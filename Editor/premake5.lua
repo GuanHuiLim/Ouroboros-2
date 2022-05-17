@@ -1,0 +1,125 @@
+project "Editor"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++20"
+    staticruntime "off"
+    --debugformat "c7"
+    warnings "Extra" -- Set warnings level to 4 for this project
+    
+    -- Engine output directory
+    targetdir("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+    objdir("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+
+    --precompiled headers for engine
+    pchheader "pch.h"
+    pchsource "src/pch.cpp"
+    
+    --Disable PCH for vendor files
+    filter "files:vendor/**/**.cpp"
+        flags { "NoPCH" }
+    filter "files:vendor/**/**.c"
+        flags { "NoPCH" }
+    filter {}   -- resets the filter
+
+    files
+    {
+        "src/**.h",
+        "src/**.hpp",
+        "src/**.c",
+        "src/**.cpp",
+    }
+
+    -- defines
+    -- {
+    --     "_CRT_SECURE_NO_WARNINGS"
+    -- }
+
+    includedirs
+    {
+        "src",
+    }
+
+    -- library diretories
+    -- CLIENT : Only Add client required Directories, rest settled by references
+    libdirs 
+    {
+    }
+
+    -- linking External libraries 
+    -- NOTE: do not put their extensions.
+    -- IMPORTANT DISCOVERY
+    --  For visual studio, If the name of the project is selected it will be linekd via 
+    --  VS references directly against other projects.
+    --  doesn't show up as links in project properties but instead
+    --  can be found on Build Dependencies/Add Reference options
+    links
+    {
+    }
+    
+    filter "system:windows"
+        cppdialect "C++20"
+        staticruntime "off"
+        systemversion "latest"
+
+        defines
+        {
+            "OO_PLATFORM_WINDOWS",
+            "EDITOR_PLATFORM_WINDOWS",
+        }
+        
+        --enable this post build command for 64 bit system
+        architecture "x86_64"
+        postbuildcommands
+        {
+        }
+    
+
+    filter{ "configurations:Debug", "platforms:Editor"}
+        defines { "EDITOR_DEBUG", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    filter{ "configurations:Release", "platforms:Editor"}
+        defines { "EDITOR_RELEASE", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    filter{ "configurations:Production", "platforms:Editor"}
+        defines "EDITOR_PRODUCTION"
+    filter{}
+    
+    filter "configurations:Debug"
+        defines "OO_DEBUG"
+        symbols "On"
+
+        architecture "x86_64"
+        -- Copy neccesary DLLs to output directory
+        postbuildcommands
+        {
+        }
+
+        links
+        {
+        }
+        
+    filter "configurations:Release"
+        defines "OO_RELEASE"
+        optimize "On"
+
+        architecture "x86_64"
+        -- Copy neccesary DLLs to output directory
+        postbuildcommands
+        {
+        }
+
+        links
+        {
+        }
+        
+    filter "configurations:Production"
+        defines "OO_PRODUCTION"
+        optimize "On"
+        
+        architecture "x86_64"
+        -- Copy neccesary DLLs to output directory
+        postbuildcommands
+        {
+        }
+
+        links
+        {
+        }

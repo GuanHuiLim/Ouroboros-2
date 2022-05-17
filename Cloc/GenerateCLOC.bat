@@ -1,0 +1,1 @@
+cloc-1.64.exe ../Engine/src ../Editor/src ../Scripting/src ../Engine/vendor/oom/oom --csv --out=loc.csv --by-file
