@@ -16,6 +16,7 @@ Technology is prohibited.
 #pragma once
 
 #include "Ouroboros/Core/Application.h"
+#include "Ouroboros/Core/LifetimeObject.h"
 //#include "Ouroboros/Core/Base.h"
 //#include "Ouroboros/Core/JobSystem/JobSystem.h"
 
@@ -44,6 +45,8 @@ int main(int argc, char** argv)
         // Uncomment to cause a break on allocation for debugging
         //_CrtSetBreakAlloc(/*Allocation Number here*/);
     #endif
+    
+    LifetimeObject lifetimeObjects;
 
     auto app = oo::CreateApplication({argc, argv});
 
