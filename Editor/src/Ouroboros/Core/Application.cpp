@@ -23,6 +23,8 @@ Technology is prohibited.
 //#include "Ouroboros/Renderer/FontRenderer.h"
 //#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
+#include "Time.h"
+
 namespace oo
 {
     Application* Application::s_instance = nullptr;
@@ -67,6 +69,8 @@ namespace oo
         {
             /*Calculate dt*/
             //Timestep dt{ m_window->CalcDeltaTime() };
+            
+            timer::Timestep dt = {};
 
             /*Process Inputs here*/
             //Input::Update();

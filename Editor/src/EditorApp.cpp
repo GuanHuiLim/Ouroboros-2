@@ -18,6 +18,10 @@ Technology is prohibited.
 // specially include this file only at the entry point of the engine.
 #include <EntryPoint.h>
 
+#include "Utility/Random.h"
+#include "Ouroboros/Core/Input.h"
+#include "Ouroboros/Core/Timer.h"
+
 class EditorApp final : public oo::Application
 {
 public:
