@@ -22,6 +22,8 @@ Technology is prohibited.
 #include "Ouroboros/Core/Input.h"
 #include "Ouroboros/Core/Timer.h"
 
+#include "Ouroboros/Core/LayerSet.h"
+
 class EditorApp final : public oo::Application
 {
 public:
@@ -29,6 +31,9 @@ public:
         : Application{ "Ouroboros v2.0", args }
     {
     }
+
+private:
+    oo::LayerSet m_layerset;
 };
 
 oo::Application* oo::CreateApplication(oo::CommandLineArgs args)
