@@ -3,7 +3,7 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           Sept 09, 2021
+\date           Sept 09, 2022
 \brief          File describing a Universally Unique Identifier
                 "UUID" (universally unique identifier) or GUID is (usually) a 128-bit integer
                 used to "uniquely" identify information.
@@ -14,7 +14,7 @@
                 but using a 64-bit random device right now. Clash rate should be extremely low even then
                 for a scope that isnt incredibly huge.
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.

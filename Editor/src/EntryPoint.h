@@ -3,12 +3,12 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           May 05, 2021
+\date           May 05, 2022
 \brief          Main Entry point to the program.
                 Will hide away this from the Sandbox and they just have to implement
                 a version of the CreateApplication function.
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
@@ -46,13 +46,15 @@ int main(int argc, char** argv)
         //_CrtSetBreakAlloc(/*Allocation Number here*/);
     #endif
     
-    LifetimeObject lifetimeObjects;
+    {
+        LifetimeObject lifetimeObjects;
 
-    auto app = oo::CreateApplication({argc, argv});
+        auto app = oo::CreateApplication({argc, argv});
 
-    app->Run();
+        app->Run();
 
-    delete app;
+        delete app;
+    }
 }
 
 #endif

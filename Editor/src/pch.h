@@ -3,7 +3,7 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           May 05, 2021
+\date           May 05, 2022
 \brief          Pre-Compiled Header that will be used throughout the entire project.
 
                 Pre-compiled headers should include files that are frequently used,
@@ -16,7 +16,7 @@
                 pchheader ("filename")
                 pchsource ("directory to pch's cpp file")
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.

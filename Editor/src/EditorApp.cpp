@@ -3,11 +3,11 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           Jul 22, 2021
+\date           Jul 22, 2022
 \brief          Customer side of the project that utilizes the functions of the Engine.
                 An Editor will be a use case for game engine.
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
@@ -30,6 +30,11 @@ public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
+    }
+
+    void OnUpdate() override
+    {
+        m_layerset.Process();
     }
 
 private:

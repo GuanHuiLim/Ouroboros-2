@@ -3,12 +3,12 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           May 24, 2021
+\date           May 24, 2022
 \brief          Layerstack holds a vector of layers and provides the interface to 
                 interact and control the individual layers. 
                 Read layers.h for more explaination on what a layer is.
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.

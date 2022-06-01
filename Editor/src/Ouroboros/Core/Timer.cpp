@@ -19,7 +19,7 @@ namespace timer
     void set_dt(double value)
     {
         s_controlled_dt = s_raw_dt = value;
-        std::clamp(s_controlled_dt, s_lower_limit, s_upper_limit);
+        s_controlled_dt = std::clamp(s_controlled_dt, s_lower_limit, s_upper_limit);
 
         if (s_frequency > 0.0)
         {

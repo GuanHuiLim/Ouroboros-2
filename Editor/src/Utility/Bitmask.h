@@ -3,7 +3,7 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           May 15, 2021
+\date           May 15, 2022
 \brief          Contains a templated class that allows the use of type-safe enums classes
                 as a bitmask.
 
