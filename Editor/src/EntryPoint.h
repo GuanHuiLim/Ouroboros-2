@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     #endif
     
     {
-        LifetimeObject lifetimeObjects;
+        oo::LifetimeObject lifetimeObjects;
 
         auto app = oo::CreateApplication({argc, argv});
 

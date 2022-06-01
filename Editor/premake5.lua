@@ -37,6 +37,7 @@ project "Editor"
     includedirs
     {
         "src",
+        "%{IncludeDir.spdlog}",
     }
 
     -- library diretories

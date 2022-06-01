@@ -12,15 +12,15 @@ outputdir = "%{cfg.buildcfg}-%{cfg.platform}-%{cfg.system}-%{cfg.architecture}"
 binOut                      = "../bin/" .. outputdir
 binApp                      = binOut .. "/" .. App
 
--- -- Include directories relative to root folder (solution directory)
--- IncludeDir                  = {}
+-- Include directories relative to root folder (solution directory)
+IncludeDir                  = {}
 -- IncludeDir["glad"]          = EngineVendor .. "/glad/include"
 -- IncludeDir["glm"]           = EngineVendor .. "/glm"
 -- IncludeDir["oom"]           = EngineVendor .. "/oom"   -- custom maths library
 -- IncludeDir["ImGui"]         = EngineVendor .. "/ImGui"
 -- IncludeDir["rttr"]          = EngineVendor .. "/rttr/include"
 -- IncludeDir["SDL"]           = EngineVendor .. "/sdl2/include"
--- IncludeDir["spdlog"]        = EngineVendor .. "/spdlog/include"
+IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["stb_image"]     = EngineVendor .. "/stb_image"
 -- IncludeDir["fmod"]          = EngineVendor .. "/fmod/core/inc"
 -- IncludeDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/inc"    -- fmod studio requires fmod inc too

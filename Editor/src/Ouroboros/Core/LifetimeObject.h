@@ -1,18 +1,24 @@
 #pragma once
 
 #include "Timer.h"
+#include "Log.h"
 
-// Uses RAII paradigm to make sure program lifetime objects are managed here
-class LifetimeObject
+namespace oo
 {
-public:
-    LifetimeObject()
+    // Uses RAII paradigm to make sure program lifetime objects are managed here
+    class LifetimeObject
     {
-        timer::init();
-    }
+    public:
+        LifetimeObject()
+        {
+            log::init();
+            timer::init();
+        }
     
-    ~LifetimeObject()
-    {
-        timer::terminate();
-    }
-};
+        ~LifetimeObject()
+        {
+            timer::terminate();
+            log::shutdown();
+        }
+    };
+}
