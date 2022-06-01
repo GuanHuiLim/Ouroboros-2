@@ -3,16 +3,16 @@
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552 | code contribution (100%)
 \par            email: l.guanhui\@digipen.edu
-\date           October 31, 2021
+\date           October 31, 2022
 \brief          Contains Event function classes that are used by the event system
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
-#include "EventUtils.h"
+#include "Event.h"
 #include <functional>
 namespace oo
 {
@@ -20,11 +20,11 @@ namespace oo
     {
     public:
         // Call the member function
-        void Execute(event::Event* event);
+        void Execute(Event* event);
         virtual ~EventFunctionBase() = default;
     protected:
         // Implemented by MemberFunctionHandler
-        virtual void Invoke(event::Event* event) = 0;
+        virtual void Invoke(Event* event) = 0;
     };
 
 
@@ -37,7 +37,7 @@ namespace oo
         EventMemberFunction(T* instance, MemberFunctionPointer memberFunction) : m_instance{ instance }, m_memberFunction{ memberFunction } {};
 
     protected:
-        void Invoke(event::Event* event) override
+        void Invoke(Event* event) override
         {
             // Cast event to the correct type and call member function
             std::invoke(m_memberFunction, m_instance, static_cast<EventType*>(event));
@@ -57,7 +57,7 @@ namespace oo
         using FunctionPointer = void(*)(EventType*);
         EventFunction(FunctionPointer function) : m_function{ function } {};
     private:
-        void Invoke(event::Event* event) override 
+        void Invoke(Event* event) override 
         {
             // Cast event to the correct type and call function
             std::invoke(m_function, static_cast<EventType*>(event));

@@ -3,7 +3,7 @@
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552 | code contribution (100%)
 \par            email: l.guanhui\@digipen.edu
-\date           October 31, 2021
+\date           October 31, 2022
 \brief          Generic event system implemented with some reference from
                 https://www.gamedev.net/articles/programming/general-and-gameplay-programming/effective-event-handling-in-c-r2459/
                 and https://medium.com/@savas/nomad-game-engine-part-7-the-event-system-45a809ccb68f
@@ -68,13 +68,13 @@
                 * are created on the stack and the *note above applies here as well.
                 * Depending on the usage, there are many ways you can use this fact to pass around information
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
-#include "EventUtils.h"
+#include "Event.h"
 #include "EventFunction.h"
 #include <vector>
 #include <memory>

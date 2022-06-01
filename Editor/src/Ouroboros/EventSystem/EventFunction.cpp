@@ -3,10 +3,10 @@
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552 | code contribution (100%)
 \par            email: l.guanhui\@digipen.edu
-\date           October 31, 2021
+\date           October 31, 2022
 \brief          Contains Event function classes that are used by the event system
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
@@ -16,7 +16,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    void EventFunctionBase::Execute(event::Event* event)
+    void EventFunctionBase::Execute(Event* event)
     {
         Invoke(event);
     }
