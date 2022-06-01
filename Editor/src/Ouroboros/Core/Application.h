@@ -3,16 +3,18 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           May 05, 2021
+\date           May 05, 2022
 \brief          Core Application Loop and functionality. 
                 Will be inherited by Sandbox project.
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
+
+#include "Ouroboros/Core/WindowsWindow.h"
 
 //forward declare main
 int main(int argc, char** argv);
@@ -95,7 +97,9 @@ namespace oo
         // @brief     Describes what happens when any type of event gets called
         //*//*****************************************************************************/
         //void OnEvent(Event& e);
-        
+
+        virtual void OnUpdate() = 0;
+
         // Windows short-hand
         //static bool WindowIsFocused() { return Get().GetWindow().IsFocused(); }
 
@@ -113,8 +117,8 @@ namespace oo
         
         //Order matters!
         //Window* m_window;
-        //std::unique_ptr<Window> m_window;
-        //GraphicsContext* m_renderer;
+        std::unique_ptr<WindowsWindow> m_window;
+        GraphicsContext* m_renderer;
         
         static Application* s_instance;
         friend int ::main(int argc, char** argv);
