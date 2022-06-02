@@ -41,6 +41,7 @@ workspace "Ouroboros"
 
 
 group "Dependencies"
+include "Editor/vendor/imgui"
 group ""
 
 include "Editor"

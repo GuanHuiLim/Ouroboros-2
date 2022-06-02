@@ -102,6 +102,11 @@ namespace oo
             return s_clientLogger;
         }
 
+        std::shared_ptr<spdlog::logger>& GetDebugLogger()
+        {
+            return s_debuggerLogger;
+        }
+
         void shutdown()
         {
             s_coreLogger.reset();
@@ -111,6 +116,12 @@ namespace oo
             s_debuggerLogger.reset();
 
             spdlog::drop_all();
+        }
+
+        void ShutdownDebugLogger()
+        {
+            s_debuggerLogger->dump_backtrace();
+            s_debuggerLogger.reset();
         }
 
     }

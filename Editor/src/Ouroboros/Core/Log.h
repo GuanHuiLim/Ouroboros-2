@@ -41,6 +41,8 @@ namespace oo
         *//*********************************************************************************/
         void shutdown();
 
+        void ShutdownDebugLogger();
+
         /********************************************************************************//*!
          @brief     Retrieve the core logger used to store logging information of
                     Game Engine
@@ -52,14 +54,12 @@ namespace oo
                     Client Application
         *//*********************************************************************************/
         std::shared_ptr<spdlog::logger>& GetClientLogger();
-//
-//#ifndef OO_EXECUTABLE
-//        /********************************************************************************//*!
-//         @brief     Retrieve the debug logger used to store logging information of
-//            Client Application
-//        *//*********************************************************************************/
-//        std::shared_ptr<spdlog::logger>& GetDebugLogger() { return s_debuggerLogger; }
-//#endif
+
+        /********************************************************************************//*!
+         @brief     Retrieve the debug logger used to store logging information of
+            Client Application
+        *//*********************************************************************************/
+        std::shared_ptr<spdlog::logger>& GetDebugLogger();
 
     }
 
@@ -71,11 +71,11 @@ namespace oo
 *//*****************************************************************************/
 
 // Engine Log macros
-#define LOG_ENGINE_TRACE(...)               SPDLOG_LOGGER_TRACE(::oo::log::GetCoreLogger(),__VA_ARGS__)
-#define LOG_ENGINE_INFO(...)                SPDLOG_LOGGER_INFO(::oo::log::GetCoreLogger(),__VA_ARGS__)
-#define LOG_ENGINE_WARN(...)                SPDLOG_LOGGER_WARN(::oo::log::GetCoreLogger(),__VA_ARGS__)
-#define LOG_ENGINE_ERROR(...)               SPDLOG_LOGGER_ERROR(::oo::log::GetCoreLogger(),__VA_ARGS__)
-#define LOG_ENGINE_CRITICAL(...)            SPDLOG_LOGGER_CRITICAL(::oo::log::GetCoreLogger(),__VA_ARGS__)
+#define LOG_CORE_TRACE(...)                 SPDLOG_LOGGER_TRACE(::oo::log::GetCoreLogger(),__VA_ARGS__)
+#define LOG_CORE_INFO(...)                  SPDLOG_LOGGER_INFO(::oo::log::GetCoreLogger(),__VA_ARGS__)
+#define LOG_CORE_WARN(...)                  SPDLOG_LOGGER_WARN(::oo::log::GetCoreLogger(),__VA_ARGS__)
+#define LOG_CORE_ERROR(...)                 SPDLOG_LOGGER_ERROR(::oo::log::GetCoreLogger(),__VA_ARGS__)
+#define LOG_CORE_CRITICAL(...)              SPDLOG_LOGGER_CRITICAL(::oo::log::GetCoreLogger(),__VA_ARGS__)
 
 // Client Log macros
 #define LOG_TRACE(...)                      SPDLOG_LOGGER_TRACE(::oo::log::GetClientLogger(),__VA_ARGS__)
@@ -87,13 +87,13 @@ namespace oo
 #ifndef OO_EXECUTABLE
 
 //Critical Logs are reserved for assert
-#define LOG_ENGINE_DEBUG_INFO(...)          SPDLOG_LOGGER_INFO(::oo::log::GetDebugLogger(),__VA_ARGS__)
-#define LOG_ENGINE_DEBUG_CRITICAL(...)      SPDLOG_LOGGER_CRITICAL(::oo::log::GetDebugLogger(),__VA_ARGS__)
+#define LOG_CORE_DEBUG_INFO(...)            SPDLOG_LOGGER_INFO(::oo::log::GetDebugLogger(),__VA_ARGS__)
+#define LOG_CORE_DEBUG_CRITICAL(...)        SPDLOG_LOGGER_CRITICAL(::oo::log::GetDebugLogger(),__VA_ARGS__)
 
 #else
 
 //Critical Logs are reserved for assert
-#define LOG_ENGINE_DEBUG_INFO(...)          
-#define LOG_ENGINE_DEBUG_CRITICAL(...)      
+#define LOG_CORE_DEBUG_INFO(...)          
+#define LOG_CORE_DEBUG_CRITICAL(...)      
 
 #endif

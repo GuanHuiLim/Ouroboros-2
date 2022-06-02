@@ -69,37 +69,37 @@ namespace oo
         m_data.VSync = properties.VSync;
         m_data.FullScreen = properties.Fullscreen;
 
-//        LOG_ENGINE_INFO("Creating Windows window using SDL: [{0} {1}x{2}]", properties.Title, properties.Width, properties.Height);
-//
-//        // windows creation
-//        if (!s_SDLInitialized)
-//        {
-//            TRACY_PROFILE_SCOPE("SDL_INIT");
-//
-//            int success = SDL_Init(SDL_INIT_VIDEO);
-//            ENGINE_ASSERT_CUSTOM_MSG((success == 0), "Failed to initialize SDL {0}", SDL_GetError());
-//
-//            s_SDLInitialized = true;
-//            TRACY_PROFILE_SCOPE_END();
-//        }
-//
-//        // controller initialization
-//        {
-//            TRACY_PROFILE_SCOPE("CONTROLLER_INIT");
-//
-//            int success = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
-//            ENGINE_ASSERT_MSG((success == 0), "Failed to initialize SDL {0}", SDL_GetError());
-//            //Load the gamecontrollerdb.txt and check if there was any problem
-//            int iNumOfControllers = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
-//            ENGINE_ASSERT_CUSTOM_MSG(iNumOfControllers != -1, "Error loading database {0}", SDL_GetError());
-//
-//            //// Ignore the controller events
-//            SDL_GameControllerEventState(SDL_IGNORE);
-//
-//            TRACY_PROFILE_SCOPE_END();
-//        }
-//
-//        //ENGINE_PROFILE_SCOPE("SDL_CreateWindows");
+        LOG_CORE_INFO("Creating Windows window using SDL: [{0} {1}x{2}]", properties.Title, properties.Width, properties.Height);
+
+        // windows creation
+        if (!s_SDLInitialized)
+        {
+            //TRACY_PROFILE_SCOPE("SDL_INIT");
+
+            //int success = SDL_Init(SDL_INIT_VIDEO);
+            //ASSERT_CUSTOM_MSG((success == 0), "Failed to initialize SDL {0}", SDL_GetError());
+
+            s_SDLInitialized = true;
+            //TRACY_PROFILE_SCOPE_END();
+        }
+
+        // controller initialization
+        {
+            //TRACY_PROFILE_SCOPE("CONTROLLER_INIT");
+
+            //int success = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+            //ASSERT_MSG((success == 0), "Failed to initialize SDL {0}", SDL_GetError());
+            //Load the gamecontrollerdb.txt and check if there was any problem
+            //int iNumOfControllers = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
+            //ASSERT_CUSTOM_MSG(iNumOfControllers != -1, "Error loading database {0}", SDL_GetError());
+
+            //// Ignore the controller events
+            //SDL_GameControllerEventState(SDL_IGNORE);
+
+            //TRACY_PROFILE_SCOPE_END();
+        }
+
+        //ENGINE_PROFILE_SCOPE("SDL_CreateWindows");
 //
 //#ifdef GRAPHICS_CONTEXT_OPENGL
 //        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -164,6 +164,8 @@ namespace oo
         //SDL_Quit();
 
         //TRACY_PROFILE_SCOPE_END();
+        
+        LOG_CORE_INFO("Finished Windows Shutdown");
     }
 
     void WindowsWindow::ProcessEvents()

@@ -34,6 +34,8 @@ Technology is prohibited.
 // Utility files
 //#include "Utility/Bitmask.h"
 //#include "Utility/EventCallback.h"
+#include "Ouroboros/Core/Log.h"
+#include "Ouroboros/Core/Assert.h"
 
 // Commonly use external libraries
 #include <iostream>

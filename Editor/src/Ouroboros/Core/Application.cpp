@@ -31,7 +31,7 @@ namespace oo
         , m_running{ true }
     {
 
-        /*ENGINE_ASSERT_MSG(!s_instance, "Application already exist!");*/
+        ASSERT_MSG(s_instance == this, "Application already exist!");
         s_instance = this;
         m_window = std::make_unique<WindowsWindow>(WindowProperties{ name });
         //Retrieve renderer from window

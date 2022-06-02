@@ -12,14 +12,17 @@ outputdir = "%{cfg.buildcfg}-%{cfg.platform}-%{cfg.system}-%{cfg.architecture}"
 binOut                      = "../bin/" .. outputdir
 binApp                      = binOut .. "/" .. App
 
+-- retrieving vulkan from pc
+VULKAN_SDK = os.getenv("VULKAN_SDK")
+
 -- Include directories relative to root folder (solution directory)
 IncludeDir                  = {}
 -- IncludeDir["glad"]          = EngineVendor .. "/glad/include"
 -- IncludeDir["glm"]           = EngineVendor .. "/glm"
 -- IncludeDir["oom"]           = EngineVendor .. "/oom"   -- custom maths library
--- IncludeDir["ImGui"]         = EngineVendor .. "/ImGui"
+IncludeDir["imgui"]         = AppVendor .. "/imgui"
 -- IncludeDir["rttr"]          = EngineVendor .. "/rttr/include"
--- IncludeDir["SDL"]           = EngineVendor .. "/sdl2/include"
+IncludeDir["SDL"]           = AppVendor .. "/sdl2/include"
 IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["stb_image"]     = EngineVendor .. "/stb_image"
 -- IncludeDir["fmod"]          = EngineVendor .. "/fmod/core/inc"
@@ -29,16 +32,26 @@ IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["mono"]          = EngineVendor .. "/mono/include/mono-2.0"
 -- IncludeDir["tracy"]         = EngineVendor .. "/tracy"
 -- IncludeDir["rapidjson"]     = EngineVendor .. "/rpj"
--- -- Editor include dependencies
+IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
+-- IncludeDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader"
+-- IncludeDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap"
+-- IncludeDir["vma"]           = EngineVendor .. "/vma"
 
--- -- Paths to various external libraries directories
--- LibraryDir                  = {}
+
+-- Paths to various external libraries directories
+LibraryDir                  = {}
 -- LibraryDir["mono"]          = EngineVendor .. "/mono/lib"
 -- LibraryDir["rttr"]          = EngineVendor .. "/rttr/lib"
--- LibraryDir["SDL"]           = EngineVendor .. "/sdl2/lib/x64"
+LibraryDir["SDL"]           = AppVendor .. "/sdl2/lib/x64"
 -- LibraryDir["fmod"]          = EngineVendor .. "/fmod/core/lib/x64"
 -- LibraryDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/lib/x64"
 -- LibraryDir["ffmpeg"]   		= EngineVendor .. "/ffmpeg/lib64"
 -- LibraryDir["freetype"]      = EngineVendor .. "/freetype/x64"
 -- LibraryDir["oom"]           = EngineVendor .. "/oom/lib"   -- custom maths library directory
--- Editor Library dependencies
+LibraryDir["VulkanSDK"]     = "%{VULKAN_SDK}/Lib"
+-- LibraryDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader/lib"
+-- LibraryDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap/lib"
+
+-- Paths to libraries that will be used
+Library                     = {}
+Library["Vulkan"]           = "%{LibraryDir.VulkanSDK}/vulkan-1.lib"

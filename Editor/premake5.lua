@@ -38,12 +38,16 @@ project "Editor"
     {
         "src",
         "%{IncludeDir.spdlog}",
+        "%{IncludeDir.VulkanSDK}",
+        "%{IncludeDir.SDL}",
     }
 
     -- library diretories
     -- CLIENT : Only Add client required Directories, rest settled by references
     libdirs 
     {
+        "%{LibraryDir.VulkanSDK}",
+        "%{LibraryDir.SDL}",
     }
 
     -- linking External libraries 
@@ -55,6 +59,8 @@ project "Editor"
     --  can be found on Build Dependencies/Add Reference options
     links
     {
+        "%{Library.Vulkan}",
+        "ImGui",
     }
     
     filter "system:windows"

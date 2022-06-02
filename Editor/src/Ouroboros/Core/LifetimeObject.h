@@ -12,12 +12,14 @@ namespace oo
         LifetimeObject()
         {
             log::init();
+            LOG_CORE_INFO("Begin loading static lifetime objects");
             timer::init();
         }
     
         ~LifetimeObject()
         {
             timer::terminate();
+            LOG_CORE_INFO("Finish unloading static lifetime objects");
             log::shutdown();
         }
     };
