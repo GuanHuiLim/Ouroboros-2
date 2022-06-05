@@ -89,11 +89,11 @@ namespace oo
         // Vulkan will call internally
 
         ImGuiIO& io = ImGui::GetIO();
-        /*if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
-        }*/
+        }
     }
 
     void VulkanContext::OnImGuiShutdown()

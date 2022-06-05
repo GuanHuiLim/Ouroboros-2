@@ -70,7 +70,7 @@ namespace oo
          @return    returns the static instance of the created application.
                     crashes if s_instance is null due to dereferencing.
         *//*****************************************************************************/
-        //static Application& Get() { ENGINE_ASSERT(s_instance);  return *s_instance; }
+        static Application& Get() { ASSERT(s_instance == nullptr);  return *s_instance; }
         /****************************************************************************//*!
          @brief     Retrieve window that the application holds.
 
@@ -78,7 +78,7 @@ namespace oo
 
          @return    returns a generic window reference
         *//*****************************************************************************/
-        //Window& GetWindow() const { ENGINE_ASSERT(m_window); return *m_window; }
+        WindowsWindow& GetWindow() const { ASSERT(m_window == nullptr); return *m_window; }
         /****************************************************************************//*!
          @brief     Retrieve the command line arguments passed to the application.
 

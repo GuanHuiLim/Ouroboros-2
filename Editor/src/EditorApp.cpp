@@ -22,8 +22,70 @@ Technology is prohibited.
 #include <Ouroboros/Core/Input.h>
 #include <Ouroboros/Core/Timer.h>
 #include <Ouroboros/Core/LayerSet.h>
+#include <Ouroboros/ImGui/ImGuiAbstraction.h>
 
 #include "TestLayers/InputDebugLayer.h"
+
+
+#include <imgui.h>
+class EditorLayer final : public oo::Layer
+{
+private:
+    //order matters dont change it
+    bool m_demo = true;
+    bool m_showDebugInfo = false;
+
+public:
+    EditorLayer()
+        : oo::Layer{ "EditorLayer" }
+    {
+        LOG_INFO("Test Info");
+        LOG_TRACE("Test Trace");
+        LOG_WARN("Test Warn");
+        LOG_ERROR("Test Error");
+        LOG_CRITICAL("Test Critical");
+    }
+
+    virtual void OnAttach() override final
+    {
+    }
+
+    // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
+    // PROPERLY FOR IMGUI RENDERING TO TAKE PLACE
+    virtual void OnUpdate() override final
+    {
+        if (oo::input::IsKeyPressed(KEY_F5))
+        {
+            m_showDebugInfo = !m_showDebugInfo;
+        }
+
+        /* m_imGuiAbstract->Begin();
+         OnImGuiRender();
+         m_imGuiAbstract->End();*/
+        
+         //#if EDITOR_DEBUG || EDITOR_RELEASE
+         /*if (m_showDebugInfo)
+         {
+             oo::TimeDebugInfo timeDebugInfo = oo::Timestep::GetDebugTimeInfo();
+
+             ImGui::Begin("fpsviewer", nullptr,
+                 ImGuiWindowFlags_NoScrollbar
+                 | ImGuiWindowFlags_NoCollapse
+                 | ImGuiWindowFlags_NoTitleBar
+                 | ImGuiWindowFlags_AlwaysAutoResize);
+             ImGui::Text("Rolling FPS %.2f", timeDebugInfo.AvgFPS);
+             ImGui::Text("Rolling DeltaTime %.6f", timeDebugInfo.AvgDeltaTime);
+             ImGui::Text("Current Timescale %.2f", timeDebugInfo.CurrentTimeScale);
+             ImGui::Text("Time elpased %.2f", timeDebugInfo.TimeElapsed);
+             ImGui::End();
+         }*/
+         //#endif
+
+        //m_editor.ShowAllWidgets();
+        //ImGui::ShowDemoWindow(&m_demo);
+    }
+
+};
 
 class EditorApp final : public oo::Application
 {
@@ -32,12 +94,20 @@ public:
         : Application{ "Ouroboros v2.0", args }
     {
         m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        
+        m_layerset.PushLayer(std::make_shared<EditorLayer>());
+
+        m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
     }
 
     void OnUpdate() override
     {
+        m_imGuiAbstract->Begin();
+
         m_layerset.Update();
-        
+
+        m_imGuiAbstract->End();
+
         if (oo::input::IsKeyPressed(KEY_ESCAPE))
         {
             Close();
@@ -46,6 +116,7 @@ public:
 
 private:
     oo::LayerSet m_layerset;
+    std::unique_ptr<oo::ImGuiAbstraction> m_imGuiAbstract;
 };
 
 oo::Application* oo::CreateApplication(oo::CommandLineArgs args)

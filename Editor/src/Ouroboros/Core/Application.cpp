@@ -72,7 +72,7 @@ namespace oo
 
             // run derived class update here
             OnUpdate();
-            
+
             // swap buffers at the end of frame
             m_window->SwapBuffers();
         }
