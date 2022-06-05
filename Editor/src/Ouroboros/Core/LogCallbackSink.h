@@ -4,7 +4,7 @@
 \author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution (100%)
 \par           email: junxiang.leong\@digipen.edu
 \date          November 12, 2022
-\brief		   a spdlog sink which allows for callback when using the logging function
+\brief         a spdlog sink which allows for callback when using the logging function
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

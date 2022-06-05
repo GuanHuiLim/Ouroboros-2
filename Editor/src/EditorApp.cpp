@@ -19,10 +19,9 @@ Technology is prohibited.
 #include <EntryPoint.h>
 
 #include "Utility/Random.h"
-#include "Ouroboros/Core/Input.h"
-#include "Ouroboros/Core/Timer.h"
-
-#include "Ouroboros/Core/LayerSet.h"
+#include <Ouroboros/Core/Input.h>
+#include <Ouroboros/Core/Timer.h>
+#include <Ouroboros/Core/LayerSet.h>
 
 #include "TestLayers/InputDebugLayer.h"
 
@@ -39,7 +38,7 @@ public:
     {
         m_layerset.Update();
         
-        if (input::IsKeyPressed(KEY_ESCAPE))
+        if (oo::input::IsKeyPressed(KEY_ESCAPE))
         {
             Close();
         }

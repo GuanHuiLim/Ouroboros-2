@@ -7,18 +7,18 @@
 \brief          Describes a Test scene used to test The Input Systems
                 Functionality and print out debug messages for all supported inputs.
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include "Ouroboros/Core/Layer.h"
-#include "Ouroboros/Core/Input.h"
-#include "Ouroboros/Core/Assert.h"
-#include "Ouroboros/Core/Log.h"
-#include "Ouroboros/Core/KeyCode.h"
+#include <Ouroboros/Core/Layer.h>
+#include <Ouroboros/Core/Input.h>
+#include <Ouroboros/Core/Assert.h>
+#include <Ouroboros/Core/Log.h>
+#include <Ouroboros/Core/KeyCode.h>
 
 /****************************************************************************//*!
  @brief     Describes a Test scene used to test The Input Systems
@@ -34,167 +34,167 @@ public:
     void OnUpdate() override final
     {
         //LOG_INFO("ExampleLayer::Update {0}s {1}ms", dt.GetSeconds(), dt.GetMilliSeconds());
-        // Commenting this out for now until input::GetMouseDelta() no longer consumes the information
-        /*input::GetMouseDelta();
-        std::pair<int, int> pos = input::GetMouseDelta();
+        // Commenting this out for now until oo::input::GetMouseDelta() no longer consumes the information
+        /*oo::input::GetMouseDelta();
+        std::pair<int, int> pos = oo::input::GetMouseDelta();
         LOG_INFO("{0}, {1}", pos.first , pos.second);*/
 
 
         // New way to do check keys.
-        if (input::IsKeyPressed(KEY_0))
+        if (oo::input::IsKeyPressed(KEY_0))
         {
             LOG_TRACE("key 0 Pressed ");
         }
 
-        if (input::IsAnyKeyHeld())
+        if (oo::input::IsAnyKeyHeld())
         {
-            for (input::KeyCode key : input::GetKeysHeld())
+            for (oo::input::KeyCode key : oo::input::GetKeysHeld())
             {
-                LOG_TRACE("input::Key {0} down", key);
+                LOG_TRACE("oo::input::Key {0} down", key);
             }
         }
 
-        if (input::IsAnyKeyPressed())
+        if (oo::input::IsAnyKeyPressed())
         {
-            for (input::KeyCode key : input::GetKeysPressed())
+            for (oo::input::KeyCode key : oo::input::GetKeysPressed())
             {
-                LOG_TRACE("input::Key {0} pressed", key);
+                LOG_TRACE("oo::input::Key {0} pressed", key);
             }
         }
 
-        if (input::IsAnyKeyReleased())
+        if (oo::input::IsAnyKeyReleased())
         {
-            for (input::KeyCode key : input::GetKeysReleased())
+            for (oo::input::KeyCode key : oo::input::GetKeysReleased())
             {
-                LOG_TRACE("input::Key {0} released", key);
+                LOG_TRACE("oo::input::Key {0} released", key);
             }
         }
 
-        if (input::IsAnyMouseButtonHeld())
+        if (oo::input::IsAnyMouseButtonHeld())
         {
-            for (input::MouseCode mousecode : input::GetMouseButtonsHeld())
+            for (oo::input::MouseCode mousecode : oo::input::GetMouseButtonsHeld())
             {
-                LOG_TRACE("input::Mouse Button {0} Down", mousecode);
+                LOG_TRACE("oo::input::Mouse Button {0} Down", mousecode);
             }
         }
 
-        if (input::IsAnyMouseButtonPressed())
+        if (oo::input::IsAnyMouseButtonPressed())
         {
-            for (input::MouseCode mousecode : input::GetMouseButtonsPressed())
+            for (oo::input::MouseCode mousecode : oo::input::GetMouseButtonsPressed())
             {
-                LOG_TRACE("input::Mouse Button {0} Pressed", mousecode);
+                LOG_TRACE("oo::input::Mouse Button {0} Pressed", mousecode);
             }
         }
 
-        if (input::IsAnyMouseButtonReleased())
+        if (oo::input::IsAnyMouseButtonReleased())
         {
-            for (input::MouseCode mousecode : input::GetMouseButtonsReleased())
+            for (oo::input::MouseCode mousecode : oo::input::GetMouseButtonsReleased())
             {
-                LOG_TRACE("input::Mouse Button {0} Released", mousecode);
+                LOG_TRACE("oo::input::Mouse Button {0} Released", mousecode);
             }
         }
 
-        if (input::IsAnyControllerButtonHeld())
+        if (oo::input::IsAnyControllerButtonHeld())
         {
-            for (input::ControllerButtonCode controllerBtnCode : input::GetControllerButtonsHeld())
+            for (oo::input::ControllerButtonCode controllerBtnCode : oo::input::GetControllerButtonsHeld())
             {
                 LOG_TRACE("Controller Button {0} Down", controllerBtnCode);
             }
         }
 
-        if (input::IsAnyControllerButtonPressed())
+        if (oo::input::IsAnyControllerButtonPressed())
         {
-            for (input::ControllerButtonCode controllerBtnCode : input::GetControllerButtonsPressed())
+            for (oo::input::ControllerButtonCode controllerBtnCode : oo::input::GetControllerButtonsPressed())
             {
                 LOG_TRACE("Controller Button {0} Pressed", controllerBtnCode);
             }
         }
 
-        if (input::IsAnyControllerButtonReleased())
+        if (oo::input::IsAnyControllerButtonReleased())
         {
-            for (input::ControllerButtonCode controllerBtnCode : input::GetControllerButtonsReleased())
+            for (oo::input::ControllerButtonCode controllerBtnCode : oo::input::GetControllerButtonsReleased())
             {
                 LOG_TRACE("Controller Button {0} Released", controllerBtnCode);
             }
         }
 
-        if (input::IsAnyControllerAxis())
+        if (oo::input::IsAnyControllerAxis())
         {
-            for (auto&& [controllerAxis, value] : input::GetControllerAxis())
+            for (auto&& [controllerAxis, value] : oo::input::GetControllerAxis())
             {
                 LOG_TRACE("Active Controller Axis {0} value {1}", controllerAxis, value);
             }
         }
 
 
-        if (input::IsKeyHeld(input::Key::W))
+        if (oo::input::IsKeyHeld(oo::input::Key::W))
         {
             LOG_TRACE("key W down!");
         }
-        if (input::IsKeyPressed(input::Key::W))
+        if (oo::input::IsKeyPressed(oo::input::Key::W))
         {
             LOG_TRACE("key W pressed!");
         }
-        if (input::IsKeyReleased(input::Key::W))
+        if (oo::input::IsKeyReleased(oo::input::Key::W))
         {
             LOG_TRACE("key W released!");
         }
 
-        if (input::IsMouseButtonHeld(input::Mouse::ButtonLeft))
+        if (oo::input::IsMouseButtonHeld(oo::input::Mouse::ButtonLeft))
         {
             LOG_TRACE("mouse button Left is Down!");
         }
-        if (input::IsMouseButtonPressed(input::Mouse::ButtonLeft))
+        if (oo::input::IsMouseButtonPressed(oo::input::Mouse::ButtonLeft))
         {
             LOG_TRACE("mouse button Left is Pressed!");
         }
-        if (input::IsMouseButtonReleased(input::Mouse::ButtonLeft))
+        if (oo::input::IsMouseButtonReleased(oo::input::Mouse::ButtonLeft))
         {
             LOG_TRACE("mouse button Left is Released!");
         }
 
-        if (input::IsMouseButtonHeld(input::Mouse::ButtonRight))
+        if (oo::input::IsMouseButtonHeld(oo::input::Mouse::ButtonRight))
         {
             LOG_TRACE("mouse button Right is Down!");
         }
-        if (input::IsMouseButtonPressed(input::Mouse::ButtonRight))
+        if (oo::input::IsMouseButtonPressed(oo::input::Mouse::ButtonRight))
         {
             LOG_TRACE("mouse button Right is Pressed!");
         }
-        if (input::IsMouseButtonReleased(input::Mouse::ButtonRight))
+        if (oo::input::IsMouseButtonReleased(oo::input::Mouse::ButtonRight))
         {
             LOG_TRACE("mouse button Right is Released!");
         }
 
 
-        if (input::IsMouseButtonHeld(input::Mouse::ButtonMiddle))
+        if (oo::input::IsMouseButtonHeld(oo::input::Mouse::ButtonMiddle))
         {
             LOG_TRACE("mouse button Middle is Down!");
         }
-        if (input::IsMouseButtonPressed(input::Mouse::ButtonMiddle))
+        if (oo::input::IsMouseButtonPressed(oo::input::Mouse::ButtonMiddle))
         {
             LOG_TRACE("mouse button Middle is Pressed!");
         }
-        if (input::IsMouseButtonReleased(input::Mouse::ButtonMiddle))
+        if (oo::input::IsMouseButtonReleased(oo::input::Mouse::ButtonMiddle))
         {
             LOG_TRACE("mouse button Middle is Released!");
         }
 
-        if (input::IsMouseButtonHeld(input::Mouse::ButtonLast))
+        if (oo::input::IsMouseButtonHeld(oo::input::Mouse::ButtonLast))
         {
             LOG_TRACE("mouse button Last is Down!");
         }
-        if (input::IsMouseButtonPressed(input::Mouse::ButtonLast))
+        if (oo::input::IsMouseButtonPressed(oo::input::Mouse::ButtonLast))
         {
             LOG_TRACE("mouse button Last is Pressed!");
         }
-        if (input::IsMouseButtonReleased(input::Mouse::ButtonLast))
+        if (oo::input::IsMouseButtonReleased(oo::input::Mouse::ButtonLast))
         {
             LOG_TRACE("mouse button Last is Released!");
         }
 
-        //LOG_TRACE("{0}, {1}", input::GetMousePosition().first, input::GetMousePosition().second);
-        //LOG_TRACE("{0}, {1}", input::GetMouseX(), input::GetMouseY());
+        //LOG_TRACE("{0}, {1}", oo::input::GetMousePosition().first, oo::input::GetMousePosition().second);
+        //LOG_TRACE("{0}, {1}", oo::input::GetMouseX(), oo::input::GetMouseY());
 
     }
 

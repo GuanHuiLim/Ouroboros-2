@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           Event.h
+\file           AppEvent.h
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu

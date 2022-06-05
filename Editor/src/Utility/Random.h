@@ -3,7 +3,7 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
-\date           Nov 8, 2022
+\date           Jun 08, 2022
 \brief          Utility Random class that helps wrap C++ random into one simple to use
                 class.
 

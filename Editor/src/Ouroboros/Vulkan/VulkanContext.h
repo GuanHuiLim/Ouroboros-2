@@ -1,6 +1,6 @@
 /************************************************************************************//*!
 \file           VulkanContext.h
-\project        INSERT PROJECT NAME
+\project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420
 \par            email: c.tecklee\@digipen.edu
 \date           Jun 17, 2022

@@ -3,7 +3,7 @@
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552 | code contribution (100%)
 \par            email: l.guanhui\@digipen.edu
-\date           November 3, 2022
+\date           November 03, 2022
 \brief          
 
 Copyright (C) 2022 DigiPen Institute of Technology.

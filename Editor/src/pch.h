@@ -37,6 +37,8 @@ Technology is prohibited.
 #define GLM_FORCE_ALIGNED
 #include <glm/glm.hpp>
 #include <glm/matrix.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 // Utility files
 //#include "Utility/Bitmask.h"
