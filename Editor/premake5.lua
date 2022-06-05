@@ -73,6 +73,10 @@ project "Editor"
         staticruntime "off"
         systemversion "latest"
 
+        -- Game Engine icon
+        files { 'Editor.rc', '**.ico' }
+        vpaths { ['Resources/*'] = { '*.rc', '**.ico' } }
+        
         defines
         {
             "OO_PLATFORM_WINDOWS",
@@ -85,6 +89,8 @@ project "Editor"
         {
             -- SDL2.0 
             {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" " .. binApp },
+            -- Controller Support file
+            {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" " .. binApp },
         }
     
 
