@@ -41,6 +41,7 @@ project "Editor"
         "%{IncludeDir.VulkanSDK}",
         "%{IncludeDir.SDL}",
         "%{IncludeDir.imgui}",
+        "%{IncludeDir.glm}",
     }
 
     -- library diretories

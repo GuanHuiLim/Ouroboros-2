@@ -18,7 +18,7 @@ VULKAN_SDK = os.getenv("VULKAN_SDK")
 -- Include directories relative to root folder (solution directory)
 IncludeDir                  = {}
 -- IncludeDir["glad"]          = EngineVendor .. "/glad/include"
--- IncludeDir["glm"]           = EngineVendor .. "/glm"
+IncludeDir["glm"]           = AppVendor .. "/glm"
 -- IncludeDir["oom"]           = EngineVendor .. "/oom"   -- custom maths library
 IncludeDir["imgui"]         = AppVendor .. "/imgui"
 -- IncludeDir["rttr"]          = EngineVendor .. "/rttr/include"

@@ -31,6 +31,13 @@ Technology is prohibited.
 //#include <oom/oom.hpp>
 //#include <rttr/registration>
 
+#define GLM_FORCE_PURE
+#define GLM_FORCE_SSE42 //GLM_FORCE_SSE2 or GLM_FORCE_SSE42 if your processor supports it
+//#define GLM_FORCE_SIMD_AVX2
+#define GLM_FORCE_ALIGNED
+#include <glm/glm.hpp>
+#include <glm/matrix.hpp>
+
 // Utility files
 //#include "Utility/Bitmask.h"
 //#include "Utility/EventCallback.h"

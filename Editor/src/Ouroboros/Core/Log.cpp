@@ -111,7 +111,10 @@ namespace oo
 
         void shutdown()
         {
+            s_coreLogger->dump_backtrace();
             s_coreLogger.reset();
+            
+            s_clientLogger->dump_backtrace();
             s_clientLogger.reset();
             
             ShutdownDebugLogger();
