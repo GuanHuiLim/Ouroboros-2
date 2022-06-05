@@ -24,17 +24,25 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/LayerSet.h"
 
+#include "TestLayers/InputDebugLayer.h"
+
 class EditorApp final : public oo::Application
 {
 public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
+        m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
     }
 
     void OnUpdate() override
     {
-        m_layerset.Process();
+        m_layerset.Update();
+        
+        if (input::IsKeyPressed(KEY_ESCAPE))
+        {
+            Close();
+        }
     }
 
 private:

@@ -18,7 +18,7 @@ Technology is prohibited.
 #pragma once
 
 //#include "Ouroboros/Core/Base.h"
-//#include "Ouroboros/Core/Timestep.h"
+//#include "Ouroboros/Core/Timer.h"
 //#include "Ouroboros/Core/Events/Event.h"
 
 namespace oo
@@ -49,7 +49,7 @@ namespace oo
         /*-----------------------------------------------------------------------------*/
         virtual void OnAttach() {}
         virtual void OnDetach() {}
-        //virtual void OnUpdate(oo::Timestep dt) { UNREFERENCED_PARAMETER(dt); }
+        virtual void OnUpdate() {}
         //virtual void OnImGuiRender() {}
         //virtual void OnEvent(Event& event) { UNREFERENCED_PARAMETER(event); }
         

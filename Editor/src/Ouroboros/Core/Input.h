@@ -30,6 +30,12 @@ Technology is prohibited.
 *//*****************************************************************************/
 namespace input
 {
+    void Init();
+    void Update();
+    void ShutDown();
+    void AddController(int index);
+    void RemoveController(int index);
+
     /*-----------------------------------------------------------------------------*/
     /* Interface Functions                                                         */
     /*-----------------------------------------------------------------------------*/
@@ -297,12 +303,4 @@ namespace input
     *//*****************************************************************************/
     std::vector<std::tuple<ControllerAxisCode, float>> GetControllerAxis();
 
-    namespace
-    {
-        void Init();
-        void Update();
-        void ShutDown();
-        void AddController(int index);
-        void RemoveController(int index);
-    }
 }

@@ -16,6 +16,7 @@ Technology is prohibited.
 
 #include <filesystem>
 #include "Ouroboros/Core/Events/AppEvent.h"
+#include <string>
 
 namespace oo
 {
@@ -44,11 +45,13 @@ namespace oo
 
         std::string ToString() const override final
         {
-            return m_file.u8string();
+            std::stringstream ss;
+            ss << "FileDropEvent : " << m_file;
+            return ss.str();
         }
 
         EVENT_CLASS_TYPE(FILEDROPPED);
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::FILEDROP } | EVENT_CATEGORY::INPUT) //TECHNICALLY ITS INPUT
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::FILEDROP } | EVENT_CATEGORY::INPUT) //TECHNICALLY ITS INPUT
     private:
         FileDropType m_type;
         std::filesystem::path m_file;

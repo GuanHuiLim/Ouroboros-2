@@ -39,3 +39,4 @@ bin-int/
 # Editor/Editor.aps
 # Editor/Did not set Save Directory
 # Installer/OuroborosInstaller.exe
+*.log

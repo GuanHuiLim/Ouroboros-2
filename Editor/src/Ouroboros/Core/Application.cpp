@@ -15,7 +15,7 @@ Technology is prohibited.
 #include "pch.h"
 #include "Application.h"
 
-//#include "Ouroboros/Core/Input.h"
+#include "Ouroboros/Core/Input.h"
 
 #include "Ouroboros/Core/GraphicsContext.h"
 //#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
@@ -38,13 +38,13 @@ namespace oo
         m_renderer = static_cast<GraphicsContext*>(m_window->GetRenderingContext());
 
         /*Initialize Input Management*/
-        //Input::Init();
+        input::Init();
     }
 
     Application::~Application()
     {
         /*Shutdown Input Management*/
-        //Input::ShutDown();
+        input::ShutDown();
 
         //m_window->~Window();
     }
@@ -62,19 +62,19 @@ namespace oo
             timer::Timestep dt = {};
 
             /*Process Inputs here*/
-            //Input::Update();
+            input::Update();
 
             /* Process window input events */
-            //m_window->ProcessEvents();
+            m_window->ProcessEvents();
 
             //whatever the renderer needs to call at the beggining if each frame e.g. clear color
-            //m_renderer->OnUpdateBegin();
+            m_renderer->OnUpdateBegin();
 
             // run derived class update here
             OnUpdate();
             
             // swap buffers at the end of frame
-            //m_window->SwapBuffers();
+            m_window->SwapBuffers();
         }
     }
 

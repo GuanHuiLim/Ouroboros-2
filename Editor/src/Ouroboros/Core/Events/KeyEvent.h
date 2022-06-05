@@ -28,7 +28,7 @@ namespace oo
     public:
         inline input::KeyCode GetKeyCode() const { return m_keycode; }
 
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::KEYBOARD } | EVENT_CATEGORY::INPUT)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::KEYBOARD } | EVENT_CATEGORY::INPUT)
     protected:
         KeyEvent(input::KeyCode keycode)
             : m_keycode{ keycode } {}

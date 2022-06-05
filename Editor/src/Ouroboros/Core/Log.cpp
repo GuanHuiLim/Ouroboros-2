@@ -45,19 +45,21 @@ namespace oo
             {
                 // Creates a multi-threaded, Colored std out console
                 std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
-                std::make_shared<CallbackSink_mt>()
+                std::make_shared<CallbackSink_mt>(),
+                std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/Engine.log", true)
             };
 
             std::vector<spdlog::sink_ptr> clientSinks =
             {
                 // Creates a multi-threaded, Colored std out console
                 std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
-                std::make_shared<CallbackSink_mt>()
+                std::make_shared<CallbackSink_mt>(),
+                std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/Client.log", true)
             };
 
             std::vector<spdlog::sink_ptr> debugLoggerSinks =
             {
-                std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/Client.log", true)
+                std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/Debug.log", true)
             };
 
             // %^   == Color
@@ -86,7 +88,7 @@ namespace oo
             // Create debug logger
             s_debuggerLogger = std::make_shared<spdlog::logger>("DEBUG", debugLoggerSinks.begin(), debugLoggerSinks.end());
             // Set logging level to trace : lowest level therefore traces everything
-            s_debuggerLogger->set_level(spdlog::level::critical);
+            s_debuggerLogger->set_level(spdlog::level::trace);
             s_debuggerLogger->enable_backtrace(512);
         }
 
@@ -112,8 +114,7 @@ namespace oo
             s_coreLogger.reset();
             s_clientLogger.reset();
             
-            s_debuggerLogger->dump_backtrace();
-            s_debuggerLogger.reset();
+            ShutdownDebugLogger();
 
             spdlog::drop_all();
         }

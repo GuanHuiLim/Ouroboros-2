@@ -38,7 +38,7 @@ namespace oo
         }
 
         EVENT_CLASS_TYPE(WINDOWRESIZE)
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::APPLICATION })
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
 
     private:
         unsigned int m_width, m_height;
@@ -52,7 +52,7 @@ namespace oo
     public:
         WindowCloseEvent() = default;
         EVENT_CLASS_TYPE(WINDOWCLOSE)
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::APPLICATION })
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 
 
@@ -64,7 +64,7 @@ namespace oo
     public:
         WindowFocusEvent() = default;
         EVENT_CLASS_TYPE(WINDOWFOCUS)
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::APPLICATION })
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 
     /********************************************************************************//*!
@@ -75,7 +75,7 @@ namespace oo
     public:
         WindowLoseFocusEvent() = default;
         EVENT_CLASS_TYPE(WINDOWLOSEFOCUS)
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::APPLICATION })
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 
     class WindowMovedEvent final : public AppEvent
@@ -83,7 +83,7 @@ namespace oo
     public:
         WindowMovedEvent() = default;
         EVENT_CLASS_TYPE(WINDOWMOVED)
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::APPLICATION })
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 
 }

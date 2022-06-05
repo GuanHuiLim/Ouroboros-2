@@ -70,7 +70,7 @@ namespace oo
     /********************************************************************************//*!
      @brief     Describes a basic event.
     *//*********************************************************************************/
-    class AppEvent : Event
+    class AppEvent : public Event
     {
     public:
         //bool Handled = false;

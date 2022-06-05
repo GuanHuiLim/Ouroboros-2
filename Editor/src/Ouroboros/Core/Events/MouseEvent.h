@@ -40,7 +40,7 @@ namespace oo
         }
 
         EVENT_CLASS_TYPE(MOUSEMOVED)
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::MOUSE } | EVENT_CATEGORY::INPUT)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::MOUSE } | EVENT_CATEGORY::INPUT)
     private:
         float m_mouseX, m_mouseY;
     };
@@ -65,7 +65,7 @@ namespace oo
         }
 
         EVENT_CLASS_TYPE(MOUSESCROLLED)
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::MOUSE } | EVENT_CATEGORY::INPUT)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::MOUSE } | EVENT_CATEGORY::INPUT)
     private:
         float m_xOffset, m_yOffset;
     };
@@ -78,7 +78,7 @@ namespace oo
     public:
         input::MouseCode GetMouseButton() const { return m_Button; }
 
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::MOUSE } | EVENT_CATEGORY::INPUT | EVENT_CATEGORY::MOUSEBUTTON)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::MOUSE } | EVENT_CATEGORY::INPUT | EVENT_CATEGORY::MOUSEBUTTON)
     protected:
         MouseButtonEvent(const input::MouseCode button)
             : m_Button(button) {}

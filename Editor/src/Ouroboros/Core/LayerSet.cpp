@@ -23,6 +23,15 @@ namespace oo
         m_removeOverlayQueue.emplace(overlay);
     }
 
+    void LayerSet::Update()
+    {
+        Process();
+        for (auto& layer : m_layerStack)
+        {
+            layer->OnUpdate();
+        }
+    }
+
     void LayerSet::Process()
     {
         while (!m_removeLayerQueue.empty())

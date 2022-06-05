@@ -27,7 +27,7 @@ namespace oo
     class ControllerAddedEvent : public AppEvent
     {
     public:
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::DEVICE } | EVENT_CATEGORY::CONTROLLER | EVENT_CATEGORY::INPUT)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::DEVICE } | EVENT_CATEGORY::CONTROLLER | EVENT_CATEGORY::INPUT)
 
         ControllerAddedEvent(int32_t index) : m_index{ index } {}
 
@@ -51,7 +51,7 @@ namespace oo
     class ControllerRemovedEvent : public AppEvent
     {
     public:
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::DEVICE } | EVENT_CATEGORY::CONTROLLER | EVENT_CATEGORY::INPUT)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::DEVICE } | EVENT_CATEGORY::CONTROLLER | EVENT_CATEGORY::INPUT)
 
         ControllerRemovedEvent(int32_t index) : m_index{ index } {}
 
@@ -75,7 +75,7 @@ namespace oo
     class ControllerMovedEvent : public AppEvent
     {
     public:
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::CONTROLLER } | EVENT_CATEGORY::INPUT)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::CONTROLLER } | EVENT_CATEGORY::INPUT)
 
         ControllerMovedEvent(uint8_t button, int16_t value) : m_button{ button }, m_value{ value } {}
 
@@ -100,7 +100,7 @@ namespace oo
     class ControllerButtonEvent : public AppEvent
     {
     public:
-        EVENT_CLASS_CATEGORY(utility::bitmask{ EVENT_CATEGORY::CONTROLLER } | EVENT_CATEGORY::INPUT)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::CONTROLLER } | EVENT_CATEGORY::INPUT)
     protected:
         ControllerButtonEvent(uint8_t button) : m_button{ button } {}
 

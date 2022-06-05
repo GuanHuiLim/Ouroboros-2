@@ -40,6 +40,7 @@ project "Editor"
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.VulkanSDK}",
         "%{IncludeDir.SDL}",
+        "%{IncludeDir.imgui}",
     }
 
     -- library diretories
@@ -61,6 +62,9 @@ project "Editor"
     {
         "%{Library.Vulkan}",
         "ImGui",
+        "SDL2",
+        "SDL2main",
+        "SDL2test",
     }
     
     filter "system:windows"
@@ -78,6 +82,8 @@ project "Editor"
         architecture "x86_64"
         postbuildcommands
         {
+            -- SDL2.0 
+            {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" " .. binApp },
         }
     
 

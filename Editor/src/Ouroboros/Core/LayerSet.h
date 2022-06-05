@@ -14,9 +14,10 @@ namespace oo
         void PopLayer(LayerStack::value_type layer);
         void PopOverlay(LayerStack::value_type overlay);
 
+        void Update();
+    private:
         void Process();
 
-    private:
         LayerStack m_layerStack;
         std::queue<LayerStack::value_type> m_addLayerQueue;
         std::queue<LayerStack::value_type> m_addOverlayQueue;

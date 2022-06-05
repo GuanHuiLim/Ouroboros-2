@@ -120,14 +120,14 @@ private:
     underlying_type m_mask = 0;
 };
 
-/********************************************************************************//*!
-@brief     Creates a bitmask from two options, convenient for stuff like:
-        bitmask(enum::flag1|enum::flag2|enum::flag3)
-*//*********************************************************************************/
-template <class option_type, class void_type = void,
-    typename = typename std::enable_if_t<std::is_void_v<void_type>>,
-    typename = typename std::enable_if_t<std::is_enum_v<option_type>>>
-    constexpr bitmask<option_type> operator|(option_type lhs, option_type rhs)
-{
-    return bitmask<option_type>{lhs} | rhs;
-}
+///********************************************************************************//*!
+//@brief     Creates a bitmask from two options, convenient for stuff like:
+//        bitmask(enum::flag1|enum::flag2|enum::flag3)
+//*//*********************************************************************************/
+//template <class option_type, class void_type = void,
+//    typename = typename std::enable_if_t<std::is_void_v<void_type>>,
+//    typename = typename std::enable_if_t<std::is_enum_v<option_type>>>
+//    constexpr bitmask<option_type> operator|(option_type lhs, option_type rhs)
+//{
+//    return bitmask<option_type>{lhs} | rhs;
+//}
