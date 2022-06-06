@@ -22,6 +22,11 @@ void RandomTest()
         auto test2 = random::generate(10.f);
         auto test3 = random::generate(-10.f, 10.f);
         auto test4 = random::generate(-10.f, 10.0);
+        
+        UNREFERENCED(test1);
+        UNREFERENCED(test2);
+        UNREFERENCED(test3);
+        UNREFERENCED(test4);
     }
 
     {
@@ -32,6 +37,15 @@ void RandomTest()
         auto test2 = random::generate(t1);
         auto test3 = random::generate(t1, t2);
         auto test4 = random::generate(t1, d2);
+        auto test5 = random::generate(d1, t2);
+        auto test6 = random::generate(d1, d2);
+        
+        UNREFERENCED(test1);
+        UNREFERENCED(test2);
+        UNREFERENCED(test3);
+        UNREFERENCED(test4);
+        UNREFERENCED(test5);
+        UNREFERENCED(test6);
     }
 
     {
@@ -47,5 +61,10 @@ void RandomTest()
         auto test2 = random::generate(m_wrapper.t1);
         auto test3 = random::generate(m_wrapper.t1, m_wrapper.t2);
         auto test4 = random::generate(m_wrapper.t1, m_wrapper.d2);
+
+        UNREFERENCED(test1);
+        UNREFERENCED(test2);
+        UNREFERENCED(test3);
+        UNREFERENCED(test4);
     }
 }

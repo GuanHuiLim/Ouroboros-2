@@ -110,7 +110,7 @@ namespace oo
         void terminate()
         {
             auto program_lifetime = program_elapsed();
-
+            UNREFERENCED(program_lifetime);
             reset();
         }
 
