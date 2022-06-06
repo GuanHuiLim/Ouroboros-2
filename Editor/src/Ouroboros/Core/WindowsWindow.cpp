@@ -37,7 +37,7 @@ Technology is prohibited.
 
 //#include <imgui_impl_sdl.h>
 //#include <imgui.h>
-//#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_sdl.h"
 
 #include "Events/ApplicationEvent.h"
 #include "Events/ControllerEvent.h"
@@ -166,10 +166,10 @@ namespace oo
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
-//#ifdef OO_EDITOR
-//            // this should only run if there's imgui on
-//            ImGui_ImplSDL2_ProcessEvent(&event);
-//#endif 
+#ifdef OO_EDITOR
+            // this should only run if there's imgui on
+            ImGui_ImplSDL2_ProcessEvent(&event);
+#endif 
             switch (event.type)
             {
                 // WINDOWS EVENT

@@ -82,7 +82,7 @@ public:
          //#endif
 
         //m_editor.ShowAllWidgets();
-        //ImGui::ShowDemoWindow(&m_demo);
+        ImGui::ShowDemoWindow(&m_demo);
     }
 
 };
