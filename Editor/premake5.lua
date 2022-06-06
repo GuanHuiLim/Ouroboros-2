@@ -40,7 +40,11 @@ project "Editor"
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.VulkanSDK}",
         "%{IncludeDir.SDL}",
+        
         "%{IncludeDir.imgui}",
+        "%{IncludeDir.imgui}/backends",
+        "%{IncludeDir.imgui}/misc/cpp",
+
         "%{IncludeDir.glm}",
         "%{IncludeDir.rapidjson}",
 

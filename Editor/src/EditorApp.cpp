@@ -26,6 +26,9 @@ Technology is prohibited.
 
 #include "TestLayers/InputDebugLayer.h"
 
+#include "ProjectTracker.h"
+#include "../Utilities/ImGuiManager.h"  // for now.
+
 #include <imgui.h>
 class EditorLayer final : public oo::Layer
 {
@@ -33,7 +36,8 @@ private:
     //order matters dont change it
     bool m_demo = true;
     bool m_showDebugInfo = false;
-
+    
+    ProjectTracker m_tracker;
 public:
     EditorLayer()
         : oo::Layer{ "EditorLayer" }
@@ -47,6 +51,7 @@ public:
 
     virtual void OnAttach() override final
     {
+        ImGuiManager::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
     }
 
     // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -57,6 +62,8 @@ public:
         {
             m_showDebugInfo = !m_showDebugInfo;
         }
+        
+        ImGuiManager::UpdateAllUI();
 
         /* m_imGuiAbstract->Begin();
          OnImGuiRender();
@@ -81,7 +88,9 @@ public:
          //#endif
 
         //m_editor.ShowAllWidgets();
-        ImGui::ShowDemoWindow(&m_demo);
+        
+        if(m_demo)
+            ImGui::ShowDemoWindow(&m_demo);
     }
 
 };
