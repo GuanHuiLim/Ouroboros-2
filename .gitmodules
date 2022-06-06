@@ -4,3 +4,9 @@
 [submodule "Editor/vendor/imgui"]
 	path = Editor/vendor/imgui
 	url = https://github.com/spironan/imgui-docking
+[submodule "Editor/vendor/launcher/Oroborous-Launcher"]
+	path = Editor/vendor/launcher/Oroborous-Launcher
+	url = https://github.com/JunXiang-Leong/Oroborous-Launcher
+[submodule "Editor/vendor/rapidjson"]
+	path = Editor/vendor/rapidjson
+	url = https://github.com/Tencent/rapidjson.git

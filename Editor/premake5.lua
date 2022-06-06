@@ -42,6 +42,9 @@ project "Editor"
         "%{IncludeDir.SDL}",
         "%{IncludeDir.imgui}",
         "%{IncludeDir.glm}",
+        "%{IncludeDir.rapidjson}",
+
+        "%{IncludeDir.launcher}",
     }
 
     -- library diretories
@@ -50,6 +53,8 @@ project "Editor"
     {
         "%{LibraryDir.VulkanSDK}",
         "%{LibraryDir.SDL}",
+
+        --"%{LibraryDir.launcher}",
     }
 
     -- linking External libraries 
@@ -66,6 +71,8 @@ project "Editor"
         "SDL2",
         "SDL2main",
         "SDL2test",
+        
+        "Launcher"
     }
     
     filter "system:windows"

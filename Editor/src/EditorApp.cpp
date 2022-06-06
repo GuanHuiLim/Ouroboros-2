@@ -26,7 +26,6 @@ Technology is prohibited.
 
 #include "TestLayers/InputDebugLayer.h"
 
-
 #include <imgui.h>
 class EditorLayer final : public oo::Layer
 {
