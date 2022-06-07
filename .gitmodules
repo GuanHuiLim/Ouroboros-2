@@ -4,3 +4,6 @@
 [submodule "Editor/vendor/imgui"]
 	path = Editor/vendor/imgui
 	url = https://github.com/spironan/imgui-docking
+[submodule "Editor/vendor/glm"]
+	path = Editor/vendor/glm
+	url = https://github.com/g-truc/glm.git
