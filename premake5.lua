@@ -43,6 +43,7 @@ workspace "Ouroboros"
 group "Dependencies"
 include "Editor/vendor/imgui"
 include "Editor/vendor/launcher"
+include "Editor/vendor/Archetypes_Ecs"
 group ""
 
 include "Editor"

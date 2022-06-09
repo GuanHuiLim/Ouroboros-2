@@ -40,6 +40,9 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- temporary please fix
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/Launcher"
 
+IncludeDir["ecs"]     = AppVendor .. "/Archetypes_Ecs/Archetypes_Ecs/src"
+
+
 -- Paths to various external libraries directories
 LibraryDir                  = {}
 -- LibraryDir["mono"]          = EngineVendor .. "/mono/lib"

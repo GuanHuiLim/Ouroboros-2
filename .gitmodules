@@ -16,3 +16,6 @@
 [submodule "Editor/vendor/rapidjson"]
 	path = Editor/vendor/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "Editor/vendor/Archetypes_Ecs"]
+	path = Editor/vendor/Archetypes_Ecs
+	url = https://github.com/GuanHuiLim/Archetypes_Ecs.git

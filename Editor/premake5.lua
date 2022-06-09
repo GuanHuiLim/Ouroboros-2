@@ -49,6 +49,7 @@ project "Editor"
         "%{IncludeDir.rapidjson}",
 
         "%{IncludeDir.launcher}",
+        "%{IncludeDir.ecs}",
     }
 
     -- library diretories
@@ -75,8 +76,8 @@ project "Editor"
         "SDL2",
         "SDL2main",
         "SDL2test",
-        
-        "Launcher"
+        "ECS",
+        --"Launcher"
     }
     
     filter "system:windows"
