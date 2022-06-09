@@ -31,12 +31,14 @@ IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["freetype"]      = EngineVendor .. "/freetype/include"
 -- IncludeDir["mono"]          = EngineVendor .. "/mono/include/mono-2.0"
 -- IncludeDir["tracy"]         = EngineVendor .. "/tracy"
--- IncludeDir["rapidjson"]     = EngineVendor .. "/rpj"
+IncludeDir["rapidjson"]     = AppVendor .. "/rapidjson/include"
 IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader"
 -- IncludeDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap"
 -- IncludeDir["vma"]           = EngineVendor .. "/vma"
 
+-- temporary please fix
+IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/Launcher"
 
 -- Paths to various external libraries directories
 LibraryDir                  = {}
@@ -51,6 +53,7 @@ LibraryDir["SDL"]           = AppVendor .. "/sdl2/lib/x64"
 LibraryDir["VulkanSDK"]     = "%{VULKAN_SDK}/Lib"
 -- LibraryDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader/lib"
 -- LibraryDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap/lib"
+-- LibraryDir["launcher"]      = AppVendor .. "launcher/Oroborous-Launcher/lib"
 
 -- Paths to libraries that will be used
 Library                     = {}

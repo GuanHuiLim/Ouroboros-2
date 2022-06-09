@@ -10,3 +10,9 @@
 [submodule "Editor/vendor/rttr"]
 	path = Editor/vendor/rttr
 	url = https://github.com/spironan/rttr.git
+[submodule "Editor/vendor/launcher/Oroborous-Launcher"]
+	path = Editor/vendor/launcher/Oroborous-Launcher
+	url = https://github.com/JunXiang-Leong/Oroborous-Launcher
+[submodule "Editor/vendor/rapidjson"]
+	path = Editor/vendor/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
