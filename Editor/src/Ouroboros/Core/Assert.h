@@ -28,13 +28,13 @@ Technology is prohibited.
             whereas verify still calls the original function (x).
             Use at own discretion.
 *//*****************************************************************************/
-#define ASSERT(x)                        { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Assertion Failed!"); oo::log::ShutdownDebugLogger(); __debugbreak();} }
-#define ASSERT_MSG(x, ...)               { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Assertion Failed : {0}", __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak();} }
-#define ASSERT_CUSTOM_MSG(x, msg, ...)   { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Assertion Failed! " + std::string(msg), __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak();} }
+#define ASSERT(x)                        { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Assertion Failed!"); oo::log::ShutdownDebugLogger(); __debugbreak(); throw; } }
+#define ASSERT_MSG(x, ...)               { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Assertion Failed : {0}", __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak(); throw; } }
+#define ASSERT_CUSTOM_MSG(x, msg, ...)   { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Assertion Failed! " + std::string(msg), __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak(); throw; } }
 
-#define VERIFY(x)                        { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Verification Failed!"); oo::log::ShutdownDebugLogger(); __debugbreak();} }
-#define VERIFY_MSG(x, ...)               { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Verification Failed : {0}", __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak();} }
-#define VERIFY_CUSTOM_MSG(x, msg, ...)   { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Verification Failed! " + std::string(msg), __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak();} }
+#define VERIFY(x)                        { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Verification Failed!"); oo::log::ShutdownDebugLogger(); __debugbreak(); throw;} }
+#define VERIFY_MSG(x, ...)               { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Verification Failed : {0}", __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak(); throw; } }
+#define VERIFY_CUSTOM_MSG(x, msg, ...)   { if(!(!(x))) {LOG_CORE_DEBUG_CRITICAL("Verification Failed! " + std::string(msg), __VA_ARGS__); oo::log::ShutdownDebugLogger(); __debugbreak(); throw; } }
 
 #else
 

@@ -59,7 +59,7 @@ project "Editor"
         "%{LibraryDir.VulkanSDK}",
         "%{LibraryDir.SDL}",
 
-        --"%{LibraryDir.launcher}",
+        "%{LibraryDir.launcher}",
     }
 
     -- linking External libraries 
@@ -77,7 +77,11 @@ project "Editor"
         "SDL2main",
         "SDL2test",
         "ECS",
-        --"Launcher"
+        "Launcher",
+        
+        "dbghelp",
+        --"srcsrv", are these even needed? might just remove-em altogether.
+        --"symsrv",
     }
     
     filter "system:windows"
@@ -103,6 +107,11 @@ project "Editor"
             {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" " .. binApp },
             -- Controller Support file
             {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" " .. binApp },
+            -- copy General DLLs
+            {"{COPY} \"%{AppDir}/dlls/\" " .. binApp },
+            
+            -- copy launcher's debug file
+            --{"{COPY} \"%{IncludeDir.launcher}/dlls/\" " .. binApp },
         }
     
 

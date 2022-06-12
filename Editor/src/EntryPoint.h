@@ -20,6 +20,8 @@ Technology is prohibited.
 //#include "Ouroboros/Core/Base.h"
 //#include "Ouroboros/Core/JobSystem/JobSystem.h"
 
+#include "Ouroboros/Debug/MiniDumpHelper.h"
+
 #include <Windows.h>
 // Hints enable Nvidia optimus on laptop systems
 extern "C" 
@@ -33,10 +35,16 @@ extern oo::Application* oo::CreateApplication(oo::CommandLineArgs args);
 
 int main(int argc, char** argv)
 {
+    MiniDumpHelper::Init();
+
+    __try
+    {
+
     #ifdef OO_PRODUCTION
     // destroy and hide console 
     FreeConsole();
     #endif
+
 
     // Memory Leak Checker in Debug builds
     #if not defined (OO_PRODUCTION)
@@ -45,16 +53,28 @@ int main(int argc, char** argv)
         // Uncomment to cause a break on allocation for debugging
         //_CrtSetBreakAlloc(/*Allocation Number here*/);
     #endif
-    
-    {
-        oo::LifetimeObject lifetimeObjects;
+        
+        //RaiseException(
+        //    1,                    // exception code 
+        //    1,                    // non continuable exception 
+        //    0, NULL);             // no arguments
 
-        auto app = oo::CreateApplication({argc, argv});
+        {
+            oo::static_runtime::init();
 
-        app->Run();
+            auto app = oo::CreateApplication({ argc, argv });
+            
+            app->Run();
 
-        delete app;
+            delete app;
+
+            oo::static_runtime::terminate();
+        }
     }
+    __except (MiniDumpHelper::DumpMiniDump(GetExceptionInformation()), EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
+
 }
 
 #endif

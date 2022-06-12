@@ -26,8 +26,9 @@ Technology is prohibited.
 
 #include "TestLayers/InputDebugLayer.h"
 
-#include "ProjectTracker.h"
-#include "../Utilities/ImGuiManager.h"  // for now.
+// Project Tracker related includes
+#include <ProjectTracker.h>
+#include <../Utilities/ImGuiManager.h>  // for now.
 
 #include <imgui.h>
 class EditorLayer final : public oo::Layer

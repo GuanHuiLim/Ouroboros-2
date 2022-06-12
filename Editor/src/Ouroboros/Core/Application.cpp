@@ -30,7 +30,6 @@ namespace oo
         : m_commandLineArgs{ args }
         , m_running{ true }
     {
-
         ASSERT_MSG(s_instance == this, "Application already exist!");
         s_instance = this;
         m_window = std::make_unique<WindowsWindow>(WindowProperties{ name });
