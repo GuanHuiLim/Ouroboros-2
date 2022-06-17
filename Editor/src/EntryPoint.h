@@ -16,7 +16,7 @@ Technology is prohibited.
 #pragma once
 
 #include "Ouroboros/Core/Application.h"
-#include "Ouroboros/Core/LifetimeObject.h"
+#include "Ouroboros/Core/StaticRuntime.h"
 //#include "Ouroboros/Core/Base.h"
 //#include "Ouroboros/Core/JobSystem/JobSystem.h"
 

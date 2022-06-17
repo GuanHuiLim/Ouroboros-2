@@ -110,8 +110,8 @@ project "Editor"
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" " .. binApp },
             
-            -- copy launcher's debug file
-            --{"{COPY} \"%{IncludeDir.launcher}/dlls/\" " .. binApp },
+            -- copy launcher's Data file
+            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/BaseTemplate\" " .. binApp },
         }
     
 
