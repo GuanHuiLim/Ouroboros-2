@@ -1,0 +1,21 @@
+[submodule "Editor/vendor/spdlog"]
+	path = Editor/vendor/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "Editor/vendor/imgui"]
+	path = Editor/vendor/imgui
+	url = https://github.com/spironan/imgui-docking
+[submodule "Editor/vendor/glm"]
+	path = Editor/vendor/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Editor/vendor/rttr"]
+	path = Editor/vendor/rttr
+	url = https://github.com/spironan/rttr.git
+[submodule "Editor/vendor/launcher/Oroborous-Launcher"]
+	path = Editor/vendor/launcher/Oroborous-Launcher
+	url = https://github.com/JunXiang-Leong/Oroborous-Launcher
+[submodule "Editor/vendor/rapidjson"]
+	path = Editor/vendor/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "Editor/vendor/Archetypes_Ecs"]
+	path = Editor/vendor/Archetypes_Ecs
+	url = https://github.com/GuanHuiLim/Archetypes_Ecs.git

@@ -1,0 +1,42 @@
+#directories
+.vs/
+bin/
+bin-int/
+# #logs
+# Editor/logs
+# #Test Editor files
+# Editor/**.scn
+
+# Files
+*.user
+*.*.filters
+**.vcxproj
+**.csproj
+
+#sln file
+*.sln
+
+# #exe files
+# Installer/*.exe
+
+# #instrumentation JSON scripts in Editor
+# */EngineProfile-Startup.json
+# */EngineProfile-Runtime.json
+# */EngineProfile-Shutdown.json
+
+# **.oor
+# **.meta
+# **.prefab
+
+# #scripts
+# ScriptCore.dll
+# ScriptCore.pdb
+
+# #scripting Proj
+# Scripting/bin/
+# Scripting/bin-int/
+# loc.csv
+# Editor/Editor.aps
+# Editor/Did not set Save Directory
+# Installer/OuroborosInstaller.exe
+*.log

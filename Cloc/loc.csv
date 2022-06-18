@@ -1,0 +1,447 @@
+language,filename,blank,comment,code,"http://cloc.sourceforge.net v 1.64  T=5.45 s (81.8 files/s, 12528.2 lines/s)"
+C++,..\Editor\src\Editor\Views\InspectorView.cpp,68,31,1068
+C++,..\Engine\src\Ouroboros\Renderer\Renderer2D.cpp,266,106,1004
+C++,..\Engine\src\Ouroboros\Scripting\ScriptUtility.cpp,91,30,721
+C++,..\Engine\src\Ouroboros\Scripting\Scripting.cpp,75,69,618
+C++,..\Engine\src\Ouroboros\Renderer\FontRenderer.cpp,152,87,615
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec4_impl.hpp,94,22,607
+C++,..\Engine\src\Ouroboros\Asset\AssetsManager.cpp,115,61,607
+C++,..\Engine\src\Ouroboros\Geometry\Algorithm.cpp,216,602,574
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec3_impl.hpp,83,22,524
+C++,..\Editor\src\Animator\AnimatorController.cpp,91,36,520
+C++,..\Editor\src\Editor\EditorFileGroup.cpp,59,54,499
+C++,..\Editor\src\Editor\Views\HierarchyView.cpp,54,57,463
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat4x4_impl.hpp,74,44,459
+C++,..\Editor\src\Seralizer.cpp,40,25,456
+C++,..\Editor\src\Editor\Views\AnimatorControllerView.cpp,17,19,449
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec2_impl.hpp,74,22,423
+C++,..\Engine\src\Ouroboros\PhysicsCollision\PhysicsSystem.cpp,113,112,422
+C++,..\Engine\src\Ouroboros\Renderer\Renderer2DSystem.cpp,81,95,408
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat3x3_impl.hpp,64,21,408
+C++,..\Engine\src\Ouroboros\Asset\AssetSerializer.cpp,90,37,403
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat4x3_impl.hpp,57,21,398
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat3x4_impl.hpp,57,21,394
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat4x2_impl.hpp,58,21,374
+C++,..\Editor\src\Editor\Views\ProjectFolderView.cpp,47,49,363
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat2x2_impl.hpp,62,21,361
+C++,..\Engine\src\Ouroboros\Platform\Windows\WindowsInput.cpp,114,34,359
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat1x1_impl.hpp,70,21,357
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat2x4_impl.hpp,57,21,352
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat3x2_impl.hpp,57,21,348
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat2x3_impl.hpp,57,21,342
+C++,..\Editor\src\Serializer_Init.cpp,10,14,336
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLShader.cpp,38,23,329
+C/C++ Header,..\Engine\src\Ouroboros\ECS\ComponentManager.h,77,54,327
+C++,..\Editor\src\Editor\Widgets\StyleEditorView.cpp,48,28,318
+C/C++ Header,..\Engine\src\Ouroboros\ECS\ECS_Manager.h,69,294,308
+C++,..\Engine\src\Ouroboros\Memory\SegListAllocator.cpp,61,47,306
+C++,..\Engine\src\Ouroboros\Platform\Windows\Windowswindow.cpp,77,44,304
+C++,..\Editor\src\Project\EditorProject.cpp,44,27,282
+C++,..\Editor\src\Editor\Views\TimelineView.cpp,26,15,281
+C++,..\Engine\vendor\oom\oom\matrix_utils.cpp,89,92,281
+C++,..\Editor\src\TestScenes\RenderingTestScene.cpp,48,23,279
+C/C++ Header,..\Engine\src\Utility\Quadtree.h,39,51,275
+C++,..\Editor\src\TestScenes\PhysicsTestScene.cpp,60,73,268
+C/C++ Header,..\Engine\vendor\oom\oom\matrix_utils.hpp,55,89,263
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLFont.cpp,56,58,259
+C++,..\Editor\src\Editor\Views\EditorViewport.cpp,37,56,243
+C/C++ Header,..\Engine\src\Ouroboros\Asset\Asset.h,108,99,242
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec1_impl.hpp,54,22,237
+C/C++ Header,..\Engine\src\Ouroboros\Core\KeyCode.h,21,73,229
+C/C++ Header,..\Editor\src\Editor\Views\InspectorView.h,29,49,228
+C++,..\Engine\src\Ouroboros\ECS\GameObject.cpp,61,38,226
+C++,..\Engine\src\Ouroboros\Renderer\ParticleRenderer.cpp,78,20,220
+C++,..\Engine\src\Ouroboros\Scripting\ScriptInfo.cpp,24,29,219
+C/C++ Header,..\Engine\src\Ouroboros\ECS\SparseArray.h,47,68,216
+C/C++ Header,..\Engine\src\Ouroboros\ECS\View.h,46,30,213
+C/C++ Header,..\Engine\src\Ouroboros\Asset\AssetsManager.h,60,122,206
+C++,..\Engine\src\Ouroboros\UI\RectTransform.cpp,40,80,203
+C++,..\Editor\src\Editor\Widgets\LoggingView.cpp,11,38,202
+C++,..\Engine\src\Ouroboros\Transform\Transform3D.cpp,45,104,201
+C++,..\Engine\src\Ouroboros\Transform\TransformSystem.cpp,69,79,199
+C++,..\Engine\src\Ouroboros\PhysicsCollision\CollisionDetection.cpp,55,60,199
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLFramebuffer.cpp,42,41,194
+C++,..\Engine\src\Ouroboros\Scripting\ScriptSystem.cpp,31,29,193
+C/C++ Header,..\Engine\src\Ouroboros\ECS\EntityView.h,41,29,183
+C++,..\Engine\src\Ouroboros\UI\UISystem.cpp,33,60,183
+C/C++ Header,..\Engine\src\Ouroboros\ECS\ECS_Test.h,27,26,181
+C++,..\Editor\src\Prefab\PrefabComponentSystem.cpp,21,18,179
+C++,..\Editor\src\Scene\RuntimeScene.cpp,33,26,177
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec4.hpp,57,45,173
+C++,..\Engine\src\Ouroboros\Core\Application.cpp,51,44,171
+C++,..\Editor\src\Editor\Editor.cpp,32,47,170
+C/C++ Header,..\Editor\src\Seralizer.h,41,65,168
+C++,..\Engine\src\Ouroboros\Renderer\SceneCamera.cpp,52,29,161
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Image.h,47,16,161
+C/C++ Header,..\Editor\src\TestLayers\InputDebugLayer.h,26,31,152
+C++,..\Engine\src\Ouroboros\Audio\Studio\AudioSource.cpp,22,18,151
+C++,..\Editor\src\API\ScriptingAPI.cpp,34,20,149
+C++,..\Editor\src\Scene\SceneManager.cpp,30,17,148
+C++,..\Engine\src\Ouroboros\TracyProfiling\OO_TracyProfiler.cpp,24,25,147
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat4x4.hpp,51,22,144
+C/C++ Header,..\Engine\src\Ouroboros\Scripting\ScriptInfo.h,76,157,142
+C++,..\Engine\src\Ouroboros\Renderer\EditorCamera.cpp,32,33,142
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec3.hpp,57,33,142
+C++,..\Engine\src\Ouroboros\Renderer\ParticleRenderingSystem.cpp,33,24,141
+C++,..\Engine\src\Ouroboros\PhysicsCollision\Components\RigidBody.cpp,29,23,140
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat3x3.hpp,51,22,138
+C/C++ Header,..\Engine\src\Ouroboros\ECS\GameObject.h,43,49,136
+C++,..\Engine\src\Ouroboros\Audio\Studio\AudioAssets.cpp,32,14,135
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat1x1.hpp,53,22,134
+C++,..\Engine\src\Ouroboros\Renderer\ParticleEmitter.cpp,32,13,134
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat2x2.hpp,52,22,130
+C++,..\Editor\src\Scene\Scene.cpp,30,21,130
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec2.hpp,57,30,126
+C/C++ Header,..\Engine\vendor\oom\oom\type_ptr.hpp,26,13,125
+C++,..\Engine\src\Ouroboros\PhysicsCollision\Components\Colliders.cpp,33,25,125
+C++,..\Engine\src\Ouroboros\Audio\Studio\AudioEngine.cpp,23,27,122
+C++,..\Engine\src\Ouroboros\PhysicsCollision\Components\ColliderCore.cpp,20,25,121
+C++,..\Editor\src\Animator\AnimatorControllerComponent.cpp,12,13,121
+C++,..\Editor\src\API\TransformAPI.cpp,20,19,120
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat4x3.hpp,45,22,119
+C++,..\Editor\src\Animator\AnimatorAnimationNode.cpp,14,16,119
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat4x2.hpp,45,22,119
+C++,..\Engine\src\Ouroboros\Asset\Asset.cpp,25,21,118
+C/C++ Header,..\Engine\src\Ouroboros\Asset\AssetTypes.h,21,22,118
+C++,..\Engine\src\Ouroboros\PhysicsCollision\Algorithms\PhysicsDetection.cpp,32,18,116
+C++,..\Engine\src\Ouroboros\Renderer\Sprite2D.cpp,28,12,116
+C/C++ Header,..\Editor\src\Animator\AnimatorNodeTransition.h,22,13,115
+C++,..\Editor\src\Animator\AnimatorNodeTransition.cpp,11,16,114
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat3x2.hpp,44,22,114
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat3x4.hpp,46,22,114
+C++,..\Editor\src\Editor\Widgets\SpriteEditorView.cpp,6,3,113
+C++,..\Editor\src\Editor\Views\ToolbarView.cpp,9,24,113
+C++,..\Editor\src\Editor\GUIcallbacks.cpp,26,23,113
+C++,..\Editor\src\Scene\EditorScene.cpp,23,17,112
+C++,..\Editor\src\Prefab\EditorComponent.cpp,12,0,110
+C/C++ Header,..\Engine\src\Ouroboros\EventSystem\EventSystem.h,23,83,110
+C/C++ Header,..\Editor\src\Project\EditorProject.h,30,29,109
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat2x4.hpp,43,22,109
+C++,..\Engine\src\Ouroboros\Renderer\TextRenderingSystem.cpp,25,29,108
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat2x3.hpp,43,22,107
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLImage.h,25,14,107
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\VertexBuffer.h,22,15,106
+C++,..\Editor\src\Editor\ActionStack\EditorActionStack.cpp,11,20,105
+C/C++ Header,..\Engine\vendor\oom\oom\common.hpp,25,61,104
+C/C++ Header,..\Engine\src\Ouroboros\Memory\SegListAllocator.h,39,32,104
+C++,..\Editor\src\TestScenes\RenderManyObjectsScene.cpp,29,14,104
+C/C++ Header,..\Engine\src\Ouroboros\ECS\GameObjectComponent.h,24,20,100
+C++,..\Engine\src\Ouroboros\PhysicsCollision\Solvers\ImpulseSolver.cpp,40,31,99
+C++,..\Engine\src\Ouroboros\Geometry\Shapes.cpp,27,23,97
+C++,..\Engine\src\Ouroboros\Project\Project.cpp,23,16,95
+C/C++ Header,..\Editor\src\Animator\AnimatorUtils.h,18,12,94
+C/C++ Header,..\Editor\src\Animator\AnimatorAnimationNode.h,22,16,94
+C/C++ Header,..\Engine\src\Utility\UniqueInstanceIDGenerator.h,53,109,91
+C++,..\Editor\src\Editor\Views\ProjectRootView.cpp,20,20,90
+C/C++ Header,..\Engine\src\Ouroboros\Core\ControllerCode.h,12,15,90
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Framebuffer.h,36,27,90
+C/C++ Header,..\Editor\src\Editor\Editor.h,16,44,88
+C++,..\Editor\src\Editor\Widgets\AssetBrowserView.cpp,12,14,88
+C/C++ Header,..\Engine\vendor\oom\oom\vector\vec1.hpp,44,29,88
+C++,..\Editor\src\TestScenes\AudioTestScene.cpp,15,20,87
+C++,..\Editor\src\EditorApp.cpp,25,38,87
+C++,..\Engine\src\Ouroboros\Asset\AssetRegistry.cpp,15,14,87
+C/C++ Header,..\Engine\src\Ouroboros\TracyProfiling\OO_TracyProfiler.h,11,36,87
+C/C++ Header,..\Engine\src\Ouroboros\Scripting\ScriptSystem.h,31,97,86
+C/C++ Header,..\Engine\src\Ouroboros\Transform\Transform3D.h,46,90,86
+C++,..\Editor\src\Scene\RuntimeController.cpp,14,14,85
+C/C++ Header,..\Editor\src\Animator\AnimatorController.h,12,26,84
+C/C++ Header,..\Engine\src\Ouroboros\Core\Events\ControllerEvent.h,28,36,84
+C/C++ Header,..\Engine\src\Ouroboros\Core\Buffer.h,23,12,84
+C/C++ Header,..\Engine\src\Ouroboros\ECS\Component.h,21,45,83
+C++,..\Editor\src\API\InputAPI.cpp,20,3,83
+C/C++ Header,..\Engine\src\Utility\EventCallback.h,28,107,83
+C/C++ Header,..\Engine\src\Ouroboros\ECS\ComponentArray.h,18,13,81
+C++,..\Editor\src\Editor\Widgets\KeyBindingView.cpp,8,15,80
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLContext.cpp,21,15,80
+C++,..\Editor\src\Editor\Widgets\ProjectSceneManagerView.cpp,6,13,80
+C++,..\Editor\src\Scene\EditorController.cpp,21,38,79
+C++,..\Editor\src\Editor\Views\GameView.cpp,18,44,78
+C/C++ Header,..\Engine\src\Ouroboros\Core\Events\MouseEvent.h,19,29,78
+C/C++ Header,..\Engine\src\Ouroboros\Core\Application.h,35,83,78
+C++,..\Engine\src\Ouroboros\Renderer\Text.cpp,15,12,77
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Renderer2D.h,49,59,77
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Components\RigidBody.h,40,87,77
+C++,..\Editor\src\Prefab\EditorComponentSystem.cpp,11,19,76
+C++,..\Engine\src\Ouroboros\Core\Log.cpp,22,32,76
+C++,..\Editor\src\Editor\Views\WarningView.cpp,6,14,74
+C/C++ Header,..\Engine\vendor\oom\oom\Shapes.hpp,15,36,73
+C/C++ Header,..\Engine\src\Ouroboros\Scripting\Scripting.h,115,313,73
+C/C++ Header,..\Engine\src\Ouroboros\Core\Events\Event.h,17,34,72
+C/C++ Header,..\Engine\src\Ouroboros\Geometry\Shapes.h,37,76,70
+C++,..\Engine\src\Ouroboros\Geometry\Intersection2D.cpp,23,63,69
+C/C++ Header,..\Engine\src\Ouroboros\UI\RectTransform.h,27,50,69
+C++,..\Editor\src\API\UI\RectTransformAPI.cpp,11,13,69
+C++,..\Engine\src\Ouroboros\Renderer\Animator.cpp,13,16,69
+C++,..\Editor\src\TestScenes\WaypointTestScene.cpp,18,12,68
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Components\Colliders.h,31,45,68
+C/C++ Header,..\Engine\vendor\oom\oom\matrix_defines.hpp,8,34,67
+C/C++ Header,..\Engine\src\Utility\Random.h,10,19,67
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\ParticleProperties.h,31,15,67
+C/C++ Header,..\Engine\vendor\oom\oom\geometric.hpp,15,12,66
+C/C++ Header,..\Engine\src\Ouroboros\Audio\Studio\AudioAssets.h,21,30,65
+C++,..\Engine\src\Ouroboros\UI\UIImage.cpp,11,13,64
+C/C++ Header,..\Editor\src\Editor\GUIglobals.h,4,13,64
+C++,..\Engine\src\Ouroboros\Renderer\QuadtreeSystem.cpp,16,56,63
+C/C++ Header,..\Engine\src\Ouroboros\ECS\EntityManager.h,21,19,63
+C/C++ Header,..\Engine\src\Ouroboros\Asset\AssetSerializer.h,16,13,62
+C/C++ Header,..\Editor\src\Editor\ActionStack\GizmoActionStack.h,5,12,62
+C++,..\Engine\src\Ouroboros\Audio\Studio\AudioSystem.cpp,13,18,61
+C++,..\Engine\src\Ouroboros\ImGui\ImGuiAbstraction.cpp,29,30,61
+C/C++ Header,..\Editor\src\CoreLayers\EditorLayer.h,16,17,61
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\PostProcessing.h,25,22,60
+C/C++ Header,..\Engine\src\Ouroboros\Memory\MemoryManager.h,17,47,60
+C/C++ Header,..\Engine\src\Ouroboros\Scripting\ScriptUtility.h,96,228,59
+C/C++ Header,..\Engine\src\Ouroboros\Memory\BufferAllocator.h,18,43,59
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\SceneCamera.h,37,36,59
+C/C++ Header,..\Engine\src\Ouroboros\ECS\WorldManager.h,14,15,59
+C++,..\Engine\src\Ouroboros\Renderer\ParticleProperties.cpp,14,12,59
+C/C++ Header,..\Editor\src\Editor\ActionStack\InspectorActionBehaviour.h,6,35,58
+C++,..\Engine\src\Ouroboros\PhysicsCollision\Solvers\SmoothPositionSolver.cpp,23,24,58
+C/C++ Header,..\Engine\src\Ouroboros\Core\Events\KeyEvent.h,16,27,58
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\ParticleEmitter.h,34,12,56
+C++,..\Engine\src\Ouroboros\ECS\Component.cpp,12,13,56
+C/C++ Header,..\Engine\src\Ouroboros\Core\Input.h,63,199,56
+C++,..\Editor\src\Editor\Widgets\AudioBrowserView.cpp,7,3,55
+C/C++ Header,..\Engine\src\Ouroboros\Project\Project.h,19,26,55
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\EditorCamera.h,29,20,55
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLTexture.cpp,21,19,55
+C/C++ Header,..\Engine\src\Ouroboros\ECS\SystemManager.h,19,33,55
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\PhysicsSystem.h,23,34,54
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLImage.cpp,14,13,54
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Sprite2D.h,53,94,53
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Components\ColliderCore.h,18,39,53
+C/C++ Header,..\Editor\src\DebugLayer.h,9,13,53
+C++,..\Engine\src\Ouroboros\Memory\MemoryManager.cpp,14,18,52
+C/C++ Header,..\Engine\src\Ouroboros\Geometry\Algorithm.h,18,46,52
+C++,..\Editor\src\Waypoint\WaypointTravellerComponent.cpp,13,12,52
+C++,..\Editor\src\API\Collider2DAPI.cpp,10,13,51
+C++,..\Editor\src\API\AudioSourceAPI.cpp,9,13,51
+C/C++ Header,..\Engine\src\Ouroboros\Core\Events\ApplicationEvent.h,13,25,51
+C++,..\Editor\src\API\Sprite2DAPI.cpp,7,19,51
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Renderer2DSystem.h,24,44,51
+C++,..\Editor\src\Editor\Widgets\FontSelectorView.cpp,3,0,50
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\FontRenderer.h,37,44,50
+C/C++ Header,..\Editor\src\Scene\SceneManager.h,23,17,49
+C/C++ Header,..\Engine\src\Utility\Bitmask.h,23,68,49
+C++,..\Editor\src\API\Rigidbody2DAPI.cpp,8,13,49
+C/C++ Header,..\Engine\src\Ouroboros\Platform\Windows\WindowsWindow.h,16,36,49
+C/C++ Header,..\Engine\src\Ouroboros\Core\Log.h,27,73,48
+C/C++ Header,..\Engine\src\Utility\Hash.h,14,28,47
+C/C++ Header,..\Editor\src\Scene\Scene.h,23,85,46
+C/C++ Header,..\Editor\src\CoreLayers\SceneLayer.h,12,13,46
+C++,..\Engine\src\Ouroboros\Asset\AssetImporter.cpp,12,17,45
+C++,..\Editor\src\API\UI\TextAPI.cpp,9,13,45
+C/C++ Header,..\Editor\src\Editor\EditorFileGroup.h,18,76,45
+C/C++ Header,..\Engine\src\Ouroboros\Core\LogCallbackSink.h,5,26,44
+C/C++ Header,..\Engine\src\Ouroboros\Memory\StackAllocator.h,15,44,44
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Camera.h,14,28,44
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Text.h,21,20,43
+C++,..\Editor\src\API\SceneCameraAPI.cpp,7,13,43
+C/C++ Header,..\Editor\src\Editor\Views\HierarchyView.h,17,64,43
+C/C++ Header,..\Editor\src\Editor\Widgets\AssetBrowserView.h,7,24,42
+C/C++ Header,..\Engine\src\Ouroboros\ECS\ComponentTraits.h,14,70,42
+C/C++ Header,..\Engine\src\Ouroboros\Asset\AssetRegistry.h,10,14,42
+C/C++ Header,..\Editor\src\Editor\RttrTypeID.h,5,13,42
+C++,..\Editor\src\CoreLayers\AssetManagementLayer.cpp,12,16,42
+C/C++ Header,..\Editor\src\Prefab\EditorComponent.h,8,49,42
+C++,..\Engine\src\Ouroboros\ECS\GameObjectComponent.cpp,8,14,42
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLShader.h,23,48,41
+C/C++ Header,..\Engine\src\Ouroboros\Core\Window.h,16,43,41
+C++,..\Engine\src\Ouroboros\Core\LayerStack.cpp,7,15,41
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\QuadtreeSystem.h,26,38,41
+C++,..\Editor\src\TestScenes\UITestScene.cpp,15,90,41
+C/C++ Header,..\Engine\src\Ouroboros\EventSystem\EventManager.h,4,30,41
+C/C++ Header,..\Editor\src\Editor\ActionStack\ScriptActionStack.h,7,29,40
+C/C++ Header,..\Engine\src\Ouroboros\EventSystem\EventFunction.h,8,19,40
+C++,..\Engine\src\Ouroboros\Renderer\PostProcessing.cpp,8,15,40
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\CollisionDetection.h,10,30,39
+C/C++ Header,..\Editor\src\CoreLayers\ScriptingLayer.h,9,26,39
+C/C++ Header,..\Editor\src\Animator\AnimatorControllerComponent.h,7,12,38
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLFramebuffer.h,19,12,38
+C/C++ Header,..\Engine\src\Ouroboros\Audio\Studio\AudioSource.h,14,13,37
+C++,..\Engine\src\Ouroboros\Memory\StackAllocator.cpp,12,20,36
+C/C++ Header,..\Engine\vendor\oom\oom\trigonometric.hpp,18,13,36
+C/C++ Header,..\Engine\src\Ouroboros\Core\MouseCode.h,8,15,36
+C++,..\Engine\src\Ouroboros\Core\Timestep.cpp,10,14,36
+C/C++ Header,..\Engine\src\Ouroboros\ECS\ECS_Utility.h,9,16,35
+C++,..\Engine\src\Ouroboros\Memory\BufferAllocator.cpp,10,14,35
+C/C++ Header,..\Engine\src\Ouroboros\Core\Events\FileDropEvent.h,9,16,35
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLTexture.h,16,12,35
+C/C++ Header,..\Editor\src\Scene\RuntimeController.h,10,13,34
+C/C++ Header,..\Engine\src\Ouroboros\Memory\DynamicAllocator.h,12,12,34
+C/C++ Header,..\Editor\src\Prefab\PrefabComponentSystem.h,9,69,34
+C/C++ Header,..\Engine\src\Ouroboros\Core\LayerStack.h,9,31,34
+C/C++ Header,..\Engine\src\Utility\SingletonTemplate.h,17,43,34
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Animator.h,13,16,33
+C/C++ Header,..\Editor\src\Editor\GUIcallbacks.h,5,17,33
+C/C++ Header,..\Editor\src\Editor\ActionStack\ParentActionStack.h,3,30,33
+C++,..\Engine\src\Ouroboros\UI\UIButton.cpp,7,15,33
+C/C++ Header,..\Engine\src\Ouroboros\Transform\TransformSystem.h,32,104,33
+C/C++ Header,..\Engine\src\Ouroboros\Memory\MallocAllocator.h,13,12,33
+C/C++ Header,..\Engine\src\Ouroboros\Audio\Studio\AudioEngine.h,11,16,32
+C++,..\Editor\src\API\TimeAPI.cpp,8,13,31
+C/C++ Header,..\Editor\src\Editor\Views\ProjectFolderView.h,7,19,31
+C++,..\Editor\src\API\UI\UIImageAPI.cpp,5,13,31
+C++,..\Engine\src\Ouroboros\Memory\MemoryCommon.cpp,4,35,31
+C/C++ Header,..\Engine\src\Ouroboros\Core\UUID.h,11,22,30
+C/C++ Header,..\Engine\src\pch.h,11,26,30
+C/C++ Header,..\Editor\src\Animator\AnimatorNode.h,8,13,29
+C/C++ Header,..\Editor\src\API\ScriptingAPI.h,87,224,29
+C++,..\Editor\src\Editor\ActionStack\DeleteItemActionStack.cpp,7,19,29
+C/C++ Header,..\Engine\src\Ouroboros\UI\UIButton.h,12,41,28
+C/C++ Header,..\Editor\src\Waypoint\WaypointTravellerComponent.h,8,12,28
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\PhysicsFwd.h,9,18,28
+C/C++ Header,..\Engine\src\EntryPoint.h,14,21,27
+C++,..\Engine\src\Ouroboros\EventSystem\EventManager.cpp,4,13,27
+C/C++ Header,..\Editor\src\Editor\Widgets\LoggingView.h,6,12,26
+C/C++ Header,..\Editor\src\API\InputAPI.h,61,104,26
+C/C++ Header,..\Editor\src\API\TransformAPI.h,56,173,26
+C/C++ Header,..\Engine\src\Ouroboros\Core\Timestep.h,9,23,26
+C/C++ Header,..\Engine\src\Ouroboros\UI\UIImage.h,10,33,26
+C/C++ Header,..\Editor\src\Scene\EditorController.h,8,13,26
+C/C++ Header,..\Engine\src\Ouroboros\Memory\MemoryUtils.h,7,13,25
+C/C++ Header,..\Editor\src\Prefab\EditorComponentSystem.h,4,49,25
+C/C++ Header,..\Editor\src\Editor\Views\EditorViewport.h,11,23,25
+C/C++ Header,..\Editor\src\Editor\ActionStack\EditorActionStack.h,12,46,24
+C++,..\Editor\src\API\WaypointAPI.cpp,2,12,24
+C/C++ Header,..\Editor\src\TestScenes\PhysicsTestScene.h,14,12,24
+C/C++ Header,..\Engine\src\Utility\UniqueTypeIDGenerator.h,12,43,24
+C/C++ Header,..\Editor\src\CoreLayers\AssetManagementLayer.h,7,12,24
+C/C++ Header,..\Engine\src\Ouroboros\UI\UICanvas.h,13,39,24
+C++,..\Editor\src\API\AnimatorControllerAPI.cpp,2,12,23
+C/C++ Header,..\Engine\src\Ouroboros\Geometry\GeometryFwd.h,6,15,23
+C/C++ Header,..\Engine\vendor\oom\oom\vector_defines.hpp,5,12,23
+C/C++ Header,..\Editor\src\TestScenes\RenderManyObjectsScene.h,15,16,23
+C/C++ Header,..\Editor\src\Scene\RuntimeScene.h,10,14,23
+C/C++ Header,..\Editor\src\Editor\Widgets\KeyBindingView.h,3,12,23
+Lua,..\Engine\vendor\oom\oom\premake5.lua,6,1,23
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLContext.h,7,13,22
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\AnimatorSystem.h,8,18,22
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Manifold.h,8,21,22
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Algorithms\PhysicsDetection.h,7,46,22
+C/C++ Header,..\Editor\src\Editor\Views\WarningView.h,4,25,22
+C/C++ Header,..\Engine\src\Ouroboros\Geometry\Intersection2D.h,13,35,22
+C/C++ Header,..\Engine\src\Ouroboros\ECS\World.h,5,15,22
+C/C++ Header,..\Engine\src\Ouroboros\Audio\Studio\AudioFwd.h,3,13,22
+C/C++ Header,..\Editor\src\TestScenes\RenderingTestScene.h,15,16,22
+C++,..\Engine\src\Ouroboros\UI\UICanvas.cpp,5,16,22
+C/C++ Header,..\Editor\src\Editor\Views\GameView.h,3,20,22
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\TextRenderingSystem.h,9,19,22
+C/C++ Header,..\Engine\src\Ouroboros\Core\Layer.h,6,32,21
+C++,..\Engine\src\Ouroboros\ECS\DeletedGameObject.cpp,3,14,21
+C/C++ Header,..\Engine\src\Ouroboros.h,13,25,21
+C/C++ Header,..\Editor\src\Animator\AnimatorControllerSystem.h,4,13,21
+C/C++ Header,..\Engine\src\Ouroboros\ImGui\ImGuiAbstraction.h,8,21,21
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\ParticleRenderer.h,12,12,21
+C/C++ Header,..\Engine\src\Ouroboros\ECS\TransformSparseArray.h,7,12,21
+C/C++ Header,..\Editor\src\TestScenes\DefaultTestScene.h,5,12,20
+C/C++ Header,..\Editor\src\Editor\Widgets\StyleEditorView.h,2,12,20
+C/C++ Header,..\Engine\src\Ouroboros\UI\UISystem.h,10,42,20
+C/C++ Header,..\Editor\src\Editor\Views\TimelineView.h,3,12,20
+C/C++ Header,..\Engine\vendor\oom\oom\exponential.hpp,10,12,20
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Debug\ColliderDebugDraw.h,16,31,20
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\RenderPass.h,9,12,19
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\2DRendering.h,8,13,19
+C/C++ Header,..\Engine\src\Ouroboros\Asset\AssetExtensions.h,4,13,19
+C/C++ Header,..\Editor\src\Waypoint\WaypointSystem.h,6,12,19
+C/C++ Header,..\Editor\src\API\UI\RectTransformAPI.h,33,112,18
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\ParticleRenderingSystem.h,9,12,18
+C/C++ Header,..\Editor\src\Editor\Views\AnimatorControllerView.h,3,12,18
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\GraphicsContext.h,5,13,18
+C++,..\Engine\src\Ouroboros\Renderer\AnimatorSystem.cpp,6,12,17
+C++,..\Editor\src\API\UI\UIButtonAPI.cpp,3,13,17
+C/C++ Header,..\Editor\src\TestScenes\UITestScene.h,8,12,17
+C/C++ Header,..\Editor\src\Editor\ActionStack\DeleteItemActionStack.h,7,31,17
+C/C++ Header,..\Engine\src\Ouroboros\Core\Assert.h,7,22,17
+C/C++ Header,..\Engine\src\Ouroboros\Memory\MemoryCommon.h,7,15,17
+C/C++ Header,..\Editor\src\API\Rigidbody2DAPI.h,29,96,17
+C/C++ Header,..\Engine\src\Ouroboros\Asset\AssetMetadata.h,6,12,17
+C++,..\Editor\src\API\SceneManagerAPI.cpp,4,13,16
+C/C++ Header,..\Engine\vendor\oom\oom\oom.hpp,4,12,16
+C/C++ Header,..\Editor\src\API\AudioSourceAPI.h,25,65,16
+C++,..\Engine\src\Ouroboros\Core\Window.cpp,3,13,16
+C/C++ Header,..\Editor\src\API\Collider2DAPI.h,28,82,16
+C++,..\Engine\src\Ouroboros\Renderer\Debug\ColliderDebugDraw.cpp,10,20,16
+C/C++ Header,..\Engine\src\Ouroboros\Asset\AssetImporter.h,6,13,15
+C/C++ Header,..\Engine\src\Ouroboros\Audio\Studio\AudioSystem.h,4,13,15
+C/C++ Header,..\Engine\src\Ouroboros\ECS\DeletedGameObject.h,4,14,15
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Resolution.h,5,12,15
+C++,..\Editor\src\API\ScreenAPI.cpp,5,13,15
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLRenderPass.h,6,12,15
+C++,..\Engine\src\Ouroboros\PhysicsCollision\SortSweepPrune.cpp,3,13,14
+C/C++ Header,..\Editor\src\Editor\Views\ProjectRootView.h,8,21,14
+C++,..\Engine\src\Ouroboros\Renderer\Image.cpp,6,12,14
+C/C++ Header,..\Editor\src\TestScenes\WaypointTestScene.h,8,12,14
+C++,..\Engine\src\Ouroboros\ECS\ComponentManager.cpp,0,0,14
+C/C++ Header,..\Engine\src\Ouroboros\ECS\System.h,1,13,14
+C/C++ Header,..\Editor\src\Scene\IScene.h,3,14,14
+C++,..\Engine\src\Ouroboros\Audio\Studio\AudioListener.cpp,4,18,14
+C/C++ Header,..\Editor\src\API\UI\TextAPI.h,16,65,14
+C/C++ Header,..\Editor\src\Scene\EditorScene.h,5,12,13
+C/C++ Header,..\Editor\src\API\TimeAPI.h,20,44,13
+C/C++ Header,..\Engine\src\Ouroboros\Audio\Studio\AudioListener.h,3,13,13
+C++,..\Engine\src\Ouroboros\Core\UUID.cpp,5,20,13
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\SortSweepPrune.h,6,16,13
+C++,..\Editor\src\API\ApplicationAPI.cpp,3,0,13
+C++,..\Engine\src\Ouroboros\Memory\MemoryUtils.cpp,1,13,13
+C/C++ Header,..\Engine\src\Ouroboros\Renderer\Shader.h,7,19,13
+C/C++ Header,..\Editor\src\API\Sprite2DAPI.h,14,58,13
+C++,..\Engine\src\Ouroboros\ECS\ComponentTraits.cpp,2,12,13
+C/C++ Header,..\Editor\src\Editor\Widgets\SpriteEditorView.h,0,0,13
+C++,..\Engine\src\Ouroboros\Renderer\Framebuffer.cpp,7,13,13
+C++,..\Editor\src\Prefab\PrefabComponent.cpp,3,12,13
+C/C++ Header,..\Engine\vendor\oom\oom\fwd.hpp,4,12,13
+C/C++ Header,..\Editor\src\API\SceneCameraAPI.h,17,66,13
+C++,..\Editor\src\API\QuadTreeScriptAPI.cpp,3,0,12
+C/C++ Header,..\Editor\src\API\UI\UIImageAPI.h,11,52,12
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Solvers\Solver.h,3,13,12
+C/C++ Header,..\Editor\src\Editor\ActionStack\ActionBehaviour.h,2,28,12
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLFont.h,5,12,12
+C/C++ Header,..\Editor\src\TestScenes\AudioTestScene.h,7,12,12
+C/C++ Header,..\Editor\src\Editor\Views\ToolbarView.h,3,21,12
+C/C++ Header,..\Engine\src\Ouroboros\EventSystem\EventUtils.h,2,12,12
+C/C++ Header,..\Engine\src\Ouroboros\ImGui\InspectorGUIcustomization.h,6,12,12
+C/C++ Header,..\Editor\src\API\AnimatorControllerAPI.h,2,12,11
+C++,..\Engine\src\Ouroboros\EventSystem\EventFunction.cpp,2,12,11
+C++,..\Editor\src\Animator\AnimatorUtils.cpp,3,12,11
+C/C++ Header,..\Editor\src\API\WaypointAPI.h,2,12,11
+C/C++ Header,..\Editor\src\Prefab\PrefabComponent.h,5,24,11
+C/C++ Header,..\Editor\src\Editor\Widgets\FontSelectorView.h,0,0,10
+C/C++ Header,..\Editor\src\Editor\EditorObjectGroup.h,2,12,10
+C/C++ Header,..\Engine\src\Ouroboros\ECS\DeletedInfoComponent.h,2,12,10
+C++,..\Engine\src\Ouroboros\Renderer\RenderPass.cpp,5,12,10
+C++,..\Engine\src\Ouroboros\Renderer\Shader.cpp,6,13,10
+C/C++ Header,..\Editor\src\API\UI\UIButtonAPI.h,7,26,10
+C/C++ Header,..\Editor\src\API\ScreenAPI.h,8,23,10
+C/C++ Header,..\Editor\src\API\SceneManagerAPI.h,8,25,10
+C++,..\Engine\src\Ouroboros\Core\Layer.cpp,2,15,9
+C/C++ Header,..\Editor\src\API\ApplicationAPI.h,2,0,9
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Solvers\ImpulseSolver.h,3,14,9
+C/C++ Header,..\Engine\src\Ouroboros\ECS\ECS.h,2,12,9
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Solvers\SmoothPositionSolver.h,3,14,9
+C/C++ Header,..\Editor\src\Editor.h,5,0,9
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLRenderPass.cpp,3,13,9
+C/C++ Header,..\Editor\src\Editor\Widgets\ProjectSceneManagerView.h,4,21,9
+C/C++ Header,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLVertexBuffer.h,5,13,9
+C++,..\Editor\src\Animator\AnimatorNode.cpp,5,12,8
+C++,..\Engine\src\Utility\Random.cpp,3,13,7
+C/C++ Header,..\Engine\src\Ouroboros\Audio\Studio\Audio.h,2,12,7
+C/C++ Header,..\Editor\src\Editor\Widgets\AudioBrowserView.h,3,0,6
+C++,..\Engine\src\Ouroboros\Asset\stbi_impl.cpp,2,12,6
+C/C++ Header,..\Engine\src\Ouroboros\Core\Base.h,4,19,6
+C/C++ Header,..\Engine\src\Ouroboros\PhysicsCollision\Physics.h,3,12,6
+C++,..\Engine\src\Ouroboros\Renderer\VertexBuffer.cpp,5,21,6
+C++,..\Engine\src\Ouroboros\ECS\ECS.cpp,2,12,5
+C/C++ Header,..\Editor\src\API\QuadTreeScriptAPI.h,3,0,5
+C++,..\Editor\src\Editor\ActionStack\ActionBehaviour.cpp,2,12,4
+C++,..\Editor\src\Editor\EditorObjectGroup.cpp,3,12,4
+C++,..\Editor\src\Editor\GUIglobals.cpp,3,13,4
+C/C++ Header,..\Engine\src\Ouroboros\Transform\Transform.h,3,12,3
+C++,..\Engine\src\Ouroboros\Platform\OpenGL\OpenGLVertexBuffer.cpp,1,12,2
+C++,..\Engine\src\Ouroboros\Core\Buffer.cpp,0,0,2
+C++,..\Editor\src\Editor\ActionStack\InspectorActionBehaviour.cpp,3,12,1
+C++,..\Engine\src\pch.cpp,3,16,1
+C++,..\Editor\src\Editor\ActionStack\ScriptActionStack.cpp,1,12,1
+C/C++ Header,..\Engine\src\Ouroboros\EventSystem\EventTypes.h,3,16,1
+C/C++ Header,..\Engine\vendor\oom\oom\matrix\mat1x2.h,0,198,0
