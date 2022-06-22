@@ -111,7 +111,7 @@ project "Editor"
             {"{COPY} \"%{AppDir}/dlls/\" " .. binApp },
             
             -- copy launcher's Data file
-            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/BaseTemplate\" " .. binApp },
+            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" " .. binApp },
         }
     
 

@@ -9,16 +9,15 @@ project "Launcher"
 
     files
     {
-        "Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/Launcher/*.cpp",
-        "Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/Launcher/*.h",
-        "Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/Utilities/*.h",
-        "Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/Utilities/*.cpp",
+        "Oroborous-Launcher/Launcher/Launcher/*.cpp",
+        "Oroborous-Launcher/Launcher/Launcher/*.h",
+        "Oroborous-Launcher/Launcher/Utilities/*.h",
+        "Oroborous-Launcher/Launcher/Utilities/*.cpp",
     }
 
     includedirs
     {
         "Oroborous-Launcher/Launcher",
-        "Oroborous-Launcher/Launcher/examples/example_glfw_opengl3",
         "%{IncludeDir.imgui}",
         "%{IncludeDir.rapidjson}",
     }

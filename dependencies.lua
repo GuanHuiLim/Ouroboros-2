@@ -38,7 +38,7 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["vma"]           = EngineVendor .. "/vma"
 
 -- temporary please fix
-IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher/Launcher/examples/example_glfw_opengl3/Launcher"
+IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher/Launcher/Launcher"
 
 IncludeDir["ecs"]     = AppVendor .. "/Archetypes_Ecs/Archetypes_Ecs/src"
 
