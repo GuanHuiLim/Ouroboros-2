@@ -107,6 +107,8 @@ project "Editor"
             {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" " .. binApp },
             -- Controller Support file
             {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" " .. binApp },
+            -- ImGui Default Settings
+            {"{COPY} \"%{AppDir}/default.ini\" " .. binApp },
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" " .. binApp },
             
