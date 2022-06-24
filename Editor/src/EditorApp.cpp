@@ -32,6 +32,9 @@ Technology is prohibited.
 #include <../Utilities/ImGuiManager.h>  // for now.
 
 #include <imgui.h>
+
+#include <Ouroboros/EventSystem/EventManager.h>
+
 class EditorLayer final : public oo::Layer
 {
 private:
@@ -66,7 +69,7 @@ public:
         }
         
         ImGuiManager::UpdateAllUI();
-
+        
         /* m_imGuiAbstract->Begin();
          OnImGuiRender();
          m_imGuiAbstract->End();*/
@@ -93,6 +96,13 @@ public:
         
         if(m_demo)
             ImGui::ShowDemoWindow(&m_demo);
+
+        if (ImGui::Button("restart Imgui"))
+        {
+            oo::ImGuiRestartEvent restartEvent;
+            oo::EventManager::Broadcast(&restartEvent);
+        }
+        
     }
 
 };
@@ -108,6 +118,8 @@ public:
         m_layerset.PushLayer(std::make_shared<EditorLayer>());
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
+        
+        oo::EventManager::Subscribe<oo::ImGuiAbstraction, oo::ImGuiRestartEvent>(m_imGuiAbstract.get(), &oo::ImGuiAbstraction::Restart);
     }
 
     void OnUpdate() override

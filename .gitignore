@@ -40,3 +40,4 @@ bin-int/
 # Editor/Did not set Save Directory
 # Installer/OuroborosInstaller.exe
 *.log
+Editor/imgui.ini

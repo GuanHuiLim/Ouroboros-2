@@ -23,6 +23,8 @@ Technology is prohibited.
 #include <imgui.h>
 #include <backends/imgui_impl_sdl.h>
 
+#include "Ouroboros/EventSystem/EventManager.h"
+
 namespace oo
 {
     ImGuiAbstraction::ImGuiAbstraction()
@@ -114,8 +116,21 @@ namespace oo
         // if restarting is required
         if (m_restart)
         {
+            LOG_CORE_WARN("Restarting ImGui");
+            
             Destroy();
+            
+            {
+                //char exePath[1000];
+                //GetModuleFileNameA(NULL, exePath, 1000);
+                // std::filesystem::path p = exePath; hard-path
+                std::filesystem::path p = "./"; // current-path but cannot debug.
+                //std::string filepath = p.string();
+                std::filesystem::copy_file(p.parent_path().string() + "/default.ini", p.parent_path().string() + "/imgui.ini", std::filesystem::copy_options::overwrite_existing);
+            }
+            
             Init();
+            
             m_restart = false;
         }
     }
