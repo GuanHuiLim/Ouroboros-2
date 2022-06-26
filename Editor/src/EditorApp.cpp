@@ -35,6 +35,12 @@ Technology is prohibited.
 
 #include <Ouroboros/EventSystem/EventManager.h>
 
+#include "Ouroboros/EventSystem/Event.h"
+
+struct ImGuiRestartEvent : public oo::Event
+{
+};
+
 class EditorLayer final : public oo::Layer
 {
 private:
@@ -99,7 +105,7 @@ public:
 
         if (ImGui::Button("restart Imgui"))
         {
-            oo::ImGuiRestartEvent restartEvent;
+            ImGuiRestartEvent restartEvent;
             oo::EventManager::Broadcast(&restartEvent);
         }
         
@@ -119,7 +125,8 @@ public:
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
         
-        oo::EventManager::Subscribe<oo::ImGuiAbstraction, oo::ImGuiRestartEvent>(m_imGuiAbstract.get(), &oo::ImGuiAbstraction::Restart);
+        //oo::EventManager::Subscribe<oo::ImGuiAbstraction, oo::ImGuiRestartEvent>(m_imGuiAbstract.get(), &oo::ImGuiAbstraction::Restart);
+        oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
     }
 
     void OnUpdate() override
@@ -134,6 +141,11 @@ public:
         {
             Close();
         }
+    }
+
+    void RestartImGui(ImGuiRestartEvent*)
+    {
+        m_imGuiAbstract->Restart();
     }
 
 private:

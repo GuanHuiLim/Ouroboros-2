@@ -17,16 +17,10 @@ Technology is prohibited.
 //forward declaration
 struct SDL_Window;
 
-#include "Ouroboros/EventSystem/Event.h"
-
 namespace oo
 {
     //forward declaration
     class GraphicsContext;
-
-    struct ImGuiRestartEvent : public oo::Event
-    {
-    };
 
     class ImGuiAbstraction final
     {
@@ -46,7 +40,7 @@ namespace oo
         void Begin();
         void End();
         
-        void Restart(oo::ImGuiRestartEvent*) { m_restart = true; };
+        void Restart() { m_restart = true; };
 
     private:
         bool m_restart;
