@@ -50,6 +50,9 @@ project "Editor"
 
         "%{IncludeDir.launcher}",
         "%{IncludeDir.ecs}",
+
+        "%{IncludeDir.sharedlib}",
+        "%{IncludeDir.scene}",
     }
 
     -- library diretories
@@ -76,8 +79,10 @@ project "Editor"
         "SDL2",
         "SDL2main",
         "SDL2test",
+        
         "ECS",
         "Launcher",
+        "SharedLib",
         
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
