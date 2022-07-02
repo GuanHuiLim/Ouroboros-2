@@ -35,11 +35,6 @@ Technology is prohibited.
 
 #include <Ouroboros/EventSystem/EventManager.h>
 
-#include <SceneManager.h>
-#include <Transform.h>
-#include <Quaternion.h>
-#include <Scenegraph.h>
-
 class EditorLayer final : public oo::Layer
 {
 private:
