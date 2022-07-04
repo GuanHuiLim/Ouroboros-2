@@ -35,6 +35,8 @@ Technology is prohibited.
 
 #include <Ouroboros/EventSystem/EventManager.h>
 
+#include "CoreLayers/SceneLayer.h"
+
 class EditorLayer final : public oo::Layer
 {
 private:
@@ -120,6 +122,8 @@ public:
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
         
         oo::EventManager::Subscribe<oo::ImGuiAbstraction, oo::ImGuiRestartEvent>(m_imGuiAbstract.get(), &oo::ImGuiAbstraction::Restart);
+
+        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>());
     }
 
     void OnUpdate() override
