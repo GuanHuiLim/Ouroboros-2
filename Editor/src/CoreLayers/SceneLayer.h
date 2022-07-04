@@ -21,17 +21,21 @@ Technology is prohibited.
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Scene/EditorController.h"
 
+#include "Ouroboros/Core/Input.h"
+
 namespace oo
 {
     class SceneLayer final : public oo::Layer
     {
     private:
         SceneManager m_sceneManager;
+        RuntimeController m_runtimeController;
         EditorController m_editorController;
     public:
 
         SceneLayer() 
-            : m_editorController{ m_sceneManager }
+            : m_runtimeController { m_sceneManager }
+            , m_editorController{ m_sceneManager, m_runtimeController }
             , Layer("Scene Management Layer")
         {
             m_editorController.Init();
@@ -53,6 +57,19 @@ namespace oo
 
         void OnUpdate() override final
         {
+            if (oo::input::IsKeyPressed(KEY_Q))
+            {
+                m_editorController.Simulate();
+            }
+            if (oo::input::IsKeyPressed(KEY_W))
+            {
+                m_editorController.Pause();
+            }
+            if (oo::input::IsKeyPressed(KEY_E))
+            {
+                m_editorController.Stop();
+            }
+
             m_sceneManager.Update();
         }
 

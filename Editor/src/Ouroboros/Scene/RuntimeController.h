@@ -34,7 +34,8 @@ namespace oo
     public:
         using container_type = std::vector<SceneInfo>;
         using size_type = container_type::size_type;
-    private:
+    
+    public:
         RuntimeController(SceneManager& sceneManager) : m_sceneManager{ sceneManager } {}
         ~RuntimeController() = default;
 

@@ -1,11 +1,17 @@
 #pragma once
 
 #include <IScene.h>
-
+#include "Ouroboros/EventSystem/Event.h"
 namespace oo
 {
     class Scene : public IScene
     {
+        // Events
+    public:
+        class OnInitEvent : public Event
+        {
+        };
+
     public:
         Scene(std::string_view name) : m_name{ name }, IScene() {};
         virtual ~Scene() = default;
@@ -32,6 +38,7 @@ namespace oo
 
         void LoadFromFile();
         void SaveToFile();
+
     private:
         std::string m_name;
         std::string m_filepath;

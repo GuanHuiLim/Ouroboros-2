@@ -24,6 +24,7 @@ Technology is prohibited.
 //#include "Scene/SceneManager.h"
 
 #include "SceneManager.h"
+#include "RuntimeController.h"
 #include "RuntimeScene.h"
 #include "EditorScene.h"
 
@@ -32,12 +33,15 @@ namespace oo
     class EditorController
     {
     public:
-        EditorController(SceneManager& sceneManager) : m_sceneManager{ sceneManager } {};
+        EditorController(SceneManager& sceneManager, RuntimeController& runtimeController) 
+            : m_sceneManager{ sceneManager }, m_runtimeController{ runtimeController }
+        {};
 
-        void Init();
         void Simulate();
         void Pause();
         void Stop();
+
+        void Init();
         void LoadScene(const std::string& file);
         bool GetActiveScenePaused() const;
         bool GetActiveSceneStepMode() const;
@@ -47,10 +51,11 @@ namespace oo
             EDITING,
             RUNNING,
         };
-        STATE GetActiveState() { return m_activeState; };
+
+        STATE GetActiveState() const { return m_activeState; };
 
     private:
-        void OnRuntimeSceneChange();
+        void OnRuntimeSceneChange(Scene::OnInitEvent*);
 
         std::shared_ptr<EditorScene> m_editorScene = nullptr;
         std::shared_ptr<RuntimeScene> m_runtimeScene = nullptr;
@@ -59,6 +64,7 @@ namespace oo
         bool m_temporaryAdd = false;
 
         SceneManager& m_sceneManager;
+        RuntimeController& m_runtimeController;
     };
 
 }

@@ -21,6 +21,7 @@ Technology is prohibited.
 //#include "Ouroboros/Platform/Windows/WindowsWindow.h"
 //#include "Ouroboros/Core/Timestep.h"
 
+#include "Ouroboros/EventSystem/EventManager.h"
 namespace oo
 {
 
@@ -28,9 +29,11 @@ namespace oo
     {
         auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>("Editor Scene", "please fill up with a valid filepath");
         ASSERT(!success);
-        
-        m_editorScene = editorScene;
 
+        m_editorScene = editorScene;
+        EventManager::Subscribe<EditorController, Scene::OnInitEvent>(this, &EditorController::OnRuntimeSceneChange);
+
+        m_sceneManager.ChangeScene(m_editorScene);
         //m_editorScene = std::make_shared<EditorScene>("");
         //SceneManager::ChangeScene(m_editorScene);
         //SceneManager::GetInstance().OnActiveSceneChange += [] { OnRuntimeSceneChange(); };
@@ -53,6 +56,7 @@ namespace oo
 
             ////Force save when you press play [ not sure if intended ]
             //m_editorScene->Save();
+            m_editorScene->Save();
 
             /*m_temporaryAdd = !RuntimeController::HasScene(m_editorScene->GetSceneName());
             // add selected path as load path
@@ -61,9 +65,11 @@ namespace oo
 
             // Generate all the scenes on run
             //RuntimeController::GenerateScenes();
+            m_runtimeController.GenerateScenes();
 
             // Change runtime scene to currently selected
             //RuntimeController::ChangeRuntimeScene(m_editorScene->GetSceneName());
+            m_runtimeController.ChangeRuntimeScene(m_editorScene->GetID());
         }
         // if in runtime 
         else if (m_activeState == STATE::RUNNING)
@@ -113,10 +119,14 @@ namespace oo
         {
             m_temporaryAdd = false;
             RuntimeController::RemoveLoadPath(m_editorScene->GetSceneName());
+            
+            m_runtimeController.RemoveLoadPath(m_editorScene->GetSceneName());
         }*/
 
         // change editor scene
         //m_editorScene->ReloadWorldWithPath(newPath);
+        m_editorScene->ReloadSceneWithPath(newPath);
+
         // reset runtime Scene to be nullptr
         m_runtimeScene = nullptr;
     }
@@ -156,9 +166,12 @@ namespace oo
         m_sceneManager.ChangeScene(m_editorScene);
     }
 
-    void EditorController::OnRuntimeSceneChange()
+    void EditorController::OnRuntimeSceneChange(Scene::OnInitEvent*)
     {
         // if the scene is active, it has to be a runtime scene!
+        if (m_activeState == STATE::RUNNING)
+            m_runtimeScene = std::static_pointer_cast<RuntimeScene>(m_sceneManager.GetActiveScene());
+
         /*if (m_activeScene == STATE::RUNNING)
             m_runtimeScene = std::static_pointer_cast<RuntimeScene>(SceneManager::GetActiveScenePointer());*/
     }

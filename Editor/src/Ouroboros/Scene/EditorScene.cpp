@@ -161,6 +161,12 @@ namespace oo
         //SaveToFile();
     }
 
+    void EditorScene::ReloadSceneWithPath(std::string const& filepath)
+    {
+        SetSaveFile(filepath);
+        ReloadScene();
+    }
+
     void EditorScene::Save()
     {
         SaveToFile();
