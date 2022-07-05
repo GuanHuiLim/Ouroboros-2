@@ -126,11 +126,12 @@ namespace oo
             return WorldManager::GetActiveWorld().GetComponents<Components>(m_entity);
         }*/
 
-        /*template<typename Component>
+        template<typename Component>
         Component* TryGetComponent() const
         {
-            return WorldManager::GetActiveWorld().TryGetComponent<Component>(m_entity);
-        }*/
+            return HasComponent<Component>() ? GetComponent<Component>(): nullptr;
+            // return WorldManager::GetActiveWorld().TryGetComponent<Component>(m_entity);
+        }
 
         template<typename Component>
         bool HasComponent() const
