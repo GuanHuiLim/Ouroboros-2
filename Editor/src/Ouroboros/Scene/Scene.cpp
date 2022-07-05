@@ -61,7 +61,7 @@ namespace oo
         return LoadStatus();
     }
     
-    void Scene::SetSaveFile(std::string_view filepath)
+    void Scene::SetFilePath(std::string_view filepath)
     {
         m_filepath = filepath;
     }

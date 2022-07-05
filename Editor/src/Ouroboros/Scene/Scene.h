@@ -29,12 +29,12 @@ namespace oo
 
         virtual LoadStatus GetProgress() override;
 
-    protected:
-        void SetSaveFile(std::string_view filepath);
         std::string GetFilePath() const;
-
-        void SetSceneName(std::string_view name);
         std::string GetSceneName() const;
+
+    protected:
+        void SetFilePath(std::string_view filepath);
+        void SetSceneName(std::string_view name);
 
         void LoadFromFile();
         void SaveToFile();

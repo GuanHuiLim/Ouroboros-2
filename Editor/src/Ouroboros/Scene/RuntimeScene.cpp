@@ -25,11 +25,13 @@ namespace oo
         : Scene{ "Runtime Scene" }
     {
         if (!filepath.empty())
-            SetSaveFile(filepath);
+            SetFilePath(filepath);
     }
 
     void RuntimeScene::Init()
     {
+        Scene::Init();
+
         //constexpr const char* const registration = "registration";
         {
             //TRACY_PROFILE_SCOPE(registration);
@@ -71,6 +73,8 @@ namespace oo
     {
         if (m_stepMode && m_framesLeft == 0) return;
         --m_framesLeft;
+
+        Scene::Update();
 
         //constexpr const char* const runtime_scene_update = "Runtime Scene Update";
         {
@@ -155,15 +159,17 @@ namespace oo
             //TRACY_PROFILE_SCOPE_END();
         }
 
-
     }
 
     void RuntimeScene::LateUpdate()
     {
+        //Scene::LateUpdate();
     }
 
     void RuntimeScene::Render()
     {
+        //Scene::Render();
+
         //constexpr const char* const text_rendering = "Text Rendering";
         {
             /*TRACY_PROFILE_SCOPE(text_rendering);
@@ -187,6 +193,8 @@ namespace oo
 
     void RuntimeScene::Exit()
     {
+        //Scene::Exit();
+
         StopSimulation();
     }
 

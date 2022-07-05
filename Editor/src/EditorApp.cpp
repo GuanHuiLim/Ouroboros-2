@@ -115,7 +115,7 @@ public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
-        m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         
         m_layerset.PushLayer(std::make_shared<EditorLayer>());
 

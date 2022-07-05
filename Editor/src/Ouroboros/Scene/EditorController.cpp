@@ -27,13 +27,14 @@ namespace oo
 
     void EditorController::Init()
     {
-        auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>("Editor Scene", "please fill up with a valid filepath");
+        auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>("Test Scene", "please fill up with a valid filepath");
         ASSERT(!success);
 
         m_editorScene = editorScene;
         EventManager::Subscribe<EditorController, Scene::OnInitEvent>(this, &EditorController::OnRuntimeSceneChange);
 
         m_sceneManager.ChangeScene(m_editorScene);
+
         //m_editorScene = std::make_shared<EditorScene>("");
         //SceneManager::ChangeScene(m_editorScene);
         //SceneManager::GetInstance().OnActiveSceneChange += [] { OnRuntimeSceneChange(); };
@@ -58,10 +59,10 @@ namespace oo
             //m_editorScene->Save();
             m_editorScene->Save();
 
-            /*m_temporaryAdd = !RuntimeController::HasScene(m_editorScene->GetSceneName());
+            m_temporaryAdd = !m_runtimeController.HasScene(m_editorScene->GetSceneName());
             // add selected path as load path
             if (m_temporaryAdd)
-                RuntimeController::AddLoadPath(m_editorScene->GetSceneName(), m_editorScene->GetFilePath());*/
+                m_runtimeController.AddLoadPath(m_editorScene->GetSceneName(), m_editorScene->GetFilePath());
 
             // Generate all the scenes on run
             //RuntimeController::GenerateScenes();
@@ -69,7 +70,7 @@ namespace oo
 
             // Change runtime scene to currently selected
             //RuntimeController::ChangeRuntimeScene(m_editorScene->GetSceneName());
-            m_runtimeController.ChangeRuntimeScene(m_editorScene->GetID());
+            m_runtimeController.ChangeRuntimeScene(m_editorScene->GetSceneName());
         }
         // if in runtime 
         else if (m_activeState == STATE::RUNNING)
@@ -114,14 +115,14 @@ namespace oo
 
         // Remove all old scenes when loading a new one
         //RuntimeController::RemoveScenes();
+        m_runtimeController.RemoveScenes();
         // remove the current scene
-        /*if (m_temporaryAdd)
+        if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
-            RuntimeController::RemoveLoadPath(m_editorScene->GetSceneName());
-            
+            //RuntimeController::RemoveLoadPath(m_editorScene->GetSceneName())
             m_runtimeController.RemoveLoadPath(m_editorScene->GetSceneName());
-        }*/
+        }
 
         // change editor scene
         //m_editorScene->ReloadWorldWithPath(newPath);
@@ -155,12 +156,13 @@ namespace oo
         //}
 
         //RuntimeController::RemoveScenes();
+        m_runtimeController.RemoveScenes();
         // remove the current scene
-        /*if (m_temporaryAdd)
+        if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
-            RuntimeController::RemoveLoadPath(m_editorScene->GetSceneName());
-        }*/
+            m_runtimeController.RemoveLoadPath(m_editorScene->GetSceneName());
+        }
 
         m_activeState = STATE::EDITING;
         m_sceneManager.ChangeScene(m_editorScene);

@@ -24,11 +24,13 @@ namespace oo
         : Scene{ "Editor Scene" }
     {
         if (!filepath.empty())
-            SetSaveFile(filepath);
+            SetFilePath(filepath);
     }
 
     void EditorScene::Init()
     {
+        Scene::Init();
+
         //constexpr const char* const editor_scene_init = "Editor scene init";
         //constexpr const char* const registration = "registration";
         //constexpr const char* const loading_world = "loading world";
@@ -77,6 +79,8 @@ namespace oo
 
     void EditorScene::Update()
     {
+        Scene::Update();
+
         //constexpr const char* const editor_scene_update = "Editor Scene Update";
         //constexpr const char* const physics_editor_update = "physics editor mode update";
         //constexpr const char* const transform_update = "transform update";
@@ -128,10 +132,13 @@ namespace oo
 
     void EditorScene::LateUpdate()
     {
+        Scene::LateUpdate();
     }
 
     void EditorScene::Render()
     {
+        Scene::Render();
+
         //constexpr const char* const rendering = "Overall Rendering";
         //constexpr const char* const text_rendering = "Text Rendering";
         //constexpr const char* const renderer2d_rendering = "Renderer2D Rendering";
@@ -157,13 +164,15 @@ namespace oo
 
     void EditorScene::Exit()
     {
+        Scene::Exit();
+
         // DOES not autosave by default anymore
         //SaveToFile();
     }
 
     void EditorScene::ReloadSceneWithPath(std::string const& filepath)
     {
-        SetSaveFile(filepath);
+        SetFilePath(filepath);
         ReloadScene();
     }
 
