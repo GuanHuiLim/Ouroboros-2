@@ -62,7 +62,7 @@ project "Editor"
         "%{LibraryDir.VulkanSDK}",
         "%{LibraryDir.SDL}",
 
-        "%{LibraryDir.launcher}",
+        --"%{LibraryDir.launcher}",
     }
 
     -- linking External libraries 
