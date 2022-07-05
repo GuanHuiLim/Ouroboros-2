@@ -68,7 +68,7 @@ namespace oo
         // make sure file path is unique.
         if (std::find_if(m_loadpaths.cbegin(), m_loadpaths.cend(), [=](SceneInfo elem) { return elem.LoadPath == loadpath; }) == m_loadpaths.cend())
         {
-            m_loadpaths.emplace_back(sceneName, loadpath, m_loadpaths.size());
+            m_loadpaths.emplace_back(sceneName, loadpath/*, m_loadpaths.size()*/);
         }
         else
         {

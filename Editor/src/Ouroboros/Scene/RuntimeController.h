@@ -26,7 +26,7 @@ namespace oo
         std::string SceneName;
         std::string LoadPath;
 
-        SceneInfo(std::string_view name, std::string_view path, std::size_t index) : SceneName{ name }, LoadPath{ path }{}
+        SceneInfo(std::string_view name, std::string_view path/*, std::size_t index*/) : SceneName{ name }, LoadPath{ path }{}
     };
 
     class RuntimeController final

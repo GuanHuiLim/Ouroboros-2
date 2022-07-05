@@ -29,9 +29,9 @@ namespace oo
 
     void EditorScene::Init()
     {
-        constexpr const char* const editor_scene_init = "Editor scene init";
-        constexpr const char* const registration = "registration";
-        constexpr const char* const loading_world = "loading world";
+        //constexpr const char* const editor_scene_init = "Editor scene init";
+        //constexpr const char* const registration = "registration";
+        //constexpr const char* const loading_world = "loading world";
         {
             //TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
             //Register All Systems
@@ -77,13 +77,13 @@ namespace oo
 
     void EditorScene::Update()
     {
-        constexpr const char* const editor_scene_update = "Editor Scene Update";
-        constexpr const char* const physics_editor_update = "physics editor mode update";
-        constexpr const char* const transform_update = "transform update";
-        constexpr const char* const particles_update = "Particles update";
-        constexpr const char* const animator_update = "animator update";
-        constexpr const char* const ui_update = "ui update";
-        constexpr const char* const video_update = "Video update";
+        //constexpr const char* const editor_scene_update = "Editor Scene Update";
+        //constexpr const char* const physics_editor_update = "physics editor mode update";
+        //constexpr const char* const transform_update = "transform update";
+        //constexpr const char* const particles_update = "Particles update";
+        //constexpr const char* const animator_update = "animator update";
+        //constexpr const char* const ui_update = "ui update";
+        //constexpr const char* const video_update = "Video update";
         {
             //TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
 
@@ -132,9 +132,9 @@ namespace oo
 
     void EditorScene::Render()
     {
-        constexpr const char* const rendering = "Overall Rendering";
-        constexpr const char* const text_rendering = "Text Rendering";
-        constexpr const char* const renderer2d_rendering = "Renderer2D Rendering";
+        //constexpr const char* const rendering = "Overall Rendering";
+        //constexpr const char* const text_rendering = "Text Rendering";
+        //constexpr const char* const renderer2d_rendering = "Renderer2D Rendering";
         {
             //TRACY_PROFILE_SCOPE_NC(rendering, tracy::Color::Cyan);
 
