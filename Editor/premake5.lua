@@ -51,7 +51,8 @@ project "Editor"
         "%{IncludeDir.launcher}",
         "%{IncludeDir.ecs}",
 
-        "%{IncludeDir.sharedlib}",
+        "%{IncludeDir.quaternion}",
+        "%{IncludeDir.scenegraph}",
         "%{IncludeDir.scene}",
     }
 

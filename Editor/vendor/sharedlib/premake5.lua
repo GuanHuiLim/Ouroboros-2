@@ -9,15 +9,22 @@ project "SharedLib"
 
     files
     {
-        "Isolated-Testing-Ground/SharedLibrary/include/*.*",
-        "Isolated-Testing-Ground/SharedLibrary/src/*.*",
+        "Isolated-Testing-Ground/Quaternion/include/*.*",
+        "Isolated-Testing-Ground/Quaternion/src/*.*",
 
         "Isolated-Testing-Ground/SceneManagement/include/*.*",
         "Isolated-Testing-Ground/SceneManagement/src/*.*",
+
+        
+        "Isolated-Testing-Ground/Scenegraph/include/*.*",
+        "Isolated-Testing-Ground/Scenegraph/src/*.*",
     }
 
     includedirs
     {
+        "%{IncludeDir.scenegraph}",
+        "%{IncludeDir.scene}",
+        "%{IncludeDir.quaternion}",
         --"Oroborous-Launcher/Launcher",
         --"%{IncludeDir.imgui}",
         --"%{IncludeDir.rapidjson}",
