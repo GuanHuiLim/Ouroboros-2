@@ -3,7 +3,13 @@
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Core/Log.h"
-#define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
+
+//#define DEBUG_PRINT
+#ifdef DEBUG_PRINT
+    #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
+#else
+    #define PRINT(name) 
+#endif
 
 namespace oo
 {
