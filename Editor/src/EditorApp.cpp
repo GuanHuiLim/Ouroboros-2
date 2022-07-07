@@ -23,17 +23,23 @@ Technology is prohibited.
 #include <Ouroboros/Core/Timer.h>
 #include <Ouroboros/Core/LayerSet.h>
 #include <Ouroboros/ImGui/ImGuiAbstraction.h>
+#include <Ouroboros/EventSystem/EventManager.h>
 
 #include "TestLayers/InputDebugLayer.h"
 
-// Project Tracker related includes
+#include "CoreLayers/SceneLayer.h"
 
-#include <ProjectTracker.h>
-#include <../Utilities/ImGuiManager.h>  // for now.
 
 #include <imgui.h>
+// Project Tracker related includes
+#include <Launcher/Launcher/ProjectTracker.h>
+#include <Launcher/Utilities/ImGuiManager.h>
 
-#include <Ouroboros/EventSystem/EventManager.h>
+//Shared Library related includes
+#include <SceneManager.h>
+#include <Transform.h>
+#include <Quaternion.h>
+#include <Scenegraph.h>
 
 #include "Ouroboros/EventSystem/Event.h"
 
@@ -76,10 +82,6 @@ public:
         
         ImGuiManager::UpdateAllUI();
         
-        /* m_imGuiAbstract->Begin();
-         OnImGuiRender();
-         m_imGuiAbstract->End();*/
-        
          //#if EDITOR_DEBUG || EDITOR_RELEASE
          /*if (m_showDebugInfo)
          {
@@ -119,14 +121,15 @@ public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
-        m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         
         m_layerset.PushLayer(std::make_shared<EditorLayer>());
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
         
-        //oo::EventManager::Subscribe<oo::ImGuiAbstraction, oo::ImGuiRestartEvent>(m_imGuiAbstract.get(), &oo::ImGuiAbstraction::Restart);
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
+        
+        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>());
     }
 
     void OnUpdate() override

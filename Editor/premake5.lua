@@ -50,6 +50,10 @@ project "Editor"
 
         "%{IncludeDir.launcher}",
         "%{IncludeDir.ecs}",
+
+        "%{IncludeDir.quaternion}",
+        "%{IncludeDir.scenegraph}",
+        "%{IncludeDir.scene}",
     }
 
     -- library diretories
@@ -59,7 +63,7 @@ project "Editor"
         "%{LibraryDir.VulkanSDK}",
         "%{LibraryDir.SDL}",
 
-        "%{LibraryDir.launcher}",
+        --"%{LibraryDir.launcher}",
     }
 
     -- linking External libraries 
@@ -76,8 +80,10 @@ project "Editor"
         "SDL2",
         "SDL2main",
         "SDL2test",
+        
         "ECS",
         "Launcher",
+        "SharedLib",
         
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.

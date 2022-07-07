@@ -19,3 +19,6 @@
 [submodule "Editor/vendor/Archetypes_Ecs"]
 	path = Editor/vendor/Archetypes_Ecs
 	url = https://github.com/GuanHuiLim/Archetypes_Ecs.git
+[submodule "Editor/vendor/sharedlib/Isolated-Testing-Ground"]
+	path = Editor/vendor/sharedlib/Isolated-Testing-Ground
+	url = https://github.com/spironan/Isolated-Testing-Ground.git
