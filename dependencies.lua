@@ -38,9 +38,11 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["vma"]           = EngineVendor .. "/vma"
 
 -- Our External Submodules 
-IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher/Launcher/Launcher"
+IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
 IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs/Archetypes_Ecs/src"
-IncludeDir["sharedlib"]     = AppVendor .. "/sharedlib/Isolated-Testing-Ground/SharedLibrary/include" 
+
+IncludeDir["quaternion"]    = AppVendor .. "/sharedlib/Isolated-Testing-Ground/Quaternion/include" 
+IncludeDir["scenegraph"]    = AppVendor .. "/sharedlib/Isolated-Testing-Ground/Scenegraph/include" 
 IncludeDir["scene"]         = AppVendor .. "/sharedlib/Isolated-Testing-Ground/SceneManagement/include" 
 
 
