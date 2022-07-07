@@ -23,18 +23,17 @@ Technology is prohibited.
 #include <Ouroboros/Core/Timer.h>
 #include <Ouroboros/Core/LayerSet.h>
 #include <Ouroboros/ImGui/ImGuiAbstraction.h>
+#include <Ouroboros/EventSystem/EventManager.h>
 
 #include "TestLayers/InputDebugLayer.h"
 
-// Project Tracker related includes
-
-#include <ProjectTracker.h>
-#include <../Utilities/ImGuiManager.h>  // for now.
-
 #include <imgui.h>
 
-#include <Ouroboros/EventSystem/EventManager.h>
+// Project Tracker related includes
+#include <Launcher/Launcher/ProjectTracker.h>
+#include <Launcher/Utilities/ImGuiManager.h>
 
+//Shared Library related includes
 #include <SceneManager.h>
 #include <Transform.h>
 #include <Quaternion.h>
@@ -74,10 +73,6 @@ public:
         }
         
         ImGuiManager::UpdateAllUI();
-        
-        /* m_imGuiAbstract->Begin();
-         OnImGuiRender();
-         m_imGuiAbstract->End();*/
         
          //#if EDITOR_DEBUG || EDITOR_RELEASE
          /*if (m_showDebugInfo)
