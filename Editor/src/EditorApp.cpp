@@ -33,7 +33,7 @@ Technology is prohibited.
 #include <imgui.h>
 // Project Tracker related includes
 #include <Launcher/Launcher/ProjectTracker.h>
-#include <Launcher/Utilities/ImGuiManager.h>
+#include <Launcher/Utilities/ImGuiManager_Launcher.h>
 
 //Shared Library related includes
 #include <SceneManager.h>
@@ -62,7 +62,7 @@ public:
 
     virtual void OnAttach() override final
     {
-        ImGuiManager::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
+        ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
     }
 
     // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -74,7 +74,7 @@ public:
             m_showDebugInfo = !m_showDebugInfo;
         }
         
-        ImGuiManager::UpdateAllUI();
+        ImGuiManager_Launcher::UpdateAllUI();
         
          //#if EDITOR_DEBUG || EDITOR_RELEASE
          /*if (m_showDebugInfo)
