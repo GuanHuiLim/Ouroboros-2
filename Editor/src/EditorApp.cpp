@@ -18,19 +18,22 @@ Technology is prohibited.
 // specially include this file only at the entry point of the engine.
 #include <EntryPoint.h>
 
-#include "Utility/Random.h"
 #include <Ouroboros/Core/Input.h>
 #include <Ouroboros/Core/Timer.h>
 #include <Ouroboros/Core/LayerSet.h>
 #include <Ouroboros/ImGui/ImGuiAbstraction.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 
+// Debug Layers
 #include "TestLayers/InputDebugLayer.h"
+#include "TestLayers/MainDebugLayer.h"
 
+// Core Essential Layers
 #include "CoreLayers/SceneLayer.h"
 
-
+// External includes
 #include <imgui.h>
+
 // Project Tracker related includes
 #include <Launcher/Launcher/ProjectTracker.h>
 #include <Launcher/Utilities/ImGuiManager.h>
@@ -122,6 +125,7 @@ public:
         : Application{ "Ouroboros v2.0", args }
     {
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
         
         m_layerset.PushLayer(std::make_shared<EditorLayer>());
 
@@ -130,6 +134,7 @@ public:
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>());
+
     }
 
     void OnUpdate() override
