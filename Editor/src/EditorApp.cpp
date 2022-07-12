@@ -62,7 +62,7 @@ public:
         
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         
-        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
+        //m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
 
     }
 

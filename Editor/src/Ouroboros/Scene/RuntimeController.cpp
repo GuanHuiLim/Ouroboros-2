@@ -105,10 +105,10 @@ namespace oo
 
         if (iter == m_loadpaths.end())
         {
-            LOG_WARN("Scene {0} was not not added to build thus it was loaded! Ensure you add it to the build via", sceneName);
+            LOG_WARN("Scene \"{0}\" was not not added to build thus it was loaded! Ensure you add it to the build via", sceneName);
             return;
         }
-        LOG_INFO("Changing to runtime scene {0}", sceneName);
+        LOG_INFO("Changing to runtime scene \"{0}\"", sceneName);
         m_sceneManager.ChangeScene(sceneName);
     }
 

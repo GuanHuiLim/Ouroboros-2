@@ -68,8 +68,8 @@ namespace oo
     private:
         void OnRuntimeSceneChange(Scene::OnInitEvent*);
 
-        std::shared_ptr<EditorScene> m_editorScene = nullptr;
-        std::shared_ptr<RuntimeScene> m_runtimeScene = nullptr;
+        std::weak_ptr<EditorScene> m_editorScene = {};
+        std::weak_ptr<RuntimeScene> m_runtimeScene = {};
 
         STATE m_activeState = STATE::EDITING;
         bool m_temporaryAdd = false;

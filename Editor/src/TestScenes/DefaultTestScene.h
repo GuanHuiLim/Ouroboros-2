@@ -29,6 +29,8 @@ public:
     { 
         m_print_debug_msgs = print_debug_msgs;
     }
+    
+    virtual ~DefaultTestScene() = default;
 
     virtual void Init() override final 
     { 

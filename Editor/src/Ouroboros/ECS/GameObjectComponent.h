@@ -13,6 +13,6 @@ namespace oo
         UUID Id;
         std::string Name = "Default";
 
-        scenenode::shared_pointer Node = nullptr;
+        scenenode::weak_pointer Node = {};
     };
 }

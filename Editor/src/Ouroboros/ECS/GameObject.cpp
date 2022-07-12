@@ -32,14 +32,14 @@ namespace oo
     //}
 
     // Create is a dummy type
-    GameObject::GameObject(Ecs::ECSWorld* ecsWorld)
-        : GameObject{ UUID{}, ecsWorld }
+    GameObject::GameObject(Scene* scene)
+        : GameObject{ UUID{}, scene }
     {
     }
 
-    GameObject::GameObject(UUID uuid, Ecs::ECSWorld* ecsWorld)
-        : m_ecsworld { ecsWorld }
-        , m_entity{ ecsWorld->new_entity() }
+    GameObject::GameObject(UUID uuid, Scene* scene)
+        : m_scene { scene }
+        , m_entity{ scene->GetWorld().new_entity() }
     {
         // Order matters, dont swap it for no reason!
         AddComponent<GameObjectComponent>().Id = uuid;
@@ -47,8 +47,8 @@ namespace oo
     }
 
     //Conversion from entt to gameobject
-    GameObject::GameObject(Entity entt, Ecs::ECSWorld* ecsWorld)
-        : m_ecsworld { ecsWorld }
+    GameObject::GameObject(Entity entt, Scene* scene)
+        : m_scene{ scene }
         , m_entity{ entt }
     {
     }

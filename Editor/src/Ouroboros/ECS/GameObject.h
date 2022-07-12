@@ -15,9 +15,10 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include <A_Ecs.h>
-#include <EcsUtils.h>
+//#include <A_Ecs.h>
+//#include <EcsUtils.h>
 #include <set>
+#include "Ouroboros/Scene/Scene.h"
 
 #include "Ouroboros/Core/Base.h"
 #include "Utility/UUID.h"
@@ -39,22 +40,24 @@ namespace oo
         static constexpr Entity     ROOT    = std::numeric_limits<Entity>::min();
 
     private:
-        Ecs::ECSWorld* m_ecsworld   = nullptr;
-        Entity m_entity             = NOTFOUND; //default to not found
+        Scene* m_scene      = nullptr;
+        //Ecs::ECSWorld* m_ecsworld   = nullptr;
+        Entity m_entity     = NOTFOUND; //default to not found
 
     /*---------------------------------------------------------------------------------*/
     /* Public Functions                                                                */
     /*---------------------------------------------------------------------------------*/
     public:
         // Helper Getters
-        Transform3D& Transform()                    const { ASSERT_MSG(HasComponent<Transform3D>(), "Invalid ID");          return GetComponent<Transform3D>(); };
-        bool IsActive()                             const { ASSERT_MSG(HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Active; }
-        bool ActiveInHierarchy()                    const { ASSERT_MSG(HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().ActiveInHierarchy; }
-        std::string& Name()                         const { ASSERT_MSG(HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Name; }
-        UUID GetInstanceID()                        const { ASSERT_MSG(HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Id; }
-        scenenode::shared_pointer GetSceneNode()    const { ASSERT_MSG(HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node; }
+        Transform3D& Transform()                    const { ASSERT_MSG(!HasComponent<Transform3D>(), "Invalid ID");          return GetComponent<Transform3D>(); };
+        bool IsActive()                             const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Active; }
+        bool ActiveInHierarchy()                    const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().ActiveInHierarchy; }
+        std::string& Name()                         const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Name; }
+        UUID GetInstanceID()                        const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Id; }
+        scenenode::shared_pointer GetSceneNode()    const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node.lock(); }
         Entity GetEntity()                          const { return m_entity; }
-        Ecs::ECSWorld const * GetWorld()            const { return m_ecsworld; } // ptr to read-only ECS World
+        //Ecs::ECSWorld const GetWorld()              const { ASSERT_MSG(m_scene == nullptr, "GameObject has invalid scene"); return m_scene->GetWorld(); } // ptr to read-only ECS World
+        Scene const* GetScene()                     const { return m_scene; } 
 
         // Setters
         void SetActive(bool active) const;
@@ -68,13 +71,13 @@ namespace oo
         GameObject& operator=(GameObject&&) = default;
 
         // Explicit Instantiation constructor
-        explicit GameObject(Ecs::ECSWorld* ecsWorld);
+        explicit GameObject(Scene* scene);
 
         // Traditional Construct GameObject Based on UUID
-        GameObject(UUID uuid, Ecs::ECSWorld* ecsWorld);
+        GameObject(UUID uuid, Scene* scene);
 
         // Non-Traditional Copy Construct GameObject Based on Entity
-        GameObject(Entity entt, Ecs::ECSWorld* ecsWorld);
+        GameObject(Entity entt, Scene* scene);
 
         // Scene-graph Related Functions
         void AddChild(GameObject const& child, bool preserveTransforms = false) const;
@@ -95,8 +98,8 @@ namespace oo
         template<typename Component>
         Component& GetComponent() const
         {
-            ASSERT_MSG(HasComponent<Component>(), "Use TryGet instead if youre Unsure.");
-            return m_ecsworld->get_component<Component>(m_entity);
+            ASSERT_MSG(HasComponent<Component>() == false, "Use TryGet instead if youre Unsure.");
+            return m_scene->GetWorld().get_component<Component>(m_entity);
         }
 
         template<typename Component>
@@ -108,8 +111,8 @@ namespace oo
         template<typename Component>
         bool HasComponent() const
         {
-            ASSERT_MSG(m_ecsworld == nullptr, " ecs world shouldn't be null! Likely created gameobject wrongly");
-            return m_ecsworld->has_component<Component>(m_entity);
+            ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+            return m_scene->GetWorld().has_component<Component>(m_entity);
         }
 
         /*---------------------------------------------------------------------------------*/
@@ -119,16 +122,16 @@ namespace oo
         template<typename Component, typename... Args>
         Component& AddComponent(Args... args) const
         {
-            ASSERT_MSG(m_ecsworld == nullptr, " ecs world shouldn't be null! Likely created gameobject wrongly");
-            m_ecsworld->add_component<Component>(m_entity, args...);
+            ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+            m_scene->GetWorld().add_component<Component>(m_entity, args...);
             return GetComponent<Component>();
         }
 
         template<typename Component>
         void RemoveComponent() const
         {
-            ASSERT_MSG(m_ecsworld == nullptr, " ecs world shouldn't be null! Likely created gameobject wrongly");
-            m_ecsworld->remove_component<Component>(m_entity);
+            ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+            m_scene->GetWorld().remove_component<Component>(m_entity);
         }
 
         template<typename Component, typename...Args>

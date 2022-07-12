@@ -4,6 +4,8 @@
 
 #include "Ouroboros/Core/Log.h"
 
+#include "Ouroboros/ECS/GameObject.h"
+
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -13,6 +15,29 @@
 
 namespace oo
 {
+    Scene::Scene(std::string_view name) : 
+        m_name{ "default name" },
+        m_filepath{ "unassigned filepath" },
+        m_removeList {},
+        m_lookupTable {},
+        m_ecsWorld {},
+        m_scenegraph { m_name + " scenegraph" },
+        m_root{ CreateGameObject().lock() },
+        //m_root{ CreateGameObject() },
+        IScene() 
+    {
+    }
+    
+    Scene::~Scene()
+    {
+        /*m_removeList.clear();
+
+        for (auto& [uuid, go] : m_lookupTable)
+            go.reset();
+        
+        m_lookupTable.clear();*/
+    }
+
     void Scene::Init()
     {
         Scene::OnInitEvent e;
@@ -103,14 +128,14 @@ namespace oo
         return m_name; 
     }
 
-    oo::GameObject Scene::CreateGameObject()
+    std::weak_ptr<GameObject> Scene::CreateGameObject()
     {
-        oo::GameObject newObject{ &m_ecsWorld };
+        std::shared_ptr<GameObject> newObjectPtr = std::make_shared<GameObject>(this);
         // IMPT: we are using the uuid to retrieve back the gameobject as well!
-        newObject.GetComponent<GameObjectComponent>().Node = m_scenegraph.create_new_child(newObject.Name(), newObject.GetInstanceID());
-        m_lookupTable.emplace(newObject.GetInstanceID(), std::make_shared<GameObject>(newObject));
+        //newObjectPtr->GetComponent<GameObjectComponent>().Node = m_scenegraph.create_new_child(newObjectPtr->Name(), newObjectPtr->GetInstanceID());
+        m_lookupTable.emplace(newObjectPtr->GetInstanceID(), newObjectPtr);
 
-        return newObject;
+        return newObjectPtr;
     }
 
     std::shared_ptr<GameObject> Scene::FindWithInstanceID(UUID uuid)
@@ -125,11 +150,12 @@ namespace oo
     {
         // a valid gameobject will not have its ID as NotFound, will have gameobject component(minimally)
         // and parent will not be equals to NOParent
+        return go.GetScene() == this && m_lookupTable.contains(go.GetInstanceID());
 
-        return !(go.GetEntity().value == GameObject::NOTFOUND.value
-            || go.HasComponent<GameObjectComponent>() == false
-            || go.GetWorld() == nullptr
-            || go.GetWorld() != &m_ecsWorld);
+        //return !(go.GetEntity().value == GameObject::NOTFOUND.value
+        //    || go.HasComponent<GameObjectComponent>() == false
+        //    || go.GetWorld() == nullptr
+        //    || go.GetWorld() != &m_ecsWorld);
     }
 
     void Scene::DestroyGameObject(GameObject go)
@@ -165,7 +191,7 @@ namespace oo
     {
     }
     
-    Ecs::ECSWorld Scene::GetWorld() const
+    Ecs::ECSWorld& Scene::GetWorld()
     {
         return m_ecsWorld;
     }
@@ -175,8 +201,8 @@ namespace oo
         return m_scenegraph;
     }
 
-    oo::GameObject Scene::GetRoot() const
+    GameObject * Scene::GetRoot() const
     {
-        return m_root;
+        return m_root.get();
     }
 }

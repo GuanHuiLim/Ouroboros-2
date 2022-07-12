@@ -5,10 +5,14 @@
 
 #include <scenegraph.h>
 #include <A_Ecs.h>
-#include "Ouroboros/ECS/GameObject.h"
+#include <set>
+#include "Utility/UUID.h"
 
 namespace oo
 {
+    //forward declare
+    class GameObject;
+
     class Scene : public IScene
     {
         // Events
@@ -18,8 +22,8 @@ namespace oo
         };
 
     public:
-        Scene(std::string_view name) : m_name{ name }, IScene() {};
-        virtual ~Scene() = default;
+        Scene(std::string_view name);
+        virtual ~Scene();
 
         virtual void Init() override;
         virtual void Update() override;
@@ -37,7 +41,7 @@ namespace oo
         std::string GetFilePath() const;
         std::string GetSceneName() const;
 
-        oo::GameObject CreateGameObject();
+        std::weak_ptr<GameObject> CreateGameObject();
 
         // Attempts to search the lookup table with uuid.
         // returns the gameobject if it does
@@ -54,6 +58,10 @@ namespace oo
         std::vector<Entity> GetDirectChilds(bool includeItself = false) const;
         std::vector<Entity> GetChildren(bool includeItself = false) const;*/
 
+        Ecs::ECSWorld& GetWorld();
+        scenegraph GetGraph() const;
+        GameObject* GetRoot() const;
+
     protected:
         void SetFilePath(std::string_view filepath);
         void SetSceneName(std::string_view name);
@@ -61,21 +69,17 @@ namespace oo
         void LoadFromFile();
         void SaveToFile();
 
-        Ecs::ECSWorld GetWorld() const;
-        scenegraph GetGraph() const;
-        oo::GameObject GetRoot() const;
-
     private:
-        std::string m_name = "default name";
-        std::string m_filepath = "unassigned filepath";
+        std::string m_name;
+        std::string m_filepath;
 
         // set of ids to Remove 
-        std::set<UUID> m_removeList = {};
+        std::set<UUID> m_removeList;
         // one copy of a lookup table for all gameobjects.
-        std::unordered_map<UUID, std::shared_ptr<oo::GameObject>> m_lookupTable = {};
+        std::map<UUID, std::shared_ptr<oo::GameObject>> m_lookupTable;
 
-        Ecs::ECSWorld m_ecsWorld = {};
-        scenegraph m_scenegraph = { m_name + " scenegraph" };
-        oo::GameObject m_root = { oo::GameObject::ROOT, &m_ecsWorld };
+        Ecs::ECSWorld m_ecsWorld;
+        scenegraph m_scenegraph;
+        std::shared_ptr<GameObject> m_root;
     };
 }

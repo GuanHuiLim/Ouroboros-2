@@ -59,33 +59,33 @@ namespace oo
             m_activeState = STATE::RUNNING;
 
             ////Force save when you press play [ not sure if intended ]
-            //m_editorScene->Save();
-            m_editorScene->Save();
+            //m_editorScene.lock()->Save();
+            m_editorScene.lock()->Save();
 
-            m_temporaryAdd = !m_runtimeController.HasScene(m_editorScene->GetSceneName());
+            m_temporaryAdd = !m_runtimeController.HasScene(m_editorScene.lock()->GetSceneName());
             // add selected path as load path
             if (m_temporaryAdd)
-                m_runtimeController.AddLoadPath(m_editorScene->GetSceneName(), m_editorScene->GetFilePath());
+                m_runtimeController.AddLoadPath(m_editorScene.lock()->GetSceneName(), m_editorScene.lock()->GetFilePath());
 
             // Generate all the scenes on run
             //RuntimeController::GenerateScenes();
             m_runtimeController.GenerateScenes();
 
             // Change runtime scene to currently selected
-            //RuntimeController::ChangeRuntimeScene(m_editorScene->GetSceneName());
-            m_runtimeController.ChangeRuntimeScene(m_editorScene->GetSceneName());
+            //RuntimeController::ChangeRuntimeScene(m_editorScene.lock()->GetSceneName());
+            m_runtimeController.ChangeRuntimeScene(m_editorScene.lock()->GetSceneName());
         }
         // if in runtime 
         else if (m_activeState == STATE::RUNNING)
         {
             // check if its paused
-            if (m_runtimeScene->IsPaused())
+            if (m_runtimeScene.lock()->IsPaused())
             {
-                m_runtimeScene->ResumeSimulation();
+                m_runtimeScene.lock()->ResumeSimulation();
             }
             //else // is either in step mode or all good.
             //{
-            //    m_runtimeScene->StopStepMode();
+            //    m_runtimeScene.lock()->StopStepMode();
             //}
         }
 
@@ -99,17 +99,17 @@ namespace oo
         OnPauseEvent onPauseEvent;
         EventManager::Broadcast(&onPauseEvent);
 
-        if (m_runtimeScene->IsStepMode())
+        if (m_runtimeScene.lock()->IsStepMode())
         {
-            m_runtimeScene->ProcessFrame(1);
+            m_runtimeScene.lock()->ProcessFrame(1);
         }
-        else if (!m_runtimeScene->IsPaused()) // check if runtime scene is currently paused.
+        else if (!m_runtimeScene.lock()->IsPaused()) // check if runtime scene is currently paused.
         {
-            m_runtimeScene->PauseSimulation();
+            m_runtimeScene.lock()->PauseSimulation();
         }
         //else // scene is already paused, proceed to step mode.
         //{
-        //    m_runtimeScene->ProcessFrame(1);
+        //    m_runtimeScene.lock()->ProcessFrame(1);
         //}
 
     }
@@ -127,26 +127,26 @@ namespace oo
         if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
-            //RuntimeController::RemoveLoadPath(m_editorScene->GetSceneName())
-            m_runtimeController.RemoveLoadPath(m_editorScene->GetSceneName());
+            //RuntimeController::RemoveLoadPath(m_editorScene.lock()->GetSceneName())
+            m_runtimeController.RemoveLoadPath(m_editorScene.lock()->GetSceneName());
         }
 
         // change editor scene
-        //m_editorScene->ReloadWorldWithPath(newPath);
-        m_editorScene->ReloadSceneWithPath(newPath);
+        //m_editorScene.lock()->ReloadWorldWithPath(newPath);
+        m_editorScene.lock()->ReloadSceneWithPath(newPath);
 
         // reset runtime Scene to be nullptr
-        m_runtimeScene = nullptr;
+        //m_runtimeScene.lock() = nullptr;
     }
 
     bool EditorController::GetActiveScenePaused() const
     {
-        return m_activeState == STATE::RUNNING && m_runtimeScene->IsPaused();
+        return m_activeState == STATE::RUNNING && m_runtimeScene.lock()->IsPaused();
     }
 
     bool EditorController::GetActiveSceneStepMode() const
     {
-        return m_activeState == STATE::RUNNING && m_runtimeScene->IsStepMode();
+        return m_activeState == STATE::RUNNING && m_runtimeScene.lock()->IsStepMode();
     }
 
     void EditorController::Stop()
@@ -171,7 +171,7 @@ namespace oo
         if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
-            m_runtimeController.RemoveLoadPath(m_editorScene->GetSceneName());
+            m_runtimeController.RemoveLoadPath(m_editorScene.lock()->GetSceneName());
         }
 
         m_activeState = STATE::EDITING;
@@ -182,7 +182,7 @@ namespace oo
     {
         // if the scene is active, it has to be a runtime scene!
         if (m_activeState == STATE::RUNNING)
-            m_runtimeScene = std::static_pointer_cast<RuntimeScene>(m_sceneManager.GetActiveScene());
+            m_runtimeScene = std::static_pointer_cast<RuntimeScene>(m_sceneManager.GetActiveScene().lock());
 
         /*if (m_activeScene == STATE::RUNNING)
             m_runtimeScene = std::static_pointer_cast<RuntimeScene>(SceneManager::GetActiveScenePointer());*/
