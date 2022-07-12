@@ -20,32 +20,38 @@ Technology is prohibited.
 
 void WarningMessage::Show()
 {
-	if (s_ShowWarning)
+	if (s_ShowWarning == false)
+		return;
+	
+	ImGui::BeginTooltip();
+	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+	if (ImGui::Begin("Warning Message", 0, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs) == false)
 	{
-		ImGui::BeginTooltip();
-		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-		switch (s_dtype)
-		{
-		case DisplayType::DISPLAY_LOG:
-			ImGui::TextColored({ 1,1,1,1 }, "%s", s_WarningMessage.c_str());
-			break;
-		case DisplayType::DISPLAY_WARNING:
-			ImGui::TextColored({ 1,0.5,0.5,1 }, "%s", s_WarningMessage.c_str());
-			break;
-		case DisplayType::DISPLAY_ERROR:
-			ImGui::TextColored({ 1,0,0,1 }, "%s", s_WarningMessage.c_str());
-			break;
-		default:
-			break;
-		}
-		ImGui::PopTextWrapPos();
-		ImGui::EndTooltip();
 		ImGui::End();
-		
-		s_counter -= oo::timer::dt();
-		if (s_counter<0)
-			s_ShowWarning = false;
+		return;
 	}
+
+	switch (s_dtype)
+	{
+	case DisplayType::DISPLAY_LOG:
+		ImGui::TextColored({ 1,1,1,1 }, "%s", s_WarningMessage.c_str());
+		break;
+	case DisplayType::DISPLAY_WARNING:
+		ImGui::TextColored({ 1,0.5,0.5,1 }, "%s", s_WarningMessage.c_str());
+		break;
+	case DisplayType::DISPLAY_ERROR:
+		ImGui::TextColored({ 1,0,0,1 }, "%s", s_WarningMessage.c_str());
+		break;
+	default:
+		break;
+	}
+	ImGui::PopTextWrapPos();
+	ImGui::EndTooltip();
+	ImGui::End();
+		
+	s_counter -= oo::timer::dt();
+	if (s_counter<0)
+		s_ShowWarning = false;
 }
 void WarningMessage::DisplayWarning(DisplayType type ,const std::string& str,float time)
 {

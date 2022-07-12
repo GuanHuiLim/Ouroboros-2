@@ -272,7 +272,6 @@ void StyleEditor::Show()
 	}
 
 	ImGui::PopItemWidth();
-	ImGui::End();
 }
 
 void StyleEditor::MenuBar()

@@ -34,6 +34,7 @@ Technology is prohibited.
 // Project Tracker related includes
 #include <Launcher/Launcher/ProjectTracker.h>
 #include <Launcher/Utilities/ImGuiManager_Launcher.h>
+#include "Editor/Editor.h"
 
 //Shared Library related includes
 #include <SceneManager.h>
@@ -49,6 +50,7 @@ private:
     bool m_showDebugInfo = false;
     
     ProjectTracker m_tracker;
+	Editor m_editor;
 public:
     EditorLayer()
         : oo::Layer{ "EditorLayer" }
@@ -75,7 +77,7 @@ public:
         }
         
         ImGuiManager_Launcher::UpdateAllUI();
-        
+		m_editor.Update();
          //#if EDITOR_DEBUG || EDITOR_RELEASE
          /*if (m_showDebugInfo)
          {

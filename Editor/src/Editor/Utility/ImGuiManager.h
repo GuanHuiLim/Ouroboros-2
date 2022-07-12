@@ -9,7 +9,7 @@
 class ImGuiManager
 {
 public:
-	static void Create(const std::string name,const bool enabled,const ImGuiWindowFlags_ flag, std::function<void()> fnc);
+	static void Create(const std::string name,const bool enabled,const ImGuiWindowFlags_ flag, std::function<void()> fnc, std::function<void()> pre_window = 0);
 	static void UpdateAllUI();
 	static ImGuiObject& GetItem(const std::string& item);
 public:

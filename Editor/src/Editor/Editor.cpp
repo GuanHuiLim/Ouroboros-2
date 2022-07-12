@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "Editor.h"
 #include "Editor/Utility/ImGuiManager.h"
+
 Editor::Editor()
 {
-	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_None, [this] {this->m_styleEditor.Show(); });
+	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
+	m_warningMessage.Show();
 }
 
 Editor::~Editor()
