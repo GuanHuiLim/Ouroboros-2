@@ -17,25 +17,36 @@ Technology is prohibited.
 #include <string>
 #include <memory>
 
-//#include <Ouroboros.h>
+#include <SceneManager.h>
+#include <Ouroboros/EventSystem/Event.h>
 
-//#include "Scene/EditorScene.h"
-//#include "Scene/RuntimeScene.h"
-//#include "Scene/SceneManager.h"
-
-#include "SceneManager.h"
 #include "RuntimeController.h"
 #include "RuntimeScene.h"
 #include "EditorScene.h"
+
 
 namespace oo
 {
     class EditorController
     {
+        //Editor related events
+        //Note: only gets that succeed will be invoked
+    public:
+        class OnSimulateEvent : public Event
+        {
+        };
+        class OnPauseEvent : public Event
+        {
+        };
+        class OnStopEvent : public Event
+        {
+        };
+
     public:
         EditorController(SceneManager& sceneManager, RuntimeController& runtimeController) 
             : m_sceneManager{ sceneManager }, m_runtimeController{ runtimeController }
         {};
+
 
         void Simulate();
         void Pause();

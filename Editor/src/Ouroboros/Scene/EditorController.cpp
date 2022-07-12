@@ -51,6 +51,9 @@ namespace oo
             //    //LOG_ERROR("Fix Compile Time Errors before entering play mode");
             //    return;
             //}
+            
+            OnSimulateEvent onSimulateEvent;
+            EventManager::Broadcast(&onSimulateEvent);
 
             // set active scene to runtime scene
             m_activeState = STATE::RUNNING;
@@ -93,6 +96,9 @@ namespace oo
         // pause only applies when in runtime scene
         if (m_activeState == STATE::EDITING) return;
 
+        OnPauseEvent onPauseEvent;
+        EventManager::Broadcast(&onPauseEvent);
+
         if (m_runtimeScene->IsStepMode())
         {
             m_runtimeScene->ProcessFrame(1);
@@ -111,6 +117,7 @@ namespace oo
     void EditorController::LoadScene(const std::string& newPath)
     {
         LOG_TRACE("Loading new Scene at path {0}", newPath);
+
         if (m_activeState == STATE::RUNNING) return;
 
         // Remove all old scenes when loading a new one
@@ -146,6 +153,9 @@ namespace oo
     {
         // stop only applies when in runtime scene
         if (m_activeState == STATE::EDITING) return;
+
+        OnStopEvent onStopEvent;
+        EventManager::Broadcast(&onStopEvent);
 
         // Reset the important things that the user can modify 
         //{

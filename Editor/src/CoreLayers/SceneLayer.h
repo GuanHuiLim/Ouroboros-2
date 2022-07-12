@@ -28,13 +28,14 @@ namespace oo
     class SceneLayer final : public oo::Layer
     {
     private:
-        SceneManager m_sceneManager;
+        SceneManager& m_sceneManager;
         RuntimeController m_runtimeController;
         EditorController m_editorController;
     public:
 
-        SceneLayer() 
-            : m_runtimeController { m_sceneManager }
+        SceneLayer(SceneManager& sceneManager)
+            : m_sceneManager { sceneManager }
+            , m_runtimeController { m_sceneManager }
             , m_editorController{ m_sceneManager, m_runtimeController }
             , Layer("Scene Management Layer")
         {

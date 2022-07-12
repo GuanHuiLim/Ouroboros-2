@@ -82,6 +82,7 @@ public:
     virtual void ReloadScene() override final
     {
         m_print_debug_msgs = !m_print_debug_msgs;
+        LOG_INFO("Debugging Messages : {0}", m_print_debug_msgs);
 
         if (m_print_debug_msgs)
             PRINT(GetSceneName());

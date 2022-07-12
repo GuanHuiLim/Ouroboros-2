@@ -30,13 +30,10 @@ Technology is prohibited.
 
 // Core Essential Layers
 #include "CoreLayers/SceneLayer.h"
+#include "Corelayers/EditorLayer.h"
 
 // External includes
 #include <imgui.h>
-
-// Project Tracker related includes
-#include <Launcher/Launcher/ProjectTracker.h>
-#include <Launcher/Utilities/ImGuiManager.h>
 
 //Shared Library related includes
 #include <SceneManager.h>
@@ -44,96 +41,28 @@ Technology is prohibited.
 #include <Quaternion.h>
 #include <Scenegraph.h>
 
-#include "Ouroboros/EventSystem/Event.h"
-
-struct ImGuiRestartEvent : public oo::Event
-{
-};
-
-class EditorLayer final : public oo::Layer
-{
-private:
-    //order matters dont change it
-    bool m_demo = true;
-    bool m_showDebugInfo = false;
-    
-    ProjectTracker m_tracker;
-public:
-    EditorLayer()
-        : oo::Layer{ "EditorLayer" }
-    {
-        LOG_INFO("Test Info");
-        LOG_TRACE("Test Trace");
-        LOG_WARN("Test Warn");
-        LOG_ERROR("Test Error");
-        LOG_CRITICAL("Test Critical");
-    }
-
-    virtual void OnAttach() override final
-    {
-        ImGuiManager::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
-    }
-
-    // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
-    // PROPERLY FOR IMGUI RENDERING TO TAKE PLACE
-    virtual void OnUpdate() override final
-    {
-        if (oo::input::IsKeyPressed(KEY_F5))
-        {
-            m_showDebugInfo = !m_showDebugInfo;
-        }
-        
-        ImGuiManager::UpdateAllUI();
-        
-         //#if EDITOR_DEBUG || EDITOR_RELEASE
-         /*if (m_showDebugInfo)
-         {
-             oo::TimeDebugInfo timeDebugInfo = oo::Timestep::GetDebugTimeInfo();
-
-             ImGui::Begin("fpsviewer", nullptr,
-                 ImGuiWindowFlags_NoScrollbar
-                 | ImGuiWindowFlags_NoCollapse
-                 | ImGuiWindowFlags_NoTitleBar
-                 | ImGuiWindowFlags_AlwaysAutoResize);
-             ImGui::Text("Rolling FPS %.2f", timeDebugInfo.AvgFPS);
-             ImGui::Text("Rolling DeltaTime %.6f", timeDebugInfo.AvgDeltaTime);
-             ImGui::Text("Current Timescale %.2f", timeDebugInfo.CurrentTimeScale);
-             ImGui::Text("Time elpased %.2f", timeDebugInfo.TimeElapsed);
-             ImGui::End();
-         }*/
-         //#endif
-
-        //m_editor.ShowAllWidgets();
-        
-        if(m_demo)
-            ImGui::ShowDemoWindow(&m_demo);
-
-        if (ImGui::Button("restart Imgui"))
-        {
-            ImGuiRestartEvent restartEvent;
-            oo::EventManager::Broadcast(&restartEvent);
-        }
-        
-    }
-
-};
-
 class EditorApp final : public oo::Application
 {
+private:
+    // main scene manager
+    SceneManager m_sceneManager;
+
 public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
+        //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
         
+        // Main Layers
         m_layerset.PushLayer(std::make_shared<EditorLayer>());
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
         
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         
-        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>());
+        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
 
     }
 
