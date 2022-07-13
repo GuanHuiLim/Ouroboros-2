@@ -1,0 +1,61 @@
+/************************************************************************************//*!
+\file          OpenFileEvent.h
+\project       Sandbox
+\author        Leong Jun Xiang, junxiang.leong , 390007920
+\par           email: junxiang.leong\@digipen.edu
+\date          March 16, 2022
+\brief          
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+#pragma once
+#include "Ouroboros/EventSystem/Event.h"
+#include <string>
+#include <filesystem>
+#include <unordered_map>
+class OpenFileEvent :public oo::Event
+{
+public:
+	enum class FileType
+	{
+		PREFAB,
+		SCENE,
+		IMAGE,
+		AUDIO,
+		ANIMATION,
+		ANIMATION_CONTROLLER,
+		CODE,
+		FOLDER,
+		OTHERS,
+	};
+
+	OpenFileEvent(const std::filesystem::path& path) : m_filepath{ path }, m_type{ PathToFileType(path) } {};
+	~OpenFileEvent() {};
+	const FileType m_type;
+	const std::filesystem::path m_filepath;
+private:
+	const FileType PathToFileType(const std::filesystem::path& path)
+	{
+		std::string ext = path.extension().string();
+		if (ext.empty())
+			return FileType::FOLDER;
+
+		auto iter = s_typelist.find(ext);
+		if (iter == s_typelist.end())
+			return FileType::OTHERS;
+		else
+			return iter->second;
+
+	}
+	inline static std::unordered_map<std::string,FileType> s_typelist = 
+	{
+		{".png",FileType::IMAGE},
+		{".prefab",FileType::PREFAB},
+		{".scn",FileType::SCENE},
+		{".anim",FileType::ANIMATION},
+		{".controller",FileType::ANIMATION_CONTROLLER},
+	};
+};
