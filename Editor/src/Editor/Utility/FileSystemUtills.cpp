@@ -80,7 +80,7 @@ void FileSystemUtils::DuplicateItem(const std::filesystem::path& filename, const
 size_t FileSystemUtils::CountFiles_Recursively(const std::filesystem::path& filename)
 {
 	size_t counter = 0;
-	for (auto& file : std::filesystem::recursive_directory_iterator(filename))
+	for (auto file : std::filesystem::recursive_directory_iterator(filename))
 	{
 		++counter;
 	}
@@ -90,7 +90,7 @@ size_t FileSystemUtils::CountFiles_Recursively(const std::filesystem::path& file
 size_t FileSystemUtils::CountFiles_NonRecursive(const std::filesystem::path& filename)
 {
 	size_t counter = 0;
-	for (auto& file : std::filesystem::directory_iterator(filename))
+	for (auto file : std::filesystem::directory_iterator(filename))
 	{
 		++counter;
 	}
