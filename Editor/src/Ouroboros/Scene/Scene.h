@@ -23,7 +23,7 @@ namespace oo
 
     public:
         Scene(std::string_view name);
-        virtual ~Scene();
+        virtual ~Scene() = default;
 
         virtual void Init() override;
         virtual void Update() override;
@@ -36,16 +36,16 @@ namespace oo
         virtual void UnloadScene() override;
         virtual void ReloadScene() override;
 
-        virtual LoadStatus GetProgress() override;
+        virtual LoadStatus GetProgress() const override;
 
         std::string GetFilePath() const;
         std::string GetSceneName() const;
 
-        std::weak_ptr<GameObject> CreateGameObject();
+        std::shared_ptr<GameObject> CreateGameObject();
 
         // Attempts to search the lookup table with uuid.
         // returns the gameobject if it does
-        // else returns max.
+        // else returns nullptr.
         std::shared_ptr<GameObject> FindWithInstanceID(UUID uuid);
         
         bool IsValid(GameObject go) const;
@@ -60,7 +60,7 @@ namespace oo
 
         Ecs::ECSWorld& GetWorld();
         scenegraph GetGraph() const;
-        GameObject* GetRoot() const;
+        std::shared_ptr<GameObject> GetRoot() const;
 
     protected:
         void SetFilePath(std::string_view filepath);
@@ -79,7 +79,7 @@ namespace oo
         std::map<UUID, std::shared_ptr<oo::GameObject>> m_lookupTable;
 
         Ecs::ECSWorld m_ecsWorld;
-        scenegraph m_scenegraph;
-        std::shared_ptr<GameObject> m_root;
+        std::unique_ptr<scenegraph> m_scenegraph;
+        std::shared_ptr<GameObject> m_rootGo;
     };
 }

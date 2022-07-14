@@ -15,27 +15,34 @@
 
 namespace oo
 {
-    Scene::Scene(std::string_view name) : 
-        m_name{ "default name" },
-        m_filepath{ "unassigned filepath" },
-        m_removeList {},
-        m_lookupTable {},
-        m_ecsWorld {},
-        m_scenegraph { m_name + " scenegraph" },
-        m_root{ CreateGameObject().lock() },
-        //m_root{ CreateGameObject() },
-        IScene() 
+    Scene::Scene(std::string_view name) 
+        : m_name{ "default name" }
+        , m_filepath{ "unassigned filepath" }
+        , m_removeList {}
+        , m_lookupTable {}
+        , m_ecsWorld {}
+        , m_scenegraph { std::make_unique<scenegraph>("scenegraph") }
+        , m_rootGo{ std::make_shared<GameObject>(*this) }
     {
-    }
-    
-    Scene::~Scene()
-    {
-        /*m_removeList.clear();
+        if (scenegraph::shared_pointer root = m_scenegraph->get_root())
+        {
+            auto comp = m_rootGo->TryGetComponent<GameObjectComponent>();
+            if (comp)
+            {
+                scenenode::raw_pointer& node = comp->Node;
+                node = root.get();
+                if (node == nullptr)
+                {
+                    LOG_ERROR("Shouldn't be null");
+                }
+                else
+                {
+                    LOG_INFO("SUCCESS!");
+                }
+            }
 
-        for (auto& [uuid, go] : m_lookupTable)
-            go.reset();
-        
-        m_lookupTable.clear();*/
+        }
+        //m_lookupTable.emplace(m_rootGo->GetInstanceID(), m_rootGo);
     }
 
     void Scene::Init()
@@ -102,7 +109,7 @@ namespace oo
         PRINT(m_name);
     }
 
-    LoadStatus Scene::GetProgress()
+    LoadStatus Scene::GetProgress() const
     {
         PRINT(m_name);
         return LoadStatus();
@@ -128,11 +135,15 @@ namespace oo
         return m_name; 
     }
 
-    std::weak_ptr<GameObject> Scene::CreateGameObject()
+    std::shared_ptr<GameObject> Scene::CreateGameObject()
     {
-        std::shared_ptr<GameObject> newObjectPtr = std::make_shared<GameObject>(this);
+        std::shared_ptr<GameObject> newObjectPtr = std::make_shared<GameObject>(*this);
         // IMPT: we are using the uuid to retrieve back the gameobject as well!
-        //newObjectPtr->GetComponent<GameObjectComponent>().Node = m_scenegraph.create_new_child(newObjectPtr->Name(), newObjectPtr->GetInstanceID());
+        //auto name = newObjectPtr->Name();
+        auto name = "Just a default for now";
+        auto shared_ptr = m_scenegraph->create_new_child(name, newObjectPtr->GetInstanceID());
+        newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr.get();
+        //auto use_count = weak_ptr.use_count();
         m_lookupTable.emplace(newObjectPtr->GetInstanceID(), newObjectPtr);
 
         return newObjectPtr;
@@ -175,9 +186,9 @@ namespace oo
         // Then continue to destroy all its children
         for (auto const& childuuid : go.GetChildrenUUID())
         {
-            auto go = FindWithInstanceID(childuuid);
-            if(go)
-                DestroyGameObject(*go);
+            auto childobj = FindWithInstanceID(childuuid);
+            if(childobj)
+                DestroyGameObject(*childobj);
             else            
                 LOG_CORE_ERROR("attempting to remove an invalid uuid {0} from scene {1}", childuuid, m_name);
         }
@@ -198,11 +209,11 @@ namespace oo
 
     scenegraph Scene::GetGraph() const
     {
-        return m_scenegraph;
+        return *m_scenegraph;
     }
 
-    GameObject * Scene::GetRoot() const
+    std::shared_ptr<GameObject> Scene::GetRoot() const
     {
-        return m_root.get();
+        return m_rootGo;
     }
 }

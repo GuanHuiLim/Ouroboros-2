@@ -32,30 +32,31 @@ namespace oo
     //}
 
     // Create is a dummy type
-    GameObject::GameObject(Scene* scene)
+    GameObject::GameObject(Scene& scene)
         : GameObject{ UUID{}, scene }
     {
     }
 
-    GameObject::GameObject(UUID uuid, Scene* scene)
-        : m_scene { scene }
-        , m_entity{ scene->GetWorld().new_entity() }
+    GameObject::GameObject(UUID uuid, Scene& scene)
+        : m_scene { &scene }
+        , m_entity{ scene.GetWorld().new_entity() }
     {
         // Order matters, dont swap it for no reason!
         AddComponent<GameObjectComponent>().Id = uuid;
-        AddComponent<Transform3D>();
+        //AddComponent<Transform3D>();
     }
 
     //Conversion from entt to gameobject
-    GameObject::GameObject(Entity entt, Scene* scene)
-        : m_scene{ scene }
+    GameObject::GameObject(Entity entt, Scene& scene)
+        : m_scene{ &scene }
         , m_entity{ entt }
     {
     }
 
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
-        GetSceneNode()->add_child(child.GetSceneNode().get());
+        // TODO!
+        //GetSceneNode()->add_child(child.GetSceneNode());
         
         // perform some immediate transformation if required.
     }
@@ -120,10 +121,10 @@ namespace oo
         //CalculateHierarchyActive(*this, hierarchyActive);
     }
 
-    void GameObject::SetName(std::string_view name) const
+    /*void GameObject::SetName(std::string_view name) const
     {
         GetComponent<GameObjectComponent>().Name = name;
-    }
+    }*/
 
     //void GameObject::CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const
     //{

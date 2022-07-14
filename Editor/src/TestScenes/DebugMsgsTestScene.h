@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file          DefaultTestScene.h
+\file          DebugMsgsTestScene.h
 \project       Ouroboros
 \author        Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par           email: c.tecklee\@digipen.edu
@@ -15,22 +15,22 @@ Technology is prohibited.
 
 #include "Ouroboros/Scene/Scene.h"
 
-class DefaultTestScene final : public oo::Scene
+class DebugMsgsTestScene final : public IScene
 {
 private:
     inline static bool m_print_debug_msgs = true;
 
+    std::string GetSceneName() const { return "Debug Msgs Test Scene"; }
 public:
 
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
 
-    DefaultTestScene(bool print_debug_msgs = true)
-        : Scene{ "Default Test Scene" } 
+    DebugMsgsTestScene(bool print_debug_msgs = true)
     { 
         m_print_debug_msgs = print_debug_msgs;
     }
     
-    virtual ~DefaultTestScene() = default;
+    virtual ~DebugMsgsTestScene() = default;
 
     virtual void Init() override final 
     { 

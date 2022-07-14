@@ -54,7 +54,7 @@ public:
         //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
-        
+
         // Main Layers
         m_layerset.PushLayer(std::make_shared<EditorLayer>());
 
@@ -68,6 +68,7 @@ public:
 
     void OnUpdate() override
     {
+
         m_imGuiAbstract->Begin();
 
         m_layerset.Update();

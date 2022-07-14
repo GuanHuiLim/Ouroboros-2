@@ -20,7 +20,9 @@ Technology is prohibited.
 #include "Ouroboros/Core/Base.h"
 #include "Ouroboros/Core/Layer.h"
 
-#include "TestScenes/DefaultTestScene.h"
+#include "TestScenes/TestScene.h"
+#include "TestScenes/DebugMsgsTestScene.h"
+#include "TestScenes/ECSTestScene.h"
 
 class MainDebugLayer final : public oo::Layer
 {
@@ -32,7 +34,7 @@ private:
     SceneManager::key_type AddScene(Args... args)
     {
         auto fullname = std::string(typeid(Scene).name()).substr(6);
-        auto finalName = fullname;
+        std::string finalName = fullname;
         std::size_t additional_index = 1;
         while (std::find_if(m_scenes.begin(), m_scenes.end(),
             [&](auto&& name_key_pair)
@@ -58,8 +60,12 @@ public:
 
     void OnAttach() override final
     {
-        bool print_debug_messages = true;
-        AddScene<DefaultTestScene>(print_debug_messages);
+        //AddScene<TestScene>();
+        //bool print_debug_messages = true;
+        //AddScene<DebugMsgsTestScene>(print_debug_messages);
+        //AddScene<ECSTestScene>();
+        oo::Scene test("default test");
+        //AddScene<oo::Scene>("Default test");
 
         /*AddScene<PhysicsTestScene>();
         AddScene<RenderingTestScene>();

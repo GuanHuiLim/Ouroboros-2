@@ -41,7 +41,6 @@ namespace oo
 
     private:
         Scene* m_scene      = nullptr;
-        //Ecs::ECSWorld* m_ecsworld   = nullptr;
         Entity m_entity     = NOTFOUND; //default to not found
 
     /*---------------------------------------------------------------------------------*/
@@ -52,16 +51,19 @@ namespace oo
         Transform3D& Transform()                    const { ASSERT_MSG(!HasComponent<Transform3D>(), "Invalid ID");          return GetComponent<Transform3D>(); };
         bool IsActive()                             const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Active; }
         bool ActiveInHierarchy()                    const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().ActiveInHierarchy; }
-        std::string& Name()                         const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Name; }
+        
+        // only done after ecs able to return dynamic objects
+        //std::string& Name()                         const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Name; }
         UUID GetInstanceID()                        const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Id; }
-        scenenode::shared_pointer GetSceneNode()    const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node.lock(); }
+        scenenode::raw_pointer GetSceneNode()       const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node; }
         Entity GetEntity()                          const { return m_entity; }
         //Ecs::ECSWorld const GetWorld()              const { ASSERT_MSG(m_scene == nullptr, "GameObject has invalid scene"); return m_scene->GetWorld(); } // ptr to read-only ECS World
         Scene const* GetScene()                     const { return m_scene; } 
 
         // Setters
         void SetActive(bool active) const;
-        void SetName(std::string_view name) const;
+        // only done after ecs able to move objects dynamically
+        //void SetName(std::string_view name) const;
 
         // Rule of 5
         GameObject() = default;
@@ -71,13 +73,13 @@ namespace oo
         GameObject& operator=(GameObject&&) = default;
 
         // Explicit Instantiation constructor
-        explicit GameObject(Scene* scene);
+        explicit GameObject(Scene& scene);
 
         // Traditional Construct GameObject Based on UUID
-        GameObject(UUID uuid, Scene* scene);
+        GameObject(UUID uuid, Scene& scene);
 
         // Non-Traditional Copy Construct GameObject Based on Entity
-        GameObject(Entity entt, Scene* scene);
+        GameObject(Entity entt, Scene& scene);
 
         // Scene-graph Related Functions
         void AddChild(GameObject const& child, bool preserveTransforms = false) const;
@@ -105,7 +107,7 @@ namespace oo
         template<typename Component>
         Component* TryGetComponent() const
         {
-            return HasComponent<Component>() ? GetComponent<Component>(): nullptr;
+            return HasComponent<Component>() ? &GetComponent<Component>() : nullptr;
         }
 
         template<typename Component>
