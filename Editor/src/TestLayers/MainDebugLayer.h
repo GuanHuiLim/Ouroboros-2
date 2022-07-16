@@ -60,20 +60,17 @@ public:
 
     void OnAttach() override final
     {
+        // - empty test scene. most basic test scene
         //AddScene<TestScene>();
+        // - debug print test scene for debug msgs
         //bool print_debug_messages = true;
         //AddScene<DebugMsgsTestScene>(print_debug_messages);
-        //AddScene<ECSTestScene>();
-        oo::Scene test("default test");
+        // - ecs testing ground
+        AddScene<ECSTestScene>();
+        // - scene testing ground
         //AddScene<oo::Scene>("Default test");
-
-        /*AddScene<PhysicsTestScene>();
-        AddScene<RenderingTestScene>();
-        AddScene<RenderManyObjectsScene>();
-        AddScene<UITestScene>();
-        AddScene<AudioTestScene>();
-        AddScene<WaypointTestScene>();*/
-
+        
+        // - make sure this runs last.
         m_sceneManager.Init();
     }
 

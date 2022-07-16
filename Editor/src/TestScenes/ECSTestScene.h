@@ -5,9 +5,11 @@
 
 struct DummyComponent
 {
-    bool simple_test = true;
+    /*bool simple_test = true;
     std::size_t base_test = 999;
-    std::size_t* fake_ptr = nullptr;
+    std::size_t* fake_ptr = nullptr;*/
+
+    std::string this_is_broken = "this is a test string long enough";
 };
 
 struct FakeGameObject;
@@ -44,7 +46,6 @@ struct ECSTestScene final : public TestScene
     ECSTestScene()
     {
         std::shared_ptr<FakeGameObject> fakeGo = m_fakeScene.CreateGO();
-        
     }
 
 };
