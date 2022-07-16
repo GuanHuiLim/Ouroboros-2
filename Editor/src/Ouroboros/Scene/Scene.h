@@ -38,6 +38,8 @@ namespace oo
 
         virtual LoadStatus GetProgress() const override;
 
+    public:
+
         std::string GetFilePath() const;
         std::string GetSceneName() const;
 
@@ -50,6 +52,7 @@ namespace oo
         
         bool IsValid(GameObject go) const;
         void DestroyGameObject(GameObject go);
+        void DestroyGameObjectImmediate(GameObject go);
 
         /*void AddChild(GameObject const& gameObj, bool preserveTransforms = false) const;
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
@@ -59,6 +62,7 @@ namespace oo
         std::vector<Entity> GetChildren(bool includeItself = false) const;*/
 
         Ecs::ECSWorld& GetWorld();
+
         scenegraph GetGraph() const;
         std::shared_ptr<GameObject> GetRoot() const;
 
@@ -70,6 +74,9 @@ namespace oo
         void SaveToFile();
 
     private:
+        void InsertGameObject(std::shared_ptr<GameObject> go_ptr);
+        void RemoveGameObject(std::shared_ptr<GameObject> go_ptr);
+
         std::string m_name;
         std::string m_filepath;
 
@@ -77,6 +84,8 @@ namespace oo
         std::set<UUID> m_removeList;
         // one copy of a lookup table for all gameobjects.
         std::map<UUID, std::shared_ptr<oo::GameObject>> m_lookupTable;
+        // direct copy of all gameobjects in the scene
+        std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 
         Ecs::ECSWorld m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;

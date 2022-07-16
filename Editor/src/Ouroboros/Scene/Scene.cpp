@@ -16,14 +16,19 @@
 namespace oo
 {
     Scene::Scene(std::string_view name) 
-        : m_name{ "default name" }
+        : m_name{ name }
         , m_filepath{ "unassigned filepath" }
         , m_removeList {}
         , m_lookupTable {}
+        , m_gameObjects{}
         , m_ecsWorld {}
         , m_scenegraph { std::make_unique<scenegraph>("scenegraph") }
-        , m_rootGo{ std::make_shared<GameObject>(*this) }
+        , m_rootGo{ nullptr }
     {
+        // differed to initialization after itself exist.
+        m_rootGo = std::make_shared<GameObject>(*this);
+        InsertGameObject(m_rootGo);
+        
         if (scenegraph::shared_pointer root = m_scenegraph->get_root())
         {
             auto comp = m_rootGo->TryGetComponent<GameObjectComponent>();
@@ -40,9 +45,10 @@ namespace oo
                     LOG_INFO("SUCCESS!");
                 }
             }
-
         }
-        //m_lookupTable.emplace(m_rootGo->GetInstanceID(), m_rootGo);
+
+        ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
+
     }
 
     void Scene::Init()
@@ -83,8 +89,7 @@ namespace oo
             );
 
             // Actual Deletion
-            m_ecsWorld.destroy(go_ptr->GetEntity());
-            m_lookupTable.erase(uuid);
+            RemoveGameObject(go_ptr);
         }
         m_removeList.clear();
     }
@@ -140,17 +145,20 @@ namespace oo
         std::shared_ptr<GameObject> newObjectPtr = std::make_shared<GameObject>(*this);
         // IMPT: we are using the uuid to retrieve back the gameobject as well!
         //auto name = newObjectPtr->Name();
-        auto name = "Just a default for now";
+        auto name = "Just a fake default name for now until ecs is fixed";
         auto shared_ptr = m_scenegraph->create_new_child(name, newObjectPtr->GetInstanceID());
         newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr.get();
-        //auto use_count = weak_ptr.use_count();
-        m_lookupTable.emplace(newObjectPtr->GetInstanceID(), newObjectPtr);
+        InsertGameObject(newObjectPtr);
+        
+        ASSERT_MSG((!IsValid(*newObjectPtr)), "Sanity check, object created should comply");
 
         return newObjectPtr;
     }
 
     std::shared_ptr<GameObject> Scene::FindWithInstanceID(UUID uuid)
     {
+        LOG_INFO("Finding gameobject of instance ID {0}", uuid);
+
         if (m_lookupTable.contains(uuid))
             return m_lookupTable.at(uuid);
 
@@ -161,7 +169,10 @@ namespace oo
     {
         // a valid gameobject will not have its ID as NotFound, will have gameobject component(minimally)
         // and parent will not be equals to NOParent
-        return go.GetScene() == this && m_lookupTable.contains(go.GetInstanceID());
+        return go.GetScene() == this && 
+            std::find_if(m_gameObjects.begin(), m_gameObjects.end(), [&](std::shared_ptr<oo::GameObject> elem) { return *elem == go; }) != m_gameObjects.end();
+        
+        //m_lookupTable.contains(go.GetInstanceID());
 
         //return !(go.GetEntity().value == GameObject::NOTFOUND.value
         //    || go.HasComponent<GameObjectComponent>() == false
@@ -193,6 +204,22 @@ namespace oo
                 LOG_CORE_ERROR("attempting to remove an invalid uuid {0} from scene {1}", childuuid, m_name);
         }
     }
+
+    void Scene::DestroyGameObjectImmediate(GameObject go)
+    {
+        ASSERT_MSG(IsValid(go), "Working on an invalid GameObject");
+
+        std::shared_ptr<GameObject> target = FindWithInstanceID(go.GetInstanceID());
+        // safety check
+        if (target == nullptr)
+        {
+            LOG_CORE_ERROR("Attempting to remove an invalid gameobject {0} with instance ID of {1}", go.GetEntity().value, go.GetInstanceID());
+            return;
+        }
+
+        // Actual Deletion [Immediate]
+        RemoveGameObject(target);
+    }
     
     void Scene::LoadFromFile()
     {
@@ -200,6 +227,21 @@ namespace oo
 
     void Scene::SaveToFile()
     {
+    }
+
+    void Scene::InsertGameObject(std::shared_ptr<GameObject> go_ptr)
+    {
+        m_gameObjects.emplace(go_ptr);
+        m_lookupTable.emplace(go_ptr->GetInstanceID(), go_ptr);
+    }
+
+    void Scene::RemoveGameObject(std::shared_ptr<GameObject> go_ptr)
+    {
+        m_lookupTable.erase(go_ptr->GetInstanceID());
+        m_gameObjects.erase(go_ptr);
+        
+        // actual deletion : Immediate.
+        m_ecsWorld.destroy(go_ptr->GetEntity());
     }
     
     Ecs::ECSWorld& Scene::GetWorld()

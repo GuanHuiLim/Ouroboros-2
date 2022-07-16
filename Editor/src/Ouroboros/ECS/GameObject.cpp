@@ -20,10 +20,6 @@ Technology is prohibited.
 namespace oo
 {
     /*---------------------------------------------------------------------------------*/
-    /* Static Variables                                                                */
-    /*---------------------------------------------------------------------------------*/
-
-    /*---------------------------------------------------------------------------------*/
     /* Static Functions                                                                */
     /*---------------------------------------------------------------------------------*/
     //GameObject GameObject::Instantiate(GameObject source)
@@ -39,10 +35,13 @@ namespace oo
 
     GameObject::GameObject(UUID uuid, Scene& scene)
         : m_scene { &scene }
-        , m_entity{ scene.GetWorld().new_entity() }
+        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent>() }
     {
         // Order matters, dont swap it for no reason!
-        AddComponent<GameObjectComponent>().Id = uuid;
+        auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(m_entity);
+        goComp.Id = uuid;
+        //GetComponent<GameObjectComponent>().Id = uuid;
+        
         //AddComponent<Transform3D>();
     }
 
@@ -51,6 +50,13 @@ namespace oo
         : m_scene{ &scene }
         , m_entity{ entt }
     {
+    }
+
+    void GameObject::Destroy()
+    {
+        ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+        ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
+        m_scene->DestroyGameObject(*this);
     }
 
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
