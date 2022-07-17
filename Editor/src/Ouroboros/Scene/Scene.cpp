@@ -144,16 +144,7 @@ namespace oo
     std::shared_ptr<GameObject> Scene::CreateGameObject()
     {
         std::shared_ptr<GameObject> newObjectPtr = std::make_shared<GameObject>(*this);
-        // IMPT: we are using the uuid to retrieve back the gameobject as well!
-        //auto name = newObjectPtr->Name();
-        auto name = "Just a fake default name for now until ecs is fixed";
-        auto shared_ptr = m_scenegraph->create_new_child(name, newObjectPtr->GetInstanceID());
-        newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr;
-        InsertGameObject(newObjectPtr);
-        
-        ASSERT_MSG((!IsValid(*newObjectPtr)), "Sanity check, object created should comply");
-
-        return newObjectPtr;
+        return CreateGameObject(newObjectPtr);
     }
 
     std::shared_ptr<GameObject> Scene::FindWithInstanceID(UUID uuid)
@@ -221,6 +212,12 @@ namespace oo
         // Actual Deletion [Immediate]
         RemoveGameObject(target);
     }
+
+    std::shared_ptr<GameObject> Scene::InstatiateGameObject(GameObject go)
+    {
+        std::shared_ptr<GameObject> new_instance = std::make_shared<GameObject>(go.Duplicate());
+        return CreateGameObject(new_instance);
+    }
     
     void Scene::LoadFromFile()
     {
@@ -228,6 +225,21 @@ namespace oo
 
     void Scene::SaveToFile()
     {
+    }
+
+    std::shared_ptr<GameObject> Scene::CreateGameObject(std::shared_ptr<GameObject> new_go)
+    {
+        std::shared_ptr<GameObject> newObjectPtr = new_go;
+        // IMPT: we are using the uuid to retrieve back the gameobject as well!
+        auto& name = newObjectPtr->Name();
+        //auto name = "Just a fake default name for now until ecs is fixed";
+        auto shared_ptr = m_scenegraph->create_new_child(name, newObjectPtr->GetInstanceID());
+        newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr;
+        InsertGameObject(newObjectPtr);
+
+        ASSERT_MSG((!IsValid(*newObjectPtr)), "Sanity check, object created should comply");
+
+        return newObjectPtr;
     }
 
     void Scene::InsertGameObject(std::shared_ptr<GameObject> go_ptr)

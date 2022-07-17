@@ -54,6 +54,7 @@ namespace oo
         void DestroyGameObject(GameObject go);
         void DestroyGameObjectImmediate(GameObject go);
 
+        std::shared_ptr<GameObject> InstatiateGameObject(GameObject go);
         /*void AddChild(GameObject const& gameObj, bool preserveTransforms = false) const;
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
         void SwapChildren(GameObject const& other);
@@ -74,6 +75,7 @@ namespace oo
         void SaveToFile();
 
     private:
+        std::shared_ptr<GameObject> CreateGameObject(std::shared_ptr<GameObject> new_go);
         void InsertGameObject(std::shared_ptr<GameObject> go_ptr);
         void RemoveGameObject(std::shared_ptr<GameObject> go_ptr);
 

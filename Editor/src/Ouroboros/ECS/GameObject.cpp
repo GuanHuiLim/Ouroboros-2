@@ -22,10 +22,14 @@ namespace oo
     /*---------------------------------------------------------------------------------*/
     /* Static Functions                                                                */
     /*---------------------------------------------------------------------------------*/
-    //GameObject GameObject::Instantiate(GameObject source)
-    //{
-    //    return static_cast<GameObject>(WorldManager::GetActiveWorld().DuplicateEntity(source));
-    //}
+    GameObject GameObject::Duplicate()
+    {
+        UUID new_uuid = UUID{};
+        Entity new_entt = m_scene->GetWorld().duplicate_entity(m_entity);
+        GameObject new_gameObject{ new_entt, *m_scene };
+        m_scene->GetWorld().get_component<GameObjectComponent>(new_entt).Id = new_uuid;
+        return new_gameObject;
+    }
 
     // Create is a dummy type
     GameObject::GameObject(Scene& scene)
@@ -35,14 +39,10 @@ namespace oo
 
     GameObject::GameObject(UUID uuid, Scene& scene)
         : m_scene { &scene }
-        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent>() }
+        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, Transform3D>() }
     {
-        // Order matters, dont swap it for no reason!
         auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(m_entity);
         goComp.Id = uuid;
-        //GetComponent<GameObjectComponent>().Id = uuid;
-        
-        //AddComponent<Transform3D>();
     }
 
     //Conversion from entt to gameobject
@@ -70,15 +70,16 @@ namespace oo
         // perform some immediate transformation if required.
     }
 
-    //void GameObject::AddChild(std::initializer_list<GameObject> gos, bool preserveTransforms) const
-    //{
-    //    ASSERT_MSG(IsValid(m_entity), "Working on an invalid Entity");
+    void GameObject::AddChild(std::initializer_list<GameObject> gos, bool preserveTransforms) const
+    {
+        ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+        ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
 
-    //    for (auto go : gos)
-    //    {
-    //        AddChild(go, preserveTransforms);
-    //    }
-    //}
+        for (auto go : gos)
+        {
+            AddChild(go, preserveTransforms);
+        }
+    }
 
     //void GameObject::SwapChildren(GameObject const& other)
     //{
@@ -130,10 +131,10 @@ namespace oo
         //CalculateHierarchyActive(*this, hierarchyActive);
     }
 
-    /*void GameObject::SetName(std::string_view name) const
+    void GameObject::SetName(std::string_view name) const
     {
         GetComponent<GameObjectComponent>().Name = name;
-    }*/
+    }
 
     //void GameObject::CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const
     //{
