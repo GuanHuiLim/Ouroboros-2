@@ -56,7 +56,7 @@ namespace oo
         // only done after ecs able to return dynamic objects
         //std::string& Name()                         const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Name; }
         UUID GetInstanceID()                        const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Id; }
-        scenenode::raw_pointer GetSceneNode()       const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node; }
+        scenenode::weak_pointer GetSceneNode()       const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node; }
         Entity GetEntity()                          const { return m_entity; }
         //Ecs::ECSWorld const GetWorld()              const { ASSERT_MSG(m_scene == nullptr, "GameObject has invalid scene"); return m_scene->GetWorld(); } // ptr to read-only ECS World
         Scene const* GetScene()                     const { return m_scene; }

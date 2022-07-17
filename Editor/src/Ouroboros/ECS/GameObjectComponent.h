@@ -15,15 +15,15 @@ namespace oo
         // Should be string, but just string_view for now until ecs is fixed
         const std::string_view Name = "Default Name Long enough for no short string optimization";
 
-        scenenode::raw_pointer Node = nullptr;
+        scenenode::weak_pointer Node = {};//= nullptr;
 
         //components must have all 5 : default ctor, copy and move ctor/assignment
 
-        GameObjectComponent() = default;
+        /*GameObjectComponent() = default;
         GameObjectComponent(GameObjectComponent const& copyconstruct) = default;
-        GameObjectComponent& operator=(GameObjectComponent const& copyassign) = default;
+        GameObjectComponent& operator=(GameObjectComponent const& copyassign) = default;*/
         
-        GameObjectComponent(GameObjectComponent&& other) noexcept
+        /*GameObjectComponent(GameObjectComponent&& other) noexcept
             : Name {std::move(other.Name)}
             , Node {std::move(other.Node)}
             , Active {std::move(other.Active)}
@@ -36,7 +36,7 @@ namespace oo
         {
             *this = std::move(moveassign);
             return *this;
-        }
+        }*/
         
         /*GameObjectComponent(GameObjectComponent&& moveconstruct) noexcept = default;
         GameObjectComponent& operator=(GameObjectComponent&& moveassign) noexcept = default;*/

@@ -34,9 +34,10 @@ namespace oo
             auto comp = m_rootGo->TryGetComponent<GameObjectComponent>();
             if (comp)
             {
-                scenenode::raw_pointer& node = comp->Node;
-                node = root.get();
-                if (node == nullptr)
+                //scenenode::raw_pointer& node = comp->Node;
+                //node = root.get();
+                //if (node == nullptr)
+                if(root)
                 {
                     LOG_ERROR("Shouldn't be null");
                 }
@@ -147,7 +148,7 @@ namespace oo
         //auto name = newObjectPtr->Name();
         auto name = "Just a fake default name for now until ecs is fixed";
         auto shared_ptr = m_scenegraph->create_new_child(name, newObjectPtr->GetInstanceID());
-        newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr.get();
+        newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr;
         InsertGameObject(newObjectPtr);
         
         ASSERT_MSG((!IsValid(*newObjectPtr)), "Sanity check, object created should comply");

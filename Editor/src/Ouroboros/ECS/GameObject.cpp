@@ -62,7 +62,10 @@ namespace oo
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
         // TODO!
-        //GetSceneNode()->add_child(child.GetSceneNode());
+        scenenode::shared_pointer parentNode = GetSceneNode().lock();
+        scenenode::shared_pointer childNode = child.GetSceneNode().lock();
+        if(parentNode && childNode)
+            parentNode->add_child(childNode);
         
         // perform some immediate transformation if required.
     }
@@ -87,7 +90,7 @@ namespace oo
 
     UUID GameObject::GetParentUUID() const
     {
-        auto scenenode = GetSceneNode();
+        auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
         // parent handle is uuid : behaviours defined in scene when we set this value!
         return scenenode->get_parent_handle();
@@ -95,7 +98,7 @@ namespace oo
 
     std::vector<UUID> GameObject::GetDirectChildsUUID(bool includeItself) const
     {
-        auto scenenode = GetSceneNode();
+        auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
         auto container = scenenode->get_direct_child_handles();
         std::vector<UUID> result;
@@ -106,7 +109,7 @@ namespace oo
 
     std::vector<UUID> GameObject::GetChildrenUUID(bool includeItself) const
     {
-        auto scenenode = GetSceneNode();
+        auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
         auto container = scenenode->get_all_child_handles();
         std::vector<UUID> result;

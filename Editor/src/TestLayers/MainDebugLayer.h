@@ -66,9 +66,9 @@ public:
         //bool print_debug_messages = true;
         //AddScene<DebugMsgsTestScene>(print_debug_messages);
         // - ecs testing ground
-        AddScene<ECSTestScene>();
+        //AddScene<ECSTestScene>();
         // - scene testing ground
-        //AddScene<oo::Scene>("Default test");
+        AddScene<oo::Scene>("Default test");
         
         // - make sure this runs last.
         m_sceneManager.Init();
