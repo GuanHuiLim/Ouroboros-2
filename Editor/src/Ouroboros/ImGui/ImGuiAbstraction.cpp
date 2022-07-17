@@ -20,8 +20,8 @@ Technology is prohibited.
 
 #include <sdl2/SDL.h>
 
-#include <imgui.h>
-#include <backends/imgui_impl_sdl.h>
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_sdl.h>
 
 #include "Ouroboros/EventSystem/EventManager.h"
 

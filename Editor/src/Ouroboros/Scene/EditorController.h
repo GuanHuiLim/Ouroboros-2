@@ -17,7 +17,7 @@ Technology is prohibited.
 #include <string>
 #include <memory>
 
-#include <SceneManager.h>
+#include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/EventSystem/Event.h>
 
 #include "RuntimeController.h"

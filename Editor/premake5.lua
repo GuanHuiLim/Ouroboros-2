@@ -37,13 +37,16 @@ project "Editor"
     includedirs
     {
         "src",
+
+        --"%{AppVendor}",
+
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.VulkanSDK}",
         "%{IncludeDir.SDL}",
         
         "%{IncludeDir.imgui}",
-        "%{IncludeDir.imgui}/backends",
-        "%{IncludeDir.imgui}/misc/cpp",
+        --"%{IncludeDir.imgui}/backends",
+        --"%{IncludeDir.imgui}/misc/cpp",
 
         "%{IncludeDir.glm}",
         "%{IncludeDir.rapidjson}",
@@ -51,9 +54,10 @@ project "Editor"
         "%{IncludeDir.launcher}",
         "%{IncludeDir.ecs}",
 
-        "%{IncludeDir.quaternion}",
-        "%{IncludeDir.scenegraph}",
-        "%{IncludeDir.scene}",
+        "%{IncludeDir.sharedlib}",
+        --"%{IncludeDir.quaternion}",
+        --"%{IncludeDir.scenegraph}",
+        --"%{IncludeDir.scene}",
     }
 
     -- library diretories

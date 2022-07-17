@@ -22,9 +22,10 @@ project "SharedLib"
 
     includedirs
     {
-        "%{IncludeDir.scenegraph}",
-        "%{IncludeDir.scene}",
-        "%{IncludeDir.quaternion}",
+        "%{IncludeDir.sharedlib}",
+        --"%{IncludeDir.scenegraph}",
+        --"%{IncludeDir.scene}",
+        --"%{IncludeDir.quaternion}",
         --"Oroborous-Launcher/Launcher",
         --"%{IncludeDir.imgui}",
         --"%{IncludeDir.rapidjson}",

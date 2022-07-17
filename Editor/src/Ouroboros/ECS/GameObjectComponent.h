@@ -2,7 +2,7 @@
 
 #include <string>
 #include "Utility/UUID.h"
-#include <scenenode.h>
+#include <scenegraph/include/scenenode.h>
 
 namespace oo
 {

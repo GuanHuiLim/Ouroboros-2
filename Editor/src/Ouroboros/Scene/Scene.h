@@ -1,10 +1,10 @@
 #pragma once
 
-#include <IScene.h>
+#include <SceneManagement/include/IScene.h>
 #include "Ouroboros/EventSystem/Event.h"
 
-#include <scenegraph.h>
-#include <A_Ecs.h>
+#include <scenegraph/include/scenegraph.h>
+#include <Archetypes_ECS/src/A_Ecs.h>
 #include <set>
 #include "Utility/UUID.h"
 

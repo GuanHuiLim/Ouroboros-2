@@ -25,21 +25,21 @@ Technology is prohibited.
 #include <Ouroboros/EventSystem/EventManager.h>
 
 // Debug Layers
-#include "TestLayers/InputDebugLayer.h"
-#include "TestLayers/MainDebugLayer.h"
+#include "Testing/TestLayers/InputDebugLayer.h"
+#include "Testing/TestLayers/MainDebugLayer.h"
 
 // Core Essential Layers
-#include "CoreLayers/SceneLayer.h"
-#include "Corelayers/EditorLayer.h"
+#include "App/CoreLayers/SceneLayer.h"
+#include "App/Corelayers/EditorLayer.h"
 
 // External includes
-#include <imgui.h>
+#include <imgui/imgui.h>
 
 //Shared Library related includes
-#include <SceneManager.h>
-#include <Transform.h>
-#include <Quaternion.h>
-#include <Scenegraph.h>
+#include <SceneManagement/include/SceneManager.h>
+#include <Quaternion/include/Transform.h>
+#include <Quaternion/include/Quaternion.h>
+#include <Scenegraph/include/scenegraph.h>
 
 class EditorApp final : public oo::Application
 {

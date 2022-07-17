@@ -14,7 +14,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "RuntimeController.h"
-#include "SceneManager.h"
+#include <SceneManagement/include/SceneManager.h>
 #include "RuntimeScene.h"
 
 namespace oo
