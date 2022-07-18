@@ -2,15 +2,17 @@
 
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/ECS/GameObject.h>
-
+#include <Ouroboros/Transform/TransformComponent.h>
 #include <stack>
 namespace oo
 {
-    class TransformSystem final
+    class TransformSystem final : public Ecs::System
     {
     public:
-        Scene& m_activeScene;
-
+        //Scene& m_activeScene;
+        TransformSystem() = default;
+        virtual ~TransformSystem() = default;
+        
         void UpdateAllTransforms()
         {
             /*std::shared_ptr<oo::GameObject> rootGo = m_activeScene.GetRoot();
@@ -31,6 +33,9 @@ namespace oo
 
             //readonlygraph = newgraph;
             
+            /*Ecs::Query some_query;
+            some_query.with<Transform3D>().build();
+            
             scenegraph sg = m_activeScene.GetGraph();
             
             auto root_node = sg.get_root();
@@ -49,7 +54,7 @@ namespace oo
                     handles.emplace_back(child->get_handle());
                 }
                 curr = s.top();
-            }
+            }*/
 
             ////root_node->add_child();
             //auto target = root_node->get_direct_child()[9]; //9 scene.h
@@ -64,6 +69,18 @@ namespace oo
             //std::shared_ptr<oo::GameObject> rootGo = m_activeScene.FindWithInstanceID(root_node->get_handle());
             //rootGo->GetComponent<Transform3D>();
             
+        }
+
+        void UpdateTransform(Transform3D& tf)
+        {
+            tf.m_transform.CalculateLocalTransform();
+        }
+        
+        virtual void Run(Ecs::ECSWorld* world) override
+        {
+            Ecs::Query query;
+            query.with<Transform3D>().build();
+            world->for_each(query, [&] (Transform3D& tf) { UpdateTransform(tf); });
         }
 
     };

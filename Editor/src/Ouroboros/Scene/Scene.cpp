@@ -5,7 +5,7 @@
 #include "Ouroboros/Core/Log.h"
 
 #include "Ouroboros/ECS/GameObject.h"
-
+#include "Ouroboros/Transform/TransformSystem.h"
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -57,11 +57,19 @@ namespace oo
         Scene::OnInitEvent e;
         EventManager::Broadcast(&e);
 
+        /*{
+            m_ecsWorld.Add_System<oo::TransformSystem>();
+        }*/
+
         PRINT(m_name);
     }
     
     void Scene::Update()
     {
+        /*{
+            m_ecsWorld.Get_System<oo::TransformSystem>()->Run(&m_ecsWorld);
+        }*/
+
         PRINT(m_name);
     }
     

@@ -5,11 +5,24 @@
 
 struct DummyComponent
 {
-    /*bool simple_test = true;
-    std::size_t base_test = 999;
-    std::size_t* fake_ptr = nullptr;*/
+    std::string dynamic_allocated_data_types_ok = "this is a test string long enough";
+};
 
-    std::string this_is_broken = "this is a test string long enough";
+struct DummySystem : public Ecs::System
+{
+    void Update(DummyComponent& comp)
+    {
+        // do nothing.
+    }
+
+public:
+
+    virtual void Run(Ecs::ECSWorld * world) override
+    {
+        Ecs::Query query;
+        query.with<DummyComponent>().build();
+        world->for_each(query, [&](DummyComponent& comp) { Update(comp); });
+    }
 };
 
 struct FakeGameObject;
@@ -26,6 +39,19 @@ struct FakeScene
         m_cont.emplace(fake_uuid, fakego);
         return fakego;
     }
+
+    void Init()
+    {
+        // Problematic Statement #1
+        //world.Add_System<DummySystem>();
+    }
+
+    void Update()
+    {
+        // Problematic Statement #2
+        //world.Get_System<DummySystem>()->Run(&world);
+    }
+
 };
 
 struct FakeGameObject
@@ -46,6 +72,10 @@ struct ECSTestScene final : public TestScene
     ECSTestScene()
     {
         std::shared_ptr<FakeGameObject> fakeGo = m_fakeScene.CreateGO();
+        
+        // inspect these functions for problematic statements
+        m_fakeScene.Init();
+        m_fakeScene.Update();
     }
 
 };

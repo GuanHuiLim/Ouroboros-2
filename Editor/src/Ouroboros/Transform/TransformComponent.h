@@ -60,5 +60,7 @@ namespace oo
 
     private:
         Transform m_transform;
+
+        friend class TransformSystem;
     };
 }
