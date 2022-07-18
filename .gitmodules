@@ -1,8 +1,8 @@
 [submodule "Editor/vendor/spdlog"]
 	path = Editor/vendor/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "Editor/vendor/imgui"]
-	path = Editor/vendor/imgui
+[submodule "Editor/vendor/New folder"]
+	path = Editor/vendor/New folder
 	url = https://github.com/spironan/imgui-docking
 [submodule "Editor/vendor/rttr"]
 	path = Editor/vendor/rttr
