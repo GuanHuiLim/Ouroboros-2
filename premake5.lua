@@ -41,7 +41,7 @@ workspace "Ouroboros"
 
 
 group "Dependencies"
-include "Editor/vendor/imgui/imgui"
+include "Editor/vendor/imgui"
 include "Editor/vendor/launcher"
 include "Editor/vendor/Archetypes_Ecs"
 include "Editor/vendor/sharedlib"
