@@ -52,11 +52,17 @@ namespace oo
 
     }
 
+    Scene::~Scene()
+    {
+        delete m_transformSystem;
+    }
+
     void Scene::Init()
     {
         Scene::OnInitEvent e;
         EventManager::Broadcast(&e);
-
+        
+        m_transformSystem = new TransformSystem();
         /*{
             m_ecsWorld.Add_System<oo::TransformSystem>();
         }*/
@@ -69,7 +75,7 @@ namespace oo
         /*{
             m_ecsWorld.Get_System<oo::TransformSystem>()->Run(&m_ecsWorld);
         }*/
-
+        m_transformSystem->Run(&m_ecsWorld);
         PRINT(m_name);
     }
     
@@ -121,6 +127,7 @@ namespace oo
     void Scene::ReloadScene()
     {
         PRINT(m_name);
+        delete m_transformSystem;
     }
 
     LoadStatus Scene::GetProgress() const

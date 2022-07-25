@@ -2,6 +2,7 @@
 
 #include"TestScene.h"
 #include <Archetypes_ECS/src/A_Ecs.h>
+#include "Ouroboros/Core/Base.h"
 
 struct DummyComponent
 {
@@ -13,6 +14,7 @@ struct DummySystem : public Ecs::System
     void Update(DummyComponent& comp)
     {
         // do nothing.
+        UNREFERENCED(comp);
     }
 
 public:

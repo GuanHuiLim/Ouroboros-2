@@ -6,7 +6,7 @@
 #include <stack>
 namespace oo
 {
-    class TransformSystem final : public Ecs::System
+    class TransformSystem final /*: public Ecs::System*/
     {
     public:
         //Scene& m_activeScene;
@@ -75,8 +75,8 @@ namespace oo
         {
             tf.m_transform.CalculateLocalTransform();
         }
-        
-        virtual void Run(Ecs::ECSWorld* world) override
+
+        virtual void Run(Ecs::ECSWorld* world)
         {
             Ecs::Query query;
             query.with<Transform3D>().build();

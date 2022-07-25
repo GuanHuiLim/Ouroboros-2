@@ -52,6 +52,17 @@ private:
         return key;
     };
 
+    std::string GetSceneName(SceneManager::key_type key) const
+    {
+        for (auto& [name, scene_key]: m_scenes)
+        {
+            if (scene_key == key)
+                return name;
+        }
+
+        return "not found";
+    }
+
 public:
     MainDebugLayer()
         : Layer{ "Main Debug Layer" }
@@ -67,9 +78,9 @@ public:
         //bool print_debug_messages = true;
         //AddScene<DebugMsgsTestScene>(print_debug_messages);
         // - ecs testing ground
-        AddScene<ECSTestScene>();
+        //AddScene<ECSTestScene>();
         // - scene testing ground
-        //AddScene<oo::Scene>("Default test");
+        AddScene<oo::Scene>("Default test");
         
         // - make sure this runs last.
         m_sceneManager.Init();
@@ -83,6 +94,11 @@ public:
     void OnUpdate() override final
     {
         ImGui::Begin("Debug Scenes!", nullptr, ImGuiWindowFlags_NoDocking);
+        if (m_sceneManager.HasActiveScene())
+        {
+            auto displayText = "Current Debug Scene: " + GetSceneName(m_sceneManager.GetActiveScene().lock()->GetID());
+            ImGui::Text(displayText.c_str());
+        }
         for (auto& scene : m_scenes)
         {
             if (ImGui::Button(scene.first.c_str()))

@@ -12,6 +12,7 @@ namespace oo
 {
     //forward declare
     class GameObject;
+    class TransformSystem;
 
     class Scene : public IScene
     {
@@ -23,7 +24,7 @@ namespace oo
 
     public:
         Scene(std::string_view name);
-        virtual ~Scene() = default;
+        virtual ~Scene();
 
         virtual void Init() override;
         virtual void Update() override;
@@ -73,6 +74,10 @@ namespace oo
 
         void LoadFromFile();
         void SaveToFile();
+    
+        
+    private://for now
+        TransformSystem* m_transformSystem = nullptr;
 
     private:
         std::shared_ptr<GameObject> CreateGameObject(std::shared_ptr<GameObject> new_go);
