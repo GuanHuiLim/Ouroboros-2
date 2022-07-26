@@ -18,13 +18,12 @@ void Hierarchy::Show()
 
 	scenegraph instance{"name"};//the scene graph should be obtained instead.
 	ImGui::BeginChild("search bar", {0,20},true);
+	SearchFilter();
 	ImGui::EndChild();
-
-
 
 	scenenode::shared_pointer root_node = instance.get_root();
 	//collasable 
-
+	std::vector<scenenode::raw_pointer> parents;
 	std::stack<scenenode::raw_pointer> s;
 	scenenode::raw_pointer curr = root_node.get();
 	s.push(curr);
@@ -39,8 +38,11 @@ void Hierarchy::Show()
 				flags = static_cast<ImGuiTreeNodeFlags_>(flags|ImGuiTreeNodeFlags_Selected);
 		}
 		//pass this to scene to get game object
-		if (curr->get_direct_child_count())
+		if (curr->get_direct_child_count())//tree push
+		{
 			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_OpenOnArrow);
+			parents.push_back(curr);
+		}
 		else
 			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
 		
@@ -58,10 +60,28 @@ void Hierarchy::Show()
 		
 		if (open && flags & ImGuiTreeNodeFlags_OpenOnArrow)
 		{
-			for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+			if (curr->empty() == false)
 			{
-				scenenode::shared_pointer child = *iter;
-				s.push(child.get());
+				for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+				{
+					scenenode::shared_pointer child = *iter;
+					s.push(child.get());
+				}
+			}
+			else
+			{
+				auto parent_handle = s.top()->get_parent_handle();
+				while (parents.empty() == false)
+				{
+					auto handle = parents.back()->get_handle();
+					if (handle == parent_handle)
+						break;
+					else
+					{
+						ImGui::TreePop();
+						parents.pop_back();
+					}
+				}
 			}
 		}
 
@@ -138,4 +158,11 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 const std::vector<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
+}
+void Hierarchy::SearchFilter()
+{
+	if (ImGui::InputText("##Filter", &m_filter, ImGuiInputTextFlags_EnterReturnsTrue))
+	{
+
+	}
 }
