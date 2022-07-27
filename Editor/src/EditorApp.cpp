@@ -56,7 +56,7 @@ public:
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
 
         // Main Layers
-        m_layerset.PushLayer(std::make_shared<EditorLayer>());
+        m_layerset.PushLayer(std::make_shared<EditorLayer>(m_sceneManager));
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
         

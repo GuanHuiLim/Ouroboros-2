@@ -19,5 +19,5 @@ public:
 	inline static const ImVec2 image_small = { 20,20 };
 	inline static const ImVec2 image_medium = { 50,50 };
 
-	inline static SceneManager* s_scenemanager = nullptr;
+	inline static SceneManager const* s_scenemanager = nullptr;
 };
