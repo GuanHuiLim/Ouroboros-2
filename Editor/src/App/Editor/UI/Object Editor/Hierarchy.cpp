@@ -16,13 +16,6 @@
 
 Hierarchy::Hierarchy()
 {
-
-	instance.create_new_child("child",1);
-	instance.create_new_child("child1", 2);
-	//auto parent = instance.create_new_child("child2", 3);
-	//auto child = instance.create_new_child("child child", 4);
-	//parent->add_child(child);
-	
 }
 
 void Hierarchy::Show()
@@ -31,7 +24,7 @@ void Hierarchy::Show()
 		m_isDragging = false;//false if not dragging
 	bool found_dragging = false;
 
-	//scenegraph instance{ "name" };//the scene graph should be obtained instead.
+	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
 	ImGui::BeginChild("search bar", { 0,40 }, false);
 	SearchFilter();
 	ImGui::EndChild();

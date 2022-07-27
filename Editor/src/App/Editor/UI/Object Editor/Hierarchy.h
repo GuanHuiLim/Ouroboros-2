@@ -8,7 +8,6 @@ class Hierarchy
 public:
 	Hierarchy();
 	void Show();
-	scenegraph instance{ "name" };
 protected:
 	bool TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flag, bool swaping = false);
 	void SwappingUI(scenenode& node, bool setbelow = true);

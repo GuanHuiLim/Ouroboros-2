@@ -10,6 +10,12 @@
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
+	
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
+	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
+	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
+	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP

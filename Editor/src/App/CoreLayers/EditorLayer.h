@@ -9,7 +9,7 @@
 #include <App/Editor/Utility/ImGuiManager.h>
 
 #include <SceneManagement/include/SceneManager.h>
-
+#include <Ouroboros/Scene/Scene.h>
 struct ImGuiRestartEvent : public oo::Event
 {
 };

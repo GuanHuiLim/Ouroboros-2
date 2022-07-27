@@ -55,6 +55,7 @@ public:
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
 
+        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
         // Main Layers
         m_layerset.PushLayer(std::make_shared<EditorLayer>(m_sceneManager));
 
@@ -62,7 +63,6 @@ public:
         
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         
-        //m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
 
     }
 
