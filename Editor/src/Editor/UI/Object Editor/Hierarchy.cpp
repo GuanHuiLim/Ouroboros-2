@@ -1,8 +1,8 @@
 #include <pch.h>
-#include <Scenegraph.h>
+#include <Scenegraph/include/Scenegraph.h>
 #include <imgui.h>
 //#include <imgui_internal.h>
-#include <imgui_stdlib.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 #include <stack>
 #include <Ouroboros/Core/KeyCode.h>
 #include "Hierarchy.h"

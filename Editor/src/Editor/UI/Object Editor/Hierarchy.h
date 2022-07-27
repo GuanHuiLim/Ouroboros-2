@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <scenenode.h>
+#include <scenegraph/include/scenenode.h>
 #include <string>
 enum ImGuiTreeNodeFlags_;//pre-declare
 class Hierarchy
