@@ -6,6 +6,7 @@
 #include <functional>
 #include <unordered_map>
 #include "ImGuiObject.h"
+#include <SceneManagement/include/SceneManager.h>
 class ImGuiManager
 {
 public:
@@ -17,5 +18,6 @@ public:
 
 	inline static const ImVec2 image_small = { 20,20 };
 	inline static const ImVec2 image_medium = { 50,50 };
-	
+
+	inline static SceneManager* s_scenemanager = nullptr;
 };

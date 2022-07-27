@@ -5,7 +5,8 @@
 
 // Project Tracker related includes
 #include <Launcher/Launcher/ProjectTracker.h>
-
+#include <App/Editor/Editor.h>
+#include <App/Editor/Utility/ImGuiManager.h>
 struct ImGuiRestartEvent : public oo::Event
 {
 };
@@ -18,6 +19,7 @@ private:
     bool m_showDebugInfo = false;
 
     ProjectTracker m_tracker;
+	Editor m_editor;
 public:
     EditorLayer()
         : oo::Layer{ "EditorLayer" }
@@ -27,6 +29,7 @@ public:
         LOG_WARN("Test Warn");
         LOG_ERROR("Test Error");
         LOG_CRITICAL("Test Critical");
+		//ImGuiManager::s_scenemanager = scenemanager;
     }
 
     virtual void OnAttach() override final;

@@ -23,7 +23,7 @@ void EditorLayer::OnUpdate()
     }
 
     ImGuiManager_Launcher::UpdateAllUI();
-
+	m_editor.Update();
     //#if EDITOR_DEBUG || EDITOR_RELEASE
     /*if (m_showDebugInfo)
     {

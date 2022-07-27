@@ -37,7 +37,7 @@ namespace oo
                 //scenenode::raw_pointer& node = comp->Node;
                 //node = root.get();
                 //if (node == nullptr)
-                if(root)
+                if(root == nullptr)
                 {
                     LOG_ERROR("Shouldn't be null");
                 }
