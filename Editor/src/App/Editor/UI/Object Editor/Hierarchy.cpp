@@ -10,6 +10,7 @@
 
 #include <Ouroboros/Core/KeyCode.h>
 #include <Ouroboros/ECS/GameObject.h>
+#include <Scenegraph/include/scenenode.h>
 #include <Scenegraph/include/Scenegraph.h>
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
@@ -20,8 +21,6 @@ Hierarchy::Hierarchy()
 
 void Hierarchy::Show()
 {
-	if (m_isDragging && !ImGui::IsMouseDragging(ImGuiMouseButton_::ImGuiMouseButton_Left))
-		m_isDragging = false;//false if not dragging
 	bool found_dragging = false;
 
 	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
@@ -61,7 +60,7 @@ void Hierarchy::Show()
 			found_dragging = true;
 		}
 
-		bool open = TreeNodeUI("object", *curr, flags, swapping);
+		bool open = TreeNodeUI(std::to_string(curr->get_handle()).c_str(), *curr, flags, swapping);
 		if (open == true && flags & ImGuiTreeNodeFlags_OpenOnArrow)
 		{
 			parents.push_back(curr);
@@ -69,31 +68,29 @@ void Hierarchy::Show()
 
 		//drag and drop option
 
-		if (open && flags & ImGuiTreeNodeFlags_OpenOnArrow)
+
+		if (open && flags & ImGuiTreeNodeFlags_OpenOnArrow && curr->get_direct_child_count())
 		{
-			if (curr->get_direct_child_count())
+			for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
 			{
-				for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
-				{
-					scenenode::shared_pointer child = *iter;
-					s.push(child.get());
-				}
+				scenenode::shared_pointer child = *iter;
+				s.push(child.get());
 			}
-			else
+		}
+		else if(s.empty() == false)
+		{
+			auto parent_handle = s.top()->get_parent_handle();
+			while (parents.empty() == false)
 			{
-				auto parent_handle = s.top()->get_parent_handle();
-				while (parents.empty() == false)
+				auto c_handle = parents.back()->get_handle();
+				if (c_handle == parent_handle)
 				{
-					auto c_handle = parents.back()->get_handle();
-					if (c_handle == parent_handle)
-					{
-						break;
-					}
-					else
-					{
-						ImGui::TreePop();
-						parents.pop_back();
-					}
+					break;
+				}
+				else
+				{
+					ImGui::TreePop();
+					parents.pop_back();
 				}
 			}
 		}
@@ -108,7 +105,8 @@ void Hierarchy::Show()
 		}
 		curr = s.top();
 	}
-
+	if (m_isDragging && !ImGui::IsMouseDragging(ImGuiMouseButton_::ImGuiMouseButton_Left))
+		m_isDragging = false;//false if not dragging
 }
 
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping)
@@ -116,8 +114,21 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	auto handle = node.get_handle();
 	ImGui::PushID(static_cast<int>(handle));
 	bool open = (ImGui::TreeNodeEx(name, flags));
+	if (ImGui::BeginDragDropTarget())
+	{
+		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
+		if (payload)
+		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			auto source = scene->FindWithInstanceID(m_dragged);
+			auto targetparent = scene->FindWithInstanceID(node.get_handle());
+			targetparent->AddChild(*source);//s_selected
+		}
+		ImGui::EndDragDropTarget();
+	}
 	ImGui::PopID();
-	if (ImGui::IsItemHovered() &&
+	bool hovered = ImGui::IsItemHovered();
+	if (hovered &&
 		(ImGui::IsMouseReleased(ImGuiMouseButton_Left)
 			|| ImGui::IsMouseClicked(ImGuiMouseButton_Right)
 			|| ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER))))
@@ -131,19 +142,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		}
 	}
 
-	if (ImGui::BeginDragDropTarget())
-	{
-		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
-		if (payload)
-		{
-			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-			auto source = scene->FindWithInstanceID(m_dragged);
-			auto targetparent = scene->FindWithInstanceID(node.get_handle());
-			targetparent->AddChild(*source);//s_selected
-		}
-		ImGui::EndDragDropTarget();
-	}
-	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload | ImGuiDragDropFlags_SourceAllowNullID))
+	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
 		ImGui::SetDragDropPayload(payload_name, nullptr, 0);
 		m_isDragging = true;
@@ -152,16 +151,28 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		ImGui::Text("Dragging [%s]", "object");
 		ImGui::EndDragDropSource();
 	}
+
 	if (swaping)
-		SwappingUI(node);
+		SwappingUI(node,true);
 	return open;
 }
 
 void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 {
+	ImGui::PushID(node.get_handle());
+	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,1.0f });
+	ImVec2 pos = ImGui::GetCursorPos();
+	ImGui::Selectable("--------", false, ImGuiSelectableFlags_::ImGuiSelectableFlags_None, {0,8.0f});
+	ImGui::PopStyleVar();
 
-	ImGui::Separator();
-
+	if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+	{
+		ImGui::SetCursorPos(pos);
+		ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,5.0f });
+		ImGui::Selectable("----------------------", false, ImGuiSelectableFlags_::ImGuiSelectableFlags_Disabled, { 0,10.0f });
+		ImGui::PopStyleVar();
+	}
+	ImGui::PopID();
 	if (ImGui::BeginDragDropTarget())
 	{
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
@@ -175,6 +186,9 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 			else
 			{
 				//swap as oldest sibling(first object)
+				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+				auto source = scene->FindWithInstanceID(m_dragged);
+				source->GetSceneNode().lock()->move_to(node.shared_from_this());
 			}
 
 		}
