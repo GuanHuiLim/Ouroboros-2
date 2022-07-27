@@ -181,7 +181,9 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 			if (setbelow)
 			{
 				//swap as younger sibling
-				
+				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+				auto source = scene->FindWithInstanceID(m_dragged);
+				source->GetSceneNode().lock()->move_to_after(node.shared_from_this());
 			}
 			else
 			{
