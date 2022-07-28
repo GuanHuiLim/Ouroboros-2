@@ -22,8 +22,10 @@ Hierarchy::Hierarchy()
 void Hierarchy::Show()
 {
 	bool found_dragging = false;
-
+	bool rename_item = false;
 	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	
 	ImGui::BeginChild("search bar", { 0,40 }, false);
 	SearchFilter();
 	ImGui::EndChild();
@@ -39,10 +41,18 @@ void Hierarchy::Show()
 		s.pop();
 		ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_None;
 		auto handle = curr->get_handle();
+		rename_item = false;
 		for (auto selectedhandle : s_selected)
 		{
 			if (handle == selectedhandle)
+			{
 				flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_Selected);
+				break;
+			}
+		}
+		if (m_isRename && m_renaming == handle)
+		{
+			rename_item = true;
 		}
 		//pass this to scene to get game object
 		if (curr->get_direct_child_count())//tree push
@@ -59,8 +69,11 @@ void Hierarchy::Show()
 			swapping = true;
 			found_dragging = true;
 		}
-
-		bool open = TreeNodeUI(std::to_string(curr->get_handle()).c_str(), *curr, flags, swapping);
+		auto source = scene->FindWithInstanceID(curr->get_handle());
+		std::string name = "";
+		if (source)
+			name = source->Name();
+		bool open = TreeNodeUI(name.c_str(), *curr, flags, swapping,rename_item);
 		if (open == true && flags & ImGuiTreeNodeFlags_OpenOnArrow)
 		{
 			parents.push_back(curr);
@@ -107,13 +120,28 @@ void Hierarchy::Show()
 	}
 	if (m_isDragging && !ImGui::IsMouseDragging(ImGuiMouseButton_::ImGuiMouseButton_Left))
 		m_isDragging = false;//false if not dragging
+	if (ImGui::IsKeyDown(ImGuiKey_F2))
+	{
+		m_isRename = true;
+		m_renaming = m_hovered;
+	}
 }
 
-bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping)
+bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename)
 {
 	auto handle = node.get_handle();
 	ImGui::PushID(static_cast<int>(handle));
-	bool open = (ImGui::TreeNodeEx(name, flags));
+	bool open = false;
+	if (!rename)
+		open = (ImGui::TreeNodeEx(name, flags));
+	else
+	{
+		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+		auto source = scene->FindWithInstanceID(node.get_handle());
+		ImGui::SetKeyboardFocusHere();
+		if (ImGui::InputText("##rename", &source->Name(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+			m_isRename = false;
+	}
 	if (ImGui::BeginDragDropTarget())
 	{
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
@@ -128,18 +156,25 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	}
 	ImGui::PopID();
 	bool hovered = ImGui::IsItemHovered();
-	if (hovered &&
-		(ImGui::IsMouseReleased(ImGuiMouseButton_Left)
-			|| ImGui::IsMouseClicked(ImGuiMouseButton_Right)
-			|| ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER))))
+	bool clicked = ImGui::IsMouseReleased(ImGuiMouseButton_Left) | ImGui::IsMouseClicked(ImGuiMouseButton_Right);
+	bool keyenter = ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER));
+	if (hovered)
 	{
-		if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
-			s_selected.push_back(handle);
-		else
+		m_hovered = node.get_handle();
+		if ((clicked || keyenter))
 		{
-			s_selected.clear();
-			s_selected.push_back(handle);
+			if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
+				s_selected.push_back(handle);
+			else
+			{
+				s_selected.clear();
+				s_selected.push_back(handle);
+			}
 		}
+	}
+	else if (clicked)
+	{
+		m_isRename = false;
 	}
 
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
