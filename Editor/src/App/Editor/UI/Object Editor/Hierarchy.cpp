@@ -35,9 +35,16 @@ void Hierarchy::Show()
 	std::vector<scenenode::raw_pointer> parents;
 	std::stack<scenenode::raw_pointer> s;
 	scenenode::raw_pointer curr = root_node.get();
-	s.push(curr);
+
+	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+	{
+		scenenode::shared_pointer child = *iter;
+		s.push(child.get());
+	}
+
 	while (!s.empty())
 	{
+		curr = s.top();
 		s.pop();
 		ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_None;
 		auto handle = curr->get_handle();
@@ -116,7 +123,6 @@ void Hierarchy::Show()
 			}
 			break;
 		}
-		curr = s.top();
 	}
 	if (m_isDragging && !ImGui::IsMouseDragging(ImGuiMouseButton_::ImGuiMouseButton_Left))
 		m_isDragging = false;//false if not dragging

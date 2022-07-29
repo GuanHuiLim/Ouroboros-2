@@ -35,5 +35,6 @@ void Inspector::Show()
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Active", &active))
 			gameobject->SetActive(active);
+		//gameobject->GetComponent<>();
 	}
 }
