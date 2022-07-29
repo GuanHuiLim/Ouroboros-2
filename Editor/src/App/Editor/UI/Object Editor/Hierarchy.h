@@ -8,6 +8,7 @@ class Hierarchy
 public:
 	Hierarchy();
 	void Show();
+	static const std::vector<scenenode::handle_type>& GetSelected();
 protected:
 	bool TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flag, bool swaping = false, bool rename = false);
 	void SwappingUI(scenenode& node, bool setbelow = true);
@@ -17,7 +18,6 @@ protected:
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-	static const std::vector<scenenode::handle_type>& GetSelected();
 
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
