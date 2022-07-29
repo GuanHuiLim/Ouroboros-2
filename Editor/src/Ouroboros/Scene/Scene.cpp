@@ -278,7 +278,7 @@ namespace oo
         return m_ecsWorld;
     }
 
-    scenegraph Scene::GetGraph() const
+    scenegraph const Scene::GetGraph() const
     {
         return *m_scenegraph;
     }

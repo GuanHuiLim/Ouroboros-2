@@ -81,6 +81,31 @@ namespace oo
         }
     }
 
+    GameObject GameObject::GetParent() const
+    {
+        return *m_scene->FindWithInstanceID(GetParentUUID());
+    }
+
+    std::vector<GameObject> GameObject::GetDirectChilds(bool includeItself) const
+    {
+        std::vector<GameObject> gos;
+        
+        for (auto& go : GetDirectChildsUUID())
+            gos.emplace_back(*m_scene->FindWithInstanceID(go));
+        
+        return gos;
+    }
+
+    std::vector<GameObject> GameObject::GetChildren(bool includeItself) const
+    {
+        std::vector<GameObject> gos;
+
+        for (auto& go : GetChildrenUUID())
+            gos.emplace_back(*m_scene->FindWithInstanceID(go));
+
+        return gos;
+    }
+
     //void GameObject::SwapChildren(GameObject const& other)
     //{
     //    ASSERT_MSG(IsValid(m_entity), "Working on an invalid Entity");
@@ -127,8 +152,8 @@ namespace oo
         GetComponent<GameObjectComponent>().Active = active;
 
         //// Determine state of this object's active state in hierarchy
-        //bool hierarchyActive = GetParent().ActiveInHierarchy() && active;
-        //CalculateHierarchyActive(*this, hierarchyActive);
+        bool hierarchyActive = GetParent().ActiveInHierarchy() && active;
+        CalculateHierarchyActive(*this, hierarchyActive);
     }
 
     void GameObject::SetName(std::string_view name) const
@@ -136,18 +161,18 @@ namespace oo
         GetComponent<GameObjectComponent>().Name = name;
     }
 
-    //void GameObject::CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const
-    //{
-    //    // Determine state of this object's active state in hierarchy
-    //    bool hierarchyActive = IsActiveInHierarchy && parent.IsActive();
+    void GameObject::CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const
+    {
+        // Determine state of this object's active state in hierarchy
+        bool hierarchyActive = IsActiveInHierarchy && parent.IsActive();
 
-    //    // Set this object's active state in hierarchy
-    //    parent.GetComponent<GameObjectComponent>().SetHierarchyActive(hierarchyActive);
+        // Set this object's active state in hierarchy
+        parent.GetComponent<GameObjectComponent>().SetHierarchyActive(hierarchyActive);
 
-    //    // Set active In Hierarchy for children to be
-    //    for (auto& child : parent.GetDirectChilds())
-    //    {
-    //        CalculateHierarchyActive(child, hierarchyActive);
-    //    }
-    //}
+        // Set active In Hierarchy for children to be
+        for (auto& child : parent.GetDirectChilds())
+        {
+            CalculateHierarchyActive(child, hierarchyActive);
+        }
+    }
 }

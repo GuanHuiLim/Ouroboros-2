@@ -65,7 +65,7 @@ namespace oo
 
         Ecs::ECSWorld& GetWorld();
 
-        scenegraph GetGraph() const;
+        scenegraph const GetGraph() const;
         std::shared_ptr<GameObject> GetRoot() const;
 
     protected:

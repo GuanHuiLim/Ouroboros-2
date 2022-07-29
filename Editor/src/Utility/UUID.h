@@ -26,7 +26,7 @@ Technology is prohibited.
 class UUID final
 {
 public:
-    using value_type = uint64_t;
+    using value_type = std::uint64_t;
 
     UUID();
     UUID(UUID const& other) = default;

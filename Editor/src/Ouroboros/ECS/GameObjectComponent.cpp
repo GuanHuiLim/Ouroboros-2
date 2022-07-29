@@ -2,7 +2,7 @@
 #include "GameObjectComponent.h"
 
 #include <rttr/registration>
-
+#include <Ouroboros/EventSystem/EventManager.h>
 namespace oo
 {
     RTTR_REGISTRATION
@@ -15,13 +15,26 @@ namespace oo
             //.property("Layer", &GameObjectComponent::GetLayer, &GameObjectComponent::SetLayer)
             .property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy);
     }
-
-    GameObjectComponent::GameObjectComponent()
-        : Active{ true }
-        , ActiveInHierarchy{ true }
-        , Id { }
-        , Name { "Default Name Long enough for no short string optimization" }
-        , Node { }
+    
+    void oo::GameObjectComponent::SetHierarchyActive(bool active)
     {
+        if (ActiveInHierarchy != active)
+        {
+            if(ActiveInHierarchy)
+            {
+                // if was active, call the disable event
+                OnDisableEvent onDisableEvent;
+                oo::EventManager::Broadcast(&onDisableEvent);
+                LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
+            }
+            else
+            {
+                // if was inactive, call the enable event
+                OnEnableEvent onEnableEvent;
+                oo::EventManager::Broadcast(&onEnableEvent);
+                LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
+            }
+            ActiveInHierarchy = active;
+        }
     }
 }

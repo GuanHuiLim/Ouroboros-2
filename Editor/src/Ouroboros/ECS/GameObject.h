@@ -116,6 +116,11 @@ namespace oo
         void AddChild(GameObject const& child, bool preserveTransforms = false) const;
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
         /*void SwapChildren(GameObject const& other);*/
+        
+        GameObject GetParent() const;
+        std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
+        std::vector<GameObject> GetChildren(bool includeItself = false) const;
+        
         UUID GetParentUUID() const;
         std::vector<UUID> GetDirectChildsUUID(bool includeItself = false) const;
         std::vector<UUID> GetChildrenUUID(bool includeItself = false) const;
@@ -176,5 +181,7 @@ namespace oo
             return HasComponent<Component>() ? GetComponent<Component>() : AddComponent<Component>(args...);
         }
 
+    private:
+        void CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const;
     };
 }

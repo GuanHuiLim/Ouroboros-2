@@ -5,6 +5,7 @@
 #include <scenegraph/include/scenenode.h>
 
 #include <rttr/type>
+#include <Ouroboros/EventSystem/Event.h>
 
 namespace oo
 {
@@ -14,13 +15,20 @@ namespace oo
         bool Active = true;
         bool ActiveInHierarchy = true;
         UUID Id;
-
-        // Should be string, but just string_view for now until ecs is fixed
         std::string Name = "Default Name Long enough for no short string optimization";
+        scenenode::weak_pointer Node = {};
+    public:
+        
+        struct OnEnableEvent : public Event
+        {
+        };
 
-        scenenode::weak_pointer Node = {};//= nullptr;
+        struct OnDisableEvent : public Event
+        {
+        };
 
-        GameObjectComponent();
+    public:
+        void SetHierarchyActive(bool active);
 
         RTTR_ENABLE();
     };

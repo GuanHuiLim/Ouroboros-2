@@ -41,6 +41,9 @@ Technology is prohibited.
 #include <Quaternion/include/Quaternion.h>
 #include <Scenegraph/include/scenegraph.h>
 
+
+#include <Ouroboros/Core/Events/ApplicationEvent.h>
+
 class EditorApp final : public oo::Application
 {
 private:
@@ -61,9 +64,9 @@ public:
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
         
+        // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
-        
-
+        oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
     }
 
     void OnUpdate() override
@@ -84,6 +87,11 @@ public:
     void RestartImGui(ImGuiRestartEvent*)
     {
         m_imGuiAbstract->Restart();
+    }
+
+    void CloseApp(oo::WindowCloseEvent*)
+    {
+        Close();
     }
 
 private:
