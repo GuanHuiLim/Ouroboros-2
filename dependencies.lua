@@ -21,7 +21,7 @@ IncludeDir                  = {}
 IncludeDir["glm"]           = AppVendor .. "/glm"
 -- IncludeDir["oom"]           = EngineVendor .. "/oom"   -- custom maths library
 IncludeDir["imgui"]         = AppVendor .. "/imgui"
--- IncludeDir["rttr"]          = EngineVendor .. "/rttr/include"
+IncludeDir["rttr"]          = AppVendor .. "/rttr/src"
 IncludeDir["SDL"]           = AppVendor .. "/sdl2/include"
 IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["stb_image"]     = EngineVendor .. "/stb_image"
@@ -50,7 +50,7 @@ IncludeDir["sharedlib"]     = AppVendor .. "/sharedlib/Isolated-Testing-Ground"
 -- Paths to various external libraries directories
 LibraryDir                  = {}
 -- LibraryDir["mono"]          = EngineVendor .. "/mono/lib"
--- LibraryDir["rttr"]          = EngineVendor .. "/rttr/lib"
+LibraryDir["rttr"]          = AppVendor .. "/rttr/lib"
 LibraryDir["SDL"]           = AppVendor .. "/sdl2/lib/x64"
 -- LibraryDir["fmod"]          = EngineVendor .. "/fmod/core/lib/x64"
 -- LibraryDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/lib/x64"

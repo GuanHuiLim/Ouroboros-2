@@ -50,11 +50,13 @@ project "Editor"
 
         "%{IncludeDir.glm}",
         "%{IncludeDir.rapidjson}",
+        "%{IncludeDir.rttr}",
 
         "%{IncludeDir.launcher}",
         "%{IncludeDir.ecs}",
 
         "%{IncludeDir.sharedlib}",
+
         --"%{IncludeDir.quaternion}",
         --"%{IncludeDir.scenegraph}",
         --"%{IncludeDir.scene}",
@@ -66,6 +68,8 @@ project "Editor"
     {
         "%{LibraryDir.VulkanSDK}",
         "%{LibraryDir.SDL}",
+        "%{LibraryDir.rttr}/Debug",
+        "%{LibraryDir.rttr}/Release",
 
         --"%{LibraryDir.launcher}",
     }
@@ -143,10 +147,12 @@ project "Editor"
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
+            {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" " .. binApp},
         }
 
         links
         {
+            "rttr_core_d",
         }
         
     filter "configurations:Release"
@@ -157,10 +163,12 @@ project "Editor"
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
+            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
         }
 
         links
         {
+            "rttr_core",
         }
         
     filter "configurations:Production"
@@ -171,8 +179,10 @@ project "Editor"
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
+            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
         }
 
         links
         {
+            "rttr_core",
         }
