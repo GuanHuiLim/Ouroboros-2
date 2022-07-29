@@ -146,7 +146,7 @@ namespace oo
 
     void GameObject::SetActive(bool active) const
     {
-        ASSERT_MSG(HasComponent<GameObjectComponent>(), "Invalid ID");
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");
 
         // Set individual active to false
         GetComponent<GameObjectComponent>().Active = active;

@@ -25,19 +25,22 @@ namespace oo
         , m_scenegraph { std::make_unique<scenegraph>("scenegraph") }
         , m_rootGo{ nullptr }
     {
-        // differed to initialization after itself exist.
-        m_rootGo = std::make_shared<GameObject>(*this);
-        InsertGameObject(m_rootGo);
+        // Creation of root node
+        {
+            // differed to initialization after itself exist.
+            auto root_handle = m_scenegraph->get_root()->get_handle();
+            m_rootGo = std::make_shared<GameObject>(root_handle , *this);
+            InsertGameObject(m_rootGo);
+        }
         
-        if (scenegraph::shared_pointer root = m_scenegraph->get_root())
+        /*if (scenegraph::shared_pointer root = m_scenegraph->get_root())
         {
             auto comp = m_rootGo->TryGetComponent<GameObjectComponent>();
             if (comp)
             {
-                //scenenode::raw_pointer& node = comp->Node;
-                //node = root.get();
-                //if (node == nullptr)
-                if(root == nullptr)
+                scenenode::shared_pointer node = comp->Node.lock();
+                node = root;
+                if (node == nullptr)
                 {
                     LOG_ERROR("Shouldn't be null");
                 }
@@ -46,7 +49,7 @@ namespace oo
                     LOG_INFO("SUCCESS!");
                 }
             }
-        }
+        }*/
 
         ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
 
