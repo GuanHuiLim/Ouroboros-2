@@ -2,6 +2,8 @@
 
 #include <Quaternion/include/Transform.h>
 
+#include <rttr/type>
+
 namespace oo
 {
     class Transform3D
@@ -44,20 +46,21 @@ namespace oo
         /*-----------------------------------------------------------------------------*/
         vec3& Position();
         vec3& Scale();
-        // note : scale must be set using setEulerAngle (internally uses quaternions)
+        // note : rotation must be set using setEulerAngle (internally uses quaternions)
 
         // Local Setters
-        void SetPosition(vec3 const& pos);
-        void SetEulerAngles(vec3 const& eulerAngle);
-        void SetScale(vec3 const& scale);
+        void SetPosition(vec3 pos);
+        void SetEulerAngles(vec3 eulerAngle);
+        void SetScale(vec3 scale);
 
         // Global Setters
-        void SetGlobalPosition(vec3 const& position);
-        void SetGlobalScale(vec3 const& scale);
-        void SetGlobalAngle(vec3 const& euler_angles);
-        void SetGlobalTransform(vec3 const& position, vec3 const& euler_angles, vec3 const& scale);
+        void SetGlobalPosition(vec3 position);
+        void SetGlobalScale(vec3 scale);
+        void SetGlobalAngle(vec3 euler_angles);
+        void SetGlobalTransform(vec3 position, vec3 euler_angles, vec3 scale);
         //void SetGlobalTransform(glm::mat4 const& targetGlobalTransform);
 
+        RTTR_ENABLE();
     private:
         Transform m_transform;
 
