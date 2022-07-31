@@ -17,6 +17,8 @@ Technology is prohibited.
 //#include "Ouroboros/Transform/Transform3D.h"
 //#include "Ouroboros/Transform/TransformSystem.h"
 
+#include "Ouroboros/ECS/GameObjectDebugComponent.h"
+
 namespace oo
 {
     /*---------------------------------------------------------------------------------*/
@@ -41,6 +43,11 @@ namespace oo
         : m_scene { &scene }
         , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, Transform3D>() }
     {
+        // add debugging component
+#if not define OO_PRODUCTION
+        oo::GameObjectDebugComponent comp{ this };
+        m_scene->GetWorld().add_component<oo::GameObjectDebugComponent>(m_entity, comp);
+#endif
         auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(m_entity);
         goComp.Id = uuid;
     }

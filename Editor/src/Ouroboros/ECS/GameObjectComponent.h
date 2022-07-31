@@ -17,6 +17,7 @@ namespace oo
         UUID Id;
         std::string Name = "Default Name Long enough for no short string optimization";
         scenenode::weak_pointer Node = {};
+
     public:
         
         struct OnEnableEvent : public Event
