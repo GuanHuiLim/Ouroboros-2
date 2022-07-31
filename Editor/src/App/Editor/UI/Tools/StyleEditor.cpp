@@ -3,10 +3,10 @@
 \project       Editor
 \author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution (100%)
 \par           email: junxiang.leong\@digipen.edu
-\date          November 12, 2021
+\date          November 12, 2022
 \brief		   Displays the UI for editing the style of the editor
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.

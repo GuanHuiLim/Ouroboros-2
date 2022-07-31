@@ -3,10 +3,10 @@
 \project       Ouroboros
 \author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution (100%)
 \par           email: junxiang.leong\@digipen.edu
-\date          October 3, 2021
+\date          October 3, 2022
 \brief         UI for displaying the error/warning of the user action
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.

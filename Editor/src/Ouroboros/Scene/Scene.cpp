@@ -1,3 +1,18 @@
+/************************************************************************************//*!
+\file           Scene.cpp
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\par            email: c.tecklee\@digipen.edu
+\date           Jul 31, 2022
+\brief          Scene defines the basis of what makes a scene and most of its core
+                features such as tracking all the gameobjects, having access to the
+                scene graph and root gameobject.
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "Scene.h"
 #include "Ouroboros/EventSystem/EventManager.h"

@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           GameObjectComponent.h
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\par            email: c.tecklee\@digipen.edu
+\date           Jul 22, 2022
+\brief          Describes component holding basic information that should be accessible
+                by all and all gameobjects should have one of these components by default.
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <string>

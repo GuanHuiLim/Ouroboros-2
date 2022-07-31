@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           TransformSystem.h
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420
+\par            email: c.tecklee\@digipen.edu
+\date           Jun 31, 2022
+\brief          Describes the main system that will work on updating the transform
+                components in the current world.
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <Ouroboros/Scene/Scene.h>

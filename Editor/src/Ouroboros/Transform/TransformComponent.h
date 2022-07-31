@@ -1,3 +1,19 @@
+/************************************************************************************//*!
+\file           TransformComponent.h
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420
+\par            email: c.tecklee\@digipen.edu
+\date           Jun 31, 2022
+\brief          Defines the data and functions required to allow for operations
+                to move objects around in a define 3D space 
+
+\note           Name of component Transform3D
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <Quaternion/include/Transform.h>

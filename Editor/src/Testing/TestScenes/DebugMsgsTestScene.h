@@ -4,7 +4,8 @@
 \author        Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par           email: c.tecklee\@digipen.edu
 \date          July 27, 2022
-\brief         Default empty Test scene
+\brief         Default Test scene with debug messages to help with seeing when
+                certain functions are being called.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           ECSTestScene.h
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\par            email: c.tecklee\@digipen.edu
+\date           Jul 22, 2022
+\brief          Describes a test scene that uses ecs stuff for scene-testing purposes
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include"TestScene.h"
