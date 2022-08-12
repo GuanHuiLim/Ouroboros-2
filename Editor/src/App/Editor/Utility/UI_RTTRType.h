@@ -1,6 +1,8 @@
 #pragma once
 #include <unordered_map>
 #include <rttr/type.h>
+
+
 class UI_RTTRType
 {
 public:
@@ -10,6 +12,9 @@ public:
 		BOOL_TYPE = 0,
 		STRING_TYPE,
 		UUID_TYPE,
+
+		VEC2_TYPE,
+		VEC3_TYPE,
 	};
 
 	inline static std::unordered_map<rttr::type::type_id, UItypes> types;

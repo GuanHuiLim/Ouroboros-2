@@ -10,9 +10,9 @@
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/ECS/GameObject.h>
+#include <glm/gtc/type_ptr.hpp>
 Inspector::Inspector()
 {
-	UI_RTTRType::Init();
 	m_InspectorUI[UI_RTTRType::UItypes::BOOL_TYPE] = [](std::string& name, rttr::variant& v, bool& edited) 
 	{
 		bool value = v.get_value<bool>();
@@ -23,6 +23,18 @@ Inspector::Inspector()
 	{
 		auto value = v.get_value<std::string>();
 		edited = ImGui::InputText(name.c_str(), &value);
+		if (edited) v = value;
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::VEC2_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
+	{
+		auto value = v.get_value<glm::vec2>();
+		edited = ImGui::DragFloat2(name.c_str(), glm::value_ptr(value));
+		if (edited) v = value;
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::VEC3_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
+	{
+		auto value = v.get_value<glm::vec2>();
+		edited = ImGui::DragFloat3(name.c_str(), glm::value_ptr(value));
 		if (edited) v = value;
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::UUID_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
