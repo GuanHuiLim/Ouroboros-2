@@ -30,10 +30,10 @@ private:
 	};
 	std::string m_filter = "";
 	FilterTypes m_filterTypes = FilterTypes::Name;
-	scenenode::handle_type m_hovered = -100;
-	scenenode::handle_type m_renaming = -100;
-	scenenode::handle_type m_dragged = -100;
-	scenenode::handle_type m_dragged_parent = -100;
+	scenenode::handle_type m_hovered = (scenenode::handle_type)-100;
+	scenenode::handle_type m_renaming = (scenenode::handle_type)-100;
+	scenenode::handle_type m_dragged = (scenenode::handle_type)-100;
+	scenenode::handle_type m_dragged_parent = (scenenode::handle_type)-100;
 	bool m_isDragging = false;
 	bool m_isRename = false;
 	//static

@@ -13,12 +13,23 @@
 #include <rapidjson/prettywriter.h>
 
 #include <Ouroboros/ECS/GameObjectComponent.h>
+#include <Ouroboros/EventSystem/EventManager.h>
+#include "App/Editor/UI/Tools/WarningMessage.h"
+#include "App/Editor/Events/LoadSceneEvent.h"
 Serializer::Serializer()
 {
 }
 
 Serializer::~Serializer()
 {
+}
+
+void Serializer::InitEvents()
+{
+	oo::EventManager::Subscribe<LoadSceneEvent>([](LoadSceneEvent* loadscene) {
+		Serializer::LoadScene(*loadscene->m_scene);
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Loaded");
+		});
 }
 
 void Serializer::Init()
@@ -40,6 +51,11 @@ void Serializer::Init()
 		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
 		obj.AddMember(name , v, doc.GetAllocator());
 		});
+
+	AddLoadComponent<oo::GameObjectComponent>();
+
+	load_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetBool();});
+	load_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetString(); });
 }
 
 void Serializer::SaveScene(oo::Scene& scene)
@@ -105,16 +121,76 @@ void Serializer::SaveScene(oo::Scene& scene)
 		rapidjson::OStreamWrapper osw(ofs);
 		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
 		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
+		writer.SetMaxDecimalPlaces(rapidjson_precision);
 		doc.Accept(writer);
-		rapidjson::Document d; // new temp document
-		doc.Swap(d).SetObject(); // minimize and recreate allocator
+		ResetDocument();
 		ofs.close();
 	}
 }
 
+void Serializer::LoadScene(oo::Scene& scene)
+{
+	std::ifstream ifs(scene.GetFilePath());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
+		return;
+	}
+	rapidjson::IStreamWrapper isw(ifs);
+	doc.ParseStream(isw);
+	std::stack<std::shared_ptr<oo::GameObject>> parents;
+	parents.push(scene.GetRoot());
+	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
+	{
+		auto go = scene.CreateGameObject();
+		go->SetName(iter->name.GetString());
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
+		{//when the order dont match the size it will keep poping until it matches
+		//then parent to it and adds itself
+			while (order != parents.size())
+				parents.pop();
+
+			parents.top()->AddChild(*go);
+			parents.push(go);
+		}
+
+		++members;
+		{//another element that will store all the component hashes and create the apporiate archtype
+			// go->SetArchtype(vector<hashes>);
+		}
+		//processes the components		
+		LoadObject(*go, members, membersEnd);
+	}
+	ResetDocument();//clear it after using
+	ifs.close();
+}
+
 void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val)
 {
+	//will have more components
 	SaveComponent<oo::GameObjectComponent>(go, val);
-	bool a = go.HasComponent<oo::GameObjectComponent>();
+}
+
+void Serializer::LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter , rapidjson::Value::MemberIterator& end)
+{
+	for (; iter != end; ++iter)
+	{
+		rttr::type t = rttr::type::get_by_name(iter->name.GetString());
+		if (t.is_valid() == false)
+			continue;//if not valid then skip
+		auto lc_iter = load_components.find(t.get_id());
+		if (lc_iter == load_components.end())
+			continue;//not found
+		lc_iter->second(go, std::move(iter->value));
+	}
+}
+
+void Serializer::ResetDocument() noexcept
+{
+	rapidjson::Document d; // new temp document
+	doc.Swap(d).SetObject(); // minimize and recreate allocator
 }
 

@@ -17,35 +17,36 @@ Technology is prohibited.
 #include <imgui/imgui.h>
 //#include <Editor/GUIglobals.h>
 #include "Ouroboros/Core/Timer.h"
-
+#include "Ouroboros/Core/Assert.h"
 void WarningMessage::Show()
 {
 	if (s_ShowWarning == false)
 		return;
 	
-	ImGui::BeginTooltip();
-	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
 	if (ImGui::Begin("Warning Message", 0, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs) == false)
 	{
 		ImGui::End();
 		return;
 	}
+	ImGui::BeginTooltip();
 
 	switch (s_dtype)
 	{
 	case DisplayType::DISPLAY_LOG:
-		ImGui::TextColored({ 1,1,1,1 }, "%s", s_WarningMessage.c_str());
+		ImGui::TextColored({ 0.8,1,0.8,1 }, "****Log****");
+		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
 		break;
 	case DisplayType::DISPLAY_WARNING:
-		ImGui::TextColored({ 1,0.5,0.5,1 }, "%s", s_WarningMessage.c_str());
+		ImGui::TextColored({ 1,0.5,0.5,1 }, "****Warning****");
+		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
 		break;
 	case DisplayType::DISPLAY_ERROR:
-		ImGui::TextColored({ 1,0,0,1 }, "%s", s_WarningMessage.c_str());
+		ImGui::TextColored({ 1,0,0,1 }, "****Error****");
+		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
 		break;
 	default:
 		break;
 	}
-	ImGui::PopTextWrapPos();
 	ImGui::EndTooltip();
 	ImGui::End();
 		
@@ -55,13 +56,15 @@ void WarningMessage::Show()
 }
 void WarningMessage::DisplayWarning(DisplayType type ,const std::string& str,float time)
 {
+	if(type == DisplayType::DISPLAY_ERROR)//should cause a debug break when debugging
+		ASSERT_MSG(true, s_WarningMessage.c_str());
+
 	s_dtype = type;
 	s_WarningMessage = str;
 	s_ShowWarning = true;
 	s_counter = time;
 	s_position[0] = ImGui::GetMousePos().x;
 	s_position[1] = ImGui::GetMousePos().y;
-
 }
 
 void WarningMessage::DisplayToolTip(const std::string& str)

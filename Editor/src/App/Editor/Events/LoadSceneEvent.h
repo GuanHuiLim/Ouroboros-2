@@ -1,12 +1,17 @@
 #pragma once
 #include "Ouroboros/EventSystem/Event.h"
-#include <string>
+#include "Ouroboros/Scene/Scene.h"
+#include <filesystem>
 class LoadSceneEvent :public oo::Event
 {
 public:
-	LoadSceneEvent(const std::string& scenePath) : m_scenePath{ scenePath } {};
-	LoadSceneEvent(std::string&& scenePath) : m_scenePath{ scenePath } {};
+	LoadSceneEvent( std::shared_ptr<oo::Scene> scene) :
+		m_scene{scene}
+	{
+	};
+
 	~LoadSceneEvent() {};
-	std::string m_scenePath;
+
+	std::shared_ptr<oo::Scene> m_scene;
 };
 
