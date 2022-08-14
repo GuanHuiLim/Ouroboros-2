@@ -16,6 +16,9 @@
 #include <Ouroboros/Scene/Scene.h>
 
 Hierarchy::Hierarchy()
+	:m_colorButton({ "Name","Component","Scripts" }, 
+		{ ImColor(0.75f,0.2f,0.3f),ImColor(0.3f,0.75f,0.2f),ImColor(0.2f,0.3f,0.75f) },
+		ImVec2{0,0},0)
 {
 }
 
@@ -247,7 +250,7 @@ const std::vector<scenenode::handle_type>& Hierarchy::GetSelected()
 void Hierarchy::SearchFilter()
 {
 	{//for drawing the search bar
-		ImGui::PushItemWidth(-60.0f);
+		ImGui::PushItemWidth(-100.0f);
 		ImVec2 cursor_pos = ImGui::GetCursorPos();
 		ImGui::InputText("##Search", &m_filter, ImGuiInputTextFlags_EnterReturnsTrue);
 		ImVec2 cursor_pos2 = ImGui::GetCursorPos();
@@ -256,6 +259,8 @@ void Hierarchy::SearchFilter()
 			ImGui::Text("Search");
 		ImGui::PopItemWidth();
 		ImGui::SetCursorPos(cursor_pos2);
+		ImGui::SameLine();
+		m_colorButton.UpdateToggle();
 	}
 	// can use color button here but extend it to have multiple selections
 	// m_filterTypes = ColorButton();

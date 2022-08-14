@@ -14,3 +14,15 @@ private:
 	bool m_toggled = false;
 
 };
+
+class ColorButton
+{
+public:
+	ColorButton(std::vector<std::string>&& names, std::vector<ImColor>&& colors, ImVec2 buttonsize, int start_index);
+	bool UpdateToggle();
+private:
+	std::vector<ImColor> m_colorList;
+	std::vector<std::string> m_names;
+	int m_index;
+	ImVec2 m_buttonsize;
+};

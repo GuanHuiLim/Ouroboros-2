@@ -2,6 +2,7 @@
 #include <vector>
 #include <scenegraph/include/Scenegraph.h>
 #include <string>
+#include "App/Editor/Utility/ImGui_ToggleButton.h"
 enum ImGuiTreeNodeFlags_;//pre-declare
 class Hierarchy
 {
@@ -28,6 +29,7 @@ private:
 		Component = 1,
 		Scripts = 2,
 	};
+	ColorButton m_colorButton;
 	std::string m_filter = "";
 	FilterTypes m_filterTypes = FilterTypes::Name;
 	scenenode::handle_type m_hovered = (scenenode::handle_type)-100;
