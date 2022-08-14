@@ -22,7 +22,7 @@ namespace oo
         double s_timescale;
 
         double s_debugTrackingDuration;
-        double s_lower_limit, s_upper_limit;
+        double s_lower_limit = 0.f, s_upper_limit = 1.0f;
 
         std::chrono::steady_clock::time_point s_timeStart;
         double s_raw_dt, s_controlled_dt;
