@@ -34,7 +34,9 @@ namespace oo
     {
         if (ActiveInHierarchy != active)
         {
-            if(ActiveInHierarchy)
+            // check previous state to do appropriate callback
+            bool previousState = ActiveInHierarchy;
+            if(previousState)
             {
                 // if was active, call the disable event
                 OnDisableEvent onDisableEvent;

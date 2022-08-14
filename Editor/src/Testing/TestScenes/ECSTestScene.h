@@ -28,6 +28,9 @@ struct DummySystem : public Ecs::System
     {
         // do nothing.
         UNREFERENCED(comp);
+
+        // work on the data
+        comp.dynamic_allocated_data_types_ok = "change it to something else";
     }
 
 public:
