@@ -24,116 +24,7 @@ Hierarchy::Hierarchy()
 
 void Hierarchy::Show()
 {
-	bool found_dragging = false;
-	bool rename_item = false;
-	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	
-	ImGui::BeginChild("search bar", { 0,40 }, false);
-	SearchFilter();
-	ImGui::EndChild();
-
-	scenenode::shared_pointer root_node = instance.get_root();
-	//collasable 
-	std::vector<scenenode::raw_pointer> parents;
-	std::stack<scenenode::raw_pointer> s;
-	scenenode::raw_pointer curr = root_node.get();
-
-	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
-	{
-		scenenode::shared_pointer child = *iter;
-		s.push(child.get());
-	}
-
-	while (!s.empty())
-	{
-		curr = s.top();
-		s.pop();
-		ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_None;
-		auto handle = curr->get_handle();
-		rename_item = false;
-		for (auto selectedhandle : s_selected)
-		{
-			if (handle == selectedhandle)
-			{
-				flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_Selected);
-				break;
-			}
-		}
-		if (m_isRename && m_renaming == handle)
-		{
-			rename_item = true;
-		}
-		//pass this to scene to get game object
-		if (curr->get_direct_child_count())//tree push
-		{
-			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_OpenOnArrow);
-		}
-		else
-			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
-
-		bool swapping = (curr->get_parent_handle() == m_dragged_parent) & m_isDragging;
-		if (swapping && found_dragging == false)//first encounter
-		{
-			SwappingUI(*curr, found_dragging);
-			swapping = true;
-			found_dragging = true;
-		}
-		auto source = scene->FindWithInstanceID(curr->get_handle());
-		std::string name = "";
-		if (source)
-			name = source->Name();
-		bool open = TreeNodeUI(name.c_str(), *curr, flags, swapping,rename_item);
-		if (open == true && flags & ImGuiTreeNodeFlags_OpenOnArrow)
-		{
-			parents.push_back(curr);
-		}
-
-		//drag and drop option
-
-
-		if (open && flags & ImGuiTreeNodeFlags_OpenOnArrow && curr->get_direct_child_count())
-		{
-			for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
-			{
-				scenenode::shared_pointer child = *iter;
-				s.push(child.get());
-			}
-		}
-		else if(s.empty() == false)
-		{
-			auto parent_handle = s.top()->get_parent_handle();
-			while (parents.empty() == false)
-			{
-				auto c_handle = parents.back()->get_handle();
-				if (c_handle == parent_handle)
-				{
-					break;
-				}
-				else
-				{
-					ImGui::TreePop();
-					parents.pop_back();
-				}
-			}
-		}
-		if (s.empty())
-		{
-			while (parents.empty() == false)
-			{
-				ImGui::TreePop();
-				parents.pop_back();
-			}
-			break;
-		}
-	}
-	if (m_isDragging && !ImGui::IsMouseDragging(ImGuiMouseButton_::ImGuiMouseButton_Left))
-		m_isDragging = false;//false if not dragging
-	if (ImGui::IsKeyDown(ImGuiKey_F2))
-	{
-		m_isRename = true;
-		m_renaming = m_hovered;
-	}
+	m_filter.empty() ? NormalView() : FilteredView();
 }
 
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename)
@@ -247,28 +138,216 @@ const std::vector<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
 }
+void Hierarchy::NormalView()
+{
+	bool found_dragging = false;
+	bool rename_item = false;
+	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+
+	ImGui::BeginChild("search bar", { 0,40 }, false);
+	SearchFilter();
+	ImGui::EndChild();
+
+	scenenode::shared_pointer root_node = instance.get_root();
+	//collasable 
+	std::vector<scenenode::raw_pointer> parents;
+	std::stack<scenenode::raw_pointer> s;
+	scenenode::raw_pointer curr = root_node.get();
+
+	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+	{
+		scenenode::shared_pointer child = *iter;
+		s.push(child.get());
+	}
+
+	while (!s.empty())
+	{
+		curr = s.top();
+		s.pop();
+		ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_None;
+		auto handle = curr->get_handle();
+		rename_item = false;
+		for (auto selectedhandle : s_selected)
+		{
+			if (handle == selectedhandle)
+			{
+				flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_Selected);
+				break;
+			}
+		}
+		if (m_isRename && m_renaming == handle)
+		{
+			rename_item = true;
+		}
+		//pass this to scene to get game object
+		if (curr->get_direct_child_count())//tree push
+		{
+			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_OpenOnArrow);
+		}
+		else
+			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
+
+		bool swapping = (curr->get_parent_handle() == m_dragged_parent) & m_isDragging;
+		if (swapping && found_dragging == false)//first encounter
+		{
+			SwappingUI(*curr, found_dragging);
+			swapping = true;
+			found_dragging = true;
+		}
+		auto source = scene->FindWithInstanceID(curr->get_handle());
+		std::string name = "";
+		if (source)
+			name = source->Name();
+		bool open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
+		if (open == true && flags & ImGuiTreeNodeFlags_OpenOnArrow)
+		{
+			parents.push_back(curr);
+		}
+
+		//drag and drop option
+
+
+		if (open && flags & ImGuiTreeNodeFlags_OpenOnArrow && curr->get_direct_child_count())
+		{
+			for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+			{
+				scenenode::shared_pointer child = *iter;
+				s.push(child.get());
+			}
+		}
+		else if (s.empty() == false)
+		{
+			auto parent_handle = s.top()->get_parent_handle();
+			while (parents.empty() == false)
+			{
+				auto c_handle = parents.back()->get_handle();
+				if (c_handle == parent_handle)
+				{
+					break;
+				}
+				else
+				{
+					ImGui::TreePop();
+					parents.pop_back();
+				}
+			}
+		}
+		if (s.empty())
+		{
+			while (parents.empty() == false)
+			{
+				ImGui::TreePop();
+				parents.pop_back();
+			}
+			break;
+		}
+	}
+	if (m_isDragging && !ImGui::IsMouseDragging(ImGuiMouseButton_::ImGuiMouseButton_Left))
+		m_isDragging = false;//false if not dragging
+	if (ImGui::IsKeyDown(ImGuiKey_F2))
+	{
+		m_isRename = true;
+		m_renaming = m_hovered;
+	}
+}
+void Hierarchy::FilteredView()
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	ImGui::Text("Filtered Search");
+	for (auto handle : m_filterList)
+	{
+		auto go = scene->FindWithInstanceID(handle);
+		bool selected = false;
+		for (auto selectedhandle : s_selected)
+		{
+			if (handle == selectedhandle)
+			{
+				selected = true;
+				break;
+			}
+		}
+		ImGui::PushID(handle);
+		ImGui::Selectable(go->Name().c_str(),selected);
+		ImGui::PopID();
+
+		bool hovered = ImGui::IsItemHovered();
+		bool clicked = ImGui::IsMouseReleased(ImGuiMouseButton_Left) | ImGui::IsMouseClicked(ImGuiMouseButton_Right);
+		bool keyenter = ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER));
+		if (hovered)
+		{
+			m_hovered = handle;
+			if ((clicked || keyenter))
+			{
+				if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
+					s_selected.push_back(handle);
+				else
+				{
+					s_selected.clear();
+					s_selected.push_back(handle);
+				}
+			}
+		}
+	}
+}
 void Hierarchy::SearchFilter()
 {
 	{//for drawing the search bar
-		ImGui::PushItemWidth(-100.0f);
 		ImVec2 cursor_pos = ImGui::GetCursorPos();
-		ImGui::InputText("##Search", &m_filter, ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::PushItemWidth(-100.0f);
+		bool edited = ImGui::InputText("##Search", &m_filter);
+		ImGui::PopItemWidth();
 		ImVec2 cursor_pos2 = ImGui::GetCursorPos();
+		ImGui::SameLine(cursor_pos2.x);
+		if (ImGui::Button("Clear"))
+			m_filter.clear();
+
+		ImGui::SameLine();
+		m_colorButton.UpdateToggle();
+
+		
+
 		ImGui::SetCursorPos(cursor_pos);
 		if (ImGui::IsItemActive() == false && m_filter.empty() == true)
 			ImGui::Text("Search");
-		ImGui::PopItemWidth();
-		ImGui::SetCursorPos(cursor_pos2);
-		ImGui::SameLine();
-		m_colorButton.UpdateToggle();
-	}
-	// can use color button here but extend it to have multiple selections
-	// m_filterTypes = ColorButton();
+		//ImGui::SetCursorPos(cursor_pos2);
 
+
+		if(edited)
+		switch (m_colorButton.GetIndex())
+		{
+		case 0:
+			Filter_ByName();
+			break;
+		case 1:
+			break;
+		case 2:
+			break;
+		}
+
+	}
 }
 
 void Hierarchy::Filter_ByName()
 {
+	m_filterList.clear();
+	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();
+	auto handles = instance.hierarchy_traversal_handles();
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto curr_handle : handles)
+	{
+		std::shared_ptr<oo::GameObject> go = scene->FindWithInstanceID(curr_handle);
+		std::string& name = go->Name();
+		
+		auto iter = std::search(name.begin(), name.end(),
+			m_filter.begin(), m_filter.end(),
+			[](char ch1, char ch2) 
+			{
+				return std::toupper(ch1) == std::toupper(ch2); 
+			});
+		if (iter != name.end())
+			m_filterList.emplace_back(curr_handle);
+	}
 }
 
 void Hierarchy::Filter_ByComponent()

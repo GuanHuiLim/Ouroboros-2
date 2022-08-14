@@ -79,3 +79,8 @@ bool ColorButton::UpdateToggle()
 	}
 	return result;
 }
+
+int ColorButton::GetIndex()
+{
+	return m_index;
+}
