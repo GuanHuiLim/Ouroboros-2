@@ -24,6 +24,10 @@ Hierarchy::Hierarchy()
 
 void Hierarchy::Show()
 {
+	ImGui::BeginChild("search bar", { 0,40 }, false);
+	SearchFilter();
+	ImGui::EndChild();
+
 	m_filter.empty() ? NormalView() : FilteredView();
 }
 
@@ -145,9 +149,6 @@ void Hierarchy::NormalView()
 	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 
-	ImGui::BeginChild("search bar", { 0,40 }, false);
-	SearchFilter();
-	ImGui::EndChild();
 
 	scenenode::shared_pointer root_node = instance.get_root();
 	//collasable 
