@@ -18,118 +18,57 @@ Technology is prohibited.
 // specially include this file only at the entry point of the engine.
 #include <EntryPoint.h>
 
-#include "Utility/Random.h"
 #include <Ouroboros/Core/Input.h>
 #include <Ouroboros/Core/Timer.h>
 #include <Ouroboros/Core/LayerSet.h>
 #include <Ouroboros/ImGui/ImGuiAbstraction.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 
-#include "TestLayers/InputDebugLayer.h"
+// Debug Layers
+#include "Testing/TestLayers/InputDebugLayer.h"
+#include "Testing/TestLayers/MainDebugLayer.h"
 
-#include "CoreLayers/SceneLayer.h"
+// Core Essential Layers
+#include "App/CoreLayers/SceneLayer.h"
+#include "App/Corelayers/EditorLayer.h"
 
-
-#include <imgui.h>
-// Project Tracker related includes
-#include <Launcher/Launcher/ProjectTracker.h>
-#include <Launcher/Utilities/ImGuiManager_Launcher.h>
-#include "Editor/Editor.h"
+// External includes
+#include <imgui/imgui.h>
 
 //Shared Library related includes
-#include <SceneManager.h>
-#include <Transform.h>
-#include <Quaternion.h>
-#include <Scenegraph.h>
-
-class EditorLayer final : public oo::Layer
-{
-private:
-    //order matters dont change it
-    bool m_demo = true;
-    bool m_showDebugInfo = false;
-    
-    ProjectTracker m_tracker;
-	Editor m_editor;
-public:
-    EditorLayer()
-        : oo::Layer{ "EditorLayer" }
-    {
-        LOG_INFO("Test Info");
-        LOG_TRACE("Test Trace");
-        LOG_WARN("Test Warn");
-        LOG_ERROR("Test Error");
-        LOG_CRITICAL("Test Critical");
-    }
-
-    virtual void OnAttach() override final
-    {
-        ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
-    }
-
-    // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
-    // PROPERLY FOR IMGUI RENDERING TO TAKE PLACE
-    virtual void OnUpdate() override final
-    {
-        if (oo::input::IsKeyPressed(KEY_F5))
-        {
-            m_showDebugInfo = !m_showDebugInfo;
-        }
-        
-        ImGuiManager_Launcher::UpdateAllUI();
-		m_editor.Update();
-         //#if EDITOR_DEBUG || EDITOR_RELEASE
-         /*if (m_showDebugInfo)
-         {
-             oo::TimeDebugInfo timeDebugInfo = oo::Timestep::GetDebugTimeInfo();
-
-             ImGui::Begin("fpsviewer", nullptr,
-                 ImGuiWindowFlags_NoScrollbar
-                 | ImGuiWindowFlags_NoCollapse
-                 | ImGuiWindowFlags_NoTitleBar
-                 | ImGuiWindowFlags_AlwaysAutoResize);
-             ImGui::Text("Rolling FPS %.2f", timeDebugInfo.AvgFPS);
-             ImGui::Text("Rolling DeltaTime %.6f", timeDebugInfo.AvgDeltaTime);
-             ImGui::Text("Current Timescale %.2f", timeDebugInfo.CurrentTimeScale);
-             ImGui::Text("Time elpased %.2f", timeDebugInfo.TimeElapsed);
-             ImGui::End();
-         }*/
-         //#endif
-
-        //m_editor.ShowAllWidgets();
-        
-        if(m_demo)
-            ImGui::ShowDemoWindow(&m_demo);
-
-        if (ImGui::Button("restart Imgui"))
-        {
-            oo::ImGuiRestartEvent restartEvent;
-            oo::EventManager::Broadcast(&restartEvent);
-        }
-        
-    }
-
-};
+#include <SceneManagement/include/SceneManager.h>
+#include <Quaternion/include/Transform.h>
+#include <Quaternion/include/Quaternion.h>
+#include <Scenegraph/include/scenegraph.h>
 
 class EditorApp final : public oo::Application
 {
+private:
+    // main scene manager
+    SceneManager m_sceneManager;
+
 public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
+        //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
-        
+        m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
+
+        // Main Layers
         m_layerset.PushLayer(std::make_shared<EditorLayer>());
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
         
-        oo::EventManager::Subscribe<oo::ImGuiAbstraction, oo::ImGuiRestartEvent>(m_imGuiAbstract.get(), &oo::ImGuiAbstraction::Restart);
+        oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
+        
+        //m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
 
-        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>());
     }
 
     void OnUpdate() override
     {
+
         m_imGuiAbstract->Begin();
 
         m_layerset.Update();
@@ -140,6 +79,11 @@ public:
         {
             Close();
         }
+    }
+
+    void RestartImGui(ImGuiRestartEvent*)
+    {
+        m_imGuiAbstract->Restart();
     }
 
 private:

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Transform.h>
+#include <Quaternion/include/Transform.h>
 
 namespace oo
 {
@@ -60,5 +60,7 @@ namespace oo
 
     private:
         Transform m_transform;
+
+        friend class TransformSystem;
     };
 }

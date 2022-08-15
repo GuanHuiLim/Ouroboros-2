@@ -45,6 +45,8 @@ Technology is prohibited.
 //#include "Utility/Bitmask.h"
 //#include "Utility/EventCallback.h"
 #include "Ouroboros/Core/Base.h"
+#include "Utility/Random.h"
+
 
 // Commonly use external libraries
 #include <iostream>

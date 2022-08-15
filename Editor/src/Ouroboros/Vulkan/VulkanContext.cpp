@@ -16,9 +16,9 @@ Technology is prohibited.
 
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
-#include "imgui.h"
-#include "backends/imgui_impl_sdl.h"
-#include "backends/imgui_impl_vulkan.h"
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_sdl.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
 
 #include <sdl2/SDL.h>
 #include <sdl2/SDL_vulkan.h>
