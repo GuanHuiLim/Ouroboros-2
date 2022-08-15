@@ -256,6 +256,7 @@ void Hierarchy::FilteredView()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	ImGui::Text("Filtered Search");
+	ImGui::Separator();
 	for (auto handle : m_filterList)
 	{
 		auto go = scene->FindWithInstanceID(handle);
