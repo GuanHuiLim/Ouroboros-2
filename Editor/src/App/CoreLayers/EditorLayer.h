@@ -24,6 +24,7 @@ Technology is prohibited.
 
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
+#include "Project.h"
 struct ImGuiRestartEvent : public oo::Event
 {
 };
@@ -39,7 +40,8 @@ private:
 	Editor m_editor;
 public:
     EditorLayer(SceneManager const& m_sceneManager)
-        : oo::Layer{ "EditorLayer" }
+        : oo::Layer{ "EditorLayer" },
+		m_tracker{Project::LoadProject}
     {
         LOG_INFO("Test Info");
         LOG_TRACE("Test Trace");

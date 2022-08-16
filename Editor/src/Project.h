@@ -5,19 +5,20 @@ class Project
 {
 public:
 	static void LoadProject(std::filesystem::path& p);
+	static void SaveProject();
 public:
-	static std::string GetStartingScene() { return s_startingScene; };
-	static std::string GetProjectFolder() { return s_projectFolder; };
-	static std::string GetSceneFolder() { return s_sceneFolder; };
-	static std::string GetScriptCoreDLL() { return s_scriptcoreDLL; };
-	static std::string GetScriptModulePath() { return s_scriptmodulePath; };
-	static std::string GetScriptBuildPath() { return s_scriptbuildPath; };
-private:
-
-	inline static std::string s_startingScene;
-	inline static std::string s_projectFolder;
-	inline static std::string s_sceneFolder;
-	inline static std::string s_scriptcoreDLL;
-	inline static std::string s_scriptmodulePath;
-	inline static std::string s_scriptbuildPath;
+	static std::filesystem::path GetStartingScene() { return s_startingScene; };
+	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
+	static std::filesystem::path GetSceneFolder() { return s_sceneFolder; };
+	static std::filesystem::path GetScriptCoreDLL() { return s_scriptcoreDLL; };
+	static std::filesystem::path GetScriptModulePath() { return s_scriptmodulePath; };
+	static std::filesystem::path GetScriptBuildPath() { return s_scriptbuildPath; };
+private:		
+	inline static std::filesystem::path s_configFile;
+	inline static std::filesystem::path s_startingScene;
+	inline static std::filesystem::path s_projectFolder;
+	inline static std::filesystem::path s_sceneFolder;
+	inline static std::filesystem::path s_scriptcoreDLL;
+	inline static std::filesystem::path s_scriptmodulePath;
+	inline static std::filesystem::path s_scriptbuildPath;
 };
