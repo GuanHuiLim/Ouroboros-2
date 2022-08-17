@@ -22,7 +22,7 @@ namespace Ecs
 		std::unordered_map<uint64_t, void*> singleton_map{};
 		std::unordered_map<uint64_t, ComponentInfo> singleton_info_map{};
 
-		std::unordered_map<uint64_t, void*> system_map{};
+		std::unordered_map<size_t, void*> system_map{};
 
 		int live_entities{ 0 }; //tracks number of active entity IDs
 		int dead_entities{ 0 }; //tracks number of dead entity IDs

@@ -8,9 +8,9 @@ namespace Ecs
 {
 	class System
 	{
-		friend struct ECSWorld;
+		friend struct IECSWorld;
 	protected:
-		//ECSWorld* world;
+		IECSWorld* world;
 	public:
 		System() = default;
 		virtual ~System() = default;
