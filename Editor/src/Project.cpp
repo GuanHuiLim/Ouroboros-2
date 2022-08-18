@@ -7,6 +7,11 @@
 #include <fstream>
 #include <SceneManagement/include/SceneManager.h>
 #include "App/Editor/UI/Tools/WarningMessage.h"
+#include "App/Editor/Events/LoadProjectEvents.h"
+
+#include "Ouroboros/Scene/RuntimeController.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
 void Project::LoadProject(std::filesystem::path& config)
 {
 	std::ifstream ifs(config.string());
@@ -28,8 +33,16 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_scriptcoreDLL = (*prj_setting).value.FindMember("ScriptCoreDLL")->value.GetString();
 	s_scriptmodulePath = (*prj_setting).value.FindMember("ScriptModulePath")->value.GetString();
 	s_scriptbuildPath = (*prj_setting).value.FindMember("ScriptBuildPath")->value.GetString();
+
 	//scenes to add to scene manager
-	
+	oo::RuntimeController::container_type m_loadpaths;
+	auto scenes_settings = doc.FindMember("Scenes");
+	for (auto iter = scenes_settings->value.MemberBegin(); iter != scenes_settings->value.MemberEnd(); ++iter)
+	{
+		m_loadpaths.emplace_back(oo::SceneInfo{iter->name.GetString() , iter->value.GetString()});
+	}
+	LoadProjectEvent lpe(std::move(s_startingScene.string()), std::move(m_loadpaths));
+	oo::EventManager::Broadcast(&lpe);
 	//end
 }
 
