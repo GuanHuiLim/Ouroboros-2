@@ -85,8 +85,8 @@ namespace oo
             //TRACY_PROFILE_SCOPE("SDL_INIT");
 
             int success = SDL_Init(SDL_INIT_VIDEO);
-            ASSERT_CUSTOM_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
-
+            //ASSERT_CUSTOM_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
+            ASSERT_MSG((success != 0), std::string{ "Failed to initialize SDL " } + SDL_GetError());
             s_SDLInitialized = true;
             //TRACY_PROFILE_SCOPE_END();
         }
@@ -99,7 +99,8 @@ namespace oo
             ASSERT_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
             //Load the gamecontrollerdb.txt and check if there was any problem
             int iNumOfControllers = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
-            ASSERT_CUSTOM_MSG(iNumOfControllers == -1, "Error loading database {0}", SDL_GetError());
+            //ASSERT_CUSTOM_MSG(iNumOfControllers == -1, "Error loading database {0}", SDL_GetError());
+            ASSERT_MSG((iNumOfControllers == -1), std::string{ "Error loading database " } + SDL_GetError());
 
             // Ignore the controller events
             SDL_GameControllerEventState(SDL_IGNORE);
