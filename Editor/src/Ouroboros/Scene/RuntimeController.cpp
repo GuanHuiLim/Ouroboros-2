@@ -17,9 +17,20 @@ Technology is prohibited.
 #include <SceneManagement/include/SceneManager.h>
 #include "RuntimeScene.h"
 
+#include "Ouroboros/EventSystem/EventManager.h"
 namespace oo
 {
     //RuntimeController::container_type RuntimeController::m_loadpaths;
+
+    RuntimeController::RuntimeController(SceneManager& sceneManager) : m_sceneManager{ sceneManager }
+    {
+        EventManager::Subscribe<RuntimeController, LoadProjectEvent>(this, &RuntimeController::OnLoadProjectEvent);
+    }
+
+    void RuntimeController::OnLoadProjectEvent(LoadProjectEvent* loadProjEvent)
+    {
+        SetLoadPaths(loadProjEvent->m_filename_pathname);
+    }
 
     void RuntimeController::SetLoadPaths(container_type loadPaths)
     {

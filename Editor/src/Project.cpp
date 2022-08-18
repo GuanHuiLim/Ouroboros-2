@@ -27,8 +27,8 @@ void Project::LoadProject(std::filesystem::path& config)
 	auto prj_setting = doc.FindMember("Project Settings");
 	
 	s_configFile = config;
+	s_projectFolder = s_configFile.parent_path();
 	s_startingScene = (*prj_setting).value.FindMember("StartScene")->value.GetString();
-	s_projectFolder = (*prj_setting).value.FindMember("ProjectFolderPath")->value.GetString();
 	s_sceneFolder = (*prj_setting).value.FindMember("SceneFolder")->value.GetString();
 	s_scriptcoreDLL = (*prj_setting).value.FindMember("ScriptCoreDLL")->value.GetString();
 	s_scriptmodulePath = (*prj_setting).value.FindMember("ScriptModulePath")->value.GetString();
@@ -39,9 +39,9 @@ void Project::LoadProject(std::filesystem::path& config)
 	auto scenes_settings = doc.FindMember("Scenes");
 	for (auto iter = scenes_settings->value.MemberBegin(); iter != scenes_settings->value.MemberEnd(); ++iter)
 	{
-		m_loadpaths.emplace_back(oo::SceneInfo{iter->name.GetString() , iter->value.GetString()});
+		m_loadpaths.emplace_back(oo::SceneInfo{ iter->name.GetString() , s_projectFolder.string() + s_sceneFolder.string() + iter->value.GetString() });
 	}
-	LoadProjectEvent lpe(std::move(s_startingScene.string()), std::move(m_loadpaths));
+	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_startingScene.string()), std::move(m_loadpaths));
 	oo::EventManager::Broadcast(&lpe);
 	//end
 }

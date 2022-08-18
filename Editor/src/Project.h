@@ -13,7 +13,8 @@ public:
 	static std::filesystem::path GetScriptCoreDLL() { return s_scriptcoreDLL; };
 	static std::filesystem::path GetScriptModulePath() { return s_scriptmodulePath; };
 	static std::filesystem::path GetScriptBuildPath() { return s_scriptbuildPath; };
-private:		
+private:
+	
 	inline static std::filesystem::path s_configFile;
 	inline static std::filesystem::path s_startingScene;
 	inline static std::filesystem::path s_projectFolder;

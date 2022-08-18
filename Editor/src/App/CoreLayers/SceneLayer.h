@@ -22,7 +22,6 @@ Technology is prohibited.
 #include "Ouroboros/Scene/EditorController.h"
 
 #include "Ouroboros/Core/Input.h"
-
 namespace oo
 {
     class SceneLayer final : public oo::Layer
@@ -39,9 +38,9 @@ namespace oo
             , m_editorController{ m_sceneManager, m_runtimeController }
             , Layer("Scene Management Layer")
         {
-            m_editorController.Init();
+            //m_editorController.Init();
         }
-
+        
         ~SceneLayer()
         {
         }

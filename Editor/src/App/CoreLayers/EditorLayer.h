@@ -24,6 +24,7 @@ Technology is prohibited.
 
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
+#include <functional>
 #include "Project.h"
 struct ImGuiRestartEvent : public oo::Event
 {
@@ -35,13 +36,13 @@ private:
     //order matters dont change it
     bool m_demo = true;
     bool m_showDebugInfo = false;
-
+    bool m_editormode = false;
     ProjectTracker m_tracker;
 	Editor m_editor;
 public:
     EditorLayer(SceneManager const& m_sceneManager)
         : oo::Layer{ "EditorLayer" },
-		m_tracker{Project::LoadProject}
+        m_tracker{ [this](std::filesystem::path& p) {Project::LoadProject(p); m_editormode = true; } }
     {
         LOG_INFO("Test Info");
         LOG_TRACE("Test Trace");

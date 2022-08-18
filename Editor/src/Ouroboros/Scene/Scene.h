@@ -93,11 +93,14 @@ namespace oo
         
     private://for now
         TransformSystem* m_transformSystem = nullptr;
-
+    
     private:
+
         std::shared_ptr<GameObject> CreateGameObject(std::shared_ptr<GameObject> new_go);
         void InsertGameObject(std::shared_ptr<GameObject> go_ptr);
         void RemoveGameObject(std::shared_ptr<GameObject> go_ptr);
+
+    private:
 
         std::string m_name;
         std::string m_filepath;

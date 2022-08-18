@@ -21,6 +21,10 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Transform/TransformSystem.h"
+
+#include "App/Editor/Events/LoadSceneEvent.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -135,6 +139,9 @@ namespace oo
     void Scene::LoadScene()
     {
         PRINT(m_name);
+
+        LoadSceneEvent lse{ this };
+        EventManager::Broadcast<LoadSceneEvent>(&lse);
     }
     
     void Scene::UnloadScene()
@@ -305,4 +312,5 @@ namespace oo
     {
         return m_rootGo;
     }
+
 }

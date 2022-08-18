@@ -24,12 +24,6 @@ Technology is prohibited.
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
-	
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -42,8 +36,10 @@ void EditorLayer::OnUpdate()
         m_showDebugInfo = !m_showDebugInfo;
     }
 
-    ImGuiManager_Launcher::UpdateAllUI();
-	m_editor.Update();
+    if(m_editormode == false)
+        ImGuiManager_Launcher::UpdateAllUI();
+    else
+	    m_editor.Update();
     //#if EDITOR_DEBUG || EDITOR_RELEASE
     /*if (m_showDebugInfo)
     {

@@ -22,12 +22,29 @@ Technology is prohibited.
 //#include "Ouroboros/Core/Timestep.h"
 
 #include "Ouroboros/EventSystem/EventManager.h"
+
+#include <filesystem>
+
 namespace oo
 {
-
-    void EditorController::Init()
+    EditorController::EditorController(SceneManager& sceneManager, RuntimeController& runtimeController)
+        : m_sceneManager{ sceneManager }, m_runtimeController{ runtimeController }
     {
-        auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>("Test Scene", "please fill up with a valid filepath");
+        EventManager::Subscribe<EditorController, LoadProjectEvent>(this, &EditorController::OnLoadProjectEvent);
+    }
+
+    void EditorController::OnLoadProjectEvent(LoadProjectEvent* loadProjEvent)
+    {
+        std::filesystem::path filename = loadProjEvent->m_startScene;
+        SceneInfo sceneData{ filename.stem().string(), loadProjEvent->m_startScene };
+        Init(sceneData);
+
+        //SetLoadPaths(loadProjEvent->m_filename_pathname);
+    }
+
+    void EditorController::Init(SceneInfo startfile)
+    {   
+        auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>(startfile.SceneName, startfile.LoadPath);
         ASSERT(!success);
 
         m_editorScene = editorScene;

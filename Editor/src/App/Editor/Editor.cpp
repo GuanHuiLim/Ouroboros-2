@@ -33,7 +33,7 @@ void Editor::Update()
 	}
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_D))
 	{
-		LoadSceneEvent lse = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+		LoadSceneEvent lse = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>().get();
 		oo::EventManager::Broadcast(&lse);
 	}
 }
