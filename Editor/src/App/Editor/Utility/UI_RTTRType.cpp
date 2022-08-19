@@ -4,6 +4,7 @@
 #include <Utility/UUID.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <Quaternion/include/Quaternion.h>
 void UI_RTTRType::Init()
 {
 	types.emplace(rttr::type::get<bool>().get_id(), UItypes::BOOL_TYPE);
@@ -11,6 +12,9 @@ void UI_RTTRType::Init()
 	types.emplace(rttr::type::get<UUID>().get_id(), UItypes::UUID_TYPE);
 	types.emplace(rttr::type::get<glm::vec2>().get_id(), UItypes::VEC2_TYPE);
 	types.emplace(rttr::type::get<glm::vec3>().get_id(), UItypes::VEC3_TYPE);
+	types.emplace(rttr::type::get<glm::vec4>().get_id(), UItypes::VEC4_TYPE);
 	types.emplace(rttr::type::get<glm::mat3>().get_id(), UItypes::MAT3_TYPE);
 	types.emplace(rttr::type::get<glm::mat4>().get_id(), UItypes::MAT4_TYPE);
+	types.emplace(rttr::type::get<quaternion>().get_id(), UItypes::QUAT_TYPE);
+
 }

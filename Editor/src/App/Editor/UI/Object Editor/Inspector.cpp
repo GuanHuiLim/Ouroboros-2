@@ -40,6 +40,12 @@ Inspector::Inspector()
 		edited = ImGui::DragFloat3(name.c_str(), glm::value_ptr(value));
 		if (edited) v = value;
 	};
+	m_InspectorUI[UI_RTTRType::UItypes::VEC4_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
+	{
+		auto value = v.get_value<glm::vec4>();
+		edited = ImGui::DragFloat4(name.c_str(), glm::value_ptr(value));
+		if (edited) v = value;
+	};
 	m_InspectorUI[UI_RTTRType::UItypes::UUID_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
 	{
 		auto value = v.get_value<UUID>();
@@ -62,6 +68,12 @@ Inspector::Inspector()
 		edited |= ImGui::DragFloat4("##2", glm::value_ptr(value[1]));
 		edited |= ImGui::DragFloat4("##3", glm::value_ptr(value[2]));
 		edited |= ImGui::DragFloat4("##4", glm::value_ptr(value[3]));
+		if (edited) v = value;
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::QUAT_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
+	{
+		auto value = v.get_value<quaternion>().value;
+		edited = ImGui::DragFloat4(name.c_str(), glm::value_ptr(value));
 		if (edited) v = value;
 	};
 }
