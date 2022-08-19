@@ -18,14 +18,16 @@ protected:
 	bool TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flag, bool swaping = false, bool rename = false);
 	void SwappingUI(scenenode& node, bool setbelow = true);
 	void SearchFilter();
+	void RightClickOptions();
 
 	void Filter_ByName();
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-
+	void CreateGameObject();
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
+	static constexpr const unsigned int Popup_ID = 100000;
 private:
 	enum class FilterTypes
 	{

@@ -144,11 +144,12 @@ const std::vector<scenenode::handle_type>& Hierarchy::GetSelected()
 }
 void Hierarchy::NormalView()
 {
+	RightClickOptions();
+
 	bool found_dragging = false;
 	bool rename_item = false;
 	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-
 
 	scenenode::shared_pointer root_node = instance.get_root();
 	//collasable 
@@ -330,6 +331,28 @@ void Hierarchy::SearchFilter()
 	}
 }
 
+void Hierarchy::RightClickOptions()
+{
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right))
+		ImGui::OpenPopupEx(Popup_ID);
+	if (ImGui::BeginPopupEx(Popup_ID, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings))
+	{
+		
+		if (ImGui::BeginMenu("Create"))
+		{
+			if (ImGui::MenuItem("New GameObject"))
+			{
+				CreateGameObject();
+			}
+			if(ImGui::MenuItem("Box"))
+			{ }
+			ImGui::EndMenu();
+		}
+		ImGui::EndPopup();
+	}
+
+}
+
 void Hierarchy::Filter_ByName()
 {
 	m_filterList.clear();
@@ -358,4 +381,13 @@ void Hierarchy::Filter_ByComponent()
 
 void Hierarchy::Filter_ByScript()
 {
+}
+
+void Hierarchy::CreateGameObject()
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto go = scene->CreateGameObject();
+	go->SetName("New GameObject");
+	if (s_selected.empty() == false && m_hovered == s_selected.back())
+		scene->FindWithInstanceID(m_hovered)->AddChild(*go);
 }
