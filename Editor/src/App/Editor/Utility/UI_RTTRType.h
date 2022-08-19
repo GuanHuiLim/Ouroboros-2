@@ -15,6 +15,8 @@ public:
 
 		VEC2_TYPE,
 		VEC3_TYPE,
+		MAT3_TYPE,
+		MAT4_TYPE,
 	};
 
 	inline static std::unordered_map<rttr::type::type_id, UItypes> types;

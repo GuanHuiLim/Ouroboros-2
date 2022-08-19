@@ -9,7 +9,10 @@
 
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
+
 #include <Ouroboros/ECS/GameObject.h>
+#include <Ouroboros/Transform/TransformComponent.h>
+
 #include <glm/gtc/type_ptr.hpp>
 Inspector::Inspector()
 {
@@ -33,7 +36,7 @@ Inspector::Inspector()
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::VEC3_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
 	{
-		auto value = v.get_value<glm::vec2>();
+		auto value = v.get_value<glm::vec3>();
 		edited = ImGui::DragFloat3(name.c_str(), glm::value_ptr(value));
 		if (edited) v = value;
 	};
@@ -44,10 +47,33 @@ Inspector::Inspector()
 		ImGui::InputScalarN(name.c_str(),ImGuiDataType_::ImGuiDataType_U64, &value,1);//read only
 		ImGui::PopItemFlag();
 	};
+	m_InspectorUI[UI_RTTRType::UItypes::MAT3_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
+	{
+		auto value = v.get_value<glm::mat3>();
+		edited |= ImGui::DragFloat3(name.c_str(), glm::value_ptr(value[0]));
+		edited |= ImGui::DragFloat3("##2", glm::value_ptr(value[1]));
+		edited |= ImGui::DragFloat3("##3", glm::value_ptr(value[2]));
+		if (edited) v = value;
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::MAT4_TYPE] = [](std::string& name, rttr::variant& v, bool& edited)
+	{
+		auto value = v.get_value<glm::mat4>();
+		edited |= ImGui::DragFloat4(name.c_str(), glm::value_ptr(value[0]));
+		edited |= ImGui::DragFloat4("##2", glm::value_ptr(value[1]));
+		edited |= ImGui::DragFloat4("##3", glm::value_ptr(value[2]));
+		edited |= ImGui::DragFloat4("##4", glm::value_ptr(value[3]));
+		if (edited) v = value;
+	};
 }
 
 void Inspector::Show()
 {
+	if(ImGui::BeginMenuBar())
+	{
+		if (ImGui::MenuItem("Show ReadOnly", nullptr, m_showReadonly))
+			m_showReadonly = !m_showReadonly;
+		ImGui::EndMenuBar();
+	}
 	auto& selected_items = Hierarchy::GetSelected();
 	size_t size = selected_items.size();
 	if (size == 0)
@@ -71,5 +97,6 @@ void Inspector::Show()
 			gameobject->SetActive(active);
 		//gameobject->GetComponent<>();
 		DisplayComponent<oo::GameObjectComponent>(*gameobject);
+		DisplayComponent<oo::Transform3D>(*gameobject);
 	}
 }
