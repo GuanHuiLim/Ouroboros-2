@@ -38,15 +38,11 @@ project "Editor"
     {
         "src",
 
-        --"%{AppVendor}",
-
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.VulkanSDK}",
         "%{IncludeDir.SDL}",
         
         "%{IncludeDir.imgui}",
-        --"%{IncludeDir.imgui}/backends",
-        --"%{IncludeDir.imgui}/misc/cpp",
 
         "%{IncludeDir.glm}",
         "%{IncludeDir.rapidjson}",
@@ -57,9 +53,8 @@ project "Editor"
 
         "%{IncludeDir.sharedlib}",
 
-        --"%{IncludeDir.quaternion}",
-        --"%{IncludeDir.scenegraph}",
-        --"%{IncludeDir.scene}",
+        --for tracy
+        "%{IncludeDir.tracy}",
     }
 
     -- library diretories
@@ -70,8 +65,6 @@ project "Editor"
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
-
-        --"%{LibraryDir.launcher}",
     }
 
     -- linking External libraries 
@@ -96,6 +89,7 @@ project "Editor"
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
         --"symsrv",
+
     }
     
     filter "system:windows"

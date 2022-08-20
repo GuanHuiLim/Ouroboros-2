@@ -182,7 +182,7 @@ namespace oo
 
     std::shared_ptr<GameObject> Scene::FindWithInstanceID(UUID uuid)
     {
-        LOG_INFO("Finding gameobject of instance ID {0}", uuid);
+        //LOG_INFO("Finding gameobject of instance ID {0}", uuid);
 
         if (m_lookupTable.contains(uuid))
             return m_lookupTable.at(uuid);
