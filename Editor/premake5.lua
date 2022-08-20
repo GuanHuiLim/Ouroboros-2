@@ -122,6 +122,9 @@ project "Editor"
             
             -- copy launcher's Data file
             {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" " .. binApp },
+
+            -- tracy server copy 
+            {"{COPY} \"%{AppDir}/tracy_server\" " .. binApp .. "/tracy_server"}, 
         }
     
 
