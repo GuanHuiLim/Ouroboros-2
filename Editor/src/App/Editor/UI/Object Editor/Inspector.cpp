@@ -6,12 +6,16 @@
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include "App/Editor/Utility/ImGuiManager.h"
+#include "App/Editor/Events/OpenFileEvent.h"
 
 #include <SceneManagement/include/SceneManager.h>
+#include <Ouroboros/EventSystem/EventManager.h>
 #include <Ouroboros/Scene/Scene.h>
+
 
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/Transform/TransformComponent.h>
+#include <Ouroboros/Prefab/PrefabComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 Inspector::Inspector()
@@ -107,6 +111,15 @@ void Inspector::Show()
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Active", &active))
 			gameobject->SetActive(active);
+		if (gameobject->HasComponent<oo::PrefabComponent>())
+		{
+			ImGui::SameLine();
+			if (ImGui::Button("Update Prefab"))
+			{
+				OpenFileEvent ofe(gameobject->GetComponent<oo::PrefabComponent>().prefab_filePath);
+				oo::EventManager::Broadcast(&ofe);
+			}
+		}
 		//gameobject->GetComponent<>();
 		DisplayComponent<oo::GameObjectComponent>(*gameobject);
 		DisplayComponent<oo::Transform3D>(*gameobject);
