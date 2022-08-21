@@ -27,6 +27,12 @@ namespace Ecs
 
 			delete arch;
 		}
+
+
+		//delete systems
+		for (auto s : system_map)
+			delete s.second;
+
 		//delete singletons
 		for (auto s : singleton_map)
 			delete[] s.second;

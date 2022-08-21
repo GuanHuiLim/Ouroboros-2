@@ -1069,23 +1069,29 @@ namespace Ecs
 	template<typename S>
 	inline S* IECSWorld::Add_System()
 	{
-		if (system_map.contains(typeid(S).name()))
-			return system_map[typeid(S).name()];
+		using base_type = std::remove_const_t<std::remove_reference_t<S>>;
+		constexpr auto hash = TypeHash::hash<base_type>();
+
+		if (system_map.contains(hash))
+			return static_cast<S*>(system_map[hash]);
+
 		//create the system
 		S* system = new S();
 		if constexpr (std::derived_from<S, System> == true) {
 			system->world = this;
 		}
-		system_map[typeid(S).name()] = system;
+		system_map[hash] = static_cast<void*>(system);
 			return system;
 	}
 
 	template<typename S>
 	inline S* IECSWorld::Get_System()
 	{
-		if (system_map.contains(typeid(S).name()) == false)
+		using base_type = std::remove_const_t<std::remove_reference_t<S>>;
+		constexpr auto hash = TypeHash::hash<base_type>();
+		if (system_map.contains(hash) == false)
 			return nullptr;
 
-		return system_map[typeid(S).name()];
+		return static_cast<S*>(system_map[hash]);
 	}
 }

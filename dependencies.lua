@@ -30,7 +30,7 @@ IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["ffmpeg"]      	= EngineVendor .. "/ffmpeg/"
 -- IncludeDir["freetype"]      = EngineVendor .. "/freetype/include"
 -- IncludeDir["mono"]          = EngineVendor .. "/mono/include/mono-2.0"
--- IncludeDir["tracy"]         = EngineVendor .. "/tracy"
+IncludeDir["tracy"]         = AppVendor .. "/tracy"
 IncludeDir["rapidjson"]     = AppVendor .. "/rapidjson/include"
 IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader"
@@ -42,10 +42,6 @@ IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
 IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs"
 
 IncludeDir["sharedlib"]     = AppVendor .. "/sharedlib/Isolated-Testing-Ground"
---IncludeDir["quaternion"]    = AppVendor .. "/sharedlib/Isolated-Testing-Ground/Quaternion/include" 
---IncludeDir["scenegraph"]    = AppVendor .. "/sharedlib/Isolated-Testing-Ground/Scenegraph/include" 
---IncludeDir["scene"]         = AppVendor .. "/sharedlib/Isolated-Testing-Ground/SceneManagement/include" 
-
 
 -- Paths to various external libraries directories
 LibraryDir                  = {}

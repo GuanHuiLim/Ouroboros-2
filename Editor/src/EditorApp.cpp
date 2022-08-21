@@ -44,6 +44,9 @@ Technology is prohibited.
 
 #include <Ouroboros/Core/Events/ApplicationEvent.h>
 
+//Tracy
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
 class EditorApp final : public oo::Application
 {
 private:
@@ -71,6 +74,7 @@ public:
 
     void OnUpdate() override
     {
+        TRACY_PROFILE_SCOPE("Editor App Update");
 
         m_imGuiAbstract->Begin();
 
@@ -82,6 +86,8 @@ public:
         {
             Close();
         }
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void RestartImGui(ImGuiRestartEvent*)

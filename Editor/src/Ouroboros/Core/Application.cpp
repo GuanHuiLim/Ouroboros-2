@@ -18,7 +18,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Input.h"
 
 #include "Ouroboros/Core/GraphicsContext.h"
-//#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #include "Timer.h"
 
