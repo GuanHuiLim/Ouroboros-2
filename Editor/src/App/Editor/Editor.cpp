@@ -6,7 +6,7 @@
 #include <Ouroboros/EventSystem/EventManager.h>
 #include "App/Editor/Events/LoadSceneEvent.h"
 #include "App/Editor/Events/ImGuiRestartEvent.h"
-
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 Editor::Editor()
 {
 	UI_RTTRType::Init();
@@ -53,9 +53,12 @@ void Editor::MenuBar()
 				ImGuiRestartEvent restartEvent;
 				oo::EventManager::Broadcast(&restartEvent);
 			}
-			if (ImGui::MenuItem("Open Profiler"))
+			if (ImGui::MenuItem(oo::OO_TracyProfiler::m_server_active ? ("Close Profiler") : ("Open Profiler")))
 			{
-
+				if (oo::OO_TracyProfiler::m_server_active)
+					oo::OO_TracyProfiler::CloseTracyServer();
+				else
+					oo::OO_TracyProfiler::StartTracyServer();
 			}
 			ImGui::EndMenu();
 		}
