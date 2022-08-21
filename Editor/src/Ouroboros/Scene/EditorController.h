@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "EditorScene.h"
 
 //#include "App/Editor/Events/LoadProjectEvents.h"
+#include "App/Editor/Events/OpenFileEvent.h"
 
 namespace oo
 {
@@ -66,6 +67,7 @@ namespace oo
 
     private:
         void OnLoadProjectEvent(LoadProjectEvent* loadProjEvent);
+        void OnOpenFileEvent(OpenFileEvent* openFileEvent);
         void OnRuntimeSceneChange(Scene::OnInitEvent*);
 
         std::weak_ptr<EditorScene> m_editorScene = {};

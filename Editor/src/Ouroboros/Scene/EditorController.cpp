@@ -30,7 +30,9 @@ namespace oo
     EditorController::EditorController(SceneManager& sceneManager, RuntimeController& runtimeController)
         : m_sceneManager{ sceneManager }, m_runtimeController{ runtimeController }
     {
+        EventManager::Subscribe<EditorController, Scene::OnInitEvent>(this, &EditorController::OnRuntimeSceneChange);
         EventManager::Subscribe<EditorController, LoadProjectEvent>(this, &EditorController::OnLoadProjectEvent);
+        EventManager::Subscribe<EditorController, OpenFileEvent>(this, &EditorController::OnOpenFileEvent);
     }
 
     void EditorController::OnLoadProjectEvent(LoadProjectEvent* loadProjEvent)
@@ -42,13 +44,27 @@ namespace oo
         //SetLoadPaths(loadProjEvent->m_filename_pathname);
     }
 
+    void EditorController::OnOpenFileEvent(OpenFileEvent* openFileEvent)
+    {
+        if (openFileEvent->m_type == OpenFileEvent::FileType::PREFAB ||
+            openFileEvent->m_type == OpenFileEvent::FileType::SCENE)
+        {
+            //std::filesystem::path filename = openFileEvent->m_filepath;
+            //SceneInfo sceneData{ filename.stem().string(), openFileEvent->m_filepath.string() };
+            //Init(sceneData);
+            LoadScene(openFileEvent->m_filepath.string());
+        }
+    }
+
     void EditorController::Init(SceneInfo startfile)
     {   
+        if (auto ptr = m_editorScene.lock())
+            m_sceneManager.RemoveScene(ptr->GetSceneName());
+
         auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>(startfile.SceneName, startfile.LoadPath);
         ASSERT(!success);
 
         m_editorScene = editorScene;
-        EventManager::Subscribe<EditorController, Scene::OnInitEvent>(this, &EditorController::OnRuntimeSceneChange);
 
         m_sceneManager.ChangeScene(m_editorScene);
 
