@@ -26,9 +26,7 @@ Technology is prohibited.
 #include <Ouroboros/Scene/Scene.h>
 #include <functional>
 #include "Project.h"
-struct ImGuiRestartEvent : public oo::Event
-{
-};
+#include "App/Editor/Events/ImGuiRestartEvent.h"
 
 class EditorLayer final : public oo::Layer
 {

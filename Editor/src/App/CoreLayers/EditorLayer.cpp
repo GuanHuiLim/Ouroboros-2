@@ -60,13 +60,8 @@ void EditorLayer::OnUpdate()
 
     //m_editor.ShowAllWidgets();
 
-    if (m_demo)
-        ImGui::ShowDemoWindow(&m_demo);
+    //if (m_demo)
+    //    ImGui::ShowDemoWindow(&m_demo);
 
-    if (ImGui::Button("restart Imgui"))
-    {
-        ImGuiRestartEvent restartEvent;
-        oo::EventManager::Broadcast(&restartEvent);
-    }
 
 }

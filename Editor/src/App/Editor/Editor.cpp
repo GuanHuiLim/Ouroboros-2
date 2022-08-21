@@ -5,6 +5,8 @@
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include <Ouroboros/EventSystem/EventManager.h>
 #include "App/Editor/Events/LoadSceneEvent.h"
+#include "App/Editor/Events/ImGuiRestartEvent.h"
+
 Editor::Editor()
 {
 	UI_RTTRType::Init();
@@ -22,9 +24,11 @@ Editor::~Editor()
 void Editor::Update()
 {
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+	MenuBar();
+
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
-
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_S))
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -35,5 +39,26 @@ void Editor::Update()
 	{
 		LoadSceneEvent lse = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>().get();
 		oo::EventManager::Broadcast(&lse);
+	}
+}
+
+void Editor::MenuBar()
+{
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Reset ImGui"))
+			{
+				ImGuiRestartEvent restartEvent;
+				oo::EventManager::Broadcast(&restartEvent);
+			}
+			if (ImGui::MenuItem("Open Profiler"))
+			{
+
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
 	}
 }
