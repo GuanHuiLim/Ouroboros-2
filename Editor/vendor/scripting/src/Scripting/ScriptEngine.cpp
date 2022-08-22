@@ -40,7 +40,7 @@ namespace oo
         // load scripting dll
         if (mono_domain_get() == nullptr)
         {
-            mono_set_dirs("Engine", "");
+            mono_set_dirs(".", "");
             mono_jit_init("root");
             mono_thread_set_main(mono_thread_current());
             mono_assemblies_init();
