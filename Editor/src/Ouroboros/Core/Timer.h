@@ -67,6 +67,9 @@ namespace oo
         double raw_dt_precise();
         double raw_fps_precise();
         
-        void set_timescale(double newTimeScale);
+
+        float  get_timescale();
+        double get_timescale_precise();
+        void   set_timescale(double newTimeScale);
     }
 }
