@@ -46,6 +46,7 @@ include "Editor/vendor/launcher"
 include "Editor/vendor/Archetypes_Ecs"
 include "Editor/vendor/sharedlib"
 include "Editor/vendor/vulkan"
+include "Editor/vendor/scripting"
 group ""
 
 include "Editor"

@@ -33,7 +33,7 @@ IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/inc"    -- fmod studio requires fmod inc too
 -- IncludeDir["ffmpeg"]      	= EngineVendor .. "/ffmpeg/"
 -- IncludeDir["freetype"]      = EngineVendor .. "/freetype/include"
--- IncludeDir["mono"]          = EngineVendor .. "/mono/include/mono-2.0"
+IncludeDir["mono"]          =  AppVendor .. "/scripting/vendor/mono/include/mono-2.0"
 IncludeDir["tracy"]         = AppVendor .. "/tracy"
 IncludeDir["rapidjson"]     = AppVendor .. "/rapidjson/include"
 IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
@@ -44,6 +44,7 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
 IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs"
+IncludeDir["scripting"]     = AppVendor .. "/scripting/src"
 
 IncludeDir["sharedlib"]     = AppVendor .. "/sharedlib/Isolated-Testing-Ground"
 

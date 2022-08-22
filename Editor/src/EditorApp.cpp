@@ -47,6 +47,8 @@ Technology is prohibited.
 //Tracy
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
+#include <Scripting/Scripting.h>
+
 class EditorApp final : public oo::Application
 {
 private:
@@ -70,6 +72,15 @@ public:
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
+
+        //try
+        //{
+        //    oo::ScriptEngine::Load("");
+        //}
+        //catch(std::exception const& e)
+        //{
+        //    LOG_TRACE(e.what());
+        //}
     }
 
     void OnUpdate() override

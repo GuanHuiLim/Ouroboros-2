@@ -54,6 +54,9 @@ project "Editor"
         "%{IncludeDir.ecs}",
 
         "%{IncludeDir.sharedlib}",
+		
+		"%{IncludeDir.mono}",
+		"%{IncludeDir.scripting}",
 
         --for tracy
         "%{IncludeDir.tracy}",
@@ -88,6 +91,9 @@ project "Editor"
         "ECS",
         "Launcher",
         "SharedLib",
+		
+		--"mono-2.0-sgen",
+		"Scripting",
         
         --Linking to vulkan Library [Uncomment the next line when youre done setting up]
         "Vulkan",
