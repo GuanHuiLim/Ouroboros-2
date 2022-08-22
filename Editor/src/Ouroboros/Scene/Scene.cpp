@@ -127,8 +127,8 @@ namespace oo
             // differed to initialization after itself exist.
             auto root_handle = m_scenegraph->get_root()->get_handle();
             m_rootGo = std::make_shared<GameObject>(root_handle, *this);
-            m_rootGo->GetSceneNode() = m_scenegraph->get_root();
             InsertGameObject(m_rootGo);
+            m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
         }
 
         /*if (scenegraph::shared_pointer root = m_scenegraph->get_root())
