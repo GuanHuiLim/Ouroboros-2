@@ -112,7 +112,7 @@ namespace oo
         // direct copy of all gameobjects in the scene
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 
-        Ecs::ECSWorld m_ecsWorld;
+        std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
         std::shared_ptr<GameObject> m_rootGo;
     };

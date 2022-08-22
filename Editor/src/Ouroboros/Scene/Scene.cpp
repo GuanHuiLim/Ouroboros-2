@@ -40,47 +40,20 @@ namespace oo
         , m_removeList {}
         , m_lookupTable {}
         , m_gameObjects{}
-        , m_ecsWorld {}
-        , m_scenegraph { std::make_unique<scenegraph>("scenegraph") }
-        , m_rootGo{ nullptr }
+        , m_ecsWorld { nullptr }
+        , m_scenegraph { nullptr }
+        , m_rootGo { nullptr }
     {
-        // Creation of root node
-        {
-            // differed to initialization after itself exist.
-            auto root_handle = m_scenegraph->get_root()->get_handle();
-            m_rootGo = std::make_shared<GameObject>(root_handle , *this);
-            InsertGameObject(m_rootGo);
-        }
-        
-        /*if (scenegraph::shared_pointer root = m_scenegraph->get_root())
-        {
-            auto comp = m_rootGo->TryGetComponent<GameObjectComponent>();
-            if (comp)
-            {
-                scenenode::shared_pointer node = comp->Node.lock();
-                node = root;
-                if (node == nullptr)
-                {
-                    LOG_ERROR("Shouldn't be null");
-                }
-                else
-                {
-                    LOG_INFO("SUCCESS!");
-                }
-            }
-        }*/
-
-        ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
-
     }
 
     Scene::~Scene()
     {
-        //delete m_transformSystem;
     }
 
     void Scene::Init()
     {
+       
+
         Scene::OnInitEvent e;
         EventManager::Broadcast(&e);
         
@@ -98,7 +71,7 @@ namespace oo
         /*{
             m_ecsWorld.Get_System<oo::TransformSystem>()->Run(&m_ecsWorld);
         }*/
-        m_transformSystem->Run(&m_ecsWorld);
+        m_transformSystem->Run(m_ecsWorld.get());
         PRINT(m_name);
     }
     
@@ -135,21 +108,47 @@ namespace oo
     void Scene::Exit()
     {
         PRINT(m_name);
-        EndOfFrameUpdate();
-        m_lookupTable.clear();
-        
-        for (auto& [key, go] : m_lookupTable)
-            go.reset();
-
-        m_gameObjects.clear();
-        m_rootGo.reset();
-        m_scenegraph.release();
-        m_transformSystem.release();
+        m_transformSystem.reset();
     }
     
     void Scene::LoadScene()
     {
         PRINT(m_name);
+
+        m_removeList.clear();
+        m_lookupTable.clear();
+        m_gameObjects.clear();
+        m_ecsWorld = std::make_unique<Ecs::ECSWorld>();
+        m_scenegraph = std::make_unique<scenegraph>("scenegraph");
+        m_rootGo = nullptr;
+
+        // Creation of root node
+        {
+            // differed to initialization after itself exist.
+            auto root_handle = m_scenegraph->get_root()->get_handle();
+            m_rootGo = std::make_shared<GameObject>(root_handle, *this);
+            InsertGameObject(m_rootGo);
+        }
+
+        /*if (scenegraph::shared_pointer root = m_scenegraph->get_root())
+        {
+            auto comp = m_rootGo->TryGetComponent<GameObjectComponent>();
+            if (comp)
+            {
+                scenenode::shared_pointer node = comp->Node.lock();
+                node = root;
+                if (node == nullptr)
+                {
+                    LOG_ERROR("Shouldn't be null");
+                }
+                else
+                {
+                    LOG_INFO("SUCCESS!");
+                }
+            }
+        }*/
+
+        ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
 
         LoadSceneEvent lse{ this };
         EventManager::Broadcast<LoadSceneEvent>(&lse);
@@ -158,7 +157,13 @@ namespace oo
     void Scene::UnloadScene()
     {
         PRINT(m_name);
-        //delete m_transformSystem;
+
+        EndOfFrameUpdate();
+        m_lookupTable.clear();
+        m_gameObjects.clear();
+        m_rootGo.reset();
+        m_scenegraph.reset();
+        m_ecsWorld.reset();
     }
     
     void Scene::ReloadScene()
@@ -308,12 +313,12 @@ namespace oo
         m_gameObjects.erase(go_ptr);
         
         // actual deletion : Immediate.
-        m_ecsWorld.destroy(go_ptr->GetEntity());
+        m_ecsWorld->destroy(go_ptr->GetEntity());
     }
     
     Ecs::ECSWorld& Scene::GetWorld()
     {
-        return m_ecsWorld;
+        return *m_ecsWorld;
     }
 
     scenegraph const Scene::GetGraph() const
