@@ -33,9 +33,15 @@ public:
     static std::filesystem::path ConvertPlainAsset(const std::filesystem::path& fp);
 
 private:
+    struct InternalAssetInfo
+    {
+        std::filesystem::path originalPath;
+        std::filesystem::file_time_type lastWriteTime;
+    };
+
     bool isRunning = true;
     std::unordered_map<Snowflake, Asset> assets;
-    std::unordered_map<Snowflake, std::filesystem::path> assetMap;
+    std::unordered_map<Snowflake, InternalAssetInfo> internalInfo;
     std::thread fileWatchThread;
     std::vector<std::thread> loadThreads;
 

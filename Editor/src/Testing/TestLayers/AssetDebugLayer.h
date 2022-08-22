@@ -32,19 +32,30 @@ public:
 
     void OnAttach() override final
     {
-        AssetManager manager;
-        /*Asset myFile = manager.LoadFile("infile.txt");*/
-        Asset myFile = manager.Load(1331783729154L);
-        std::ifstream* ifs = myFile.GetData<std::ifstream>();
-        while (ifs->good())
-        {
-            std::cout << static_cast<char>(ifs->get());
-        }
-        std::cout << myFile.GetHeader().id;
     }
 
     void OnUpdate() override final
     {
-
+        if (oo::input::IsAnyKeyPressed())
+        {
+            static AssetManager manager;
+            try
+            {
+                //Asset myFile = manager.LoadFile("assets/infile.txt");
+                Asset myFile = manager.Load(2509311311874L);
+                std::ifstream* ifs = myFile.GetData<std::ifstream>();
+                ifs->clear();
+                ifs->seekg(0);
+                while (ifs->good())
+                {
+                    std::cout << static_cast<char>(ifs->get());
+                }
+                std::cout << myFile.GetHeader().id;
+            }
+            catch (...)
+            {
+                std::cout << "not found\n";
+            }
+        }
     }
 };
