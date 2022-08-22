@@ -168,6 +168,15 @@ void Serializer::LoadScene(oo::Scene& scene)
 	ifs.close();
 }
 
+void Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go)
+{
+
+}
+
+void Serializer::LoadPrefab(std::shared_ptr<oo::GameObject> go)
+{
+}
+
 void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val)
 {
 	//will have more components

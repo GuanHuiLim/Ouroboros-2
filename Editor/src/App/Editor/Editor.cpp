@@ -25,7 +25,7 @@ void Editor::Update()
 {
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-	MenuBar();
+	//MenuBar();
 
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();

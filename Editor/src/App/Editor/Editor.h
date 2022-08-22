@@ -9,7 +9,7 @@ public:
 	Editor();
 	~Editor();
 	void Update();
-	void MenuBar();
+	static void MenuBar();
 
 	StyleEditor m_styleEditor;
 	WarningMessage m_warningMessage;

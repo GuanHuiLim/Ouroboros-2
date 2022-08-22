@@ -35,6 +35,8 @@ public:
 	*//**********************************************************************************/
 	static void LoadScene(oo::Scene& scene);
 
+	static void SavePrefab(std::shared_ptr<oo::GameObject> go);
+	static void LoadPrefab(std::shared_ptr<oo::GameObject> go);
 private:
 	//saving
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val);

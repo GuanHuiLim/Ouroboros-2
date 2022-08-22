@@ -40,23 +40,9 @@ void EditorLayer::OnUpdate()
         ImGuiManager_Launcher::UpdateAllUI();
     else
 	    m_editor.Update();
-    //#if EDITOR_DEBUG || EDITOR_RELEASE
-    /*if (m_showDebugInfo)
-    {
-    oo::TimeDebugInfo timeDebugInfo = oo::Timestep::GetDebugTimeInfo();
 
-    ImGui::Begin("fpsviewer", nullptr,
-    ImGuiWindowFlags_NoScrollbar
-    | ImGuiWindowFlags_NoCollapse
-    | ImGuiWindowFlags_NoTitleBar
-    | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Rolling FPS %.2f", timeDebugInfo.AvgFPS);
-    ImGui::Text("Rolling DeltaTime %.6f", timeDebugInfo.AvgDeltaTime);
-    ImGui::Text("Current Timescale %.2f", timeDebugInfo.CurrentTimeScale);
-    ImGui::Text("Time elpased %.2f", timeDebugInfo.TimeElapsed);
-    ImGui::End();
-    }*/
-    //#endif
+	//top menu bar
+	Editor::MenuBar();
 
     //m_editor.ShowAllWidgets();
 
