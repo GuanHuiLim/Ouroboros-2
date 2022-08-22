@@ -57,6 +57,7 @@ namespace oo
 
         while (m_running)
         {
+            OO_TracyProfiler::CheckIfServerToBeOpened();
             OO_TracyProfiler::CheckIfServerToBeClosed();
 
             /*Calculate dt*/
