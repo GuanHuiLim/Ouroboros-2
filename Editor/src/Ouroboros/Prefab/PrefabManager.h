@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <Ouroboros/ECS/GameObject.h>
 namespace oo
 {
 
@@ -8,7 +9,7 @@ namespace oo
 	public:
 		PrefabManager();
 		~PrefabManager();
-
+		static void MakePrefab(std::shared_ptr<oo::GameObject> go);
 	private:
 
 	};

@@ -19,6 +19,8 @@ public:
 		MAT3_TYPE,
 		MAT4_TYPE,
 		QUAT_TYPE,
+
+		PATH_TYPE,
 	};
 
 	inline static std::unordered_map<rttr::type::type_id, UItypes> types;

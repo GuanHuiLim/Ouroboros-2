@@ -7,6 +7,8 @@
 #include "App/Editor/Events/LoadSceneEvent.h"
 #include "App/Editor/Events/ImGuiRestartEvent.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "App/Editor/Events/OpenFileEvent.h"
+#include "Project.h"
 Editor::Editor()
 {
 	UI_RTTRType::Init();
@@ -37,8 +39,8 @@ void Editor::Update()
 	}
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_D))
 	{
-		LoadSceneEvent lse = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>().get();
-		oo::EventManager::Broadcast(&lse);
+		OpenFileEvent ofe(Project::GetSceneFolder().string() + "Scene1.scn");
+		oo::EventManager::Broadcast(&ofe);
 	}
 }
 

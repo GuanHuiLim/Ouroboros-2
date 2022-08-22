@@ -11,6 +11,7 @@ namespace oo
 		~PrefabComponent();
 		void Init(std::filesystem::path& p);
 		std::filesystem::path prefab_filePath;
+		RTTR_ENABLE();
 	private:
 	};
 

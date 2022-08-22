@@ -9,10 +9,10 @@ public:
 public:
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
-	static std::filesystem::path GetSceneFolder() { return s_sceneFolder; };
-	static std::filesystem::path GetScriptCoreDLL() { return s_scriptcoreDLL; };
-	static std::filesystem::path GetScriptModulePath() { return s_scriptmodulePath; };
-	static std::filesystem::path GetScriptBuildPath() { return s_scriptbuildPath; };
+	static std::filesystem::path GetSceneFolder() { return s_projectFolder.string() + s_sceneFolder.string(); };
+	static std::filesystem::path GetScriptCoreDLL() { return s_projectFolder.string() +s_scriptcoreDLL.string(); };
+	static std::filesystem::path GetScriptModulePath() { return s_projectFolder.string() + s_scriptmodulePath.string(); };
+	static std::filesystem::path GetScriptBuildPath() { return s_projectFolder.string() + s_scriptbuildPath.string(); };
 private:
 	
 	inline static std::filesystem::path s_configFile;
