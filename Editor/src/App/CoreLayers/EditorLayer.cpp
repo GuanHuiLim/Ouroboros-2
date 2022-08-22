@@ -43,7 +43,18 @@ void EditorLayer::OnUpdate()
 
 	//top menu bar
 	Editor::MenuBar();
-
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("Project"))
+		{
+			if (ImGui::MenuItem("Open Launcher"))
+			{
+				m_editormode = false;
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
     //m_editor.ShowAllWidgets();
 
     //if (m_demo)

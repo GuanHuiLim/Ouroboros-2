@@ -148,8 +148,12 @@ void Hierarchy::NormalView()
 
 	{
 		ImVec2 temp = ImGui::GetCursorPos();
-		ImGui::Selectable("##parent to root", false, ImGuiSelectableFlags_AllowItemOverlap | ImGuiSelectableFlags_Disabled,ImGui::GetContentRegionAvail());
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
+		if (ImGui::Selectable("##parent to root", false, ImGuiSelectableFlags_AllowItemOverlap, ImGui::GetContentRegionAvail()))
+			s_selected.clear();
 		ImGui::SetCursorPos(temp);
+		ImGui::PopStyleColor(2);
 		if (ImGui::BeginDragDropTarget())
 		{
 			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
