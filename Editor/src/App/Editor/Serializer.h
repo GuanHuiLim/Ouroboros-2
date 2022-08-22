@@ -46,11 +46,12 @@ public:
 	*//**********************************************************************************/
 	static void LoadScene(oo::Scene& scene);
 
-	static void SavePrefab(std::shared_ptr<oo::GameObject> go, oo::Scene& scene);
+	static std::filesystem::path SavePrefab(std::shared_ptr<oo::GameObject> go, oo::Scene& scene);
 	static void LoadPrefab(std::shared_ptr<oo::GameObject> go);
 private:
 	//saving
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val);
+	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val);
 	template <typename Component>
 	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val);
 	//loading
@@ -183,7 +184,8 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		}
 		//processes the components		
 		LoadObject(*gameobj, members, membersEnd);
-		gameobj = scene->CreateGameObject();
+		if (iter + 1 != document.MemberEnd())
+			gameobj = scene->CreateGameObject();
 	}
 	ifs.close();
 }
@@ -194,6 +196,7 @@ inline void Serializer::AddLoadComponent() noexcept
 	load_components.emplace(rttr::type::get<Component>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v) 
 		{
+			go.AddComponent<Component>();
 			LoadComponent<Component>(go, std::move(v));
 		});
 }
@@ -204,6 +207,7 @@ inline void Serializer::AddLoadComponent<oo::PrefabComponent>() noexcept
 	load_components.emplace(rttr::type::get<oo::PrefabComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
 		{
+			go.AddComponent<oo::PrefabComponent>();
 			LoadComponent<oo::PrefabComponent>(go, std::move(v));
 		});
 }

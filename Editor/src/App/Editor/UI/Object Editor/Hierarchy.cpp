@@ -146,6 +146,23 @@ void Hierarchy::NormalView()
 {
 	RightClickOptions();
 
+	{
+		ImVec2 temp = ImGui::GetCursorPos();
+		ImGui::Selectable("##parent to root", false, ImGuiSelectableFlags_AllowItemOverlap | ImGuiSelectableFlags_Disabled,ImGui::GetContentRegionAvail());
+		ImGui::SetCursorPos(temp);
+		if (ImGui::BeginDragDropTarget())
+		{
+			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
+			if (payload)
+			{
+				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+				auto source = scene->FindWithInstanceID(m_dragged);
+				scene->GetRoot()->AddChild(*source);//s_selected
+			}
+			ImGui::EndDragDropTarget();
+		}
+	}
+
 	bool found_dragging = false;
 	bool rename_item = false;
 	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
