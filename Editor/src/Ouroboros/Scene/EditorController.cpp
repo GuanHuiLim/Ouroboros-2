@@ -28,7 +28,8 @@ Technology is prohibited.
 namespace oo
 {
     EditorController::EditorController(SceneManager& sceneManager, RuntimeController& runtimeController)
-        : m_sceneManager{ sceneManager }, m_runtimeController{ runtimeController }
+        : m_sceneManager { sceneManager }
+        , m_runtimeController { runtimeController }
     {
         EventManager::Subscribe<EditorController, Scene::OnInitEvent>(this, &EditorController::OnRuntimeSceneChange);
         EventManager::Subscribe<EditorController, LoadProjectEvent>(this, &EditorController::OnLoadProjectEvent);
@@ -40,8 +41,6 @@ namespace oo
         std::filesystem::path filename = loadProjEvent->m_startScene;
         SceneInfo sceneData{ filename.stem().string(), loadProjEvent->m_startScene };
         Init(sceneData);
-
-        //SetLoadPaths(loadProjEvent->m_filename_pathname);
     }
 
     void EditorController::OnOpenFileEvent(OpenFileEvent* openFileEvent)
@@ -49,28 +48,23 @@ namespace oo
         if (openFileEvent->m_type == OpenFileEvent::FileType::PREFAB ||
             openFileEvent->m_type == OpenFileEvent::FileType::SCENE)
         {
-            //std::filesystem::path filename = openFileEvent->m_filepath;
-            //SceneInfo sceneData{ filename.stem().string(), openFileEvent->m_filepath.string() };
-            //Init(sceneData);
             LoadScene(openFileEvent->m_filepath.string());
         }
     }
 
     void EditorController::Init(SceneInfo startfile)
     {   
-        if (auto ptr = m_editorScene.lock())
-            m_sceneManager.RemoveScene(ptr->GetSceneName());
+        // check current scene is already loaded
+        auto currentScene = m_editorScene.lock();
+        if (currentScene != nullptr)
+            m_sceneManager.RemoveScene(currentScene->GetSceneName());
 
         auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>(startfile.SceneName, startfile.LoadPath);
-        ASSERT(!success);
-
+        ASSERT_MSG(!success, "Scene couldnt be loaded, is the file path passed in correct?");
+        
         m_editorScene = editorScene;
 
         m_sceneManager.ChangeScene(m_editorScene);
-
-        //m_editorScene = std::make_shared<EditorScene>("");
-        //SceneManager::ChangeScene(m_editorScene);
-        //SceneManager::GetInstance().OnActiveSceneChange += [] { OnRuntimeSceneChange(); };
     }
 
     void EditorController::Simulate()
@@ -91,8 +85,7 @@ namespace oo
             // set active scene to runtime scene
             m_activeState = STATE::RUNNING;
 
-            ////Force save when you press play [ not sure if intended ]
-            //m_editorScene.lock()->Save();
+            //Force save when you press play [ not sure if intended ]
             m_editorScene.lock()->Save();
 
             m_temporaryAdd = !m_runtimeController.HasScene(m_editorScene.lock()->GetSceneName());
@@ -101,11 +94,9 @@ namespace oo
                 m_runtimeController.AddLoadPath(m_editorScene.lock()->GetSceneName(), m_editorScene.lock()->GetFilePath());
 
             // Generate all the scenes on run
-            //RuntimeController::GenerateScenes();
             m_runtimeController.GenerateScenes();
 
             // Change runtime scene to currently selected
-            //RuntimeController::ChangeRuntimeScene(m_editorScene.lock()->GetSceneName());
             m_runtimeController.ChangeRuntimeScene(m_editorScene.lock()->GetSceneName());
         }
         // if in runtime 
@@ -144,7 +135,6 @@ namespace oo
         //{
         //    m_runtimeScene.lock()->ProcessFrame(1);
         //}
-
     }
 
     void EditorController::LoadScene(const std::string& newPath)
@@ -154,22 +144,20 @@ namespace oo
         if (m_activeState == STATE::RUNNING) return;
 
         // Remove all old scenes when loading a new one
-        //RuntimeController::RemoveScenes();
         m_runtimeController.RemoveScenes();
+
         // remove the current scene
         if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
-            //RuntimeController::RemoveLoadPath(m_editorScene.lock()->GetSceneName())
             m_runtimeController.RemoveLoadPath(m_editorScene.lock()->GetSceneName());
         }
 
         // change editor scene
-        //m_editorScene.lock()->ReloadWorldWithPath(newPath);
         m_editorScene.lock()->ReloadSceneWithPath(newPath);
 
         // reset runtime Scene to be nullptr
-        //m_runtimeScene.lock() = nullptr;
+        m_runtimeScene.lock() = nullptr;
     }
 
     bool EditorController::GetActiveScenePaused() const
@@ -198,7 +186,6 @@ namespace oo
         //    oo::Timestep::TimeScale = 1.0;
         //}
 
-        //RuntimeController::RemoveScenes();
         m_runtimeController.RemoveScenes();
         // remove the current scene
         if (m_temporaryAdd)
@@ -216,8 +203,5 @@ namespace oo
         // if the scene is active, it has to be a runtime scene!
         if (m_activeState == STATE::RUNNING)
             m_runtimeScene = std::static_pointer_cast<RuntimeScene>(m_sceneManager.GetActiveScene().lock());
-
-        /*if (m_activeScene == STATE::RUNNING)
-            m_runtimeScene = std::static_pointer_cast<RuntimeScene>(SceneManager::GetActiveScenePointer());*/
     }
 }

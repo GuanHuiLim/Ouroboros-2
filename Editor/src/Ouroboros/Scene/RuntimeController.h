@@ -39,7 +39,7 @@ namespace oo
         void OnLoadProjectEvent(LoadProjectEvent*);
 
     public:
-        void SetLoadPaths(container_type loadPaths);
+        void SetLoadPaths(container_type&& loadPaths);
         container_type GetLoadPaths() const;
         void GenerateScenes();
         void RemoveScenes();

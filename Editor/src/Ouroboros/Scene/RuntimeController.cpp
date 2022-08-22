@@ -20,23 +20,22 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 namespace oo
 {
-    //RuntimeController::container_type RuntimeController::m_loadpaths;
-
-    RuntimeController::RuntimeController(SceneManager& sceneManager) : m_sceneManager{ sceneManager }
+    RuntimeController::RuntimeController(SceneManager& sceneManager) 
+        : m_sceneManager{ sceneManager }
     {
         EventManager::Subscribe<RuntimeController, LoadProjectEvent>(this, &RuntimeController::OnLoadProjectEvent);
     }
 
     void RuntimeController::OnLoadProjectEvent(LoadProjectEvent* loadProjEvent)
     {
-        SetLoadPaths(loadProjEvent->m_filename_pathname);
+        SetLoadPaths(std::move(loadProjEvent->m_filename_pathname));
     }
 
-    void RuntimeController::SetLoadPaths(container_type loadPaths)
+    void RuntimeController::SetLoadPaths(container_type&& loadPaths)
     {
         RemoveScenes();
         ClearSceneLibrary();
-        m_loadpaths = loadPaths;
+        m_loadpaths = std::move(loadPaths);
     }
 
     RuntimeController::container_type RuntimeController::GetLoadPaths() const 

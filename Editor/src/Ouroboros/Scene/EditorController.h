@@ -47,7 +47,6 @@ namespace oo
     public:
         EditorController(SceneManager& sceneManager, RuntimeController& runtimeController);
 
-
         void Simulate();
         void Pause();
         void Stop();
