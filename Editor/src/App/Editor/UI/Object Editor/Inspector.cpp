@@ -11,6 +11,7 @@
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 #include <Ouroboros/Scene/Scene.h>
+#include <Ouroboros/Prefab/PrefabManager.h>
 
 
 #include <Ouroboros/ECS/GameObject.h>
@@ -118,6 +119,14 @@ void Inspector::Show()
 			{
 				OpenFileEvent ofe(gameobject->GetComponent<oo::PrefabComponent>().prefab_filePath);
 				oo::EventManager::Broadcast(&ofe);
+			}
+		}
+		else
+		{
+			ImGui::SameLine();
+			if (ImGui::Button("Create Prefab"))
+			{
+				oo::PrefabManager::MakePrefab(gameobject);
 			}
 		}
 		//gameobject->GetComponent<>();
