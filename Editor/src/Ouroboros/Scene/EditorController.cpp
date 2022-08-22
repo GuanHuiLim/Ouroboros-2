@@ -57,7 +57,10 @@ namespace oo
         // check current scene is already loaded
         auto currentScene = m_editorScene.lock();
         if (currentScene != nullptr)
+        {
+            m_editorScene.reset();
             m_sceneManager.RemoveScene(currentScene->GetSceneName());
+        }
 
         auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>(startfile.SceneName, startfile.LoadPath);
         ASSERT_MSG(!success, "Scene couldnt be loaded, is the file path passed in correct?");
