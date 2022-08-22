@@ -14,7 +14,7 @@ namespace oo
         // find msbuild path
         FILE* msbuildPathFile = _popen("\"C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe\" -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\\**\\Bin\\MSBuild.exe", "r");
         if (msbuildPathFile == nullptr)
-            throw CompileException(CompileException::Type::MSBUILD_NOTFOUND, "ScriptEngine Compile Exception: Failed to find msbuild");
+            throw std::exception("ScriptEngine Compile Exception: Failed to find msbuild");
 
         char buffer[1024];
         fgets(buffer, 1024, msbuildPathFile);
@@ -28,7 +28,7 @@ namespace oo
                             + "\";warningsonly -p:Configuration=\"Debug OpenGL\";Platform=\"x64\"");
         FILE* compileResult = _popen(command.c_str(), "r");
         if (compileResult == nullptr)
-            throw CompileException(CompileException::Type::MSBUILD_FAILED, "ScriptEngine Compile Exception: msbuild failed to compile");
+            throw std::exception("ScriptEngine Compile Exception: msbuild failed to compile");
         _pclose(compileResult);
     }
 
@@ -47,11 +47,11 @@ namespace oo
         }
         MonoDomain* domain = mono_domain_create_appdomain((char*)"scripts", NULL);
         if (!mono_domain_set(domain, false))
-            throw LoadException(LoadException::Type::DOMAIN_FAILED, "ScriptEngine Load Exception: failed to set scripting domain");
+            throw std::exception("ScriptEngine Load Exception: failed to set scripting domain");
 
         MonoAssembly* assembly = mono_domain_assembly_open(domain, dllPath.c_str());
         if (assembly == nullptr)
-            throw LoadException(LoadException::Type::ASSEMBLY_FAILED, "ScriptEngine Load Exception: failed to load assembly");
+            throw std::exception("ScriptEngine Load Exception: failed to load assembly");
 
         MonoImage* scripting = mono_assembly_get_image(assembly);
         libraryMap.insert(std::pair<const char*, MonoImage*>{ "Scripting", mono_assembly_get_image(assembly) });
@@ -98,7 +98,7 @@ namespace oo
         if (oldDomain != nullptr && oldDomain != mono_get_root_domain())
         {
             if (!mono_domain_set(mono_get_root_domain(), false))
-                throw LoadException(LoadException::Type::DOMAIN_FAILED, "ScriptEngine Unload Exception: failed to set root domain");
+                throw std::exception("ScriptEngine Unload Exception: failed to set root domain");
             mono_domain_unload(oldDomain);
             // Trigger C# garbage collection, not necessary but good point to clean up stuff
             mono_gc_collect(mono_gc_max_generation());
@@ -389,7 +389,7 @@ namespace oo
         {
             MonoMethod* stringMethod = mono_class_get_method_from_name(mono_get_exception_class(), "ToString", 0);
             MonoString* excString = (MonoString*)mono_runtime_invoke(stringMethod, exception, NULL, NULL);
-            throw ScriptException(mono_string_to_utf8(excString));
+            throw std::exception(mono_string_to_utf8(excString));
         }
         return result;
     }

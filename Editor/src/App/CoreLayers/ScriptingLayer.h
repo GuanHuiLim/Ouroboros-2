@@ -62,17 +62,19 @@ namespace oo
                 {
                     ScriptEngine::Compile("TestProject/Scripting.csproj", "TestProject/bin/Debug/warnings.log", "TestProject/bin/Debug/errors.log");
                 }
-                catch (ScriptEngine::CompileException const& e)
+                catch (std::exception const& e)
                 {
-                    LOG_ERROR(e.message);
+                    LOG_ERROR(e.what());
+                    return;
                 }
                 try
                 {
                     ScriptEngine::Load("TestProject/bin/Debug/Scripting.dll");
                 }
-                catch (ScriptEngine::LoadException const& e)
+                catch (std::exception const& e)
                 {
-                    LOG_ERROR(e.message);
+                    LOG_ERROR(e.what());
+                    return;
                 }
                 std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour"));
                 ScriptDatabase::Initialize(classList);
@@ -84,9 +86,9 @@ namespace oo
                 {
                     ScriptEngine::InvokeFunction(obj, "Awake");
                 }
-                catch(ScriptEngine::ScriptException const& e)
+                catch(std::exception const& e)
                 {
-                    LOG_ERROR(e.message);
+                    LOG_ERROR(e.what());
                 }
                 LOG_TRACE("DONE SUCCESSFULLY");
             }
@@ -96,9 +98,9 @@ namespace oo
                 {
                     ScriptEngine::InvokeFunction(obj, "Update");
                 }
-                catch (ScriptEngine::ScriptException const& e)
+                catch (std::exception const& e)
                 {
-                    LOG_ERROR(e.message);
+                    LOG_ERROR(e.what());
                 }
             });
         }

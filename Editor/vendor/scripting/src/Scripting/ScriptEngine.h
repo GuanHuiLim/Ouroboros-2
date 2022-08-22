@@ -15,51 +15,6 @@ namespace oo
     class ScriptEngine
     {
     public:
-        // Exceptions
-        class CompileException : public std::exception
-        {
-        public:
-            enum class Type
-            {
-                MSBUILD_NOTFOUND,
-                MSBUILD_FAILED,
-            };
-
-        public:
-            CompileException(Type aType, const char* aMessage) : type{ aType }, message{ aMessage } {};
-
-        public:
-            Type type;
-            const char* message;
-        };
-
-        class LoadException : public std::exception
-        {
-        public:
-            enum class Type
-            {
-                DOMAIN_FAILED,
-                ASSEMBLY_FAILED,
-            };
-
-        public:
-            LoadException(Type aType, const char* aMessage) : type{ aType }, message{ aMessage } {};
-
-        public:
-            Type type;
-            const char* message;
-        };
-
-        class ScriptException : public std::exception
-        {
-        public:
-            ScriptException(const char* aMessage) : message{ aMessage } {}
-
-        public:
-            const char* message;
-        };
-
-    public:
         // Control functions
         static void Compile(std::string const& projPath, std::string const& warningsPath, std::string const& errorsPath);
         static void Load(std::string const& dllPath);
