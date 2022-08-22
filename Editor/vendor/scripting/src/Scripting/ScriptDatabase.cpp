@@ -7,6 +7,16 @@ namespace oo
     ScriptDatabase::ObjectCheck ScriptDatabase::ObjectEnableCheck;
     std::unordered_map<std::string, ScriptDatabase::InstancePool> ScriptDatabase::scriptMap;
 
+    void ScriptDatabase::Initialize(std::vector<MonoClass*> const& classList)
+    {
+        DeleteAll();
+        for (MonoClass* klass : classList)
+        {
+            std::string key = std::string(mono_class_get_namespace(klass)) + "." + mono_class_get_name(klass);
+            scriptMap.insert(std::pair<std::string, InstancePool>(key, InstancePool{}));
+        }
+    }
+
     void ScriptDatabase::Initialize(std::vector<std::string> const& classList)
     {
         DeleteAll();

@@ -94,6 +94,7 @@ project "Editor"
 		
 		--"mono-2.0-sgen",
 		"Scripting",
+		"ScriptCore",
         
         --Linking to vulkan Library [Uncomment the next line when youre done setting up]
         "Vulkan",

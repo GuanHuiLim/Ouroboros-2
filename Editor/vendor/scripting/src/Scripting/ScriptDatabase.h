@@ -38,6 +38,7 @@ namespace oo
         {
             ObjectEnableCheck = EnableCheck;
         }
+        static void Initialize(std::vector<MonoClass*> const& classList);
         static void Initialize(std::vector<std::string> const& classList);
 
         static MonoObject* Instantiate(UUID id, const char* name_space, const char* name);

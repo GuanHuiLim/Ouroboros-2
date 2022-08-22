@@ -47,6 +47,7 @@ include "Editor/vendor/Archetypes_Ecs"
 include "Editor/vendor/sharedlib"
 include "Editor/vendor/vulkan"
 include "Editor/vendor/scripting"
+include "Editor/vendor/scriptcore"
 group ""
 
 include "Editor"

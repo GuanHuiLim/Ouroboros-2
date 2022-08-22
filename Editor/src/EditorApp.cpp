@@ -31,6 +31,7 @@ Technology is prohibited.
 // Core Essential Layers
 #include "App/CoreLayers/SceneLayer.h"
 #include "App/Corelayers/EditorLayer.h"
+#include "App/CoreLayers/ScriptingLayer.h"
 
 // External includes
 #include <imgui/imgui.h>
@@ -59,6 +60,9 @@ public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
+        // Scripting Layer
+        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>());
+
         //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
@@ -72,15 +76,6 @@ public:
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
-
-        try
-        {
-            oo::ScriptEngine::Load("");
-        }
-        catch(oo::ScriptEngine::LoadException const& e)
-        {
-            LOG_TRACE(e.message);
-        }
     }
 
     void OnUpdate() override
