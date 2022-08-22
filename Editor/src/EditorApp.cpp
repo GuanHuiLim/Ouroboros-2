@@ -27,6 +27,7 @@ Technology is prohibited.
 // Debug Layers
 #include "Testing/TestLayers/InputDebugLayer.h"
 #include "Testing/TestLayers/MainDebugLayer.h"
+#include "Testing/TestLayers/AssetDebugLayer.h"
 
 // Core Essential Layers
 #include "App/CoreLayers/SceneLayer.h"
@@ -60,6 +61,7 @@ public:
         //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
+        m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
 
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
         // Main Layers
