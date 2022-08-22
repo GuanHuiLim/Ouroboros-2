@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "EcsUtils.h"
-
+#include "EventCallback.h"
 #include <assert.h>
 
 namespace Ecs
@@ -13,6 +13,8 @@ namespace Ecs
 		int full_chunks{0};
 		//full chunks allways on the start of the array
 		std::vector<DataChunk*> chunks{};
+		EventCallback addition_callbacks;
+		EventCallback deletion_callbacks;
 	};
 
 	//contains info for mapping which chunk an entity belongs to

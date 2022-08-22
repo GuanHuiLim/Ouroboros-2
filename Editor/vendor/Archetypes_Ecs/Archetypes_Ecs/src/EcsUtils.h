@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <cstddef>
 #include <typeinfo>
+#include <utility>
+#include <concepts>
 namespace Ecs
 {
 	constexpr size_t BLOCK_MEMORY_16K = 16384;
@@ -63,4 +65,25 @@ namespace Ecs
 	};
 
 	struct TestComponent{};
+
+	
+}
+
+namespace Ecs::internal::event
+{
+	struct Event
+	{
+	protected:
+		virtual ~Event() {};
+	};
+
+}
+
+namespace Ecs
+{
+	struct EntityEvent : public internal::event::Event
+	{
+		EntityID entity;
+		EntityEvent(EntityID eid) : entity{ eid } {}
+	};
 }

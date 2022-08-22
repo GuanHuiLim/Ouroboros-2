@@ -33,6 +33,18 @@ namespace Ecs
 	{
 		IECSWorld world;
 	public:
+		template<typename C>
+		using CompEventFnPtr = typename IECSWorld::CompEventFnPtr<C>;
+		template<typename T, typename C>
+		using CompEventMemberFnPtr = typename IECSWorld::CompEventMemberFnPtr<T,C>;
+
+
+		using FnPtr = typename IECSWorld::FnPtr;
+		template<typename T>
+		using MemberFnPtr = typename IECSWorld::MemberFnPtr<T>;
+
+
+
 		template<typename Func>
 		inline void for_each(IQuery& query, Func&& function)
 		{
@@ -103,11 +115,18 @@ namespace Ecs
 		std::vector<uint64_t> const componentHashes(EntityID id);
 
 		void destroy(EntityID eid);
-
-		template<typename S>
+		
+		/*template<typename S>
 		S* Add_System()
 		{
 			return world.Add_System<S>();
+		}*/
+
+		//adds a system, constructor arguements supported
+		template<typename S, typename... Args>
+		S* Add_System(Args&&... arguementList)
+		{
+			return world.Add_System<S, Args...>(std::forward<Args>(arguementList)...);
 		}
 
 		template<typename S>
@@ -115,5 +134,57 @@ namespace Ecs
 		{
 			return world.Get_System<S>();
 		}
+
+		template<typename S>
+		void Run_System()
+		{
+			world.Run_System<S>(this);
+		}
+
+		//requires type Ecs::EntityEvent* for the function's parameters
+		void SubscribeOnAddEntity(FnPtr function);
+		//requires type Ecs::EntityEvent* for the function's parameters
+		//T is member function's class
+		template<typename T>
+		void SubscribeOnAddEntity(T* instance, MemberFnPtr<T> function)
+		{
+			world.SubscribeOnAddEntity<T>(instance, function);
+		}
+
+		//requires type Ecs::EntityEvent* for the function's parameters
+		void SubscribeOnDestroyEntity(FnPtr function);
+		//requires type Ecs::EntityEvent* for the function's parameters
+		//T is member function's class
+		template<typename T>
+		void SubscribeOnDestroyEntity(T* instance, MemberFnPtr<T> function)
+		{
+			world.SubscribeOnDestroyEntity(instance, function);
+		}
+		//C is Component type
+		template<typename C>
+		void SubscribeOnAddComponent(CompEventFnPtr<C> function)
+		{
+			world.SubscribeOnAddComponent<C>(function);
+		}
+		//C is Component type
+		template<typename C>
+		void SubscribeOnRemoveComponent(CompEventFnPtr<C> function)
+		{
+			world.SubscribeOnRemoveComponent<C>(function);
+		}
+
+		//T is the type of the member function's class, C is Component type
+		template<typename T, typename C>
+		void SubscribeOnAddComponent(T* instance, CompEventMemberFnPtr<T, C> function)
+		{
+			world.SubscribeOnAddComponent<T,C>(instance, function);
+		}
+		//T is the type of the member function's class, C is Component type
+		template<typename T, typename C>
+		void SubscribeOnRemoveComponent(T* instance, CompEventMemberFnPtr<T, C> function)
+		{
+			world.SubscribeOnRemoveComponent<T, C>(instance, function);
+		}
+
 	};
 }
