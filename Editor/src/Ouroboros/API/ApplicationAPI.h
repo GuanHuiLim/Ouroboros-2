@@ -57,15 +57,17 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* Time Functions for C#                                                       */
     /*-----------------------------------------------------------------------------*/
-    //SCRIPT_API float Time_GetTimeScale()
-    //{
-    //    return static_cast<float>(Timestep::TimeScale);
-    //}
+    SCRIPT_API float Time_GetTimeScale()
+    {
+        // return static_cast<float>(Timestep::TimeScale);
+        return timer::get_timescale();
+    }
 
-    //SCRIPT_API void Time_SetTimeScale(float timeScale)
-    //{
-    //    Timestep::TimeScale = timeScale;
-    //}
+    SCRIPT_API void Time_SetTimeScale(float timeScale)
+    {
+        // Timestep::TimeScale = timeScale;
+        timer::set_timescale(timeScale);
+    }
 
     SCRIPT_API float Time_GetDeltaTime()
     {

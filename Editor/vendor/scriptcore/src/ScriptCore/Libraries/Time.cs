@@ -4,14 +4,14 @@ namespace Ouroboros
 {
     public static class Time
     {
-        //[DllImport("__Internal")] private static extern float Time_GetTimeScale();
-        //[DllImport("__Internal")] private static extern void Time_SetTimeScale(float timeScale);
+        [DllImport("__Internal")] private static extern float Time_GetTimeScale();
+        [DllImport("__Internal")] private static extern void Time_SetTimeScale(float timeScale);
 
-        //public static float timeScale
-        //{
-        //    get { return Time_GetTimeScale(); }
-        //    set { Time_SetTimeScale(value); }
-        //}
+        public static float timeScale
+        {
+            get { return Time_GetTimeScale(); }
+            set { Time_SetTimeScale(value); }
+        }
 
         [DllImport("__Internal")] private static extern float Time_GetDeltaTime();
 
