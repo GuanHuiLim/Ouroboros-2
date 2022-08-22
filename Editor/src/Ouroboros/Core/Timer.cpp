@@ -158,5 +158,10 @@ namespace oo
         double raw_dt_precise() { return s_raw_dt; }
 
         double raw_fps_precise() { return 1.0 / dt_precise(); }
+        
+        void set_timescale(double newTimeScale)
+        {
+            s_timescale = std::clamp(newTimeScale, 0.0, newTimeScale);
+        }
     }
 }
