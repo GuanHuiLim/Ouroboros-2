@@ -91,8 +91,8 @@ namespace oo
         void SaveToFile();
     
         
-    private://for now
-        TransformSystem* m_transformSystem = nullptr;
+    private: //for now
+        std::unique_ptr<TransformSystem> m_transformSystem;
     
     private:
 

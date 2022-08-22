@@ -76,7 +76,7 @@ namespace oo
 
     Scene::~Scene()
     {
-        delete m_transformSystem;
+        //delete m_transformSystem;
     }
 
     void Scene::Init()
@@ -84,7 +84,8 @@ namespace oo
         Scene::OnInitEvent e;
         EventManager::Broadcast(&e);
         
-        m_transformSystem = new TransformSystem();
+        m_transformSystem = std::make_unique<TransformSystem>();
+
         /*{
             m_ecsWorld.Add_System<oo::TransformSystem>();
         }*/
@@ -134,6 +135,16 @@ namespace oo
     void Scene::Exit()
     {
         PRINT(m_name);
+        EndOfFrameUpdate();
+        m_lookupTable.clear();
+        
+        for (auto& [key, go] : m_lookupTable)
+            go.reset();
+
+        m_gameObjects.clear();
+        m_rootGo.reset();
+        m_scenegraph.release();
+        m_transformSystem.release();
     }
     
     void Scene::LoadScene()
@@ -147,12 +158,14 @@ namespace oo
     void Scene::UnloadScene()
     {
         PRINT(m_name);
+        //delete m_transformSystem;
     }
     
     void Scene::ReloadScene()
     {
         PRINT(m_name);
-        delete m_transformSystem;
+        UnloadScene();
+        LoadScene();
     }
 
     LoadStatus Scene::GetProgress() const

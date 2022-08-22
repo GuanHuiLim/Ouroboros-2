@@ -63,7 +63,6 @@ namespace oo
         ASSERT_MSG(!success, "Scene couldnt be loaded, is the file path passed in correct?");
         
         m_editorScene = editorScene;
-
         m_sceneManager.ChangeScene(m_editorScene);
     }
 
@@ -187,7 +186,8 @@ namespace oo
         //}
 
         m_runtimeController.RemoveScenes();
-        // remove the current scene
+        
+        // remove the current scene if it was added temporarily
         if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
@@ -204,4 +204,5 @@ namespace oo
         if (m_activeState == STATE::RUNNING)
             m_runtimeScene = std::static_pointer_cast<RuntimeScene>(m_sceneManager.GetActiveScene().lock());
     }
+
 }
