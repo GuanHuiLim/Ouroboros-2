@@ -281,7 +281,7 @@ namespace oo
 
     void Scene::DestroyGameObject(GameObject go)
     {
-        ASSERT_MSG(IsValid(go), "Working on an invalid GameObject");
+        ASSERT_MSG(IsValid(go) == false, "Working on an invalid GameObject");
 
         // safety check
         if (FindWithInstanceID(go.GetInstanceID()) == nullptr)
@@ -358,14 +358,14 @@ namespace oo
 
     void Scene::RemoveGameObject(Scene::go_ptr go_ptr)
     {
-        m_lookupTable.erase(go_ptr->GetInstanceID());
-        m_gameObjects.erase(go_ptr);
-        
-        // remove from scenegraph
-        if(auto scenegraph_go = go_ptr->GetSceneNode().lock())
+        // remove from scenegraph first. Timing is important here.
+        if (auto scenegraph_go = go_ptr->GetSceneNode().lock())
         {
             scenegraph_go->detach();
         }
+
+        m_lookupTable.erase(go_ptr->GetInstanceID());
+        m_gameObjects.erase(go_ptr);
 
         // actual deletion : Immediate.
         m_ecsWorld->destroy(go_ptr->GetEntity());
