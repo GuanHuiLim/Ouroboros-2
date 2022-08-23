@@ -1,18 +1,21 @@
 #pragma once
+//gameobject for getting component
 #include <Ouroboros/ECS/GameObject.h>
-
-
+//undo redo commands
+#include <Ouroboros/Commands/Component_ActionCommand.h>
+#include <Ouroboros/Commands/CommandStackManager.h>
+//rttr stuffs
 #include <rttr/type.h>
 #include <rttr/property.h>
-
+//imgui stuff
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-
+//std libs
 #include <unordered_map>
 #include <functional>
 #include <string>
 
-
+//editor utility
 #include <App/Editor/Utility/UI_RTTRType.h>
 #include <App/Editor/Utility/ImGuiStylePresets.h>
 
@@ -72,8 +75,14 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 		else
 		{
 			iter->second(name, v, set_value);
-			if(set_value == true)
+			if (set_value == true)
+			{
+				//undo redo command
+				oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<Component>
+					(prop.get_value(component), v, prop, gameobject.GetInstanceID()));
+				//set value to component
 				prop.set_value(component,v);
+			}
 		}
 		ImGui::Dummy({ 0,5.0f });
 	}

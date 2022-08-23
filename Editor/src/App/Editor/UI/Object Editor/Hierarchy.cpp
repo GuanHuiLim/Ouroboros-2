@@ -78,7 +78,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		m_hovered = node.get_handle();
 		if ((clicked || keyenter))
 		{
-			if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
+			if (ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LSHIFT)))
 				s_selected.push_back(handle);
 			else
 			{
