@@ -25,6 +25,8 @@ Technology is prohibited.
 #include "App/Editor/Events/LoadSceneEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
+#include "Ouroboros/ECS/DifferedSystem.h"
+
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -37,7 +39,7 @@ namespace oo
     Scene::Scene(std::string_view name) 
         : m_name{ name }
         , m_filepath{ "unassigned filepath" }
-        , m_createList {}
+        //, m_createList {}
         , m_removeList {}
         , m_lookupTable {}
         , m_gameObjects{}
@@ -63,6 +65,9 @@ namespace oo
         
             // Initialize Default Systems
             {
+                m_ecsWorld->Add_System<oo::DifferedSystem>();
+                m_ecsWorld->Get_System<oo::DifferedSystem>()->Link(this);
+
                 m_ecsWorld->Add_System<oo::TransformSystem>();
                 m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
             }
@@ -77,12 +82,6 @@ namespace oo
     
     void Scene::Update()
     {
-        //// these 2 steps are extremely important in ensuring correctness throughout a frame [not cheap though]
-        //// get latest scene graph
-        //m_scenegraph_previous = std::move(m_scenegraph_current);
-        ////initialize current graph
-        //m_scenegraph_current = std::make_unique<scenegraph>(*m_scenegraph_previous);
-
         // Update Systems
         {
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
@@ -110,13 +109,14 @@ namespace oo
 
             PRINT(m_name);
 
-            // go through all things to create and add at the end of frame and do so.
-            for (auto& [go, callback] : m_createList)
-            {
-                CreateGameObjectImmediate(go);
-                callback(go);
-            }
-            m_createList.clear();
+            //// go through all things to create and add at the end of frame and do so.
+            //for (auto& [go, callback] : m_createList)
+            //{
+            //    CreateGameObjectImmediate(go);
+            //    callback(go);
+            //}
+            //m_createList.clear();
+            m_ecsWorld->Get_System<oo::DifferedSystem>()->Run(m_ecsWorld.get());
 
             // go through all things to remove at the end of frame and do so.
             for (auto& uuid : m_removeList)
@@ -143,7 +143,6 @@ namespace oo
     void Scene::Exit()
     {
         PRINT(m_name);
-        m_transformSystem.reset();
     }
     
     void Scene::LoadScene()
@@ -155,7 +154,7 @@ namespace oo
 
             PRINT(m_name);
             
-            m_createList.clear();
+            //m_createList.clear();
             m_removeList.clear();
             m_lookupTable.clear();
             m_gameObjects.clear();
@@ -239,10 +238,15 @@ namespace oo
         return m_name; 
     }
 
-    Scene::go_ptr Scene::CreateGameObjectDiffered(go_on_create_callback onCreationCallback)
+    Scene::go_ptr Scene::CreateGameObjectDiffered()
     {
+        LOG_INFO("Creating Differed Game Object");
+
         Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(*this);
-        m_createList.emplace_back(std::make_pair(newObjectPtr, onCreationCallback));
+        //m_createList.emplace_back(std::make_pair(newObjectPtr, onCreationCallback));
+        newObjectPtr = CreateGameObjectImmediate(newObjectPtr);
+        // add differed component and set the entity ID to be itself
+        newObjectPtr->AddComponent<DifferedComponent>().entityID = newObjectPtr->GetEntity();
         return newObjectPtr;
     }
 
@@ -357,6 +361,12 @@ namespace oo
         m_lookupTable.erase(go_ptr->GetInstanceID());
         m_gameObjects.erase(go_ptr);
         
+        // remove from scenegraph
+        if(auto scenegraph_go = go_ptr->GetSceneNode().lock())
+        {
+            scenegraph_go->detach();
+        }
+
         // actual deletion : Immediate.
         m_ecsWorld->destroy(go_ptr->GetEntity());
     }

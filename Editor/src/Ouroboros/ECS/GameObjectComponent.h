@@ -20,6 +20,7 @@ Technology is prohibited.
 
 #include <rttr/type>
 #include <Ouroboros/EventSystem/Event.h>
+#include <Archetypes_Ecs/src/A_Ecs.h>
 
 namespace oo
 {

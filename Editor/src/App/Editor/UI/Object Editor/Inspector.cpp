@@ -15,6 +15,7 @@
 
 
 #include <Ouroboros/ECS/GameObject.h>
+#include <Ouroboros/ECS/DifferedComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
@@ -132,5 +133,6 @@ void Inspector::Show()
 		//gameobject->GetComponent<>();
 		DisplayComponent<oo::GameObjectComponent>(*gameobject);
 		DisplayComponent<oo::Transform3D>(*gameobject);
+		DisplayComponent<oo::DifferedComponent>(*gameobject);
 	}
 }

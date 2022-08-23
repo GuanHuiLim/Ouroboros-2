@@ -28,13 +28,13 @@ namespace oo
 {
     //forward declare
     class GameObject;
-    class TransformSystem;
 
     class Scene : public IScene
     {
     public:
         using go_ptr = std::shared_ptr<oo::GameObject>;
-        using go_on_create_callback = std::function<void(go_ptr)>;
+        //using go_on_create_callback = std::function<void(go_ptr)>;
+        
         // Events
     public:
         class OnInitEvent : public Event
@@ -63,7 +63,7 @@ namespace oo
         std::string GetFilePath() const;
         std::string GetSceneName() const;
 
-        go_ptr CreateGameObjectDiffered(go_on_create_callback onCreationCallback);
+        go_ptr CreateGameObjectDiffered();
         go_ptr CreateGameObjectImmediate();
         void DestroyGameObject(GameObject go);
         void DestroyGameObjectImmediate(GameObject go);
@@ -92,10 +92,6 @@ namespace oo
         void LoadFromFile();
         void SaveToFile();
 
-        //ECS Systems
-    private: 
-        std::unique_ptr<TransformSystem> m_transformSystem;
-    
         // Helper Functions
     private:
         go_ptr CreateGameObjectImmediate(go_ptr new_go);
@@ -109,7 +105,8 @@ namespace oo
 
         
         // set of gameobjects to initialize
-        std::vector<std::pair<go_ptr, go_on_create_callback>> m_createList;
+        //std::vector<std::pair<go_ptr, go_on_create_callback>> m_createList;
+
         // set of ids to Remove 
         std::set<UUID> m_removeList;
         // one copy of a lookup table for all gameobjects.

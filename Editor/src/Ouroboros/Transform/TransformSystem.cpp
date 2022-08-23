@@ -15,6 +15,8 @@ Technology is prohibited.
 #include "pch.h"
 #include "TransformSystem.h"
 
+#include "ouroboros/ECS/DifferedComponent.h"
+
 namespace oo
 {
     void TransformSystem::UpdateTransform(GameObjectComponent& gocomp, Transform3D& tf)
@@ -52,7 +54,7 @@ namespace oo
             TRACY_PROFILE_SCOPE_NC(transform_update, tracy::Color::Gold2);
             
             Ecs::Query query;
-            query.with<GameObjectComponent, Transform3D>().build();
+            query.with<GameObjectComponent, Transform3D>().exclude<DifferedComponent>().build();
             world->for_each(query, [&](GameObjectComponent gocomp, Transform3D& tf) { UpdateTransform(gocomp, tf); });
             
             TRACY_PROFILE_SCOPE_END();
