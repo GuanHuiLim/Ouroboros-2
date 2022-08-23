@@ -363,7 +363,7 @@ void Hierarchy::RightClickOptions()
 		{
 			if (ImGui::MenuItem("New GameObject"))
 			{
-				CreateGameObject();
+				CreateGameObjectImmediate();
 			}
 			if(ImGui::MenuItem("Box"))
 			{ }
@@ -404,10 +404,10 @@ void Hierarchy::Filter_ByScript()
 {
 }
 
-void Hierarchy::CreateGameObject()
+void Hierarchy::CreateGameObjectImmediate()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	auto go = scene->CreateGameObject();
+	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
 	if (s_selected.empty() == false && m_hovered == s_selected.back())
 		scene->FindWithInstanceID(m_hovered)->AddChild(*go);

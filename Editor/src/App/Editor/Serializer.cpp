@@ -154,7 +154,7 @@ void Serializer::LoadScene(oo::Scene& scene)
 	parents.push(scene.GetRoot());
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
-		auto go = scene.CreateGameObject();
+		auto go = scene.CreateGameObjectImmediate();
 		go->SetName(iter->name.GetString());
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
