@@ -32,8 +32,6 @@ namespace oo
         std::string Name = "Default Name Long enough for no short string optimization";
         scenenode::weak_pointer Node = {};
 
-    public:
-        
         struct OnEnableEvent : public Event
         {
         };
@@ -41,9 +39,6 @@ namespace oo
         struct OnDisableEvent : public Event
         {
         };
-
-    public:
-        void SetHierarchyActive(bool active);
 
         RTTR_ENABLE();
     };
