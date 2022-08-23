@@ -182,6 +182,7 @@ namespace oo
         }
 
     private:
+        void SetHierarchyActive(GameObjectComponent& comp, bool active) const;
         void CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const;
     };
 }

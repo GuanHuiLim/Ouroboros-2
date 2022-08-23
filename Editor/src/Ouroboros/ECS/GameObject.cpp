@@ -19,6 +19,7 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
 
+#include "Ouroboros/EventSystem/EventManager.h"
 namespace oo
 {
     /*---------------------------------------------------------------------------------*/
@@ -168,13 +169,38 @@ namespace oo
         GetComponent<GameObjectComponent>().Name = name;
     }
 
+    void GameObject::SetHierarchyActive(GameObjectComponent& comp, bool active) const
+    {
+        if (comp.ActiveInHierarchy != active)
+        {
+            // check previous state to do appropriate callback
+            bool previousState = comp.ActiveInHierarchy;
+            if (previousState)
+            {
+                // if was active, call the disable event
+                GameObjectComponent::OnDisableEvent onDisableEvent;
+                oo::EventManager::Broadcast(&onDisableEvent);
+                LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
+            }
+            else
+            {
+                // if was inactive, call the enable event
+                GameObjectComponent::OnEnableEvent onEnableEvent;
+                oo::EventManager::Broadcast(&onEnableEvent);
+                LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
+            }
+            
+            comp.ActiveInHierarchy = active;
+        }
+    }
+
     void GameObject::CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const
     {
         // Determine state of this object's active state in hierarchy
         bool hierarchyActive = IsActiveInHierarchy && parent.IsActive();
 
         // Set this object's active state in hierarchy
-        parent.GetComponent<GameObjectComponent>().SetHierarchyActive(hierarchyActive);
+        SetHierarchyActive(parent.GetComponent<GameObjectComponent>(), hierarchyActive);
 
         // Set active In Hierarchy for children to be
         for (auto& child : parent.GetDirectChilds())
