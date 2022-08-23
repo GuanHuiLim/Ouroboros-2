@@ -16,6 +16,7 @@ public:
 	static std::filesystem::path GetScriptModulePath() { return s_projectFolder.string() + s_scriptmodulePath.string(); };
 	static std::filesystem::path GetScriptBuildPath() { return s_projectFolder.string() + s_scriptbuildPath.string(); };
 private:
+    static void UpdateScriptingFiles();
 	
 	inline static std::filesystem::path s_configFile;
 	inline static std::filesystem::path s_startingScene;
