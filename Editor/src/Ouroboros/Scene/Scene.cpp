@@ -37,6 +37,7 @@ namespace oo
     Scene::Scene(std::string_view name) 
         : m_name{ name }
         , m_filepath{ "unassigned filepath" }
+        , m_createList {}
         , m_removeList {}
         , m_lookupTable {}
         , m_gameObjects{}
@@ -52,17 +53,26 @@ namespace oo
 
     void Scene::Init()
     {
-
-        Scene::OnInitEvent e;
-        EventManager::Broadcast(&e);
-        
-        // Initialize Default Systems
+        constexpr const char* const scene_init = "Scene_init";
         {
-            m_ecsWorld->Add_System<oo::TransformSystem>();
-            m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
+            TRACY_TRACK_PERFORMANCE(scene_init);
+            TRACY_PROFILE_SCOPE_NC(scene_init, tracy::Color::Seashell1);
+
+            Scene::OnInitEvent e;
+            EventManager::Broadcast(&e);
+        
+            // Initialize Default Systems
+            {
+                m_ecsWorld->Add_System<oo::TransformSystem>();
+                m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
+            }
+
+            PRINT(m_name);
+            
+            TRACY_PROFILE_SCOPE_END();
         }
 
-        PRINT(m_name);
+        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_init);
     }
     
     void Scene::Update()
@@ -93,22 +103,41 @@ namespace oo
     
     void Scene::EndOfFrameUpdate()
     {
-        PRINT(m_name);
-
-        // go through all things to remove at the end of frame and do so.
-        for (auto& uuid : m_removeList)
+        constexpr const char* const scene_end_of_frame_update = "Scene_end_of_frame_update";
         {
-            auto go_ptr = FindWithInstanceID(uuid);
-            ASSERT_MSG
-            (
-                (go_ptr == nullptr),
-                "Attempting to delete an object that's already been removed"
-            );
+            TRACY_TRACK_PERFORMANCE(scene_end_of_frame_update);
+            TRACY_PROFILE_SCOPE_NC(scene_end_of_frame_update, tracy::Color::Seashell2);
 
-            // Actual Deletion
-            RemoveGameObject(go_ptr);
+            PRINT(m_name);
+
+            // go through all things to create and add at the end of frame and do so.
+            for (auto& [go, callback] : m_createList)
+            {
+                CreateGameObjectImmediate(go);
+                callback(go);
+            }
+            m_createList.clear();
+
+            // go through all things to remove at the end of frame and do so.
+            for (auto& uuid : m_removeList)
+            {
+                auto go_ptr = FindWithInstanceID(uuid);
+                ASSERT_MSG
+                (
+                    (go_ptr == nullptr),
+                    "Attempting to delete an object that's already been removed"
+                );
+
+                // Actual Deletion
+                RemoveGameObject(go_ptr);
+            }
+            m_removeList.clear();
+
+
+            TRACY_PROFILE_SCOPE_END();
         }
-        m_removeList.clear();
+
+        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_end_of_frame_update);
     }
     
     void Scene::Exit()
@@ -119,41 +148,62 @@ namespace oo
     
     void Scene::LoadScene()
     {
-        PRINT(m_name);
-
-        m_removeList.clear();
-        m_lookupTable.clear();
-        m_gameObjects.clear();
-        m_ecsWorld = std::make_unique<Ecs::ECSWorld>();
-        m_scenegraph = std::make_unique<scenegraph>("scenegraph");
-        m_rootGo = nullptr;
-
-        // Creation of root node
+        constexpr const char* const scene_loading = "scene_loading";
         {
-            // differed to initialization after itself exist.
-            auto root_handle = m_scenegraph->get_root()->get_handle();
-            m_rootGo = std::make_shared<GameObject>(root_handle, *this);
-            InsertGameObject(m_rootGo);
-            m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
+            TRACY_TRACK_PERFORMANCE(scene_loading);
+            TRACY_PROFILE_SCOPE_NC(scene_loading, tracy::Color::Seashell3);
+
+            PRINT(m_name);
+            
+            m_createList.clear();
+            m_removeList.clear();
+            m_lookupTable.clear();
+            m_gameObjects.clear();
+            m_ecsWorld = std::make_unique<Ecs::ECSWorld>();
+            m_scenegraph = std::make_unique<scenegraph>("scenegraph");
+            m_rootGo = nullptr;
+
+            // Creation of root node
+            {
+                // differed to initialization after itself exist.
+                auto root_handle = m_scenegraph->get_root()->get_handle();
+                m_rootGo = std::make_shared<GameObject>(root_handle, *this);
+                InsertGameObject(m_rootGo);
+                m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
+            }
+
+            ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
+
+            // Broadcast event to load scene
+            LoadSceneEvent lse{ this };
+            EventManager::Broadcast<LoadSceneEvent>(&lse);
+
+            TRACY_PROFILE_SCOPE_END();
         }
 
-        ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
-
-        // Broadcast event to load scene
-        LoadSceneEvent lse{ this };
-        EventManager::Broadcast<LoadSceneEvent>(&lse);
+        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_loading);
     }
     
     void Scene::UnloadScene()
     {
-        PRINT(m_name);
+        constexpr const char* const scene_unload = "scene_unload";
+        {
+            TRACY_PROFILE_SCOPE_NC(scene_unload, tracy::Color::Seashell4);
+            TRACY_TRACK_PERFORMANCE(scene_unload);
 
-        EndOfFrameUpdate();
-        m_lookupTable.clear();
-        m_gameObjects.clear();
-        m_rootGo.reset();
-        m_scenegraph.reset();
-        m_ecsWorld.reset();
+            PRINT(m_name);
+
+            EndOfFrameUpdate();
+            m_lookupTable.clear();
+            m_gameObjects.clear();
+            m_rootGo.reset();
+            m_scenegraph.reset();
+            m_ecsWorld.reset();
+            
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_unload);
     }
     
     void Scene::ReloadScene()
@@ -189,13 +239,20 @@ namespace oo
         return m_name; 
     }
 
-    std::shared_ptr<GameObject> Scene::CreateGameObject()
+    Scene::go_ptr Scene::CreateGameObjectDiffered(go_on_create_callback onCreationCallback)
     {
-        std::shared_ptr<GameObject> newObjectPtr = std::make_shared<GameObject>(*this);
-        return CreateGameObject(newObjectPtr);
+        Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(*this);
+        m_createList.emplace_back(std::make_pair(newObjectPtr, onCreationCallback));
+        return newObjectPtr;
     }
 
-    std::shared_ptr<GameObject> Scene::FindWithInstanceID(UUID uuid)
+    Scene::go_ptr Scene::CreateGameObjectImmediate()
+    {
+        Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(*this);
+        return CreateGameObjectImmediate(newObjectPtr);
+    }
+
+    Scene::go_ptr Scene::FindWithInstanceID(UUID uuid) const
     {
         //LOG_INFO("Finding gameobject of instance ID {0}", uuid);
 
@@ -247,7 +304,7 @@ namespace oo
     {
         ASSERT_MSG(IsValid(go), "Working on an invalid GameObject");
 
-        std::shared_ptr<GameObject> target = FindWithInstanceID(go.GetInstanceID());
+        Scene::go_ptr target = FindWithInstanceID(go.GetInstanceID());
         // safety check
         if (target == nullptr)
         {
@@ -259,10 +316,10 @@ namespace oo
         RemoveGameObject(target);
     }
 
-    std::shared_ptr<GameObject> Scene::InstatiateGameObject(GameObject go)
+    Scene::go_ptr Scene::InstatiateGameObject(GameObject go)
     {
-        std::shared_ptr<GameObject> new_instance = std::make_shared<GameObject>(go.Duplicate());
-        return CreateGameObject(new_instance);
+        Scene::go_ptr new_instance = std::make_shared<GameObject>(go.Duplicate());
+        return CreateGameObjectImmediate(new_instance);
     }
     
     void Scene::LoadFromFile()
@@ -273,9 +330,9 @@ namespace oo
     {
     }
 
-    std::shared_ptr<GameObject> Scene::CreateGameObject(std::shared_ptr<GameObject> new_go)
+    Scene::go_ptr Scene::CreateGameObjectImmediate(Scene::go_ptr new_go)
     {
-        std::shared_ptr<GameObject> newObjectPtr = new_go;
+        Scene::go_ptr newObjectPtr = new_go;
         InsertGameObject(newObjectPtr);
 
         // IMPT: we are using the uuid to retrieve back the gameobject as well!
@@ -289,13 +346,13 @@ namespace oo
         return newObjectPtr;
     }
 
-    void Scene::InsertGameObject(std::shared_ptr<GameObject> go_ptr)
+    void Scene::InsertGameObject(Scene::go_ptr go_ptr)
     {
         m_gameObjects.emplace(go_ptr);
         m_lookupTable.emplace(go_ptr->GetInstanceID(), go_ptr);
     }
 
-    void Scene::RemoveGameObject(std::shared_ptr<GameObject> go_ptr)
+    void Scene::RemoveGameObject(Scene::go_ptr go_ptr)
     {
         m_lookupTable.erase(go_ptr->GetInstanceID());
         m_gameObjects.erase(go_ptr);
@@ -314,7 +371,7 @@ namespace oo
         return *m_scenegraph;
     }
 
-    std::shared_ptr<GameObject> Scene::GetRoot() const
+    Scene::go_ptr Scene::GetRoot() const
     {
         return m_rootGo;
     }
