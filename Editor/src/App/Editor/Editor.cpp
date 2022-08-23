@@ -9,6 +9,8 @@
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "Project.h"
+
+#include "Ouroboros/Commands/CommandStackManager.h"
 Editor::Editor()
 {
 	UI_RTTRType::Init();
@@ -21,6 +23,8 @@ Editor::Editor()
 
 Editor::~Editor()
 {
+	//commands only exist on editor so it makes sense that the editor handles the destruction of it
+	oo::CommandStackManager::ClearCommandBuffer();
 }
 
 void Editor::Update()
@@ -41,6 +45,15 @@ void Editor::Update()
 	{
 		OpenFileEvent ofe(Project::GetSceneFolder().string() + "Scene1.scn");
 		oo::EventManager::Broadcast(&ofe);
+	}
+
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Z))
+	{
+		oo::CommandStackManager::UndoCommand();
+	}
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Y))
+	{
+		oo::CommandStackManager::RedoCommand();
 	}
 }
 

@@ -37,6 +37,7 @@ private:
 	};
 	ColorButton m_colorButton;
 	std::vector<scenenode::handle_type> m_filterList;
+	std::string m_curr_sceneFilepath = "";
 	std::string m_filter = "";
 	FilterTypes m_filterTypes = FilterTypes::Name;
 	scenenode::handle_type m_hovered = (scenenode::handle_type)-100;
@@ -45,7 +46,7 @@ private:
 	scenenode::handle_type m_dragged_parent = (scenenode::handle_type)-100;
 	bool m_isDragging = false;
 	bool m_isRename = false;
-
+	bool m_previewPrefab = false;
 	//static
 	inline static std::vector<scenenode::handle_type> s_selected;
 };
