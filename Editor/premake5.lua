@@ -86,6 +86,9 @@ project "Editor"
         "Launcher",
         "SharedLib",
         
+        --Linking to vulkan Library [Uncomment the next line when youre done setting up]
+        -- "Vulkan",
+
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
         --"symsrv",
@@ -109,6 +112,14 @@ project "Editor"
         
         --enable this post build command for 64 bit system
         architecture "x86_64"
+        
+        -- if Editor need any prebuild commands regardless of debug/release/production
+        prebuildcommands
+        {
+
+        }
+
+        -- if Editor needs any postbuild commands regardless of debug/release/production
         postbuildcommands
         {
             -- SDL2.0 
@@ -119,14 +130,17 @@ project "Editor"
             {"{COPY} \"%{AppDir}/default.ini\" " .. binApp },
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" " .. binApp },
-            
             -- copy launcher's Data file
             {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" " .. binApp },
-
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" " .. binApp .. "/tracy_server"}, 
         }
     
+        -- if editor needs to link with any static/dynamic library regardless of debug/release/production
+        links
+        {
+
+        }
 
     filter{ "configurations:Debug", "platforms:Editor"}
         defines { "EDITOR_DEBUG", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
