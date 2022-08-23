@@ -66,6 +66,7 @@ namespace oo
         // else returns nullptr.
         std::shared_ptr<GameObject> FindWithInstanceID(UUID uuid);
         
+        bool IsValid(UUID uuid) const;
         bool IsValid(GameObject go) const;
         void DestroyGameObject(GameObject go);
         void DestroyGameObjectImmediate(GameObject go);
@@ -91,17 +92,18 @@ namespace oo
         void SaveToFile();
     
         
-    private: //for now
+        //ECS Systems
+    private: 
         std::unique_ptr<TransformSystem> m_transformSystem;
     
+        // Helper Functions
     private:
-
         std::shared_ptr<GameObject> CreateGameObject(std::shared_ptr<GameObject> new_go);
         void InsertGameObject(std::shared_ptr<GameObject> go_ptr);
         void RemoveGameObject(std::shared_ptr<GameObject> go_ptr);
 
+        // Variables
     private:
-
         std::string m_name;
         std::string m_filepath;
 

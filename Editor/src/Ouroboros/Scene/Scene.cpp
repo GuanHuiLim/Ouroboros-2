@@ -52,26 +52,32 @@ namespace oo
 
     void Scene::Init()
     {
-       
 
         Scene::OnInitEvent e;
         EventManager::Broadcast(&e);
         
-        m_transformSystem = std::make_unique<TransformSystem>();
-
-        /*{
-            m_ecsWorld.Add_System<oo::TransformSystem>();
-        }*/
+        // Initialize Default Systems
+        {
+            m_ecsWorld->Add_System<oo::TransformSystem>();
+            m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
+        }
 
         PRINT(m_name);
     }
     
     void Scene::Update()
     {
-        /*{
-            m_ecsWorld.Get_System<oo::TransformSystem>()->Run(&m_ecsWorld);
-        }*/
-        m_transformSystem->Run(m_ecsWorld.get());
+        //// these 2 steps are extremely important in ensuring correctness throughout a frame [not cheap though]
+        //// get latest scene graph
+        //m_scenegraph_previous = std::move(m_scenegraph_current);
+        ////initialize current graph
+        //m_scenegraph_current = std::make_unique<scenegraph>(*m_scenegraph_previous);
+
+        // Update Systems
+        {
+            m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
+        }
+
         PRINT(m_name);
     }
     
@@ -131,26 +137,9 @@ namespace oo
             m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
         }
 
-        /*if (scenegraph::shared_pointer root = m_scenegraph->get_root())
-        {
-            auto comp = m_rootGo->TryGetComponent<GameObjectComponent>();
-            if (comp)
-            {
-                scenenode::shared_pointer node = comp->Node.lock();
-                node = root;
-                if (node == nullptr)
-                {
-                    LOG_ERROR("Shouldn't be null");
-                }
-                else
-                {
-                    LOG_INFO("SUCCESS!");
-                }
-            }
-        }*/
-
         ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
 
+        // Broadcast event to load scene
         LoadSceneEvent lse{ this };
         EventManager::Broadcast<LoadSceneEvent>(&lse);
     }
@@ -216,19 +205,17 @@ namespace oo
         return nullptr;
     }
 
+    bool Scene::IsValid(UUID uuid) const
+    {
+        return m_lookupTable.contains(uuid);
+    }
+
     bool Scene::IsValid(GameObject go) const
     {
         // a valid gameobject will not have its ID as NotFound, will have gameobject component(minimally)
         // and parent will not be equals to NOParent
         return go.GetScene() == this && 
             std::find_if(m_gameObjects.begin(), m_gameObjects.end(), [&](std::shared_ptr<oo::GameObject> elem) { return *elem == go; }) != m_gameObjects.end();
-        
-        //m_lookupTable.contains(go.GetInstanceID());
-
-        //return !(go.GetEntity().value == GameObject::NOTFOUND.value
-        //    || go.HasComponent<GameObjectComponent>() == false
-        //    || go.GetWorld() == nullptr
-        //    || go.GetWorld() != &m_ecsWorld);
     }
 
     void Scene::DestroyGameObject(GameObject go)

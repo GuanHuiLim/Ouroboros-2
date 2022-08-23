@@ -28,7 +28,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    // Note Gameobject is no longer directly convertible to Entity.
+    // NOTE Gameobject is no longer directly convertible to Entity.
     class GameObject final
     {
     public:

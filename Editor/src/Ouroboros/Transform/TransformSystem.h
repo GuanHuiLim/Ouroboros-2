@@ -17,16 +17,24 @@ Technology is prohibited.
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/Transform/TransformComponent.h>
-#include <stack>
+
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
 namespace oo
 {
-    class TransformSystem final /*: public Ecs::System*/
+    class TransformSystem final : public Ecs::System
     {
+    private:
+        Scene* m_scene = nullptr;
+
     public:
-        //Scene& m_activeScene;
+        
+        //TransformSystem(Scene* scene) : m_scene{ scene } {};
         TransformSystem() = default;
         virtual ~TransformSystem() = default;
         
+        void Link(Scene* scene) { m_scene = scene; }
+
         void UpdateAllTransforms()
         {
             /*std::shared_ptr<oo::GameObject> rootGo = m_activeScene.GetRoot();
@@ -85,16 +93,46 @@ namespace oo
             
         }
 
-        void UpdateTransform(Transform3D& tf)
+        void UpdateTransform(GameObjectComponent& gocomp, Transform3D& tf)
         {
-            tf.m_transform.CalculateLocalTransform();
+            // Reset all has changed to false regardless of their previous state.
+            tf.m_transform.m_hasChanged = false;
+
+            // Update local and global transform immediately
+            if (tf.IsDirty())
+            {
+                tf.m_transform.CalculateLocalTransform();
+                tf.m_transform.m_globalTransform = tf.m_transform.m_localTransform;
+            }
+            
+            // Find current gameobject
+            std::shared_ptr<GameObject> go = m_scene->FindWithInstanceID(gocomp.Id);
+            
+            // Check for valid parent
+            if (m_scene->IsValid(go->GetParentUUID()))
+            {
+                // Check if parent has changed locally or if hierarchy above has changed [optimization step]
+                if (go->GetParent().Transform().HasChanged())
+                {
+                    tf.m_transform.m_hasChanged = true;
+                    tf.m_transform.m_globalTransform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform;
+                }
+            }
         }
 
         virtual void Run(Ecs::ECSWorld* world)
         {
-            Ecs::Query query;
-            query.with<Transform3D>().build();
-            world->for_each(query, [&] (Transform3D& tf) { UpdateTransform(tf); });
+            constexpr const char* const transform_update = "transform_update";
+            {
+                ZoneScopedNC(transform_update, tracy::Color::Gold2);
+                TRACY_TRACK_PERFORMANCE(transform_update);
+
+                Ecs::Query query;
+                query.with<GameObjectComponent, Transform3D>().build();
+                world->for_each(query, [&] (GameObjectComponent gocomp, Transform3D& tf) { UpdateTransform(gocomp,tf); });
+            }
+
+            TRACY_DISPLAY_PERFORMANCE_SELECTED(transform_update);
         }
 
     };
