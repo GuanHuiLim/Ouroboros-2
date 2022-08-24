@@ -54,9 +54,19 @@ namespace oo
 
             // Typical System updates
 
+            // Option 1
+            //static Ecs::Query query = []()
+            //{
+            //    Ecs::Query query;
+            //    query.with<GameObjectComponent, Transform3D>().exclude<DeferredComponent>().build();
+            //    return query;
+            //}();
+            //world->for_each(query, [&](GameObjectComponent& gocomp, Transform3D& tf) { /*UpdateTransform(gocomp, tf); */ });
+
+            // Option 2
             //Ecs::Query query;
             //query.with<GameObjectComponent, Transform3D>().exclude<DeferredComponent>().build();
-            //world->for_each(query, [&](GameObjectComponent gocomp, Transform3D& tf) { UpdateTransform(gocomp, tf); });
+            //world->for_each(query, [&](GameObjectComponent& gocomp, Transform3D& tf) { UpdateTransform(gocomp, tf); });
             
             // Transform System updates via the scenegraph because the order matters
 
