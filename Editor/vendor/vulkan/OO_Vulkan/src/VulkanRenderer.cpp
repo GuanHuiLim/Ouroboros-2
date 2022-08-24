@@ -42,10 +42,12 @@
 #include <random>
 #include <filesystem>
 
-
+VulkanRenderer* VulkanRenderer::s_vulkanRenderer{ nullptr };
 
 VulkanRenderer::~VulkanRenderer()
 { 
+
+	camera.SetPosition(glm::vec3{ 0.0f,0.0f,0.0f });
 	//wait until no actions being run on device before destorying
 	vkDeviceWaitIdle(m_device.logicalDevice);
 
@@ -124,11 +126,19 @@ VulkanRenderer::~VulkanRenderer()
 	}
 }
 
+VulkanRenderer* VulkanRenderer::get()
+{
+	if (s_vulkanRenderer == nullptr)
+	{
+		s_vulkanRenderer = new VulkanRenderer();
+	}
+	return s_vulkanRenderer;
+}
+
 void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 {
 	try
 	{	
-		std::cout<< "PATH: "<<std::filesystem::current_path().string() << std::endl;
 
 		CreateInstance(setupSpecs);
 		CreateSurface(setupSpecs,window);
@@ -150,10 +160,18 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		CreateDescriptorSetLayout();
 		CreatePushConstantRange();
 
+		(void)intsVector;
+
+		new(&gpuTransformBuffer) GpuVector<GPUTransform>;
+		*const_cast<VkBuffer*>(gpuTransformBuffer.getBufferPtr()) = VK_NULL_HANDLE;
+		std::cout << "gpu xform :" << gpuTransformBuffer.m_size << " " << gpuTransformBuffer.m_capacity << std::endl;
 		gpuTransformBuffer.Init(&m_device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		gpuTransformBuffer.reserve(MAX_OBJECTS);
 
 		// TEMP debug drawing code
+		new(&debugTransformBuffer) GpuVector<GPUTransform>;
+		std::cout << "debug xform :" << debugTransformBuffer.m_size << " " << debugTransformBuffer.m_capacity << std::endl;
+		*const_cast<VkBuffer*>(debugTransformBuffer.getBufferPtr()) = VK_NULL_HANDLE;
 		debugTransformBuffer.Init(&m_device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		debugTransformBuffer.reserve(MAX_OBJECTS);
 
@@ -1057,6 +1075,8 @@ void VulkanRenderer::InitImGUI()
 	info.dependencyCount = 1;
 	info.pDependencies = &dependency;
 
+	new (&m_imguiConfig) ImGUIStructures;
+
 	if (vkCreateRenderPass(m_device.logicalDevice, &info, nullptr, &m_imguiConfig.renderPass) != VK_SUCCESS) {
 		throw std::runtime_error("Could not create Dear ImGui's render pass");
 	}
@@ -1094,7 +1114,18 @@ void VulkanRenderer::InitImGUI()
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	
-	ImGui_ImplWin32_Init(windowPtr->GetRawHandle());
+	if (windowPtr->m_type == Window::WindowType::WINDOWS32)
+	{
+		ImGui_ImplWin32_Init(windowPtr->GetRawHandle());
+	}
+	else
+	{
+		if (io.BackendPlatformUserData == NULL)
+		{
+			std::cout << "Vulkan Imgui Error: you should handle the initializeation of imgui::window_init before here"<< std::endl;
+			assert(true);
+		}		
+	}
 	ImGuiPlatformIO& pio = ImGui::GetPlatformIO();
 	//pio.Platform_CreateVkSurface = Win32SurfaceCreator;
 
@@ -1176,45 +1207,45 @@ void VulkanRenderer::ResizeGUIBuffers()
 
 void VulkanRenderer::DrawGUI()
 {
-	if(ImGui::Begin("img"))
-	{
-		const char* views[]  = { "Lookat", "FirstPerson" };
-		ImGui::ListBox("Camera View", reinterpret_cast<int*>(&camera.type), views, 2);
-		auto sz = ImGui::GetContentRegionAvail();
-		ImGui::Image(myImg, { sz.x,sz.y });
-	}
-	ImGui::End();
-
-	if(ImGui::Begin("Deferred Rendering GBuffer"))
-	{
-		ImGui::Checkbox("Enable Deferred Rendering", &deferredRendering);
-		if (deferredRendering)
-		{
-			const auto sz = ImGui::GetContentRegionAvail();
-			auto gbuff = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
-
-			auto shadows = RenderPassDatabase::GetRenderPass<ShadowPass>();
-
-			const float renderWidth = float(windowPtr->m_width);
-			const float renderHeight = float(windowPtr->m_height);
-			const float aspectRatio = renderHeight / renderWidth;
-			const ImVec2 imageSize = { sz.x, sz.x * aspectRatio };
-
-			//auto gbuff = GBufferRenderPass::Get();
-			ImGui::BulletText("World Position");
-			ImGui::Image(gbuff->deferredImg[POSITION], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
-			ImGui::BulletText("World Normal");
-			ImGui::Image(gbuff->deferredImg[NORMAL], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
-			ImGui::BulletText("Albedo");
-			ImGui::Image(gbuff->deferredImg[ALBEDO], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
-			ImGui::BulletText("Material");
-			ImGui::Image(gbuff->deferredImg[MATERIAL], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
-			ImGui::BulletText("Depth (TODO)");
-			//ImGui::Image(gbuff->deferredImg[3], { sz.x,sz.y/4 });
-			ImGui::Image(shadows->shadowImg ,imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
-		}
-	}
-	ImGui::End();
+	//if(ImGui::Begin("img"))
+	//{
+	//	const char* views[]  = { "Lookat", "FirstPerson" };
+	//	ImGui::ListBox("Camera View", reinterpret_cast<int*>(&camera.type), views, 2);
+	//	auto sz = ImGui::GetContentRegionAvail();
+	//	ImGui::Image(myImg, { sz.x,sz.y });
+	//}
+	//ImGui::End();
+	//
+	//if(ImGui::Begin("Deferred Rendering GBuffer"))
+	//{
+	//	ImGui::Checkbox("Enable Deferred Rendering", &deferredRendering);
+	//	if (deferredRendering)
+	//	{
+	//		const auto sz = ImGui::GetContentRegionAvail();
+	//		auto gbuff = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
+	//
+	//		auto shadows = RenderPassDatabase::GetRenderPass<ShadowPass>();
+	//
+	//		const float renderWidth = float(windowPtr->m_width);
+	//		const float renderHeight = float(windowPtr->m_height);
+	//		const float aspectRatio = renderHeight / renderWidth;
+	//		const ImVec2 imageSize = { sz.x, sz.x * aspectRatio };
+	//
+	//		//auto gbuff = GBufferRenderPass::Get();
+	//		ImGui::BulletText("World Position");
+	//		ImGui::Image(gbuff->deferredImg[POSITION], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+	//		ImGui::BulletText("World Normal");
+	//		ImGui::Image(gbuff->deferredImg[NORMAL], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+	//		ImGui::BulletText("Albedo");
+	//		ImGui::Image(gbuff->deferredImg[ALBEDO], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+	//		ImGui::BulletText("Material");
+	//		ImGui::Image(gbuff->deferredImg[MATERIAL], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+	//		ImGui::BulletText("Depth (TODO)");
+	//		//ImGui::Image(gbuff->deferredImg[3], { sz.x,sz.y/4 });
+	//		ImGui::Image(shadows->shadowImg ,imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+	//	}
+	//}
+	//ImGui::End();
 
 	VkRenderPassBeginInfo GUIpassInfo = {};
 	GUIpassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1225,7 +1256,6 @@ void VulkanRenderer::DrawGUI()
     const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
 
 	vkCmdBeginRenderPass(cmdlist, &GUIpassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	ImGui::Render();  // Rendering UI
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdlist);
 	vkCmdEndRenderPass(cmdlist);
 }
@@ -1727,7 +1757,8 @@ bool VulkanRenderer::PrepareFrame()
 {
 	if (resizeSwapchain || windowPtr->m_width == 0 ||windowPtr->m_height == 0)
 	{
-		if (ResizeSwapchain() == false)
+		m_prepared = ResizeSwapchain();
+		if (m_prepared == false)
 			return false;
 		resizeSwapchain = false;
 	}
@@ -1759,6 +1790,7 @@ void VulkanRenderer::Draw()
         if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
         {
             resizeSwapchain = true;
+			m_prepared = false;
         }
 	}
 
@@ -1779,7 +1811,7 @@ void VulkanRenderer::Draw()
 void VulkanRenderer::RenderFrame()
 {
 	this->Draw(); // TODO: Clean this up...
-
+	std::cout << "rendering" << std::endl;
     {
 		// Command list has already started inside VulkanRenderer::Draw
         PROFILE_GPU_CONTEXT(commandBuffers[swapchainIdx]);
@@ -1848,6 +1880,7 @@ void VulkanRenderer::Present()
 		if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
 		{
 			resizeSwapchain = true;
+			m_prepared = false;
 			return;
 		}
 		else if(result != VK_SUCCESS && result!= VK_SUBOPTIMAL_KHR)
@@ -1886,8 +1919,8 @@ void VulkanRenderer::InitTreeDebugDraws()
 {
 	for (size_t i = 0; i < debugDrawBufferCnt; i++)
 	{
-		g_DebugDraws[i].vbo.Init(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		g_DebugDraws[i].ibo.Init(VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+		g_DebugDraws[i].vbo.Init(&m_device,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		g_DebugDraws[i].ibo.Init(&m_device,VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 	}
 }
 
@@ -2197,8 +2230,8 @@ void VulkanRenderer::InitDebugBuffers()
 
 
 	// TODO remove this
-	g_debugDrawVertBuffer.Init(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-	g_debugDrawIndxBuffer.Init(VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+	g_debugDrawVertBuffer.Init(&m_device,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	g_debugDrawIndxBuffer.Init(&m_device,VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 }
 
 void VulkanRenderer::UpdateDebugBuffers()
@@ -2211,88 +2244,6 @@ void VulkanRenderer::UpdateDebugBuffers()
 
 }
 
-void VulkanRenderer::UpdateTreeBuffers()
-{
-	for (size_t i = 0; i < debugDrawBufferCnt; i++)
-	{
-		if (g_b_drawDebug[i] && g_DebugDraws[i].dirty)
-		{
-			auto& debug = g_DebugDraws[i];
-
-			debug.vbo.reserve(debug.vertex.size());
-			debug.ibo.reserve(debug.indices.size());
-
-			debug.vbo.writeTo(debug.vertex.size() , debug.vertex.data());
-			debug.ibo.writeTo(debug.indices.size() , debug.indices.data());
-
-			debug.dirty = false;
-		}
-	}
-
-}
-
-void VulkanRenderer::SimplePass()
-{
-	std::array<VkClearValue, 2> clearValues{};
-	//clearValues[0].color = { 0.6f,0.65f,0.4f,1.0f };
-	clearValues[0].color = { 0.1f,0.1f,0.1f,1.0f };
-	clearValues[1].depthStencil.depth = {1.0f};
-
-	//Information about how to begin a render pass (only needed for graphical applications)
-	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass = renderPass_default;									//render pass to begin
-	renderPassBeginInfo.renderArea.offset = { 0,0 };								//start point of render pass in pixels
-	renderPassBeginInfo.renderArea.extent = m_swapchain.swapChainExtent;			//size of region to run render pass on (Starting from offset)
-	renderPassBeginInfo.pClearValues = clearValues.data();							//list of clear values
-	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-
-	renderPassBeginInfo.framebuffer = swapChainFramebuffers[swapchainIdx];
-
-	const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
-
-	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport = { 0, float(windowPtr->m_height), float(windowPtr->m_width), -float(windowPtr->m_height), 0, 1 };
-	VkRect2D scissor = { {0, 0}, {uint32_t(windowPtr->m_width),uint32_t(windowPtr->m_height) } };
-	vkCmdSetViewport(cmdlist, 0, 1, &viewport);
-	vkCmdSetScissor(cmdlist, 0, 1, &scissor);
-
-	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, wireframePSO);
-	std::array<VkDescriptorSet, 3> descriptorSetGroup =
-	{
-		descriptorSet_gpuscene,
-		descriptorSets_uniform[swapchainIdx],
-		descriptorSet_bindless 
-	};
-
-	uint32_t dynamicOffset = 0;
-	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, indirectPSOLayout,
-		0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
-
-	for (auto& entity : entities)
-	{
-		auto& model = models[entity.modelID];
-
-		glm::mat4 xform(1.0f);
-		xform = glm::translate(xform, entity.position);
-		xform = glm::rotate(xform,glm::radians(entity.rot), entity.rotVec);
-		xform = glm::scale(xform, entity.scale);
-
-		vkCmdPushConstants(cmdlist,
-			indirectPSOLayout,
-			VK_SHADER_STAGE_ALL,        // stage to push constants to
-			0,							// offset of push constants to update
-			sizeof(glm::mat4),			// size of data being pushed
-			glm::value_ptr(xform));		// actualy data being pushed (could be an array));
-
-		VkDeviceSize offsets[] = { 0 };	
-		vkCmdBindIndexBuffer(cmdlist, g_MeshBuffers.IdxBuffer.getBuffer(),0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1,g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-		vkCmdDrawIndexed(cmdlist, model.indices.count, 1, model.indices.offset, model.vertices.offset, 0);
-	}
-
-	vkCmdEndRenderPass(cmdlist);
-}
 
 void VulkanRenderer::UpdateUniformBuffers()
 {		
@@ -2405,7 +2356,8 @@ uint32_t VulkanRenderer::UpdateBindlessGlobalTexture(vkutils::Texture2D texture)
 
 ImTextureID VulkanRenderer::CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l)
 {
-	if (m_imguiInitialized == false)
+
+	if (VulkanRenderer::get()->m_imguiInitialized == false)
 	{
 		return 0;
 	}
@@ -2429,9 +2381,10 @@ int Win32SurfaceCreator(ImGuiViewport* vp, ImU64 device, const void* allocator, 
 // Helper function to set Viewport & Scissor to the default window full extents.
 void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer)
 {
-    auto* windowPtr = VulkanRenderer::windowPtr;
-    const float vpHeight = (float)VulkanRenderer::m_swapchain.swapChainExtent.height;
-    const float vpWidth = (float)VulkanRenderer::m_swapchain.swapChainExtent.width;
+	auto& vr = *VulkanRenderer::get();
+    auto* windowPtr = vr.windowPtr;
+    const float vpHeight = (float)vr.m_swapchain.swapChainExtent.height;
+    const float vpWidth = (float)vr.m_swapchain.swapChainExtent.width;
     VkViewport viewport = { 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f };
     VkRect2D scissor = { {0, 0}, {uint32_t(windowPtr->m_width), uint32_t(windowPtr->m_height) } };
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -2451,7 +2404,7 @@ void DrawIndexedIndirect(
 	uint32_t drawCount,
 	uint32_t stride)
 {
-    if (VulkanRenderer::m_device.enabledFeatures.multiDrawIndirect)
+    if (VulkanRenderer::get()->m_device.enabledFeatures.multiDrawIndirect)
     {
         vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, sizeof(VkDrawIndexedIndirectCommand));
     }

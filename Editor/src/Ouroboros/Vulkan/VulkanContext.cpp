@@ -30,11 +30,11 @@ namespace oo
     //VulkanEngine VulkanContext::vkEngine;
     
       
-  VulkanRenderer VulkanContext::vr;
+    VulkanRenderer* VulkanContext::vr{nullptr};
   GraphicsWorld VulkanContext::gw;
   Window VulkanContext::m_window;
 
-#define TEMPORARY_CODE
+//#define TEMPORARY_CODE
 
 #ifdef TEMPORARY_CODE
     //#define IMGUI_UNLIMITED_FRAME_RATE
@@ -383,26 +383,37 @@ namespace oo
 
     void VulkanContext::Init()
     {
-       
-#ifdef TEMPORARY_CODE
         // Setup Vulkan
         uint32_t extensions_count = 0;
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, NULL);
-        //const char** extensions = new const char* [extensions_count];
         std::vector<const char*> extensions;
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
-        SetupVulkan(&extensions[0], extensions_count);
-        //delete[] extensions;
-        
+
         int w, h;
         SDL_GetWindowSize(m_windowHandle, &w, &h);
+
+        vr = VulkanRenderer::get();
+
+        vr->camera.type = Camera::CameraType::lookat;
+        vr->camera.target = glm::vec3(0.01f, 0.0f, 0.0f);
+        vr->camera.position = glm::vec3(-1.0f, 5.0f, 0.0f);
+        //vr->camera.SetPosition(glm::vec3{ 0.0f,0.0f,0.0f });
+        //vr->camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+        vr->camera.SetRotationSpeed(0.5f);
+        vr->camera.matrices.perspective = glm::perspective(45.0f, 16.0f / 9, 0.01f, 1000.0f);
+        vr->camera.matrices.view = glm::lookAt(vr->camera.position, {}, glm::vec3{0,1,0});
+       // vr->camera.SetPosition(glm::vec3(0.1f, 5.0f, 10.5f));
+        vr->camera.movementSpeed = 5.0f;
+        vr->camera.SetPerspective(60.0f, (float)m_window.m_width / (float)m_window.m_height, 0.1f, 10000.0f);
+        //vr->camera.Rotate(glm::vec3(1 * vr->camera.rotationSpeed, 1 * vr->camera.rotationSpeed, 0.0f));
+        vr->camera.type = Camera::CameraType::firstperson;
 
         oGFX::SetupInfo si;
         si.debug = true;
         si.renderDoc = true;
         si.SurfaceFunctionPointer = std::function<void()>([&]() {
-            return SDL_Vulkan_CreateSurface(m_windowHandle, vr.m_instance.instance, &vr.m_instance.surface);
+            return SDL_Vulkan_CreateSurface(m_windowHandle, vr->m_instance.instance, &vr->m_instance.surface);
             });
         si.extensions = extensions;
         m_window.m_width = w;
@@ -411,19 +422,23 @@ namespace oo
         m_window.rawHandle = m_windowHandle;
         try
         {
-            vr.Init(si, m_window);
+            vr->Init(si, m_window);
         } 
         catch (std::runtime_error e)
         {
             std::cout << "VK_init: " << e.what() << std::endl;
         }
-        
-        
-        gw.CreateObjectInstance();
-        vr.SetWorld(&gw);
-        DefaultMesh dm = CreateDefaultCubeMesh();
-        vr.LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr);
 
+        // setup world..
+        // TODO: move this out of here pls
+        auto obj = gw.CreateObjectInstance();
+        vr->SetWorld(&gw);
+        auto& myObj = gw.GetObjectInstance(obj);
+        DefaultMesh dm = CreateDefaultCubeMesh();
+        auto model = vr->LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr);
+        myObj.modelID = model->gfxIndex;
+        myObj.scale = glm::vec3{ 0.1f,0.1f,0.1f };
+#ifdef TEMPORARY_CODE 
         // Create Window Surface
         VkSurfaceKHR surface;
         VkResult err;
@@ -442,17 +457,17 @@ namespace oo
 
     void VulkanContext::OnUpdateBegin()
     {
-        if (vr.PrepareFrame() == true)
+        if (vr->PrepareFrame() == true)
         {
-            vr.timer += 0.02f;
+            vr->timer += 0.02f;
             
-            vr.UpdateLights(0.02f);
+            vr->UpdateLights(0.02f);
 
             // Upload CPU light data to GPU. Ideally this should only contain lights that intersects the camera frustum.
-            vr.UploadLights();
+            vr->UploadLights();
 
             // Render the frame
-            vr.RenderFrame();
+            vr->RenderFrame();
         }
     }
 
@@ -467,7 +482,7 @@ namespace oo
         {
             vkEngine.RecreateSwapchain();
         }*/
-       
+        vr->Present();
 
 #ifdef TEMPORARY_CODE
         // Resize swap chain?
@@ -488,10 +503,12 @@ namespace oo
 
     void VulkanContext::InitImGui()
     {
+        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
+        vr->InitImGUI();
 #ifdef TEMPORARY_CODE
         ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
+        
         ImGui_ImplVulkan_InitInfo init_info = {};
         init_info.Instance = g_Instance;
         init_info.PhysicalDevice = g_PhysicalDevice;
@@ -546,12 +563,13 @@ namespace oo
     void VulkanContext::OnImGuiBegin()
     {
         ImGui_ImplVulkan_NewFrame();
+       
     }
 
     void VulkanContext::OnImGuiEnd()
     {
         // Vulkan will call internally
-
+        vr->DrawGUI();
 #ifdef TEMPORARY_CODE
         ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -566,6 +584,7 @@ namespace oo
             FrameRender(wd, main_draw_data);
 #endif // TEMPORARY_CODE
 
+        ImGui::EndFrame();
         ImGuiIO& io = ImGui::GetIO();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
@@ -577,7 +596,7 @@ namespace oo
         // Present Main Platform Window
         if (!main_is_minimized)
         {
-            vr.Present();
+            vr->Present();
             //FramePresent(wd);
         }
 #endif // TEMPORARY_CODE

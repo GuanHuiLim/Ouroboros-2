@@ -34,10 +34,11 @@ void DeferredCompositionRenderpass::CreatePSO()
 
 void DeferredCompositionRenderpass::Draw()
 {
-	auto swapchainIdx = VulkanRenderer::swapchainIdx;
-	auto* windowPtr = VulkanRenderer::windowPtr;
+	auto& vr = *VulkanRenderer::get();
+	auto swapchainIdx = vr.swapchainIdx;
+	auto* windowPtr = vr.windowPtr;
 
-    const VkCommandBuffer cmdlist = VulkanRenderer::commandBuffers[swapchainIdx];
+    const VkCommandBuffer cmdlist = vr.commandBuffers[swapchainIdx];
     PROFILE_GPU_CONTEXT(cmdlist);
     PROFILE_GPU_EVENT("DeferredComposition");
 
@@ -48,13 +49,13 @@ void DeferredCompositionRenderpass::Draw()
 
 	//Information about how to begin a render pass (only needed for graphical applications)
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass = VulkanRenderer::renderPass_default;                  //render pass to begin
+	renderPassBeginInfo.renderPass = vr.renderPass_default;                  //render pass to begin
 	renderPassBeginInfo.renderArea.offset = { 0,0 };                                     //start point of render pass in pixels
-	renderPassBeginInfo.renderArea.extent = VulkanRenderer::m_swapchain.swapChainExtent; //size of region to run render pass on (Starting from offset)
+	renderPassBeginInfo.renderArea.extent = vr.m_swapchain.swapChainExtent; //size of region to run render pass on (Starting from offset)
 	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
-	renderPassBeginInfo.framebuffer =  VulkanRenderer::swapChainFramebuffers[swapchainIdx];
+	renderPassBeginInfo.framebuffer =  vr.swapChainFramebuffers[swapchainIdx];
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -63,11 +64,11 @@ void DeferredCompositionRenderpass::Draw()
 	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, pso_DeferredLightingComposition);
 	std::array<VkDescriptorSet, 2> descriptorSetGroup = 
 	{
-		VulkanRenderer::descriptorSets_uniform[swapchainIdx],
-		VulkanRenderer::descriptorSet_bindless
+		vr.descriptorSets_uniform[swapchainIdx],
+		vr.descriptorSet_bindless
 	};
 
-	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, layout_DeferredLightingComposition, 0, 1, &VulkanRenderer::descriptorSet_DeferredComposition, 0, nullptr);
+	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, layout_DeferredLightingComposition, 0, 1, &vr.descriptorSet_DeferredComposition, 0, nullptr);
 
 	DrawFullScreenQuad(cmdlist);
 
@@ -76,25 +77,27 @@ void DeferredCompositionRenderpass::Draw()
 
 void DeferredCompositionRenderpass::Shutdown()
 {
-	vkDestroyPipelineLayout(VulkanRenderer::m_device.logicalDevice, layout_DeferredLightingComposition, nullptr);
-	vkDestroyRenderPass(VulkanRenderer::m_device.logicalDevice,renderpass_DeferredLightingComposition, nullptr);
-	vkDestroyPipeline(VulkanRenderer::m_device.logicalDevice, pso_DeferredLightingComposition, nullptr);
+	auto& vr = *VulkanRenderer::get();
+	vkDestroyPipelineLayout(vr.m_device.logicalDevice, layout_DeferredLightingComposition, nullptr);
+	vkDestroyRenderPass(vr.m_device.logicalDevice,renderpass_DeferredLightingComposition, nullptr);
+	vkDestroyPipeline(vr.m_device.logicalDevice, pso_DeferredLightingComposition, nullptr);
 }
 
 void DeferredCompositionRenderpass::CreateDescriptors()
 {
+	auto& vr = *VulkanRenderer::get();
 	// At this point, all dependent resources (gbuffer etc) must be ready.
 	auto gbuffer = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
 	assert(gbuffer != nullptr);
 
-    auto& m_device = VulkanRenderer::m_device;
+    auto& m_device = vr.m_device;
 
-    if (VulkanRenderer::descriptorSet_DeferredComposition)
+    if (vr.descriptorSet_DeferredComposition)
         return;
 
     // TODO: Share this function?
     VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(VulkanRenderer::m_device.physicalDevice, &props);
+    vkGetPhysicalDeviceProperties(vr.m_device.physicalDevice, &props);
     size_t minUboAlignment = props.limits.minUniformBufferOffsetAlignment;
     if (minUboAlignment > 0)
     {
@@ -130,24 +133,25 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
 
-    DescriptorBuilder::Begin(&VulkanRenderer::DescLayoutCache, &VulkanRenderer::DescAlloc)
+    DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.DescAlloc)
         .BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindBuffer(5, &VulkanRenderer::lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .Build(VulkanRenderer::descriptorSet_DeferredComposition, VulkanRenderer::descriptorSetLayout_DeferredComposition);
+        .BindBuffer(5, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .Build(vr.descriptorSet_DeferredComposition, vr.descriptorSetLayout_DeferredComposition);
 }
 
 void DeferredCompositionRenderpass::CreatePipeline()
 {
-	auto& m_device = VulkanRenderer::m_device;
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
 
-	std::vector<VkDescriptorSetLayout> setLayouts{ VulkanRenderer::descriptorSetLayout_DeferredComposition };
+	std::vector<VkDescriptorSetLayout> setLayouts{ vr.descriptorSetLayout_DeferredComposition };
 
 	VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(setLayouts.data(),static_cast<uint32_t>(setLayouts.size()));	
 	plci.pushConstantRangeCount = 1;
-	plci.pPushConstantRanges = &VulkanRenderer::pushConstantRange;
+	plci.pPushConstantRanges = &vr.pushConstantRange;
 
 	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &layout_DeferredLightingComposition));
 	VK_NAME(m_device.logicalDevice, "compositionPipeLayout", layout_DeferredLightingComposition);
@@ -163,7 +167,7 @@ void DeferredCompositionRenderpass::CreatePipeline()
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(VulkanRenderer::indirectPSOLayout, VulkanRenderer::renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(vr.indirectPSOLayout, vr.renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -178,13 +182,13 @@ void DeferredCompositionRenderpass::CreatePipeline()
 
 	// Final fullscreen composition pass pipeline
 	rasterizationState.cullMode = VK_CULL_MODE_NONE;
-	shaderStages[0] = VulkanRenderer::LoadShader(m_device, "Shaders/bin/deferredlighting.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = VulkanRenderer::LoadShader(m_device, "Shaders/bin/deferredlighting.frag.spv",VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStages[0] = vr.LoadShader(m_device, "Shaders/bin/deferredlighting.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/deferredlighting.frag.spv",VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Empty vertex input state, vertices are generated by the vertex shader
 	VkPipelineVertexInputStateCreateInfo emptyInputState = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo();
 	pipelineCI.pVertexInputState = &emptyInputState;
-	pipelineCI.renderPass = VulkanRenderer::renderPass_default;
+	pipelineCI.renderPass = vr.renderPass_default;
 	pipelineCI.layout = layout_DeferredLightingComposition;
 	colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
 	blendAttachmentState= oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);

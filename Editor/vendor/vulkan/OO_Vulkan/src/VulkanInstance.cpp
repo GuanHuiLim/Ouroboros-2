@@ -10,14 +10,16 @@
 
 VkResult FilterValidationLayers(std::vector<const char*>& Layers, const std::vector<const char* >& FilterView)
 {
-	std::uint32_t    ValidationLayerCount = -1;
-	if( auto Err = vkEnumerateInstanceLayerProperties( &ValidationLayerCount, nullptr ); Err ) 
+	uint32_t    ValidationLayerCount = 0;
+	VkResult Err = vkEnumerateInstanceLayerProperties( &ValidationLayerCount, NULL );
+	if(  Err ) 
 	{
 		return Err;
 	}
 
     std::vector<VkLayerProperties>LayerProperties(ValidationLayerCount);
-	if( auto Err = vkEnumerateInstanceLayerProperties( &ValidationLayerCount, LayerProperties.data() ); Err )
+	Err = vkEnumerateInstanceLayerProperties( &ValidationLayerCount, LayerProperties.data() );
+	if(   Err )
 	{
 		return Err;
 	}
@@ -39,14 +41,14 @@ VkResult FilterValidationLayers(std::vector<const char*>& Layers, const std::vec
 
 std::vector<const char*> getSupportedValidationLayers(VulkanInstance& vkinstance)
 {
-	static auto s_ValidationLayerNames_Alt1 = std::vector<const char*>
+	auto s_ValidationLayerNames_Alt1 = std::vector<const char*>
 	{
 #ifdef _DEBUG
 		"VK_LAYER_KHRONOS_validation"
 #endif // DEBUG
 	};
 
-	static auto s_ValidationLayerNames_Alt2 = std::vector<const char*>
+	auto s_ValidationLayerNames_Alt2 = std::vector<const char*>
 	{
 		"VK_LAYER_GOOGLE_threading",     "VK_LAYER_LUNARG_parameter_validation",
 		"VK_LAYER_LUNARG_device_limits", "VK_LAYER_LUNARG_object_tracker",
@@ -55,7 +57,7 @@ std::vector<const char*> getSupportedValidationLayers(VulkanInstance& vkinstance
 	};
 
 	// Try alt list first 
-	std::vector<const char*> Layers;
+	std::vector<const char*> Layers{};
 
 	FilterValidationLayers(Layers, s_ValidationLayerNames_Alt1 );
 	if (Layers.size() != s_ValidationLayerNames_Alt1.size())
@@ -158,10 +160,10 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 	}
 
 	//requiredExtensions.push_back(// , VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME );     // (NOT WORKING ON MANY GRAPHICS CARDS WILL HAVE TO WAIT...) Allows to change the vertex input to a pipeline (which should have been the default behavior)
-	requiredExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // descriptor indexing
+	requiredExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // descriptor indexing
 
 	//create list for validation layers
-	std::vector<const char *> validationLayers;
+	std::vector<const char*> validationLayers{};
 	//
 	// Check if we need to set any validation layers
 	//

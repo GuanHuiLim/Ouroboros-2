@@ -676,9 +676,10 @@ namespace oGFX
 
 	void SetVulkanObjectName(VkDevice device,const VkDebugMarkerObjectNameInfoEXT& info)
 	{
-		if (VulkanRenderer::pfnDebugMarkerSetObjectName)
+		auto& vr = *VulkanRenderer::get();
+		if (vr.pfnDebugMarkerSetObjectName)
 		{
-			VulkanRenderer::pfnDebugMarkerSetObjectName(device, &info);
+			vr.pfnDebugMarkerSetObjectName(device, &info);
 		}
 	}
 

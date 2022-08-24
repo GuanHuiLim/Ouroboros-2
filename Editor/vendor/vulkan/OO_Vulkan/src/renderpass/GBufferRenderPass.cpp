@@ -32,14 +32,15 @@ void GBufferRenderPass::CreatePSO()
 
 void GBufferRenderPass::Draw()
 {
-	if (!VulkanRenderer::deferredRendering)
+	auto& vr = *VulkanRenderer::get();
+	if (!vr.deferredRendering)
 		return;
 
-	auto& device = VulkanRenderer::m_device;
-	auto& swapchain = VulkanRenderer::m_swapchain;
-	auto& commandBuffers = VulkanRenderer::commandBuffers;
-	auto& swapchainIdx = VulkanRenderer::swapchainIdx;
-	auto* windowPtr = VulkanRenderer::windowPtr;
+	auto& device = vr.m_device;
+	auto& swapchain = vr.m_swapchain;
+	auto& commandBuffers = vr.commandBuffers;
+	auto& swapchainIdx = vr.swapchainIdx;
+	auto* windowPtr = vr.windowPtr;
 
     const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
     PROFILE_GPU_CONTEXT(cmdlist);
@@ -63,7 +64,7 @@ void GBufferRenderPass::Draw()
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
 
-	// VulkanRenderer::ResizeSwapchain() destroys the depth attachment. This causes the renderpass to fail on resize
+	// vr.ResizeSwapchain() destroys the depth attachment. This causes the renderpass to fail on resize
 	// TODO: handle all framebuffer resizes gracefully
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	
@@ -72,23 +73,23 @@ void GBufferRenderPass::Draw()
 	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, pso_GBufferDefault);
 	std::array<VkDescriptorSet, 3> descriptorSetGroup = 
 	{
-		VulkanRenderer::descriptorSet_gpuscene,
-		VulkanRenderer::descriptorSets_uniform[swapchainIdx],
-		VulkanRenderer::descriptorSet_bindless
+		vr.descriptorSet_gpuscene,
+		vr.descriptorSets_uniform[swapchainIdx],
+		vr.descriptorSet_bindless
 	};
 	
 	uint32_t dynamicOffset = 0;
-	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, VulkanRenderer::indirectPSOLayout,
+	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, vr.indirectPSOLayout,
 		0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
 	
 	// Bind merged mesh vertex & index buffers, instancing buffers.
     VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, VulkanRenderer::g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-    vkCmdBindIndexBuffer(cmdlist, VulkanRenderer::g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &VulkanRenderer::instanceBuffer.buffer, offsets);
+    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
+    vkCmdBindIndexBuffer(cmdlist, vr.g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
 
-    const VkBuffer idcb = VulkanRenderer::indirectCommandsBuffer.buffer;
-    const uint32_t count = (uint32_t)VulkanRenderer::m_DrawIndirectCommandsCPU.size();
+    const VkBuffer idcb = vr.indirectCommandsBuffer.buffer;
+    const uint32_t count = (uint32_t)vr.m_DrawIndirectCommandsCPU.size();
 
 	DrawIndexedIndirect(cmdlist, idcb, 0, count, sizeof(VkDrawIndexedIndirectCommand));
 
@@ -96,9 +97,9 @@ void GBufferRenderPass::Draw()
     // TODO: Deprecate this, or handle it gracefully. Leaving this here.
     if constexpr (false)
     {
-        for (auto& entity : VulkanRenderer::entities)
+        for (auto& entity : vr.entities)
         {
-            auto& model = VulkanRenderer::models[entity.modelID];
+            auto& model = vr.models[entity.modelID];
 
             glm::mat4 xform(1.0f);
             xform = glm::translate(xform, entity.position);
@@ -106,16 +107,16 @@ void GBufferRenderPass::Draw()
             xform = glm::scale(xform, entity.scale);
 
 			vkCmdPushConstants(cmdlist,
-				VulkanRenderer::indirectPSOLayout,
+				vr.indirectPSOLayout,
 				VK_SHADER_STAGE_ALL,        // stage to push constants to
 				0,                          // offset of push constants to update
 				sizeof(glm::mat4),          // size of data being pushed
 				glm::value_ptr(xform));     // actualy data being pushed (could be an array));
 
             VkDeviceSize offsets[] = { 0 };
-            vkCmdBindIndexBuffer(cmdlist, VulkanRenderer::g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-            vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, VulkanRenderer::g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-            vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &VulkanRenderer::instanceBuffer.buffer, offsets);
+            vkCmdBindIndexBuffer(cmdlist, vr.g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
+            vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
             //vkCmdDrawIndexed(commandBuffers[swapchainImageIndex], model.indices.count, 1, model.indices.offset, model.vertices.offset, 0);
         }
     }
@@ -125,7 +126,8 @@ void GBufferRenderPass::Draw()
 
 void GBufferRenderPass::Shutdown()
 {
-	auto& m_device = VulkanRenderer::m_device;
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
 	att_albedo.destroy(m_device.logicalDevice);
 	att_position.destroy(m_device.logicalDevice);
 	att_normal.destroy(m_device.logicalDevice);
@@ -138,8 +140,9 @@ void GBufferRenderPass::Shutdown()
 
 void GBufferRenderPass::SetupRenderpass()
 {
-	auto& m_device = VulkanRenderer::m_device;
-	auto& m_swapchain = VulkanRenderer::m_swapchain;
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
+	auto& m_swapchain = vr.m_swapchain;
 
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
@@ -149,7 +152,7 @@ void GBufferRenderPass::SetupRenderpass()
 	att_normal  .createAttachment(m_device, width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	att_albedo  .createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	att_material.createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	att_depth   .createAttachment(m_device, width, height, VulkanRenderer::G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	att_depth   .createAttachment(m_device, width, height, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	// Set up separate renderpass with references to the color and depth attachments
 	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};
@@ -231,15 +234,18 @@ void GBufferRenderPass::SetupRenderpass()
 
 void GBufferRenderPass::SetupFramebuffer()
 {
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
+	auto& m_swapchain = vr.m_swapchain;
+
 	std::array<VkImageView, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachments;
 	attachments[GBufferAttachmentIndex::POSITION] = att_position.view;
 	attachments[GBufferAttachmentIndex::NORMAL]   = att_normal.view;
 	attachments[GBufferAttachmentIndex::ALBEDO]   = att_albedo.view;
 	attachments[GBufferAttachmentIndex::MATERIAL] = att_material.view;
-	attachments[GBufferAttachmentIndex::DEPTH]    = VulkanRenderer::m_swapchain.depthAttachment.view;
+	attachments[GBufferAttachmentIndex::DEPTH]    = vr.m_swapchain.depthAttachment.view;
 
-	auto& m_device = VulkanRenderer::m_device;
-	auto& m_swapchain = VulkanRenderer::m_swapchain;
+	
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
@@ -250,7 +256,7 @@ void GBufferRenderPass::SetupFramebuffer()
 	tex[3].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM, width, height, &m_device);
 
 	//FramebufferCache g_cache;
-	//g_cache.Init(VulkanRenderer::m_device.logicalDevice);
+	//g_cache.Init(vr.m_device.logicalDevice);
 	//
 	//VkFramebuffer fb;
 	//FramebufferBuilder::Begin(&g_cache)
@@ -266,23 +272,24 @@ void GBufferRenderPass::SetupFramebuffer()
 	fbufCreateInfo.renderPass = renderpass_GBuffer;
 	fbufCreateInfo.pAttachments = attachments.data();
 	fbufCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-	fbufCreateInfo.width = VulkanRenderer::m_swapchain.swapChainExtent.width;
-	fbufCreateInfo.height = VulkanRenderer::m_swapchain.swapChainExtent.height;
+	fbufCreateInfo.width = vr.m_swapchain.swapChainExtent.width;
+	fbufCreateInfo.height = vr.m_swapchain.swapChainExtent.height;
 	fbufCreateInfo.layers = 1;
-	VK_CHK(vkCreateFramebuffer(VulkanRenderer::m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
-	VK_NAME(VulkanRenderer::m_device.logicalDevice, "deferredFB", framebuffer_GBuffer);
+	VK_CHK(vkCreateFramebuffer(vr.m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
+	VK_NAME(vr.m_device.logicalDevice, "deferredFB", framebuffer_GBuffer);
 
-	deferredImg[GBufferAttachmentIndex::POSITION] = VulkanRenderer::CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_position.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	deferredImg[GBufferAttachmentIndex::NORMAL]   = VulkanRenderer::CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_normal.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	deferredImg[GBufferAttachmentIndex::ALBEDO]   = VulkanRenderer::CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_albedo.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	deferredImg[GBufferAttachmentIndex::MATERIAL] = VulkanRenderer::CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_material.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::POSITION] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_position.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::NORMAL]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_normal.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::ALBEDO]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_albedo.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::MATERIAL] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_material.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	//deferredImg[GBufferAttachmentIndex::DEPTH]    = ImGui_ImplVulkan_AddTexture(GfxSamplerManager::GetSampler_Deferred(), att_depth.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 
 void GBufferRenderPass::CreatePipeline()
 {
-	auto& m_device = VulkanRenderer::m_device;
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
@@ -295,7 +302,7 @@ void GBufferRenderPass::CreatePipeline()
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(VulkanRenderer::indirectPSOLayout, VulkanRenderer::renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(vr.indirectPSOLayout, vr.renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -326,8 +333,8 @@ void GBufferRenderPass::CreatePipeline()
 	pipelineCI.pVertexInputState = &vertexInputCreateInfo;
 
 	// Offscreen pipeline
-	shaderStages[0] = VulkanRenderer::LoadShader(m_device, "Shaders/bin/gbuffer.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = VulkanRenderer::LoadShader(m_device, "Shaders/bin/gbuffer.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStages[0] = vr.LoadShader(m_device, "Shaders/bin/gbuffer.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/gbuffer.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Separate render pass
 	pipelineCI.renderPass = renderpass_GBuffer;

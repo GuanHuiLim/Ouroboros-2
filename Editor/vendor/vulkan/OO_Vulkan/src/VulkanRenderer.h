@@ -41,6 +41,7 @@ int Win32SurfaceCreator(ImGuiViewport* vp, ImU64 device, const void* allocator, 
 class VulkanRenderer
 {
 public:
+	static VulkanRenderer* s_vulkanRenderer;
 
 	static constexpr int MAX_FRAME_DRAWS = 2;
 	static constexpr int MAX_OBJECTS = 2048;
@@ -48,13 +49,11 @@ public:
 
 #define OBJECT_INSTANCE_COUNT 128
 
-	inline static PFN_vkDebugMarkerSetObjectNameEXT pfnDebugMarkerSetObjectName{ nullptr };
+	 PFN_vkDebugMarkerSetObjectNameEXT pfnDebugMarkerSetObjectName{ nullptr };
 
-	VulkanRenderer()
-	{
-		(void)1;
-	}
 	~VulkanRenderer();
+
+	static VulkanRenderer* get();
 
 	void Init(const oGFX::SetupInfo& setupSpecs, Window& window);
 
@@ -81,39 +80,39 @@ public:
 	void CreateOffscreenFB();
 	void ResizeOffscreenFB();
 
-	inline static bool m_imguiInitialized = false;
+	 bool m_imguiInitialized = false;
 	bool m_initialized = false;
 
 	//---------- Device ----------
 
-	inline static VulkanInstance m_instance{};
-	inline static VulkanDevice m_device{};
-	inline static VulkanSwapchain m_swapchain{};
-	inline static std::vector<VkFramebuffer> swapChainFramebuffers;
-	inline static uint32_t swapchainIdx{ 0 };
+	 VulkanInstance m_instance{};
+	 VulkanDevice m_device{};
+	 VulkanSwapchain m_swapchain{};
+	 std::vector<VkFramebuffer> swapChainFramebuffers;
+	 uint32_t swapchainIdx{ 0 };
 
 	//---------- DescriptorSetLayout & DescriptorSet ----------
 
 	// For Deferred Lighting onwards
-	inline static VkDescriptorSetLayout descriptorSetLayout_DeferredComposition;
-	inline static VkDescriptorSet descriptorSet_DeferredComposition;
+	 VkDescriptorSetLayout descriptorSetLayout_DeferredComposition;
+	 VkDescriptorSet descriptorSet_DeferredComposition;
 
 	// For unbounded array of texture descriptors, used in bindless approach
-	inline static VkDescriptorSetLayout descriptorSetLayout_bindless;
-	inline static VkDescriptorSet descriptorSet_bindless;
+	 VkDescriptorSetLayout descriptorSetLayout_bindless;
+	 VkDescriptorSet descriptorSet_bindless;
 
 	// For GPU Scene
-    inline static VkDescriptorSetLayout descriptorSetLayout_gpuscene;
-    inline static VkDescriptorSet descriptorSet_gpuscene;
+     VkDescriptorSetLayout descriptorSetLayout_gpuscene;
+     VkDescriptorSet descriptorSet_gpuscene;
 
 	// For UBO with the corresponding swap chain image
-	inline static VkDescriptorSetLayout descriptorSetLayout_uniform;
-	inline static std::vector<VkDescriptorSet> descriptorSets_uniform;
+	 VkDescriptorSetLayout descriptorSetLayout_uniform;
+	 std::vector<VkDescriptorSet> descriptorSets_uniform;
 
 	void ResizeDeferredFB();
 
 	void SetWorld(GraphicsWorld* world);
-	inline static GraphicsWorld* currWorld{ nullptr };
+	 GraphicsWorld* currWorld{ nullptr };
 
 	std::array<OmniLightInstance, 6> m_HardcodedOmniLights;
 
@@ -122,12 +121,12 @@ public:
 		OmniLightInstance lights[6];
 		glm::vec4 viewPos;
 	};
-	inline static LightUBO lightUBO{};
+	 LightUBO lightUBO{};
 	float timer{ 0.0f };
 
-	inline static bool deferredRendering = true;
+	 bool deferredRendering = true;
 
-	inline static vkutils::Buffer lightsBuffer;
+	 vkutils::Buffer lightsBuffer;
 	void CreateLightingBuffers(); 
 	void UpdateLights(float delta);
 	void UploadLights();
@@ -161,14 +160,12 @@ public:
 	void UploadInstanceData();
 	uint32_t objectCount{};
 	// Contains the instanced data
-	inline static vkutils::Buffer instanceBuffer;
+	 vkutils::Buffer instanceBuffer;
 
 	bool PrepareFrame();
 	void Draw();
 	void RenderFrame();
 	void Present();
-
-	void SimplePass();
 
 	void UpdateUniformBuffers();
 
@@ -192,8 +189,6 @@ public:
 	void InitDebugBuffers();
 	void UpdateDebugBuffers();
 
-	void UpdateTreeBuffers();
-
 	struct VertexBufferObject
 	{
 		GpuVector<oGFX::Vertex> VtxBuffer;
@@ -202,24 +197,24 @@ public:
 		size_t IdxOffset{};
 	};
 
-	inline static VertexBufferObject g_MeshBuffers;
+	 VertexBufferObject g_MeshBuffers;
 
-	inline static VertexBufferObject g_AABBMeshBuffers;
+	 VertexBufferObject g_AABBMeshBuffers;
 	std::vector<oGFX::Vertex> g_AABBMeshes;
-	inline static VertexBufferObject g_SphereMeshBuffers;
+	 VertexBufferObject g_SphereMeshBuffers;
 	std::vector<oGFX::Vertex> g_SphereMeshes;
 
-
-	inline static GpuVector<oGFX::Vertex> g_debugDrawVertBuffer{ &VulkanRenderer::m_device };
-	inline static GpuVector<uint32_t> g_debugDrawIndxBuffer{ &VulkanRenderer::m_device };
+	std::vector<int> intsVector;
+	GpuVector<oGFX::Vertex> g_debugDrawVertBuffer;
+	GpuVector<uint32_t> g_debugDrawIndxBuffer;
 	std::vector<oGFX::Vertex> g_debugDrawVerts;
 	std::vector<uint32_t> g_debugDrawIndices;
 
 	//TEMP
 	struct DebugDraw
 	{
-		GpuVector<oGFX::Vertex> vbo{ &VulkanRenderer::m_device };
-		GpuVector<uint32_t> ibo{ &VulkanRenderer::m_device };
+		GpuVector<oGFX::Vertex> vbo;
+		GpuVector<uint32_t> ibo;
 		std::vector<oGFX::Vertex> vertex;
 		std::vector<uint32_t> indices;
 		bool dirty = true;
@@ -236,8 +231,8 @@ public:
 
 	static constexpr size_t debugDrawBufferCnt = 7;
 
-	inline static bool g_b_drawDebug[debugDrawBufferCnt];
-	inline static DebugDraw g_DebugDraws[debugDrawBufferCnt];
+	 bool g_b_drawDebug[debugDrawBufferCnt];
+	 DebugDraw g_DebugDraws[debugDrawBufferCnt];
 	void InitTreeDebugDraws();
 	void ShutdownTreeDebug();
 
@@ -248,29 +243,29 @@ public:
 
 	bool ResizeSwapchain();
 
-	inline static Window* windowPtr{nullptr};
+	 Window* windowPtr{nullptr};
 
 	//textures
 	std::vector<vkutils::Texture2D> g_Textures;
 
 	// - Synchronisation
-	inline static std::vector<VkSemaphore> imageAvailable;
-	inline static std::vector<VkSemaphore> renderFinished;
-	inline static std::vector<VkFence> drawFences;
+	 std::vector<VkSemaphore> imageAvailable;
+	 std::vector<VkSemaphore> renderFinished;
+	 std::vector<VkFence> drawFences;
 	
 	// - Pipeline
 	VkPipeline graphicsPSO{};
 	VkPipeline wireframePSO{};
-	inline static VkRenderPass renderPass_default{};
+	 VkRenderPass renderPass_default{};
 
-	inline static vkutils::Buffer indirectCommandsBuffer{};
-	inline static VkPipeline indirectPSO{};
-	inline static VkPipelineLayout indirectPSOLayout{};
-	inline static uint32_t indirectDrawCount{};
+	 vkutils::Buffer indirectCommandsBuffer{};
+	 VkPipeline indirectPSO{};
+	 VkPipelineLayout indirectPSOLayout{};
+	 uint32_t indirectDrawCount{};
 
-	inline static vkutils::Buffer boneMatrixBuffer{};
-	inline static vkutils::Buffer skinningVertexBuffer{};
-	inline static vkutils::Buffer globalLightBuffer{};
+	 vkutils::Buffer boneMatrixBuffer{};
+	 vkutils::Buffer skinningVertexBuffer{};
+	 vkutils::Buffer globalLightBuffer{};
 
 	// - Descriptors
 	
@@ -280,7 +275,7 @@ public:
 		glm::mat4 xform{};
 		glm::vec3 light{};
 	};
-	inline static VkPushConstantRange pushConstantRange{};
+	 VkPushConstantRange pushConstantRange{};
 
 	VkDescriptorPool descriptorPool{};
 	VkDescriptorPool samplerDescriptorPool{};
@@ -289,29 +284,29 @@ public:
 	uint32_t bindlessGlobalTexturesNextIndex = 0;
 
 	// SSBO
-	inline static std::vector<GPUTransform> gpuTransform{};
-	GpuVector<GPUTransform> gpuTransformBuffer{&m_device};
+	 std::vector<GPUTransform> gpuTransform{};
+	GpuVector<GPUTransform> gpuTransformBuffer;
 
-	inline static std::vector<GPUTransform> debugTransform;
-	GpuVector<GPUTransform> debugTransformBuffer{&m_device};
+	 std::vector<GPUTransform> debugTransform;
+	GpuVector<GPUTransform> debugTransformBuffer;
 	
 	// SSBO
-	inline static std::vector<VkBuffer> vpUniformBuffer{};
-	inline static std::vector<VkDeviceMemory> vpUniformBufferMemory{};
+	 std::vector<VkBuffer> vpUniformBuffer{};
+	 std::vector<VkDeviceMemory> vpUniformBufferMemory{};
 
-	inline static DescriptorAllocator DescAlloc;
-	inline static DescriptorLayoutCache DescLayoutCache;
+	 DescriptorAllocator DescAlloc;
+	 DescriptorLayoutCache DescLayoutCache;
 
 	GfxSamplerManager samplerManager;
 
-	inline static std::vector<VkCommandBuffer> commandBuffers;
+	 std::vector<VkCommandBuffer> commandBuffers;
 
 	// Store the indirect draw commands containing index offsets and instance count per object
-	inline static std::vector<VkDrawIndexedIndirectCommand> m_DrawIndirectCommandsCPU;
-	inline static std::vector<VkDrawIndexedIndirectCommand> indirectDebugCommandsCPU;
+	 std::vector<VkDrawIndexedIndirectCommand> m_DrawIndirectCommandsCPU;
+	 std::vector<VkDrawIndexedIndirectCommand> indirectDebugCommandsCPU;
 
 	//Scene objects
-	inline static std::vector<gfxModel> models;
+	 std::vector<gfxModel> models;
 
 	uint32_t currentFrame = 0;
 
@@ -328,6 +323,7 @@ public:
 	} m_FrameContextUBO;
 
 	bool resizeSwapchain = false;
+	bool m_prepared = false;
 
 	Camera camera;
 
@@ -372,7 +368,7 @@ public:
 			return 8.0f * ( (width*height)*(width*depth)*(height*depth) );
 		}
 	};
-	inline static std::vector<EntityDetails> entities;
+	 std::vector<EntityDetails> entities;
 	static ImTextureID CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l);
 	static VkPipelineShaderStageCreateInfo LoadShader(VulkanDevice& device, const std::string& fileName, VkShaderStageFlagBits stage);
 	private:
@@ -383,6 +379,8 @@ public:
 		
 
 };
+
+
 
 // Helper function to set Viewport & Scissor to the default window full extents.
 void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer);

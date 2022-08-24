@@ -9,7 +9,8 @@ VkSampler GfxSamplerManager::deferredSampler = nullptr;
 
 void GfxSamplerManager::Init()
 {
-    auto& device = VulkanRenderer::m_device.logicalDevice;
+    auto& vr = *VulkanRenderer::get();
+    auto& device = vr.m_device.logicalDevice;
 
     {
         VkSamplerCreateInfo samplerCreateInfo{};
@@ -56,7 +57,8 @@ void GfxSamplerManager::Init()
 
 void GfxSamplerManager::Shutdown()
 {
-    auto& device = VulkanRenderer::m_device.logicalDevice;
+    auto& vr = *VulkanRenderer::get();
+    auto& device = vr.m_device.logicalDevice;
 
     vkDestroySampler(device, textureSampler, nullptr);
     vkDestroySampler(device, deferredSampler, nullptr);

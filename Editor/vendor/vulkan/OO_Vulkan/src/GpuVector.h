@@ -28,12 +28,12 @@ public:
 	bool MustUpdate();
 	void Updated();
 
-private:
-	size_t m_size{};
-	size_t m_capacity{};
+public:
+	size_t m_size{0};
+	size_t m_capacity{0};
 	VkBufferUsageFlags m_usage{};
-	VkBuffer m_buffer{};
-	VkDeviceMemory m_gpuMemory{};
+	VkBuffer m_buffer{VK_NULL_HANDLE};
+	VkDeviceMemory m_gpuMemory{VK_NULL_HANDLE};
 	VkDescriptorBufferInfo m_descriptor{};
 
 	VulkanDevice* m_device{nullptr};
@@ -50,14 +50,16 @@ private:
 
 template<typename T>
 GpuVector<T>::GpuVector() : 
-	m_device{nullptr}
+	m_device{nullptr},
+	m_buffer{VK_NULL_HANDLE}
 {
 
 }
 
 template <typename T>
 GpuVector<T>::GpuVector(VulkanDevice* device) :
-	m_device{ device }
+	m_device{ device },
+	m_buffer{VK_NULL_HANDLE}
 {
 
 }

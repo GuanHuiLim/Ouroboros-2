@@ -11,7 +11,6 @@ RenderPassDatabase* RenderPassDatabase::Get()
 		ms_renderpass =new RenderPassDatabase;
 	}
 	//std::cout << ms_renderpass.get() << std::endl;
-	std::cout << ms_renderpass << std::endl;
 	//return ms_renderpass.get();
 	return ms_renderpass;
 }

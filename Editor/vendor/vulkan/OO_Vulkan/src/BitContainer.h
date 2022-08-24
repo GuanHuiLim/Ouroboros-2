@@ -23,8 +23,8 @@ public:
 	T& operator[](size_t i);
 
 private:
-	std::bitset<MAX_OBJECTS> m_bits;
-	std::vector<T> m_data;
+	std::bitset<MAX_OBJECTS> m_bits{};
+	std::vector<T> m_data{};
 };
 
 template <typename T, int32_t MAX_OBJECTS>
