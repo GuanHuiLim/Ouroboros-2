@@ -131,14 +131,12 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 	appInfo.apiVersion = VK_API_VERSION_1_2;				//vulkan version, might need to change
 
 	//create list to hold instance extensions
-	std::vector<const char *> requiredExtensions = std::vector<const char *>();
+	std::vector<const char *> requiredExtensions = setupSpecs.extensions;
 
-	requiredExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	//requiredExtensions.push_back(// , VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME );     // (NOT WORKING ON MANY GRAPHICS CARDS WILL HAVE TO WAIT...) Allows to change the vertex input to a pipeline (which should have been the default behavior)
-	requiredExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // descriptor indexing
-	
-
+	if (setupSpecs.extensions.empty())
 	{
+		requiredExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+	
 		// Enable surface extensions depending on os
 		#if defined(_WIN32)
 				requiredExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
@@ -158,6 +156,9 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 				requiredExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 		#endif
 	}
+
+	//requiredExtensions.push_back(// , VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME );     // (NOT WORKING ON MANY GRAPHICS CARDS WILL HAVE TO WAIT...) Allows to change the vertex input to a pipeline (which should have been the default behavior)
+	requiredExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // descriptor indexing
 
 	//create list for validation layers
 	std::vector<const char *> validationLayers;
@@ -218,7 +219,7 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 
 	if (result != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create a runtime instance!\n" + oGFX::vk::tools::VkResultString(result));
+		throw std::runtime_error("Failed to create a runtime instance!\n" + oGFX::vkutils::tools::VkResultString(result));
 	}
 
 	return true;
@@ -229,6 +230,7 @@ void VulkanInstance::CreateSurface(Window& window)
 	//
 	// Create the surface
 	//
+	
 
 	// Get the Surface creation extension since we are about to use it
 	auto VKCreateWin32Surface = (PFN_vkCreateWin32SurfaceKHR)vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR");

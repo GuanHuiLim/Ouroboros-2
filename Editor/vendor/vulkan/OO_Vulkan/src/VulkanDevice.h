@@ -35,9 +35,9 @@ struct VulkanDevice
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
 	VkResult CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags,
-		vk::Buffer* buffer, VkDeviceSize size, void* data = nullptr);
+		vkutils::Buffer* buffer, VkDeviceSize size, void* data = nullptr);
 
-	void CopyBuffer(vk::Buffer* src, vk::Buffer* dst, VkQueue queue,
+	void CopyBuffer(vkutils::Buffer* src, vkutils::Buffer* dst, VkQueue queue,
 			VkBufferCopy* copyRegion = nullptr);
 
 	VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin = false);

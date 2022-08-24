@@ -2,7 +2,7 @@
 
 // Note: This header file only wraps the C++ Macros needed for external profiling tools.
 
-#define USE_PROFILING_OPTICK
+//#define USE_PROFILING_OPTICK
 
 #if defined(USE_PROFILING_OPTICK)
     #include "optick/optick.h"

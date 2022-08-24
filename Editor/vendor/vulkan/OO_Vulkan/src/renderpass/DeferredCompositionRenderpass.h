@@ -5,10 +5,12 @@
 
 #include "VulkanFramebufferAttachment.h"
 
+#include <memory>
+
 struct DeferredCompositionRenderpass : public GfxRenderpass
 {
 	//DECLARE_RENDERPASS_SINGLETON(DeferredCompositionRenderpass)
-
+	
 	void Init() override;
 	void Draw() override;
 	void Shutdown() override;
@@ -26,3 +28,11 @@ private:
 	void CreateDescriptors();
 };
 
+inline static int x;
+//
+//inline static int wahteferhtefuckyouwant = []() {
+//	auto ptr = new DeferredCompositionRenderpass;
+//	RenderPassDatabase::Get()->RegisterRenderPass(ptr);
+//	std::cout<< "KILL ME PLS" << std::endl;
+//	return 1;
+//}();

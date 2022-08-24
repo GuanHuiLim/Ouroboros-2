@@ -1,7 +1,7 @@
 #include "VulkanBuffer.h"
 #include <cassert>
 
-namespace vk
+namespace vkutils
 {	
 
 	VkResult Buffer::map(VkDeviceSize size, VkDeviceSize offset)

@@ -14,7 +14,7 @@ FramebufferBuilder FramebufferBuilder::Begin(FramebufferCache* bufferCache)
 }
 
 
-FramebufferBuilder& FramebufferBuilder::BindImage(vk::Texture2D& tex)
+FramebufferBuilder& FramebufferBuilder::BindImage(vkutils::Texture2D& tex)
 {
 	textures.push_back(tex);
 

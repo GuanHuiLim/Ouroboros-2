@@ -4,7 +4,7 @@
 
 #include "vulkan/vulkan.h"
 
-namespace vk
+namespace vkutils
 {	
 	struct Buffer
 	{

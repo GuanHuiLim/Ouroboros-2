@@ -115,8 +115,8 @@ namespace oGFX
 	{
 	
 		static std::vector<VkVertexInputBindingDescription> bindingDescription {	
-			oGFX::vk::inits::vertexInputBindingDescription(VERTEX_BUFFER_ID,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX),
-			oGFX::vk::inits::vertexInputBindingDescription(INSTANCE_BUFFER_ID,sizeof(oGFX::InstanceData),VK_VERTEX_INPUT_RATE_INSTANCE),
+			oGFX::vkutils::inits::vertexInputBindingDescription(VERTEX_BUFFER_ID,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX),
+			oGFX::vkutils::inits::vertexInputBindingDescription(INSTANCE_BUFFER_ID,sizeof(oGFX::InstanceData),VK_VERTEX_INPUT_RATE_INSTANCE),
 		};
 		return bindingDescription;
 	
@@ -125,14 +125,14 @@ namespace oGFX
 	const std::vector<VkVertexInputAttributeDescription>& GetGFXVertexInputAttributes()
 	{
 		static std::vector<VkVertexInputAttributeDescription>attributeDescriptions{
-		oGFX::vk::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, pos)), //Position attribute
-		oGFX::vk::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,1,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, norm)),//normals attribute
-		oGFX::vk::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, col)), // colour attribute
-		oGFX::vk::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,3,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, tangent)),//tangent attribute
-		oGFX::vk::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,4,VK_FORMAT_R32G32_SFLOAT	  ,offsetof(Vertex, tex)),    //Texture attribute
+		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, pos)), //Position attribute
+		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,1,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, norm)),//normals attribute
+		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, col)), // colour attribute
+		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,3,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, tangent)),//tangent attribute
+		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,4,VK_FORMAT_R32G32_SFLOAT	  ,offsetof(Vertex, tex)),    //Texture attribute
 	
 		// instance data attributes
-		oGFX::vk::inits::vertexInputAttributeDescription(INSTANCE_BUFFER_ID,15,VK_FORMAT_R32G32B32A32_UINT,offsetof(InstanceData, InstanceData::instanceAttributes)),
+		oGFX::vkutils::inits::vertexInputAttributeDescription(INSTANCE_BUFFER_ID,15,VK_FORMAT_R32G32B32A32_UINT,offsetof(InstanceData, InstanceData::instanceAttributes)),
 		};
 		return attributeDescriptions;
 	}
@@ -427,7 +427,7 @@ namespace oGFX
 	{
 		//CREATE VERTEX BUFFER
 		//information to create a buffer ( doesnt include assigning memory)
-		VkBufferCreateInfo bufferInfo = oGFX::vk::inits::bufferCreateInfo(bufferUsage,bufferSize);
+		VkBufferCreateInfo bufferInfo = oGFX::vkutils::inits::bufferCreateInfo(bufferUsage,bufferSize);
 		VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer);
 		if (result != VK_SUCCESS)
 		{
@@ -439,7 +439,7 @@ namespace oGFX
 		vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
 
 		// Allocate memory to buffer
-		VkMemoryAllocateInfo memoryAllocInfo = oGFX::vk::inits::memoryAllocateInfo();
+		VkMemoryAllocateInfo memoryAllocInfo = oGFX::vkutils::inits::memoryAllocateInfo();
 		memoryAllocInfo.allocationSize = memoryRequirements.size;
 		memoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(physicalDevice,memoryRequirements.memoryTypeBits,bufferProperties); //index of memory type on physical device that has required bit flags
 			
@@ -455,7 +455,7 @@ namespace oGFX
 		result = vkAllocateMemory(device, &memoryAllocInfo, nullptr, bufferMemory);
 		if (result != VK_SUCCESS)
 		{
-			std::cout << oGFX::vk::tools::VkResultString(result) << std::endl;
+			std::cout << oGFX::vkutils::tools::VkResultString(result) << std::endl;
 			throw std::runtime_error("Failed to allocate Vertex Buffer Memory!");
 		}
 
@@ -684,11 +684,11 @@ namespace oGFX
 
 }
 
-void oGFX::vk::tools::setImageLayout(VkCommandBuffer cmdbuffer, VkImage image, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkImageSubresourceRange subresourceRange, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+void oGFX::vkutils::tools::setImageLayout(VkCommandBuffer cmdbuffer, VkImage image, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkImageSubresourceRange subresourceRange, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
 {
 	{
 		// Create an image barrier object
-		VkImageMemoryBarrier imageMemoryBarrier = oGFX::vk::inits::imageMemoryBarrier();
+		VkImageMemoryBarrier imageMemoryBarrier = oGFX::vkutils::inits::imageMemoryBarrier();
 		imageMemoryBarrier.oldLayout = oldImageLayout;
 		imageMemoryBarrier.newLayout = newImageLayout;
 		imageMemoryBarrier.image = image;
@@ -801,7 +801,7 @@ void oGFX::vk::tools::setImageLayout(VkCommandBuffer cmdbuffer, VkImage image, V
 	}
 }
 
-void oGFX::vk::tools::setImageLayout(VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+void oGFX::vkutils::tools::setImageLayout(VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
 {
 	VkImageSubresourceRange subresourceRange = {};
 	subresourceRange.aspectMask = aspectMask;
@@ -811,7 +811,7 @@ void oGFX::vk::tools::setImageLayout(VkCommandBuffer cmdbuffer, VkImage image, V
 	setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
 }
 
-std::string oGFX::vk::tools::VkResultString(VkResult value)
+std::string oGFX::vkutils::tools::VkResultString(VkResult value)
 {
 	switch (value) {
 	case (VK_SUCCESS): return "SUCCESS";
@@ -857,7 +857,7 @@ std::string oGFX::vk::tools::VkResultString(VkResult value)
 	}
 }
 
-std::string oGFX::vk::tools::VkFormatString(VkFormat value) {
+std::string oGFX::vkutils::tools::VkFormatString(VkFormat value) {
 	switch (value) {
 	case (VK_FORMAT_UNDEFINED): return "FORMAT_UNDEFINED";
 	case (VK_FORMAT_R4G4_UNORM_PACK8): return "FORMAT_R4G4_UNORM_PACK8";
@@ -1110,7 +1110,7 @@ std::string oGFX::vk::tools::VkFormatString(VkFormat value) {
 	}
 }
 
-std::string oGFX::vk::tools::VkColorSpaceKHRString(VkColorSpaceKHR value) {
+std::string oGFX::vkutils::tools::VkColorSpaceKHRString(VkColorSpaceKHR value) {
 	switch (value) {
 	case (VK_COLOR_SPACE_SRGB_NONLINEAR_KHR): return "COLOR_SPACE_SRGB_NONLINEAR_KHR";
 	case (VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT): return "COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT";

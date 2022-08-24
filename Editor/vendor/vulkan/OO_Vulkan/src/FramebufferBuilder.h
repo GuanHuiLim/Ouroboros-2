@@ -9,12 +9,12 @@ class FramebufferBuilder {
 public:
 	static FramebufferBuilder Begin(FramebufferCache* bufferCache);
 
-	FramebufferBuilder& BindImage(vk::Texture2D& tex);
+	FramebufferBuilder& BindImage(vkutils::Texture2D& tex);
 
 	bool Build(VkFramebuffer& framebuffer, VkRenderPass renderPass);
 private:
 
-	std::vector<vk::Texture2D> textures;
+	std::vector<vkutils::Texture2D> textures;
 
 	FramebufferCache* cache;
 };

@@ -10,8 +10,20 @@
 
 DECLARE_RENDERPASS(DeferredCompositionRenderpass);
 
+
+//struct test
+//{
+//	test()
+//	{
+//		auto ptr = new DeferredCompositionRenderpass;
+//		RenderPassDatabase::Get()->RegisterRenderPass(ptr);
+//		std::cout<< "KILL ME PLS" << std::endl;
+//	}
+//}t;
+
 void DeferredCompositionRenderpass::Init()
 {
+
 }
 
 void DeferredCompositionRenderpass::CreatePSO()
@@ -35,7 +47,7 @@ void DeferredCompositionRenderpass::Draw()
 	clearValues[1].depthStencil.depth = { 1.0f };
 
 	//Information about how to begin a render pass (only needed for graphical applications)
-	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vk::inits::renderPassBeginInfo();
+	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
 	renderPassBeginInfo.renderPass = VulkanRenderer::renderPass_default;                  //render pass to begin
 	renderPassBeginInfo.renderArea.offset = { 0,0 };                                     //start point of render pass in pixels
 	renderPassBeginInfo.renderArea.extent = VulkanRenderer::m_swapchain.swapChainExtent; //size of region to run render pass on (Starting from offset)
@@ -95,22 +107,22 @@ void DeferredCompositionRenderpass::CreateDescriptors()
     //// LightData buffer size
 
     // Image descriptors for the offscreen color attachments
-    VkDescriptorImageInfo texDescriptorPosition = oGFX::vk::inits::descriptorImageInfo(
+    VkDescriptorImageInfo texDescriptorPosition = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
 		gbuffer->att_position.view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    VkDescriptorImageInfo texDescriptorNormal = oGFX::vk::inits::descriptorImageInfo(
+    VkDescriptorImageInfo texDescriptorNormal = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
 		gbuffer->att_normal.view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    VkDescriptorImageInfo texDescriptorAlbedo = oGFX::vk::inits::descriptorImageInfo(
+    VkDescriptorImageInfo texDescriptorAlbedo = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
 		gbuffer->att_albedo.view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    VkDescriptorImageInfo texDescriptorMaterial = oGFX::vk::inits::descriptorImageInfo(
+    VkDescriptorImageInfo texDescriptorMaterial = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
         gbuffer->att_material.view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -133,25 +145,25 @@ void DeferredCompositionRenderpass::CreatePipeline()
 
 	std::vector<VkDescriptorSetLayout> setLayouts{ VulkanRenderer::descriptorSetLayout_DeferredComposition };
 
-	VkPipelineLayoutCreateInfo plci = oGFX::vk::inits::pipelineLayoutCreateInfo(setLayouts.data(),static_cast<uint32_t>(setLayouts.size()));	
+	VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(setLayouts.data(),static_cast<uint32_t>(setLayouts.size()));	
 	plci.pushConstantRangeCount = 1;
 	plci.pPushConstantRanges = &VulkanRenderer::pushConstantRange;
 
 	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &layout_DeferredLightingComposition));
 	VK_NAME(m_device.logicalDevice, "compositionPipeLayout", layout_DeferredLightingComposition);
 
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vk::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vk::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
-	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vk::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
-	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vk::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
-	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vk::inits::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
-	VkPipelineViewportStateCreateInfo viewportState = oGFX::vk::inits::pipelineViewportStateCreateInfo(1, 1, 0);
-	VkPipelineMultisampleStateCreateInfo multisampleState = oGFX::vk::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
+	VkPipelineViewportStateCreateInfo viewportState = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1, 1, 0);
+	VkPipelineMultisampleStateCreateInfo multisampleState = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vk::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
+	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vk::inits::pipelineCreateInfo(VulkanRenderer::indirectPipeLayout, VulkanRenderer::renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(VulkanRenderer::indirectPSOLayout, VulkanRenderer::renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -170,12 +182,12 @@ void DeferredCompositionRenderpass::CreatePipeline()
 	shaderStages[1] = VulkanRenderer::LoadShader(m_device, "Shaders/bin/deferredlighting.frag.spv",VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Empty vertex input state, vertices are generated by the vertex shader
-	VkPipelineVertexInputStateCreateInfo emptyInputState = oGFX::vk::inits::pipelineVertexInputStateCreateInfo();
+	VkPipelineVertexInputStateCreateInfo emptyInputState = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo();
 	pipelineCI.pVertexInputState = &emptyInputState;
 	pipelineCI.renderPass = VulkanRenderer::renderPass_default;
 	pipelineCI.layout = layout_DeferredLightingComposition;
-	colorBlendState = oGFX::vk::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
-	blendAttachmentState= oGFX::vk::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+	colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+	blendAttachmentState= oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
 
 	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_DeferredLightingComposition));
 	VK_NAME(m_device.logicalDevice, "compositionPipe", pso_DeferredLightingComposition);

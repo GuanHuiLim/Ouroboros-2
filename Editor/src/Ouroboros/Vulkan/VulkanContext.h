@@ -48,7 +48,9 @@ namespace oo
         }*/
     private:
         SDL_Window* m_windowHandle;
-        VulkanRenderer vr;
+        static VulkanRenderer vr;
+        static GraphicsWorld gw;
+        static Window m_window;
         //static VulkanEngine vkEngine;
     };
 }

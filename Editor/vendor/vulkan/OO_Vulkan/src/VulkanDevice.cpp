@@ -135,7 +135,7 @@ void VulkanDevice::InitLogicalDevice(VulkanInstance& instance)
     VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("VK Renderer Failed to create a logical device!\n" + oGFX::vk::tools::VkResultString(result));
+        throw std::runtime_error("VK Renderer Failed to create a logical device!\n" + oGFX::vkutils::tools::VkResultString(result));
     }
     VK_NAME(logicalDevice, "logicalDevice", logicalDevice);
 
@@ -230,18 +230,18 @@ bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
     return true;
 }
 
-VkResult VulkanDevice::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, vk::Buffer* buffer, VkDeviceSize size, void* data)
+VkResult VulkanDevice::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, vkutils::Buffer* buffer, VkDeviceSize size, void* data)
 {
     buffer->device = logicalDevice;
 
     // Create the buffer handle
-    VkBufferCreateInfo bufferCreateInfo = oGFX::vk::inits::bufferCreateInfo(usageFlags, size);
+    VkBufferCreateInfo bufferCreateInfo = oGFX::vkutils::inits::bufferCreateInfo(usageFlags, size);
     vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &buffer->buffer);
     VK_NAME(logicalDevice, "CreateBuffer::buffer", buffer->buffer);
 
     // Create the memory backing up the buffer handle
     VkMemoryRequirements memReqs;
-    VkMemoryAllocateInfo memAlloc = oGFX::vk::inits::memoryAllocateInfo();
+    VkMemoryAllocateInfo memAlloc = oGFX::vkutils::inits::memoryAllocateInfo();
     vkGetBufferMemoryRequirements(logicalDevice, buffer->buffer, &memReqs);
     memAlloc.allocationSize = memReqs.size;
     // Find a memory type index that fits the properties of the buffer
@@ -280,13 +280,13 @@ VkResult VulkanDevice::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPrope
 
 VkCommandBuffer VulkanDevice::CreateCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin)
 {
-    VkCommandBufferAllocateInfo cmdBufAllocateInfo = oGFX::vk::inits::commandBufferAllocateInfo(pool, level, 1);
+    VkCommandBufferAllocateInfo cmdBufAllocateInfo = oGFX::vkutils::inits::commandBufferAllocateInfo(pool, level, 1);
     VkCommandBuffer cmdBuffer;
     vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &cmdBuffer);
     // If requested, also start recording for the new command buffer
     if (begin)
     {
-        VkCommandBufferBeginInfo cmdBufInfo = oGFX::vk::inits::commandBufferBeginInfo();
+        VkCommandBufferBeginInfo cmdBufInfo = oGFX::vkutils::inits::commandBufferBeginInfo();
         vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo);
     }
     return cmdBuffer;
@@ -306,11 +306,11 @@ void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue que
 
     vkEndCommandBuffer(commandBuffer);
 
-    VkSubmitInfo submitInfo = oGFX::vk::inits::submitInfo();
+    VkSubmitInfo submitInfo = oGFX::vkutils::inits::submitInfo();
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
     // Create fence to ensure that the command buffer has finished executing
-    VkFenceCreateInfo fenceInfo = oGFX::vk::inits::fenceCreateInfo(0);
+    VkFenceCreateInfo fenceInfo = oGFX::vkutils::inits::fenceCreateInfo(0);
     VkFence fence;
     vkCreateFence(logicalDevice, &fenceInfo, nullptr, &fence);
     VK_NAME(logicalDevice, "fence", fence);
@@ -330,7 +330,7 @@ void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue que
     return FlushCommandBuffer(commandBuffer, queue, commandPool, free);
 }
 
-void VulkanDevice::CopyBuffer(vk::Buffer* src, vk::Buffer* dst, VkQueue queue, VkBufferCopy* copyRegion)
+void VulkanDevice::CopyBuffer(vkutils::Buffer* src, vkutils::Buffer* dst, VkQueue queue, VkBufferCopy* copyRegion)
 {
     assert(dst->size >= src->size);
     assert(src->buffer);

@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-namespace vk
+namespace vkutils
 {
 	void Texture::updateDescriptor()
 	{
@@ -61,7 +61,7 @@ namespace vk
 		// limited amount of _formats and features (mip maps, cubemaps, arrays, etc.)
 		VkBool32 useStaging = !forceLinear;
 
-		VkMemoryAllocateInfo memAllocInfo =oGFX::vk::inits::memoryAllocateInfo();
+		VkMemoryAllocateInfo memAllocInfo =oGFX::vkutils::inits::memoryAllocateInfo();
 		VkMemoryRequirements memReqs;
 
 		// Use a separate command buffer for texture loading
@@ -73,7 +73,7 @@ namespace vk
 			VkBuffer stagingBuffer;
 			VkDeviceMemory stagingMemory;
 
-			VkBufferCreateInfo bufferCreateInfo = oGFX::vk::inits::bufferCreateInfo();
+			VkBufferCreateInfo bufferCreateInfo = oGFX::vkutils::inits::bufferCreateInfo();
 			bufferCreateInfo.size = ktxTextureSize;
 			// This buffer is used as a transfer source for the buffer copy
 			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -120,7 +120,7 @@ namespace vk
 			//}
 
 			// Create optimal tiled target image
-			VkImageCreateInfo imageCreateInfo = oGFX::vk::inits::imageCreateInfo();
+			VkImageCreateInfo imageCreateInfo = oGFX::vkutils::inits::imageCreateInfo();
 			imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 			imageCreateInfo.format = _format;
 			imageCreateInfo.mipLevels = mipLevels;
@@ -155,7 +155,7 @@ namespace vk
 
 			// Image barrier for optimal image (target)
 			// Optimal image will be used as destination for the copy
-			oGFX::vk::tools::setImageLayout(
+			oGFX::vkutils::tools::setImageLayout(
 				copyCmd,
 				image,
 				VK_IMAGE_LAYOUT_UNDEFINED,
@@ -174,7 +174,7 @@ namespace vk
 
 			// Change texture image layout to shader read after all mip levels have been copied
 			this->imageLayout = imageLayout;
-			oGFX::vk::tools::setImageLayout(
+			oGFX::vkutils::tools::setImageLayout(
 				copyCmd,
 				image,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -199,7 +199,7 @@ namespace vk
 			VkImage mappableImage;
 			VkDeviceMemory mappableMemory;
 
-			VkImageCreateInfo imageCreateInfo = oGFX::vk::inits::imageCreateInfo();
+			VkImageCreateInfo imageCreateInfo = oGFX::vkutils::inits::imageCreateInfo();
 			imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 			imageCreateInfo.format = _format;
 			imageCreateInfo.extent = { width, height, 1 };
@@ -258,7 +258,7 @@ namespace vk
 			this->imageLayout = imageLayout;
 
 			// Setup image memory barrier
-			oGFX::vk::tools::setImageLayout(copyCmd, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
+			oGFX::vkutils::tools::setImageLayout(copyCmd, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
 
 			device->FlushCommandBuffer(copyCmd, copyQueue);
 		}
@@ -332,7 +332,7 @@ namespace vk
 		format = _format;
 		mipLevels =static_cast<uint32_t>(mipInfo.size());
 
-		VkMemoryAllocateInfo memAllocInfo = oGFX::vk::inits::memoryAllocateInfo();
+		VkMemoryAllocateInfo memAllocInfo = oGFX::vkutils::inits::memoryAllocateInfo();
 		VkMemoryRequirements memReqs;
 
 		// Use a separate command buffer for texture loading
@@ -343,7 +343,7 @@ namespace vk
 		VkDeviceMemory stagingMemory;
 
 		// This buffer is used as a transfer source for the buffer copy
-		VkBufferCreateInfo bufferCreateInfo = oGFX::vk::inits::bufferCreateInfo(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,bufferSize);
+		VkBufferCreateInfo bufferCreateInfo = oGFX::vkutils::inits::bufferCreateInfo(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,bufferSize);
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		vkCreateBuffer(device->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer);
@@ -377,7 +377,7 @@ namespace vk
 		//bufferCopyRegion.bufferOffset = 0;
 
 		// Create optimal tiled target image
-		VkImageCreateInfo imageCreateInfo = oGFX::vk::inits::imageCreateInfo();
+		VkImageCreateInfo imageCreateInfo = oGFX::vkutils::inits::imageCreateInfo();
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format = format;
 		imageCreateInfo.mipLevels = mipLevels;
@@ -412,7 +412,7 @@ namespace vk
 
 		// Image barrier for optimal image (target)
 		// Optimal image will be used as destination for the copy
-		oGFX::vk::tools::setImageLayout(
+		oGFX::vkutils::tools::setImageLayout(
 			copyCmd,
 			image,
 			VK_IMAGE_LAYOUT_UNDEFINED,
@@ -431,7 +431,7 @@ namespace vk
 
 		// Change texture image layout to shader read after all mip levels have been copied
 		this->imageLayout = imageLayout;
-		oGFX::vk::tools::setImageLayout(
+		oGFX::vkutils::tools::setImageLayout(
 			copyCmd,
 			image,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -502,7 +502,7 @@ namespace vk
 			| VK_IMAGE_USAGE_STORAGE_BIT
 			| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	
-		VkImageCreateInfo imageinfo = oGFX::vk::inits::imageCreateInfo();
+		VkImageCreateInfo imageinfo = oGFX::vkutils::inits::imageCreateInfo();
 		imageinfo.imageType = VK_IMAGE_TYPE_2D;
 		imageinfo.extent.width = width;
 		imageinfo.extent.height = height;
@@ -521,7 +521,7 @@ namespace vk
 		VkMemoryRequirements memReqs;
 		vkGetImageMemoryRequirements(device->logicalDevice, image, &memReqs);
 
-		VkMemoryAllocateInfo memAllocInfo = oGFX::vk::inits::memoryAllocateInfo();
+		VkMemoryAllocateInfo memAllocInfo = oGFX::vkutils::inits::memoryAllocateInfo();
 		memAllocInfo.allocationSize = memReqs.size;
 		// Get memory type index for a host visible buffer
 		memAllocInfo.memoryTypeIndex = oGFX::FindMemoryTypeIndex(device->physicalDevice,memReqs.memoryTypeBits,properties);

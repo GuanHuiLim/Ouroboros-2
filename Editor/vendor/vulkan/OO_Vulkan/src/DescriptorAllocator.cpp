@@ -24,7 +24,7 @@ bool DescriptorAllocator::Allocate(VkDescriptorSet* set, VkDescriptorSetLayout l
 		usedPools.push_back(currentPool);
 	}
 
-	VkDescriptorSetAllocateInfo allocInfo = oGFX::vk::inits::descriptorSetAllocateInfo(currentPool,&layout,1);
+	VkDescriptorSetAllocateInfo allocInfo = oGFX::vkutils::inits::descriptorSetAllocateInfo(currentPool,&layout,1);
 
 	//try to allocate the descriptor set
 	VkResult allocResult = vkAllocateDescriptorSets(device, &allocInfo, set);
@@ -105,7 +105,7 @@ VkDescriptorPool DescriptorAllocator::CreatePool(VkDevice device, const Descript
 		sizes.push_back({ sz.first, uint32_t(sz.second * count) });
 	}
 
-	VkDescriptorPoolCreateInfo pool_info = oGFX::vk::inits::descriptorPoolCreateInfo(sizes,count);
+	VkDescriptorPoolCreateInfo pool_info = oGFX::vkutils::inits::descriptorPoolCreateInfo(sizes,count);
 	pool_info.flags = flags;
 
 	VkDescriptorPool descriptorPool;

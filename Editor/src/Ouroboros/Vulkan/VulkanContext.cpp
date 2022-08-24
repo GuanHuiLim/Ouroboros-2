@@ -23,10 +23,16 @@ Technology is prohibited.
 #include <sdl2/SDL.h>
 #include <sdl2/SDL_vulkan.h>
 
+#include "OO_Vulkan/src/DefaultMeshCreator.h"
 
 namespace oo
 {
     //VulkanEngine VulkanContext::vkEngine;
+    
+      
+  VulkanRenderer VulkanContext::vr;
+  GraphicsWorld VulkanContext::gw;
+  Window VulkanContext::m_window;
 
 #define TEMPORARY_CODE
 
@@ -264,8 +270,9 @@ namespace oo
     }
 
     static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
-    {
+    {      
         VkResult err;
+
 
         VkSemaphore image_acquired_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
         VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
@@ -394,17 +401,28 @@ namespace oo
         oGFX::SetupInfo si;
         si.debug = true;
         si.renderDoc = true;
-        Window win(w,h);
-        win.m_type = Window::WindowType::SDL2;
-        win.rawHandle = m_windowHandle;
+        si.SurfaceFunctionPointer = std::function<void()>([&]() {
+            return SDL_Vulkan_CreateSurface(m_windowHandle, vr.m_instance.instance, &vr.m_instance.surface);
+            });
+        si.extensions = extensions;
+        m_window.m_width = w;
+        m_window.m_height = h;
+        m_window.m_type = Window::WindowType::SDL2;
+        m_window.rawHandle = m_windowHandle;
         try
         {
-            vr.Init(si, win);
-        }
-        catch (...)
+            vr.Init(si, m_window);
+        } 
+        catch (std::runtime_error e)
         {
-            std::cout << "your mom die" << std::endl;
+            std::cout << "VK_init: " << e.what() << std::endl;
         }
+        
+        
+        gw.CreateObjectInstance();
+        vr.SetWorld(&gw);
+        DefaultMesh dm = CreateDefaultCubeMesh();
+        vr.LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr);
 
         // Create Window Surface
         VkSurfaceKHR surface;
@@ -424,7 +442,18 @@ namespace oo
 
     void VulkanContext::OnUpdateBegin()
     {
+        if (vr.PrepareFrame() == true)
+        {
+            vr.timer += 0.02f;
+            
+            vr.UpdateLights(0.02f);
 
+            // Upload CPU light data to GPU. Ideally this should only contain lights that intersects the camera frustum.
+            vr.UploadLights();
+
+            // Render the frame
+            vr.RenderFrame();
+        }
     }
 
     void VulkanContext::SwapBuffers()
@@ -438,6 +467,7 @@ namespace oo
         {
             vkEngine.RecreateSwapchain();
         }*/
+       
 
 #ifdef TEMPORARY_CODE
         // Resize swap chain?
@@ -546,7 +576,10 @@ namespace oo
 #ifdef TEMPORARY_CODE
         // Present Main Platform Window
         if (!main_is_minimized)
-            FramePresent(wd);
+        {
+            vr.Present();
+            //FramePresent(wd);
+        }
 #endif // TEMPORARY_CODE
     }
 

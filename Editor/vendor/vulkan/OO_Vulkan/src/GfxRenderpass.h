@@ -23,6 +23,7 @@ enum GBufferAttachmentIndex
 class GfxRenderpass
 {
 public:
+    virtual ~GfxRenderpass() = default;
     virtual void Init() = 0;
     virtual void CreatePSO(){};
     virtual void Draw() = 0;
@@ -35,20 +36,20 @@ class RenderPassDatabase
 public:
     static RenderPassDatabase* Get();
     void RegisterRenderPass(std::unique_ptr<GfxRenderpass>&& renderPass);
+    void RegisterRenderPass(GfxRenderpass* renderPass);
 
     // Call this once to call "Init()" on all registered render passes.
     // Take note the order of initialization is undefined.
     static void InitAllRegisteredPasses();
 
     static void ShutdownAllRegisteredPasses();
-
     // TODO: Proper C++ Fix needed.
     template<typename T_PASS>
     static inline T_PASS* GetRenderPass()
     {
-        for (auto& pass : Get()->m_AllRenderPasses)
+        for (auto& pass : Get()->m_AllRawRenderPasses)
         {
-            GfxRenderpass* base = pass.get();
+            GfxRenderpass* base = pass;
             if constexpr (true) // TODO FIX ME
             {
                 // This is bad ! Leaving this here as a fallback in case shit happens
@@ -62,8 +63,8 @@ public:
     }
 
 private:
-    inline static std::unique_ptr<RenderPassDatabase> ms_renderpass{std::make_unique<RenderPassDatabase>()};
-    std::vector<std::unique_ptr<GfxRenderpass>> m_AllRenderPasses;
+    static RenderPassDatabase* ms_renderpass;
+    std::vector<GfxRenderpass*> m_AllRawRenderPasses;
     uint8_t m_RegisteredRenderPasses{ 0 };
 };
 
@@ -81,12 +82,15 @@ inline static pass* m_pass{nullptr};
 #define DECLARE_RENDERPASS(pass)\
 namespace DeclareRenderPass_ns\
 {\
-    struct DeclareRenderPass_##pass\
-    {\
+struct DeclareRenderPass_##pass\
+     {\
             DeclareRenderPass_##pass()\
             {\
-                auto ptr = std::make_unique<pass>();\
-                RenderPassDatabase::Get()->RegisterRenderPass(std::move(ptr));\
+                auto ptr = new pass;\
+                auto rdb =  RenderPassDatabase::Get();\
+                rdb->RegisterRenderPass(ptr);\
             }\
     }g_DeclareRenderPass_##pass;\
-}// end DeclareRenderPass_ns
+}
+
+#define BIGCANCER(pass) DeclareRenderPass_ns::g_DeclareRenderPass_##pass

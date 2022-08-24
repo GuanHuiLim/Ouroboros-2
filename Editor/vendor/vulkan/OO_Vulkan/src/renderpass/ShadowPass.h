@@ -35,3 +35,5 @@ private:
 	void SetupFramebuffer();
 	void CreatePipeline();
 };
+
+inline static int y;

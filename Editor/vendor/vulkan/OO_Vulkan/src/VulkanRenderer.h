@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <array>
+#include <set>
 #include <string>
 
 struct Window;
@@ -49,12 +50,16 @@ public:
 
 	inline static PFN_vkDebugMarkerSetObjectNameEXT pfnDebugMarkerSetObjectName{ nullptr };
 
+	VulkanRenderer()
+	{
+		(void)1;
+	}
 	~VulkanRenderer();
 
 	void Init(const oGFX::SetupInfo& setupSpecs, Window& window);
 
 	void CreateInstance(const oGFX::SetupInfo& setupSpecs);
-	void CreateSurface(Window& window);
+	void CreateSurface(const oGFX::SetupInfo& setupSpecs, Window& window);
 	void AcquirePhysicalDevice();
 	void CreateLogicalDevice();
 	void SetupSwapchain();
@@ -75,6 +80,9 @@ public:
 	void CreateOffscreenPass();
 	void CreateOffscreenFB();
 	void ResizeOffscreenFB();
+
+	inline static bool m_imguiInitialized = false;
+	bool m_initialized = false;
 
 	//---------- Device ----------
 
@@ -119,7 +127,7 @@ public:
 
 	inline static bool deferredRendering = true;
 
-	inline static vk::Buffer lightsBuffer;
+	inline static vkutils::Buffer lightsBuffer;
 	void CreateLightingBuffers(); 
 	void UpdateLights(float delta);
 	void UploadLights();
@@ -153,7 +161,7 @@ public:
 	void UploadInstanceData();
 	uint32_t objectCount{};
 	// Contains the instanced data
-	inline static vk::Buffer instanceBuffer;
+	inline static vkutils::Buffer instanceBuffer;
 
 	bool PrepareFrame();
 	void Draw();
@@ -243,26 +251,26 @@ public:
 	inline static Window* windowPtr{nullptr};
 
 	//textures
-	std::vector<vk::Texture2D> g_Textures;
+	std::vector<vkutils::Texture2D> g_Textures;
 
 	// - Synchronisation
-	std::vector<VkSemaphore> imageAvailable;
-	std::vector<VkSemaphore> renderFinished;
-	std::vector<VkFence> drawFences;
-
+	inline static std::vector<VkSemaphore> imageAvailable;
+	inline static std::vector<VkSemaphore> renderFinished;
+	inline static std::vector<VkFence> drawFences;
+	
 	// - Pipeline
 	VkPipeline graphicsPSO{};
 	VkPipeline wireframePSO{};
 	inline static VkRenderPass renderPass_default{};
 
-	inline static vk::Buffer indirectCommandsBuffer{};
-	inline static VkPipeline indirectPipeline{};
-	inline static VkPipelineLayout indirectPipeLayout{};
+	inline static vkutils::Buffer indirectCommandsBuffer{};
+	inline static VkPipeline indirectPSO{};
+	inline static VkPipelineLayout indirectPSOLayout{};
 	inline static uint32_t indirectDrawCount{};
 
-	inline static vk::Buffer boneMatrixBuffer{};
-	inline static vk::Buffer skinningVertexBuffer{};
-	inline static vk::Buffer globalLightBuffer{};
+	inline static vkutils::Buffer boneMatrixBuffer{};
+	inline static vkutils::Buffer skinningVertexBuffer{};
+	inline static vkutils::Buffer globalLightBuffer{};
 
 	// - Descriptors
 	
@@ -281,15 +289,15 @@ public:
 	uint32_t bindlessGlobalTexturesNextIndex = 0;
 
 	// SSBO
-	std::vector<GPUTransform> gpuTransform;
+	inline static std::vector<GPUTransform> gpuTransform{};
 	GpuVector<GPUTransform> gpuTransformBuffer{&m_device};
 
-	std::vector<GPUTransform> debugTransform;
+	inline static std::vector<GPUTransform> debugTransform;
 	GpuVector<GPUTransform> debugTransformBuffer{&m_device};
 	
 	// SSBO
-	std::vector<VkBuffer> vpUniformBuffer;
-	std::vector<VkDeviceMemory> vpUniformBufferMemory;
+	inline static std::vector<VkBuffer> vpUniformBuffer{};
+	inline static std::vector<VkDeviceMemory> vpUniformBufferMemory{};
 
 	inline static DescriptorAllocator DescAlloc;
 	inline static DescriptorLayoutCache DescLayoutCache;
@@ -300,7 +308,7 @@ public:
 
 	// Store the indirect draw commands containing index offsets and instance count per object
 	inline static std::vector<VkDrawIndexedIndirectCommand> m_DrawIndirectCommandsCPU;
-	std::vector<VkDrawIndexedIndirectCommand> indirectDebugCommandsCPU;
+	inline static std::vector<VkDrawIndexedIndirectCommand> indirectDebugCommandsCPU;
 
 	//Scene objects
 	inline static std::vector<gfxModel> models;
@@ -324,6 +332,7 @@ public:
 	Camera camera;
 
 public:
+	
 	struct EntityDetails
 	{
 		std::string name;
@@ -364,12 +373,14 @@ public:
 		}
 	};
 	inline static std::vector<EntityDetails> entities;
-
+	static ImTextureID CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l);
 	static VkPipelineShaderStageCreateInfo LoadShader(VulkanDevice& device, const std::string& fileName, VkShaderStageFlagBits stage);
 	private:
+		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);		
 		uint32_t CreateTextureImage(const std::string& fileName);
-		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);
-		uint32_t UpdateBindlessGlobalTexture(vk::Texture2D texture);		
+		uint32_t UpdateBindlessGlobalTexture(vkutils::Texture2D texture);		
+
+		
 
 };
 

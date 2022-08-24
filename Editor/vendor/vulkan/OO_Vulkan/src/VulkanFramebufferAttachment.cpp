@@ -25,7 +25,7 @@ void VulkanFramebufferAttachment::createAttachment(VulkanDevice& indevice, uint3
 	assert(aspectMask > 0);
 	layout = imageLayout;
 
-	VkImageCreateInfo image = oGFX::vk::inits::imageCreateInfo();
+	VkImageCreateInfo image = oGFX::vkutils::inits::imageCreateInfo();
 	image.imageType = VK_IMAGE_TYPE_2D;
 	image.format = format;
 	image.extent.width = width;
@@ -37,7 +37,7 @@ void VulkanFramebufferAttachment::createAttachment(VulkanDevice& indevice, uint3
 	image.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-	VkMemoryAllocateInfo memAlloc = oGFX::vk::inits::memoryAllocateInfo();
+	VkMemoryAllocateInfo memAlloc = oGFX::vkutils::inits::memoryAllocateInfo();
 	VkMemoryRequirements memReqs;
 
 	
@@ -51,7 +51,7 @@ void VulkanFramebufferAttachment::createAttachment(VulkanDevice& indevice, uint3
 	VK_CHK(vkAllocateMemory(device, &memAlloc, nullptr, &this->mem));
 	VK_CHK(vkBindImageMemory(device, this->image, this->mem, 0));
 
-	VkImageViewCreateInfo imageView = oGFX::vk::inits::imageViewCreateInfo();
+	VkImageViewCreateInfo imageView = oGFX::vkutils::inits::imageViewCreateInfo();
 	imageView.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	imageView.format = format;
 	imageView.subresourceRange = {};

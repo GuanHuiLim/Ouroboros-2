@@ -11,7 +11,7 @@
 #include "VulkanDevice.h"
 //#include "VulkanTools.h"
 
-namespace vk
+namespace vkutils
 {
 	class Texture
 	{
