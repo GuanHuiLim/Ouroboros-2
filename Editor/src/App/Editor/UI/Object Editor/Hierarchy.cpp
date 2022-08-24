@@ -424,7 +424,8 @@ void Hierarchy::RightClickOptions()
 				CreateGameObjectImmediate();
 			}
 			if(ImGui::MenuItem("Box"))
-			{ }
+			{
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::MenuItem("Destroy GameObject"))
@@ -434,6 +435,15 @@ void Hierarchy::RightClickOptions()
 			{
 				auto object = scene->FindWithInstanceID(go);
 				object->Destroy();
+			}
+		}
+		if (ImGui::MenuItem("Duplicate GameObject"))
+		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			for (auto go : s_selected)
+			{
+				auto object = scene->FindWithInstanceID(go);
+				object->Duplicate();
 			}
 		}
 		ImGui::EndPopup();
