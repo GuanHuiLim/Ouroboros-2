@@ -77,7 +77,7 @@ namespace oo
                 // Find current gameobject
                 auto const go = m_scene->FindWithInstanceID(node.get_handle());
                 
-                // Skip gameobjects that has the differed component
+                // Skip gameobjects that has the deferred component
                 if (go->HasComponent<DeferredComponent>() == true)
                     continue;
 

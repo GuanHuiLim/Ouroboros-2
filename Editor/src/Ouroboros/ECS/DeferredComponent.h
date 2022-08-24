@@ -5,7 +5,7 @@
 \par            email: c.tecklee\@digipen.edu
 \date           Aug 23, 2022
 \brief          All Components holding onto this component will need to be considered
-                differed and will not be updated for the current frame.
+                deferred and will not be updated for the current frame.
                 This Component will be removed by the end of this frame by the system.
 
 Copyright (C) 2022 DigiPen Institute of Technology.

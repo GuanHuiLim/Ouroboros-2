@@ -164,7 +164,7 @@ namespace oo
 
             // Creation of root node
             {
-                // differed to initialization after itself exist.
+                // deferred to initialization after itself exist.
                 auto root_handle = m_scenegraph->get_root()->get_handle();
                 m_rootGo = std::make_shared<GameObject>(root_handle, *this);
                 InsertGameObject(m_rootGo);
@@ -238,14 +238,14 @@ namespace oo
         return m_name; 
     }
 
-    Scene::go_ptr Scene::CreateGameObjectDiffered()
+    Scene::go_ptr Scene::CreateGameObjectDeferred()
     {
-        LOG_INFO("Creating Differed Game Object");
+        LOG_INFO("Creating Deferred Game Object");
 
         Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(*this);
         //m_createList.emplace_back(std::make_pair(newObjectPtr, onCreationCallback));
         newObjectPtr = CreateGameObjectImmediate(newObjectPtr);
-        // add differed component and set the entity ID to be itself
+        // add deferred component and set the entity ID to be itself
         newObjectPtr->AddComponent<DeferredComponent>().entityID = newObjectPtr->GetEntity();
         return newObjectPtr;
     }

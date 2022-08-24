@@ -5,7 +5,7 @@
 \par            email: c.tecklee\@digipen.edu
 \date           Aug 23, 2022
 \brief          All Components holding onto this component will need to be considered
-                differed and will not be updated for the current frame.
+                deferred and will not be updated for the current frame.
                 This Component will be removed by the end of this frame by the system.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
@@ -23,7 +23,7 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<oo::DeferredComponent>("This is a Differed Object")
+        registration::class_<oo::DeferredComponent>("This is a Deferred Object")
             .property("Entity ID", &DeferredComponent::entityID);
     }
     
