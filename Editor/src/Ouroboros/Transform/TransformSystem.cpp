@@ -15,11 +15,13 @@ Technology is prohibited.
 #include "pch.h"
 #include "TransformSystem.h"
 
-#include "ouroboros/ECS/DifferedComponent.h"
+#include "ouroboros/ECS/DeferredComponent.h"
+
+#include <JobSystem/src/JobSystem.h>
 
 namespace oo
 {
-    void TransformSystem::UpdateTransform(GameObjectComponent& gocomp, Transform3D& tf)
+    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> go, GameObjectComponent& gocomp, Transform3D& tf)
     {
         // Reset all has changed to false regardless of their previous state.
         tf.m_transform.m_hasChanged = false;
@@ -28,17 +30,14 @@ namespace oo
         if (tf.IsDirty())
         {
             tf.m_transform.CalculateLocalTransform();
-            tf.m_transform.m_globalTransform = tf.m_transform.m_localTransform;
+            //tf.m_transform.m_globalTransform = tf.m_transform.m_localTransform;
         }
-
-        // Find current gameobject
-        std::shared_ptr<GameObject> go = m_scene->FindWithInstanceID(gocomp.Id);
 
         // Check for valid parent
         if (m_scene->IsValid(go->GetParentUUID()))
         {
             // Check if parent has changed locally or if hierarchy above has changed [optimization step]
-            if (go->GetParent().Transform().HasChanged())
+            if (tf.m_transform.HasChanged() || go->GetParent().Transform().HasChanged())
             {
                 tf.m_transform.m_hasChanged = true;
                 tf.m_transform.m_globalTransform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform;
@@ -52,10 +51,29 @@ namespace oo
         {
             TRACY_TRACK_PERFORMANCE(transform_update);
             TRACY_PROFILE_SCOPE_NC(transform_update, tracy::Color::Gold2);
+
+            // Typical System updates
+
+            //Ecs::Query query;
+            //query.with<GameObjectComponent, Transform3D>().exclude<DeferredComponent>().build();
+            //world->for_each(query, [&](GameObjectComponent gocomp, Transform3D& tf) { UpdateTransform(gocomp, tf); });
             
-            Ecs::Query query;
-            query.with<GameObjectComponent, Transform3D>().exclude<DifferedComponent>().build();
-            world->for_each(query, [&](GameObjectComponent gocomp, Transform3D& tf) { UpdateTransform(gocomp, tf); });
+            // Transform System updates via the scenegraph because the order matters
+
+            auto& const scenegraph = m_scene->GetGraph();
+            scenegraph.get_childs(scenegraph.get_root());
+            for (auto& node : scenegraph.hierarchy_traversal_nodes())
+            {
+                // Find current gameobject
+                auto const go = m_scene->FindWithInstanceID(node.get_handle());
+                
+                // Skip gameobjects that has the differed component
+                if (go->HasComponent<DeferredComponent>() == true)
+                    continue;
+
+                UpdateTransform(go, go->GetComponent<GameObjectComponent>(), go->Transform());
+            }
+
             
             TRACY_PROFILE_SCOPE_END();
         }

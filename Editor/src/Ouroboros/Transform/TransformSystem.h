@@ -93,7 +93,7 @@ namespace oo
             
         }
 
-        void UpdateTransform(GameObjectComponent& gocomp, Transform3D& tf);
+        void UpdateTransform(std::shared_ptr<GameObject> go, GameObjectComponent& gocomp, Transform3D& tf);
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
