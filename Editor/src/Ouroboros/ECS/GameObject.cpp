@@ -72,10 +72,13 @@ namespace oo
         // TODO!
         scenenode::shared_pointer parentNode = GetSceneNode().lock();
         scenenode::shared_pointer childNode = child.GetSceneNode().lock();
-        if(parentNode && childNode)
+        if (parentNode && childNode)
+        {
             parentNode->add_child(childNode);
+            // notify child node that its parent has changed.
+            child.Transform().ParentChanged();
+        }
         
-        // perform some immediate transformation if required.
     }
 
     void GameObject::AddChild(std::initializer_list<GameObject> gos, bool preserveTransforms) const
