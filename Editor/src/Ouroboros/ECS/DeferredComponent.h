@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           DifferedComponent.h
+\file           DeferredComponent.h
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
@@ -20,9 +20,9 @@ Technology is prohibited.
 
 namespace oo
 {
-    struct DifferedComponent
+    struct DeferredComponent
     {
-        DifferedComponent();
+        DeferredComponent();
 
         Ecs::EntityID entityID;
 

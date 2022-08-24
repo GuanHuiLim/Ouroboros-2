@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           DifferedComponent.h
+\file           DeferredComponent.h
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #include "pch.h"
-#include "DifferedComponent.h"
+#include "DeferredComponent.h"
 
 #include <rttr/registration>
 namespace oo
@@ -23,10 +23,10 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<oo::DifferedComponent>("This is a Differed Object")
-            .property("Entity ID", &DifferedComponent::entityID);
+        registration::class_<oo::DeferredComponent>("This is a Differed Object")
+            .property("Entity ID", &DeferredComponent::entityID);
     }
     
-    DifferedComponent::DifferedComponent() {};
+    DeferredComponent::DeferredComponent() {};
 
 }

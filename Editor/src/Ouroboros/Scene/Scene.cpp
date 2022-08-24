@@ -25,7 +25,7 @@ Technology is prohibited.
 #include "App/Editor/Events/LoadSceneEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
-#include "Ouroboros/ECS/DifferedSystem.h"
+#include "Ouroboros/ECS/DeferredSystem.h"
 
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
@@ -65,8 +65,8 @@ namespace oo
         
             // Initialize Default Systems
             {
-                m_ecsWorld->Add_System<oo::DifferedSystem>();
-                m_ecsWorld->Get_System<oo::DifferedSystem>()->Link(this);
+                m_ecsWorld->Add_System<oo::DeferredSystem>();
+                m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
 
                 m_ecsWorld->Add_System<oo::TransformSystem>();
                 m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
@@ -116,7 +116,7 @@ namespace oo
             //    callback(go);
             //}
             //m_createList.clear();
-            m_ecsWorld->Get_System<oo::DifferedSystem>()->Run(m_ecsWorld.get());
+            m_ecsWorld->Get_System<oo::DeferredSystem>()->Run(m_ecsWorld.get());
 
             // go through all things to remove at the end of frame and do so.
             for (auto& uuid : m_removeList)
@@ -246,7 +246,7 @@ namespace oo
         //m_createList.emplace_back(std::make_pair(newObjectPtr, onCreationCallback));
         newObjectPtr = CreateGameObjectImmediate(newObjectPtr);
         // add differed component and set the entity ID to be itself
-        newObjectPtr->AddComponent<DifferedComponent>().entityID = newObjectPtr->GetEntity();
+        newObjectPtr->AddComponent<DeferredComponent>().entityID = newObjectPtr->GetEntity();
         return newObjectPtr;
     }
 

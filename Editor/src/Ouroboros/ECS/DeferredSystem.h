@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           DifferedSystem.h
+\file           DeferredComponent.h
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420
 \par            email: c.tecklee\@digipen.edu
@@ -15,12 +15,15 @@ Technology is prohibited.
 #pragma once
 
 #include <Archetypes_Ecs/src/A_Ecs.h>
-#include "DifferedComponent.h"
+#include "DeferredComponent.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Ouroboros/Scene/Scene.h"
+#include "Ouroboros/ECS/GameObjectComponent.h"
+#include "Ouroboros/ECS/GameObject.h"
 
 namespace oo
 {
-    class DifferedSystem : public Ecs::System
+    class DeferredSystem : public Ecs::System
     {
     private:
         Scene* m_scene = nullptr;
@@ -31,16 +34,16 @@ namespace oo
         // Removes all differed component from the system
         virtual void Run(Ecs::ECSWorld* world) override
         {
-            static constexpr const char* const differed_component_removal = "differed_component_removal";
+            static constexpr const char* const deferred_component_removal = "deferred_component_removal";
             {
-                TRACY_TRACK_PERFORMANCE(differed_component_removal);
-                TRACY_PROFILE_SCOPE_NC(differed_component_removal, tracy::Color::Gold2);
+                TRACY_TRACK_PERFORMANCE(deferred_component_removal);
+                TRACY_PROFILE_SCOPE_NC(deferred_component_removal, tracy::Color::Gold2);
 
                 std::vector<UUID> uuids;
 
                 Ecs::Query query;
-                query.with<GameObjectComponent, DifferedComponent>().build();
-                world->for_each(query, [&](GameObjectComponent& gocomp, DifferedComponent& differedComp)
+                query.with<GameObjectComponent, DeferredComponent>().build();
+                world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& differedComp)
                     {
                         LOG_INFO("Should be removing differed Component from entity {0}", gocomp.Id);
                         uuids.emplace_back(gocomp.Id);
@@ -49,13 +52,13 @@ namespace oo
                 for (auto& uuid : uuids)
                 {
                     auto go = m_scene->FindWithInstanceID(uuid);
-                    go->RemoveComponent<DifferedComponent>();
+                    go->RemoveComponent<DeferredComponent>();
                 }
 
                 TRACY_PROFILE_SCOPE_END();
             }
 
-            TRACY_DISPLAY_PERFORMANCE_SELECTED(differed_component_removal);
+            TRACY_DISPLAY_PERFORMANCE_SELECTED(deferred_component_removal);
         }
     };
 }
