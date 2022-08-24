@@ -30,7 +30,7 @@ private:
 	void DisplayComponent(oo::GameObject& gameobject);
 	template <typename Component>
 	void SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, UUID id, bool edited, bool endEdit );
-	void DisplayNestedComponent(rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
+	void DisplayNestedComponent(std::string name ,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
 
 	void DisplayArrayView(std::string name,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
 private:
@@ -97,7 +97,7 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 				rttr::variant value = prop.get_value(component);
 				bool edited = false;
 				bool end_edit = false;
-				DisplayNestedComponent(prop_type, value, edited, end_edit);
+				DisplayNestedComponent(prop.get_name().data(),prop_type, value, edited, end_edit);
 				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
 			}
 			continue;

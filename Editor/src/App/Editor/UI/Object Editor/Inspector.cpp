@@ -146,12 +146,13 @@ void Inspector::Show()
 		DisplayComponent<oo::Transform3D>(*gameobject);
 	}
 }
-void Inspector::DisplayNestedComponent(rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
+void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
+
+	ImGui::Text(name.c_str());
 	ImGui::Dummy({ 5.0f,0 });
 	ImGui::SameLine();
 	ImGui::BeginGroup();
-	ImGui::Text(class_type.get_name().data());
 	ImGui::Separator();
 	ImGui::PushID(class_type.get_id());
 
@@ -165,7 +166,23 @@ void Inspector::DisplayNestedComponent(rttr::type class_type, rttr::variant& val
 
 		auto ut = UI_RTTRType::types.find(prop_type.get_id());
 		if (ut == UI_RTTRType::types.end())
+		{
+			if (prop_type.is_sequential_container())//vectors and lists
+			{
+				rttr::variant v = prop.get_value(value);
+				bool set_edited = false;
+				bool end_edit = false;
+				DisplayArrayView(prop.get_name().data(), prop_type, v, set_edited, end_edit);
+				if (end_edit)
+					endEdit = true;
+				if (set_edited == true)
+				{
+					edited = true;
+					prop.set_value(value, v);//set value to variant
+				}
+			}
 			continue;
+		}
 
 		auto iter = m_InspectorUI.find(ut->second);
 		if (iter == m_InspectorUI.end())
@@ -198,7 +215,9 @@ void Inspector::DisplayNestedComponent(rttr::type class_type, rttr::variant& val
 		ImGui::Dummy({ 0,5.0f });
 	}
 	ImGui::PopID();
+	ImGui::Separator();
 	ImGui::EndGroup();
+
 }
 void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
@@ -212,11 +231,11 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	if (iter == m_InspectorUI.end())
 		return;
 	ImGui::Text(name.c_str());
-	ImGui::Separator();
 	ImGui::PushID(id);
 	ImGui::Dummy({ 5.0f,0 });
 	ImGui::SameLine();
 	ImGui::BeginGroup();
+	ImGui::Separator();
 	
 	size_t size = sqv.get_size();
 	constexpr size_t min_arrSize = 0;
