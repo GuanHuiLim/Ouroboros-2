@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
 
@@ -78,15 +76,31 @@ public:
 	void CreateOffscreenFB();
 	void ResizeOffscreenFB();
 
+	//---------- Device ----------
 
 	inline static VulkanInstance m_instance{};
 	inline static VulkanDevice m_device{};
 	inline static VulkanSwapchain m_swapchain{};
 	inline static std::vector<VkFramebuffer> swapChainFramebuffers;
-	inline static uint32_t swapchainIdx{0};
+	inline static uint32_t swapchainIdx{ 0 };
 
-	inline static VkDescriptorSet descriptorSet_Deferred;
-	inline static VkDescriptorSetLayout descriptorSetLayout_Deferred;
+	//---------- DescriptorSetLayout & DescriptorSet ----------
+
+	// For Deferred Lighting onwards
+	inline static VkDescriptorSetLayout descriptorSetLayout_DeferredComposition;
+	inline static VkDescriptorSet descriptorSet_DeferredComposition;
+
+	// For unbounded array of texture descriptors, used in bindless approach
+	inline static VkDescriptorSetLayout descriptorSetLayout_bindless;
+	inline static VkDescriptorSet descriptorSet_bindless;
+
+	// For GPU Scene
+    inline static VkDescriptorSetLayout descriptorSetLayout_gpuscene;
+    inline static VkDescriptorSet descriptorSet_gpuscene;
+
+	// For UBO with the corresponding swap chain image
+	inline static VkDescriptorSetLayout descriptorSetLayout_uniform;
+	inline static std::vector<VkDescriptorSet> descriptorSets_uniform;
 
 	void ResizeDeferredFB();
 
@@ -101,7 +115,7 @@ public:
 		glm::vec4 viewPos;
 	};
 	inline static LightUBO lightUBO{};
-	float timer{};
+	float timer{ 0.0f };
 
 	inline static bool deferredRendering = true;
 
@@ -113,7 +127,7 @@ public:
 	void CreateSynchronisation();
 	void CreateUniformBuffers();
 	void CreateDescriptorPool();
-	void CreateDescriptorSets();
+	void CreateDescriptorSets_GPUScene();
 
 	struct ImGUIStructures
 	{
@@ -127,6 +141,7 @@ public:
 	void DrawGUI();
 	void DestroyImGUI();
 
+	//---------- Debug Draw Interface ----------
 
 	void AddDebugBox(const AABB& aabb, const oGFX::Color& col, size_t loc = -1);
 	void AddDebugSphere(const Sphere& sphere, const oGFX::Color& col,size_t loc = -1);
@@ -147,7 +162,6 @@ public:
 
 	void SimplePass();
 
-	void RecordCommands(uint32_t currentImage);
 	void UpdateUniformBuffers();
 
 	// Immediate command sending helper
@@ -228,7 +242,6 @@ public:
 
 	inline static Window* windowPtr{nullptr};
 
-
 	//textures
 	std::vector<vk::Texture2D> g_Textures;
 
@@ -237,11 +250,10 @@ public:
 	std::vector<VkSemaphore> renderFinished;
 	std::vector<VkFence> drawFences;
 
-
 	// - Pipeline
-	VkPipeline graphicsPipeline{};
-	VkPipeline wirePipeline{};
-	inline static VkRenderPass defaultRenderPass{};
+	VkPipeline graphicsPSO{};
+	VkPipeline wireframePSO{};
+	inline static VkRenderPass renderPass_default{};
 
 	inline static vk::Buffer indirectCommandsBuffer{};
 	inline static VkPipeline indirectPipeline{};
@@ -253,8 +265,7 @@ public:
 	inline static vk::Buffer globalLightBuffer{};
 
 	// - Descriptors
-	inline static VkDescriptorSetLayout descriptorSetLayout{};
-	inline static VkDescriptorSetLayout samplerSetLayout{};
+	
 
 	struct PushConstData
 	{
@@ -265,7 +276,7 @@ public:
 
 	VkDescriptorPool descriptorPool{};
 	VkDescriptorPool samplerDescriptorPool{};
-	inline static std::vector<VkDescriptorSet> uniformDescriptorSets;
+	
 	//std::vector<VkDescriptorSet> samplerDescriptorSets;
 	uint32_t bindlessGlobalTexturesNextIndex = 0;
 
@@ -275,13 +286,8 @@ public:
 
 	std::vector<GPUTransform> debugTransform;
 	GpuVector<GPUTransform> debugTransformBuffer{&m_device};
+	
 	// SSBO
-
-	inline static VkDescriptorSet g0_descriptors;
-	inline static VkDescriptorSetLayout g0_descriptorsLayout;
-
-	inline static VkDescriptorSet globalSamplers; // big descriptor set of textures
-
 	std::vector<VkBuffer> vpUniformBuffer;
 	std::vector<VkDeviceMemory> vpUniformBufferMemory;
 
@@ -301,11 +307,6 @@ public:
 
 	uint32_t currentFrame = 0;
 
-	struct LightData
-	{
-		glm::vec3 position{};
-	};
-
 	uint64_t uboDynamicAlignment;
 	uint32_t numCameras;
 
@@ -320,10 +321,9 @@ public:
 
 	bool resizeSwapchain = false;
 
-	LightData light;
 	Camera camera;
 
-	public:
+public:
 	struct EntityDetails
 	{
 		std::string name;

@@ -1,14 +1,14 @@
 #pragma once
+
 #include "GfxRenderpass.h"
 #include "vulkan/vulkan.h"
 
 struct DebugRenderpass : public GfxRenderpass
 {
-
 	//DECLARE_RENDERPASS_SINGLETON(DebugRenderpass)
 
 	VkRenderPass debugRenderpass{};
-	VkPipeline linesPipeline{};
+	VkPipeline debugDrawLinesPSO{};
 	VkPushConstantRange pushConstantRange;
 
 	void Init() override;

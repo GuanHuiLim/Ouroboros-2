@@ -37,7 +37,7 @@ rem ------------------------------------------------------------
 :GLM
 rmdir "../vendor/imgui" /S /Q
 rem we want to clone docking branch
-git clone -b docking https://github.com/ocornut/imgui.git "../vendor/imgui"
+git clone -b docking https://github.com/ocornut/imgui.git "../vendor/imgui/imgui"
 if %ERRORLEVEL% GEQ 1 goto :ERROR
 
 rem ------------------------------------------------------------

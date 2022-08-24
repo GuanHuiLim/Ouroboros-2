@@ -72,9 +72,9 @@ void ShadowPass::Draw()
 	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, pso_ShadowDefault);
 	std::array<VkDescriptorSet, 3> descriptorSetGroup = 
 	{
-		VulkanRenderer::g0_descriptors,
-		VulkanRenderer::uniformDescriptorSets[swapchainIdx],
-		VulkanRenderer::globalSamplers
+		VulkanRenderer::descriptorSet_gpuscene,
+		VulkanRenderer::descriptorSets_uniform[swapchainIdx],
+		VulkanRenderer::descriptorSet_bindless
 	};
 	
 	uint32_t dynamicOffset = 0;
@@ -251,7 +251,7 @@ void ShadowPass::CreatePipeline()
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vk::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vk::inits::pipelineCreateInfo(VulkanRenderer::indirectPipeLayout, VulkanRenderer::defaultRenderPass);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vk::inits::pipelineCreateInfo(VulkanRenderer::indirectPipeLayout, VulkanRenderer::renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;

@@ -48,14 +48,14 @@ void DebugRenderpass::Draw()
 
 	SetDefaultViewportAndScissor(cmdlist);
 
-	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, linesPipeline);
+	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, debugDrawLinesPSO);
 
 	uint32_t dynamicOffset = 0;
 	std::array<VkDescriptorSet, 3> descriptorSetGroup =
 	{ 
-		VulkanRenderer::g0_descriptors,  
-		VulkanRenderer::uniformDescriptorSets[swapchainIdx],
-		VulkanRenderer::globalSamplers 
+		VulkanRenderer::descriptorSet_gpuscene,  
+		VulkanRenderer::descriptorSets_uniform[swapchainIdx],
+		VulkanRenderer::descriptorSet_bindless 
 	};
 	vkCmdBindDescriptorSets(cmdlist,VK_PIPELINE_BIND_POINT_GRAPHICS,  VulkanRenderer::indirectPipeLayout,
 		0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
@@ -94,7 +94,7 @@ void DebugRenderpass::Shutdown()
 	auto& m_device = VulkanRenderer::m_device;
 
 	vkDestroyRenderPass(m_device.logicalDevice, debugRenderpass, nullptr);
-	vkDestroyPipeline(m_device.logicalDevice, linesPipeline, nullptr);
+	vkDestroyPipeline(m_device.logicalDevice, debugDrawLinesPSO, nullptr);
 	VulkanRenderer::g_debugDrawVertBuffer.destroy();
 	VulkanRenderer::g_debugDrawIndxBuffer.destroy();
 }
@@ -219,11 +219,14 @@ void DebugRenderpass::CreatePipeline()
 	VkPipelineColorBlendStateCreateInfo colourBlendingCreateInfo = oGFX::vk::inits::pipelineColorBlendStateCreateInfo(1,&colourState);
 
 	// -- PIPELINE LAYOUT 
-	std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = {VulkanRenderer::g0_descriptorsLayout, 
-																VulkanRenderer::descriptorSetLayout,
-																VulkanRenderer::samplerSetLayout };
+	std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = 
+	{
+		VulkanRenderer::descriptorSetLayout_gpuscene, // (set = 0)
+		VulkanRenderer::descriptorSetLayout_uniform, // (set = 1)
+		VulkanRenderer::descriptorSetLayout_bindless // (set = 2)
+	};
 
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =  
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = 
 		oGFX::vk::inits::pipelineLayoutCreateInfo(descriptorSetLayouts.data(),static_cast<uint32_t>(descriptorSetLayouts.size()));
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
@@ -245,7 +248,7 @@ void DebugRenderpass::CreatePipeline()
 	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = oGFX::vk::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE,VK_TRUE, VK_COMPARE_OP_LESS);
 
 																	// -- GRAPHICS PIPELINE CREATION --
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vk::inits::pipelineCreateInfo(VulkanRenderer::indirectPipeLayout,VulkanRenderer::defaultRenderPass);
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vk::inits::pipelineCreateInfo(VulkanRenderer::indirectPipeLayout,VulkanRenderer::renderPass_default);
 	pipelineCreateInfo.stageCount = 2;								//number of shader stages
 	pipelineCreateInfo.pStages = shaderStages.data();				//list of sader stages
 	pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;	//all the fixed funciton pipeline states
@@ -271,8 +274,8 @@ void DebugRenderpass::CreatePipeline()
 	pipelineCreateInfo.renderPass = debugRenderpass;
 	depthStencilCreateInfo.depthWriteEnable = VK_FALSE;
 	//depthStencilCreateInfo.depthTestEnable = VK_FALSE;
-	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &linesPipeline));
-	VK_NAME(m_device.logicalDevice, "linesPipeline", linesPipeline);
+	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &debugDrawLinesPSO));
+	VK_NAME(m_device.logicalDevice, "DebugDrawLinesPSO", debugDrawLinesPSO);
 
 	//destroy shader modules after pipeline is created
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
