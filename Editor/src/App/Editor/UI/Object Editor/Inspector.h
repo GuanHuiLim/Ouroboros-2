@@ -32,7 +32,7 @@ private:
 	void SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, UUID id, bool edited, bool endEdit );
 	void DisplayNestedComponent(rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
 
-	void DisplayArrayView(rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
+	void DisplayArrayView(std::string name,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
 private:
 	std::unordered_map<UI_RTTRType::UItypes, std::function<void(std::string& name,rttr::variant & v, bool & edited , bool& endEdit)>> m_InspectorUI;
 	bool m_showReadonly = false;
@@ -89,13 +89,7 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 				rttr::variant value = prop.get_value(component);
 				bool edited = false;
 				bool end_edit = false;
-				
-				ImGui::Text(prop.get_name().data());
-				ImGui::Separator();
-				ImGui::Dummy({ 5.0f,0 });
-				ImGui::SameLine();
-				DisplayArrayView(prop_type, value, edited, end_edit);
-				ImGui::Separator();
+				DisplayArrayView(prop.get_name().data(),prop_type, value, edited, end_edit);
 				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
 			}
 			else if (prop_type.is_class())//nested

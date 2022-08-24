@@ -200,7 +200,7 @@ void Inspector::DisplayNestedComponent(rttr::type class_type, rttr::variant& val
 	ImGui::PopID();
 	ImGui::EndGroup();
 }
-void Inspector::DisplayArrayView(rttr::type variable_type, rttr::variant& value, bool& edited, bool& endEdit)
+void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
 	rttr::variant_sequential_view sqv =	value.create_sequential_view();
 	rttr::type::type_id id = sqv.get_value_type().get_id();
@@ -211,7 +211,11 @@ void Inspector::DisplayArrayView(rttr::type variable_type, rttr::variant& value,
 	auto iter = m_InspectorUI.find(ut->second);
 	if (iter == m_InspectorUI.end())
 		return;
+	ImGui::Text(name.c_str());
+	ImGui::Separator();
 	ImGui::PushID(id);
+	ImGui::Dummy({ 5.0f,0 });
+	ImGui::SameLine();
 	ImGui::BeginGroup();
 	
 	size_t size = sqv.get_size();
@@ -251,4 +255,5 @@ void Inspector::DisplayArrayView(rttr::type variable_type, rttr::variant& value,
 	}
 	ImGui::EndGroup();
 	ImGui::PopID();
+	ImGui::Separator();
 }
