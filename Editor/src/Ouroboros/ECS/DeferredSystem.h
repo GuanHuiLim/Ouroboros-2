@@ -4,7 +4,7 @@
 \author         Chua Teck Lee, c.tecklee, 390008420
 \par            email: c.tecklee\@digipen.edu
 \date           Aug 23, 2022
-\brief          Describes a system that will remove all differed Components at the 
+\brief          Describes a system that will remove all deferred Components at the 
                 VERY end of frame to indicate object has been removed.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
@@ -31,7 +31,7 @@ namespace oo
     public:
         void Link(Scene* scene) { m_scene = scene; }
 
-        // Removes all differed component from the system
+        // Removes all deferred component from the system
         virtual void Run(Ecs::ECSWorld* world) override
         {
             static constexpr const char* const deferred_component_removal = "deferred_component_removal";
@@ -43,9 +43,9 @@ namespace oo
 
                 Ecs::Query query;
                 query.with<GameObjectComponent, DeferredComponent>().build();
-                world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& differedComp)
+                world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& deferredComp)
                     {
-                        LOG_INFO("Should be removing differed Component from entity {0}", gocomp.Id);
+                        LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);
                         uuids.emplace_back(gocomp.Id);
                     });
 
