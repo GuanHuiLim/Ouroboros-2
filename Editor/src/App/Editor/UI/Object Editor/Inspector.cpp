@@ -146,3 +146,125 @@ void Inspector::Show()
 		DisplayComponent<oo::Transform3D>(*gameobject);
 	}
 }
+void Inspector::DisplayNestedComponent(rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
+{
+	ImGui::Dummy({ 5.0f,0 });
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text(class_type.get_name().data());
+	ImGui::Separator();
+	ImGui::PushID(class_type.get_id());
+
+	for (rttr::property prop : class_type.get_properties())
+	{
+		bool propReadonly = prop.is_readonly();
+		if (propReadonly && m_showReadonly == false)
+			continue;
+
+		rttr::type prop_type = prop.get_type();
+
+		auto ut = UI_RTTRType::types.find(prop_type.get_id());
+		if (ut == UI_RTTRType::types.end())
+			continue;
+
+		auto iter = m_InspectorUI.find(ut->second);
+		if (iter == m_InspectorUI.end())
+		{
+			//nested variables & arrays
+			if (prop_type.is_array())//array
+			{
+				ASSERT_MSG(true, "AYO u doing illegal shit");
+			}
+			else if (prop_type.is_class())//nested
+			{
+				ASSERT_MSG(true, "AYO u doing illegal shit");
+				//rttr::variant value = prop.get_value(component);
+
+			}
+			continue;
+		}
+
+		rttr::variant v = prop.get_value(value);
+		bool set_value = false;
+		bool end_edit = false; //when the item is let go
+		std::string name = prop.get_name().data();
+
+		if (propReadonly)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, ImGui_StylePresets::disabled_color);
+			iter->second(name, v, set_value, end_edit);
+			ImGui::PopStyleColor();
+			ImGui::PopItemFlag();
+		}
+		else
+		{
+			iter->second(name, v, set_value, end_edit);
+			if (end_edit)
+				endEdit = true;
+			if (set_value == true)
+			{
+				edited = true;
+				prop.set_value(value, v);//set value to variant
+			}
+		}
+		ImGui::Dummy({ 0,5.0f });
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+}
+void Inspector::DisplayArrayView(rttr::type variable_type, rttr::variant& value, bool& edited, bool& endEdit)
+{
+	rttr::variant_sequential_view sqv =	value.create_sequential_view();
+	rttr::type::type_id id = sqv.get_value_type().get_id();
+
+	auto ut = UI_RTTRType::types.find(id);
+	if (ut == UI_RTTRType::types.end())
+		return;
+	auto iter = m_InspectorUI.find(ut->second);
+	if (iter == m_InspectorUI.end())
+		return;
+	ImGui::PushID(id);
+	
+	size_t size = sqv.get_size();
+	constexpr size_t min_arrSize = 0;
+	constexpr size_t max_arrSize = 30;
+
+	//Size Slider
+	ImVec2 cursorpos = ImGui::GetCursorPos();
+	if (ImGui::DragScalarN("Size", ImGuiDataType_::ImGuiDataType_U64, &size, 1,0.5f,&min_arrSize,&max_arrSize))
+		sqv.set_size(size);
+	ImVec2 dragSize = ImGui::GetItemRectSize();
+	ImGui::SetCursorPos(cursorpos);
+	if (size > 0)
+	{
+		if(ImGui::ArrowButton("reduceSize", ImGuiDir_::ImGuiDir_Left))
+			sqv.set_size(--size);
+	}
+	ImGui::Dummy({ dragSize.x - 30.0f,0});
+	ImGui::SameLine();
+	if (size < 30)
+	{
+		if (ImGui::ArrowButton("increaseSize", ImGuiDir_::ImGuiDir_Right))
+			sqv.set_size(++size);
+	}
+	size_t counter = 0;
+	bool itemEdited = false;
+	bool itemEndEdit = false;
+	std::string tempstring = "##";
+	for (const auto& item : sqv)
+	{
+		ImGui::PushID(counter);
+		rttr::variant v = item;
+		iter->second(tempstring, v, itemEdited, itemEndEdit);
+		if (itemEdited)
+		{
+			edited = true;
+			sqv.set_value(counter, v);
+		}
+		endEdit |= itemEndEdit;
+		ImGui::PopID();
+		++counter;
+	}
+	ImGui::PopID();
+}
