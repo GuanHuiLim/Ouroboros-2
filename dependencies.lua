@@ -22,7 +22,6 @@ IncludeDir["glm"]           = AppVendor .. "/glm"
 -- IncludeDir["oom"]           = EngineVendor .. "/oom"   -- custom maths library
 IncludeDir["imgui"]         = AppVendor .. "/imgui"
 IncludeDir["vulkan"]        = AppVendor .. "/vulkan"
-IncludeDir["vulkanIMGUI"]        = AppVendor .. "/vulkan/vendor/imgui"
 IncludeDir["vulkanSrc"]     = AppVendor .. "/vulkan/OO_Vulkan/src"
 IncludeDir["assimp"]        = AppVendor .. "/vulkan/vendor/assimp/include/"
 IncludeDir["assimpBin"]     = AppVendor .. "/vulkan/vendor/assimp/BINARIES/Win32/include/"
