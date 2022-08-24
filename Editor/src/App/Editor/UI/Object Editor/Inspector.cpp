@@ -29,7 +29,7 @@ Inspector::Inspector()
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::STRING_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
-		auto value = v.get_value<std::string>();
+		auto value = v.to_string();
 		edited = ImGui::InputText(name.c_str(), &value);
 		if (edited) { v = value; };
 		endEdit = ImGui::IsItemDeactivatedAfterEdit();
@@ -169,20 +169,7 @@ void Inspector::DisplayNestedComponent(rttr::type class_type, rttr::variant& val
 
 		auto iter = m_InspectorUI.find(ut->second);
 		if (iter == m_InspectorUI.end())
-		{
-			//nested variables & arrays
-			if (prop_type.is_array())//array
-			{
-				ASSERT_MSG(true, "AYO u doing illegal shit");
-			}
-			else if (prop_type.is_class())//nested
-			{
-				ASSERT_MSG(true, "AYO u doing illegal shit");
-				//rttr::variant value = prop.get_value(component);
-
-			}
 			continue;
-		}
 
 		rttr::variant v = prop.get_value(value);
 		bool set_value = false;
@@ -225,46 +212,43 @@ void Inspector::DisplayArrayView(rttr::type variable_type, rttr::variant& value,
 	if (iter == m_InspectorUI.end())
 		return;
 	ImGui::PushID(id);
+	ImGui::BeginGroup();
 	
 	size_t size = sqv.get_size();
 	constexpr size_t min_arrSize = 0;
 	constexpr size_t max_arrSize = 30;
 
 	//Size Slider
-	ImVec2 cursorpos = ImGui::GetCursorPos();
-	if (ImGui::DragScalarN("Size", ImGuiDataType_::ImGuiDataType_U64, &size, 1,0.5f,&min_arrSize,&max_arrSize))
-		sqv.set_size(size);
-	ImVec2 dragSize = ImGui::GetItemRectSize();
-	ImGui::SetCursorPos(cursorpos);
-	if (size > 0)
-	{
-		if(ImGui::ArrowButton("reduceSize", ImGuiDir_::ImGuiDir_Left))
-			sqv.set_size(--size);
-	}
-	ImGui::Dummy({ dragSize.x - 30.0f,0});
+
+	if (ImGui::DragScalarN("##Size", ImGuiDataType_::ImGuiDataType_U64, &size, 1,0.3f,&min_arrSize,&max_arrSize))
+		edited = endEdit = sqv.set_size(size);
 	ImGui::SameLine();
-	if (size < 30)
-	{
-		if (ImGui::ArrowButton("increaseSize", ImGuiDir_::ImGuiDir_Right))
-			sqv.set_size(++size);
-	}
-	size_t counter = 0;
+	if (ImGui::ArrowButton("reduceSize", ImGuiDir_::ImGuiDir_Left))
+		edited = endEdit = sqv.set_size(size - 1);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("increaseSize", ImGuiDir_::ImGuiDir_Right))
+		edited = endEdit = sqv.set_size(size + 1);
+	ImGui::SameLine();
+	ImGui::Text("Size");
+
 	bool itemEdited = false;
 	bool itemEndEdit = false;
-	std::string tempstring = "##";
-	for (const auto& item : sqv)
+	std::string tempstring = "##empty";
+	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
-		ImGui::PushID(counter);
-		rttr::variant v = item;
+		ImGui::PushID(i);
+		rttr::variant v = sqv.get_value(i);
+		std::string temp = v.get_type().get_name().data();
+		std::string tmep2 = rttr::type::get<bool>().get_name().data();
 		iter->second(tempstring, v, itemEdited, itemEndEdit);
 		if (itemEdited)
 		{
 			edited = true;
-			sqv.set_value(counter, v);
+			sqv.set_value(i, v);
 		}
 		endEdit |= itemEndEdit;
 		ImGui::PopID();
-		++counter;
 	}
+	ImGui::EndGroup();
 	ImGui::PopID();
 }

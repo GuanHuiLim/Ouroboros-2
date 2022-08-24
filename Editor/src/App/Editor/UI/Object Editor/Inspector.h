@@ -82,24 +82,21 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 
 		auto ut = UI_RTTRType::types.find(prop_type.get_id());
 		if (ut == UI_RTTRType::types.end())
-			continue;
-
-		auto iter = m_InspectorUI.find(ut->second);
-		//special cases
-		if (iter == m_InspectorUI.end())
 		{
 			//nested variables & arrays
-			if (prop_type.is_array())//array
+			if (prop_type.is_sequential_container())//vectors and lists
 			{
-				//ASSERT_MSG(true, "AYO u doing illegal shit");
 				rttr::variant value = prop.get_value(component);
 				bool edited = false;
 				bool end_edit = false;
-				if (prop_type.is_sequential_container())
-				{
-					DisplayArrayView(prop_type,value,edited,end_edit);
-					SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
-				}
+				
+				ImGui::Text(prop.get_name().data());
+				ImGui::Separator();
+				ImGui::Dummy({ 5.0f,0 });
+				ImGui::SameLine();
+				DisplayArrayView(prop_type, value, edited, end_edit);
+				ImGui::Separator();
+				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
 			}
 			else if (prop_type.is_class())//nested
 			{
@@ -111,6 +108,11 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 			}
 			continue;
 		}
+
+		auto iter = m_InspectorUI.find(ut->second);
+		//special cases
+		if (iter == m_InspectorUI.end())
+			continue;
 
 		rttr::variant v = prop.get_value(component);
 		bool set_value = false;
