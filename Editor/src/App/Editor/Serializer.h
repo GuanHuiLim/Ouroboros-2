@@ -87,10 +87,38 @@ inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val)
 	{
 		if (prop.is_readonly())
 			continue;
-
-		auto iter = UI_RTTRType::types.find(prop.get_type().get_id());
+		auto prop_type = prop.get_type();
+		auto iter = UI_RTTRType::types.find(prop_type.get_id());
 		if (iter == UI_RTTRType::types.end())
+		{
+			if (prop_type.is_sequential_container())
+			{
+				rapidjson::Value arrayValue(rapidjson::kObjectType);
+				rttr::variant variant = prop.get_value(component);
+				rttr::variant_sequential_view sqv = variant.create_sequential_view();
+
+				auto iter_type = UI_RTTRType::types.find(sqv.get_value_type().get_id());
+				if (iter_type == UI_RTTRType::types.end())
+					continue;
+				auto sf = save_commands.find(iter_type->second);
+				if (sf == save_commands.end())
+					continue;
+
+				for (size_t i = 0; i < sqv.get_size(); ++i)
+				{
+					sf->second(arrayValue, sqv.get_value(i), prop);
+				}
+				std::string temp = prop.get_name().data();
+				rapidjson::Value name;
+				name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+				v.AddMember(name, arrayValue, doc.GetAllocator());
+			}
+			else if (prop_type.is_class())
+			{
+
+			}
 			continue;//not supported
+		}
 		auto sf = save_commands.find(iter->second);
 		if (sf == save_commands.end())
 			continue;//don't have this save function
@@ -121,7 +149,33 @@ inline void Serializer::LoadComponent(oo::GameObject& go, rapidjson::Value&& val
 		
 		auto types_UI = UI_RTTRType::types.find(prop.get_type().get_id());
 		if (types_UI == UI_RTTRType::types.end())
+		{
+			rttr::type prop_type = prop.get_type();
+			if (prop_type.is_sequential_container())
+			{
+				rttr::variant v = prop.get_value(component);
+				rttr::variant_sequential_view sqv = v.create_sequential_view();
+
+				auto arr_UITypes = UI_RTTRType::types.find(sqv.get_value_type().get_id());
+				if (arr_UITypes == UI_RTTRType::types.end())
+					continue;
+				auto command = load_commands.find(arr_UITypes->second);
+				if (command == load_commands.end())
+					continue;
+
+				size_t size_array = static_cast<size_t>(iter->value.MemberCount());
+				sqv.set_size(size_array);
+				size_t counter = 0;
+				for (auto arrBegin = iter->value.MemberBegin(); arrBegin != iter->value.MemberEnd(); ++arrBegin, ++counter)
+				{
+					rttr::variant varr = sqv.get_value(counter);
+					command->second(varr, std::move(arrBegin->value));			
+					sqv.set_value(counter, varr);
+				}
+				prop.set_value(component, v);
+			}
 			continue;//not supported
+		}
 		auto command = load_commands.find(types_UI->second);
 		if (command == load_commands.end())
 			continue;//don't have this save function
