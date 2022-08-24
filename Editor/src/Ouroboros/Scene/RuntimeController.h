@@ -17,18 +17,11 @@ Technology is prohibited.
 #include "Scene.h"
 #include <vector>
 
+#include "Sceneinfo.h"
+
+#include "App/Editor/Events/LoadProjectEvents.h"
 namespace oo
 {
-    class RuntimeScene;
-
-    struct SceneInfo final
-    {
-        std::string SceneName;
-        std::string LoadPath;
-
-        SceneInfo(std::string_view name, std::string_view path/*, std::size_t index*/) : SceneName{ name }, LoadPath{ path }{}
-    };
-
     class RuntimeController final
     {
     public:
@@ -36,15 +29,17 @@ namespace oo
         using size_type = container_type::size_type;
     
     public:
-        RuntimeController(SceneManager& sceneManager) : m_sceneManager{ sceneManager } {}
+        RuntimeController(SceneManager& sceneManager);
         ~RuntimeController() = default;
 
     private:
         container_type m_loadpaths;
         SceneManager& m_sceneManager;
+        
+        void OnLoadProjectEvent(LoadProjectEvent*);
 
     public:
-        void SetLoadPaths(container_type loadPaths);
+        void SetLoadPaths(container_type&& loadPaths);
         container_type GetLoadPaths() const;
         void GenerateScenes();
         void RemoveScenes();

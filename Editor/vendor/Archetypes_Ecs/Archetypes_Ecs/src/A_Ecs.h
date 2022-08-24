@@ -68,6 +68,15 @@ namespace Ecs::internal
 	inline EntityID erase_entity_in_chunk(DataChunk* chunk, uint16_t index);
 	inline DataChunk* build_chunk(ComponentCombination* cmpList);
 
+	//declarations for callback
+	inline void broadcast_add_entity_callback(IECSWorld* world, EntityID eid);
+	inline void broadcast_destroy_entity_callback(IECSWorld* world, EntityID eid);
+
+	template<typename C>
+	inline void broadcast_add_component_callback(IECSWorld* world, EntityID eid, C& component);
+	template<typename C>
+	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, C& component);
+
 
 	template<typename... Type>
 	struct type_list {};
@@ -715,6 +724,7 @@ namespace Ecs::internal
 			set_entity_archetype(newArch, id);
 		}
 
+		
 	}
 	template<typename C>
 	void add_component_to_entity(IECSWorld* world, EntityID id, C& comp)
@@ -726,7 +736,7 @@ namespace Ecs::internal
 
 		//optimize later
 		if (type->is_empty() == false) {
-			get_entity_component<C>(world, id) = comp;
+			get_entity_component<C>(world, id) = std::move(comp);
 		}
 	}
 
@@ -794,12 +804,27 @@ namespace Ecs::internal
 			function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
 		}
 	}
+	template<typename Func>
+	void entity_chunk_iterate_with_entity(DataChunk* chnk, Func&& function) {
+		//int popIndex = chunk->header.last - 1;
+		//chunk->header.archetype->ownerWorld->entities[eidptr[popIndex].index].chunkIndex
+		EntityID* eidptr = ((EntityID*)chnk);
+		for (int i = chnk->header.last - 1; i >= 0; i--) {
+			function(eidptr[i]);
+		}
+	}
 
 
 	template<typename ...Args, typename Func>
 	void unpack_chunk(type_list<Args...> types, DataChunk* chunk, Func&& function) {
 		entity_chunk_iterate<Args...>(chunk, function);
 	}
+	template<typename Func>
+	void unpack_chunk_with_entity(DataChunk* chunk, Func&& function)
+	{
+		entity_chunk_iterate_with_entity<Func>(chunk, function);
+	}
+
 	template<typename ...Args>
 	IQuery& unpack_querywith(type_list<Args...> types, IQuery& query) {
 		return query.with<Args...>();
@@ -853,24 +878,27 @@ namespace Ecs::internal
 
 		bool bWasFull = chunk->header.last == cmpList->chunkCapacity;
 		assert(chunk->header.last > index);
-
+		//if component is in between first and last
 		bool bPop = chunk->header.last > 1 && index != (chunk->header.last - 1);
+		//last entity added index
 		int popIndex = chunk->header.last - 1;
 
 		chunk->header.last--;
 
-		//clear and pop last
+		//run destructor on components with data & copy last 
 		for (auto& cmp : cmpList->components) {
 			const ComponentInfo* mtype = cmp.type;
-
+			//if component has data
 			if (!mtype->is_empty()) {
 				void* ptr = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * index));
 
 				mtype->destructor(ptr);
 
 				if (bPop) {
-					void* ptrPop = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * popIndex));
-					memcpy(ptr, ptrPop, mtype->size);
+					//last index
+					void* lastindex = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * popIndex));
+					//copy last to deleted's location
+					memcpy(ptr, lastindex, mtype->size);
 				}
 			}
 		}
@@ -878,7 +906,7 @@ namespace Ecs::internal
 		EntityID* eidptr = ((EntityID*)chunk);
 		eidptr[index] = EntityID{};
 
-
+		//if chunk empty, free up this chunk
 		if (chunk->header.last == 0) {
 			delete_chunk_from_archetype(chunk);
 		}
@@ -886,11 +914,13 @@ namespace Ecs::internal
 		else if (bWasFull) {
 			set_chunk_partial(chunk);
 		}
-
+		//if we shifted last index's component to deleted component's slot
 		if (bPop) {
+			//last index's component's entity's chunk index is set to the deleted one's index
 			chunk->header.archetype->ownerWorld->entities[eidptr[popIndex].index].chunkIndex = index;
+			//same for the eid array in the chunk
 			eidptr[index] = eidptr[popIndex];
-
+			//return the entity that replaced the deleted entity's spot
 			return eidptr[index];
 		}
 		else {
@@ -905,6 +935,118 @@ namespace Ecs::internal
 		chunk->header.componentList = cmpList;
 
 		return chunk;
+	}
+
+	inline void broadcast_add_entity_callback(IECSWorld* world, EntityID eid)
+	{
+		EntityEvent evnt{ eid };
+
+		world->onAddEntity_callbacks.Broadcast(&evnt);
+	}
+
+	inline void broadcast_destroy_entity_callback(IECSWorld* world, EntityID eid)
+	{
+		EntityEvent evnt{ eid };
+
+		world->onDestroyEntity_callbacks.Broadcast(&evnt);
+	}
+
+	template<typename C>
+	inline void broadcast_add_component_callback(IECSWorld* world, EntityID eid, C& component)
+	{
+		static const IQuery query = []() {
+			IQuery query;
+			query.with<C>().build();
+			return query;
+		}();
+
+		ComponentEvent evnt{ eid,component };
+
+		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+
+			arch->addition_callbacks.Broadcast(&evnt);
+
+			});
+	}
+
+	template<typename C>
+	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, C& component)
+	{
+		static const IQuery query = []() {
+			IQuery query;
+			query.with<C>().build();
+			return query;
+		}();
+
+		ComponentEvent evnt{ eid,component };
+
+		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+
+			arch->deletion_callbacks.Broadcast(&evnt);
+
+			});
+	}
+
+	template<typename C>
+	inline void subscribe_on_add_component(IECSWorld* world, IECSWorld::CompEventFnPtr<C> function)
+	{
+		using EventType = ComponentEvent<C>;
+
+		IQuery query;
+		query.with<C>().build();
+
+		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+
+			arch->addition_callbacks.Subscribe<EventType>(function);
+
+			});
+	}
+
+	template<typename T, typename C>
+	inline void subscribe_on_add_component(IECSWorld* world,T* instance, IECSWorld::CompEventMemberFnPtr<T, C> function)
+	{
+		using EventType = ComponentEvent<C>;
+		//assert(std::is_same_v<Evnt, EventType> == true);
+
+		IQuery query;
+		query.with<C>().build();
+
+		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+
+			arch->addition_callbacks.Subscribe<T, EventType>(instance,function);
+
+			});
+	}
+
+	template<typename C>
+	inline void subscribe_on_remove_component(IECSWorld* world, IECSWorld::CompEventFnPtr<C> function)
+	{
+		using EventType = ComponentEvent<C>;
+
+		IQuery query;
+		query.with<C>().build();
+
+		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+
+			arch->deletion_callbacks.Subscribe<EventType>(function);
+
+			});
+	}
+
+	template<typename T, typename C>
+	inline void subscribe_on_remove_component(IECSWorld* world, T* instance, IECSWorld::CompEventMemberFnPtr<T, C> function)
+	{
+		using EventType = ComponentEvent<C>;
+		//assert(std::is_same_v<Evnt, EventType> == true);
+
+		IQuery query;
+		query.with<C>().build();
+
+		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+
+			arch->deletion_callbacks.Subscribe<T, EventType>(instance, function);
+
+			});
 	}
 }
 
@@ -945,11 +1087,12 @@ namespace Ecs
 
 	inline void IECSWorld::destroy(EntityID eid)
 	{
+		internal::broadcast_destroy_entity_callback(this, eid);
 		internal::destroy_entity(this, eid);
 	}
 
 	template<typename Func>
-	void IECSWorld::for_each(IQuery& query, Func&& function)
+	inline void IECSWorld::for_each(IQuery& query, Func&& function)
 	{
 		using params = decltype(internal::args(&Func::operator()));
 
@@ -961,6 +1104,19 @@ namespace Ecs
 			}
 			});
 	}
+
+	template<typename Func>
+	inline void IECSWorld::for_each_entity(IQuery& query, Func&& function)
+	{
+		internal::iterate_matching_archetypes(this, query, [&](Archetype* arch) {
+
+			for (auto chnk : arch->chunks) {
+
+				internal::unpack_chunk_with_entity(chnk, function);
+			}
+			});
+	}
+
 	template<typename Func>
 	void IECSWorld::for_each(Func&& function)
 	{
@@ -976,17 +1132,23 @@ namespace Ecs
 	inline void IECSWorld::add_component(EntityID id, C& comp)
 	{
 		internal::add_component_to_entity<C>(this, id, comp);
+
+		internal::broadcast_add_component_callback(this, id, get_component<C>(id));
 	}
 
 	template<typename C>
-	void IECSWorld::add_component(EntityID id)
+	inline void IECSWorld::add_component(EntityID id)
 	{
 		internal::add_component_to_entity<C>(this, id);
+
+		internal::broadcast_add_component_callback(this, id, get_component<C>(id));
 	}
 
 	template<typename C>
 	inline void IECSWorld::remove_component(EntityID id)
 	{
+		internal::broadcast_remove_component_callback(this, id, get_component<C>(id));
+
 		internal::remove_component_from_entity<C>(this, id);
 	}
 
@@ -1061,7 +1223,9 @@ namespace Ecs
 			arch = get_empty_archetype();
 		}
 
-		return internal::create_entity_with_archetype(arch);
+		auto entity = internal::create_entity_with_archetype(arch);
+		internal::broadcast_add_entity_callback(this, entity);
+		return entity;
 	}
 
 	
@@ -1084,6 +1248,24 @@ namespace Ecs
 			return system;
 	}
 
+	template<typename S, typename... Args>
+	inline S* IECSWorld::Add_System(Args&&... arguementList)
+	{
+		using base_type = std::remove_const_t<std::remove_reference_t<S>>;
+		constexpr auto hash = TypeHash::hash<base_type>();
+
+		if (system_map.contains(hash))
+			return static_cast<S*>(system_map[hash]);
+
+		////create the system
+		S* system = new S(std::forward<Args>(arguementList)...);
+		if constexpr (std::derived_from<S, System> == true) {
+			system->world = this;
+		}
+		system_map[hash] = static_cast<void*>(system);
+		return system;
+	}
+
 	template<typename S>
 	inline S* IECSWorld::Get_System()
 	{
@@ -1094,4 +1276,48 @@ namespace Ecs
 
 		return static_cast<S*>(system_map[hash]);
 	}
+
+	template<typename S>
+	inline void IECSWorld::Run_System(ECSWorld* world)
+	{
+		assert(Get_System<S>() != nullptr);
+		Get_System<S>()->Run(world);
+	}
+
+	template<typename T>
+	inline void IECSWorld::SubscribeOnAddEntity(T* instance, MemberFnPtr<T> function)
+	{
+		onAddEntity_callbacks.Subscribe<T, EntityEvent>(instance, function);
+	}
+
+	template<typename T>
+	inline void IECSWorld::SubscribeOnDestroyEntity(T* instance, MemberFnPtr<T> function)
+	{
+		onAddEntity_callbacks.Subscribe<T, EntityEvent>(instance, function);
+	}
+
+	template<typename C>
+	inline void IECSWorld::SubscribeOnAddComponent(CompEventFnPtr<C> function)
+	{
+		internal::subscribe_on_add_component<C>(this,function);
+	}
+
+	template<typename C>
+	inline void IECSWorld::SubscribeOnRemoveComponent(CompEventFnPtr<C> function)
+	{
+		internal::subscribe_on_remove_component<C>(this, function);
+	}
+
+	template<typename T, typename C>
+	inline void IECSWorld::SubscribeOnAddComponent(T* instance, CompEventMemberFnPtr<T, C> function)
+	{
+		internal::subscribe_on_add_component<T,C>(this, instance, function);
+	}
+
+	template<typename T, typename C>
+	inline void IECSWorld::SubscribeOnRemoveComponent(T* instance, CompEventMemberFnPtr<T, C> function)
+	{
+		internal::subscribe_on_remove_component<T, C>(this, instance, function);
+	}
+
 }

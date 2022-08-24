@@ -167,4 +167,16 @@ namespace Ecs
 			return chunkOwner->header.last;
 		}
 	};
+
+
+	template<typename T>
+	struct ComponentEvent : public Ecs::internal::event::Event
+	{
+		T& component;
+		EntityID entityID;
+		ComponentEvent(EntityID eid, T& _component) 
+			: component{ _component }, entityID{ eid } {};
+	};
+
+	using TestComponentEvent = ComponentEvent<TestComponent>;
 }

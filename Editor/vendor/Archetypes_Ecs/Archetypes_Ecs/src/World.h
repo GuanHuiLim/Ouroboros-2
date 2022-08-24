@@ -4,10 +4,20 @@
 
 #include <vector>
 #include <unordered_map>
+#include <queue>
 namespace Ecs
 {
 
 	struct IECSWorld {
+		template<typename C>
+		using CompEventFnPtr = typename internal::EventFunction<ComponentEvent<C>>::FunctionPointer;
+		template<typename T, typename C>
+		using CompEventMemberFnPtr = typename internal::EventMemberFunction<T, ComponentEvent<C>>::MemberFunctionPointer;
+
+		using FnPtr = typename internal::EventFunction<EntityEvent>::FunctionPointer;
+		template<typename T>
+		using MemberFnPtr = typename internal::EventMemberFunction<T, EntityEvent>::MemberFunctionPointer;
+
 		std::vector<EnityToChunk> entities;
 		std::vector<EntityID::index_type> deletedEntities;
 
@@ -26,6 +36,13 @@ namespace Ecs
 
 		int live_entities{ 0 }; //tracks number of active entity IDs
 		int dead_entities{ 0 }; //tracks number of dead entity IDs
+
+		std::queue<EntityID> addition_queue{};
+		std::queue<EntityID> deletion_queue{};
+
+		EventCallback onAddEntity_callbacks;
+		EventCallback onDestroyEntity_callbacks;
+
 		inline IECSWorld();
 		~IECSWorld();
 
@@ -35,6 +52,9 @@ namespace Ecs
 
 		template<typename Func>
 		void for_each(IQuery& query, Func&& function);
+
+		template<typename Func>
+		void for_each_entity(IQuery& query, Func&& function);
 
 		//priority
 		template<typename Func>
@@ -76,9 +96,42 @@ namespace Ecs
 		Archetype* get_empty_archetype() { return archetypes[0]; };
 
 		template<typename S>
-		S* Add_System();
+		inline S* Add_System();
+
+		template<typename S, typename... Args>
+		inline S* Add_System(Args&&... arguementList);
 
 		template<typename S>
-		S* Get_System();
+		inline S* Get_System();
+
+		template<typename S>
+		inline void Run_System(ECSWorld* world);
+
+		inline void SubscribeOnAddEntity(FnPtr function);
+		template<typename T>
+		inline void SubscribeOnAddEntity(T* instance, MemberFnPtr<T> function);
+
+		inline void SubscribeOnDestroyEntity(FnPtr function);
+		template<typename T>
+		inline void SubscribeOnDestroyEntity(T* instance, MemberFnPtr<T> function);
+
+
+		template<typename C>
+		inline void SubscribeOnAddComponent(CompEventFnPtr<C> function);
+
+		template<typename C>
+		inline void SubscribeOnRemoveComponent(CompEventFnPtr<C> function);
+
+		template<typename T, typename C>
+		inline void SubscribeOnAddComponent(T* instance, CompEventMemberFnPtr<T,C> function);
+
+		template<typename T, typename C>
+		inline void SubscribeOnRemoveComponent(T* instance, CompEventMemberFnPtr<T, C> function);
+
+
+
+		//void ProcessDeferredOperations();
+
+
 	};
 }// namespace Ecs

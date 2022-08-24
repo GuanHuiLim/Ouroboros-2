@@ -5,15 +5,13 @@
 #include <Scenegraph/include/Scenegraph.h>
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/ECS/GameObject.h>
-
-#include <rapidjson/ostreamwrapper.h>
-#include <rapidjson/istreamwrapper.h>
-#include <fstream>//rapidjson
-#include <rapidjson/writer.h>
-#include <rapidjson/prettywriter.h>
+#include <Ouroboros/Prefab/PrefabComponent.h>
 
 #include <Ouroboros/ECS/GameObjectComponent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
+
+#include "Project.h"
+
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Events/LoadSceneEvent.h"
 Serializer::Serializer()
@@ -51,11 +49,23 @@ void Serializer::Init()
 		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
 		obj.AddMember(name , v, doc.GetAllocator());
 		});
+	save_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
+		std::string temp = p.get_name().data();
+		rapidjson::Value name;
+		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+		rapidjson::Value v;
+		std::string val = variant.get_value<std::filesystem::path>().string();
+		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
+		obj.AddMember(name, v, doc.GetAllocator());
+		});
 
 	AddLoadComponent<oo::GameObjectComponent>();
+	AddLoadComponent<oo::Transform3D>();
+	AddLoadComponent<oo::PrefabComponent>();
 
 	load_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetBool();});
 	load_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetString(); });
+	load_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetString(); });
 }
 
 void Serializer::SaveScene(oo::Scene& scene)
@@ -83,12 +93,14 @@ void Serializer::SaveScene(oo::Scene& scene)
 		rapidjson::Value gameobject_start;
 		gameobject_start.SetObject();
 		gameobject_start.AddMember("Order", parents.size(), doc.GetAllocator());
-		SaveObject(*go, gameobject_start);
+
+		bool is_prefab = go->HasComponent<oo::PrefabComponent>();
+		is_prefab ? SavePrefabObject(*go, gameobject_start) : SaveObject(*go, gameobject_start);
 
 		
 		doc.AddMember(name, gameobject_start,doc.GetAllocator());
 		//end of writing this gameobject
-		if (curr->get_direct_child_count())//if there is childs
+		if (curr->get_direct_child_count() && is_prefab == false)//if there is childs
 		{
 			parents.push(curr->get_handle());
 			for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
@@ -115,7 +127,7 @@ void Serializer::SaveScene(oo::Scene& scene)
 		}
 	}
 
-	std::ofstream ofs(scene.GetFilePath());
+	std::ofstream ofs(scene.GetFilePath(), std::fstream::out | std::fstream::trunc);
 	if (ofs.good())
 	{
 		rapidjson::OStreamWrapper osw(ofs);
@@ -168,10 +180,89 @@ void Serializer::LoadScene(oo::Scene& scene)
 	ifs.close();
 }
 
+std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go , oo::Scene & scene)
+{
+	std::stack<scenenode::raw_pointer> s;
+	std::stack<scenenode::handle_type> parents;
+	scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+	parents.push(curr->get_handle());
+	s.push(curr);
+
+	while (!s.empty())
+	{
+		curr = s.top();
+		s.pop();
+		auto go = scene.FindWithInstanceID(curr->get_handle());
+		//bulk of code here
+		rapidjson::Value name;
+		name.SetString(go->Name().c_str(), static_cast<rapidjson::SizeType>(go->Name().size()));
+
+		rapidjson::Value gameobject_start;
+		gameobject_start.SetObject();
+		gameobject_start.AddMember("Order", parents.size(), doc.GetAllocator());
+
+		SaveObject(*go, gameobject_start);
+		doc.AddMember(name, gameobject_start, doc.GetAllocator());
+		//end of writing this gameobject
+		if (curr->get_direct_child_count())//if there is childs
+		{
+			parents.push(curr->get_handle());
+			for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+			{
+				scenenode::shared_pointer child = *iter;
+				s.push(child.get());
+			}
+		}
+		else if (s.empty() == false)
+		{
+			auto parent_handle = s.top()->get_parent_handle();
+			while (parents.empty() == false)
+			{
+				auto c_handle = parents.top();
+				if (c_handle == parent_handle)
+				{
+					break;
+				}
+				else
+				{
+					parents.pop();
+				}
+			}
+		}
+	}
+	std::filesystem::path newprefabPath = Project::GetPrefabFolder().string() + go->Name() + ".prefab";
+	std::ofstream ofs(Project::GetPrefabFolder().string() + go->Name() + ".prefab", std::fstream::out | std::fstream::trunc);
+	if (ofs.good())
+	{
+		rapidjson::OStreamWrapper osw(ofs);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
+		writer.SetMaxDecimalPlaces(rapidjson_precision);
+		doc.Accept(writer);
+		ResetDocument();
+		ofs.close();
+	}
+	return newprefabPath;
+}
+
+void Serializer::LoadPrefab(std::shared_ptr<oo::GameObject> go)
+{
+
+}
+
 void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val)
 {
 	//will have more components
 	SaveComponent<oo::GameObjectComponent>(go, val);
+	SaveComponent<oo::Transform3D>(go, val);
+}
+
+void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val)
+{
+	SaveComponent<oo::PrefabComponent>(go, val);
+	SaveComponent<oo::GameObjectComponent>(go, val);
+	SaveComponent<oo::Transform3D>(go, val);
+	return;
 }
 
 void Serializer::LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter , rapidjson::Value::MemberIterator& end)

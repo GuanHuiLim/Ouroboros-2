@@ -3,6 +3,7 @@
 #include "Component.h"
 #include "Archetype.h"
 #include <algorithm>
+#include  <assert.h>
 namespace Ecs::internal
 {
 	//forward declarations
@@ -280,6 +281,12 @@ namespace Ecs::internal
 			Get_entity_component<C>(world, id) = comp;
 		}
 	}
+
+	/****************************
+	  event functions
+	****************************/
+
+
 
 
 }//namespace Ecs::internal

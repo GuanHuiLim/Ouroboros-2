@@ -16,8 +16,5 @@ public:
 public:
 	inline static std::unordered_map<std::string, ImGuiObject> s_GUIContainer;
 
-	inline static const ImVec2 image_small = { 20,20 };
-	inline static const ImVec2 image_medium = { 50,50 };
-
 	inline static SceneManager const* s_scenemanager = nullptr;
 };

@@ -24,12 +24,6 @@ Technology is prohibited.
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
-	
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
-	ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->CreateGameObject();
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -42,35 +36,29 @@ void EditorLayer::OnUpdate()
         m_showDebugInfo = !m_showDebugInfo;
     }
 
-    ImGuiManager_Launcher::UpdateAllUI();
-	m_editor.Update();
-    //#if EDITOR_DEBUG || EDITOR_RELEASE
-    /*if (m_showDebugInfo)
-    {
-    oo::TimeDebugInfo timeDebugInfo = oo::Timestep::GetDebugTimeInfo();
+    if(m_editormode == false)
+        ImGuiManager_Launcher::UpdateAllUI();
+    else
+	    m_editor.Update();
 
-    ImGui::Begin("fpsviewer", nullptr,
-    ImGuiWindowFlags_NoScrollbar
-    | ImGuiWindowFlags_NoCollapse
-    | ImGuiWindowFlags_NoTitleBar
-    | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Rolling FPS %.2f", timeDebugInfo.AvgFPS);
-    ImGui::Text("Rolling DeltaTime %.6f", timeDebugInfo.AvgDeltaTime);
-    ImGui::Text("Current Timescale %.2f", timeDebugInfo.CurrentTimeScale);
-    ImGui::Text("Time elpased %.2f", timeDebugInfo.TimeElapsed);
-    ImGui::End();
-    }*/
-    //#endif
-
+	//top menu bar
+	Editor::MenuBar();
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("Project"))
+		{
+			if (ImGui::MenuItem("Open Launcher"))
+			{
+				m_editormode = false;
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
     //m_editor.ShowAllWidgets();
 
-    if (m_demo)
-        ImGui::ShowDemoWindow(&m_demo);
+    //if (m_demo)
+    //    ImGui::ShowDemoWindow(&m_demo);
 
-    if (ImGui::Button("restart Imgui"))
-    {
-        ImGuiRestartEvent restartEvent;
-        oo::EventManager::Broadcast(&restartEvent);
-    }
 
 }

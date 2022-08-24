@@ -9,6 +9,8 @@ public:
 	Editor();
 	~Editor();
 	void Update();
+	static void MenuBar();
+
 	StyleEditor m_styleEditor;
 	WarningMessage m_warningMessage;
 	Hierarchy m_hierarchy;

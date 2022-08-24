@@ -91,13 +91,16 @@ namespace oo
         void SaveToFile();
     
         
-    private://for now
-        TransformSystem* m_transformSystem = nullptr;
-
+    private: //for now
+        std::unique_ptr<TransformSystem> m_transformSystem;
+    
     private:
+
         std::shared_ptr<GameObject> CreateGameObject(std::shared_ptr<GameObject> new_go);
         void InsertGameObject(std::shared_ptr<GameObject> go_ptr);
         void RemoveGameObject(std::shared_ptr<GameObject> go_ptr);
+
+    private:
 
         std::string m_name;
         std::string m_filepath;
@@ -109,7 +112,7 @@ namespace oo
         // direct copy of all gameobjects in the scene
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 
-        Ecs::ECSWorld m_ecsWorld;
+        std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
         std::shared_ptr<GameObject> m_rootGo;
     };

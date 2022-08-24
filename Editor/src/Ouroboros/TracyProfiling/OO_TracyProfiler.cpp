@@ -24,39 +24,16 @@ namespace oo
     PROCESS_INFORMATION OO_TracyProfiler::m_pi{};
     bool OO_TracyProfiler::m_server_active = false;
     bool OO_TracyProfiler::m_server_to_be_closed = false;
+    bool OO_TracyProfiler::m_server_to_be_opened = false;
     OO_TracyProfiler::PlotContainer  OO_TracyProfiler::m_dataPlots{};
 
     void OO_TracyProfiler::StartTracyServer()
     {
 #ifdef TRACY_ENABLE
-        if (m_server_active == true)
-            return;
-        //tracy::StartupProfiler();
-        // set the size of the structures
-        ZeroMemory(&m_si, sizeof(m_si));
-        m_si.cb = sizeof(m_si);
-        ZeroMemory(&m_pi, sizeof(m_pi));
-
-        std::wstring command{ L"Tracy.exe -a 127.0.0.1" };
-        static LPWSTR arguements{ command.data() };
-        static const std::wstring path{ std::filesystem::current_path().wstring() + L"/tracy_server/Tracy.exe" };
-
-        // start the program up
-        CreateProcess(path.c_str(),   // the path
-            arguements,        // Command line
-            NULL,           // Process handle not inheritable
-            NULL,           // Thread handle not inheritable
-            FALSE,          // Set handle inheritance to FALSE
-            0,              // No creation flags
-            NULL,           // Use parent's environment block
-            NULL,           // Use parent's starting directory 
-            &m_si,            // Pointer to STARTUPINFO structure
-            &m_pi             // Pointer to PROCESS_INFORMATION structure (removed extra parentheses)
-        );
-        m_server_active = true;
+        m_server_to_be_opened = true;
 #endif
-
     }
+
     void OO_TracyProfiler::CloseTracyServer()
     {
 #ifdef TRACY_ENABLE
@@ -141,6 +118,42 @@ namespace oo
         CloseHandle(m_pi.hThread);
         //tracy::ShutdownProfiler();
         m_server_to_be_closed = false;
+#endif 
+    }
+
+    void OO_TracyProfiler::CheckIfServerToBeOpened()
+    {
+#ifdef TRACY_ENABLE
+        if (m_server_to_be_opened == false)
+            return;
+        if (m_server_active == true)
+            return;
+        
+        //tracy::StartupProfiler();
+        // set the size of the structures
+        ZeroMemory(&m_si, sizeof(m_si));
+        m_si.cb = sizeof(m_si);
+        ZeroMemory(&m_pi, sizeof(m_pi));
+
+        std::wstring command{ L"Tracy.exe -a 127.0.0.1" };
+        static LPWSTR arguements{ command.data() };
+        static const std::wstring path{ std::filesystem::current_path().wstring() + L"/tracy_server/Tracy.exe" };
+
+        // start the program up
+        CreateProcess(path.c_str(),   // the path
+            arguements,        // Command line
+            NULL,           // Process handle not inheritable
+            NULL,           // Thread handle not inheritable
+            FALSE,          // Set handle inheritance to FALSE
+            0,              // No creation flags
+            NULL,           // Use parent's environment block
+            NULL,           // Use parent's starting directory 
+            &m_si,            // Pointer to STARTUPINFO structure
+            &m_pi             // Pointer to PROCESS_INFORMATION structure (removed extra parentheses)
+        );
+        m_server_active = true;
+
+        m_server_to_be_opened = false;
 #endif 
     }
 

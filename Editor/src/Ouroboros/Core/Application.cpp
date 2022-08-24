@@ -51,14 +51,19 @@ namespace oo
     void Application::Run()
     {
         //constexpr const char* const application_run_name = "application run";
-        //constexpr const char* const update_loop_name = "update_loop";
+        constexpr const char* const update_loop_name = "core app update_loop";
         //constexpr const char* const update_layerstack_name = "LayerStack OnUpdate";
         //constexpr const char* const imgui_layerstack_name = "LayerStack OnImGuiUpdate";
 
         while (m_running)
         {
+            OO_TracyProfiler::CheckIfServerToBeOpened();
+            OO_TracyProfiler::CheckIfServerToBeClosed();
+
             /*Calculate dt*/
             timer::Timestep dt = {};
+
+            TRACY_TRACK_PERFORMANCE(update_loop_name);
 
             /*Process Inputs here*/
             input::Update();
@@ -74,6 +79,8 @@ namespace oo
 
             // swap buffers at the end of frame
             m_window->SwapBuffers();
+
+            TRACY_PROFILE_END_OF_FRAME();
         }
     }
 

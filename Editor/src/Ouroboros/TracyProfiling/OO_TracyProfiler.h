@@ -38,6 +38,8 @@ namespace oo
     public:
         static bool m_server_active;
         static bool m_server_to_be_closed;
+        static bool m_server_to_be_opened;
+
         static void StartTracyServer();
         static void CloseTracyServer();
         static Time GetTime() { return std::chrono::steady_clock::now(); };
@@ -45,6 +47,7 @@ namespace oo
         static void PlotPerformance(const char* name);
         static void PlotPerformanceSelective(std::initializer_list<const char*> list);
         static void CheckIfServerToBeClosed();
+        static void CheckIfServerToBeOpened();
     };
 
 

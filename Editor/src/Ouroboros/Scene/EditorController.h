@@ -24,6 +24,8 @@ Technology is prohibited.
 #include "RuntimeScene.h"
 #include "EditorScene.h"
 
+//#include "App/Editor/Events/LoadProjectEvents.h"
+#include "App/Editor/Events/OpenFileEvent.h"
 
 namespace oo
 {
@@ -43,16 +45,13 @@ namespace oo
         };
 
     public:
-        EditorController(SceneManager& sceneManager, RuntimeController& runtimeController) 
-            : m_sceneManager{ sceneManager }, m_runtimeController{ runtimeController }
-        {};
-
+        EditorController(SceneManager& sceneManager, RuntimeController& runtimeController);
 
         void Simulate();
         void Pause();
         void Stop();
 
-        void Init();
+        void Init(SceneInfo startfile);
         void LoadScene(const std::string& file);
         bool GetActiveScenePaused() const;
         bool GetActiveSceneStepMode() const;
@@ -66,6 +65,8 @@ namespace oo
         STATE GetActiveState() const { return m_activeState; };
 
     private:
+        void OnLoadProjectEvent(LoadProjectEvent* loadProjEvent);
+        void OnOpenFileEvent(OpenFileEvent* openFileEvent);
         void OnRuntimeSceneChange(Scene::OnInitEvent*);
 
         std::weak_ptr<EditorScene> m_editorScene = {};
