@@ -16,63 +16,22 @@ namespace oo
     {
     public:
         using UUID = uint64_t;
+        using SceneID = uint32_t;
         using IntPtr = uint32_t;
         using Callback = std::function<void(MonoObject* object)>;
 
-        static void RegisterComponent(std::string const& name_space, std::string const& name,
-            std::function<void(UUID)> Add, std::function<void(UUID)> Remove, std::function<bool(UUID)> Has,
-            std::function<void(UUID, bool)> SetEnabled, std::function<bool(UUID)> CheckEnabled);
-
-        static size_t GetComponentTypeIndex(const char* name_space, const char* name);
-
-        static void InstantiateObjectFull(UUID id);
-        static IntPtr Instantiate(UUID id, const char* name_space, const char* name, bool callAdd = false);
-
-        static bool CheckExists(UUID id);
-        static bool HasComponent(UUID id, const char* name_space, const char* name);
-
-        static IntPtr Retrieve(UUID id, const char* name_space, const char* name);
-        static inline MonoObject* RetrieveObject(UUID id, const char* name_space, const char* name)
-        {
-            return mono_gchandle_get_target(Retrieve(id, name_space, name));
-        }
-        static IntPtr TryRetrieve(UUID id, const char* name_space, const char* name);
-        static inline MonoObject* TryRetrieveObject(UUID id, const char* name_space, const char* name)
-        {
-            IntPtr ptr = TryRetrieve(id, name_space, name);
-            if (ptr == 0)
-                return nullptr;
-            return mono_gchandle_get_target(ptr);
-        }
-        static IntPtr RetrieveGameObject(UUID id);
-        static inline MonoObject* RetrieveGameObjectObject(UUID id)
-        {
-            return mono_gchandle_get_target(RetrieveGameObject(id));
-        }
-        static IntPtr TryRetrieveGameObject(UUID id);
-        static inline MonoObject* TryRetrieveGameObjectObject(UUID id)
-        {
-            IntPtr ptr = TryRetrieveGameObject(id);
-            if (ptr == 0)
-                return nullptr;
-            return mono_gchandle_get_target(ptr);
-        }
-
-        static bool CheckEnabled(UUID id, const char* name_space, const char* name);
-        static void SetEnabled(UUID id, const char* name_space, const char* name, bool isEnabled);
-
-        static void Delete(UUID id, const char* name_space, const char* name, bool callRemove = false);
-        static void Delete(UUID id);
-        static void DeleteAll();
+        using ComponentAction = std::function<void(SceneID, UUID)>;
+        using ComponentCheck = std::function<bool(SceneID, UUID)>;
+        using ComponentSetAction = std::function<void(SceneID, UUID, bool)>;
 
     private:
         struct ComponentType
         {
-            std::function<void(UUID)> Add;
-            std::function<void(UUID)> Remove;
-            std::function<bool(UUID)> Has;
-            std::function<void(UUID, bool)> SetEnabled;
-            std::function<bool(UUID)> CheckEnabled;
+            ComponentAction Add;
+            ComponentAction Remove;
+            ComponentCheck Has;
+            ComponentSetAction SetEnabled;
+            ComponentCheck CheckEnabled;
 
             std::string name_space;
             std::string name;
@@ -85,23 +44,75 @@ namespace oo
             IntPtr gameObject;
             std::vector<IntPtr> componentList;
         };
-        static std::vector<Object> objectMap;
+        std::vector<Object> objectMap;
+        SceneID sceneID;
+
+    public:
+        static void RegisterComponent(std::string const& name_space, std::string const& name,
+            ComponentAction Add, ComponentAction Remove, ComponentCheck Has,
+            ComponentSetAction SetEnabled, ComponentCheck CheckEnabled);
+
+        static size_t GetComponentTypeIndex(const char* name_space, const char* name);
+
+    public:
+        ComponentDatabase(SceneID sceneID);
+        ~ComponentDatabase();
+
+        void InstantiateObjectFull(UUID id);
+        IntPtr Instantiate(UUID id, const char* name_space, const char* name, bool callAdd = false);
+
+        bool CheckExists(UUID id);
+        bool HasComponent(UUID id, const char* name_space, const char* name);
+
+        IntPtr Retrieve(UUID id, const char* name_space, const char* name);
+        inline MonoObject* RetrieveObject(UUID id, const char* name_space, const char* name)
+        {
+            return mono_gchandle_get_target(Retrieve(id, name_space, name));
+        }
+        IntPtr TryRetrieve(UUID id, const char* name_space, const char* name);
+        inline MonoObject* TryRetrieveObject(UUID id, const char* name_space, const char* name)
+        {
+            IntPtr ptr = TryRetrieve(id, name_space, name);
+            if (ptr == 0)
+                return nullptr;
+            return mono_gchandle_get_target(ptr);
+        }
+        IntPtr RetrieveGameObject(UUID id);
+        inline MonoObject* RetrieveGameObjectObject(UUID id)
+        {
+            return mono_gchandle_get_target(RetrieveGameObject(id));
+        }
+        IntPtr TryRetrieveGameObject(UUID id);
+        inline MonoObject* TryRetrieveGameObjectObject(UUID id)
+        {
+            IntPtr ptr = TryRetrieveGameObject(id);
+            if (ptr == 0)
+                return nullptr;
+            return mono_gchandle_get_target(ptr);
+        }
+
+        bool CheckEnabled(UUID id, const char* name_space, const char* name);
+        void SetEnabled(UUID id, const char* name_space, const char* name, bool isEnabled);
+
+        void Delete(UUID id, const char* name_space, const char* name, bool callRemove = false);
+        void Delete(UUID id);
+        void DeleteAll();
 
     private:
         static ComponentType& GetComponentType(const char* name_space, const char* name);
-        static Object& GetObject(UUID uuid);
-        static IntPtr& GetComponent(Object& object, ComponentType& type);
+        Object& GetObject(UUID uuid);
+        IntPtr& GetComponent(Object& object, ComponentType& type);
 
-        static inline IntPtr& GetComponent(UUID uuid, const char* name_space, const char* name)
+        inline IntPtr& GetComponent(UUID uuid, const char* name_space, const char* name)
         {
             return GetComponent(GetObject(uuid), GetComponentType(name_space, name));
         }
 
-        static ComponentType* TryGetComponentType(const char* name_space, const char* name);
-        static Object* TryGetObject(UUID uuid);
-        static IntPtr* TryGetComponent(Object& object, ComponentType& type);
+        ComponentType* TryGetComponentType(const char* name_space, const char* name);
+        Object* TryGetObject(UUID uuid);
+        IntPtr* TryGetComponent(Object& object, ComponentType& type);
 
-        static inline IntPtr* TryGetComponent(UUID uuid, const char* name_space, const char* name)
+        inline IntPtr* TryGetComponent(UUID uuid, const char* name_space, const char* name)
         {
             Object* object = TryGetObject(uuid);
             if (object == nullptr)

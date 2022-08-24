@@ -4,25 +4,21 @@
 
 namespace oo
 {
-    ScriptDatabase::ObjectCheck ScriptDatabase::ObjectEnableCheck;
-    std::unordered_map<std::string, ScriptDatabase::InstancePool> ScriptDatabase::scriptMap;
+    ScriptDatabase::ScriptDatabase()
+    {
+    }
+
+    ScriptDatabase::~ScriptDatabase()
+    {
+        DeleteAll();
+    }
 
     void ScriptDatabase::Initialize(std::vector<MonoClass*> const& classList)
     {
-        DeleteAll();
         for (MonoClass* klass : classList)
         {
             std::string key = std::string(mono_class_get_namespace(klass)) + "." + mono_class_get_name(klass);
             scriptMap.insert(std::pair<std::string, InstancePool>(key, InstancePool{}));
-        }
-    }
-
-    void ScriptDatabase::Initialize(std::vector<std::string> const& classList)
-    {
-        DeleteAll();
-        for (std::string const& klass : classList)
-        {
-            scriptMap.insert(std::pair<std::string, InstancePool>(klass, InstancePool{}));
         }
     }
 
@@ -116,43 +112,80 @@ namespace oo
         scriptMap.clear();
     }
 
-    void ScriptDatabase::ForEach(const char* name_space, const char* name, Callback callback, bool onlyEnabled)
+    void ScriptDatabase::ForEach(const char* name_space, const char* name, Callback callback, ObjectCheck filter)
     {
         InstancePool& scriptPool = GetInstancePool(name_space, name);
         for (auto& [uuid, instance] : scriptPool)
         {
-            if (onlyEnabled && !instance.enabled)
+            if (filter != nullptr && !filter(uuid))
+                continue;
+            MonoObject* object = mono_gchandle_get_target(instance.handle);
+            callback(object);
+        }
+    }
+    void ScriptDatabase::ForEachEnabled(const char* name_space, const char* name, Callback callback, ObjectCheck filter)
+    {
+        InstancePool& scriptPool = GetInstancePool(name_space, name);
+        for (auto& [uuid, instance] : scriptPool)
+        {
+            if (!instance.enabled)
+                continue;
+            if (filter != nullptr && !filter(uuid))
                 continue;
             MonoObject* object = mono_gchandle_get_target(instance.handle);
             callback(object);
         }
     }
 
-    void ScriptDatabase::ForEach(UUID id, Callback callback, bool onlyEnabled)
+    void ScriptDatabase::ForEach(UUID id, Callback callback, ObjectCheck filter)
     {
-        if (onlyEnabled && ObjectEnableCheck && !ObjectEnableCheck(id))
+        if (filter && !filter(id))
             return;
         for (auto& [key, scriptPool] : scriptMap)
         {
             Instance* instance = TryGetInstance(id, scriptPool);
             if (instance == nullptr)
                 continue;
-            if (onlyEnabled && !instance->enabled)
+            MonoObject* object = mono_gchandle_get_target(instance->handle);
+            callback(object);
+        }
+    }
+    void ScriptDatabase::ForEachEnabled(UUID id, Callback callback, ObjectCheck filter)
+    {
+        if (filter && !filter(id))
+            return;
+        for (auto& [key, scriptPool] : scriptMap)
+        {
+            Instance* instance = TryGetInstance(id, scriptPool);
+            if (instance == nullptr || !instance->enabled)
                 continue;
             MonoObject* object = mono_gchandle_get_target(instance->handle);
             callback(object);
         }
     }
 
-    void ScriptDatabase::ForAll(Callback callback, bool onlyEnabled)
+    void ScriptDatabase::ForAll(Callback callback, ObjectCheck filter)
     {
         for (auto& [key, scriptPool] : scriptMap)
         {
             for (auto& [uuid, instance] : scriptPool)
             {
-                if (onlyEnabled && ObjectEnableCheck && !ObjectEnableCheck(uuid))
+                if (filter && !filter(uuid))
                     continue;
-                if (onlyEnabled && !instance.enabled)
+                MonoObject* object = mono_gchandle_get_target(instance.handle);
+                callback(object);
+            }
+        }
+    }
+    void ScriptDatabase::ForAllEnabled(Callback callback, ObjectCheck filter)
+    {
+        for (auto& [key, scriptPool] : scriptMap)
+        {
+            for (auto& [uuid, instance] : scriptPool)
+            {
+                if (!instance.enabled)
+                    continue;
+                if (filter && !filter(uuid))
                     continue;
                 MonoObject* object = mono_gchandle_get_target(instance.handle);
                 callback(object);

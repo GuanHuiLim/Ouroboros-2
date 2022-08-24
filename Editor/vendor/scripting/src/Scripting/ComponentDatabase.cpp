@@ -5,11 +5,10 @@
 namespace oo
 {
     std::unordered_map<std::string, ComponentDatabase::ComponentType> ComponentDatabase::componentTypeMap;
-    std::vector<ComponentDatabase::Object> ComponentDatabase::objectMap;
 
     void ComponentDatabase::RegisterComponent(std::string const& name_space, std::string const& name,
-        std::function<void(UUID)> Add, std::function<void(UUID)> Remove, std::function<bool(UUID)> Has,
-        std::function<void(UUID, bool)> SetEnabled, std::function<bool(UUID)> CheckEnabled)
+        ComponentAction Add, ComponentAction Remove, ComponentCheck Has,
+        ComponentSetAction SetEnabled, ComponentCheck CheckEnabled)
     {
         std::string key = name_space + "." + name;
         componentTypeMap.insert(std::pair<std::string, ComponentType>
@@ -23,6 +22,16 @@ namespace oo
     size_t ComponentDatabase::GetComponentTypeIndex(const char* name_space, const char* name)
     {
         return GetComponentType(name_space, name).index;
+    }
+
+    ComponentDatabase::ComponentDatabase(SceneID sceneID) : sceneID{ sceneID }
+    {
+
+    }
+
+    ComponentDatabase::~ComponentDatabase()
+    {
+        DeleteAll();
     }
 
     void ComponentDatabase::InstantiateObjectFull(UUID id)
@@ -39,7 +48,7 @@ namespace oo
 
         for (auto& [key, type] : componentTypeMap)
         {
-            if (!type.Has(id))
+            if (!type.Has(sceneID, id))
                 continue;
             Instantiate(id, type.name_space.c_str(), type.name.c_str());
         }
@@ -55,7 +64,7 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
             return component;
 
         if (callAdd)
-            GetComponentType(name_space, name).Add(id);
+            GetComponentType(name_space, name).Add(sceneID, id);
 
         // create C# Component
         MonoClass* klass = ScriptEngine::GetClass("ScriptCore", name_space, name);
@@ -84,7 +93,7 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
     bool ComponentDatabase::HasComponent(UUID id, const char* name_space, const char* name)
     {
         ComponentType& type = GetComponentType(name_space, name);
-        return type.Has(id);
+        return type.Has(sceneID, id);
     }
 
     ComponentDatabase::IntPtr ComponentDatabase::Retrieve(UUID id, const char* name_space, const char* name)
@@ -115,12 +124,12 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
 
     bool ComponentDatabase::CheckEnabled(UUID id, const char* name_space, const char* name)
     {
-        return GetComponentType(name_space, name).CheckEnabled(id);
+        return GetComponentType(name_space, name).CheckEnabled(sceneID, id);
     }
 
     void ComponentDatabase::SetEnabled(UUID id, const char* name_space, const char* name, bool isEnabled)
     {
-        GetComponentType(name_space, name).SetEnabled(id, isEnabled);
+        GetComponentType(name_space, name).SetEnabled(sceneID, id, isEnabled);
     }
 
     void ComponentDatabase::Delete(UUID id, const char* name_space, const char* name, bool callRemove)
@@ -130,7 +139,7 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
             return;
 
         if (callRemove)
-            GetComponentType(name_space, name).Remove(id);
+            GetComponentType(name_space, name).Remove(sceneID, id);
         mono_gchandle_free(*component);
         *component = 0;
     }
