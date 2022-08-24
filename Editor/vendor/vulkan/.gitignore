@@ -3,6 +3,12 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Visual Studio Extensions
+vs-chromium-project.txt
+
+# External Dependencies
+vendor/
+
 # Build-specific files
 *.spv
 done.txt

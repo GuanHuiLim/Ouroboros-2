@@ -8,7 +8,7 @@
 #include "Input.h"
 #include "Window.h"
 
-#include "imgui.h"
+#include "imgui/imgui.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -141,9 +141,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
-Window::Window(uint32_t width, uint32_t height):
+Window::Window(uint32_t width, uint32_t height, WindowType type):
     m_width{width},
     m_height{height},
+    m_type{ type },
     rawHandle{NULL},
     windowShouldClose{false}
 {
@@ -151,9 +152,9 @@ Window::Window(uint32_t width, uint32_t height):
 
 Window::~Window()
 {
-    if (rawHandle)
+    if (m_type == WindowType::WINDOWS32 && rawHandle)
     {
-        DestroyWindow(rawHandle);
+        DestroyWindow((HWND)rawHandle);
         rawHandle = NULL;
     }
 }
@@ -279,25 +280,25 @@ void Window::Init()
     }
 
     //window now exists we need to show the window..
-    ShowWindow(rawHandle, SW_SHOW); // theres a bunch of cool commands @ https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
-    SetForegroundWindow(rawHandle);
-    SetFocus(rawHandle);
+    ShowWindow((HWND)rawHandle, SW_SHOW); // theres a bunch of cool commands @ https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
+    SetForegroundWindow((HWND)rawHandle);
+    SetFocus((HWND)rawHandle);
     // window is now created!
-    UpdateWindow(rawHandle);
+    UpdateWindow((HWND)rawHandle);
 
     /*  // This function is interesting. You can kind of "Embed" information into the window as a ptr.
     // So you can ptr to the encapsulating window class in C++ and retrieve it later using GetWindowLongPtr()
     */
     if (rawHandle)
     {
-        SetWindowLongPtr(rawHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        SetWindowLongPtr((HWND)rawHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
 }
 
 HWND Window::GetRawHandle()const
 {
-    return rawHandle;
+    return (HWND)rawHandle;
 }
 
 bool Window::PollEvents()

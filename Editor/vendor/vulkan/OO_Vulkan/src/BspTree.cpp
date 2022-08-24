@@ -92,7 +92,7 @@ bool BspTree::LoadTree(const std::filesystem::path& path)
 
 	int32_t type{};
 	fs >> type;
-	m_type == static_cast<PartitionType>(type);
+	m_type = static_cast<PartitionType>(type);
 
 	size_t numVert, numIndx;
 	fs >> numVert;
@@ -202,7 +202,7 @@ void BspTree::SerializeTree()
 	}
 
 	fs.close();
-	std::cout << "Tree serialized at [" << fileName.u8string() << "]\n";
+	std::cout << "Tree serialized at [" << fileName.string() << "]\n";
 }
 
 void BspTree::SetPartitionType(PartitionType type)

@@ -11,22 +11,30 @@ project "Vulkan"
     -- output directory
     targetdir("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
     objdir("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	
 
     files
     {
+		
         -- include the relevant files you want exposed to the Editor here
-        "OO_Vulkan/src/*.*",
+        "OO_Vulkan/src/**.*",
     }
-
+    excludes{"OO_Vulkan/src/main.cpp"}
+	
     includedirs
     {
         -- include directories of the external dependencies that you need for the above files to compile
         
         "%{IncludeDir.glm}",
+        "%{IncludeDir.vulkan}",
+        "%{IncludeDir.vulkanSrc}",
+        "%{IncludeDir.assimp}",
+        -- "%{IncludeDir.vulkanIMGUI}",
+        "%{IncludeDir.assimpBin}",
 
         -- for the case of imgui if you want it to be direct just 
         -- append to the back so that it compiles your stuff properly
-        "%{IncludeDir.imgui}/imgui",
+        "%{IncludeDir.imgui}",
 
         "%{IncludeDir.VulkanSDK}",
 

@@ -8,6 +8,7 @@ struct Window;
 struct VulkanInstance;
 struct VulkanDevice
 {
+	VulkanDevice() = default;
 	~VulkanDevice();
 	VulkanDevice(const VulkanDevice&) = delete;
 

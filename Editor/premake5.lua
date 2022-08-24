@@ -40,6 +40,9 @@ project "Editor"
 
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.VulkanSDK}",
+        "%{IncludeDir.vulkan}",
+        "%{IncludeDir.assimp}",
+        "%{IncludeDir.assimpBin}",
         "%{IncludeDir.SDL}",
         
         "%{IncludeDir.imgui}",
@@ -65,6 +68,7 @@ project "Editor"
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
+        "%{LibraryDir.assimp}/Release",
     }
 
     -- linking External libraries 
@@ -87,7 +91,8 @@ project "Editor"
         "SharedLib",
         
         --Linking to vulkan Library [Uncomment the next line when youre done setting up]
-        -- "Vulkan",
+        "Vulkan",
+		"assimp-vc142-mt",
 
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
@@ -116,12 +121,13 @@ project "Editor"
         -- if Editor need any prebuild commands regardless of debug/release/production
         prebuildcommands
         {
-
+			{"call \"%{AppVendor}/vulkan/OO_Vulkan/shaders/compileShaders.bat\"" }
         }
 
         -- if Editor needs any postbuild commands regardless of debug/release/production
         postbuildcommands
         {
+				-- [IMPORTANT] copy command requires a space after the target directory.
             -- SDL2.0 
             {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" " .. binApp },
             -- Controller Support file
@@ -134,6 +140,9 @@ project "Editor"
             {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" " .. binApp },
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" " .. binApp .. "/tracy_server"}, 
+			-- vulkan shaders copy
+			{ "mkdir \"" .. binApp .. "/shaders\"" },
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" " .. binApp .. "/shaders"}, 
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -158,6 +167,7 @@ project "Editor"
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
+				-- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" " .. binApp},
         }
 
@@ -174,6 +184,7 @@ project "Editor"
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
+				-- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
         }
 
@@ -190,6 +201,7 @@ project "Editor"
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
+				-- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
         }
 

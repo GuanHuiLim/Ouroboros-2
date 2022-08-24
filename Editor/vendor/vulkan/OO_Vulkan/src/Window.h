@@ -10,7 +10,17 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 struct Window
 {
-    Window(uint32_t width =1024u, uint32_t height =720u);
+
+    enum WindowType
+    {
+        WINDOWS32,
+        SDL2,
+
+
+    };
+
+
+    Window(uint32_t width =1024u, uint32_t height =720u, WindowType = WindowType::WINDOWS32);
     Window(const Window&) = delete;
     Window& operator=(const Window&) = delete;
     ~Window();
@@ -22,7 +32,8 @@ struct Window
 
     uint32_t m_width;
     uint32_t m_height;
-    HWND rawHandle;
+    WindowType m_type;
+    void* rawHandle;
 
     bool windowShouldClose;
 

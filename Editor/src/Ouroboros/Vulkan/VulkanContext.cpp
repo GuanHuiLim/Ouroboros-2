@@ -23,6 +23,7 @@ Technology is prohibited.
 #include <sdl2/SDL.h>
 #include <sdl2/SDL_vulkan.h>
 
+
 namespace oo
 {
     //VulkanEngine VulkanContext::vkEngine;
@@ -375,28 +376,35 @@ namespace oo
 
     void VulkanContext::Init()
     {
-        //vkEngine.init();
-
-        //OpenGL + SDL code
-        //m_glContext = SDL_GL_CreateContext(m_windowHandle);
-        //SDL_GL_MakeCurrent(m_windowHandle, m_glContext);
-
-        //bool status = (gl3wInit() == 0);
-        //ASSERT_MSG(status, "Failed to initialize OpenGL loader!(gl3w)\n");
-
-        //LOG_ENGINE_INFO("OpenGL Info:");
-        //LOG_ENGINE_INFO("  Vendor   : {0}", glGetString(GL_VENDOR));
-        //LOG_ENGINE_INFO("  Renderer : {0}", glGetString(GL_RENDERER));
-        //LOG_ENGINE_INFO("  Version  : {0}", glGetString(GL_VERSION));
-
+       
 #ifdef TEMPORARY_CODE
         // Setup Vulkan
         uint32_t extensions_count = 0;
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, NULL);
-        const char** extensions = new const char* [extensions_count];
-        SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, extensions);
-        SetupVulkan(extensions, extensions_count);
-        delete[] extensions;
+        //const char** extensions = new const char* [extensions_count];
+        std::vector<const char*> extensions;
+        extensions.resize(extensions_count);
+        SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
+        SetupVulkan(&extensions[0], extensions_count);
+        //delete[] extensions;
+        
+        int w, h;
+        SDL_GetWindowSize(m_windowHandle, &w, &h);
+
+        oGFX::SetupInfo si;
+        si.debug = true;
+        si.renderDoc = true;
+        Window win(w,h);
+        win.m_type = Window::WindowType::SDL2;
+        win.rawHandle = m_windowHandle;
+        try
+        {
+            vr.Init(si, win);
+        }
+        catch (...)
+        {
+            std::cout << "your mom die" << std::endl;
+        }
 
         // Create Window Surface
         VkSurfaceKHR surface;
@@ -408,8 +416,6 @@ namespace oo
         }
 
         // Create Framebuffers
-        int w, h;
-        SDL_GetWindowSize(m_windowHandle, &w, &h);
         ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
         SetupVulkanWindow(wd, surface, w, h);
 #endif // TEMPORARY_CODE

@@ -15,9 +15,9 @@
 #include "VulkanUtils.h"
 #include "Window.h"
 
-#include <imgui.h>
-#include <backends/imgui_impl_vulkan.h>
-#include <backends/imgui_impl_win32.h>
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#include <imgui/backends/imgui_impl_win32.h>
 
 
 #include "../shaders/shared_structs.h"
