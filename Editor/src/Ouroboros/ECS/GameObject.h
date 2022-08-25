@@ -28,7 +28,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    // Note Gameobject is no longer directly convertible to Entity.
+    // NOTE Gameobject is no longer directly convertible to Entity.
     class GameObject final
     {
     public:
@@ -82,6 +82,9 @@ namespace oo
         // Explicit Instantiation constructor
         explicit GameObject(Scene& scene);
 
+        // Explicit Instantiation From Another Existing Gameobject constructor
+        explicit GameObject(Scene& scene, GameObject& target);
+
         // Traditional Construct GameObject Based on UUID
         GameObject(UUID uuid, Scene& scene);
 
@@ -117,6 +120,7 @@ namespace oo
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
         /*void SwapChildren(GameObject const& other);*/
         
+
         GameObject GetParent() const;
         std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
         std::vector<GameObject> GetChildren(bool includeItself = false) const;
@@ -133,6 +137,18 @@ namespace oo
         /*---------------------------------------------------------------------------------*/
         /* Queries                                                                         */
         /*---------------------------------------------------------------------------------*/
+        
+        bool HasChild() const;
+        std::size_t GetChildCount() const;
+        std::size_t GetDirectChildCount() const;
+
+        //template<typename Component>
+        //Component& GetComponentCount() const
+        //{
+        //    //ASSERT_MSG(HasComponent<Component>() == false, "Use TryGet instead if youre Unsure.");
+        //    //return m_scene->GetWorld().<Component>(m_entity);
+        //}
+
         template<typename Component>
         Component& GetComponent() const
         {
@@ -182,6 +198,9 @@ namespace oo
         }
 
     private:
+        void SetupGo(UUID uuid, Ecs::EntityID entt);
+
+        void SetHierarchyActive(GameObjectComponent& comp, bool active) const;
         void CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const;
     };
 }

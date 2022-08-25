@@ -24,7 +24,7 @@ protected:
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-	void CreateGameObject();
+	void CreateGameObjectImmediate();
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
 	static constexpr const unsigned int Popup_ID = 100000;

@@ -3,7 +3,7 @@
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420
 \par            email: c.tecklee\@digipen.edu
-\date           Jun 31, 2022
+\date           Aug 23, 2022
 \brief          Describes the main system that will work on updating the transform
                 components in the current world.
 
@@ -17,16 +17,24 @@ Technology is prohibited.
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/Transform/TransformComponent.h>
-#include <stack>
+
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
 namespace oo
 {
-    class TransformSystem final /*: public Ecs::System*/
+    class TransformSystem final : public Ecs::System
     {
+    private:
+        Scene* m_scene = nullptr;
+
     public:
-        //Scene& m_activeScene;
+        
+        //TransformSystem(Scene* scene) : m_scene{ scene } {};
         TransformSystem() = default;
         virtual ~TransformSystem() = default;
         
+        void Link(Scene* scene) { m_scene = scene; }
+
         void UpdateAllTransforms()
         {
             /*std::shared_ptr<oo::GameObject> rootGo = m_activeScene.GetRoot();
@@ -85,17 +93,9 @@ namespace oo
             
         }
 
-        void UpdateTransform(Transform3D& tf)
-        {
-            tf.m_transform.CalculateLocalTransform();
-        }
+        void UpdateTransform(std::shared_ptr<GameObject> go, GameObjectComponent& gocomp, Transform3D& tf);
 
-        virtual void Run(Ecs::ECSWorld* world)
-        {
-            Ecs::Query query;
-            query.with<Transform3D>().build();
-            world->for_each(query, [&] (Transform3D& tf) { UpdateTransform(tf); });
-        }
+        virtual void Run(Ecs::ECSWorld* world) override;
 
     };
 }

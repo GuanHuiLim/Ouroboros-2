@@ -21,16 +21,20 @@ Technology is prohibited.
 #include <scenegraph/include/scenegraph.h>
 #include <Archetypes_ECS/src/A_Ecs.h>
 #include <set>
+#include <functional>
 #include "Utility/UUID.h"
 
 namespace oo
 {
     //forward declare
     class GameObject;
-    class TransformSystem;
 
     class Scene : public IScene
     {
+    public:
+        using go_ptr = std::shared_ptr<oo::GameObject>;
+        //using go_on_create_callback = std::function<void(go_ptr)>;
+        
         // Events
     public:
         class OnInitEvent : public Event
@@ -59,29 +63,28 @@ namespace oo
         std::string GetFilePath() const;
         std::string GetSceneName() const;
 
-        std::shared_ptr<GameObject> CreateGameObject();
+        go_ptr CreateGameObjectDeferred();
+        go_ptr CreateGameObjectImmediate();
+        void DestroyGameObject(GameObject go);
+        void DestroyGameObjectImmediate(GameObject go);
+        
+        go_ptr InstatiateGameObject(GameObject go);
+        go_ptr DuplicateGameObject(GameObject go);
 
         // Attempts to search the lookup table with uuid.
         // returns the gameobject if it does
         // else returns nullptr.
-        std::shared_ptr<GameObject> FindWithInstanceID(UUID uuid);
-        
+        go_ptr FindWithInstanceID(UUID uuid) const;
+        bool IsValid(UUID uuid) const;
         bool IsValid(GameObject go) const;
-        void DestroyGameObject(GameObject go);
-        void DestroyGameObjectImmediate(GameObject go);
 
-        std::shared_ptr<GameObject> InstatiateGameObject(GameObject go);
-        /*void AddChild(GameObject const& gameObj, bool preserveTransforms = false) const;
-        void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
+        /*
         void SwapChildren(GameObject const& other);
-        GameObject GetParent() const;
-        std::vector<Entity> GetDirectChilds(bool includeItself = false) const;
-        std::vector<Entity> GetChildren(bool includeItself = false) const;*/
+        */
 
         Ecs::ECSWorld& GetWorld();
-
         scenegraph const GetGraph() const;
-        std::shared_ptr<GameObject> GetRoot() const;
+        go_ptr GetRoot() const;
 
     protected:
         void SetFilePath(std::string_view filepath);
@@ -89,21 +92,24 @@ namespace oo
 
         void LoadFromFile();
         void SaveToFile();
-    
-        
-    private: //for now
-        std::unique_ptr<TransformSystem> m_transformSystem;
-    
+
+        // Helper Functions
     private:
+        go_ptr CreateGameObjectImmediate(go_ptr new_go);
+        void InsertGameObject(go_ptr go_ptr);
+        void RemoveGameObject(go_ptr go_ptr);
 
-        std::shared_ptr<GameObject> CreateGameObject(std::shared_ptr<GameObject> new_go);
-        void InsertGameObject(std::shared_ptr<GameObject> go_ptr);
-        void RemoveGameObject(std::shared_ptr<GameObject> go_ptr);
+        // Old method [ keeping just to verify if something goes wrong one day ]
+        //void RecusriveLinkScenegraph(GameObject original_parent_go, std::queue<Scene::go_ptr> new_objects);
 
+        // Variables
     private:
-
         std::string m_name;
         std::string m_filepath;
+
+        
+        // set of gameobjects to initialize
+        //std::vector<std::pair<go_ptr, go_on_create_callback>> m_createList;
 
         // set of ids to Remove 
         std::set<UUID> m_removeList;
@@ -114,6 +120,6 @@ namespace oo
 
         std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
-        std::shared_ptr<GameObject> m_rootGo;
+        go_ptr m_rootGo;
     };
 }

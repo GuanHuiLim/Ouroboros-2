@@ -15,6 +15,7 @@
 
 
 #include <Ouroboros/ECS/GameObject.h>
+#include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
@@ -144,6 +145,7 @@ void Inspector::Show()
 		//gameobject->GetComponent<>();
 		DisplayComponent<oo::GameObjectComponent>(*gameobject);
 		DisplayComponent<oo::Transform3D>(*gameobject);
+		DisplayComponent<oo::DeferredComponent>(*gameobject);
 	}
 }
 void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)

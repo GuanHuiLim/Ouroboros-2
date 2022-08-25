@@ -9,6 +9,7 @@ namespace Ecs
 		//destuctor for all entity components
 		for (auto& entt : entities)
 		{
+			if (entt.chunk != nullptr) continue;
 			//erase_entity_in_chunk(oldChunk, oldindex);
 			internal::erase_entity_in_chunk(entt.chunk, entt.chunkIndex);
 		}
@@ -58,7 +59,9 @@ namespace Ecs
 			arch = get_empty_archetype();
 		}
 
-		return internal::create_entity_with_archetype(arch);
+		auto entity = internal::create_entity_with_archetype(arch);
+		internal::broadcast_add_entity_callback(this, entity);
+		return entity;
 	}
 
 	EntityID IECSWorld::duplicate_entity(EntityID id)
@@ -67,8 +70,9 @@ namespace Ecs
 		Archetype* arch = internal::get_entity_archetype(this, id);
 
 
-
-		return internal::duplicate_entity_with_archetype(arch, id);
+		auto entity = internal::duplicate_entity_with_archetype(arch, id);
+		internal::broadcast_add_entity_callback(this, entity);
+		return entity;
 	}
 
 
@@ -85,6 +89,15 @@ namespace Ecs
 		return hashes;
 	}
 
+	void IECSWorld::SubscribeOnAddEntity(FnPtr function)
+	{
+		onAddEntity_callbacks.Subscribe<EntityEvent>(function);
+	}
+
+	void IECSWorld::SubscribeOnDestroyEntity(FnPtr function)
+	{
+		onDestroyEntity_callbacks.Subscribe<EntityEvent>(function);
+	}
 
 	EntityID ECSWorld::new_entity(std::vector<uint64_t> const& component_hashes)
 	{
@@ -105,7 +118,69 @@ namespace Ecs
 	{
 		world.destroy(eid);
 	}
+
+	void ECSWorld::SubscribeOnAddEntity(FnPtr function)
+	{
+		world.SubscribeOnAddEntity(function);
+	}
+
+	void ECSWorld::SubscribeOnDestroyEntity(FnPtr function)
+	{
+		world.SubscribeOnDestroyEntity(function);
+	}
 }
 
+
+namespace Ecs::testing
+{
+	void NonMemberFunction(Ecs::EntityEvent* event) {
+		auto entity = event->entity;
+	};
+
+	void AnotherNonMemberFunction(Ecs::ComponentEvent<Ecs::TestComponent>* event) {
+		auto& comp = event->component;
+		auto entityID = event->entityID;
+	};
+	void test()
+	{
+		class TestClass
+		{
+		public:
+			void MemberFunction(Ecs::EntityEvent* event) {
+				auto entity = event->entity;
+			};
+			void 
+				AnotherMemberFunction(Ecs::ComponentEvent<Ecs::TestComponent>* event) {
+				auto& comp = event->component;
+				auto entityID = event->entityID;
+			};
+		};
+
+		ECSWorld world;
+		world.Add_System<Ecs::internal::TestSystem>();
+		world.Get_System<Ecs::internal::TestSystem>();
+		world.Run_System<Ecs::internal::TestSystem>();
+
+		TestClass testclass;
+		world.SubscribeOnAddEntity(&NonMemberFunction);
+		world.SubscribeOnAddEntity(&testclass, &TestClass::MemberFunction);
+
+
+		world.SubscribeOnDestroyEntity(&NonMemberFunction);
+		world.SubscribeOnDestroyEntity(&testclass, &TestClass::MemberFunction);
+	
+
+		world.SubscribeOnAddComponent<Ecs::TestComponent>(&AnotherNonMemberFunction);
+		world.SubscribeOnAddComponent<TestClass, Ecs::TestComponent>(&testclass, &TestClass::AnotherMemberFunction);
+
+
+		world.SubscribeOnRemoveComponent<Ecs::TestComponent>(&AnotherNonMemberFunction);
+		world.SubscribeOnRemoveComponent<TestClass, Ecs::TestComponent>(&testclass, &TestClass::AnotherMemberFunction);
+	
+		auto entity = world.new_entity();
+		world.add_component<TestComponent>(entity);
+		world.remove_component<TestComponent>(entity);
+	}
+}
 //#include "World.cpp"
 //#include "EcsCommon.cpp"

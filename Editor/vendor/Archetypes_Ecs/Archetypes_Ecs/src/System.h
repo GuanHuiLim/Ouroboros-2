@@ -18,3 +18,12 @@ namespace Ecs
 		virtual void Run(ECSWorld* world) = 0;
 	};
 }
+
+namespace Ecs::internal
+{
+	class TestSystem : public System
+	{
+	public:
+		void Run(ECSWorld* world) override {}
+	};
+}

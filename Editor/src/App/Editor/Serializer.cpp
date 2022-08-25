@@ -288,7 +288,7 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
 
-		auto go = scene.CreateGameObject();
+		auto go = scene.CreateGameObjectImmediate();
 		if (iter == doc.MemberBegin())
 			firstobj = go->GetInstanceID();
 		go->SetName(iter->name.GetString());

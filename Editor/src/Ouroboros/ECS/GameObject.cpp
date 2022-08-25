@@ -19,6 +19,7 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
 
+#include "Ouroboros/EventSystem/EventManager.h"
 namespace oo
 {
     /*---------------------------------------------------------------------------------*/
@@ -26,11 +27,21 @@ namespace oo
     /*---------------------------------------------------------------------------------*/
     GameObject GameObject::Duplicate()
     {
+        ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+        //ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
+        
+        return *m_scene->DuplicateGameObject(*this);
+
+        /*std::vector<GameObject> childs = GetChildren(true);
+
+        for(auto& child : childs)
+        
         UUID new_uuid = UUID{};
         Entity new_entt = m_scene->GetWorld().duplicate_entity(m_entity);
         GameObject new_gameObject{ new_entt, *m_scene };
         m_scene->GetWorld().get_component<GameObjectComponent>(new_entt).Id = new_uuid;
-        return new_gameObject;
+
+        return new_gameObject;*/
     }
 
     // Create is a dummy type
@@ -39,17 +50,19 @@ namespace oo
     {
     }
 
+    GameObject::GameObject(Scene& scene, GameObject& target)
+        : m_scene{ &scene }
+        , m_entity{ scene.GetWorld().duplicate_entity(target.m_entity) }
+    {
+        UUID new_uuid {};
+        SetupGo(new_uuid, m_entity);
+    }
+
     GameObject::GameObject(UUID uuid, Scene& scene)
         : m_scene { &scene }
         , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, Transform3D>() }
     {
-        // add debugging component
-#if not define OO_PRODUCTION
-        oo::GameObjectDebugComponent comp{ this };
-        m_scene->GetWorld().add_component<oo::GameObjectDebugComponent>(m_entity, comp);
-#endif
-        auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(m_entity);
-        goComp.Id = uuid;
+        SetupGo(uuid, m_entity);
     }
 
     //Conversion from entt to gameobject
@@ -68,13 +81,16 @@ namespace oo
 
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
-        // TODO!
+        // TODO! [preserve transforms needs to be used]
         scenenode::shared_pointer parentNode = GetSceneNode().lock();
         scenenode::shared_pointer childNode = child.GetSceneNode().lock();
-        if(parentNode && childNode)
+        if (parentNode && childNode)
+        {
             parentNode->add_child(childNode);
+            // notify child node that its parent has changed.
+            child.Transform().ParentChanged();
+        }
         
-        // perform some immediate transformation if required.
     }
 
     void GameObject::AddChild(std::initializer_list<GameObject> gos, bool preserveTransforms) const
@@ -86,6 +102,21 @@ namespace oo
         {
             AddChild(go, preserveTransforms);
         }
+    }
+
+    bool GameObject::HasChild() const
+    {
+        return GetChildren().size() != 0;
+    }
+
+    std::size_t GameObject::GetChildCount() const
+    {
+        return GetSceneNode().lock()->get_total_child_count();
+    }
+
+    std::size_t GameObject::GetDirectChildCount() const
+    {
+        return GetSceneNode().lock()->get_direct_child_count();
     }
 
     GameObject GameObject::GetParent() const
@@ -166,6 +197,44 @@ namespace oo
     void GameObject::SetName(std::string_view name) const
     {
         GetComponent<GameObjectComponent>().Name = name;
+        auto scenenode_ptr = GetComponent<GameObjectComponent>().Node.lock();
+        scenenode_ptr->set_debug_name(name);
+    }
+
+    void GameObject::SetupGo(UUID uuid, Ecs::EntityID entt)
+    {
+        // add debugging component
+#if not define OO_PRODUCTION
+        oo::GameObjectDebugComponent comp{ this };
+        m_scene->GetWorld().add_component<oo::GameObjectDebugComponent>(m_entity, comp);
+#endif
+        auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(m_entity);
+        goComp.Id = uuid;
+    }
+
+    void GameObject::SetHierarchyActive(GameObjectComponent& comp, bool active) const
+    {
+        if (comp.ActiveInHierarchy != active)
+        {
+            // check previous state to do appropriate callback
+            bool previousState = comp.ActiveInHierarchy;
+            if (previousState)
+            {
+                // if was active, call the disable event
+                GameObjectComponent::OnDisableEvent onDisableEvent;
+                oo::EventManager::Broadcast(&onDisableEvent);
+                LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
+            }
+            else
+            {
+                // if was inactive, call the enable event
+                GameObjectComponent::OnEnableEvent onEnableEvent;
+                oo::EventManager::Broadcast(&onEnableEvent);
+                LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
+            }
+            
+            comp.ActiveInHierarchy = active;
+        }
     }
 
     void GameObject::CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const
@@ -174,7 +243,7 @@ namespace oo
         bool hierarchyActive = IsActiveInHierarchy && parent.IsActive();
 
         // Set this object's active state in hierarchy
-        parent.GetComponent<GameObjectComponent>().SetHierarchyActive(hierarchyActive);
+        SetHierarchyActive(parent.GetComponent<GameObjectComponent>(), hierarchyActive);
 
         // Set active In Hierarchy for children to be
         for (auto& child : parent.GetDirectChilds())

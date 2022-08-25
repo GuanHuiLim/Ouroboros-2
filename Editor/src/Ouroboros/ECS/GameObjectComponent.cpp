@@ -29,28 +29,4 @@ namespace oo
             //.property("Layer", &GameObjectComponent::GetLayer, &GameObjectComponent::SetLayer)
             .property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy);
     }
-    
-    void oo::GameObjectComponent::SetHierarchyActive(bool active)
-    {
-        if (ActiveInHierarchy != active)
-        {
-            // check previous state to do appropriate callback
-            bool previousState = ActiveInHierarchy;
-            if(previousState)
-            {
-                // if was active, call the disable event
-                OnDisableEvent onDisableEvent;
-                oo::EventManager::Broadcast(&onDisableEvent);
-                LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
-            }
-            else
-            {
-                // if was inactive, call the enable event
-                OnEnableEvent onEnableEvent;
-                oo::EventManager::Broadcast(&onEnableEvent);
-                LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
-            }
-            ActiveInHierarchy = active;
-        }
-    }
 }

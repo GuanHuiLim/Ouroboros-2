@@ -221,7 +221,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		//processes the components		
 		LoadObject(*gameobj, members, membersEnd);
 		if (iter + 1 != document.MemberEnd())
-			gameobj = scene->CreateGameObject();
+			gameobj = scene->CreateGameObjectImmediate();
 	}
 	ifs.close();
 }

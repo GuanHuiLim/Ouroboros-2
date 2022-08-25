@@ -59,7 +59,7 @@ namespace oo
         if (currentScene != nullptr)
         {
             m_editorScene.reset();
-            m_sceneManager.RemoveScene(currentScene->GetSceneName());
+            m_sceneManager.RemoveScene(currentScene->GetID());
         }
 
         auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>(startfile.SceneName, startfile.LoadPath);
