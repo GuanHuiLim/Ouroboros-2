@@ -116,7 +116,7 @@ void Inspector::Show()
 
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		auto gameobject = scene->FindWithInstanceID(selected_items[0]);//first item
+		auto gameobject = scene->FindWithInstanceID(*selected_items.begin());//first item
 		if (gameobject == nullptr)
 			return;
 		bool active = gameobject->ActiveInHierarchy();

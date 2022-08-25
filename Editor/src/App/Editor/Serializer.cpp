@@ -170,6 +170,7 @@ UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& s
 	
 	auto firstObj = Loading(parent,scene);
 	ResetDocument();
+	return firstObj;
 }
 
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene)
@@ -302,10 +303,7 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 	parents.push(starting);
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
-
 		auto go = scene.CreateGameObjectImmediate();
-		if (iter == doc.MemberBegin())
-			firstobj = go->GetInstanceID();
 		go->SetName(iter->name.GetString());
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
@@ -318,6 +316,8 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 
 			parents.top()->AddChild(*go);
 			parents.push(go);
+			if (iter == doc.MemberBegin())
+				firstobj = go->GetInstanceID();
 		}
 
 		++members;

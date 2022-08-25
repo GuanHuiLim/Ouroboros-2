@@ -34,11 +34,12 @@ void oo::CommandStackManager::RedoCommand()
 {
 	if (s_current == 0 || s_commands.empty())
 		return;
-	++s_current;
 	size_t idx = s_commands.size() + s_current;
-
+	if (idx + 1 > s_commands.size())
+		return;
 	ASSERT_MSG((idx > s_commands.size()), "Idx too big(overflow)");
 	s_commands[idx]->Redo();
+	++s_current;
 	//display some redo message
 	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, s_commands[idx]->ToString() + "(Redo)");
 }

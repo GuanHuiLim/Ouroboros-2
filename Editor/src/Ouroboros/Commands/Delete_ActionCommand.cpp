@@ -23,8 +23,7 @@ void oo::Delete_ActionCommand::Undo()
 	if (scene == nullptr)
 		ASSERT_MSG(true, "scene not found???");
 	*(scene.get());
-	auto id = Serializer::LoadDeleteObject(data, parentID, *(scene.get()));
-	revivedObject = id;
+	revivedObject = Serializer::LoadDeleteObject(data, parentID, *(scene.get()));
 }
 
 void oo::Delete_ActionCommand::Redo()
