@@ -1,7 +1,6 @@
 project "Editor"
     kind "ConsoleApp"
     language "C++"
-    cppdialect "C++20"
     staticruntime "off"
     --debugformat "c7"
     warnings "Extra" -- Set warnings level to 4 for this project

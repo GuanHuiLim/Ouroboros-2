@@ -24,12 +24,12 @@ project "Launcher"
 
     filter "system:windows"
         systemversion "latest"
-        cppdialect "C++17"
+        cppdialect "C++20"
 
     filter "system:linux"
         pic "On"
         systemversion "latest"
-        cppdialect "C++17"
+        cppdialect "C++20"
 
     filter "configurations:Debug"
         runtime "Debug"
