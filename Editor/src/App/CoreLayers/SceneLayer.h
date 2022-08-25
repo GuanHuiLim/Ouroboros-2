@@ -64,6 +64,7 @@ namespace oo
             if (oo::input::IsKeyHeld(KEY_LEFT_SHIFT) && oo::input::IsKeyPressed(KEY_TAB))
             {
                 ScriptSystem::Compile();
+                ScriptSystem::Load();
             }
             if (oo::input::IsKeyPressed(KEY_Q))
             {
