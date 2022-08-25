@@ -245,9 +245,10 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 	return newprefabPath;
 }
 
-void Serializer::LoadPrefab(std::shared_ptr<oo::GameObject> go)
+void Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::GameObject> go)
 {
-
+	//query the item from the prefab scene
+	//copy the item to go
 }
 
 void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val)
@@ -265,6 +266,62 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val)
 	return;
 }
 
+void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop)
+{
+	rapidjson::Value arrayValue(rapidjson::kObjectType);
+	rttr::variant_sequential_view sqv = variant.create_sequential_view();
+
+	auto iter_type = UI_RTTRType::types.find(sqv.get_value_type().get_id());
+	if (iter_type == UI_RTTRType::types.end())
+		return;
+	auto sf = save_commands.find(iter_type->second);
+	if (sf == save_commands.end())
+		return;
+
+	for (size_t i = 0; i < sqv.get_size(); ++i)
+	{
+		sf->second(arrayValue, sqv.get_value(i), prop);
+	}
+	std::string temp = prop.get_name().data();
+	rapidjson::Value name;
+	name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+	val.AddMember(name, arrayValue, doc.GetAllocator());
+}
+
+void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property _property)
+{
+	rapidjson::Value sub_component(rapidjson::kObjectType);
+	rttr::type type = var.get_type();
+	for (auto& prop : type.get_properties())
+	{
+		if (prop.is_readonly())
+			continue;
+		auto prop_type = prop.get_type();
+		auto iter = UI_RTTRType::types.find(prop_type.get_id());
+		if (iter == UI_RTTRType::types.end())
+		{
+			if (prop_type.is_sequential_container())
+			{
+				rttr::variant variant = prop.get_value(var);
+				SaveSequentialContainer(variant, sub_component, prop);
+			}
+			else if (prop_type.is_class())
+			{
+				ASSERT_MSG(true, "you are pushing it too far buddy.");
+			}
+			continue;//not supported
+		}
+		auto sf = save_commands.find(iter->second);
+		if (sf == save_commands.end())
+			continue;//don't have this save function
+		sf->second(sub_component, prop.get_value(var), prop);
+	}
+	std::string temp = _property.get_name().data();
+	rapidjson::Value name;
+	name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+	val.AddMember(name, sub_component, doc.GetAllocator());
+}
+
 void Serializer::LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter , rapidjson::Value::MemberIterator& end)
 {
 	for (; iter != end; ++iter)
@@ -276,6 +333,62 @@ void Serializer::LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator
 		if (lc_iter == load_components.end())
 			continue;//not found
 		lc_iter->second(go, std::move(iter->value));
+	}
+}
+
+void Serializer::LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val)
+{
+	rttr::variant_sequential_view sqv = variant.create_sequential_view();
+
+	auto arr_UITypes = UI_RTTRType::types.find(sqv.get_value_type().get_id());
+	if (arr_UITypes == UI_RTTRType::types.end())
+		return;
+	auto command = load_commands.find(arr_UITypes->second);
+	if (command == load_commands.end())
+		return;
+
+	size_t size_array = static_cast<size_t>(val.MemberCount());
+	sqv.set_size(size_array);
+	size_t counter = 0;
+	for (auto arrBegin = val.MemberBegin(); arrBegin != val.MemberEnd(); ++arrBegin, ++counter)
+	{
+		rttr::variant varr = sqv.get_value(counter);
+		command->second(varr, std::move(arrBegin->value));
+		sqv.set_value(counter, varr);
+	}
+}
+
+void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val)
+{
+	for (auto iter = val.MemberBegin(); iter != val.MemberEnd(); ++iter)
+	{
+		rttr::type t = variant.get_type();
+		rttr::property prop = t.get_property(iter->name.GetString());
+		if (prop.is_valid() == false)
+			continue;
+
+		auto types_UI = UI_RTTRType::types.find(prop.get_type().get_id());
+		if (types_UI == UI_RTTRType::types.end())
+		{
+			rttr::type prop_type = prop.get_type();
+			if (prop_type.is_sequential_container())
+			{
+				rttr::variant v = prop.get_value(variant);
+				LoadSequentialContainer(v, iter->value);
+				prop.set_value(variant, v);
+			}
+			else if (prop_type.is_class())
+			{
+				ASSERT_MSG(true, "you are pushing it too far buddy.");
+			}
+			continue;//not supported
+		}
+		auto command = load_commands.find(types_UI->second);
+		if (command == load_commands.end())
+			continue;//don't have this save function
+		rttr::variant v;
+		command->second(v, std::move(iter->value));
+		prop.set_value(variant, v);
 	}
 }
 
