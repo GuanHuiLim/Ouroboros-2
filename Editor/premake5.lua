@@ -141,8 +141,10 @@ project "Editor"
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" " .. binApp .. "/tracy_server"}, 
 			-- vulkan shaders copy
-			{ "mkdir \"" .. binApp .. "/shaders\"" },
-            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" " .. binApp .. "/shaders"}, 
+			{ "mkdir \"" .. binApp .. "/shaders/bin\"" },
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" " .. binApp .. "/shaders/bin"}, 			
+			{ "mkdir \"" .. AppDir .. "/shaders/bin\"" },
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" " .. AppDir .. "/shaders/bin"}, 
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
