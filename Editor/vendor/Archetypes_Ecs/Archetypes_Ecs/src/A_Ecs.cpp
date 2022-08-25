@@ -39,6 +39,15 @@ namespace Ecs
 			delete[] s.second;
 	};
 
+	size_t IECSWorld::get_num_components(EntityID id)
+	{
+		assert(internal::is_entity_valid(this, id));
+		EnityToChunk& storage = entities[id.index];
+		assert(storage.chunk != nullptr);
+
+		return storage.chunk->header.componentList->components.size();
+	}
+
 	EntityID IECSWorld::new_entity(std::vector<uint64_t> const& component_hashes)
 	{
 		Archetype* arch = nullptr;

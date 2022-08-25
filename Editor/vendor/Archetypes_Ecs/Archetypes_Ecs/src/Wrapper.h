@@ -86,6 +86,11 @@ namespace Ecs
 			return world.get_component<C>(id);
 		}
 
+		size_t get_num_components(EntityID id)
+		{
+			return world.get_num_components(id);
+		}
+
 		template<typename C>
 		C* set_singleton()
 		{
