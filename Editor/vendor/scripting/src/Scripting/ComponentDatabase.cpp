@@ -36,8 +36,7 @@ namespace oo
 
     void ComponentDatabase::InstantiateObjectFull(UUID id)
     {
-        if (id >= objectMap.size())
-            objectMap.resize(id + 1);
+        objectMap.emplace(std::pair{ id, Object{} });
 
         Object& object = objectMap[id];
         object.componentList.resize(componentTypeMap.size());
@@ -46,22 +45,30 @@ namespace oo
         MonoObject* GO = ScriptEngine::CreateObject(GOClass);
         object.gameObject = mono_gchandle_new(GO, false);
 
+        // set GameObject instance id
+        MonoClassField* idField = mono_class_get_field_from_name(GOClass, "m_InstanceID");
+        mono_field_set_value(GO, idField, &id);
+
         for (auto& [key, type] : componentTypeMap)
         {
             if (!type.Has(sceneID, id))
                 continue;
             Instantiate(id, type.name_space.c_str(), type.name.c_str());
         }
+
+        // set GameObject's transform
+        MonoObject* transform = ComponentDatabase::RetrieveObject(id, "Ouroboros", "Transform");
+        MonoClassField* transformField = mono_class_get_field_from_name(GOClass, "m_Transform");
+        mono_field_set_value(GO, transformField, transform);
     }
 
 ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* name_space, const char* name, bool callAdd)
     {
-        if (id >= objectMap.size() || objectMap[id].gameObject == 0)
-            throw std::exception("ComponentDatabase: failed to find object");
-
-        IntPtr& component = GetComponent(id, name_space, name);
-        if (component != 0)
-            return component;
+        IntPtr* component = TryGetComponent(id, name_space, name);
+        if(component == nullptr)
+            throw std::exception("ComponentDatabase: failed to find Object/Component Type");
+        if (*component != 0)
+            return *component;
 
         if (callAdd)
             GetComponentType(name_space, name).Add(sceneID, id);
@@ -70,7 +77,7 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
         MonoClass* klass = ScriptEngine::GetClass("ScriptCore", name_space, name);
         MonoObject* object = ScriptEngine::CreateObject(klass);
         mono_runtime_object_init(object);
-        component = mono_gchandle_new(object, false);
+        *component = mono_gchandle_new(object, false);
 
         // set Component's gameObject
         MonoClassField* objField = mono_class_get_field_from_name(klass, "m_GameObject");
@@ -82,12 +89,12 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
         size_t typeID = GetComponentTypeIndex(name_space, name);
         mono_field_set_value(object, idField, &typeID);
 
-        return component;
+        return *component;
     }
 
     bool ComponentDatabase::CheckExists(UUID id)
     {
-        return id < objectMap.size() && objectMap[id].gameObject != 0;
+        return objectMap.find(id) != objectMap.end();
     }
 
     bool ComponentDatabase::HasComponent(UUID id, const char* name_space, const char* name)
@@ -146,29 +153,24 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
 
     void ComponentDatabase::Delete(UUID id)
     {
-        if (id >= objectMap.size())
+        Object* object = TryGetObject(id);
+        if (object == nullptr)
             return;
-
-        Object& object = GetObject(id);
-        if (object.gameObject == 0)
-            return;
-        for (IntPtr& ptr : object.componentList)
+        for (IntPtr& ptr : object->componentList)
         {
             if (ptr == 0)
                 continue;
             mono_gchandle_free(ptr);
             ptr = 0;
         }
-        mono_gchandle_free(object.gameObject);
-        object.gameObject = 0;
+        mono_gchandle_free(object->gameObject);
+        objectMap.erase(id);
     }
 
     void ComponentDatabase::DeleteAll()
     {
-        for (Object& object : objectMap)
+        for (auto& [uuid, object] : objectMap)
         {
-            if (object.gameObject == 0)
-                continue;
             for (IntPtr ptr : object.componentList)
             {
                 if (ptr == 0)
@@ -191,9 +193,10 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
 
     ComponentDatabase::Object& ComponentDatabase::GetObject(UUID uuid)
     {
-        if(uuid >= objectMap.size() || objectMap[uuid].gameObject == 0)
+        auto search = objectMap.find(uuid);
+        if (search == objectMap.end())
             throw std::exception("ComponentDatabase: failed to find object");
-        return objectMap[uuid];
+        return search->second;
     }
 
     ComponentDatabase::IntPtr& ComponentDatabase::GetComponent(Object& object, ComponentType& type)
@@ -212,9 +215,10 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
 
     ComponentDatabase::Object* ComponentDatabase::TryGetObject(UUID uuid)
     {
-        if (uuid >= objectMap.size() || objectMap[uuid].gameObject == 0)
+        auto search = objectMap.find(uuid);
+        if (search == objectMap.end())
             return nullptr;
-        return &(objectMap[uuid]);
+        return &(search->second);
     }
 
     ComponentDatabase::IntPtr* ComponentDatabase::TryGetComponent(Object& object, ComponentType& type)

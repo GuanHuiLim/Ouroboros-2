@@ -61,7 +61,7 @@ public:
         : Application{ "Ouroboros v2.0", args }
     {
         // Scripting Layer
-        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>());
+        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
 
         //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());

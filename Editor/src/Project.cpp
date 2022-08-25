@@ -12,6 +12,8 @@
 #include "Ouroboros/Scene/RuntimeController.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
+#include "Ouroboros/Scripting/ScriptSystem.h"
+
 void Project::LoadProject(std::filesystem::path& config)
 {
 	std::ifstream ifs(config.string());
@@ -35,6 +37,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_scriptbuildPath = (*prj_setting).value.FindMember("ScriptBuildPath")->value.GetString();
 
     UpdateScriptingFiles();
+    oo::ScriptSystem::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
 
 	//scenes to add to scene manager
 	oo::RuntimeController::container_type m_loadpaths;

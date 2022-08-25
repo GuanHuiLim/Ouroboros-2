@@ -41,10 +41,10 @@ namespace oo
 
         struct Object
         {
-            IntPtr gameObject;
-            std::vector<IntPtr> componentList;
+            IntPtr gameObject; // C# GameObject
+            std::vector<IntPtr> componentList; // list C# Components
         };
-        std::vector<Object> objectMap;
+        std::unordered_map<UUID, Object> objectMap;
         SceneID sceneID;
 
     public:

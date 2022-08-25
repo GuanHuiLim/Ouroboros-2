@@ -15,7 +15,10 @@ Technology is prohibited.
 #pragma once
 
 #include "Ouroboros/Core/Layer.h"
-#include "Scripting/Scripting.h"
+#include <Scripting/Scripting.h>
+#include "Ouroboros/Scripting/ScriptSystem.h"
+
+#include "Ouroboros/Transform/TransformComponent.h"
 
 // FOR TESTING
 #include "Ouroboros/Core/Input.h"
@@ -27,13 +30,16 @@ namespace oo
     {
     public:
 
-        ScriptingLayer()
+        ScriptingLayer(SceneManager const& sceneManager)
         {
+            ScriptSystem::RegisterComponent<Transform3D>("Ouroboros", "Transform");
+
+            ScriptSystem::s_SceneManager = &sceneManager;
         }
 
         ~ScriptingLayer()
         {
-            ScriptEngine::Unload();
+            ScriptEngine::Shutdown();
         }
 
         void OnAttach() override final
