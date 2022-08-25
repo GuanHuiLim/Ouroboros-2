@@ -13,7 +13,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include "Scene.h"
+#include "Ouroboros/Scene/Scene.h"
 
 namespace oo
 {
