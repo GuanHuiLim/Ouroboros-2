@@ -43,6 +43,7 @@ namespace oo
 
     Scene::go_ptr PrefabScene::LookUpPrefab(std::string const& filepath)
     {
+        return Scene::go_ptr();
     }
 
 }
