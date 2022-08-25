@@ -81,7 +81,7 @@ namespace oo
 
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
-        // TODO!
+        // TODO! [preserve transforms needs to be used]
         scenenode::shared_pointer parentNode = GetSceneNode().lock();
         scenenode::shared_pointer childNode = child.GetSceneNode().lock();
         if (parentNode && childNode)
@@ -102,6 +102,11 @@ namespace oo
         {
             AddChild(go, preserveTransforms);
         }
+    }
+
+    bool GameObject::HasChild() const
+    {
+        return GetChildren().size() != 0;
     }
 
     GameObject GameObject::GetParent() const

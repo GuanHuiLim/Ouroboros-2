@@ -120,6 +120,8 @@ namespace oo
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
         /*void SwapChildren(GameObject const& other);*/
         
+        bool HasChild() const;
+
         GameObject GetParent() const;
         std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
         std::vector<GameObject> GetChildren(bool includeItself = false) const;

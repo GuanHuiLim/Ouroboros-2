@@ -99,7 +99,8 @@ namespace oo
         void InsertGameObject(go_ptr go_ptr);
         void RemoveGameObject(go_ptr go_ptr);
 
-        void RecusriveLinkScenegraph(GameObject original_parent_go, std::queue<Scene::go_ptr> new_objects);
+        // Old method [ keeping just to verify if something goes wrong one day ]
+        //void RecusriveLinkScenegraph(GameObject original_parent_go, std::queue<Scene::go_ptr> new_objects);
 
         // Variables
     private:
