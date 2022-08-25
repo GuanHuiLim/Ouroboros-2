@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "glm/glm.hpp"
+#include "MathCommon.h"
 
 #include <string>
 #include <vector>

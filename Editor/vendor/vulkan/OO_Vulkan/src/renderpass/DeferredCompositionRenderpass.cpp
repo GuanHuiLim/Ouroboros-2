@@ -79,7 +79,7 @@ void DeferredCompositionRenderpass::Shutdown()
 {
 	auto& vr = *VulkanRenderer::get();
 	vkDestroyPipelineLayout(vr.m_device.logicalDevice, layout_DeferredLightingComposition, nullptr);
-	vkDestroyRenderPass(vr.m_device.logicalDevice,renderpass_DeferredLightingComposition, nullptr);
+	//vkDestroyRenderPass(vr.m_device.logicalDevice,renderpass_DeferredLightingComposition, nullptr);
 	vkDestroyPipeline(vr.m_device.logicalDevice, pso_DeferredLightingComposition, nullptr);
 }
 
@@ -132,14 +132,17 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
+	std::cout << "Desc add:" << &VulkanRenderer::get()->DescLayoutCache << std::endl;
 
-    DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.DescAlloc)
-        .BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindBuffer(5, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .Build(vr.descriptorSet_DeferredComposition, vr.descriptorSetLayout_DeferredComposition);
+	DescriptorBuilder b = DescriptorBuilder::Begin(&VulkanRenderer::get()->DescLayoutCache,
+		&VulkanRenderer::get()->DescAlloc);
+
+	b.BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    b.BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    b.BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    b.BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    b.BindBuffer(5, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    b.Build(vr.descriptorSet_DeferredComposition, vr.descriptorSetLayout_DeferredComposition);
 }
 
 void DeferredCompositionRenderpass::CreatePipeline()

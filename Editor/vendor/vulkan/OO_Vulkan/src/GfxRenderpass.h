@@ -35,6 +35,7 @@ class RenderPassDatabase
 {
 public:
     static RenderPassDatabase* Get();
+    static void Shutdown();
     void RegisterRenderPass(std::unique_ptr<GfxRenderpass>&& renderPass);
     void RegisterRenderPass(GfxRenderpass* renderPass);
 
@@ -80,17 +81,17 @@ inline static pass* m_pass{nullptr};
 
 // function declares and creates a renderpass automatically at runtime
 #define DECLARE_RENDERPASS(pass)\
-namespace DeclareRenderPass_ns\
-{\
-struct DeclareRenderPass_##pass\
-     {\
-            DeclareRenderPass_##pass()\
-            {\
-                auto ptr = new pass;\
-                auto rdb =  RenderPassDatabase::Get();\
-                rdb->RegisterRenderPass(ptr);\
-            }\
-    }g_DeclareRenderPass_##pass;\
-}
+//namespace DeclareRenderPass_ns\
+//{\
+//struct DeclareRenderPass_##pass\
+//     {\
+//            DeclareRenderPass_##pass()\
+//            {\
+//                auto ptr = new pass;\
+//                auto rdb =  RenderPassDatabase::Get();\
+//                rdb->RegisterRenderPass(ptr);\
+//            }\
+//    }g_DeclareRenderPass_##pass;\
+//}
 
 #define BIGCANCER(pass) DeclareRenderPass_ns::g_DeclareRenderPass_##pass

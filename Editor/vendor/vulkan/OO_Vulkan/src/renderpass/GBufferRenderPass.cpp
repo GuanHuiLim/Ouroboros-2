@@ -249,11 +249,11 @@ void GBufferRenderPass::SetupFramebuffer()
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
-	vkutils::Texture2D tex[4];
-	tex[0].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, &m_device);
-	tex[1].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, &m_device);
-	tex[2].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM, width, height, &m_device);
-	tex[3].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM, width, height, &m_device);
+	//vkutils::Texture2D tex[4];
+	//tex[0].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, &m_device);
+	//tex[1].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, &m_device);
+	//tex[2].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM, width, height, &m_device);
+	//tex[3].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM, width, height, &m_device);
 
 	//FramebufferCache g_cache;
 	//g_cache.Init(vr.m_device.logicalDevice);

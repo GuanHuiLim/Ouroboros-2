@@ -373,6 +373,7 @@ namespace oo
     {
         // do nothing for now
         //vkEngine.cleanup();
+        delete vr;
 
 #ifdef TEMPORARY_CODE
         CleanupVulkanWindow();
@@ -397,17 +398,14 @@ namespace oo
 
         vr->camera.type = Camera::CameraType::lookat;
         vr->camera.target = glm::vec3(0.01f, 0.0f, 0.0f);
-        vr->camera.position = glm::vec3(-1.0f, 5.0f, 0.0f);
-        //vr->camera.SetPosition(glm::vec3{ 0.0f,0.0f,0.0f });
-        //vr->camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+        vr->camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
         vr->camera.SetRotationSpeed(0.5f);
-        vr->camera.matrices.perspective = glm::perspective(45.0f, 16.0f / 9, 0.01f, 1000.0f);
-        vr->camera.matrices.view = glm::lookAt(vr->camera.position, {}, glm::vec3{0,1,0});
-       // vr->camera.SetPosition(glm::vec3(0.1f, 5.0f, 10.5f));
+        vr->camera.SetPosition(glm::vec3(0.1f, 10.0f, 10.5f));
         vr->camera.movementSpeed = 5.0f;
         vr->camera.SetPerspective(60.0f, (float)m_window.m_width / (float)m_window.m_height, 0.1f, 10000.0f);
-        //vr->camera.Rotate(glm::vec3(1 * vr->camera.rotationSpeed, 1 * vr->camera.rotationSpeed, 0.0f));
-        vr->camera.type = Camera::CameraType::firstperson;
+        vr->camera.Rotate(glm::vec3(1 * vr->camera.rotationSpeed, 1 * vr->camera.rotationSpeed, 0.0f));
+        vr->camera.matrices.view = glm::lookAt(vr->camera.position, {}, { 0,1,0 });
+        
 
         oGFX::SetupInfo si;
         si.debug = true;
@@ -432,12 +430,37 @@ namespace oo
         // setup world..
         // TODO: move this out of here pls
         auto obj = gw.CreateObjectInstance();
-        vr->SetWorld(&gw);
-        auto& myObj = gw.GetObjectInstance(obj);
+        auto plane = gw.CreateObjectInstance();
+
         DefaultMesh dm = CreateDefaultCubeMesh();
         auto model = vr->LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr);
-        myObj.modelID = model->gfxIndex;
-        myObj.scale = glm::vec3{ 0.1f,0.1f,0.1f };
+        DefaultMesh pm = CreateDefaultPlaneXZMesh();
+        auto modelPlane = vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr);
+        {
+            auto& myObj = gw.GetObjectInstance(obj);
+            myObj.modelID = model->gfxIndex;
+            myObj.scale = glm::vec3{ 2.1f,1.1f,1.1f };
+            myObj.rotVec = glm::vec3{ 1.1f,1.1f,1.1f };
+            myObj.rot = 35.0f;
+            myObj.localToWorld = glm::mat4(1.0f);
+            myObj.localToWorld = glm::translate(myObj.localToWorld, myObj.position);
+            myObj.localToWorld = glm::rotate(myObj.localToWorld,glm::radians(myObj.rot), myObj.rotVec);
+            myObj.localToWorld = glm::scale(myObj.localToWorld, myObj.scale);
+        }
+       
+        {
+            auto& myPlane = gw.GetObjectInstance(plane);
+            myPlane.modelID = modelPlane->gfxIndex;
+            myPlane.position = { 0.0f,-1.0f,0.0f };
+            myPlane.scale = { 15.0f,1.0f,15.0f };
+            myPlane.localToWorld = glm::mat4(1.0f);
+            myPlane.localToWorld = glm::translate(myPlane.localToWorld, myPlane.position);
+            myPlane.localToWorld = glm::rotate(myPlane.localToWorld,glm::radians(myPlane.rot), myPlane.rotVec);
+            myPlane.localToWorld = glm::scale(myPlane.localToWorld, myPlane.scale);
+        }
+        
+
+        vr->SetWorld(&gw);
 #ifdef TEMPORARY_CODE 
         // Create Window Surface
         VkSurfaceKHR surface;
@@ -459,6 +482,13 @@ namespace oo
     {
         if (vr->PrepareFrame() == true)
         {
+            auto& obj = gw.GetObjectInstance(0);
+            obj.rot += 1.0f;
+            obj.localToWorld = glm::mat4(1.0f);
+            obj.localToWorld = glm::translate(obj.localToWorld, obj.position);
+            obj.localToWorld = glm::rotate(obj.localToWorld,glm::radians(obj.rot), obj.rotVec);
+            obj.localToWorld = glm::scale(obj.localToWorld, obj.scale);
+
             vr->timer += 0.02f;
             
             vr->UpdateLights(0.02f);
@@ -604,6 +634,7 @@ namespace oo
 
     void VulkanContext::OnImGuiShutdown()
     {
+        vr->DestroyImGUI();
         //vkDeviceWaitIdle(vkEngine._device);
 #ifdef TEMPORARY_CODE
         ImGui_ImplVulkan_Shutdown();

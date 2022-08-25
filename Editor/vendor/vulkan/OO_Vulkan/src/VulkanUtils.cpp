@@ -4,11 +4,13 @@
 #include <windows.h>
 #endif
 
+#include "MathCommon.h"
+
 #include <algorithm>
 #include <stdexcept>
 #include <fstream>
 #include <vector>
-#include "glm/glm.hpp"
+
 #include "stb_image.h"
 #include "DDSLoader.h"
 #include <filesystem>

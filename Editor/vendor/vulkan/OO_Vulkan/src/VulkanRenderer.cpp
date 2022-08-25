@@ -46,12 +46,10 @@ VulkanRenderer* VulkanRenderer::s_vulkanRenderer{ nullptr };
 
 VulkanRenderer::~VulkanRenderer()
 { 
-
-	camera.SetPosition(glm::vec3{ 0.0f,0.0f,0.0f });
 	//wait until no actions being run on device before destorying
 	vkDeviceWaitIdle(m_device.logicalDevice);
 
-	RenderPassDatabase::ShutdownAllRegisteredPasses();
+	RenderPassDatabase::Shutdown();
 
 	DestroyRenderBuffers();
 
@@ -188,7 +186,8 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		// Calls "Init()" on all registered render passes. Order is not guarunteed.
 		auto rpd = RenderPassDatabase::Get();
-		GfxRenderpass* ptr = new ShadowPass;
+		GfxRenderpass* ptr;
+		ptr = new ShadowPass;
 		rpd->RegisterRenderPass(ptr);
 		 ptr = new DebugRenderpass;
 		rpd->RegisterRenderPass(ptr);
@@ -291,7 +290,9 @@ void VulkanRenderer::CreateRenderpass()
 	colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //image data layout before render pass starts
 	//colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
 	colourAttachment.finalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL; //image data layout aftet render pass ( to change to)
-	colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
+	
+	// todo editor??
+	//colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
 
 																	// Depth attachment of render pass
 	VkAttachmentDescription depthAttachment{};
@@ -1101,18 +1102,7 @@ void VulkanRenderer::InitImGUI()
 	vkCreateDescriptorPool(m_device.logicalDevice, &dpci, nullptr, &m_imguiConfig.descriptorPools);
 	VK_NAME(m_device.logicalDevice, "imguiConfig_descriptorPools", m_imguiConfig.descriptorPools);
 
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
-
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
 	
 	if (windowPtr->m_type == Window::WindowType::WINDOWS32)
 	{
@@ -1120,9 +1110,10 @@ void VulkanRenderer::InitImGUI()
 	}
 	else
 	{
-		if (io.BackendPlatformUserData == NULL)
+		
+		if (ImGui::GetIO().BackendPlatformUserData == NULL)
 		{
-			std::cout << "Vulkan Imgui Error: you should handle the initializeation of imgui::window_init before here"<< std::endl;
+			std::cout << "Vulkan Imgui Error: you should handle the initialization of imgui::window_init before here"<< std::endl;
 			assert(true);
 		}		
 	}
@@ -1262,6 +1253,10 @@ void VulkanRenderer::DrawGUI()
 
 void VulkanRenderer::DestroyImGUI()
 {
+	if (m_imguiInitialized == false) return;
+
+	vkDeviceWaitIdle(m_device.logicalDevice);
+
 	for (size_t i = 0; i < m_imguiConfig.buffers.size(); i++)
 	{
 		vkDestroyFramebuffer(m_device.logicalDevice, m_imguiConfig.buffers[i], nullptr);
@@ -1269,9 +1264,10 @@ void VulkanRenderer::DestroyImGUI()
 	vkDestroyRenderPass(m_device.logicalDevice, m_imguiConfig.renderPass, nullptr);
 	vkDestroyDescriptorPool(m_device.logicalDevice, m_imguiConfig.descriptorPools, nullptr);
 	ImGui_ImplVulkan_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext(ImGui::GetCurrentContext());
-
+	if (windowPtr->m_type == Window::WindowType::WINDOWS32)
+	{
+		ImGui_ImplWin32_Shutdown();
+	}
 	m_imguiInitialized = false;
 }
 
@@ -1614,7 +1610,7 @@ void VulkanRenderer::UploadInstanceData()
 
 	if (currWorld)
 	{
-		std::cout << "rendering graphics world" << std::endl;
+
 		auto& entsBundle = currWorld->GetAllObjectInstances();
 		auto [bits, ents] = entsBundle.Raw();
 		for (size_t i = 0; i < bits.size(); i++)
@@ -1811,7 +1807,7 @@ void VulkanRenderer::Draw()
 void VulkanRenderer::RenderFrame()
 {
 	this->Draw(); // TODO: Clean this up...
-	std::cout << "rendering" << std::endl;
+
     {
 		// Command list has already started inside VulkanRenderer::Draw
         PROFILE_GPU_CONTEXT(commandBuffers[swapchainIdx]);

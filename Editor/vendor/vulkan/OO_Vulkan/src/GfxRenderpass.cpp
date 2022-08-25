@@ -15,6 +15,16 @@ RenderPassDatabase* RenderPassDatabase::Get()
 	return ms_renderpass;
 }
 
+void RenderPassDatabase::Shutdown()
+{
+	if (ms_renderpass)
+	{
+		ShutdownAllRegisteredPasses();
+		delete ms_renderpass;
+		ms_renderpass = nullptr;
+	}
+}
+
 
 void RenderPassDatabase::RegisterRenderPass(GfxRenderpass* renderPass)
 {
@@ -46,4 +56,5 @@ void RenderPassDatabase::ShutdownAllRegisteredPasses()
         renderPass->Shutdown();
 		delete renderPass;
     }
+	renderpasses->m_AllRawRenderPasses.clear();
 }

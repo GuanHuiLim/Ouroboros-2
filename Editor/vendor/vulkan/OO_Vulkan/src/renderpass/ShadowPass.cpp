@@ -20,16 +20,6 @@
 
 DECLARE_RENDERPASS(ShadowPass);
 
-struct test
-{
-	test()
-	{
-		auto ptr = new ShadowPass;
-		RenderPassDatabase::Get()->RegisterRenderPass(ptr);
-		std::cout<< "KILL ME PLS" << std::endl;
-	}
-}t;
-
 void ShadowPass::Init()
 {
 	SetupRenderpass();
