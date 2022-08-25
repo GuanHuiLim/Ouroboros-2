@@ -22,7 +22,7 @@ namespace oo
 
 		//no need to serialize
 		uint32_t model_handle{0};
-		uint32_t graphicsWorld_ID;
+		uint32_t graphicsWorld_ID{};
 
 		void GetModelHandle()
 		{
@@ -77,6 +77,8 @@ namespace oo
 	struct SkinMeshRendererComponent
 	{
 		Asset mesh_handle;
+
+
 	};
 
 }
