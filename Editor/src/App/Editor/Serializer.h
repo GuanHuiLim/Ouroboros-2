@@ -48,8 +48,12 @@ public:
 
 	static std::filesystem::path SavePrefab(std::shared_ptr<oo::GameObject> go, oo::Scene& scene);
 	static void LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go);
+
+	static std::string SaveDeletedObject(std::shared_ptr<oo::GameObject> go,oo::Scene& scene);
+	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
 private:
 	//saving
+	static void Saving(scenenode::raw_pointer starting,oo::Scene& scene);
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val);
 	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val);
 	template <typename Component>
@@ -57,6 +61,7 @@ private:
 	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop);
 	static void SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property prop);
 	//loading
+	static UUID Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene);
 	static void LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter, rapidjson::Value::MemberIterator& end);
 	template <typename Component>
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);

@@ -16,6 +16,7 @@ Editor::Editor()
 	UI_RTTRType::Init();
 	Serializer::Init();//runs the init function
 	Serializer::InitEvents();
+	oo::CommandStackManager::InitEvents();
 	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
 	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
