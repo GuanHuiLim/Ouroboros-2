@@ -69,6 +69,7 @@ namespace oo
         void DestroyGameObjectImmediate(GameObject go);
         
         go_ptr InstatiateGameObject(GameObject go);
+        go_ptr DuplicateGameObject(GameObject go);
 
         // Attempts to search the lookup table with uuid.
         // returns the gameobject if it does
@@ -97,6 +98,8 @@ namespace oo
         go_ptr CreateGameObjectImmediate(go_ptr new_go);
         void InsertGameObject(go_ptr go_ptr);
         void RemoveGameObject(go_ptr go_ptr);
+
+        void RecusriveLinkScenegraph(GameObject original_parent_go, std::queue<Scene::go_ptr> new_objects);
 
         // Variables
     private:

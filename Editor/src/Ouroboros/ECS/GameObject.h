@@ -82,6 +82,9 @@ namespace oo
         // Explicit Instantiation constructor
         explicit GameObject(Scene& scene);
 
+        // Explicit Instantiation From Another Existing Gameobject constructor
+        explicit GameObject(Scene& scene, GameObject& target);
+
         // Traditional Construct GameObject Based on UUID
         GameObject(UUID uuid, Scene& scene);
 
@@ -182,6 +185,8 @@ namespace oo
         }
 
     private:
+        void SetupGo(UUID uuid, Ecs::EntityID entt);
+
         void SetHierarchyActive(GameObjectComponent& comp, bool active) const;
         void CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const;
     };

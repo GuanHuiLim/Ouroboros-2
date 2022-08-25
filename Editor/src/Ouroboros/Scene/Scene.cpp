@@ -306,7 +306,7 @@ namespace oo
 
     void Scene::DestroyGameObjectImmediate(GameObject go)
     {
-        ASSERT_MSG(IsValid(go), "Working on an invalid GameObject");
+        ASSERT_MSG(IsValid(go) == false, "Working on an invalid GameObject");
 
         Scene::go_ptr target = FindWithInstanceID(go.GetInstanceID());
         // safety check
@@ -322,8 +322,45 @@ namespace oo
 
     Scene::go_ptr Scene::InstatiateGameObject(GameObject go)
     {
-        Scene::go_ptr new_instance = std::make_shared<GameObject>(go.Duplicate());
-        return CreateGameObjectImmediate(new_instance);
+        return DuplicateGameObject(go);
+        /*Scene::go_ptr new_instance = std::make_shared<GameObject>(go.Duplicate());
+        return CreateGameObjectImmediate(new_instance);*/
+    }
+
+    Scene::go_ptr Scene::DuplicateGameObject(GameObject target)
+    {
+        ASSERT_MSG(IsValid(target) == false, "Working on an invalid GameObject");
+        
+        // we construct a vector of all the newly created objects
+        std::queue<Scene::go_ptr> new_objects;
+
+        // first we clone the first object [this is what we return to the user]
+        // make a duplicate explicitly
+        Scene::go_ptr dupObjectHead = std::make_shared<GameObject>(*this, target);
+        CreateGameObjectImmediate(dupObjectHead);
+        new_objects.push(dupObjectHead);
+        // we than go through each child object skipping target itself
+        
+        for (auto& curr_obj : target.GetChildren(true))
+        {
+            // make a duplicate explicitly
+            Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(*this, curr_obj);
+            auto go = CreateGameObjectImmediate(newObjectPtr);
+            new_objects.push(newObjectPtr);
+        }
+
+        // than we link up their scene graphs using the target's as reference
+        
+        RecusriveLinkScenegraph(target, new_objects);
+
+        /*auto node = target.GetSceneNode().lock();
+        while(node)
+        {
+            for(auto& child : node->get_direct_child())
+                child->get
+        }*/
+
+        return dupObjectHead;
     }
     
     void Scene::LoadFromFile()
@@ -369,6 +406,28 @@ namespace oo
 
         // actual deletion : Immediate.
         m_ecsWorld->destroy(go_ptr->GetEntity());
+    }
+
+    void Scene::RecusriveLinkScenegraph(GameObject original_parent_go, std::queue<Scene::go_ptr> new_objects)
+    {
+        if (new_objects.size() == 0)
+            return;
+
+        auto og_parent = original_parent_go.GetSceneNode().lock();
+        auto new_parent = new_objects.front()->GetSceneNode().lock();
+        new_objects.pop();
+
+        for (auto& og_child  : original_parent_go.GetChildren(false))
+        {
+            if (new_objects.size() == 0)
+                return;
+
+            auto new_child = new_objects.front()->GetSceneNode().lock();
+            //new_objects.pop();
+
+            new_parent->add_child(new_child);
+            RecusriveLinkScenegraph(og_child, new_objects);
+        }
     }
     
     Ecs::ECSWorld& Scene::GetWorld()
