@@ -9,7 +9,7 @@ namespace Ecs
 		//destuctor for all entity components
 		for (auto& entt : entities)
 		{
-			if (entt.chunk != nullptr) continue;
+			if (entt.chunk == nullptr) continue;
 			//erase_entity_in_chunk(oldChunk, oldindex);
 			internal::erase_entity_in_chunk(entt.chunk, entt.chunkIndex);
 		}
