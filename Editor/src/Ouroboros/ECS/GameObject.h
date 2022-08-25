@@ -120,7 +120,6 @@ namespace oo
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
         /*void SwapChildren(GameObject const& other);*/
         
-        bool HasChild() const;
 
         GameObject GetParent() const;
         std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
@@ -138,6 +137,18 @@ namespace oo
         /*---------------------------------------------------------------------------------*/
         /* Queries                                                                         */
         /*---------------------------------------------------------------------------------*/
+        
+        bool HasChild() const;
+        std::size_t GetChildCount() const;
+        std::size_t GetDirectChildCount() const;
+
+        //template<typename Component>
+        //Component& GetComponentCount() const
+        //{
+        //    //ASSERT_MSG(HasComponent<Component>() == false, "Use TryGet instead if youre Unsure.");
+        //    //return m_scene->GetWorld().<Component>(m_entity);
+        //}
+
         template<typename Component>
         Component& GetComponent() const
         {

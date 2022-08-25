@@ -109,6 +109,16 @@ namespace oo
         return GetChildren().size() != 0;
     }
 
+    std::size_t GameObject::GetChildCount() const
+    {
+        return GetSceneNode().lock()->get_total_child_count();
+    }
+
+    std::size_t GameObject::GetDirectChildCount() const
+    {
+        return GetSceneNode().lock()->get_direct_child_count();
+    }
+
     GameObject GameObject::GetParent() const
     {
         return *m_scene->FindWithInstanceID(GetParentUUID());
@@ -187,6 +197,8 @@ namespace oo
     void GameObject::SetName(std::string_view name) const
     {
         GetComponent<GameObjectComponent>().Name = name;
+        auto scenenode_ptr = GetComponent<GameObjectComponent>().Node.lock();
+        scenenode_ptr->set_debug_name(name);
     }
 
     void GameObject::SetupGo(UUID uuid, Ecs::EntityID entt)
