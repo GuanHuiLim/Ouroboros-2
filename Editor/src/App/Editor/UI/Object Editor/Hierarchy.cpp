@@ -25,6 +25,8 @@
 //events
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
+#include <Ouroboros/Commands/CommandStackManager.h>
+#include <Ouroboros/Commands/Delete_ActionCommand.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -434,6 +436,7 @@ void Hierarchy::RightClickOptions()
 			for (auto go : s_selected)
 			{
 				auto object = scene->FindWithInstanceID(go);
+				oo::CommandStackManager::AddCommand(new oo::Delete_ActionCommand(object));
 				object->Destroy();
 			}
 		}

@@ -53,7 +53,7 @@ public:
 	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
 private:
 	//saving
-	static void Saving(scenenode::raw_pointer starting,oo::Scene& scene);
+	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene);
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val);
 	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val);
 	template <typename Component>

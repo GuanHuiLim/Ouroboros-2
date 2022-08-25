@@ -75,7 +75,18 @@ void Serializer::Init()
 void Serializer::SaveScene(oo::Scene& scene)
 {
 	scenegraph sg = scene.GetGraph();
-	Saving(sg.get_root().get(),scene);
+
+	std::stack<scenenode::raw_pointer> s;
+	std::stack<scenenode::handle_type> parents;
+	scenenode::raw_pointer curr = sg.get_root().get();
+	parents.push(curr->get_handle());
+	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+	{
+		scenenode::shared_pointer child = *iter;
+		s.push(child.get());
+	}
+
+	Saving(s,parents,scene);
 	std::ofstream ofs(scene.GetFilePath(), std::fstream::out | std::fstream::trunc);
 	if (ofs.good())
 	{
@@ -106,7 +117,12 @@ void Serializer::LoadScene(oo::Scene& scene)
 
 std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go , oo::Scene & scene)
 {
-	Saving((*go).GetSceneNode().lock().get(), scene);
+	std::stack<scenenode::raw_pointer> s;
+	std::stack<scenenode::handle_type> parents;
+	scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+	parents.push(curr->get_handle());
+	s.push(curr);
+	Saving(s,parents, scene);
 	std::filesystem::path newprefabPath = Project::GetPrefabFolder().string() + go->Name() + ".prefab";
 	std::ofstream ofs(Project::GetPrefabFolder().string() + go->Name() + ".prefab", std::fstream::out | std::fstream::trunc);
 	if (ofs.good())
@@ -130,12 +146,18 @@ void Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::Game
 
 std::string Serializer::SaveDeletedObject(std::shared_ptr<oo::GameObject> go, oo::Scene& scene)
 {
-	Saving(go->GetSceneNode().lock().get(), scene);
-	rapidjson::StringBuffer buffer(0, 512);
+	std::stack<scenenode::raw_pointer> s;
+	std::stack<scenenode::handle_type> parents;
+	scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+	parents.push(curr->get_handle());
+	s.push(curr);
+	Saving(s,parents, scene);
+	rapidjson::StringBuffer buffer(0,512);
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
+	std::string temp = buffer.GetString();
 	ResetDocument();
-	return buffer.GetString();
+	return temp;
 }
 
 UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene)
@@ -150,18 +172,11 @@ UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& s
 	ResetDocument();
 }
 
-void Serializer::Saving(scenenode::raw_pointer starting, oo::Scene& scene)
+void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene)
 {
-	std::stack<scenenode::raw_pointer> s;
-	std::stack<scenenode::handle_type> parents;
-	scenenode::raw_pointer curr = starting;
-	parents.push(curr->get_handle());
-	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
-	{
-		scenenode::shared_pointer child = *iter;
-		s.push(child.get());
-	}
 
+
+	scenenode::raw_pointer curr ;
 	while (!s.empty())
 	{
 		curr = s.top();
