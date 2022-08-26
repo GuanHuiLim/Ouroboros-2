@@ -119,6 +119,11 @@ namespace oo
         return GetSceneNode().lock()->get_direct_child_count();
     }
 
+    std::size_t GameObject::GetComponentCount() const
+    {
+        return m_scene->GetWorld().get_num_components(m_entity);
+    }
+
     GameObject GameObject::GetParent() const
     {
         return *m_scene->FindWithInstanceID(GetParentUUID());
