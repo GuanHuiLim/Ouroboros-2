@@ -49,7 +49,7 @@ void DeferredCompositionRenderpass::Draw()
 
 	//Information about how to begin a render pass (only needed for graphical applications)
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass = vr.renderPass_default2;                  //render pass to begin
+	renderPassBeginInfo.renderPass = vr.renderPass_default;                  //render pass to begin
 	renderPassBeginInfo.renderArea.offset = { 0,0 };                                     //start point of render pass in pixels
 	renderPassBeginInfo.renderArea.extent = vr.m_swapchain.swapChainExtent; //size of region to run render pass on (Starting from offset)
 	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
@@ -65,7 +65,7 @@ void DeferredCompositionRenderpass::Draw()
 	std::array<VkDescriptorSet, 2> descriptorSetGroup = 
 	{
 		vr.descriptorSets_uniform[swapchainIdx],
-		vr.descriptorSet_bindless
+		vr.descriptorSet_bindless,
 	};
 
 	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, layout_DeferredLightingComposition, 0, 1, &vr.descriptorSet_DeferredComposition, 0, nullptr);
@@ -80,7 +80,7 @@ void DeferredCompositionRenderpass::Shutdown()
 	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
 	
 	vkDestroyPipelineLayout(device, layout_DeferredLightingComposition, nullptr);
-	vkDestroyRenderPass(device, renderpass_DeferredLightingComposition, nullptr);
+	//vkDestroyRenderPass(device, renderpass_DeferredLightingComposition, nullptr);
 	vkDestroyPipeline(device, pso_DeferredLightingComposition, nullptr);
 }
 
@@ -116,7 +116,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         GfxSamplerManager::GetSampler_Deferred(),
         gbuffer->att_depth.view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
+	
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
     DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.DescAlloc)
@@ -124,7 +124,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        //.BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindBuffer(6, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .Build(vr.descriptorSet_DeferredComposition, LayoutDB::DeferredComposition);
 }
