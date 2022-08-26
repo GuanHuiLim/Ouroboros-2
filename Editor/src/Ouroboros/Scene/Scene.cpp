@@ -273,10 +273,8 @@ namespace oo
 
     bool Scene::IsValid(GameObject go) const
     {
-        // a valid gameobject will not have its ID as NotFound, will have gameobject component(minimally)
-        // and parent will not be equals to NOParent
-        return go.GetScene() == this && 
-            std::find_if(m_gameObjects.begin(), m_gameObjects.end(), [&](std::shared_ptr<oo::GameObject> elem) { return *elem == go; }) != m_gameObjects.end();
+        return go.GetScene() == this && IsValid(GetInstanceID(go));
+        //std::find_if(m_gameObjects.begin(), m_gameObjects.end(), [&](std::shared_ptr<oo::GameObject> elem) { return *elem == go; }) != m_gameObjects.end();
     }
 
     void Scene::DestroyGameObject(GameObject go)
@@ -284,14 +282,14 @@ namespace oo
         ASSERT_MSG(IsValid(go) == false, "Working on an invalid GameObject");
 
         // safety check
-        if (FindWithInstanceID(go.GetInstanceID()) == nullptr)
+        if (FindWithInstanceID(GetInstanceID(go)) == nullptr)
         {
-            LOG_CORE_ERROR("Attempting to remove an invalid gameobject {0} with instance ID of {1}", go.GetEntity().value, go.GetInstanceID());
+            LOG_CORE_ERROR("Attempting to remove an invalid gameobject {0} with instance ID of {1}", go.GetEntity().value, GetInstanceID(go));
             return;
         }
 
         // Queue selected node for deletion
-        m_removeList.emplace(go.GetInstanceID());
+        m_removeList.emplace(GetInstanceID(go));
 
         // Then continue to destroy all its children
         for (auto const& childuuid : go.GetChildrenUUID())
@@ -308,11 +306,11 @@ namespace oo
     {
         ASSERT_MSG(IsValid(go) == false, "Working on an invalid GameObject");
 
-        Scene::go_ptr target = FindWithInstanceID(go.GetInstanceID());
+        Scene::go_ptr target = FindWithInstanceID(GetInstanceID(go));
         // safety check
         if (target == nullptr)
         {
-            LOG_CORE_ERROR("Attempting to remove an invalid gameobject {0} with instance ID of {1}", go.GetEntity().value, go.GetInstanceID());
+            LOG_CORE_ERROR("Attempting to remove an invalid gameobject {0} with instance ID of {1}", go.GetEntity().value, GetInstanceID(go));
             return;
         }
 
@@ -413,10 +411,10 @@ namespace oo
         // IMPT: we are using the uuid to retrieve back the gameobject as well!
         auto& name = newObjectPtr->Name();
         //auto name = "Just a fake default name for now until ecs is fixed";
-        auto shared_ptr = m_scenegraph->create_new_child(name, newObjectPtr->GetInstanceID());
+        auto shared_ptr = m_scenegraph->create_new_child(name, GetInstanceID(*newObjectPtr));
         newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr;
 
-        ASSERT_MSG((!IsValid(*newObjectPtr)), "Sanity check, object created should comply");
+        ASSERT_MSG(IsValid(*newObjectPtr) == false, "Sanity check, object created should comply");
 
         return newObjectPtr;
     }
@@ -424,7 +422,7 @@ namespace oo
     void Scene::InsertGameObject(Scene::go_ptr go_ptr)
     {
         m_gameObjects.emplace(go_ptr);
-        m_lookupTable.emplace(go_ptr->GetInstanceID(), go_ptr);
+        m_lookupTable.emplace(GetInstanceID(*go_ptr), go_ptr);
     }
 
     void Scene::RemoveGameObject(Scene::go_ptr go_ptr)
@@ -435,11 +433,16 @@ namespace oo
             scenegraph_go->detach();
         }
 
-        m_lookupTable.erase(go_ptr->GetInstanceID());
+        m_lookupTable.erase(GetInstanceID(*go_ptr));
         m_gameObjects.erase(go_ptr);
 
         // actual deletion : Immediate.
         m_ecsWorld->destroy(go_ptr->GetEntity());
+    }
+
+    UUID Scene::GetInstanceID(GameObject const& go) const
+    {
+        return m_ecsWorld->get_component<GameObjectComponent>(go.GetEntity()).Id;
     }
 
     // Old method
