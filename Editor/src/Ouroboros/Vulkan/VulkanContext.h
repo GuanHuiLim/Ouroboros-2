@@ -16,6 +16,9 @@ Technology is prohibited.
 
 #include "Ouroboros/core/GraphicsContext.h"
 
+#include "OO_Vulkan/src/VulkanRenderer.h"
+#include "OO_Vulkan/src/Window.h"
+
 //#include "vk_engine.h"
 struct SDL_Window;
 
@@ -45,6 +48,14 @@ namespace oo
         }*/
     private:
         SDL_Window* m_windowHandle;
+        static VulkanRenderer* vr;
+        static GraphicsWorld gw;
+        static Window m_window;
+
+        //TEMP ptrs
+        std::unique_ptr<Model> cubeMesh;
+        std::unique_ptr<Model> planeMesh;
+
         //static VulkanEngine vkEngine;
     };
 }
