@@ -29,6 +29,6 @@ namespace oo
         virtual void Exit() override final;
 
         void Save();
-        void ReloadSceneWithPath(std::string const& filepath);
+        void SetNewPath(std::string const& filepath);
     };
 }

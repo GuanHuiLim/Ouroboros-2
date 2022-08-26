@@ -155,8 +155,10 @@ namespace oo
             m_runtimeController.RemoveLoadPath(m_editorScene.lock()->GetSceneName());
         }
 
-        // change editor scene
-        m_editorScene.lock()->ReloadSceneWithPath(newPath);
+        // set editor to new file path
+        m_editorScene.lock()->SetNewPath(newPath);
+        // reload active scene [ this scene ]
+        m_sceneManager.ReloadActiveScene();
 
         // reset runtime Scene to be nullptr
         m_runtimeScene.lock() = nullptr;

@@ -28,20 +28,7 @@ namespace oo
     GameObject GameObject::Duplicate()
     {
         ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
-        //ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
-        
         return *m_scene->DuplicateGameObject(*this);
-
-        /*std::vector<GameObject> childs = GetChildren(true);
-
-        for(auto& child : childs)
-        
-        UUID new_uuid = UUID{};
-        Entity new_entt = m_scene->GetWorld().duplicate_entity(m_entity);
-        GameObject new_gameObject{ new_entt, *m_scene };
-        m_scene->GetWorld().get_component<GameObjectComponent>(new_entt).Id = new_uuid;
-
-        return new_gameObject;*/
     }
 
     // Create is a dummy type
