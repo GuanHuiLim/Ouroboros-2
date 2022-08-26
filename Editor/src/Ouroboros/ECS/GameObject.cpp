@@ -193,6 +193,14 @@ namespace oo
         scenenode_ptr->set_debug_name(name);
     }
 
+	void GameObject::SetIsPrefab(bool isprefab) const
+	{
+		ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");
+
+		// tell everyone that this is a prefab
+		GetComponent<GameObjectComponent>().IsPrefab = isprefab;
+	}
+
     void GameObject::SetupGo(UUID uuid, Ecs::EntityID entt)
     {
         // add debugging component

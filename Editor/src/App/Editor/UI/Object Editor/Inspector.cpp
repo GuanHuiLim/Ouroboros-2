@@ -121,6 +121,15 @@ void Inspector::Show()
 			return;
 		bool active = gameobject->ActiveInHierarchy();
 		
+		bool disable_prefabEdit = gameobject->GetIsPrefab() && gameobject->HasComponent<oo::PrefabComponent>() == false;
+		if (disable_prefabEdit)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled,true);
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, ImGui_StylePresets::disabled_color);
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, ImGui_StylePresets::disabled_color);
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, ImGui_StylePresets::disabled_color);
+		}
+
 		ImGui::InputText("Name:",&gameobject->Name(),ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Active", &active))
@@ -146,6 +155,11 @@ void Inspector::Show()
 		DisplayComponent<oo::GameObjectComponent>(*gameobject);
 		DisplayComponent<oo::Transform3D>(*gameobject);
 		DisplayComponent<oo::DeferredComponent>(*gameobject);
+		if (disable_prefabEdit)
+		{
+			ImGui::PopItemFlag();
+			ImGui::PopStyleColor(3);
+		}
 	}
 }
 void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)

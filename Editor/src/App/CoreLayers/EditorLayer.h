@@ -27,7 +27,7 @@ Technology is prohibited.
 #include <functional>
 #include "Project.h"
 #include "App/Editor/Events/ImGuiRestartEvent.h"
-
+#include "Ouroboros/Prefab/PrefabSceneController.h"
 class EditorLayer final : public oo::Layer
 {
 private:
@@ -35,12 +35,14 @@ private:
     bool m_demo = true;
     bool m_showDebugInfo = false;
     bool m_editormode = false;
+	oo::PrefabSceneController m_prefab_controller;
     ProjectTracker m_tracker;
 	Editor m_editor;
 public:
-    EditorLayer(SceneManager const& m_sceneManager)
+    EditorLayer(SceneManager& m_sceneManager)
         : oo::Layer{ "EditorLayer" },
-        m_tracker{ [this](std::filesystem::path& p) {Project::LoadProject(p); m_editormode = true; } }
+        m_tracker{ [this](std::filesystem::path& p) {Project::LoadProject(p); m_editormode = true; } },
+		m_prefab_controller{ m_sceneManager }
     {
         LOG_INFO("Test Info");
         LOG_TRACE("Test Trace");
@@ -48,6 +50,7 @@ public:
         LOG_ERROR("Test Error");
         LOG_CRITICAL("Test Critical");
 		ImGuiManager::s_scenemanager = &m_sceneManager;
+		ImGuiManager::s_prefab_controller = &m_prefab_controller;
     }
 
     virtual void OnAttach() override final;

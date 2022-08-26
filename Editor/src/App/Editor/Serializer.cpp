@@ -36,15 +36,15 @@ void Serializer::InitEvents()
 
 void Serializer::Init()
 {
-	doc.SetObject();
+	//doc.SetObject();
 
-	save_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
+	save_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rapidjson::Document& doc,rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		obj.AddMember(name, rapidjson::Value(variant.get_value<bool>()), doc.GetAllocator());
 		});
-	save_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
+	save_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
@@ -53,7 +53,7 @@ void Serializer::Init()
 		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
 		obj.AddMember(name , v, doc.GetAllocator());
 		});
-	save_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
+	save_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
@@ -85,8 +85,9 @@ void Serializer::SaveScene(oo::Scene& scene)
 		scenenode::shared_pointer child = *iter;
 		s.push(child.get());
 	}
-
-	Saving(s,parents,scene);
+	rapidjson::Document doc;
+	doc.SetObject();
+	Saving(s,parents,scene,doc);
 	std::ofstream ofs(scene.GetFilePath(), std::fstream::out | std::fstream::trunc);
 	if (ofs.good())
 	{
@@ -109,9 +110,9 @@ void Serializer::LoadScene(oo::Scene& scene)
 		return;
 	}
 	rapidjson::IStreamWrapper isw(ifs);
-	
+	rapidjson::Document doc;
 	doc.ParseStream(isw);
-	Loading(scene.GetRoot(),scene);
+	Loading(scene.GetRoot(),scene,doc);
 	ifs.close();
 }
 
@@ -122,7 +123,9 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 	scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
 	parents.push(curr->get_handle());
 	s.push(curr);
-	Saving(s,parents, scene);
+	rapidjson::Document doc;
+	doc.SetObject();
+	Saving(s,parents, scene,doc);
 	std::filesystem::path newprefabPath = Project::GetPrefabFolder().string() + go->Name() + ".prefab";
 	std::ofstream ofs(Project::GetPrefabFolder().string() + go->Name() + ".prefab", std::fstream::out | std::fstream::trunc);
 	if (ofs.good())
@@ -138,10 +141,20 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 	return newprefabPath;
 }
 
-void Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::GameObject> go)
+UUID Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::GameObject> parent , oo::Scene& scene)
 {
-	//query the item from the prefab scene
-	//copy the item to go
+	std::ifstream ifs(path);
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
+		return 0;
+	}
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	auto prefabID = Loading(parent, scene,doc);
+	ifs.close();
+	return prefabID;
 }
 
 std::string Serializer::SaveDeletedObject(std::shared_ptr<oo::GameObject> go, oo::Scene& scene)
@@ -151,8 +164,11 @@ std::string Serializer::SaveDeletedObject(std::shared_ptr<oo::GameObject> go, oo
 	scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
 	parents.push(curr->get_handle());
 	s.push(curr);
-	Saving(s,parents, scene);
-	rapidjson::StringBuffer buffer(0,512);
+	rapidjson::Document doc;
+	doc.SetObject();
+	Saving(s,parents, scene, doc);
+	size_t count = go->GetChildCount();
+	rapidjson::StringBuffer buffer(0, count * 200);
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
 	std::string temp = buffer.GetString();
@@ -163,21 +179,19 @@ std::string Serializer::SaveDeletedObject(std::shared_ptr<oo::GameObject> go, oo
 UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene)
 {
 	rapidjson::StringStream stream(data.c_str());
+	rapidjson::Document doc;
 	doc.ParseStream(stream);
 	auto parent = scene.FindWithInstanceID(parentID);
 
 	ASSERT_MSG(parent == nullptr, "parent not found");
 	
-	auto firstObj = Loading(parent,scene);
-	ResetDocument();
+	auto firstObj = Loading(parent,scene,doc);
 	return firstObj;
 }
 
-void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene)
+void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)
 {
-
-
-	scenenode::raw_pointer curr ;
+	scenenode::raw_pointer curr;
 	while (!s.empty())
 	{
 		curr = s.top();
@@ -192,7 +206,7 @@ void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenen
 		gameobject_start.AddMember("Order", parents.size(), doc.GetAllocator());
 
 		bool is_prefab = go->HasComponent<oo::PrefabComponent>();
-		is_prefab ? SavePrefabObject(*go, gameobject_start) : SaveObject(*go, gameobject_start);
+		is_prefab ? SavePrefabObject(*go, gameobject_start,doc) : SaveObject(*go, gameobject_start,doc);
 
 
 		doc.AddMember(name, gameobject_start, doc.GetAllocator());
@@ -225,22 +239,22 @@ void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenen
 	}
 }
 
-void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val)
+void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
 {
 	//will have more components
-	SaveComponent<oo::GameObjectComponent>(go, val);
-	SaveComponent<oo::Transform3D>(go, val);
+	SaveComponent<oo::GameObjectComponent>(go, val,doc);
+	SaveComponent<oo::Transform3D>(go, val,doc);
 }
 
-void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val)
+void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
 {
-	SaveComponent<oo::PrefabComponent>(go, val);
-	SaveComponent<oo::GameObjectComponent>(go, val);
-	SaveComponent<oo::Transform3D>(go, val);
+	SaveComponent<oo::PrefabComponent>(go, val, doc);
+	SaveComponent<oo::GameObjectComponent>(go, val, doc);
+	SaveComponent<oo::Transform3D>(go, val, doc);
 	return;
 }
 
-void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop)
+void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc)
 {
 	rapidjson::Value arrayValue(rapidjson::kObjectType);
 	rttr::variant_sequential_view sqv = variant.create_sequential_view();
@@ -254,7 +268,7 @@ void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
-		sf->second(arrayValue, sqv.get_value(i), prop);
+		sf->second(doc,arrayValue, sqv.get_value(i), prop);
 	}
 	std::string temp = prop.get_name().data();
 	rapidjson::Value name;
@@ -262,7 +276,7 @@ void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value
 	val.AddMember(name, arrayValue, doc.GetAllocator());
 }
 
-void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property _property)
+void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property _property,rapidjson::Document& doc)
 {
 	rapidjson::Value sub_component(rapidjson::kObjectType);
 	rttr::type type = var.get_type();
@@ -277,7 +291,7 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 			if (prop_type.is_sequential_container())
 			{
 				rttr::variant variant = prop.get_value(var);
-				SaveSequentialContainer(variant, sub_component, prop);
+				SaveSequentialContainer(variant, sub_component, prop,doc);
 			}
 			else if (prop_type.is_class())
 			{
@@ -288,7 +302,7 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 		auto sf = save_commands.find(iter->second);
 		if (sf == save_commands.end())
 			continue;//don't have this save function
-		sf->second(sub_component, prop.get_value(var), prop);
+		sf->second(doc,sub_component, prop.get_value(var), prop);
 	}
 	std::string temp = _property.get_name().data();
 	rapidjson::Value name;
@@ -296,7 +310,7 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 	val.AddMember(name, sub_component, doc.GetAllocator());
 }
 
-UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene)
+UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
 {
 	UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
@@ -403,7 +417,7 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 
 void Serializer::ResetDocument() noexcept
 {
-	rapidjson::Document d; // new temp document
-	doc.Swap(d).SetObject(); // minimize and recreate allocator
+	//rapidjson::Document d; // new temp document
+	//doc.Swap(d).SetObject(); // minimize and recreate allocator
 }
 
