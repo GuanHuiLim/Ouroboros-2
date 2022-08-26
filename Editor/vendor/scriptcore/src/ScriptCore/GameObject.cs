@@ -40,6 +40,8 @@ namespace Ouroboros
 
         public static bool operator ==(GameObject lhs, GameObject rhs)
         {
+            if (ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is null, and rhs is null
+                return true;
             if (!ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is not null, but rhs is null
                 return !CheckEntityExists(lhs.scene, lhs.GetInstanceID());
             if (ReferenceEquals(lhs, null) && !ReferenceEquals(rhs, null)) // lhs is null, but rhs is not null

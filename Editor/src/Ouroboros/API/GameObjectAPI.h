@@ -53,11 +53,11 @@ namespace oo
     //    return instance.GetComponent<Scripting>().GetGameObjectPtr();
     //}
 
-    //SCRIPT_API void DestroyEntity(Entity id)
-    //{
-    //    GameObject obj{ id };
-    //    obj.Destroy();
-    //}
+    SCRIPT_API void DestroyEntity(Scene::ID_type sceneID, UUID uuid)
+    {
+        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        obj->Destroy();
+    }
 
     SCRIPT_API bool CheckEntityExists(Scene::ID_type sceneID, UUID uuid)
     {
