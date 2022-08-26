@@ -119,7 +119,12 @@ namespace Ouroboros
 
         public Transform transform
         {
-            get { return m_Transform; }
+            get 
+            {
+                if (this == null)
+                    throw new NullReferenceException();
+                return m_Transform; 
+            }
         }
 
         [DllImport("__Internal")] private static extern IntPtr AddScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
