@@ -59,69 +59,70 @@ namespace Ouroboros
         //    //set { Transform_SetGlobalAngle(gameObject.GetInstanceID(), value); }
         //}
 
-        //[DllImport("__Internal")] private static extern void Transform3D_GetLocalScale(int instanceID, out float x, out float y, out float z);
-        //[DllImport("__Internal")] private static extern void Transform3D_SetLocalScale(int instanceID, float x, float y, float z);
+        [DllImport("__Internal")] private static extern void Transform3D_GetLocalScale(UInt32 sceneID, UInt64 uuid, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void Transform3D_SetLocalScale(UInt32 sceneID, UInt64 uuid, float x, float y, float z);
 
-        //public Vector3 localScale
-        //{
-        //    get
-        //    {
-        //        float x, y, z;
-        //        Transform3D_GetLocalScale(gameObject.GetInstanceID(), out x, out y, out z);
-        //        return new Vector3(x, y, z);
-        //    }
-        //    set { Transform3D_SetLocalScale(gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
-        //}
-        //[DllImport("__Internal")] private static extern void Transform3D_GetGlobalScale(int instanceID, out float x, out float y, out float z);
-        //[DllImport("__Internal")] private static extern void Transform3D_SetGlobalScale(int instanceID, float x, float y, float z);
+        public Vector3 localScale
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetLocalScale(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+            set { Transform3D_SetLocalScale(gameObject.scene, gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
+        }
 
-        //public Vector3 globalScale
-        //{
-        //    get
-        //    {
-        //        float x, y, z;
-        //        Transform3D_GetGlobalScale(gameObject.GetInstanceID(), out x, out y, out z);
-        //        return new Vector3(x, y, z);
-        //    }
-        //    set { Transform3D_SetGlobalScale(gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
-        //}
+        [DllImport("__Internal")] private static extern void Transform3D_GetGlobalScale(UInt32 sceneID, UInt64 uuid, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void Transform3D_SetGlobalScale(UInt32 sceneID, UInt64 uuid, float x, float y, float z);
 
-        //[DllImport("__Internal")] private static extern int Transform_GetChildCount(int instanceID);
+        public Vector3 globalScale
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetGlobalScale(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+            set { Transform3D_SetGlobalScale(gameObject.scene, gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
+        }
 
-        //public int childCount
-        //{
-        //    get { return Transform_GetChildCount(gameObject.GetInstanceID()); }
-        //}
+        [DllImport("__Internal")] private static extern int Transform_GetChildCount(UInt32 sceneID, UInt64 uuid);
 
-        //[DllImport("__Internal")] private static extern IntPtr Transform_GetChild(int instanceID, int childIndex);
+        public int childCount
+        {
+            get { return Transform_GetChildCount(gameObject.scene, gameObject.GetInstanceID()); }
+        }
 
-        //public Transform GetChild(int index)
-        //{
-        //    IntPtr child = Transform_GetChild(gameObject.GetInstanceID(), index);
-        //    if (child == IntPtr.Zero)
-        //        return null;
-        //    return (Transform)GCHandle.FromIntPtr(child).Target;
-        //}
+        [DllImport("__Internal")] private static extern IntPtr Transform_GetChild(UInt32 sceneID, UInt64 uuid, int childIndex);
 
-        //[DllImport("__Internal")] private static extern void Transform_SetParent(int instanceID, int newParent, bool preserveTransforms);
-        //[DllImport("__Internal")] private static extern IntPtr Transform_GetParent(int instanceID);
+        public Transform GetChild(int index)
+        {
+            IntPtr child = Transform_GetChild(gameObject.scene, gameObject.GetInstanceID(), index);
+            if (child == IntPtr.Zero)
+                return null;
+            return (Transform)GCHandle.FromIntPtr(child).Target;
+        }
 
-        //public Transform parent
-        //{
-        //    get
-        //    {
-        //        IntPtr ptr = Transform_GetParent(gameObject.GetInstanceID());
-        //        if (ptr == IntPtr.Zero)
-        //            return null;
-        //        return (Transform)GCHandle.FromIntPtr(ptr).Target;
-        //    }
-        //    set { SetParent(value); }
-        //}
+        [DllImport("__Internal")] private static extern void Transform_SetParent(UInt32 sceneID, UInt64 uuid, UInt64 newParent, bool preserveTransforms);
+        [DllImport("__Internal")] private static extern IntPtr Transform_GetParent(UInt32 sceneID, UInt64 uuid);
 
-        //public void SetParent(Transform parent, bool worldPositionStays = false)
-        //{
-        //    int parentID = (parent != null) ? parent.gameObject.GetInstanceID() : -1;
-        //    Transform_SetParent(gameObject.GetInstanceID(), parentID, worldPositionStays);
-        //}
+        public Transform parent
+        {
+            get
+            {
+                IntPtr ptr = Transform_GetParent(gameObject.scene, gameObject.GetInstanceID());
+                if (ptr == IntPtr.Zero)
+                    return null;
+                return (Transform)GCHandle.FromIntPtr(ptr).Target;
+            }
+            set { SetParent(value); }
+        }
+
+        public void SetParent(Transform parent, bool worldPositionStays = false)
+        {
+            UInt64 parentID = (parent != null) ? parent.gameObject.GetInstanceID() : 0;
+            Transform_SetParent(gameObject.scene, gameObject.GetInstanceID(), parentID, worldPositionStays);
+        }
     }
 }

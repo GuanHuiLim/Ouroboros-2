@@ -61,6 +61,7 @@ namespace oo
 
         // Throw Exceptions
         static void ThrowNullException();
+        static void ThrowOutOfIndexException();
 
     private:
         static std::unordered_map<std::string, MonoImage*> libraryMap;

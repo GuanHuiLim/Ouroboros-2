@@ -403,4 +403,9 @@ namespace oo
     {
         mono_raise_exception(mono_get_exception_null_reference());
     }
+
+    void ScriptEngine::ThrowOutOfIndexException()
+    {
+        mono_raise_exception(mono_get_exception_index_out_of_range());
+    }
 }
