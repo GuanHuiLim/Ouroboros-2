@@ -126,16 +126,15 @@ void GBufferRenderPass::Draw()
 
 void GBufferRenderPass::Shutdown()
 {
-	auto& vr = *VulkanRenderer::get();
-	auto& m_device = vr.m_device;
-	att_albedo.destroy(m_device.logicalDevice);
-	att_position.destroy(m_device.logicalDevice);
-	att_normal.destroy(m_device.logicalDevice);
-	att_material.destroy(m_device.logicalDevice);
-	att_depth.destroy(m_device.logicalDevice);
-	vkDestroyFramebuffer(m_device.logicalDevice, framebuffer_GBuffer, nullptr);
-	vkDestroyRenderPass(m_device.logicalDevice,renderpass_GBuffer, nullptr);
-	vkDestroyPipeline(m_device.logicalDevice, pso_GBufferDefault, nullptr);
+	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
+	att_albedo.destroy(device);
+	att_position.destroy(device);
+	att_normal.destroy(device);
+	att_material.destroy(device);
+	att_depth.destroy(device);
+	vkDestroyFramebuffer(device, framebuffer_GBuffer, nullptr);
+	vkDestroyRenderPass(device,renderpass_GBuffer, nullptr);
+	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
 }
 
 void GBufferRenderPass::SetupRenderpass()
@@ -148,11 +147,11 @@ void GBufferRenderPass::SetupRenderpass()
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
 	// TODO: Texture format optimization/packing?
-	att_position.createAttachment(m_device, width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	att_normal  .createAttachment(m_device, width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	att_albedo  .createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	att_material.createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	att_depth   .createAttachment(m_device, width, height, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	att_position.createAttachment(m_device, width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "att_position");
+	att_normal  .createAttachment(m_device, width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "att_normal");
+	att_albedo  .createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "att_albedo");
+	att_material.createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "att_material");
+	att_depth   .createAttachment(m_device, width, height, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, "att_depth");
 
 	// Set up separate renderpass with references to the color and depth attachments
 	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};

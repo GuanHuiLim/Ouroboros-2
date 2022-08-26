@@ -17,7 +17,7 @@ struct ShadowPass : public GfxRenderpass
 
 	void CreatePSO() override;
 	
-	VulkanFramebufferAttachment att_depth;
+	VulkanFramebufferAttachment shadow_depth;
 
 	// This is for ImGui
 	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg;

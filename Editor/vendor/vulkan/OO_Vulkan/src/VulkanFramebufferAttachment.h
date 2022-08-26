@@ -13,7 +13,7 @@ struct VulkanFramebufferAttachment
 	VkImageLayout layout;
 
 	void createAttachment(VulkanDevice& indevice, uint32_t width, uint32_t height,
-		VkFormat format, VkImageUsageFlagBits usage);
+		VkFormat format, VkImageUsageFlagBits usage, const char* name = nullptr);
 
 	void destroy(VkDevice device);
 };

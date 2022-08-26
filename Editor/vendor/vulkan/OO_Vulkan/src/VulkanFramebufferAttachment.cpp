@@ -3,7 +3,7 @@
 #include "VulkanUtils.h"
 
 void VulkanFramebufferAttachment::createAttachment(VulkanDevice& indevice, uint32_t width, uint32_t height,
-	VkFormat format, VkImageUsageFlagBits usage)
+	VkFormat format, VkImageUsageFlagBits usage, const char* name)
 {
 	VkImageAspectFlags aspectMask = 0;
 	VkImageLayout imageLayout;
@@ -42,7 +42,16 @@ void VulkanFramebufferAttachment::createAttachment(VulkanDevice& indevice, uint3
 
 	
 	VK_CHK(vkCreateImage(device, &image, nullptr, &this->image));
-	VK_NAME(device, "createAttachment::image", this->image);
+	if (name)
+	{
+		std::string img= std::string("createAttachment::") +name;
+		VK_NAME(device, img.c_str(), this->image);
+	}
+	else
+	{
+		VK_NAME(device, "createAttachment::image", this->image);
+	}
+	
 	vkGetImageMemoryRequirements(device, this->image, &memReqs);
 	memAlloc.allocationSize = memReqs.size;
 
@@ -62,7 +71,16 @@ void VulkanFramebufferAttachment::createAttachment(VulkanDevice& indevice, uint3
 	imageView.subresourceRange.layerCount = 1;
 	imageView.image = this->image;
 	VK_CHK(vkCreateImageView(device, &imageView, nullptr, &this->view));
-	VK_NAME(device, "createAtt::imgView", this->view);
+	if (name)
+	{
+		std::string img= std::string("createAttachment::") +name;
+		VK_NAME(device, img.c_str(), this->view);
+	}
+	else
+	{
+		VK_NAME(device, "createAtt::imgView", this->view);
+	}
+	
 }
 
 void VulkanFramebufferAttachment::destroy(VkDevice device)

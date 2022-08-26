@@ -49,7 +49,7 @@ void DeferredCompositionRenderpass::Draw()
 
 	//Information about how to begin a render pass (only needed for graphical applications)
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass = vr.renderPass_default;                  //render pass to begin
+	renderPassBeginInfo.renderPass = vr.renderPass_default2;                  //render pass to begin
 	renderPassBeginInfo.renderArea.offset = { 0,0 };                                     //start point of render pass in pixels
 	renderPassBeginInfo.renderArea.extent = vr.m_swapchain.swapChainExtent; //size of region to run render pass on (Starting from offset)
 	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
@@ -77,10 +77,11 @@ void DeferredCompositionRenderpass::Draw()
 
 void DeferredCompositionRenderpass::Shutdown()
 {
-	auto& vr = *VulkanRenderer::get();
-	vkDestroyPipelineLayout(vr.m_device.logicalDevice, layout_DeferredLightingComposition, nullptr);
-	//vkDestroyRenderPass(vr.m_device.logicalDevice,renderpass_DeferredLightingComposition, nullptr);
-	vkDestroyPipeline(vr.m_device.logicalDevice, pso_DeferredLightingComposition, nullptr);
+	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
+	
+	vkDestroyPipelineLayout(device, layout_DeferredLightingComposition, nullptr);
+	vkDestroyRenderPass(device, renderpass_DeferredLightingComposition, nullptr);
+	vkDestroyPipeline(device, pso_DeferredLightingComposition, nullptr);
 }
 
 void DeferredCompositionRenderpass::CreateDescriptors()
@@ -89,25 +90,6 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	// At this point, all dependent resources (gbuffer etc) must be ready.
 	auto gbuffer = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
 	assert(gbuffer != nullptr);
-
-    auto& m_device = vr.m_device;
-
-    if (vr.descriptorSet_DeferredComposition)
-        return;
-
-    // TODO: Share this function?
-    VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(vr.m_device.physicalDevice, &props);
-    size_t minUboAlignment = props.limits.minUniformBufferOffsetAlignment;
-    if (minUboAlignment > 0)
-    {
-        uboDynamicAlignment = (uboDynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
-    }
-
-    size_t numLights = 1;
-    VkDeviceSize vpBufferSize = uboDynamicAlignment * numLights;
-
-    //// LightData buffer size
 
     // Image descriptors for the offscreen color attachments
     VkDescriptorImageInfo texDescriptorPosition = oGFX::vkutils::inits::descriptorImageInfo(
@@ -130,19 +112,21 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         gbuffer->att_material.view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+    VkDescriptorImageInfo texDescriptorDepth = oGFX::vkutils::inits::descriptorImageInfo(
+        GfxSamplerManager::GetSampler_Deferred(),
+        gbuffer->att_depth.view,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
-	std::cout << "Desc add:" << &VulkanRenderer::get()->DescLayoutCache << std::endl;
-
-	DescriptorBuilder b = DescriptorBuilder::Begin(&VulkanRenderer::get()->DescLayoutCache,
-		&VulkanRenderer::get()->DescAlloc);
-
-	b.BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    b.BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    b.BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    b.BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    b.BindBuffer(5, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    b.Build(vr.descriptorSet_DeferredComposition, vr.descriptorSetLayout_DeferredComposition);
+    DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.DescAlloc)
+        .BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .BindBuffer(6, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .Build(vr.descriptorSet_DeferredComposition, LayoutDB::DeferredComposition);
 }
 
 void DeferredCompositionRenderpass::CreatePipeline()
@@ -150,7 +134,7 @@ void DeferredCompositionRenderpass::CreatePipeline()
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
 
-	std::vector<VkDescriptorSetLayout> setLayouts{ vr.descriptorSetLayout_DeferredComposition };
+	std::vector<VkDescriptorSetLayout> setLayouts{ LayoutDB::DeferredComposition };
 
 	VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(setLayouts.data(),static_cast<uint32_t>(setLayouts.size()));	
 	plci.pushConstantRangeCount = 1;

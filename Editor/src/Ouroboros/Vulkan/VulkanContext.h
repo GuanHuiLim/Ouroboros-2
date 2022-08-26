@@ -51,6 +51,11 @@ namespace oo
         static VulkanRenderer* vr;
         static GraphicsWorld gw;
         static Window m_window;
+
+        //TEMP ptrs
+        std::unique_ptr<Model> cubeMesh;
+        std::unique_ptr<Model> planeMesh;
+
         //static VulkanEngine vkEngine;
     };
 }

@@ -140,13 +140,12 @@ void ShadowPass::Draw()
 void ShadowPass::Shutdown()
 {
 	auto& vr = *VulkanRenderer::get();
-	auto& m_device = vr.m_device;
+	auto& device = vr.m_device.logicalDevice;
 
-	att_depth.destroy(m_device.logicalDevice);
-
-	vkDestroyFramebuffer(m_device.logicalDevice, framebuffer_Shadow, nullptr);
-	vkDestroyRenderPass(m_device.logicalDevice,renderpass_Shadow, nullptr);
-	vkDestroyPipeline(m_device.logicalDevice, pso_ShadowDefault, nullptr);
+	shadow_depth.destroy(device);
+	vkDestroyFramebuffer(device, framebuffer_Shadow, nullptr);
+	vkDestroyRenderPass(device, renderpass_Shadow, nullptr);
+	vkDestroyPipeline(device, pso_ShadowDefault, nullptr);
 }
 
 void ShadowPass::SetupRenderpass()
@@ -158,10 +157,10 @@ void ShadowPass::SetupRenderpass()
 	const uint32_t width = shadowmapSize.width;
 	const uint32_t height = shadowmapSize.height;
 
-	att_depth.createAttachment(m_device, width, height, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	shadow_depth.createAttachment(m_device, width, height, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, "shadowDepth");
 	
 	vkutils::Texture2D tex;
-	tex.image = att_depth.image;
+	tex.image = shadow_depth.image;
 
 	// Set up separate renderpass with references to the color and depth attachments
 	VkAttachmentDescription attachmentDescs = {};
@@ -174,7 +173,7 @@ void ShadowPass::SetupRenderpass()
 	attachmentDescs.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachmentDescs.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachmentDescs.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	attachmentDescs.format = att_depth.format;
+	attachmentDescs.format = shadow_depth.format;
 
 
 	VkAttachmentReference depthReference = {};
@@ -224,7 +223,7 @@ void ShadowPass::SetupFramebuffer()
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
 
-	VkImageView depthView = att_depth.view;
+	VkImageView depthView = shadow_depth.view;
 
 	VkFramebufferCreateInfo fbufCreateInfo = {};
 	fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -240,7 +239,7 @@ void ShadowPass::SetupFramebuffer()
 
 	// TODO: Fix imgui depth rendering
 	//deferredImg[GBufferAttachmentIndex::DEPTH]    = ImGui_ImplVulkan_AddTexture(GfxSamplerManager::GetSampler_Deferred(), att_depth.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	shadowImg = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_depth.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	shadowImg = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), shadow_depth.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void ShadowPass::CreatePipeline()

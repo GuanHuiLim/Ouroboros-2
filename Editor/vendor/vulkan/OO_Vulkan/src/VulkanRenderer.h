@@ -37,6 +37,20 @@ struct Window;
 
 int Win32SurfaceCreator(ImGuiViewport* vp, ImU64 device, const void* allocator, ImU64* outSurface);
 
+// Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
+struct LayoutDB // Think of a better name? Very short and sweet for easy typing productivity?
+{
+    // For GPU Scene
+    inline static VkDescriptorSetLayout gpuscene;
+    // For UBO with the corresponding swap chain image
+    inline static VkDescriptorSetLayout uniform;
+    // For unbounded array of texture descriptors, used in bindless approach
+    inline static VkDescriptorSetLayout bindless;
+	// For lighting
+	inline static VkDescriptorSetLayout DeferredComposition;
+	// 
+	inline static VkDescriptorSetLayout ForwardDecal;
+};
 
 class VulkanRenderer
 {
@@ -91,7 +105,7 @@ public:
 	 std::vector<VkFramebuffer> swapChainFramebuffers;
 	 uint32_t swapchainIdx{ 0 };
 
-	//---------- DescriptorSetLayout & DescriptorSet ----------
+	//---------- DescriptorSet ----------
 
 	// For Deferred Lighting onwards
 	 VkDescriptorSetLayout descriptorSetLayout_DeferredComposition;
@@ -145,6 +159,7 @@ public:
 	 
 	void InitImGUI();
 	void ResizeGUIBuffers();
+	void DebugGUIcalls();
 	void DrawGUI();
 	void DestroyImGUI();
 
@@ -257,6 +272,7 @@ public:
 	VkPipeline graphicsPSO{};
 	VkPipeline wireframePSO{};
 	 VkRenderPass renderPass_default{};
+	 VkRenderPass renderPass_default2{};
 
 	 vkutils::Buffer indirectCommandsBuffer{};
 	 VkPipeline indirectPSO{};

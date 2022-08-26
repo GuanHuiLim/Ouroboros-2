@@ -433,12 +433,13 @@ namespace oo
         auto plane = gw.CreateObjectInstance();
 
         DefaultMesh dm = CreateDefaultCubeMesh();
-        auto model = vr->LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr);
+        cubeMesh.reset(vr->LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr));
         DefaultMesh pm = CreateDefaultPlaneXZMesh();
-        auto modelPlane = vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr);
+        planeMesh.reset(vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
+
         {
             auto& myObj = gw.GetObjectInstance(obj);
-            myObj.modelID = model->gfxIndex;
+            myObj.modelID = cubeMesh->gfxIndex;
             myObj.scale = glm::vec3{ 2.1f,1.1f,1.1f };
             myObj.rotVec = glm::vec3{ 1.1f,1.1f,1.1f };
             myObj.rot = 35.0f;
@@ -450,7 +451,7 @@ namespace oo
        
         {
             auto& myPlane = gw.GetObjectInstance(plane);
-            myPlane.modelID = modelPlane->gfxIndex;
+            myPlane.modelID = planeMesh->gfxIndex;
             myPlane.position = { 0.0f,-1.0f,0.0f };
             myPlane.scale = { 15.0f,1.0f,15.0f };
             myPlane.localToWorld = glm::mat4(1.0f);
