@@ -64,6 +64,11 @@ namespace Ouroboros
             return base.GetHashCode();
         }
 
+        public override string ToString()
+        {
+            return (this == null) ? "null" : name + " (GameObject)";
+        }
+
         [DllImport("__Internal")] private static extern IntPtr GameObject_GetName(UInt32 sceneID, UInt64 uuid);
         [DllImport("__Internal")] private static extern void GameObject_SetName(UInt32 sceneID, UInt64 uuid, string newName);
 
