@@ -25,6 +25,8 @@
 //events
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
+#include <Ouroboros/Commands/CommandStackManager.h>
+#include <Ouroboros/Commands/Delete_ActionCommand.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -79,11 +81,11 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		if ((clicked || keyenter))
 		{
 			if (ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LSHIFT)))
-				s_selected.push_back(handle);
+				s_selected.emplace(handle);
 			else
 			{
 				s_selected.clear();
-				s_selected.push_back(handle);
+				s_selected.emplace(handle);
 			}
 		}
 	}
@@ -149,7 +151,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 	return;
 }
 
-const std::vector<scenenode::handle_type>& Hierarchy::GetSelected()
+const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
 }
@@ -362,11 +364,11 @@ void Hierarchy::FilteredView()
 			if ((clicked || keyenter))
 			{
 				if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
-					s_selected.push_back(handle);
+					s_selected.emplace(handle);
 				else
 				{
 					s_selected.clear();
-					s_selected.push_back(handle);
+					s_selected.emplace(handle);
 				}
 			}
 		}
@@ -434,8 +436,10 @@ void Hierarchy::RightClickOptions()
 			for (auto go : s_selected)
 			{
 				auto object = scene->FindWithInstanceID(go);
+				oo::CommandStackManager::AddCommand(new oo::Delete_ActionCommand(object));
 				object->Destroy();
 			}
+			s_selected.clear();
 		}
 		if (ImGui::MenuItem("Duplicate GameObject"))
 		{
@@ -486,6 +490,6 @@ void Hierarchy::CreateGameObjectImmediate()
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
-	if (s_selected.empty() == false && m_hovered == s_selected.back())
+	if (s_selected.size() == 1 && m_hovered == *(s_selected.begin()))
 		scene->FindWithInstanceID(m_hovered)->AddChild(*go);
 }

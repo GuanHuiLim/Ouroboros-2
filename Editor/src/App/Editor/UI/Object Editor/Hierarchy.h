@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <set>
 #include <scenegraph/include/Scenegraph.h>
 #include <string>
 #include "App/Editor/Utility/ImGui_ToggleButton.h"
@@ -9,7 +10,7 @@ class Hierarchy
 public:
 	Hierarchy();
 	void Show();
-	static const std::vector<scenenode::handle_type>& GetSelected();
+	static const std::set<scenenode::handle_type>& GetSelected();
 protected:
 	void NormalView();
 	void FilteredView();
@@ -48,5 +49,5 @@ private:
 	bool m_isRename = false;
 	bool m_previewPrefab = false;
 	//static
-	inline static std::vector<scenenode::handle_type> s_selected;
+	inline static std::set<scenenode::handle_type> s_selected;
 };

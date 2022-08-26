@@ -6,6 +6,7 @@ namespace oo
 class CommandStackManager
 {
 public:
+	static void InitEvents();
 	//ctrl z
 	static void UndoCommand();
 	//ctrl y
