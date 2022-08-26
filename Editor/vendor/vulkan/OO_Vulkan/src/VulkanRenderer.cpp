@@ -140,8 +140,8 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		CreateInstance(setupSpecs);
 		CreateSurface(setupSpecs,window);
-		AcquirePhysicalDevice();
-		CreateLogicalDevice();
+		AcquirePhysicalDevice(setupSpecs);
+		CreateLogicalDevice(setupSpecs);
 
 		//if (m_device.debugMarker)
 		//{
@@ -254,14 +254,14 @@ void VulkanRenderer::CreateSurface(const oGFX::SetupInfo& setupSpecs, Window& wi
 	}
 }
 
-void VulkanRenderer::AcquirePhysicalDevice()
+void VulkanRenderer::AcquirePhysicalDevice(const oGFX::SetupInfo& setupSpecs)
 {
-    m_device.InitPhysicalDevice(m_instance);
+    m_device.InitPhysicalDevice(setupSpecs,m_instance);
 }
 
-void VulkanRenderer::CreateLogicalDevice()
+void VulkanRenderer::CreateLogicalDevice(const oGFX::SetupInfo& setupSpecs)
 {
-    m_device.InitLogicalDevice(m_instance);
+    m_device.InitLogicalDevice(setupSpecs,m_instance);
 }
 
 void VulkanRenderer::SetupSwapchain()

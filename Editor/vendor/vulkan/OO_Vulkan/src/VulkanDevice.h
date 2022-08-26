@@ -4,6 +4,8 @@
 #include "VulkanUtils.h"
 #include "VulkanBuffer.h"
 
+#include "gpuCommon.h"
+
 struct Window;
 struct VulkanInstance;
 struct VulkanDevice
@@ -12,8 +14,8 @@ struct VulkanDevice
 	~VulkanDevice();
 	VulkanDevice(const VulkanDevice&) = delete;
 
-	void InitPhysicalDevice(VulkanInstance& instance);
-	void InitLogicalDevice(VulkanInstance& instance);
+	void InitPhysicalDevice(const oGFX::SetupInfo& si,VulkanInstance& instance);
+	void InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& instance);
 	
 
 	friend class VulkanRenderer;
@@ -30,9 +32,8 @@ struct VulkanDevice
 
 	VkCommandPool commandPool = VK_NULL_HANDLE;
 
-	bool CheckDeviceSuitable(VkPhysicalDevice device);
-	
-	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
+	bool CheckDeviceSuitable(const oGFX::SetupInfo& si,VkPhysicalDevice device);
+	bool CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysicalDevice device);	
 
 	VkResult CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags,
 		vkutils::Buffer* buffer, VkDeviceSize size, void* data = nullptr);

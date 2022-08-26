@@ -30,7 +30,7 @@ VulkanDevice::~VulkanDevice()
 	}
 }
 
-void VulkanDevice::InitPhysicalDevice(VulkanInstance& instance)
+void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance& instance)
 {
     m_instancePtr = &instance;
     // Enumerate over physical devices the VK instance can access
@@ -50,16 +50,21 @@ void VulkanDevice::InitPhysicalDevice(VulkanInstance& instance)
     // find a suitable device
     for (const auto &device : deviceList)
     {
-        if (CheckDeviceSuitable(device))
+        if (CheckDeviceSuitable(si,device))
         {
             //found a nice device
             physicalDevice = device;
             break;
         }
     }
+    if (physicalDevice == VK_NULL_HANDLE)
+    {
+        throw std::runtime_error("No suitable physical device found!");
+    }
+
 }
 
-void VulkanDevice::InitLogicalDevice(VulkanInstance& instance)
+void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& instance)
 {
 
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -91,10 +96,15 @@ void VulkanDevice::InitLogicalDevice(VulkanInstance& instance)
 
     std::vector<const char*>deviceExtensions{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-#ifdef _DEBUG
-        VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
-#endif // DEBUG
+
     };
+
+    if (si.debug && si.renderDoc)
+    {
+#ifdef _DEBUG
+        deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+#endif // DEBUG
+    }
 
     //information to create logical device (somtimes called only "device")
     VkDeviceCreateInfo deviceCreateInfo = {};
@@ -162,14 +172,14 @@ void VulkanDevice::InitLogicalDevice(VulkanInstance& instance)
 }
 
 
-bool VulkanDevice::CheckDeviceSuitable(VkPhysicalDevice device)
+bool VulkanDevice::CheckDeviceSuitable(const oGFX::SetupInfo& si,VkPhysicalDevice device)
 {
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
 	oGFX::QueueFamilyIndices indices = oGFX::GetQueueFamilies(device,m_instancePtr->surface);
 
-	bool extensionsSupported = CheckDeviceExtensionSupport(device);
+	bool extensionsSupported = CheckDeviceExtensionSupport(si,device);
 
 	bool swapChainValid = false;
 	if (extensionsSupported)
@@ -181,7 +191,7 @@ bool VulkanDevice::CheckDeviceSuitable(VkPhysicalDevice device)
 }
 
 
-bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysicalDevice device)
 {
     // get device extension count
     uint32_t extensionCount = 0;
@@ -197,16 +207,21 @@ bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
 
-    static std::vector<const char*>deviceExtensions   = 
+    std::vector<const char*>deviceExtensions   = 
     { 
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-#ifdef _DEBUG
-        VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
-#endif // DEBUG
+
         //        ,   VK_NV_GLSL_SHADER_EXTENSION_NAME  // nVidia useful extension to be able to load GLSL shaders
     };
     // TODO BETTER
+
+    if (si.debug && si.renderDoc)
+    {
+#ifdef _DEBUG
+        deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+#endif // DEBUG
+    }
 
     //check extensions
     for (const auto &deviceExtension : deviceExtensions)
@@ -223,6 +238,7 @@ bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
         if (!hasExtension)
         {
             //TODO: throw what extension not supported
+            std::cout << std::string("Does not support extension ") + deviceExtension << std::endl;
             return false;
         }
     }
