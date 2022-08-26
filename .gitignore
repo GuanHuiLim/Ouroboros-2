@@ -31,7 +31,6 @@ bin-int/
 # #scripts
 ScriptCore.dll
 ScriptCore.pdb
-TestProject
 
 # #scripting Proj
 # Scripting/bin/
