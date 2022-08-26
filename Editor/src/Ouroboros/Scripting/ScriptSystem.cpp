@@ -157,7 +157,7 @@ namespace oo
             {
                 if (gameObject.Id == 0)
                     return;
-                componentDatabase.InstantiateObjectFull(gameObject.Id);
+                SetUpObject(gameObject.Id);
 
                 // create script instance
                 MonoObject* script = scriptDatabase.Instantiate(gameObject.Id, "", "TestClass");
@@ -179,6 +179,11 @@ namespace oo
         return true;
     }
 
+    void ScriptSystem::SetUpObject(UUID uuid)
+    {
+        componentDatabase.InstantiateObjectFull(uuid);
+    }
+
     bool ScriptSystem::StopPlay()
     {
         if (!s_IsPlaying)
@@ -188,6 +193,88 @@ namespace oo
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
         return true;
+    }
+
+    void ScriptSystem::InvokeForObject(UUID uuid, const char* functionName, int paramCount, void** params)
+    {
+        if (!ScriptEngine::IsLoaded())
+            return;
+        if (!s_IsPlaying)
+            return;
+        scriptDatabase.ForEach(uuid, [&functionName, &params, &paramCount](MonoObject* object)
+            {
+                try
+                {
+                    ScriptEngine::InvokeFunction(object, functionName, params, paramCount);
+                }
+                catch (std::exception const& e)
+                {
+                    LOG_ERROR(e.what());
+                }
+            });
+    }
+    void ScriptSystem::InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount, void** params)
+    {
+        if (!ScriptEngine::IsLoaded())
+            return;
+        if (!s_IsPlaying)
+            return;
+        scriptDatabase.ForEachEnabled(uuid, [&functionName, &params, &paramCount](MonoObject* object)
+            {
+                try
+                {
+                    ScriptEngine::InvokeFunction(object, functionName, params, paramCount);
+                }
+                catch (std::exception const& e)
+                {
+                    LOG_ERROR(e.what());
+                }
+            }, [this](ScriptDatabase::UUID uuid)
+            {
+                std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
+                return object->ActiveInHierarchy();
+            });
+    }
+
+    void ScriptSystem::InvokeForEach(const char* name_space, const char* name, const char* functionName, int paramCount, void** params)
+    {
+        if (!ScriptEngine::IsLoaded())
+            return;
+        if (!s_IsPlaying)
+            return;
+        scriptDatabase.ForEach(name_space, name, [&functionName, &params, &paramCount](MonoObject* object)
+            {
+                try
+                {
+                    ScriptEngine::InvokeFunction(object, functionName, params, paramCount);
+                }
+                catch (std::exception const& e)
+                {
+                    LOG_ERROR(e.what());
+                }
+            });
+    }
+    void ScriptSystem::InvokeForEachEnabled(const char* name_space, const char* name, const char* functionName, int paramCount, void** params)
+    {
+        if (!ScriptEngine::IsLoaded())
+            return;
+        if (!s_IsPlaying)
+            return;
+        scriptDatabase.ForEach(name_space, name, [&functionName, &params, &paramCount](MonoObject* object)
+            {
+                try
+                {
+                    ScriptEngine::InvokeFunction(object, functionName, params, paramCount);
+                }
+                catch (std::exception const& e)
+                {
+                    LOG_ERROR(e.what());
+                }
+            }, [this](ScriptDatabase::UUID uuid)
+            {
+                std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
+                return object->ActiveInHierarchy();
+            });
     }
 
     void ScriptSystem::InvokeForAll(const char* functionName, int paramCount, void** params)
@@ -226,8 +313,8 @@ namespace oo
                 }
             }, [this](ScriptDatabase::UUID uuid)
             {
-                GameObject& object = *(scene.FindWithInstanceID(uuid));
-                return object.ActiveInHierarchy();
+                std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
+                return object->ActiveInHierarchy();
             });
     }
 }

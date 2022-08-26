@@ -9,55 +9,49 @@ namespace Ouroboros
     {
         protected Transform() { }
 
-        ////[DllImport("__Internal")] private static extern Vector3 Transform3D_GetLocalPosition(int instanceID);
-        //[DllImport("__Internal")] private static extern void Transform3D_GetLocalPosition(int instanceID, out float x, out float y, out float z);
-        //[DllImport("__Internal")] private static extern void Transform3D_SetLocalPosition(int instanceID, float x, float y, float z);
+        [DllImport("__Internal")] private static extern void Transform3D_GetLocalPosition(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void Transform3D_SetLocalPosition(UInt32 sceneID, UInt64 instanceID, float x, float y, float z);
 
-        //public Vector3 localPosition
-        //{
-        //    get
-        //    {
-        //        float x, y, z;
-        //        Transform3D_GetLocalPosition(gameObject.GetInstanceID(), out x, out y, out z);
-        //        return new Vector3(x, y, z);
-        //    }
-        //    //get { return Transform3D_GetLocalPosition(gameObject.GetInstanceID()); }
-        //    set { Transform3D_SetLocalPosition(gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
-        //}
+        public Vector3 localPosition
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetLocalPosition(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+            set { Transform3D_SetLocalPosition(gameObject.scene, gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
+        }
 
-        ////[DllImport("__Internal")] private static extern Vector3 Transform3D_GetLocalPosition(int instanceID);
-        ////[DllImport("__Internal")] private static extern void Transform3D_SetLocalPosition(int instanceID, Vector3 vector);
+        [DllImport("__Internal")] private static extern void Transform3D_GetGlobalPosition(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void Transform3D_SetGlobalPosition(UInt32 sceneID, UInt64 instanceID, float x, float y, float z);
 
-        ////public Vector3 localPosition
-        ////{
-        ////    get { Debug.Log(gameObject.GetInstanceID()); return Transform3D_GetLocalPosition(gameObject.GetInstanceID()); }
-        ////    set { Transform3D_SetLocalPosition(gameObject.GetInstanceID(), value); }
-        ////}
+        public Vector3 position
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetGlobalPosition(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+            set { Transform3D_SetGlobalPosition(gameObject.scene, gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
+        }
 
-        //[DllImport("__Internal")] private static extern void Transform3D_GetGlobalPosition(int instanceID, out float x, out float y, out float z);
-        //[DllImport("__Internal")] private static extern void Transform3D_SetGlobalPosition(int instanceID, float x, float y, float z);
+        [DllImport("__Internal")] private static extern void Transform3D_GetLocalEulerAngles(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void Transform3D_SetLocalEulerAngles(UInt32 sceneID, UInt64 instanceID, float x, float y, float z);
 
-        //public Vector3 position
-        //{
-        //    get
-        //    {
-        //        float x, y, z;
-        //        Transform3D_GetGlobalPosition(gameObject.GetInstanceID(), out x, out y, out z);
-        //        return new Vector3(x, y, z);
-        //    }
-        //    set { Transform3D_SetGlobalPosition(gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
-        //}
-
-        //[DllImport("__Internal")] private static extern float Transform3D_GetLocalAngle(int instanceID);
-        //[DllImport("__Internal")] private static extern void Transform3D_SetLocalAngle(int instanceID, float angle);
-
-        //public float localAngle
-        //{
-        //    get { return Transform3D_GetLocalAngle(gameObject.GetInstanceID()); }
-        //    set { Transform3D_SetLocalAngle(gameObject.GetInstanceID(), value); }
-        //}
+        public Vector3 localEulerAngles
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetLocalEulerAngles(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+            set { Transform3D_SetLocalEulerAngles(gameObject.scene, gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
+        }
         //[DllImport("__Internal")] private static extern float Transform3D_GetGlobalAngle(int instanceID);
-        ////[DllImport("__Internal")] private static extern void Transform_SetGlobalAngle(int instanceID, float angle);
+        //[DllImport("__Internal")] private static extern void Transform_SetGlobalAngle(int instanceID, float angle);
 
         //public float rotationAngle
         //{

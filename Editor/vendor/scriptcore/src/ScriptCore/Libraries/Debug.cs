@@ -2,7 +2,7 @@
 
 namespace Ouroboros
 {
-    public class Debug
+    public static class Debug
     {
         [DllImport("__Internal")]
         private static extern void Log(string msg);

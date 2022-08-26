@@ -30,8 +30,29 @@ namespace oo
         static void Load();
 
         static bool DisplayWarnings();
-
         static bool DisplayErrors();
+
+        static inline std::shared_ptr<Scene> GetScene(Scene::ID_type sceneID)
+        {
+            std::weak_ptr scene_weak = s_SceneManager->GetScene(sceneID);
+            if (scene_weak.expired())
+            {
+                LOG_ERROR("scene with id ({0}) does not exist", sceneID);
+                ScriptEngine::ThrowNullException();
+            }
+            return std::dynamic_pointer_cast<Scene>(scene_weak.lock());
+        }
+
+        static inline std::shared_ptr<GameObject> GetObjectFromScene(Scene::ID_type sceneID, UUID uuid)
+        {
+            std::shared_ptr<Scene> scene = GetScene(sceneID);
+            std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(uuid);
+            if (obj == nullptr)
+            {
+                ScriptEngine::ThrowNullException();
+            }
+            return obj;
+        }
 
         static inline std::vector<std::string> const& GetScriptList()
         {
@@ -47,8 +68,8 @@ namespace oo
                 if (scene_weak.expired())
                     return;
                 Scene& scene = *(std::dynamic_pointer_cast<Scene>(scene_weak.lock()).get());
-                GameObject& obj = *(scene.FindWithInstanceID(uuid));
-                obj.AddComponent<T>();
+                std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
+                obj->AddComponent<T>();
             };
             ComponentDatabase::ComponentCheck has = [](ComponentDatabase::SceneID sceneID, ComponentDatabase::UUID uuid)
             {
@@ -56,8 +77,8 @@ namespace oo
                 if (scene_weak.expired())
                     return false;
                 Scene& scene = *(std::dynamic_pointer_cast<Scene>(scene_weak.lock()).get());
-                GameObject& obj = *(scene.FindWithInstanceID(uuid));
-                return obj.HasComponent<T>();
+                std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
+                return obj->HasComponent<T>();
             };
             ComponentDatabase::ComponentSetAction setEnabled = [](ComponentDatabase::SceneID sceneID, ComponentDatabase::UUID uuid, bool isEnabled)
             {
@@ -65,8 +86,8 @@ namespace oo
                 //if (scene_weak.expired())
                 //    return;
                 //Scene& scene = *(std::dynamic_pointer_cast<Scene>(scene_weak.lock()).get());
-                //GameObject& obj = *(scene.FindWithInstanceID(uuid));
-                //obj.GetComponent<T>().SetActive(isEnabled);
+                //std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
+                //obj->GetComponent<T>().SetActive(isEnabled);
             };
             ComponentDatabase::ComponentCheck isEnabled = [](ComponentDatabase::SceneID sceneID, ComponentDatabase::UUID uuid)
             {
@@ -74,8 +95,8 @@ namespace oo
                 //if (scene_weak.expired())
                 //    return false;
                 //Scene& scene = *(std::dynamic_pointer_cast<Scene>(scene_weak.lock()).get());
-                //GameObject& obj = *(scene.FindWithInstanceID(uuid));
-                //return obj.GetComponent<T>().IsActive();
+                //std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
+                //return obj->GetComponent<T>().IsActive();
                 return true;
             };
             ComponentDatabase::ComponentAction remove = [](ComponentDatabase::SceneID sceneID, ComponentDatabase::UUID uuid)
@@ -84,8 +105,8 @@ namespace oo
                 if (scene_weak.expired())
                     return;
                 Scene& scene = *(std::dynamic_pointer_cast<Scene>(scene_weak.lock()).get());
-                GameObject& obj = *(scene.FindWithInstanceID(uuid));
-                return obj.RemoveComponent<T>();
+                std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
+                return obj->RemoveComponent<T>();
             };
             ComponentDatabase::RegisterComponent(name_space, name, add, remove, has, setEnabled, isEnabled);
         }
@@ -96,8 +117,14 @@ namespace oo
         ~ScriptSystem();
 
         bool StartPlay();
-
+        void SetUpObject(UUID uuid);
         bool StopPlay();
+
+        void InvokeForObject(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
+        void InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
+
+        void InvokeForEach(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
+        void InvokeForEachEnabled(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
 
         void InvokeForAll(const char* functionName, int paramCount = 0, void** params = NULL);
         void InvokeForAllEnabled(const char* functionName, int paramCount = 0, void** params = NULL);

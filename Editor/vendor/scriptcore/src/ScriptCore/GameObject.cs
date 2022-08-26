@@ -5,44 +5,50 @@ namespace Ouroboros
 {
     public class GameObject : Object
     {
-        private int m_InstanceID = -1;
+        private Scene m_Scene;
+        private UInt64 m_InstanceID = 0;
         private Transform m_Transform = null;
 
-        //[DllImport("__Internal")] private static extern int CreateEntity();
+        [DllImport("__Internal")] private static extern UInt64 CreateEntity(UInt32 sceneID);
 
-        //public GameObject()
-        //{
-        //    m_InstanceID = CreateEntity();
-        //    m_Transform = GetComponent<Transform>();
-        //}
+        public GameObject()
+        {
+            m_Scene = SceneManager.GetActiveScene();
+            m_InstanceID = CreateEntity(scene);
+        }
 
-        //public GameObject(string name)
-        //{
-        //    m_InstanceID = CreateEntity();
-        //    this.name = name;
-        //    m_Transform = GetComponent<Transform>();
-        //}
+        public GameObject(string name)
+        {
+            m_Scene = SceneManager.GetActiveScene();
+            m_InstanceID = CreateEntity(scene);
+            this.name = name;
+        }
 
-        //public int GetInstanceID()
-        //{
-        //    return m_InstanceID;
-        //}
+        public Scene scene
+        {
+            get { return m_Scene; }
+        }
 
-        //[DllImport("__Internal")] private static extern bool CheckEntityExists(int id);
+        public UInt64 GetInstanceID()
+        {
+            return m_InstanceID;
+        }
 
-        //public static bool operator ==(GameObject lhs, GameObject rhs)
-        //{
-        //    if (!ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is not null, but rhs is null
-        //        return !CheckEntityExists(lhs.GetInstanceID());
-        //    if (ReferenceEquals(lhs, null) && !ReferenceEquals(rhs, null)) // lhs is null, but rhs is not null
-        //        return !CheckEntityExists(rhs.GetInstanceID());
-        //    return ReferenceEquals(lhs, rhs);
-        //}
+        [DllImport("__Internal")] private static extern bool CheckEntityExists(UInt32 sceneID, UInt64 uuid);
 
-        //public static bool operator !=(GameObject lhs, GameObject rhs)
-        //{
-        //    return !(lhs == rhs);
-        //}
+        public static bool operator ==(GameObject lhs, GameObject rhs)
+        {
+            if (!ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is not null, but rhs is null
+                return !CheckEntityExists(lhs.scene, lhs.GetInstanceID());
+            if (ReferenceEquals(lhs, null) && !ReferenceEquals(rhs, null)) // lhs is null, but rhs is not null
+                return !CheckEntityExists(rhs.scene, rhs.GetInstanceID());
+            return ReferenceEquals(lhs, rhs);
+        }
+
+        public static bool operator !=(GameObject lhs, GameObject rhs)
+        {
+            return !(lhs == rhs);
+        }
 
         public override bool Equals(object obj)
         {
@@ -54,20 +60,20 @@ namespace Ouroboros
             return base.GetHashCode();
         }
 
-        //[DllImport("__Internal")] private static extern IntPtr GameObject_GetName(int id);
-        //[DllImport("__Internal")] private static extern void GameObject_SetName(int id, string newName);
+        [DllImport("__Internal")] private static extern IntPtr GameObject_GetName(UInt32 sceneID, UInt64 uuid);
+        [DllImport("__Internal")] private static extern void GameObject_SetName(UInt32 sceneID, UInt64 uuid, string newName);
 
-        //public string name
-        //{
-        //    get
-        //    {
-        //        GCHandle stringPtr = GCHandle.FromIntPtr(GameObject_GetName(m_InstanceID));
-        //        string name = (string)stringPtr.Target;
-        //        stringPtr.Free();
-        //        return name;
-        //    }
-        //    set { GameObject_SetName(m_InstanceID, value); }
-        //}
+        public string name
+        {
+            get
+            {
+                GCHandle stringPtr = GCHandle.FromIntPtr(GameObject_GetName(scene, GetInstanceID()));
+                string name = (string)stringPtr.Target;
+                stringPtr.Free();
+                return name;
+            }
+            set { GameObject_SetName(scene, GetInstanceID(), value); }
+        }
 
         //[DllImport("__Internal")] private static extern bool GameObject_GetActive(int id);
         //[DllImport("__Internal")] private static extern bool GameObject_GetActiveInHierarchy(int id);
@@ -101,10 +107,10 @@ namespace Ouroboros
 
         #region Script/Component
 
-        //public Transform transform
-        //{
-        //    get { return m_Transform; }
-        //}
+        public Transform transform
+        {
+            get { return m_Transform; }
+        }
 
         //[DllImport("__Internal")] private static extern IntPtr AddScript(int id, string name_space, string name);
         //[DllImport("__Internal")] private static extern IntPtr AddComponentFromScript(int id, string name_space, string name);

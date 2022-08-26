@@ -78,7 +78,7 @@ namespace oo
                 }
                 else
                 {
-                    refAssembly = mono_assembly_load_full(aName, "Engine/mono/4.5", &status, false);
+                    refAssembly = mono_assembly_load_full(aName, "mono/4.5", &status, false);
                     libraryMap.insert(std::pair<const char*, MonoImage*>{ assemblyName.c_str(), mono_assembly_get_image(refAssembly) });
                 }
             }

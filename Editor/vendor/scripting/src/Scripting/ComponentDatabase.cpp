@@ -45,6 +45,14 @@ namespace oo
         MonoObject* GO = ScriptEngine::CreateObject(GOClass);
         object.gameObject = mono_gchandle_new(GO, false);
 
+        // set GameObject scene id
+        MonoClassField* sceneField = mono_class_get_field_from_name(GOClass, "m_Scene");
+        MonoClass* sceneClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Scene");
+        MonoObject* sceneObj = ScriptEngine::CreateObject(sceneClass);
+        MonoClassField* sceneIDField = mono_class_get_field_from_name(sceneClass, "m_SceneID");
+        mono_field_set_value(sceneObj, sceneIDField, &sceneID);
+        mono_field_set_value(GO, sceneField, mono_object_unbox(sceneObj));
+
         // set GameObject instance id
         MonoClassField* idField = mono_class_get_field_from_name(GOClass, "m_InstanceID");
         mono_field_set_value(GO, idField, &id);
