@@ -15,12 +15,14 @@ namespace Ouroboros
         {
             m_Scene = SceneManager.GetActiveScene();
             m_InstanceID = CreateEntity(scene);
+            m_Transform = GetComponent<Transform>();
         }
 
         public GameObject(string name)
         {
             m_Scene = SceneManager.GetActiveScene();
             m_InstanceID = CreateEntity(scene);
+            m_Transform = GetComponent<Transform>();
             this.name = name;
         }
 
@@ -42,7 +44,7 @@ namespace Ouroboros
                 return !CheckEntityExists(lhs.scene, lhs.GetInstanceID());
             if (ReferenceEquals(lhs, null) && !ReferenceEquals(rhs, null)) // lhs is null, but rhs is not null
                 return !CheckEntityExists(rhs.scene, rhs.GetInstanceID());
-            return ReferenceEquals(lhs, rhs);
+            return lhs.m_InstanceID == rhs.m_InstanceID;
         }
 
         public static bool operator !=(GameObject lhs, GameObject rhs)
@@ -112,132 +114,156 @@ namespace Ouroboros
             get { return m_Transform; }
         }
 
-        //[DllImport("__Internal")] private static extern IntPtr AddScript(int id, string name_space, string name);
-        //[DllImport("__Internal")] private static extern IntPtr AddComponentFromScript(int id, string name_space, string name);
+        [DllImport("__Internal")] private static extern IntPtr AddScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
+        [DllImport("__Internal")] private static extern IntPtr AddComponentFromScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
 
-        //public Component AddComponent(Type type)
-        //{
-        //    string name_space = "";
-        //    if (type.Namespace != null)
-        //        name_space = type.Namespace;
+        public Component AddComponent(Type type)
+        {
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
 
-        //    IntPtr ptr = type.IsSubclassOf(typeof(MonoBehaviour))
-        //                    ? AddScript(m_InstanceID, name_space, type.Name)
-        //                    : AddComponentFromScript(m_InstanceID, name_space, type.Name);
+            IntPtr ptr = IntPtr.Zero;
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                ptr = AddScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+            else
+            {
+                ptr = AddComponentFromScript(scene, GetInstanceID(), name_space, type.Name);
+            }
 
-        //    if (ptr == IntPtr.Zero)
-        //        return null;
-        //    return GCHandle.FromIntPtr(ptr).Target as Component;
-        //}
+            if (ptr == IntPtr.Zero)
+                return null;
+            return GCHandle.FromIntPtr(ptr).Target as Component;
+        }
 
-        //public T AddComponent<T>() where T : Component
-        //{
-        //    Type type = typeof(T);
-        //    string name_space = "";
-        //    if (type.Namespace != null)
-        //        name_space = type.Namespace;
+        public T AddComponent<T>() where T : Component
+        {
+            Type type = typeof(T);
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
 
-        //    IntPtr ptr = type.IsSubclassOf(typeof(MonoBehaviour))
-        //                    ? AddScript(m_InstanceID, name_space, type.Name)
-        //                    : AddComponentFromScript(m_InstanceID, name_space, type.Name);
+            IntPtr ptr = IntPtr.Zero;
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                ptr = AddScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+            else
+            {
+                ptr = AddComponentFromScript(scene, GetInstanceID(), name_space, type.Name);
+            }
 
-        //    if (ptr == IntPtr.Zero)
-        //        return null;
-        //    return GCHandle.FromIntPtr(ptr).Target as T;
-        //}
+            if (ptr == IntPtr.Zero)
+                return null;
+            return GCHandle.FromIntPtr(ptr).Target as T;
+        }
 
-        //[DllImport("__Internal")] private static extern IntPtr GetScript(int id, string name_space, string name);
-        //[DllImport("__Internal")] private static extern IntPtr GetComponentFromScript(int id, string name_space, string name);
+        [DllImport("__Internal")] private static extern IntPtr GetScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
+        [DllImport("__Internal")] private static extern IntPtr GetComponentFromScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
 
-        //public Component GetComponent(Type type)
-        //{
-        //    string name_space = "";
-        //    if (type.Namespace != null)
-        //        name_space = type.Namespace;
+        public Component GetComponent(Type type)
+        {
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
 
-        //    IntPtr ptr = type.IsSubclassOf(typeof(MonoBehaviour))
-        //                    ? GetScript(m_InstanceID, name_space, type.Name)
-        //                    : GetComponentFromScript(m_InstanceID, name_space, type.Name);
+            IntPtr ptr = IntPtr.Zero;
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                ptr = GetScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+            else
+            {
+                ptr = GetComponentFromScript(scene, GetInstanceID(), name_space, type.Name);
+            }
 
-        //    if (ptr == IntPtr.Zero)
-        //        return null;
-        //    return GCHandle.FromIntPtr(ptr).Target as Component;
-        //}
+            if (ptr == IntPtr.Zero)
+                return null;
+            return GCHandle.FromIntPtr(ptr).Target as Component;
+        }
 
-        //public T GetComponent<T>() where T : Component
-        //{
-        //    Type type = typeof(T);
-        //    string name_space = "";
-        //    if (type.Namespace != null)
-        //        name_space = type.Namespace;
+        public T GetComponent<T>() where T : Component
+        {
+            Type type = typeof(T);
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
 
-        //    IntPtr ptr = type.IsSubclassOf(typeof(MonoBehaviour))
-        //                    ? GetScript(m_InstanceID, name_space, type.Name)
-        //                    : GetComponentFromScript(m_InstanceID, name_space, type.Name);
+            IntPtr ptr = IntPtr.Zero;
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                ptr = GetScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+            else
+            {
+                ptr = GetComponentFromScript(scene, GetInstanceID(), name_space, type.Name);
+            }
 
-        //    if (ptr == IntPtr.Zero)
-        //        return null;
-        //    return GCHandle.FromIntPtr(ptr).Target as T;
-        //}
+            if (ptr == IntPtr.Zero)
+                return null;
+            return GCHandle.FromIntPtr(ptr).Target as T;
+        }
 
-        //[DllImport("__Internal")] private static extern void RemoveScript(int id, string name_space, string name);
-        //[DllImport("__Internal")] private static extern void RemoveComponentFromScript(int id, string name_space, string name);
+        [DllImport("__Internal")] private static extern void RemoveScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
+        [DllImport("__Internal")] private static extern void RemoveComponentFromScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
 
-        //public void RemoveComponent(Type type)
-        //{
-        //    if (type == typeof(Transform))
-        //    {
-        //        Debug.LogError("RemoveComponent failed: Cannot destroy transform!");
-        //        return;
-        //    }
-        //    else if (type == typeof(Collider2D))
-        //    {
-        //        Debug.LogError("RemoveComponent failed: Cannot destroy Collider2D! Remove BoxCollider2D/CircleCollider2D instead");
-        //        return;
-        //    }
+        public void RemoveComponent(Type type)
+        {
+            if (type == typeof(Transform))
+            {
+                Debug.LogError("RemoveComponent failed: Cannot destroy transform!");
+                return;
+            }
+            //else if (type == typeof(Collider2D))
+            //{
+            //    Debug.LogError("RemoveComponent failed: Cannot destroy Collider2D! Remove BoxCollider2D/CircleCollider2D instead");
+            //    return;
+            //}
 
-        //    string name_space = "";
-        //    if (type.Namespace != null)
-        //        name_space = type.Namespace;
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
 
-        //    if (type.IsSubclassOf(typeof(MonoBehaviour)))
-        //    {
-        //        RemoveScript(m_InstanceID, name_space, type.Name);
-        //    }
-        //    else
-        //    {
-        //        RemoveComponentFromScript(m_InstanceID, name_space, type.Name);
-        //    }
-        //}
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                RemoveScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+            else
+            {
+                RemoveComponentFromScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+        }
 
-        //public void RemoveComponent<T>() where T : Component
-        //{
-        //    Type type = typeof(T);
+        public void RemoveComponent<T>() where T : Component
+        {
+            Type type = typeof(T);
 
-        //    if (type == typeof(Transform))
-        //    {
-        //        Debug.LogError("RemoveComponent<T> failed: Cannot destroy transform!");
-        //        return;
-        //    }
-        //    else if (type == typeof(Collider2D))
-        //    {
-        //        Debug.LogError("RemoveComponent failed: Cannot destroy Collider2D! Remove BoxCollider2D/CircleCollider2D instead");
-        //        return;
-        //    }
+            if (type == typeof(Transform))
+            {
+                Debug.LogError("RemoveComponent<T> failed: Cannot destroy transform!");
+                return;
+            }
+            //else if (type == typeof(Collider2D))
+            //{
+            //    Debug.LogError("RemoveComponent failed: Cannot destroy Collider2D! Remove BoxCollider2D/CircleCollider2D instead");
+            //    return;
+            //}
 
-        //    string name_space = "";
-        //    if (type.Namespace != null)
-        //        name_space = type.Namespace;
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
 
-        //    if (type.IsSubclassOf(typeof(MonoBehaviour)))
-        //    {
-        //        RemoveScript(m_InstanceID, name_space, type.Name);
-        //    }
-        //    else
-        //    {
-        //        RemoveComponentFromScript(m_InstanceID, name_space, type.Name);
-        //    }
-        //}
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                RemoveScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+            else
+            {
+                RemoveComponentFromScript(scene, GetInstanceID(), name_space, type.Name);
+            }
+        }
 
         #endregion Script/Component
     }

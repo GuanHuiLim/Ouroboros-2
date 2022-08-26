@@ -59,7 +59,7 @@ namespace oo
         ~ComponentDatabase();
 
         void InstantiateObjectFull(UUID id);
-        IntPtr Instantiate(UUID id, const char* name_space, const char* name, bool callAdd = false);
+        IntPtr Instantiate(UUID id, const char* name_space, const char* name, bool onlyScript = false);
 
         bool CheckExists(UUID id);
         bool HasComponent(UUID id, const char* name_space, const char* name);
@@ -94,7 +94,7 @@ namespace oo
         bool CheckEnabled(UUID id, const char* name_space, const char* name);
         void SetEnabled(UUID id, const char* name_space, const char* name, bool isEnabled);
 
-        void Delete(UUID id, const char* name_space, const char* name, bool callRemove = false);
+        void Delete(UUID id, const char* name_space, const char* name, bool onlyScript = false);
         void Delete(UUID id);
         void DeleteAll();
 

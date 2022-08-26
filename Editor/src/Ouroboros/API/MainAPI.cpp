@@ -6,4 +6,5 @@
 #include "GameObjectAPI.h"
 #include "InputAPI.h"
 #include "SceneManagerAPI.h"
+#include "ScriptingAPI.h"
 #include "TransformAPI.h"

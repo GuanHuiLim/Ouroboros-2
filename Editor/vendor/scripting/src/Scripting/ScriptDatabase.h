@@ -37,7 +37,7 @@ namespace oo
 
         void Initialize(std::vector<MonoClass*> const& classList);
 
-        MonoObject* Instantiate(UUID id, const char* name_space, const char* name);
+        IntPtr Instantiate(UUID id, const char* name_space, const char* name);
         IntPtr Store(UUID id, MonoObject* object);
 
         IntPtr Retrieve(UUID id, const char* name_space, const char* name);

@@ -160,7 +160,7 @@ namespace oo
                 SetUpObject(gameObject.Id);
 
                 // create script instance
-                MonoObject* script = scriptDatabase.Instantiate(gameObject.Id, "", "TestClass");
+                MonoObject* script = mono_gchandle_get_target(scriptDatabase.Instantiate(gameObject.Id, "", "TestClass"));
 
                 // set gameObject field
                 MonoClass* klass = ScriptEngine::GetClass("Scripting", "", "TestClass");
@@ -193,6 +193,93 @@ namespace oo
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
         return true;
+    }
+
+    ScriptDatabase::IntPtr ScriptSystem::AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return 0;
+
+        // create script instance
+        ScriptDatabase::IntPtr ptr = scriptDatabase.Instantiate(uuid, name_space, name);
+        MonoObject* script = mono_gchandle_get_target(ptr);
+
+        // set gameObject field
+        MonoClass* klass = ScriptEngine::GetClass("Scripting", name_space, name);
+        MonoClassField* gameObjectField = mono_class_get_field_from_name(klass, "m_GameObject");
+        MonoObject* gameObject = componentDatabase.RetrieveGameObjectObject(uuid);
+        mono_field_set_value(script, gameObjectField, gameObject);
+
+        //// set componentID field
+        //unsigned int key = utility::StringHash(std::string(name_space) + "." + name);
+        //MonoClassField* idField = mono_class_get_field_from_name(klass, "m_ComponentID");
+        //mono_field_set_value(script, idField, &key);
+
+        try
+        {
+            ScriptEngine::InvokeFunction(script, "Awake");
+            ScriptEngine::InvokeFunction(script, "Start");
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR(e.what());
+        }
+        return ptr;
+    }
+    ScriptDatabase::IntPtr ScriptSystem::GetScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return 0;
+        return scriptDatabase.TryRetrieve(uuid, name_space, name);
+    }
+    void ScriptSystem::RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return;
+        scriptDatabase.Delete(uuid, name_space, name);
+    }
+    void ScriptSystem::SetScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
+    {
+        if (!s_IsPlaying)
+            return;
+        scriptDatabase.SetEnabled(uuid, name_space, name, isEnabled);
+    }
+    bool ScriptSystem::CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return false;
+        return scriptDatabase.CheckEnabled(uuid, name_space, name);
+    }
+
+    ComponentDatabase::IntPtr ScriptSystem::AddComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return 0;
+        return componentDatabase.Instantiate(uuid, name_space, name);
+    }
+    ComponentDatabase::IntPtr ScriptSystem::GetComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return 0;
+        return componentDatabase.TryRetrieve(uuid, name_space, name);
+    }
+    void ScriptSystem::RemoveComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return;
+        componentDatabase.Delete(uuid, name_space, name);
+    }
+    void ScriptSystem::SetComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
+    {
+        if (!s_IsPlaying)
+            return;
+        componentDatabase.SetEnabled(uuid, name_space, name, isEnabled);
+    }
+    bool ScriptSystem::CheckComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        if (!s_IsPlaying)
+            return false;
+        return componentDatabase.CheckEnabled(uuid, name_space, name);
     }
 
     void ScriptSystem::InvokeForObject(UUID uuid, const char* functionName, int paramCount, void** params)

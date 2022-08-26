@@ -11,7 +11,7 @@ namespace oo
     SCRIPT_API uint64_t CreateEntity(uint32_t sceneID)
     {
         std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
-        std::shared_ptr<GameObject> instance = scene->CreateGameObject();
+        std::shared_ptr<GameObject> instance = scene->CreateGameObjectDeferred();
 
         UUID uuid = instance->GetComponent<GameObjectComponent>().Id;
         scene->GetWorld().Get_System<ScriptSystem>()->SetUpObject(uuid);

@@ -16,8 +16,8 @@ namespace Ouroboros
         //}
 
         //[DllImport("__Internal")] private static extern void DestroyEntity(int id);
-        //[DllImport("__Internal")] private static extern void RemoveScript(int id, string name_space, string name);
-        //[DllImport("__Internal")] private static extern void RemoveComponentFromScript(int id, string name_space, string name);
+        [DllImport("__Internal")] private static extern void RemoveScript(int id, string name_space, string name);
+        [DllImport("__Internal")] private static extern void RemoveComponentFromScript(int id, string name_space, string name);
 
         //public static void Destroy(Object obj)
         //{

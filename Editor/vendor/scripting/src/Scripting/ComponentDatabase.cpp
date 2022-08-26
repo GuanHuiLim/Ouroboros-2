@@ -61,7 +61,7 @@ namespace oo
         {
             if (!type.Has(sceneID, id))
                 continue;
-            Instantiate(id, type.name_space.c_str(), type.name.c_str());
+            Instantiate(id, type.name_space.c_str(), type.name.c_str(), true);
         }
 
         // set GameObject's transform
@@ -70,7 +70,7 @@ namespace oo
         mono_field_set_value(GO, transformField, transform);
     }
 
-ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* name_space, const char* name, bool callAdd)
+ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* name_space, const char* name, bool onlyScript)
     {
         IntPtr* component = TryGetComponent(id, name_space, name);
         if(component == nullptr)
@@ -78,7 +78,7 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
         if (*component != 0)
             return *component;
 
-        if (callAdd)
+        if (!onlyScript)
             GetComponentType(name_space, name).Add(sceneID, id);
 
         // create C# Component
@@ -147,13 +147,13 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
         GetComponentType(name_space, name).SetEnabled(sceneID, id, isEnabled);
     }
 
-    void ComponentDatabase::Delete(UUID id, const char* name_space, const char* name, bool callRemove)
+    void ComponentDatabase::Delete(UUID id, const char* name_space, const char* name, bool onlyScript)
     {
         IntPtr* component = TryGetComponent(id, name_space, name);
         if (component == nullptr || *component == 0)
             return;
 
-        if (callRemove)
+        if (!onlyScript)
             GetComponentType(name_space, name).Remove(sceneID, id);
         mono_gchandle_free(*component);
         *component = 0;

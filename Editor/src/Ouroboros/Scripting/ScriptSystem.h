@@ -120,6 +120,18 @@ namespace oo
         void SetUpObject(UUID uuid);
         bool StopPlay();
 
+        ScriptDatabase::IntPtr AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+        ScriptDatabase::IntPtr GetScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+        void RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+        void SetScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
+        bool CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+
+        ComponentDatabase::IntPtr AddComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+        ComponentDatabase::IntPtr GetComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+        void RemoveComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+        void SetComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
+        bool CheckComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+
         void InvokeForObject(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
         void InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
 

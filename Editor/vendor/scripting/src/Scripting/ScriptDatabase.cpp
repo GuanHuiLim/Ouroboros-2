@@ -22,19 +22,19 @@ namespace oo
         }
     }
 
-    MonoObject* ScriptDatabase::Instantiate(UUID id, const char* name_space, const char* name)
+    ScriptDatabase::IntPtr ScriptDatabase::Instantiate(UUID id, const char* name_space, const char* name)
     {
         InstancePool& scriptPool = GetInstancePool(name_space, name);
         auto search = scriptPool.find(id);
         if (search != scriptPool.end())
-            return mono_gchandle_get_target(search->second.handle);
+            return search->second.handle;
 
         MonoClass* klass = ScriptEngine::GetClass("Scripting", name_space, name);
         MonoObject* object = ScriptEngine::CreateObject(klass);
         mono_runtime_object_init(object);
         IntPtr ptr = mono_gchandle_new(object, false);
         scriptPool.insert(std::pair<UUID, Instance>(id, Instance{ ptr }));
-        return object;
+        return ptr;
     }
 
     ScriptDatabase::IntPtr ScriptDatabase::Store(UUID id, MonoObject* object)
