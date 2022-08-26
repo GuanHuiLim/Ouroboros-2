@@ -85,24 +85,24 @@ namespace oo
         obj->GetComponent<GameObjectComponent>().Name = newName;
     }
 
-    //SCRIPT_API bool GameObject_GetActive(Entity id)
-    //{
-    //    GameObject obj{ id };
-    //    return obj.GetComponent<GameObjectComponent>().Active;
-    //}
+    SCRIPT_API bool GameObject_GetActive(Scene::ID_type sceneID, UUID uuid)
+    {
+        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        return obj->IsActive();
+    }
 
-    //SCRIPT_API bool GameObject_GetActiveInHierarchy(Entity id)
-    //{
-    //    GameObject obj{ id };
-    //    return obj.GetComponent<GameObjectComponent>().ActiveInHierarchy;
-    //}
+    SCRIPT_API bool GameObject_GetActiveInHierarchy(Scene::ID_type sceneID, UUID uuid)
+    {
+        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        return obj->ActiveInHierarchy();
+    }
 
 
-    //SCRIPT_API void GameObject_SetActive(Entity id, bool value)
-    //{
-    //    GameObject obj{ id };
-    //    obj.SetActive(value);
-    //}
+    SCRIPT_API void GameObject_SetActive(Scene::ID_type sceneID, UUID uuid, bool value)
+    {
+        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        obj->SetActive(value);
+    }
 
     //SCRIPT_API unsigned GameObject_GetLayer(Entity id)
     //{

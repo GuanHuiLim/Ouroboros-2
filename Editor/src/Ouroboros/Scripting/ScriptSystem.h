@@ -120,6 +120,9 @@ namespace oo
         void SetUpObject(UUID uuid);
         bool StopPlay();
 
+        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
+        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
+
         ScriptDatabase::IntPtr AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
         ScriptDatabase::IntPtr GetScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
         void RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);

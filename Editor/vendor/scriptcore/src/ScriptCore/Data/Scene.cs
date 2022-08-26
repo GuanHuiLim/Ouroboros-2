@@ -12,7 +12,7 @@ namespace Ouroboros
             m_SceneID = sceneID;
         }
 
-        public UInt32 GetSceneID()
+        public UInt32 GetID()
         {
             return m_SceneID;
         }
@@ -23,7 +23,7 @@ namespace Ouroboros
         {
             get
             {
-                GCHandle stringPtr = GCHandle.FromIntPtr(Scene_GetName(GetSceneID()));
+                GCHandle stringPtr = GCHandle.FromIntPtr(Scene_GetName(GetID()));
                 string name = (string)stringPtr.Target;
                 stringPtr.Free();
                 return name;
@@ -36,7 +36,7 @@ namespace Ouroboros
         {
             get
             {
-                GCHandle stringPtr = GCHandle.FromIntPtr(Scene_GetPath(GetSceneID()));
+                GCHandle stringPtr = GCHandle.FromIntPtr(Scene_GetPath(GetID()));
                 string name = (string)stringPtr.Target;
                 stringPtr.Free();
                 return name;
@@ -47,14 +47,14 @@ namespace Ouroboros
 
         public bool isLoaded
         {
-            get { return Scene_IsLoaded(GetSceneID()); }
+            get { return Scene_IsLoaded(GetID()); }
         }
 
         [DllImport("__Internal")] private static extern bool Scene_IsValid(UInt32 sceneID);
 
         public bool IsValid()
         {
-            return Scene_IsValid(GetSceneID());
+            return Scene_IsValid(GetID());
         }
 
         public override bool Equals(object obj)
@@ -84,7 +84,7 @@ namespace Ouroboros
 
         public static implicit operator UInt32(Scene scene)
         {
-            return scene.GetSceneID();
+            return scene.GetID();
         }
     }
 }

@@ -84,24 +84,25 @@ namespace Ouroboros
             set { GameObject_SetName(scene, GetInstanceID(), value); }
         }
 
-        //[DllImport("__Internal")] private static extern bool GameObject_GetActive(int id);
-        //[DllImport("__Internal")] private static extern bool GameObject_GetActiveInHierarchy(int id);
-        //[DllImport("__Internal")] private static extern void GameObject_SetActive(int id, bool value);
+        [DllImport("__Internal")] private static extern bool GameObject_GetActive(UInt32 sceneID, UInt64 uuid);
+        [DllImport("__Internal")] private static extern bool GameObject_GetActiveInHierarchy(UInt32 sceneID, UInt64 uuid);
+        [DllImport("__Internal")] private static extern void GameObject_SetActive(UInt32 sceneID, UInt64 uuid, bool value);
 
-        //public bool activeInHierarchy
-        //{
-        //    get { return GameObject_GetActiveInHierarchy(m_InstanceID); }
-        //}
+        public bool activeInHierarchy
+        {
+            get { return GameObject_GetActiveInHierarchy(scene, GetInstanceID()); }
+        }
 
-        //public bool activeSelf
-        //{
-        //    get { return GameObject_GetActive(m_InstanceID); }
-        //}
+        public bool activeSelf
+        {
+            get { return GameObject_GetActive(scene, GetInstanceID()); }
+        }
 
-        //public void SetActive(bool value)
-        //{
-        //    GameObject_SetActive(m_InstanceID, value);
-        //}
+        public void SetActive(bool value)
+        {
+            GameObject_SetActive(scene, GetInstanceID(), value);
+        }
+
         //[DllImport("__Internal")] private static extern uint GameObject_GetLayer(int id);
         //[DllImport("__Internal")] private static extern void GameObject_SetLayer(int id, uint newLayer);
 

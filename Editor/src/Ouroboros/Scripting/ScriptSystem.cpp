@@ -128,14 +128,15 @@ namespace oo
     // Scene specific script stuff
     ScriptSystem::ScriptSystem(Scene& scene) : scene{ scene }, componentDatabase{ scene.GetID() }
     {
-        //EventManager::Subscribe<ScriptSystem, EditorController::OnSimulateEvent>(this, [](EditorController::OnSimulateEvent* e)
-        //{
-
-        //});
+        //EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
+        //EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
     }
 
     ScriptSystem::~ScriptSystem()
     {
+        //EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
+        //EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
+
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
     }
@@ -195,6 +196,19 @@ namespace oo
         return true;
     }
 
+    void ScriptSystem::OnObjectEnabled(GameObjectComponent::OnEnableEvent* e)
+    {
+        if (scene.FindWithInstanceID(e->Id) == nullptr)
+            return;
+        InvokeForObject(e->Id, "OnEnable");
+    }
+    void ScriptSystem::OnObjectDisabled(GameObjectComponent::OnDisableEvent* e)
+    {
+        if (scene.FindWithInstanceID(e->Id) == nullptr)
+            return;
+        InvokeForObject(e->Id, "OnDisable");
+    }
+
     ScriptDatabase::IntPtr ScriptSystem::AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
         if (!s_IsPlaying)
@@ -243,6 +257,13 @@ namespace oo
         if (!s_IsPlaying)
             return;
         scriptDatabase.SetEnabled(uuid, name_space, name, isEnabled);
+        std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
+        if (!gameObject->ActiveInHierarchy())
+            return;
+        if(isEnabled)
+            InvokeForObject(uuid, "OnEnable");
+        else
+            InvokeForObject(uuid, "OnDisable");
     }
     bool ScriptSystem::CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
