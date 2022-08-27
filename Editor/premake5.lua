@@ -168,14 +168,15 @@ project "Editor"
     filter{}
     
     filter "configurations:Debug"
+        runtime "Debug" -- uses the debug Runtime Library
         defines "OO_DEBUG"
         symbols "On"
-
         architecture "x86_64"
+        
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
-				-- [IMPORTANT] copy command requires a space after the target directory.
+            -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" " .. binApp},
         }
 
@@ -183,12 +184,13 @@ project "Editor"
         {
             "rttr_core_d",
         }
-        
+    
     filter "configurations:Release"
+        runtime "Release" -- uses the release Runtime Library
         defines "OO_RELEASE"
         optimize "On"
-
         architecture "x86_64"
+
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
@@ -202,10 +204,11 @@ project "Editor"
         }
         
     filter "configurations:Production"
+        runtime "Release" -- uses the release Runtime Library
         defines "OO_PRODUCTION"
         optimize "On"
-        
         architecture "x86_64"
+
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
