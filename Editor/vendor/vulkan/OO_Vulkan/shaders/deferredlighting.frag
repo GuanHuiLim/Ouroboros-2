@@ -47,11 +47,11 @@ vec3 CalculatePointLight_NonPBR(int lightIndex, in vec3 fragPos, in vec3 normal,
 	
 		// Specular part
 		// Specular map values are stored in alpha of albedo mrt
-		vec3 R = -reflect(L, N);
-		float RdotV = max(0.0, dot(R, V));
-		vec3 spec = ubo.lights[lightIndex].color.xyz * specular * pow(RdotV, 16.0) * atten;
+		//vec3 R = -reflect(L, N);
+		//float RdotV = max(0.0, dot(R, V));
+		//vec3 spec = ubo.lights[lightIndex].color.xyz * specular * pow(RdotV, 16.0) * atten;
 	
-		result = diff + spec;	
+		result = diff;// + spec;	
 	}
 
 	return result;
