@@ -76,7 +76,12 @@ VulkanRenderer::~VulkanRenderer()
 	vkDestroyFramebuffer(m_device.logicalDevice, offscreenFramebuffer, nullptr);
 	offscreenFB.destroy(m_device.logicalDevice);
 	offscreenDepth.destroy(m_device.logicalDevice);
-	vkDestroyRenderPass(m_device.logicalDevice, offscreenPass, nullptr);
+
+	if (offscreenPass)
+	{
+		vkDestroyRenderPass(m_device.logicalDevice, offscreenPass, nullptr);
+		offscreenPass = VK_NULL_HANDLE;
+	}
 
 	for (size_t i = 0; i < models.size(); i++)
 	{
@@ -122,6 +127,11 @@ VulkanRenderer::~VulkanRenderer()
 		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
 		renderPass_default = VK_NULL_HANDLE;
 	}
+	if (renderPass_default2)
+	{
+		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default2, nullptr);
+		renderPass_default2 = VK_NULL_HANDLE;
+	}
 }
 
 VulkanRenderer* VulkanRenderer::get()
@@ -140,8 +150,8 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		CreateInstance(setupSpecs);
 		CreateSurface(setupSpecs,window);
-		AcquirePhysicalDevice();
-		CreateLogicalDevice();
+		AcquirePhysicalDevice(setupSpecs);
+		CreateLogicalDevice(setupSpecs);
 
 		//if (m_device.debugMarker)
 		//{
@@ -254,14 +264,14 @@ void VulkanRenderer::CreateSurface(const oGFX::SetupInfo& setupSpecs, Window& wi
 	}
 }
 
-void VulkanRenderer::AcquirePhysicalDevice()
+void VulkanRenderer::AcquirePhysicalDevice(const oGFX::SetupInfo& setupSpecs)
 {
-    m_device.InitPhysicalDevice(m_instance);
+    m_device.InitPhysicalDevice(setupSpecs,m_instance);
 }
 
-void VulkanRenderer::CreateLogicalDevice()
+void VulkanRenderer::CreateLogicalDevice(const oGFX::SetupInfo& setupSpecs)
 {
-    m_device.InitLogicalDevice(m_instance);
+    m_device.InitLogicalDevice(setupSpecs,m_instance);
 }
 
 void VulkanRenderer::SetupSwapchain()
@@ -274,6 +284,7 @@ void VulkanRenderer::CreateRenderpass()
 	if (renderPass_default)
 	{
 		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
+		renderPass_default = VK_NULL_HANDLE;
 	}
 
 	// ATTACHMENTS
@@ -373,7 +384,8 @@ void VulkanRenderer::CreateRenderpass()
 	VK_NAME(m_device.logicalDevice, "defaultRenderPass",renderPass_default);
 
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-	vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default2);
+	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default2));
+	VK_NAME(m_device.logicalDevice, "defaultRenderPass_2",renderPass_default2);
 	//depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	//result = vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &compositionPass);
 	//if (result != VK_SUCCESS)
@@ -669,6 +681,7 @@ void VulkanRenderer::CreateOffscreenPass()
 	if (offscreenPass)
 	{
 		vkDestroyRenderPass(m_device.logicalDevice, offscreenPass, nullptr);
+		offscreenPass = VK_NULL_HANDLE;
 	}
 
 	// ATTACHMENTS

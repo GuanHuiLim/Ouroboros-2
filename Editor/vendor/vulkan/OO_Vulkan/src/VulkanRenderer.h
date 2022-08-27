@@ -73,8 +73,8 @@ public:
 
 	void CreateInstance(const oGFX::SetupInfo& setupSpecs);
 	void CreateSurface(const oGFX::SetupInfo& setupSpecs, Window& window);
-	void AcquirePhysicalDevice();
-	void CreateLogicalDevice();
+	void AcquirePhysicalDevice(const oGFX::SetupInfo& setupSpecs);
+	void CreateLogicalDevice(const oGFX::SetupInfo& setupSpecs);
 	void SetupSwapchain();
 	void CreateRenderpass();
 	void CreateDescriptorSetLayout();

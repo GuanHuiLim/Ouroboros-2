@@ -172,23 +172,19 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 		validationLayers = getSupportedValidationLayers( *this );
 		if( validationLayers.size() ) 
 		{
-			requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #ifdef _DEBUG
+			requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			requiredExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+			//
+			// Enable render doc if requested by the user
+			//
+			if(setupSpecs.renderDoc == true)
+			{
+				validationLayers.emplace_back( "VK_LAYER_RENDERDOC_Capture" );
+			}
 #endif // DEBUG
 		}
 	}
-
-	//
-	// Enable render doc if requested by the user
-	//
-#ifdef _DEBUG
-	if( setupSpecs.renderDoc == true)
-	{
-		validationLayers.emplace_back( "VK_LAYER_RENDERDOC_Capture" );
-	}
-#endif // DEBUG
-
 
 	//check if instance extensions are supported
 	if (!checkInstanceExtensionSupport(&requiredExtensions))

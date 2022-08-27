@@ -409,7 +409,7 @@ namespace oo
 
         oGFX::SetupInfo si;
         si.debug = true;
-        si.renderDoc = true;
+        si.renderDoc = false;
         si.SurfaceFunctionPointer = std::function<void()>([&]() {
             return SDL_Vulkan_CreateSurface(m_windowHandle, vr->m_instance.instance, &vr->m_instance.surface);
             });
