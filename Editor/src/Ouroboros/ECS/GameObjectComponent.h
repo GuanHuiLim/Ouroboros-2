@@ -36,10 +36,16 @@ namespace oo
 
         struct OnEnableEvent : public Event
         {
+            OnEnableEvent(UUID id) : Id{ id } {}
+
+            UUID Id;
         };
 
         struct OnDisableEvent : public Event
         {
+            OnDisableEvent(UUID id) : Id{ id } {}
+
+            UUID Id;
         };
 
         RTTR_ENABLE();

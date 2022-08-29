@@ -221,14 +221,14 @@ namespace oo
             if (previousState)
             {
                 // if was active, call the disable event
-                GameObjectComponent::OnDisableEvent onDisableEvent;
+                GameObjectComponent::OnDisableEvent onDisableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onDisableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
             }
             else
             {
                 // if was inactive, call the enable event
-                GameObjectComponent::OnEnableEvent onEnableEvent;
+                GameObjectComponent::OnEnableEvent onEnableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onEnableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
             }

@@ -24,9 +24,6 @@ namespace oo
 {
     class TransformSystem final : public Ecs::System
     {
-    private:
-        Scene* m_scene = nullptr;
-
     public:
         
         //TransformSystem(Scene* scene) : m_scene{ scene } {};
@@ -93,9 +90,13 @@ namespace oo
             
         }
 
-        void UpdateTransform(std::shared_ptr<GameObject> go, GameObjectComponent& gocomp, Transform3D& tf);
-
         virtual void Run(Ecs::ECSWorld* world) override;
+
+    private:
+        void UpdateTransform(std::shared_ptr<GameObject> const& go, Transform3D& tf);
+
+    private:
+        Scene* m_scene = nullptr;
 
     };
 }

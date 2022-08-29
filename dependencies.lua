@@ -21,6 +21,10 @@ IncludeDir                  = {}
 IncludeDir["glm"]           = AppVendor .. "/glm"
 -- IncludeDir["oom"]           = EngineVendor .. "/oom"   -- custom maths library
 IncludeDir["imgui"]         = AppVendor .. "/imgui"
+IncludeDir["vulkan"]        = AppVendor .. "/vulkan"
+IncludeDir["vulkanSrc"]     = AppVendor .. "/vulkan/OO_Vulkan/src"
+IncludeDir["assimp"]        = AppVendor .. "/vulkan/vendor/assimp/include/"
+IncludeDir["assimpBin"]     = AppVendor .. "/vulkan/vendor/assimp/BINARIES/Win32/include/"
 IncludeDir["rttr"]          = AppVendor .. "/rttr/src"
 IncludeDir["SDL"]           = AppVendor .. "/sdl2/include"
 IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
@@ -29,7 +33,7 @@ IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/inc"    -- fmod studio requires fmod inc too
 -- IncludeDir["ffmpeg"]      	= EngineVendor .. "/ffmpeg/"
 -- IncludeDir["freetype"]      = EngineVendor .. "/freetype/include"
--- IncludeDir["mono"]          = EngineVendor .. "/mono/include/mono-2.0"
+IncludeDir["mono"]          =  AppVendor .. "/scripting/vendor/mono/include/mono-2.0"
 IncludeDir["tracy"]         = AppVendor .. "/tracy"
 IncludeDir["rapidjson"]     = AppVendor .. "/rapidjson/include"
 IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
@@ -40,6 +44,7 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
 IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs"
+IncludeDir["scripting"]     = AppVendor .. "/scripting/src"
 
 IncludeDir["sharedlib"]     = AppVendor .. "/sharedlib/Isolated-Testing-Ground"
 
@@ -54,6 +59,7 @@ LibraryDir["SDL"]           = AppVendor .. "/sdl2/lib/x64"
 -- LibraryDir["freetype"]      = EngineVendor .. "/freetype/x64"
 -- LibraryDir["oom"]           = EngineVendor .. "/oom/lib"   -- custom maths library directory
 LibraryDir["VulkanSDK"]     = "%{VULKAN_SDK}/Lib"
+LibraryDir["assimp"]     	= AppVendor .. "/vulkan/vendor/assimp/BINARIES/Win32/lib"
 -- LibraryDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader/lib"
 -- LibraryDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap/lib"
 -- LibraryDir["launcher"]      = AppVendor .. "launcher/Oroborous-Launcher/lib"

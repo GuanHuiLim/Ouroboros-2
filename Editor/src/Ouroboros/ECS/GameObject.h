@@ -64,6 +64,7 @@ namespace oo
         // Setters
         void SetActive(bool active) const;
         void SetName(std::string_view name) const;
+
 		void SetIsPrefab(bool isprefab) const;
 
         /*---------------------------------------------------------------------------------*/
@@ -119,7 +120,6 @@ namespace oo
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
         /*void SwapChildren(GameObject const& other);*/
         
-
         GameObject GetParent() const;
         std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
         std::vector<GameObject> GetChildren(bool includeItself = false) const;

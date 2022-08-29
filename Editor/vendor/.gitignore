@@ -1,0 +1,6 @@
+vulkan/OO_Vulkan/Models/*/*.*
+vulkan/OO_Vulkan/Models/*.*
+vulkan/OO_Vulkan/Textures/*/*.*
+vulkan/OO_Vulkan/Textures/*.*
+vulkan/OO_Vulkan/src/main.cpp
+vulkan/vendor/imgui/examples/
