@@ -135,22 +135,22 @@ project "Editor"
         {
 				-- [IMPORTANT] copy command requires a space after the target directory.
             -- SDL2.0 
-            {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" " .. binApp },
+            {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" \"" .. binApp .. "\""},
             -- Controller Support file
-            {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" " .. binApp },
+            {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" \"" .. binApp .. "\""},
             -- ImGui Default Settings
-            {"{COPY} \"%{AppDir}/default.ini\" " .. binApp },
+            {"{COPY} \"%{AppDir}/default.ini\" \"" .. binApp .. "\""},
             -- copy General DLLs
-            {"{COPY} \"%{AppDir}/dlls/\" " .. binApp },
+            {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
             -- copy launcher's Data file
-            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" " .. binApp },
+            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
             -- tracy server copy 
-            {"{COPY} \"%{AppDir}/tracy_server\" " .. binApp .. "/tracy_server"}, 
+            {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
 			-- vulkan shaders copy
 			{ "mkdir \"" .. binApp .. "/shaders/bin\"" },
-            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" " .. binApp .. "/shaders/bin"}, 			
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			
 			{ "mkdir \"" .. AppDir .. "/shaders/bin\"" },
-            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" " .. AppDir .. "/shaders/bin"}, 
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""}, 
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -164,7 +164,7 @@ project "Editor"
     filter{ "configurations:Release", "platforms:Editor"}
         defines { "EDITOR_RELEASE", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{ "configurations:Production", "platforms:Editor"}
-        defines "EDITOR_PRODUCTION"
+        defines { "EDITOR_PRODUCTION", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{}
     
     filter "configurations:Debug"
@@ -177,7 +177,7 @@ project "Editor"
         postbuildcommands
         {
             -- [IMPORTANT] copy command requires a space after the target directory.
-            {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" " .. binApp},
+            {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" \"" .. binApp .. "\""},
         }
 
         links
@@ -195,7 +195,7 @@ project "Editor"
         postbuildcommands
         {
 				-- [IMPORTANT] copy command requires a space after the target directory.
-            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
+            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
         }
 
         links
@@ -213,7 +213,7 @@ project "Editor"
         postbuildcommands
         {
 				-- [IMPORTANT] copy command requires a space after the target directory.
-            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
+            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
         }
 
         links
