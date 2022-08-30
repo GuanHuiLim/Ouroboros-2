@@ -166,7 +166,8 @@ project "Editor"
         }
         
     filter "configurations:Release"
-        defines "OO_RELEASE"
+        runtime "Release" -- uses the release Runtime Library
+        defines { "OO_RELEASE", "NDEBUG" }
         optimize "On"
 
         architecture "x86_64"
@@ -184,7 +185,8 @@ project "Editor"
         }
         
     filter "configurations:Production"
-        defines "OO_PRODUCTION"
+        runtime "Release" -- uses the release Runtime Library
+        defines { "OO_PRODUCTION", "NDEBUG" }
         optimize "On"
         
         architecture "x86_64"
