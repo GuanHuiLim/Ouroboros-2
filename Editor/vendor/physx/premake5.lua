@@ -15,8 +15,18 @@ project "Physics"
     includedirs
     {
         "%{IncludeDir.physx}",
-		--"%{IncludeDir.physx}/Physics/Physx/pxshared/include",
-		"%{IncludeDir.physx_foundation}"
+        --"%{IncludeDir.physx}/Physics/Physx/pxshared/include",
+        "%{IncludeDir.physx_foundation}"
+    }
+    
+    links
+    {
+        "PhysX_64",
+        "PhysXCommon_64",
+        "PhysXCooking_64",
+        "PhysXFoundation_64",
+        "PhysXExtensions_static_64",
+        "PhysXPvdSDK_static_64",
     }
 
     filter "system:windows"
@@ -31,8 +41,33 @@ project "Physics"
     filter "configurations:Debug"
         runtime "Debug"
         symbols "on"
+        defines "_DEBUG"
+        
+        -- library diretories
+        -- CLIENT : Only Add client required Directories, rest settled by references
+        libdirs 
+        {
+            "%{LibraryDir.physx}/Debug",
+        }
 
     filter "configurations:Release"
         runtime "Release"
         optimize "on"
         defines "NDEBUG"
+        -- library diretories
+        -- CLIENT : Only Add client required Directories, rest settled by references
+        libdirs 
+        {
+            "%{LibraryDir.physx}/Release",
+        }
+        
+    filter "configurations:Production"
+        runtime "Release"
+        optimize "on"
+        defines "NDEBUG"
+        -- library diretories
+        -- CLIENT : Only Add client required Directories, rest settled by references
+        libdirs 
+        {
+            "%{LibraryDir.physx}/Release",
+        }

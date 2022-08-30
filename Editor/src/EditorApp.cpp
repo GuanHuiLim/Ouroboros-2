@@ -79,7 +79,7 @@ public:
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
 
-        m_phy.test();
+        //m_phy.test();
     }
 
     void OnUpdate() override

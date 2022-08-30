@@ -70,8 +70,8 @@ project "Editor"
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
-        "%{LibraryDir.physx}/Debug",
-        "%{LibraryDir.physx}/Release",
+        -- "%{LibraryDir.physx}/Debug",
+        -- "%{LibraryDir.physx}/Release",
         "%{LibraryDir.assimp}/Release",
     }
 
@@ -93,14 +93,15 @@ project "Editor"
         "ECS",
         "Launcher",
         "SharedLib",
-        
         "Physics",
-        "PhysX_64",
-        "PhysXCommon_64",
-        "PhysXCooking_64",
-        "PhysXFoundation_64",
-        "PhysXExtensions_static_64",
-        "PhysXPvdSDK_static_64",
+        
+        -- "PhysX_64",
+        -- "PhysXCommon_64",
+        -- "PhysXCooking_64",
+        -- "PhysXFoundation_64",
+        -- "PhysXExtensions_static_64",
+        -- "PhysXPvdSDK_static_64",
+
         --"mono-2.0-sgen",
         "Scripting",
         "ScriptCore",
@@ -188,7 +189,7 @@ project "Editor"
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" \"" .. binApp .. "\""},
             -- copy Debug DLLs
-            {"{COPY} \"%{AppDir}/dlls/Debug\" \"" .. binApp .. "\"" },
+            {"{COPY} \"%{AppDir}/dlls/Debug/\" \"" .. binApp .. "\"" },
         }
 
         links
@@ -208,7 +209,7 @@ project "Editor"
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
             -- copy Release DLLs
-            {"{COPY} \"%{AppDir}/dlls/Release\" \"" .. binApp .. "\"" },
+            {"{COPY} \"%{AppDir}/dlls/Release/\" \"" .. binApp .. "\"" },
         }
 
         links
@@ -228,7 +229,7 @@ project "Editor"
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
             -- copy Release DLLs
-            {"{COPY} \"%{AppDir}/dlls/release\" \"" .. binApp .. "\"" },
+            {"{COPY} \"%{AppDir}/dlls/release/\" \"" .. binApp .. "\"" },
         }
 
         links

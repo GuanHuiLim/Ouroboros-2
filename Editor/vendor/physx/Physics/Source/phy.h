@@ -1,9 +1,9 @@
 #pragma once
 
+#include <Physics/Physx/include/PxPhysicsAPI.h>
 //#include "PxConfig.h"
 //#include "PxPhysics.h"
 
-#include <Physics/Physx/include/PxPhysicsAPI.h>
 //#include "iPxPhysicsAPI.h"
 
 //#include "vehicle/PxVehicleSDK.h"
@@ -11,7 +11,6 @@
 #include <iostream>
 #include "phy.h"
 
-using namespace physx;
 
 //PxPhysics* gPhysics = NULL;
 //PxScene* gScene = NULL;
