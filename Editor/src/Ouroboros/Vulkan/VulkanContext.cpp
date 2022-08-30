@@ -432,13 +432,16 @@ namespace oo
         auto obj = gw.CreateObjectInstance();
         auto plane = gw.CreateObjectInstance();
 
+        int32_t white = 0x00404040;
+        auto tex = vr->CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&white));
+
         DefaultMesh dm = CreateDefaultCubeMesh();
         cubeMesh.reset(vr->LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr));
         DefaultMesh pm = CreateDefaultPlaneXZMesh();
         planeMesh.reset(vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
 
         {
-            auto& myObj = gw.GetObjectInstance(obj);
+            auto& myObj = gw.GetObjectInstance(obj); 
             myObj.modelID = cubeMesh->gfxIndex;
             myObj.scale = glm::vec3{ 2.1f,1.1f,1.1f };
             myObj.rotVec = glm::vec3{ 1.1f,1.1f,1.1f };
@@ -447,6 +450,7 @@ namespace oo
             myObj.localToWorld = glm::translate(myObj.localToWorld, myObj.position);
             myObj.localToWorld = glm::rotate(myObj.localToWorld,glm::radians(myObj.rot), myObj.rotVec);
             myObj.localToWorld = glm::scale(myObj.localToWorld, myObj.scale);
+            myObj.bindlessGlobalTextureIndex_Albedo = tex;
         }
        
         {
@@ -458,6 +462,7 @@ namespace oo
             myPlane.localToWorld = glm::translate(myPlane.localToWorld, myPlane.position);
             myPlane.localToWorld = glm::rotate(myPlane.localToWorld,glm::radians(myPlane.rot), myPlane.rotVec);
             myPlane.localToWorld = glm::scale(myPlane.localToWorld, myPlane.scale);
+            myPlane.bindlessGlobalTextureIndex_Albedo = tex;
         }
         
 
@@ -484,7 +489,7 @@ namespace oo
         if (vr->PrepareFrame() == true)
         {
             auto& obj = gw.GetObjectInstance(0);
-            obj.rot += 1.0f;
+            obj.rot += 0.25f;
             obj.localToWorld = glm::mat4(1.0f);
             obj.localToWorld = glm::translate(obj.localToWorld, obj.position);
             obj.localToWorld = glm::rotate(obj.localToWorld,glm::radians(obj.rot), obj.rotVec);
@@ -492,7 +497,7 @@ namespace oo
 
             vr->timer += 0.02f;
             
-            vr->UpdateLights(0.02f);
+            vr->UpdateLights(0.002f);
 
             // Upload CPU light data to GPU. Ideally this should only contain lights that intersects the camera frustum.
             vr->UploadLights();
