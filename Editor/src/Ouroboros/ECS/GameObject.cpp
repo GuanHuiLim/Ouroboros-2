@@ -28,20 +28,7 @@ namespace oo
     GameObject GameObject::Duplicate()
     {
         ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
-        //ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
-        
         return *m_scene->DuplicateGameObject(*this);
-
-        /*std::vector<GameObject> childs = GetChildren(true);
-
-        for(auto& child : childs)
-        
-        UUID new_uuid = UUID{};
-        Entity new_entt = m_scene->GetWorld().duplicate_entity(m_entity);
-        GameObject new_gameObject{ new_entt, *m_scene };
-        m_scene->GetWorld().get_component<GameObjectComponent>(new_entt).Id = new_uuid;
-
-        return new_gameObject;*/
     }
 
     // Create is a dummy type
@@ -117,6 +104,11 @@ namespace oo
     std::size_t GameObject::GetDirectChildCount() const
     {
         return GetSceneNode().lock()->get_direct_child_count();
+    }
+
+    std::size_t GameObject::GetComponentCount() const
+    {
+        return m_scene->GetWorld().get_num_components(m_entity);
     }
 
     GameObject GameObject::GetParent() const
@@ -221,14 +213,14 @@ namespace oo
             if (previousState)
             {
                 // if was active, call the disable event
-                GameObjectComponent::OnDisableEvent onDisableEvent;
+                GameObjectComponent::OnDisableEvent onDisableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onDisableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
             }
             else
             {
                 // if was inactive, call the enable event
-                GameObjectComponent::OnEnableEvent onEnableEvent;
+                GameObjectComponent::OnEnableEvent onEnableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onEnableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
             }

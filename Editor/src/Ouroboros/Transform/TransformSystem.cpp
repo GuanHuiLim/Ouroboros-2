@@ -21,8 +21,12 @@ Technology is prohibited.
 
 namespace oo
 {
-    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> go, GameObjectComponent& gocomp, Transform3D& tf)
+    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go, Transform3D& tf)
     {
+        static constexpr const char* const per_transform_update = "per_transform_update";
+        TRACY_TRACK_PERFORMANCE(per_transform_update);
+        TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
+
         // Reset all has changed to false regardless of their previous state.
         tf.m_transform.m_hasChanged = false;
 
@@ -30,7 +34,6 @@ namespace oo
         if (tf.IsDirty())
         {
             tf.m_transform.CalculateLocalTransform();
-            //tf.m_transform.m_globalTransform = tf.m_transform.m_localTransform;
         }
 
         // Check for valid parent
@@ -43,6 +46,9 @@ namespace oo
                 tf.m_transform.m_globalTransform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform;
             }
         }
+
+        TRACY_PROFILE_SCOPE_END();
+        TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);
     }
 
     void TransformSystem::Run(Ecs::ECSWorld* world)
@@ -69,21 +75,80 @@ namespace oo
             //world->for_each(query, [&](GameObjectComponent& gocomp, Transform3D& tf) { UpdateTransform(gocomp, tf); });
             
             // Transform System updates via the scenegraph because the order matters
-
-            auto& const scenegraph = m_scene->GetGraph();
-            scenegraph.get_childs(scenegraph.get_root());
-            for (auto& node : scenegraph.hierarchy_traversal_nodes())
             {
-                // Find current gameobject
-                auto const go = m_scene->FindWithInstanceID(node.get_handle());
-                
-                // Skip gameobjects that has the deferred component
-                if (go->HasComponent<DeferredComponent>() == true)
-                    continue;
+                static constexpr const char* const pre_transform_collect = "pre_transform_collect";
+                TRACY_TRACK_PERFORMANCE(pre_transform_collect);
+                TRACY_PROFILE_SCOPE_NC(pre_transform_collect, tracy::Color::Gold3);
 
-                UpdateTransform(go, go->GetComponent<GameObjectComponent>(), go->Transform());
+                //std::vector<Scene::go_ptr> objects_to_update;
+                auto& const graph = m_scene->GetGraph();
+                //graph.get_childs(graph.get_root());
+
+                scenegraph::shared_pointer root_node = graph.get_root();
+                std::stack<scenenode::shared_pointer> s;
+                scenenode::shared_pointer curr = root_node;
+                s.push(curr);
+                while (!s.empty())
+                {
+                    curr = s.top();
+                    s.pop();
+                    for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+                    {
+                        scenenode::shared_pointer child = *iter;
+                        s.push(child);
+
+                        // Find current gameobject
+                        auto const go = m_scene->FindWithInstanceID(child->get_handle());
+                        
+                        // Skip gameobjects that has the deferred component
+                        if (go->HasComponent<DeferredComponent>())
+                            continue;
+
+                        UpdateTransform(go, go->Transform());
+                    }
+                }
+
+
+                //for (auto& handle : scenegraph.hierarchy_traversal_handles())
+                //{
+                //    // Find current gameobject
+                //    auto const go = m_scene->FindWithInstanceID(handle);
+                //
+                //    // Skip gameobjects that has the deferred component
+                //    if (go->HasComponent<DeferredComponent>())
+                //        continue;
+
+                //    //objects_to_update.emplace_back(go);
+                //    UpdateTransform(go, go->Transform());
+                //}
+
+                TRACY_PROFILE_SCOPE_END();
+                TRACY_DISPLAY_PERFORMANCE_SELECTED(pre_transform_collect);
+
+                /*for (auto& go : objects_to_update)
+                {
+                    static constexpr const char* const get_component = "get_component";
+                    TRACY_TRACK_PERFORMANCE(get_component);
+                    TRACY_PROFILE_SCOPE_NC(get_component, tracy::Color::Gold4);
+                    GameObjectComponent& gocomp = go->GetComponent<GameObjectComponent>();
+                    TRACY_PROFILE_SCOPE_END();
+                    TRACY_DISPLAY_PERFORMANCE_SELECTED(get_component);
+
+                    static constexpr const char* const get_transform = "get_transform";
+                    TRACY_TRACK_PERFORMANCE(get_transform);
+                    TRACY_PROFILE_SCOPE_NC(get_transform, tracy::Color::Gold4);
+                    Transform3D& tf = go->Transform();
+                    TRACY_PROFILE_SCOPE_END();
+                    TRACY_DISPLAY_PERFORMANCE_SELECTED(get_transform);
+                    
+                    static constexpr const char* const per_transform_update = "per_transform_update";
+                    TRACY_TRACK_PERFORMANCE(per_transform_update);
+                    TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
+                    UpdateTransform(go, gocomp, tf);
+                    TRACY_PROFILE_SCOPE_END();
+                    TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);
+                }*/
             }
-
             
             TRACY_PROFILE_SCOPE_END();
         }

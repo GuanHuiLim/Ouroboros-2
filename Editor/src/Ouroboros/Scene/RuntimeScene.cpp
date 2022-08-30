@@ -19,6 +19,8 @@ Technology is prohibited.
 //#include "Waypoint/WaypointSystem.h"
 //#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
+#include "Ouroboros/Scripting/ScriptSystem.h"
+
 namespace oo
 {
     RuntimeScene::RuntimeScene(std::string const& filepath)
@@ -31,6 +33,8 @@ namespace oo
     void RuntimeScene::Init()
     {
         Scene::Init();
+
+        GetWorld().Add_System<ScriptSystem>(*this);
 
         //constexpr const char* const registration = "registration";
         {
@@ -75,6 +79,8 @@ namespace oo
         --m_framesLeft;
 
         Scene::Update();
+
+        GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
 
         //constexpr const char* const runtime_scene_update = "Runtime Scene Update";
         {
@@ -220,6 +226,8 @@ namespace oo
     {
         //constexpr const char* const start_simulation = "Start Simulation";
         {
+            GetWorld().Get_System<ScriptSystem>()->StartPlay();
+
             /*TRACY_PROFILE_SCOPE(start_simulation);
 
             GetWorld().GetSystem<oo::ScriptSystem>()->StartPlay();
@@ -234,6 +242,7 @@ namespace oo
 
     void RuntimeScene::StopSimulation()
     {
+        GetWorld().Get_System<oo::ScriptSystem>()->StopPlay();
         //constexpr const char* const stop_simulation = "Stop Simulation";
         {
             //TRACY_PROFILE_SCOPE(stop_simulation);

@@ -102,6 +102,8 @@ namespace oo
         // Old method [ keeping just to verify if something goes wrong one day ]
         //void RecusriveLinkScenegraph(GameObject original_parent_go, std::queue<Scene::go_ptr> new_objects);
 
+        UUID GetInstanceID(GameObject const& go) const;
+
         // Variables
     private:
         std::string m_name;

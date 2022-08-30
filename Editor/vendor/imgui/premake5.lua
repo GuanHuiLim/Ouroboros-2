@@ -36,6 +36,8 @@ project "ImGui"
         "imgui/backends/imgui_impl_vulkan.cpp",
         "imgui/backends/imgui_impl_sdl.h",
         "imgui/backends/imgui_impl_sdl.cpp",
+        "imgui/backends/imgui_impl_win32.h",
+        "imgui/backends/imgui_impl_win32.cpp",
         "imgui/imgui.h",
         "imgui/imgui.cpp",
         "imgui/imgui_demo.cpp",
