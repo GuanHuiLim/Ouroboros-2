@@ -30,6 +30,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	
 	s_configFile = config;
 	s_projectFolder = s_configFile.parent_path();
+	s_prefabFolder = (*prj_setting).value.FindMember("PrefabFolder")->value.GetString();
 	s_startingScene = (*prj_setting).value.FindMember("StartScene")->value.GetString();
 	s_sceneFolder = (*prj_setting).value.FindMember("SceneFolder")->value.GetString();
 	s_scriptcoreDLL = (*prj_setting).value.FindMember("ScriptCoreDLL")->value.GetString();
@@ -53,21 +54,22 @@ void Project::LoadProject(std::filesystem::path& config)
 
 void Project::SaveProject()
 {
+	std::ifstream ifs(s_configFile.string());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Config File is not valid!");
+		return;
+	}
+
+	rapidjson::IStreamWrapper isw(ifs);
 	rapidjson::Document doc;
-	doc.SetObject();
-	rapidjson::Value projectsetting(rapidjson::kObjectType);
-	std::string temp = s_projectFolder.string().c_str();
-	projectsetting.AddMember("ProjectFolderPath", rapidjson::Value(temp.c_str(),static_cast<rapidjson::SizeType>(temp.size()),doc.GetAllocator()),doc.GetAllocator());
-	temp = s_startingScene.string();
-	projectsetting.AddMember("StartScene", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
-	temp = s_scriptcoreDLL.string();
-	projectsetting.AddMember("ScriptCoreDLL", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
-	temp = s_scriptmodulePath.string();
-	projectsetting.AddMember("ScriptModulePath", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
-	temp = s_scriptbuildPath.string();
-	projectsetting.AddMember("ScriptBuildPath", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
+	doc.ParseStream(isw);
+	auto prj_setting = doc.FindMember("Project Settings");
+	prj_setting->value.FindMember("StartScene")->value.SetString(s_startingScene.string().c_str(), static_cast<rapidjson::SizeType>(s_startingScene.string().size()));
 
 	rapidjson::Value scenes(rapidjson::kObjectType);
+	//write your scenes
+	doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
 	//get all scenes
 
@@ -75,8 +77,8 @@ void Project::SaveProject()
 	////
 	
 	//attatch all members to doc to be serialized
-	doc.AddMember("Project Settings", projectsetting, doc.GetAllocator());
-	doc.AddMember("Scenes", scenes, doc.GetAllocator());
+	//doc.AddMember("Project Settings", projectsetting, doc.GetAllocator());
+	//doc.AddMember("Scenes", scenes, doc.GetAllocator());
 
 	std::ofstream ofs(s_configFile);
 	if (ofs.good())
