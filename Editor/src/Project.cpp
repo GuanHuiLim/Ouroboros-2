@@ -67,9 +67,10 @@ void Project::SaveProject()
 	auto prj_setting = doc.FindMember("Project Settings");
 	prj_setting->value.FindMember("StartScene")->value.SetString(s_startingScene.string().c_str(), static_cast<rapidjson::SizeType>(s_startingScene.string().size()));
 
-	rapidjson::Value scenes(rapidjson::kObjectType);
+	auto scenes  = doc.FindMember("Scenes");
+	
 	//write your scenes
-	doc.AddMember("Scenes", scenes,doc.GetAllocator());
+	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
 	//get all scenes
 
