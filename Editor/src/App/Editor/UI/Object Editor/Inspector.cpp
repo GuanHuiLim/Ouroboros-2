@@ -144,7 +144,7 @@ void Inspector::Show()
 		}
 		//gameobject->GetComponent<>();
 		DisplayComponent<oo::GameObjectComponent>(*gameobject);
-		DisplayComponent<oo::Transform3D>(*gameobject);
+		DisplayComponent<oo::TransformComponent>(*gameobject);
 		DisplayComponent<oo::DeferredComponent>(*gameobject);
 	}
 }

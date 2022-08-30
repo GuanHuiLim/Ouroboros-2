@@ -49,7 +49,7 @@ namespace oo
     /*---------------------------------------------------------------------------------*/
     public:
         // Helper Getters
-        Transform3D& Transform()                    const { ASSERT_MSG(!HasComponent<Transform3D>(), "Invalid ID");          return GetComponent<Transform3D>(); };
+        TransformComponent& Transform()                    const { ASSERT_MSG(!HasComponent<TransformComponent>(), "Invalid ID");          return GetComponent<TransformComponent>(); };
         bool IsActive()                             const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Active; }
         bool ActiveInHierarchy()                    const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().ActiveInHierarchy; }
 

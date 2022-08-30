@@ -14,7 +14,7 @@ Technology is prohibited.
 #include "pch.h"
 #include "GameObject.h"
 
-//#include "Ouroboros/Transform/Transform3D.h"
+//#include "Ouroboros/Transform/TransformComponent.h"
 //#include "Ouroboros/Transform/TransformSystem.h"
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
@@ -47,7 +47,7 @@ namespace oo
 
     GameObject::GameObject(UUID uuid, Scene& scene)
         : m_scene { &scene }
-        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, Transform3D>() }
+        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent>() }
     {
         SetupGo(uuid, m_entity);
     }

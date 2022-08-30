@@ -64,7 +64,7 @@ void Serializer::Init()
 		});
 
 	AddLoadComponent<oo::GameObjectComponent>();
-	AddLoadComponent<oo::Transform3D>();
+	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 
 	load_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetBool();});
@@ -229,14 +229,14 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val)
 {
 	//will have more components
 	SaveComponent<oo::GameObjectComponent>(go, val);
-	SaveComponent<oo::Transform3D>(go, val);
+	SaveComponent<oo::TransformComponent>(go, val);
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val)
 {
 	SaveComponent<oo::PrefabComponent>(go, val);
 	SaveComponent<oo::GameObjectComponent>(go, val);
-	SaveComponent<oo::Transform3D>(go, val);
+	SaveComponent<oo::TransformComponent>(go, val);
 	return;
 }
 
