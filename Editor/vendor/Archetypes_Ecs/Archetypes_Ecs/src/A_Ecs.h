@@ -160,7 +160,7 @@ namespace Ecs::internal
 			list->components.push_back({ type,type->hash,offsets });
 
 			if (type->align != 0) {
-				offsets += type->size * (itemCount);
+				offsets += static_cast<uint32_t>(type->size * (itemCount));
 			}
 
 		}
@@ -168,7 +168,7 @@ namespace Ecs::internal
 		//implement proper size handling later
 		assert(offsets <= BLOCK_MEMORY_16K);
 
-		list->chunkCapacity = itemCount;
+		list->chunkCapacity = static_cast<int16_t>(itemCount);
 
 		return list;
 	}
@@ -288,7 +288,7 @@ namespace Ecs::internal
 			for (int i = 0; i < archvec.size(); i++) {
 
 				auto componentList = archvec[i]->componentList;
-				int ccount = componentList->components.size();
+				int ccount = static_cast<int>(componentList->components.size());
 				if (ccount == count) {
 					for (int j = 0; j < ccount; j++) {
 
@@ -328,7 +328,7 @@ namespace Ecs::internal
 	inline EntityID allocate_entity(IECSWorld* world) {
 		EntityID newID;
 		if (world->dead_entities == 0) {
-			int index = world->entities.size();
+			int index = static_cast<int>(world->entities.size());
 
 			EnityToChunk newStorage;
 			newStorage.chunk = nullptr;
@@ -436,7 +436,7 @@ namespace Ecs::internal
 					//pointers are stable
 					if (mtCp2 == mtCp1) {
 						mergarray[mergcount].idxNew = j;
-						mergarray[mergcount].idxOld = i;
+						mergarray[mergcount].idxOld = static_cast<int>(i);
 						mergarray[mergcount].msize = mtCp1->size;
 						mergarray[mergcount].info = mtCp2;
 						mergcount++;
@@ -466,11 +466,11 @@ namespace Ecs::internal
 		}
 
 		//delete entity from old chunk
-		erase_entity_in_chunk(oldChunk, oldindex);
+		erase_entity_in_chunk(oldChunk, static_cast<uint16_t>(oldindex));
 
 		//assign entity chunk data
 		newarch->ownerWorld->entities[id.index].chunk = newChunk;
-		newarch->ownerWorld->entities[id.index].chunkIndex = newindex;
+		newarch->ownerWorld->entities[id.index].chunkIndex = static_cast<uint16_t>(newindex);
 	}
 
 	inline void copy_entity_data_in_archetype(Archetype* arch, EntityID copy, EntityID original) {
@@ -489,8 +489,8 @@ namespace Ecs::internal
 		DataChunk* originalChunk = arch->ownerWorld->entities[original.index].chunk;
 		DataChunk* copyChunk	 = arch->ownerWorld->entities[copy.index].chunk;
 
-		auto& originalClist = originalChunk->header.componentList;
-		auto& copyClist		= copyChunk->header.componentList;
+		//auto& originalClist = originalChunk->header.componentList;
+		//auto& copyClist		= copyChunk->header.componentList;
 
 		int originalindex = arch->ownerWorld->entities[original.index].chunkIndex;
 		int copyindex	  = arch->ownerWorld->entities[copy.index].chunkIndex;
@@ -505,7 +505,7 @@ namespace Ecs::internal
 			const ComponentInfo* info;
 		};
 		auto infocount = componentList.size();
-		Info infoarray[MAX_COMPONENTS];
+		//Info infoarray[MAX_COMPONENTS];
 
 		//for (auto i = 0ull; i < oldNcomps; i++) {
 		//	const ComponentInfo* mtCp1 = oldClist->components[i].type;
@@ -553,7 +553,7 @@ namespace Ecs::internal
 
 			int index = insert_entity_in_chunk(targetChunk, id, bInitializeConstructors);
 			arch->ownerWorld->entities[id.index].chunk = targetChunk;
-			arch->ownerWorld->entities[id.index].chunkIndex = index;
+			arch->ownerWorld->entities[id.index].chunkIndex = static_cast<uint16_t>(index);
 		}
 		else {
 			move_entity_to_archetype(arch, id, true);
@@ -750,7 +750,7 @@ namespace Ecs::internal
 		Archetype* oldarch = get_entity_archetype(world, id);
 		ComponentCombination* oldlist = oldarch->componentList;
 		bool typeFound = false;
-		int lenght = oldlist->components.size();
+		int lenght = static_cast<int>(oldlist->components.size());
 		for (int i = 0; i < lenght; i++) {
 			temporalComponentInfoArray[i] = oldlist->components[i].type;
 
@@ -817,6 +817,7 @@ namespace Ecs::internal
 
 	template<typename ...Args, typename Func>
 	void unpack_chunk(type_list<Args...> types, DataChunk* chunk, Func&& function) {
+		(void)types;
 		entity_chunk_iterate<Args...>(chunk, function);
 	}
 	template<typename Func>
@@ -955,9 +956,9 @@ namespace Ecs::internal
 	inline void broadcast_add_component_callback(IECSWorld* world, EntityID eid, C& component)
 	{
 		static const IQuery query = []() {
-			IQuery query;
-			query.with<C>().build();
-			return query;
+			IQuery _query;
+			_query.with<C>().build();
+			return _query;
 		}();
 
 		ComponentEvent evnt{ eid,component };
@@ -973,9 +974,9 @@ namespace Ecs::internal
 	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, C& component)
 	{
 		static const IQuery query = []() {
-			IQuery query;
-			query.with<C>().build();
-			return query;
+			IQuery _query;
+			_query.with<C>().build();
+			return _query;
 		}();
 
 		ComponentEvent evnt{ eid,component };
