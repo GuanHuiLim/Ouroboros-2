@@ -10,7 +10,7 @@ namespace Ecs
 	{
 		friend struct IECSWorld;
 	protected:
-		IECSWorld* world;
+		IECSWorld* m_world;
 	public:
 		System() = default;
 		virtual ~System() = default;
