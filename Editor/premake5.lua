@@ -51,6 +51,8 @@ project "Editor"
         "%{IncludeDir.ecs}",
 
         "%{IncludeDir.sharedlib}",
+		"%{IncludeDir.physx}",
+		"%{IncludeDir.physx_foundation}",
 
         --for tracy
         "%{IncludeDir.tracy}",
@@ -64,6 +66,8 @@ project "Editor"
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
+		"%{LibraryDir.physx}/Debug",
+		"%{LibraryDir.physx}/Release",
     }
 
     -- linking External libraries 
@@ -84,6 +88,14 @@ project "Editor"
         "ECS",
         "Launcher",
         "SharedLib",
+		
+		"Physics",
+		"PhysX_64",
+		"PhysXCommon_64",
+		"PhysXCooking_64",
+		"PhysXFoundation_64",
+		"PhysXExtensions_static_64",
+		"PhysXPvdSDK_static_64",
         
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
@@ -144,6 +156,8 @@ project "Editor"
         postbuildcommands
         {
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" " .. binApp},
+			-- copy Debug DLLs
+            {"{COPY} \"%{AppDir}/dlls/Debug\" " .. binApp },
         }
 
         links
@@ -160,6 +174,8 @@ project "Editor"
         postbuildcommands
         {
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
+			-- copy Release DLLs
+            {"{COPY} \"%{AppDir}/dlls/Release\" " .. binApp },
         }
 
         links
@@ -176,6 +192,8 @@ project "Editor"
         postbuildcommands
         {
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
+			-- copy Release DLLs
+            {"{COPY} \"%{AppDir}/dlls/release\" " .. binApp },
         }
 
         links

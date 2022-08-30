@@ -37,6 +37,9 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap"
 -- IncludeDir["vma"]           = EngineVendor .. "/vma"
 
+IncludeDir["physx"]     = AppVendor .. "/physx"
+IncludeDir["physx_foundation"]     = AppVendor .. "/physx/Physics/Physx/pxshared/include"
+
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
 IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs"
@@ -48,6 +51,7 @@ LibraryDir                  = {}
 -- LibraryDir["mono"]          = EngineVendor .. "/mono/lib"
 LibraryDir["rttr"]          = AppVendor .. "/rttr/lib"
 LibraryDir["SDL"]           = AppVendor .. "/sdl2/lib/x64"
+LibraryDir["physx"]           = AppVendor .. "/physx/Physics/Physx/lib"
 -- LibraryDir["fmod"]          = EngineVendor .. "/fmod/core/lib/x64"
 -- LibraryDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/lib/x64"
 -- LibraryDir["ffmpeg"]   		= EngineVendor .. "/ffmpeg/lib64"

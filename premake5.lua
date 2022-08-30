@@ -45,6 +45,7 @@ include "Editor/vendor/imgui"
 include "Editor/vendor/launcher"
 include "Editor/vendor/Archetypes_Ecs"
 include "Editor/vendor/sharedlib"
+include "Editor/vendor/physx"
 group ""
 
 include "Editor"

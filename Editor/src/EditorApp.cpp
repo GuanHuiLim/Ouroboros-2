@@ -47,11 +47,14 @@ Technology is prohibited.
 //Tracy
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
+#include <Ouroboros/Physics/Physics.h>
+
 class EditorApp final : public oo::Application
 {
 private:
     // main scene manager
     SceneManager m_sceneManager;
+    oo::Physics m_phy;
 
 public:
     EditorApp(oo::CommandLineArgs args)
@@ -70,6 +73,8 @@ public:
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
+
+        m_phy.test();
     }
 
     void OnUpdate() override
