@@ -42,7 +42,6 @@ Technology is prohibited.
 #include <Quaternion/include/Quaternion.h>
 #include <Scenegraph/include/scenegraph.h>
 
-
 #include <Ouroboros/Core/Events/ApplicationEvent.h>
 
 //Tracy
@@ -104,6 +103,9 @@ public:
 
     void CloseApp(oo::WindowCloseEvent*)
     {
+        CloseProjectEvent e;
+        oo::EventManager::Broadcast(&e);
+
         Close();
     }
 
