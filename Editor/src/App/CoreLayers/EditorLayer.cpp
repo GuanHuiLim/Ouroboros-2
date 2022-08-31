@@ -43,16 +43,16 @@ void EditorLayer::OnUpdate()
 	    m_editor.Update();
 
 	//top menu bar
-	Editor::MenuBar();
+	//Editor::MenuBar();
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("Project"))
 		{
-			if (ImGui::MenuItem("Open Launcher"))
+			if (ImGui::MenuItem("Open Launcher")) 
 			{
 				m_editormode = false;
-				oo::EventManager::Broadcast<CloseProjectEvent>(new CloseProjectEvent());
-
+				CloseProjectEvent e;
+				oo::EventManager::Broadcast(&e);
 			}
 			ImGui::EndMenu();
 		}
