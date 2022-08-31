@@ -4,8 +4,10 @@
 
 #include <imgui/imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
+#include <imgui/imgui_internal.h>
 
 #include "App/Editor/Utility/ImGuiManager.h"
+#include "App/Editor/Utility/ImGui_ToggleButton.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 
 #include <SceneManagement/include/SceneManager.h>
@@ -21,6 +23,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 Inspector::Inspector()
+	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
 	m_InspectorUI[UI_RTTRType::UItypes::BOOL_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
@@ -151,16 +154,45 @@ void Inspector::Show()
 				oo::PrefabManager::MakePrefab(gameobject);
 			}
 		}
-		//gameobject->GetComponent<>();
-		DisplayComponent<oo::GameObjectComponent>(*gameobject);
-		DisplayComponent<oo::Transform3D>(*gameobject);
-		DisplayComponent<oo::DeferredComponent>(*gameobject);
+		ImGui::Separator();
+
+		DisplayAllComponents(*gameobject);
+		DisplayAddComponents(*gameobject);
+
 		if (disable_prefabEdit)
 		{
 			ImGui::PopItemFlag();
 			ImGui::PopStyleColor(3);
 		}
 	}
+}
+void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
+{
+	ImGui::BeginGroup();
+	DisplayComponent<oo::GameObjectComponent>(gameobject);
+	DisplayComponent<oo::Transform3D>(gameobject);
+	DisplayComponent<oo::DeferredComponent>(gameobject);
+	ImGui::EndGroup();
+}
+void Inspector::DisplayAddComponents(oo::GameObject& gameobject)
+{
+	float offset = (ImGui::GetContentRegionAvail().x - 200.0f) * 0.5f;
+	ImGui::Dummy({0,0});//for me to use sameline on
+	ImGui::SameLine(offset);
+	ImGui::BeginGroup();
+	m_AddComponentButton.UpdateToggle();
+	if (m_AddComponentButton.GetToggle())
+	{
+		bool selected = false;
+		ImGui::BeginListBox("##AddComponents", { 200,150 });
+		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::Transform3D>(gameobject);
+		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+		ImGui::EndListBox();
+		if (selected)
+			m_AddComponentButton.SetToggle(false);
+	}
+	ImGui::EndGroup();
 }
 void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
 {

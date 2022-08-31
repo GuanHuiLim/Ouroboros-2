@@ -46,6 +46,16 @@ bool ToggleButton::UpdateToggle()
 	return result;
 }
 
+void ToggleButton::SetToggle(bool toggle)
+{
+	m_toggled = toggle;
+}
+
+bool ToggleButton::GetToggle()
+{
+	return m_toggled;
+}
+
 
 
 ColorButton::ColorButton(std::vector<std::string>&& names, std::vector<ImColor>&& colors, ImVec2 buttonsize, int start_index)

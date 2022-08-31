@@ -30,6 +30,7 @@ Editor::~Editor()
 
 void Editor::Update()
 {
+	static bool b = [this]() { m_styleEditor.InitStyle(); return true; }();
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 	MenuBar();

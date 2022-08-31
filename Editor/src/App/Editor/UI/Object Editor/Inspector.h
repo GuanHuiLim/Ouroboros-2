@@ -18,7 +18,7 @@
 //editor utility
 #include <App/Editor/Utility/UI_RTTRType.h>
 #include <App/Editor/Utility/ImGuiStylePresets.h>
-
+#include <App/Editor/Utility/ImGui_ToggleButton.h>
 class Inspector
 {
 public:
@@ -26,6 +26,14 @@ public:
 
 	void Show();
 private:
+	void DisplayAllComponents(oo::GameObject& gameobject);
+	void DisplayAddComponents(oo::GameObject& gameobject);
+	template <typename Component>
+	bool AddComponentSelectable(oo::GameObject& go);
+private: 
+	ToggleButton m_AddComponentButton;
+
+private: //inspecting functions
 	template <typename Component>
 	void DisplayComponent(oo::GameObject& gameobject);
 	template <typename Component>
@@ -33,7 +41,7 @@ private:
 	void DisplayNestedComponent(std::string name ,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
 
 	void DisplayArrayView(std::string name,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
-private:
+private: //inspecting elements
 	std::unordered_map<UI_RTTRType::UItypes, std::function<void(std::string& name,rttr::variant & v, bool & edited , bool& endEdit)>> m_InspectorUI;
 	bool m_showReadonly = false;
 };
@@ -56,6 +64,16 @@ inline void Inspector::SaveComponentDataHelper(Component& component, rttr::prope
 	}
 }
 template<typename Component>
+inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
+{
+	if (ImGui::Selectable(rttr::type::get<Component>().get_name().data(), false))
+	{
+		go.AddComponent<Component>();
+		return true;
+	}
+	return false;
+}
+template<typename Component>
 inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 {
 	//tracks the currently edited item.
@@ -69,8 +87,11 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 	auto& component = gameobject.GetComponent<Component>();
 	rttr::type type = component.get_type();
 	
-	ImGui::Text(type.get_name().data());
+	bool open = ImGui::TreeNodeEx(type.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
 	ImGui::Separator();
+	if (open == false)
+		return;
+
 	ImGui::PushID(type.get_id());
 	for (rttr::property prop : type.get_properties())
 	{

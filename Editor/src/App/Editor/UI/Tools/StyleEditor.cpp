@@ -31,15 +31,18 @@ Technology is prohibited.
 
 #include <windows.h>
 #include <shobjidl_core.h>
-//#include <Editor/GUIglobals.h>
 
 ImGuiID StyleEditor::m_styleeditor_popup = 200;
-StyleEditor::StyleEditor()
+void StyleEditor::InitStyle()
 {
-	name = "Default";
+	name = defaultStyleName;
 	LoadStyle();
 
-	(name+'\0').copy(namebuffer, 100);
+	(name + '\0').copy(namebuffer, 100);
+}
+StyleEditor::StyleEditor()
+{
+
 }
 StyleEditor::~StyleEditor()
 {
@@ -344,6 +347,8 @@ void StyleEditor::SaveStyle()
 }
 void StyleEditor::LoadStyle()
 {
+	if (std::filesystem::exists(name + ".settings") == false)
+		return;
 	std::ifstream ifs;
 	ifs.open(name + ".settings",std::ios::binary);
 	if (ifs.is_open() == false)
