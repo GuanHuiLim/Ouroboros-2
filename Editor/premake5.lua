@@ -1,7 +1,6 @@
 project "Editor"
     kind "ConsoleApp"
     language "C++"
-    cppdialect "C++20"
     staticruntime "off"
     --debugformat "c7"
     warnings "Extra" -- Set warnings level to 4 for this project
@@ -40,6 +39,9 @@ project "Editor"
 
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.VulkanSDK}",
+        "%{IncludeDir.vulkan}",
+        "%{IncludeDir.assimp}",
+        "%{IncludeDir.assimpBin}",
         "%{IncludeDir.SDL}",
         
         "%{IncludeDir.imgui}",
@@ -52,6 +54,9 @@ project "Editor"
         "%{IncludeDir.ecs}",
 
         "%{IncludeDir.sharedlib}",
+		
+		"%{IncludeDir.mono}",
+		"%{IncludeDir.scripting}",
 
         --for tracy
         "%{IncludeDir.tracy}",
@@ -65,6 +70,7 @@ project "Editor"
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
+        "%{LibraryDir.assimp}/Release",
     }
 
     -- linking External libraries 
@@ -85,7 +91,15 @@ project "Editor"
         "ECS",
         "Launcher",
         "SharedLib",
+		
+		--"mono-2.0-sgen",
+		"Scripting",
+		"ScriptCore",
         
+        --Linking to vulkan Library [Uncomment the next line when youre done setting up]
+        "Vulkan",
+		"assimp-vc142-mt",
+
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
         --"symsrv",
@@ -109,58 +123,79 @@ project "Editor"
         
         --enable this post build command for 64 bit system
         architecture "x86_64"
+        
+        -- if Editor need any prebuild commands regardless of debug/release/production
+        prebuildcommands
+        {
+			{"call \"%{AppVendor}/vulkan/OO_Vulkan/shaders/compileShaders.bat\"" }
+        }
+
+        -- if Editor needs any postbuild commands regardless of debug/release/production
         postbuildcommands
         {
+				-- [IMPORTANT] copy command requires a space after the target directory.
             -- SDL2.0 
-            {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" " .. binApp },
+            {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" \"" .. binApp .. "\""},
             -- Controller Support file
-            {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" " .. binApp },
+            {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" \"" .. binApp .. "\""},
             -- ImGui Default Settings
-            {"{COPY} \"%{AppDir}/default.ini\" " .. binApp },
+            {"{COPY} \"%{AppDir}/default.ini\" \"" .. binApp .. "\""},
             -- copy General DLLs
-            {"{COPY} \"%{AppDir}/dlls/\" " .. binApp },
-            
+            {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
             -- copy launcher's Data file
-            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" " .. binApp },
-
+            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
             -- tracy server copy 
-            {"{COPY} \"%{AppDir}/tracy_server\" " .. binApp .. "/tracy_server"}, 
+            {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
+			-- vulkan shaders copy
+			{ "mkdir \"" .. binApp .. "/shaders/bin\"" },
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			
+			{ "mkdir \"" .. AppDir .. "/shaders/bin\"" },
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""}, 
         }
     
+        -- if editor needs to link with any static/dynamic library regardless of debug/release/production
+        links
+        {
+
+        }
 
     filter{ "configurations:Debug", "platforms:Editor"}
         defines { "EDITOR_DEBUG", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{ "configurations:Release", "platforms:Editor"}
         defines { "EDITOR_RELEASE", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{ "configurations:Production", "platforms:Editor"}
-        defines "EDITOR_PRODUCTION"
+        defines { "EDITOR_PRODUCTION", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{}
     
     filter "configurations:Debug"
+        runtime "Debug" -- uses the debug Runtime Library
         defines "OO_DEBUG"
         symbols "On"
-
         architecture "x86_64"
+        
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
-            {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" " .. binApp},
+            -- [IMPORTANT] copy command requires a space after the target directory.
+            {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" \"" .. binApp .. "\""},
         }
 
         links
         {
             "rttr_core_d",
         }
-        
+    
     filter "configurations:Release"
+        runtime "Release" -- uses the release Runtime Library
         defines "OO_RELEASE"
         optimize "On"
-
         architecture "x86_64"
+
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
-            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
+				-- [IMPORTANT] copy command requires a space after the target directory.
+            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
         }
 
         links
@@ -169,14 +204,16 @@ project "Editor"
         }
         
     filter "configurations:Production"
+        runtime "Release" -- uses the release Runtime Library
         defines "OO_PRODUCTION"
         optimize "On"
-        
         architecture "x86_64"
+
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
-            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" " .. binApp},
+				-- [IMPORTANT] copy command requires a space after the target directory.
+            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
         }
 
         links

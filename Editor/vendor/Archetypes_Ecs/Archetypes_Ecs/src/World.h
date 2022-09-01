@@ -75,6 +75,8 @@ namespace Ecs
 		template<typename C>
 		C& get_component(EntityID id);
 
+		size_t get_num_components(EntityID id);
+
 		template<typename C>
 		C* set_singleton();
 		template<typename C>

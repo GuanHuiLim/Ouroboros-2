@@ -32,6 +32,7 @@ Technology is prohibited.
 // Core Essential Layers
 #include "App/CoreLayers/SceneLayer.h"
 #include "App/Corelayers/EditorLayer.h"
+#include "App/CoreLayers/ScriptingLayer.h"
 
 // External includes
 #include <imgui/imgui.h>
@@ -48,6 +49,8 @@ Technology is prohibited.
 //Tracy
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
+#include <Scripting/Scripting.h>
+
 class EditorApp final : public oo::Application
 {
 private:
@@ -58,6 +61,9 @@ public:
     EditorApp(oo::CommandLineArgs args)
         : Application{ "Ouroboros v2.0", args }
     {
+        // Scripting Layer
+        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
+
         //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());

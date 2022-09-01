@@ -29,8 +29,8 @@ bin-int/
 # **.prefab
 
 # #scripts
-# ScriptCore.dll
-# ScriptCore.pdb
+ScriptCore.dll
+ScriptCore.pdb
 
 # #scripting Proj
 # Scripting/bin/

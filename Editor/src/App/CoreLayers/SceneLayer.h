@@ -22,6 +22,10 @@ Technology is prohibited.
 #include "Ouroboros/Scene/EditorController.h"
 
 #include "Ouroboros/Core/Input.h"
+
+// TESTING
+#include "Ouroboros/Scripting/ScriptSystem.h"
+
 namespace oo
 {
     class SceneLayer final : public oo::Layer
@@ -57,6 +61,11 @@ namespace oo
 
         void OnUpdate() override final
         {
+            if (oo::input::IsKeyHeld(KEY_LEFT_SHIFT) && oo::input::IsKeyPressed(KEY_TAB))
+            {
+                ScriptSystem::Compile();
+                ScriptSystem::Load();
+            }
             if (oo::input::IsKeyPressed(KEY_Q))
             {
                 m_editorController.Simulate();

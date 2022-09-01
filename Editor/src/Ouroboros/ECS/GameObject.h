@@ -28,7 +28,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    // Note Gameobject is no longer directly convertible to Entity.
+    // NOTE Gameobject is no longer directly convertible to Entity.
     class GameObject final
     {
     public:
@@ -58,14 +58,11 @@ namespace oo
         UUID GetInstanceID()                        const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Id; }
         scenenode::weak_pointer GetSceneNode()      const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node; }
         Entity GetEntity()                          const { return m_entity; }
-        //Ecs::ECSWorld GetWorld()                    const { ASSERT_MSG(m_scene == nullptr, "GameObject has invalid scene");  return m_scene->GetWorld(); } // ptr to read-only ECS World
         Scene const* GetScene()                     const { return m_scene; }
 
         // Setters
         void SetActive(bool active) const;
-        // only done after ecs able to move objects dynamically
         void SetName(std::string_view name) const;
-
 
         /*---------------------------------------------------------------------------------*/
         /* Constructors                                                                    */
@@ -81,6 +78,9 @@ namespace oo
 
         // Explicit Instantiation constructor
         explicit GameObject(Scene& scene);
+
+        // Explicit Instantiation From Another Existing Gameobject constructor
+        explicit GameObject(Scene& scene, GameObject& target);
 
         // Traditional Construct GameObject Based on UUID
         GameObject(UUID uuid, Scene& scene);
@@ -133,6 +133,13 @@ namespace oo
         /*---------------------------------------------------------------------------------*/
         /* Queries                                                                         */
         /*---------------------------------------------------------------------------------*/
+        
+        bool HasChild() const;
+        std::size_t GetChildCount() const;
+        std::size_t GetDirectChildCount() const;
+
+        std::size_t GetComponentCount() const;
+
         template<typename Component>
         Component& GetComponent() const
         {
@@ -182,6 +189,9 @@ namespace oo
         }
 
     private:
+        void SetupGo(UUID uuid, Ecs::EntityID entt);
+
+        void SetHierarchyActive(GameObjectComponent& comp, bool active) const;
         void CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const;
     };
 }

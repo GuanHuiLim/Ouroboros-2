@@ -47,17 +47,26 @@ public:
 	static void LoadScene(oo::Scene& scene);
 
 	static std::filesystem::path SavePrefab(std::shared_ptr<oo::GameObject> go, oo::Scene& scene);
-	static void LoadPrefab(std::shared_ptr<oo::GameObject> go);
+	static void LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go);
+
+	static std::string SaveDeletedObject(std::shared_ptr<oo::GameObject> go,oo::Scene& scene);
+	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
 private:
 	//saving
+	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene);
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val);
 	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val);
 	template <typename Component>
 	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val);
+	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop);
+	static void SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property prop);
 	//loading
+	static UUID Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene);
 	static void LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter, rapidjson::Value::MemberIterator& end);
 	template <typename Component>
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
+	static void LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val);
+	static void LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val);
 protected://rpj wrappers
 	static void ResetDocument() noexcept;
 protected://serialzation helpers
@@ -87,10 +96,22 @@ inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val)
 	{
 		if (prop.is_readonly())
 			continue;
-
-		auto iter = UI_RTTRType::types.find(prop.get_type().get_id());
+		auto prop_type = prop.get_type();
+		auto iter = UI_RTTRType::types.find(prop_type.get_id());
 		if (iter == UI_RTTRType::types.end())
+		{
+			if (prop_type.is_sequential_container())
+			{
+				rttr::variant variant = prop.get_value(component);
+				SaveSequentialContainer(variant, v, prop);
+			}
+			else if (prop_type.is_class())
+			{
+				rttr::variant component_variant = prop.get_value(component);
+				SaveNestedComponent(component_variant, v, prop);
+			}
 			continue;//not supported
+		}
 		auto sf = save_commands.find(iter->second);
 		if (sf == save_commands.end())
 			continue;//don't have this save function
@@ -121,7 +142,22 @@ inline void Serializer::LoadComponent(oo::GameObject& go, rapidjson::Value&& val
 		
 		auto types_UI = UI_RTTRType::types.find(prop.get_type().get_id());
 		if (types_UI == UI_RTTRType::types.end())
+		{
+			rttr::type prop_type = prop.get_type();
+			if (prop_type.is_sequential_container())
+			{
+				rttr::variant v = prop.get_value(component);
+				LoadSequentialContainer(v, iter->value);
+				prop.set_value(component, v);
+			}
+			if (prop_type.is_class())
+			{
+				rttr::variant variant = prop.get_value(component);
+				LoadNestedComponent(variant, iter->value);
+				prop.set_value(component, variant);
+			}
 			continue;//not supported
+		}
 		auto command = load_commands.find(types_UI->second);
 		if (command == load_commands.end())
 			continue;//don't have this save function
@@ -185,7 +221,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		//processes the components		
 		LoadObject(*gameobj, members, membersEnd);
 		if (iter + 1 != document.MemberEnd())
-			gameobj = scene->CreateGameObject();
+			gameobj = scene->CreateGameObjectImmediate();
 	}
 	ifs.close();
 }

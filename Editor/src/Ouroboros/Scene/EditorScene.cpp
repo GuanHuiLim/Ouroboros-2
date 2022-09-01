@@ -170,10 +170,10 @@ namespace oo
         //SaveToFile();
     }
 
-    void EditorScene::ReloadSceneWithPath(std::string const& filepath)
+    void EditorScene::SetNewPath(std::string const& filepath)
     {
         SetFilePath(filepath);
-        ReloadScene();
+        //ReloadScene();
     }
 
     void EditorScene::Save()

@@ -16,7 +16,7 @@ Technology is prohibited.
 #include "EditorController.h"
 
 //#include "Project/EditorProject.h"
-//#include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Scripting/ScriptSystem.h"
 //#include "RuntimeController.h"
 //#include "Ouroboros/Platform/Windows/WindowsWindow.h"
 //#include "Ouroboros/Core/Timestep.h"
@@ -59,7 +59,7 @@ namespace oo
         if (currentScene != nullptr)
         {
             m_editorScene.reset();
-            m_sceneManager.RemoveScene(currentScene->GetSceneName());
+            m_sceneManager.RemoveScene(currentScene->GetID());
         }
 
         auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>(startfile.SceneName, startfile.LoadPath);
@@ -74,12 +74,12 @@ namespace oo
         // if in editor mode
         if (m_activeState == STATE::EDITING)
         {
-            //// check for errors in scripts
-            //if (oo::ScriptSystem::CheckErrors(true))
-            //{
-            //    //LOG_ERROR("Fix Compile Time Errors before entering play mode");
-            //    return;
-            //}
+            // check for errors in scripts
+            if (oo::ScriptSystem::DisplayErrors())
+            {
+                LOG_ERROR("Fix Compile Time Errors before entering play mode");
+                return;
+            }
             
             OnSimulateEvent onSimulateEvent;
             EventManager::Broadcast(&onSimulateEvent);
@@ -155,8 +155,10 @@ namespace oo
             m_runtimeController.RemoveLoadPath(m_editorScene.lock()->GetSceneName());
         }
 
-        // change editor scene
-        m_editorScene.lock()->ReloadSceneWithPath(newPath);
+        // set editor to new file path
+        m_editorScene.lock()->SetNewPath(newPath);
+        // reload active scene [ this scene ]
+        m_sceneManager.ReloadActiveScene();
 
         // reset runtime Scene to be nullptr
         m_runtimeScene.lock() = nullptr;

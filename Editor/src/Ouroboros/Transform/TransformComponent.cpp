@@ -77,6 +77,12 @@ namespace oo
     void Transform3D::SetGlobalScale(vec3 scale)         { m_transform.SetGlobalScale(scale); }
     void Transform3D::SetGlobalAngle(vec3 euler_angles)  { m_transform.SetGlobalAngle(euler_angles); }
     void Transform3D::SetGlobalTransform(vec3 position, vec3 euler_angles, vec3 scale) { m_transform.SetGlobalTransform(position, euler_angles, scale); }
+    
+    void Transform3D::ParentChanged()
+    {
+        m_transform.m_dirty = true;
+    }
+
     //void SetGlobalTransform(glm::mat4 const& targetGlobalTransform) { }
 
 }

@@ -1,19 +1,32 @@
 #include <pch.h>
-#include "Hierarchy.h"
-#include "App/Editor/Utility/ImGuiManager.h"
-
 #include <stack>
+#include "Hierarchy.h"
 
+//utility
+#include "App/Editor/Utility/ImGuiManager.h"
+#include "App/Editor/Utility/ImGuiStylePresets.h"
+
+//imgui
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
-#include <Ouroboros/Core/KeyCode.h>
-#include <Ouroboros/ECS/GameObject.h>
+//scene
+#include <Ouroboros/Scene/Scene.h>
+#include <Ouroboros/Prefab/PrefabComponent.h>
 #include <Scenegraph/include/scenenode.h>
 #include <Scenegraph/include/Scenegraph.h>
 #include <SceneManagement/include/SceneManager.h>
-#include <Ouroboros/Scene/Scene.h>
+
+//ouro utility
+#include <Ouroboros/Core/KeyCode.h>
+#include <Ouroboros/ECS/GameObject.h>
+
+//events
+#include <App/Editor/Events/OpenFileEvent.h>
+#include <Ouroboros/EventSystem/EventManager.h>
+#include <Ouroboros/Commands/CommandStackManager.h>
+#include <Ouroboros/Commands/Delete_ActionCommand.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -67,12 +80,12 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		m_hovered = node.get_handle();
 		if ((clicked || keyenter))
 		{
-			if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
-				s_selected.push_back(handle);
+			if (ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LSHIFT)))
+				s_selected.emplace(handle);
 			else
 			{
 				s_selected.clear();
-				s_selected.push_back(handle);
+				s_selected.emplace(handle);
 			}
 		}
 	}
@@ -138,7 +151,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 	return;
 }
 
-const std::vector<scenenode::handle_type>& Hierarchy::GetSelected()
+const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
 }
@@ -166,17 +179,37 @@ void Hierarchy::NormalView()
 			ImGui::EndDragDropTarget();
 		}
 	}
+	if (m_previewPrefab)
+	{
+		ImGui::Separator();
+		if (ImGui::Button("Back"))
+		{
+			m_previewPrefab = false;
+			OpenFileEvent ofe(m_curr_sceneFilepath);
+			oo::EventManager::Broadcast(&ofe);
+		}
+		ImGui::SameLine();
+		ImGui::Text("Prefab Editing");
+		ImGui::Separator();
+	}
 
+	//editor stuff
 	bool found_dragging = false;
 	bool rename_item = false;
+	
+	//scene stuff
 	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();//the scene graph should be obtained instead.
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-
 	scenenode::shared_pointer root_node = instance.get_root();
+
 	//collasable 
 	std::vector<scenenode::raw_pointer> parents;
 	std::stack<scenenode::raw_pointer> s;
 	scenenode::raw_pointer curr = root_node.get();
+
+	//prefab stuff
+	std::shared_ptr<oo::GameObject> prefabobj;
+	bool open_prefab = false;
 
 	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
 	{
@@ -220,12 +253,32 @@ void Hierarchy::NormalView()
 		}
 		auto source = scene->FindWithInstanceID(curr->get_handle());
 		std::string name = "";
+
 		if (source)
 			name = source->Name();
-		bool open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
-		if (open == true && flags & ImGuiTreeNodeFlags_OpenOnArrow)
+
+		//prefab
+		bool contains_prefabComponent = source->HasComponent<oo::PrefabComponent>();
+		bool open = false;
+		if (contains_prefabComponent)
 		{
-			parents.push_back(curr);
+			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_NoTreePushOnOpen);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
+			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
+			ImGui::PopStyleColor();
+		}
+		else
+			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
+
+		if (open == true && (flags & ImGuiTreeNodeFlags_OpenOnArrow))
+		{
+			if (contains_prefabComponent == false)
+				parents.push_back(curr);
+			else
+			{
+				open_prefab = true;
+				prefabobj = source;
+			}
 		}
 
 		//drag and drop option
@@ -273,6 +326,13 @@ void Hierarchy::NormalView()
 		m_isRename = true;
 		m_renaming = m_hovered;
 	}
+	if (open_prefab)
+	{
+		m_previewPrefab = true;
+		m_curr_sceneFilepath = scene->GetFilePath();
+		OpenFileEvent ofe(prefabobj->GetComponent<oo::PrefabComponent>().prefab_filePath);
+		oo::EventManager::Broadcast(&ofe);
+	}
 }
 void Hierarchy::FilteredView()
 {
@@ -304,11 +364,11 @@ void Hierarchy::FilteredView()
 			if ((clicked || keyenter))
 			{
 				if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
-					s_selected.push_back(handle);
+					s_selected.emplace(handle);
 				else
 				{
 					s_selected.clear();
-					s_selected.push_back(handle);
+					s_selected.emplace(handle);
 				}
 			}
 		}
@@ -363,11 +423,32 @@ void Hierarchy::RightClickOptions()
 		{
 			if (ImGui::MenuItem("New GameObject"))
 			{
-				CreateGameObject();
+				CreateGameObjectImmediate();
 			}
 			if(ImGui::MenuItem("Box"))
-			{ }
+			{
+			}
 			ImGui::EndMenu();
+		}
+		if (ImGui::MenuItem("Destroy GameObject"))
+		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			for (auto go : s_selected)
+			{
+				auto object = scene->FindWithInstanceID(go);
+				oo::CommandStackManager::AddCommand(new oo::Delete_ActionCommand(object));
+				object->Destroy();
+			}
+			s_selected.clear();
+		}
+		if (ImGui::MenuItem("Duplicate GameObject"))
+		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			for (auto go : s_selected)
+			{
+				auto object = scene->FindWithInstanceID(go);
+				object->Duplicate();
+			}
 		}
 		ImGui::EndPopup();
 	}
@@ -404,11 +485,11 @@ void Hierarchy::Filter_ByScript()
 {
 }
 
-void Hierarchy::CreateGameObject()
+void Hierarchy::CreateGameObjectImmediate()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	auto go = scene->CreateGameObject();
+	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
-	if (s_selected.empty() == false && m_hovered == s_selected.back())
+	if (s_selected.size() == 1 && m_hovered == *(s_selected.begin()))
 		scene->FindWithInstanceID(m_hovered)->AddChild(*go);
 }

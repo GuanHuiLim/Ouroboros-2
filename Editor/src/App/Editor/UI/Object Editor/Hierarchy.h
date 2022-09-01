@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <set>
 #include <scenegraph/include/Scenegraph.h>
 #include <string>
 #include "App/Editor/Utility/ImGui_ToggleButton.h"
@@ -9,7 +10,7 @@ class Hierarchy
 public:
 	Hierarchy();
 	void Show();
-	static const std::vector<scenenode::handle_type>& GetSelected();
+	static const std::set<scenenode::handle_type>& GetSelected();
 protected:
 	void NormalView();
 	void FilteredView();
@@ -24,7 +25,7 @@ protected:
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-	void CreateGameObject();
+	void CreateGameObjectImmediate();
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
 	static constexpr const unsigned int Popup_ID = 100000;
@@ -37,6 +38,7 @@ private:
 	};
 	ColorButton m_colorButton;
 	std::vector<scenenode::handle_type> m_filterList;
+	std::string m_curr_sceneFilepath = "";
 	std::string m_filter = "";
 	FilterTypes m_filterTypes = FilterTypes::Name;
 	scenenode::handle_type m_hovered = (scenenode::handle_type)-100;
@@ -45,7 +47,7 @@ private:
 	scenenode::handle_type m_dragged_parent = (scenenode::handle_type)-100;
 	bool m_isDragging = false;
 	bool m_isRename = false;
-
+	bool m_previewPrefab = false;
 	//static
-	inline static std::vector<scenenode::handle_type> s_selected;
+	inline static std::set<scenenode::handle_type> s_selected;
 };

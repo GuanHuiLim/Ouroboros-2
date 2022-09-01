@@ -20,6 +20,7 @@ Technology is prohibited.
 
 #include <rttr/type>
 #include <Ouroboros/EventSystem/Event.h>
+#include <Archetypes_Ecs/src/A_Ecs.h>
 
 namespace oo
 {
@@ -32,18 +33,19 @@ namespace oo
         std::string Name = "Default Name Long enough for no short string optimization";
         scenenode::weak_pointer Node = {};
 
-    public:
-        
         struct OnEnableEvent : public Event
         {
+            OnEnableEvent(UUID id) : Id{ id } {}
+
+            UUID Id;
         };
 
         struct OnDisableEvent : public Event
         {
-        };
+            OnDisableEvent(UUID id) : Id{ id } {}
 
-    public:
-        void SetHierarchyActive(bool active);
+            UUID Id;
+        };
 
         RTTR_ENABLE();
     };
