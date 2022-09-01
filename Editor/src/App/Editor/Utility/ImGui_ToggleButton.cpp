@@ -46,6 +46,11 @@ bool ToggleButton::UpdateToggle()
 	return result;
 }
 
+void ToggleButton::SetSize(ImVec2 size)
+{
+	m_buttonsize = size;
+}
+
 void ToggleButton::SetToggle(bool toggle)
 {
 	m_toggled = toggle;

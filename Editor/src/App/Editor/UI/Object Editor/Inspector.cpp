@@ -157,7 +157,7 @@ void Inspector::Show()
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);
-		DisplayAddComponents(*gameobject);
+		DisplayAddComponents(*gameobject, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 
 		if (disable_prefabEdit)
 		{
@@ -174,20 +174,28 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	ImGui::EndGroup();
 }
-void Inspector::DisplayAddComponents(oo::GameObject& gameobject)
+void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
 {
-	float offset = (ImGui::GetContentRegionAvail().x - 200.0f) * 0.5f;
+	float offset = (ImGui::GetContentRegionAvail().x - x) * 0.5f;
 	ImGui::Dummy({0,0});//for me to use sameline on
 	ImGui::SameLine(offset);
 	ImGui::BeginGroup();
+	m_AddComponentButton.SetSize({ x,50.0f });
 	m_AddComponentButton.UpdateToggle();
 	if (m_AddComponentButton.GetToggle())
 	{
 		bool selected = false;
-		ImGui::BeginListBox("##AddComponents", { 200,150 });
+		ImGui::BeginListBox("##AddComponents", { x,y });
+		ImGui::BeginChild("##child", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::Transform3D>(gameobject);
 		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+		ImGui::EndChild();
+		ImGui::ListBoxHeader("##Searcharea", {x - 10,y*0.2f});
+		ImGui::PushItemWidth(-75.0f);
+		ImGui::InputText("Search", &m_filterComponents);
+		ImGui::PopItemWidth();
+		ImGui::ListBoxFooter();
 		ImGui::EndListBox();
 		if (selected)
 			m_AddComponentButton.SetToggle(false);
