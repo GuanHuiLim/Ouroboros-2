@@ -480,27 +480,45 @@ namespace vkutils
 	}
 
 	void Texture2D::forFrameBuffer(VkFormat _format, 
+		VkImageUsageFlags imageUsageFlags,
 		uint32_t texWidth, uint32_t texHeight,
 		VulkanDevice* device,
 		uint32_t mipLevels,
 		VkMemoryPropertyFlags properties,
-		VkFilter filter,
-		VkImageUsageFlags imageUsageFlags,
-		VkImageLayout imageLayout)
+		VkFilter filter
+	)
 	{
 		this->device = device;
 		width = texWidth;
 		height = texHeight;
 		format = _format;
+		
+		VkImageAspectFlags aspectMask = 0;
+
+		if (imageUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		{
+			aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		}
+		if (imageUsageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		{
+			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;// | VK_IMAGE_ASPECT_STENCIL_BIT;
+			imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		}
+		
+		assert(aspectMask > 0);
+
 		//uint mipLevels = std::floor(std::log2(std::max(texWidth, texHeight))) + 1;
-		mipLevels = mipLevels;
+		mipLevels = 1;
 	
 		// Does this matter in signiature? 
-		imageUsageFlags =  VK_IMAGE_USAGE_TRANSFER_DST_BIT
-			| VK_IMAGE_USAGE_SAMPLED_BIT
-			| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-			| VK_IMAGE_USAGE_STORAGE_BIT
-			| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		//imageUsageFlags =  VK_IMAGE_USAGE_TRANSFER_DST_BIT
+		//	| VK_IMAGE_USAGE_SAMPLED_BIT
+		//	| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+		//	| VK_IMAGE_USAGE_STORAGE_BIT
+		//	| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		bool n = name.empty();
 	
 		VkImageCreateInfo imageinfo = oGFX::vkutils::inits::imageCreateInfo();
 		imageinfo.imageType = VK_IMAGE_TYPE_2D;
@@ -511,12 +529,11 @@ namespace vkutils
 		imageinfo.arrayLayers = 1;
 		imageinfo.format = format;
 		imageinfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageinfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageinfo.usage = imageUsageFlags;
+		imageinfo.usage = imageUsageFlags | VK_IMAGE_USAGE_SAMPLED_BIT;
 		imageinfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		VK_CHK(vkCreateImage(device->logicalDevice, &imageinfo, nullptr, &image));
-		VK_NAME(device->logicalDevice, "forFramebuffer::image", image);
+		VK_NAME(device->logicalDevice, n? "forFramebuffer::image" :name.c_str(), image);
 
 		VkMemoryRequirements memReqs;
 		vkGetImageMemoryRequirements(device->logicalDevice, image, &memReqs);
@@ -527,7 +544,7 @@ namespace vkutils
 		memAllocInfo.memoryTypeIndex = oGFX::FindMemoryTypeIndex(device->physicalDevice,memReqs.memoryTypeBits,properties);
 		
 		VK_CHK(vkAllocateMemory(device->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
-		VK_NAME(device->logicalDevice, "forFramebuffer::deviceMemory", deviceMemory);
+		VK_NAME(device->logicalDevice, n?"forFramebuffer::deviceMemory" : name.c_str(), deviceMemory);
 
 		VK_CHK(vkBindImageMemory(device->logicalDevice, image, deviceMemory, 0));
 
@@ -537,12 +554,10 @@ namespace vkutils
 		viewCreateInfo.pNext = NULL;
 		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		viewCreateInfo.format = format;
-		viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-		viewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange = { aspectMask, 0, 1, 0, 1 };
 		viewCreateInfo.image = image;
 		VK_CHK(vkCreateImageView(device->logicalDevice, &viewCreateInfo, nullptr, &view));
-		VK_NAME(device->logicalDevice, "forFramebuffer::view", view);
+		VK_NAME(device->logicalDevice, n?"forFramebuffer::view" : name.c_str(), view);
 
 		// Create sampler
 		VkSamplerCreateInfo samplerCreateInfo = {};
@@ -560,7 +575,7 @@ namespace vkutils
 		samplerCreateInfo.anisotropyEnable = device->enabledFeatures.samplerAnisotropy; // VK_TRUE / VK_FALSE ??
 		samplerCreateInfo.maxAnisotropy = device->enabledFeatures.samplerAnisotropy ? device->properties.limits.maxSamplerAnisotropy : 1.0f;
 		VK_CHK(vkCreateSampler(device->logicalDevice, &samplerCreateInfo, nullptr, &sampler));
-		VK_NAME(device->logicalDevice, "forFramebuffer::sampler", sampler);
+		VK_NAME(device->logicalDevice, n? "forFramebuffer::sampler" : name.c_str(), sampler);
 
 		imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	}

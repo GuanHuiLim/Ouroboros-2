@@ -38,6 +38,7 @@ VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info)
 	}
 	else {
 		//create a new one (not found)
+		std::cout << "[FBCache] Creating a new framebuffer.." << std::endl;
 		VkFramebuffer frameBuffer;
 		VK_CHK(vkCreateFramebuffer(device, info, nullptr, &frameBuffer));
 		VK_NAME(device, "famebufferCache::framebuffer", frameBuffer);

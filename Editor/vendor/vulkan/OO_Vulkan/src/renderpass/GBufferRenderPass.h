@@ -4,6 +4,7 @@
 #include "vulkan/vulkan.h"
 #include "imgui/imgui.h"
 #include "VulkanFramebufferAttachment.h"
+#include "VulkanTexture.h"
 
 #include <array>
 
@@ -16,12 +17,9 @@ struct GBufferRenderPass : public GfxRenderpass
 	void Shutdown() override;
 
 	void CreatePSO() override;
-	
-	VulkanFramebufferAttachment att_albedo;
-	VulkanFramebufferAttachment att_position;
-	VulkanFramebufferAttachment att_normal;
-	VulkanFramebufferAttachment att_material;
-	VulkanFramebufferAttachment att_depth;
+
+
+	std::array<vkutils::Texture2D, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachments;
 
 	// This is for ImGui
 	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg;

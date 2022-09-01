@@ -19,6 +19,9 @@ Technology is prohibited.
 #include "OO_Vulkan/src/VulkanRenderer.h"
 #include "OO_Vulkan/src/Window.h"
 
+// TODO: remove
+#include "Application/src/CameraController.h"
+
 //#include "vk_engine.h"
 struct SDL_Window;
 
@@ -51,6 +54,7 @@ namespace oo
         static VulkanRenderer* vr;
         static GraphicsWorld gw;
         static Window m_window;
+        CameraController m_cc;
 
         //TEMP ptrs
         std::unique_ptr<Model> cubeMesh;

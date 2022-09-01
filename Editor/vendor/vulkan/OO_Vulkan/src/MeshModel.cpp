@@ -1,10 +1,7 @@
 #include "MeshModel.h"
 #include "VulkanDevice.h"
-#include <stdexcept>
 
-MeshContainer::MeshContainer()
-{
-}
+#include <stdexcept>
 
 MeshContainer::MeshContainer(std::vector<Mesh> newMeshList)
 {
@@ -44,7 +41,6 @@ void MeshContainer::destroyMeshModel()
 		mesh.destroyBuffers();
 	}
 }
-
 
 std::vector<std::string> MeshContainer::LoadMaterials(const aiScene *scene)
 {
