@@ -23,47 +23,43 @@ Technology is prohibited.
 
 #include "Asset.h"
 
-class AssetManager
+namespace oo
 {
-public:
-    static constexpr size_t WATCH_INTERVAL = 1000;
-
-    AssetManager();
-    AssetManager(const AssetManager&) = delete;
-    AssetManager(AssetManager&&) = default;
-    AssetManager& operator=(const AssetManager&) = delete;
-    AssetManager& operator=(AssetManager&&) = default;
-    ~AssetManager();
-
-    // Load asset by snowflake ID
-    Asset Load(const Snowflake& snowflake);
-    std::future<Asset> LoadAsync(const Snowflake& snowflake);
-
-    // Load asset directly by filepath
-    Asset LoadFile(const std::filesystem::path& fp);
-    std::future<Asset> LoadFileAsync(const std::filesystem::path& fp);
-
-    // Converts a raw asset into a binary asset
-    static std::filesystem::path ConvertPlainAsset(const std::filesystem::path& fp);
-
-private:
-    struct InternalAssetInfo
+    class AssetManager
     {
-        std::filesystem::path originalPath;
-        std::filesystem::file_time_type lastWriteTime;
+    public:
+        static constexpr size_t WATCH_INTERVAL = 1000;
+
+        AssetManager(std::filesystem::path root);
+        AssetManager(const AssetManager&) = delete;
+        AssetManager(AssetManager&&) = default;
+        AssetManager& operator=(const AssetManager&) = delete;
+        AssetManager& operator=(AssetManager&&) = default;
+        ~AssetManager();
+
+        [[nodiscard]] inline const std::filesystem::path& GetRootDirectory() const { return root; };
+
+        // Get asset by snowflake ID
+        Asset Get(const AssetID& snowflake);
+        std::future<Asset> GetAsync(const AssetID& snowflake);
+
+        // Load an unloaded asset into the asset store
+        Asset LoadPath(const std::filesystem::path& fp);
+        std::future<Asset> LoadPathAsync(const std::filesystem::path& fp);
+
+    private:
+        bool isRunning = true;
+        std::filesystem::path root;
+        std::unordered_map<AssetID, Asset> assets;
+        std::thread fileWatchThread;
+
+        void indexFilesystem(std::filesystem::path dir);
+        void fileWatch();
     };
 
-    bool isRunning = true;
-    std::unordered_map<Snowflake, Asset> assets;
-    std::unordered_map<Snowflake, InternalAssetInfo> internalInfo;
-    std::thread fileWatchThread;
-    std::vector<std::thread> loadThreads;
-
-    void fileWatch();
-};
-
-class AssetNotFoundException : public std::exception
-{
-public:
-    AssetNotFoundException(const std::string& what = "") : std::exception(what.c_str()) {}
-};
+    class AssetNotFoundException : public std::exception
+    {
+    public:
+        AssetNotFoundException(const std::string& what = "") : std::exception(what.c_str()) {}
+    };
+}

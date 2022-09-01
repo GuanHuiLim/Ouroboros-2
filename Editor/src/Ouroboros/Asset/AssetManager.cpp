@@ -17,193 +17,148 @@ Technology is prohibited.
 #include "AssetManager.h"
 
 #include "BinaryIO.h"
+#include "Ouroboros/Vulkan/VulkanContext.h"
 
-AssetManager::AssetManager()
+namespace oo
 {
-    fileWatchThread = std::thread(&AssetManager::fileWatch, this);
-}
-
-AssetManager::~AssetManager()
-{
-    isRunning = false;
-    fileWatchThread.join();
-}
-
-Asset AssetManager::Load(const Snowflake& snowflake)
-{
-    // Get asset from asset store
-    if (assets.contains(snowflake))
+    AssetManager::AssetManager(std::filesystem::path root)
+        : root{ root }
     {
-        return assets.at(snowflake);
-    }
-    // Get asset from internal info store
-    if (internalInfo.contains(snowflake))
-    {
-        return LoadFile(internalInfo.at(snowflake).originalPath);
-    }
-    throw AssetNotFoundException();
-}
-
-std::future<Asset> AssetManager::LoadAsync(const Snowflake& snowflake)
-{
-    return std::async(std::launch::async, &AssetManager::Load, this, snowflake);
-}
-
-Asset AssetManager::LoadFile(const std::filesystem::path& fp)
-{
-    if (!std::filesystem::exists(fp))
-        throw AssetNotFoundException();
-
-    // Check if converted asset
-    auto fpAsset = fp;
-    if (fpAsset.extension() != Asset::EXT_DATA_GENERIC)
-    {
-        // Convert
-        fpAsset = ConvertPlainAsset(fpAsset);
+        fileWatchThread = std::thread(&AssetManager::fileWatch, this);
     }
 
-    // Guarantee asset
-    Asset asset;
-
-    // Read header
-    std::ifstream ifs = std::ifstream(fpAsset);
-    BinaryIO::Read(ifs, *asset.header);
-
-    if (assets.contains(asset.header->id))
+    AssetManager::~AssetManager()
     {
-        // Acquire asset
-        return assets.at(asset.header->id);
+        isRunning = false;
+        fileWatchThread.join();
     }
-    else
+
+    Asset AssetManager::Get(const AssetID& snowflake)
     {
-        // Store asset
-        // TODO: store different data depending on asset type
-        asset.meta->data = new std::ifstream(fpAsset);
-        assets.insert({ asset.header->id, asset });
-        return asset;
-    }
-}
-
-std::future<Asset> AssetManager::LoadFileAsync(const std::filesystem::path& fp)
-{
-    return std::async(std::launch::async, &AssetManager::LoadFile, this, fp);
-}
-
-std::filesystem::path AssetManager::ConvertPlainAsset(const std::filesystem::path& fp)
-{
-    // Read file
-    std::ifstream ifs = std::ifstream(fp);
-    const size_t IF_SIZE = std::filesystem::file_size(fp);
-
-    // Write file
-    std::filesystem::path ofp = fp;
-    ofp.replace_extension(Asset::EXT_DATA_GENERIC);
-    std::ofstream ofs = std::ofstream(ofp);
-
-    // Write header content
-    AssetHeader header = AssetHeader(fp.extension().string());
-    header.id = AssetHeader::GenerateSnowflake();
-    BinaryIO::Write(ofs, header);
-
-    // Transfer contents
-    size_t count = IF_SIZE;
-    const size_t BUF_SIZE = 4096;
-    char buffer[BUF_SIZE];
-    while (count > BUF_SIZE)
-    {
-        ifs.read(buffer, BUF_SIZE);
-        ofs.write(buffer, BUF_SIZE);
-        count -= BUF_SIZE;
-    }
-    ifs.read(buffer, count);
-    ofs.write(buffer, count);
-
-    return ofp;
-}
-
-void AssetManager::fileWatch()
-{
-    const std::filesystem::path DIR = std::filesystem::canonical("./assets/");
-
-    std::chrono::steady_clock::time_point t = std::chrono::steady_clock::now();
-    while (isRunning)
-    {
-        // Check for removal
-        //auto it = internalInfo.begin();
-        //while (it != internalInfo.end())
-        //{
-        //    if (!std::filesystem::exists(it->second.originalPath))
-        //    {
-        //        // Removed
-        //        it = internalInfo.erase(it);
-
-        //        std::cout << "unindexed " << it->second.originalPath << "\n";
-        //        continue;
-        //    }
-        //    ++it;
-        //}
-
-        // Check for creation or modification
-        for (auto& file : std::filesystem::recursive_directory_iterator(DIR))
+        // Get asset from asset store
+        if (assets.contains(snowflake))
         {
-            const std::filesystem::path FP = std::filesystem::canonical(file.path());
-            const std::filesystem::path FP_EXT = FP.extension();
-            const auto WRITE_TIME = std::filesystem::last_write_time(file.path());
-
-            // Check converted assets extension
-            if (FP_EXT == Asset::EXT_DATA_GENERIC)
+            const auto FP = assets[snowflake].GetFilePath();
+            if (std::filesystem::exists(FP))
             {
-                // Read header
-                AssetHeader header;
-                std::ifstream ifs = std::ifstream(FP);
-                BinaryIO::Read(ifs, header);
+                return assets.at(snowflake);
+            }
 
-                if (!internalInfo.contains(header.id))
-                {
-                    // Newly created
-                    internalInfo[header.id] = { .originalPath = FP, .lastWriteTime = WRITE_TIME };
+            // Remove meta file
+            auto fpMeta = FP;
+            fpMeta += Asset::EXT_META;
+            if (std::filesystem::exists(fpMeta))
+            {
+                std::filesystem::remove(fpMeta);
+            }
 
-                    std::cout << "indexed " << FP << "\n";
-                }
-                else if (std::chrono::duration_cast<std::chrono::seconds>(WRITE_TIME - internalInfo[header.id].lastWriteTime).count() > 1)
+            assets.erase(snowflake);
+        }
+        throw AssetNotFoundException();
+    }
+
+    std::future<Asset> AssetManager::GetAsync(const AssetID& snowflake)
+    {
+        return std::async(std::launch::async, &AssetManager::Get, this, snowflake);
+    }
+
+    Asset AssetManager::LoadPath(const std::filesystem::path& fp)
+    {
+        const auto FP = root / fp;
+
+        if (!std::filesystem::exists(FP))
+            throw AssetNotFoundException();
+
+        // Get file paths
+        auto fpContent = FP;
+        auto fpMeta = fpContent;
+        if (fpContent.extension() == Asset::EXT_META)
+        {
+            fpContent.replace_extension();
+        }
+        else
+        {
+            fpMeta += Asset::EXT_META;
+        }
+
+        // Ensure meta file exists
+        AssetMetaContent meta;
+        if (!std::filesystem::exists(fpMeta))
+        {
+            meta.id = Asset::GenerateSnowflake();
+            std::ofstream ofs = std::ofstream(fpMeta);
+            BinaryIO::Write(ofs, meta);
+        }
+        else
+        {
+            std::ifstream ifs = std::ifstream(fpMeta);
+            BinaryIO::Read(ifs, meta);
+        }
+
+        // Get or load asset
+        if (assets.contains(meta.id))
+        {
+            // Get asset
+            return assets.at(meta.id);
+        }
+        else
+        {
+            // Load asset
+            // TODO: store different data depending on asset type
+            //asset.meta->data = new std::ifstream(fpAsset);
+            Asset asset = Asset(fpContent);
+            assets.insert({ meta.id, asset });
+            return asset;
+        }
+    }
+
+    std::future<Asset> AssetManager::LoadPathAsync(const std::filesystem::path& fp)
+    {
+        return std::async(std::launch::async, &AssetManager::LoadPath, this, fp);
+    }
+
+    void AssetManager::fileWatch()
+    {
+        const std::filesystem::path DIR = std::filesystem::canonical(root);
+
+        std::chrono::steady_clock::time_point t = std::chrono::steady_clock::now();
+        while (isRunning)
+        {
+            // Check for creation or modification
+            for (auto& file : std::filesystem::recursive_directory_iterator(DIR))
+            {
+                const std::filesystem::path FP = std::filesystem::canonical(file.path());
+                const std::filesystem::path FP_EXT = FP.extension();
+
+                if (FP_EXT == Asset::EXT_META)
+                    continue;
+
+                auto fpMeta = FP;
+                fpMeta += Asset::EXT_META;
+
+                const auto WRITE_TIME = std::filesystem::last_write_time(file.path());
+                if (t.time_since_epoch() < WRITE_TIME.time_since_epoch())
                 {
                     // Updated
-                    internalInfo[header.id].lastWriteTime = WRITE_TIME;
-                    // TODO: update data
+                    AssetMetaContent meta;
+                    std::ifstream ifs = std::ifstream(fpMeta);
+                    BinaryIO::Read(ifs, meta);
+                    if (!assets.contains(meta.id))
+                    {
+                        // Created
+                        LoadPath(FP);
+                    }
                 }
             }
-            else
+
+            // Check time elapsed
+            std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - t).count() < WATCH_INTERVAL)
             {
-                std::filesystem::path ofp = FP;
-                ofp.replace_extension(Asset::EXT_DATA_GENERIC);
-                if (!std::filesystem::exists(ofp))
-                {
-                    // Load file into store
-                    LoadFile(FP);
-
-                    std::cout << "loaded " << FP << "\n";
-                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
             }
-
-            //if (!assetMap.contains(FP))
-            //{
-            //    // Created
-            //    writeMap[FP.string()] = WRITE_TIME; =
-            //}
-            //else if (writeMap[FP.string()] != WRITE_TIME)
-            //{
-            //    // Modified
-            //    writeMap[FP.string()] = WRITE_TIME; =
-            //}
+            t = now;
         }
-
-        // Check time elapsed
-        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - t).count() < WATCH_INTERVAL)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue;
-        }
-        t = now;
     }
 }
