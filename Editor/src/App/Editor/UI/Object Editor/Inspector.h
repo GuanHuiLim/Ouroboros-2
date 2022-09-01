@@ -27,12 +27,12 @@ public:
 	void Show();
 private:
 	void DisplayAllComponents(oo::GameObject& gameobject);
-	void DisplayAddComponents(oo::GameObject& gameobject);
+	void DisplayAddComponents(oo::GameObject& gameobject,float x,float y);
 	template <typename Component>
 	bool AddComponentSelectable(oo::GameObject& go);
 private: 
 	ToggleButton m_AddComponentButton;
-
+	std::string m_filterComponents = "";
 private: //inspecting functions
 	template <typename Component>
 	void DisplayComponent(oo::GameObject& gameobject);
@@ -71,6 +71,7 @@ inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
 		go.AddComponent<Component>();
 		return true;
 	}
+	ImGui::Separator();
 	return false;
 }
 template<typename Component>

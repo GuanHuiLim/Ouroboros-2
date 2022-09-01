@@ -24,6 +24,6 @@ namespace Ecs::internal
 	class TestSystem : public System
 	{
 	public:
-		void Run(ECSWorld* world) override {}
+		void Run(ECSWorld* ) override {}
 	};
 }

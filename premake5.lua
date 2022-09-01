@@ -38,7 +38,12 @@ workspace "Ouroboros"
     {
         "MultiProcessorCompile", -- enable multicore compilation
     }
-
+    
+    -- Solution Level Disable Warning 
+    disablewarnings
+    {
+        "4201" -- nameless struct
+    }
 
 group "Dependencies"
 include "Editor/vendor/imgui"
