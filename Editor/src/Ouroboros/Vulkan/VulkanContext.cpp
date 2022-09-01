@@ -701,6 +701,11 @@ namespace oo
         return false;
     }
 
+    VulkanRenderer* VulkanContext::getRenderer()
+    {
+        return VulkanRenderer::get();
+    }
+
     void VulkanContext::SetWindowResized()
     {
         //vkEngine.SetWindowResized();
