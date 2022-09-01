@@ -9,6 +9,7 @@
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Utility/ImGui_ToggleButton.h"
 #include "App/Editor/Events/OpenFileEvent.h"
+#include "Utility/UUID.h"
 
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/EventSystem/EventManager.h>
@@ -343,12 +344,15 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	bool itemEdited = false;
 	bool itemEndEdit = false;
 	std::string tempstring = "##empty";
+
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
 		ImGui::PushID(i);
-		rttr::variant v = sqv.get_value(i);
-		std::string temp = v.get_type().get_name().data();
-		std::string tmep2 = rttr::type::get<bool>().get_name().data();
+		rttr::variant v = sqv.get_value(i).extract_wrapped_value();
+		//auto data = value.get_type().get_sizeof();
+		//auto & data = sqv.get_value(i).get_value<UUID>();
+		//std::string temp = v.get_type().get_name().data();
+		//std::string tmep2 = rttr::type::get<bool>().get_name().data();
 		iter->second(tempstring, v, itemEdited, itemEndEdit);
 		if (itemEdited)
 		{
