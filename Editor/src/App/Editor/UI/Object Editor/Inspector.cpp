@@ -20,8 +20,10 @@
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
+//#include <Ouroboros/Physics/RigidbodyComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <Ouroboros/ECS/GameObjectDebugComponent.h>
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
@@ -61,9 +63,9 @@ Inspector::Inspector()
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::UUID_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
-		auto value = v.get_value<UUID>();
+		auto value = v.get_value<UUID>().GetUUID();
 		ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
-		ImGui::InputScalarN(name.c_str(),ImGuiDataType_::ImGuiDataType_U64, &value,1);//read only
+		ImGui::InputScalarN(name.c_str(),ImGuiDataType_::ImGuiDataType_U64, &value,1); //read only
 		ImGui::PopItemFlag();
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::MAT3_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
@@ -94,6 +96,27 @@ Inspector::Inspector()
 	{
 		auto value = v.get_value<quaternion>().value;
 		edited = ImGui::DragFloat4(name.c_str(), glm::value_ptr(value));
+		if (edited) { v = value; };
+		endEdit |= ImGui::IsItemDeactivatedAfterEdit();
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::DOUBLE_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		auto value = v.get_value<double>();
+		edited = ImGui::DragScalarN(name.c_str(), ImGuiDataType_::ImGuiDataType_Double, &value, 1);
+		if (edited) { v = value; };
+		endEdit |= ImGui::IsItemDeactivatedAfterEdit();
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::SIZE_T_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		auto value = v.get_value<std::size_t>();
+		edited = ImGui::DragScalarN(name.c_str(), ImGuiDataType_::ImGuiDataType_U64, &value, 1);
+		if (edited) { v = value; };
+		endEdit |= ImGui::IsItemDeactivatedAfterEdit();
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::ENTITY_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		auto value = v.get_value<Ecs::EntityID>();
+		edited = ImGui::DragScalarN(name.c_str(), ImGuiDataType_::ImGuiDataType_U64, &value, 1);
 		if (edited) { v = value; };
 		endEdit |= ImGui::IsItemDeactivatedAfterEdit();
 	};
@@ -172,6 +195,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::Transform3D>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
+	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
+	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	ImGui::EndGroup();
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
@@ -189,7 +214,8 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::BeginChild("##child", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::Transform3D>(gameobject);
-		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+		//selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 		ImGui::EndChild();
 		ImGui::ListBoxHeader("##Searcharea", {x - 10,y*0.2f});
 		ImGui::PushItemWidth(-75.0f);
@@ -198,7 +224,11 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::ListBoxFooter();
 		ImGui::EndListBox();
 		if (selected)
+		{
 			m_AddComponentButton.SetToggle(false);
+			ImGui::EndGroup();
+			return;
+		}
 	}
 	ImGui::EndGroup();
 }
