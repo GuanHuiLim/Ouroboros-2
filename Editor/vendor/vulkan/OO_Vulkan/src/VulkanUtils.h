@@ -590,6 +590,12 @@ namespace oGFX
 				return pipelineLayoutCreateInfo;
 			}
 
+			template<typename T>
+            inline VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(const T& setLayouts)
+            {
+                return pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
+            }
+
 			inline VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
 				VkDescriptorPool descriptorPool,
 				const VkDescriptorSetLayout* pSetLayouts,

@@ -14,13 +14,13 @@ void Camera::updateViewMatrix()
 	
 
 	glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
-	if (type == CameraType::lookat)
+	if (m_CameraMovementType == CameraMovementType::lookat)
 	{
-		glm::vec3 from{ 0.0f,0.0f, -distance };
+		glm::vec3 from{ 0.0f,0.0f, -m_TargetDistance };
 		glm::vec3 temp = glm::mat3(rotM) * from;
 		from = temp;
-		position = target + from;
-		m_forward = position- target;
+		position = m_TargetPosition + from;
+		m_forward = position- m_TargetPosition;
 		worldUp = glm::eulerAngleZ(glm::radians(rotation.z)) * glm::vec4(worldUp,0.0f);
 	}
 	else
@@ -46,28 +46,14 @@ void Camera::updateViewMatrix()
 	updated = true;
 }
 
-bool Camera::Moving()
-{
-	return keys.left || keys.right || keys.up || keys.down;
-}
-
-float Camera::GetNearClip() 
-{
-	return znear;
-}
-
-float Camera::GetFarClip() 
-{
-	return zfar;
-}
-
 void Camera::SetPerspective(float fov, float aspect, float znear, float zfar)
 {
-	this->fov = fov;
-	this->znear = znear;
-	this->zfar = zfar;
+	this->m_fovDegrees = fov;
+	this->m_znear = znear;
+	this->m_zfar = zfar;
 	matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
-	if (flipY) {
+	if (flipY)
+	{
 		matrices.perspective[1][1] *= -1.0f;
 	}
 }
@@ -79,9 +65,9 @@ void Camera::LookAt(const glm::vec3& pos, const glm::vec3& target, const glm::ve
 
 void Camera::SetOrtho(float size, float aspect, float znear, float zfar)
 {
-	this->fov = fov;
-	this->znear = znear;
-	this->zfar = zfar;
+	this->m_fovDegrees = m_fovDegrees;
+	this->m_znear = znear;
+	this->m_zfar = zfar;
 	auto h = size / aspect;
 	matrices.perspective = glm::ortho(-size,size,-h,h,znear,zfar);
 	if (flipY) {
@@ -136,15 +122,6 @@ void Camera::LookFromAngle(float distance, const glm::vec3& target, float vertAn
 	LookAt(position, target);
 }
 
-
-void Camera::UpdateAspectRatio(float aspect)
-{
-	matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
-	if (flipY) {
-		matrices.perspective[1][1] *= -1.0f;
-	}
-}
-
 void Camera::SetPosition(glm::vec3 position)
 {
 	this->position = position;
@@ -165,9 +142,9 @@ void Camera::Rotate(glm::vec3 delta)
 
 void Camera::SetTranslation(glm::vec3 translation)
 {
-	if(type == Camera::CameraType::lookat)
+	if(m_CameraMovementType == Camera::CameraMovementType::lookat)
 	{
-		this->target = translation;
+		this->m_TargetPosition = translation;
 	}
 	else
 	{
@@ -178,9 +155,9 @@ void Camera::SetTranslation(glm::vec3 translation)
 
 void Camera::Translate(glm::vec3 delta)
 {
-	if(type == Camera::CameraType::lookat)
+	if(m_CameraMovementType == Camera::CameraMovementType::lookat)
 	{
-		this->target += delta;
+		this->m_TargetPosition += delta;
 	}
 	else
 	{
@@ -189,30 +166,21 @@ void Camera::Translate(glm::vec3 delta)
 	updateViewMatrix();
 }
 
-void Camera::SetRotationSpeed(float rotationSpeed)
-{
-	this->rotationSpeed = rotationSpeed;
-}
 
-void Camera::SetMovementSpeed(float movementSpeed)
-{
-	this->movementSpeed = movementSpeed;
-}
 
-void Camera::ChangeDistance(float delta)
+void Camera::ChangeTargetDistance(float delta)
 {
-	distance = std::max(1.0f, delta + distance);
+	m_TargetDistance = std::max(1.0f, delta + m_TargetDistance);
 	updateViewMatrix();
 }
 
 void Camera::Update(float deltaTime)
 {
 	updated = false;
-	if (type == CameraType::firstperson)
+	if (m_CameraMovementType == CameraMovementType::firstperson)
 	{
 		if (Moving())
 		{
-			
 			float moveSpeed = deltaTime * movementSpeed;
 
 			if (keys.up)
@@ -228,18 +196,7 @@ void Camera::Update(float deltaTime)
 		}
 	}
 }
-glm::vec3 Camera::GetFront()
-{
-	return m_forward;
-}
-glm::vec3 Camera::GetRight()
-{
-	return m_right;
-}
-glm::vec3 Camera::GetUp()
-{
-	return m_up;
-}
+
 
 
 bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
@@ -247,7 +204,7 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 {
 	bool retVal = false;
 
-	if (type == CameraType::firstperson)
+	if (m_CameraMovementType == CameraMovementType::firstperson)
 	{
 		// Use the common console thumbstick layout		
 		// Left = view, right = move
@@ -299,4 +256,17 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 	}
 
 	return retVal;
+}
+
+void Camera::UpdateProjectionMatrix()
+{
+	if (m_CameraProjectionType == CameraProjectionType::orthographic)
+	{
+		const float h = m_orthoSize / m_aspectRatio;
+		matrices.perspective = glm::ortho(-m_orthoSize, m_orthoSize, -h, h, m_znear, m_zfar);
+	}
+	else
+	{
+		matrices.perspective = glm::perspective(glm::radians(m_fovDegrees), m_aspectRatio, m_znear, m_zfar);
+	}
 }

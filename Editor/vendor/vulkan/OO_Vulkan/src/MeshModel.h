@@ -14,7 +14,7 @@
 class MeshContainer
 {
 public:
-    MeshContainer();
+    MeshContainer() = default;
     MeshContainer(std::vector<Mesh> newMeshList);
 
     size_t getMeshCount();

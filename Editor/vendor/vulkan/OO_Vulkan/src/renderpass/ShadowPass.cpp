@@ -85,14 +85,14 @@ void ShadowPass::Draw()
 	
 	// Bind merged mesh vertex & index buffers, instancing buffers.
     VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-    vkCmdBindIndexBuffer(cmdlist, vr.g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr(), offsets);
+    vkCmdBindIndexBuffer(cmdlist, vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
 
     const VkBuffer idcb = vr.indirectCommandsBuffer.buffer;
     const uint32_t count = (uint32_t)vr.m_DrawIndirectCommandsCPU.size();
 
-	auto& light = vr.lightUBO.lights[0];
+	auto& light = vr.currWorld->m_HardcodedOmniLights[0];
 	light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3{ 0.0f,0.0f,0.0f }, glm::vec3{ 0.0f,1.0f,0.0f });
 	light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 100.0f);
 	glm::mat4 viewproj = light.projection * light.view[0] ;
@@ -105,34 +105,6 @@ void ShadowPass::Draw()
 		glm::value_ptr(viewproj));	// actualy data being pushed (could be an array));
 
 	DrawIndexedIndirect(cmdlist, idcb, 0, count, sizeof(VkDrawIndexedIndirectCommand));
-  
-	// Other draw calls that are not supported by MDI
-    // TODO: Deprecate this, or handle it gracefully. Leaving this here.
-    if constexpr (false)
-    {
-        for (auto& entity : vr.entities)
-        {
-            auto& model = vr.models[entity.modelID];
-
-            glm::mat4 xform(1.0f);
-            xform = glm::translate(xform, entity.position);
-            xform = glm::rotate(xform, glm::radians(entity.rot), entity.rotVec);
-            xform = glm::scale(xform, entity.scale);
-
-            vkCmdPushConstants(cmdlist,
-                vr.indirectPSOLayout,
-				VK_SHADER_STAGE_ALL,        // stage to push constants to
-                0,							// offset of push constants to update
-                sizeof(glm::mat4),			// size of data being pushed
-                glm::value_ptr(xform));		// actualy data being pushed (could be an array));
-
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindIndexBuffer(cmdlist, vr.g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-            vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-            vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
-            //vkCmdDrawIndexed(commandBuffers[swapchainImageIndex], model.indices.count, 1, model.indices.offset, model.vertices.offset, 0);
-        }
-    }
 
 	vkCmdEndRenderPass(cmdlist);
 }

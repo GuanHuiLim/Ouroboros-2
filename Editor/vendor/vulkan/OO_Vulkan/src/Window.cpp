@@ -32,7 +32,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     ValidateRect(hWnd, NULL);
     break;
 	case WM_CLOSE:
-	PostQuitMessage(0);
+	//PostQuitMessage(0);
 	case WM_QUIT:
 	{
 		Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -40,6 +40,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			window->windowShouldClose = true;
 		}
+        return true;
 	}
 	break;
 	case WM_SIZE:
