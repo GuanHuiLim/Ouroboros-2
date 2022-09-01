@@ -272,35 +272,42 @@ namespace oo
         return scriptDatabase.CheckEnabled(uuid, name_space, name);
     }
 
-    ComponentDatabase::IntPtr ScriptSystem::AddComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    ComponentDatabase::IntPtr ScriptSystem::AddComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
         if (!s_IsPlaying)
             return 0;
         return componentDatabase.Instantiate(uuid, name_space, name);
     }
-    ComponentDatabase::IntPtr ScriptSystem::GetComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    ComponentDatabase::IntPtr ScriptSystem::GetComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
         if (!s_IsPlaying)
             return 0;
         return componentDatabase.TryRetrieve(uuid, name_space, name);
     }
-    void ScriptSystem::RemoveComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
         if (!s_IsPlaying)
             return;
         componentDatabase.Delete(uuid, name_space, name);
     }
-    void ScriptSystem::SetComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
+    void ScriptSystem::SetComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
     {
         if (!s_IsPlaying)
             return;
         componentDatabase.SetEnabled(uuid, name_space, name, isEnabled);
     }
-    bool ScriptSystem::CheckComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
+    bool ScriptSystem::CheckComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
         if (!s_IsPlaying)
             return false;
         return componentDatabase.CheckEnabled(uuid, name_space, name);
+    }
+
+    ComponentDatabase::IntPtr ScriptSystem::GetGameObject(ComponentDatabase::UUID uuid)
+    {
+        if (!s_IsPlaying)
+            return 0;
+        return componentDatabase.RetrieveGameObject(uuid);
     }
 
     void ScriptSystem::InvokeForObject(UUID uuid, const char* functionName, int paramCount, void** params)
