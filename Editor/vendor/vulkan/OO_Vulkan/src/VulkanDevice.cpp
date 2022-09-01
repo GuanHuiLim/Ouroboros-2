@@ -135,7 +135,6 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     descriptor_indexing_features.descriptorBindingVariableDescriptorCount = VK_TRUE;
     descriptor_indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
 
-
     deviceCreateInfo.pNext = &descriptor_indexing_features;
 
     this->enabledFeatures = deviceFeatures;
@@ -155,22 +154,20 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     vkGetDeviceQueue(logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
     vkGetDeviceQueue(logicalDevice, indices.presentationFamily, 0, &presentationQueue);
 
-
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = indices.graphicsFamily; //Queue family type that buffers from this command pool will use
 
-                                                                   //create a graphics queue family command pool
+    //create a graphics queue family command pool
     result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool);
     VK_NAME(logicalDevice, "commandPool", commandPool);
     if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to createa a command pool!");
+        throw std::runtime_error("Failed to create a command pool!");
     }
 
 }
-
 
 bool VulkanDevice::CheckDeviceSuitable(const oGFX::SetupInfo& si,VkPhysicalDevice device)
 {

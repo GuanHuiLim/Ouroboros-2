@@ -27,6 +27,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/DeferredSystem.h"
 
+#include "Ouroboros/Core/Application.h"
+#include "Ouroboros/Vulkan/VulkanContext.h"
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -43,6 +45,7 @@ namespace oo
         , m_removeList {}
         , m_lookupTable {}
         , m_gameObjects{}
+        , m_graphicsWorld { nullptr }
         , m_ecsWorld { nullptr }
         , m_scenegraph { nullptr }
         , m_rootGo { nullptr }
@@ -98,6 +101,9 @@ namespace oo
     void Scene::Render()
     {
         PRINT(m_name);
+        
+        //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+        //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
     }
     
     void Scene::EndOfFrameUpdate()
@@ -159,6 +165,7 @@ namespace oo
             m_lookupTable.clear();
             m_gameObjects.clear();
             m_ecsWorld = std::make_unique<Ecs::ECSWorld>();
+            m_graphicsWorld = std::make_unique<GraphicsWorld>();
             m_scenegraph = std::make_unique<scenegraph>("scenegraph");
             m_rootGo = nullptr;
 
@@ -198,6 +205,7 @@ namespace oo
             m_rootGo.reset();
             m_scenegraph.reset();
             m_ecsWorld.reset();
+            m_graphicsWorld.reset();
             
             TRACY_PROFILE_SCOPE_END();
         }

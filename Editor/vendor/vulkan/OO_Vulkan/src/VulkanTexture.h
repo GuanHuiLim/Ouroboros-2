@@ -16,7 +16,7 @@ namespace vkutils
 	class Texture
 	{
 	public:
-		std::string name; // maybe remove when not debug?
+		std::string name{}; // maybe remove when not debug?
 		VulkanDevice* device;
 		VkImage image;
 		VkFormat format;
@@ -59,13 +59,13 @@ namespace vkutils
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		void forFrameBuffer(VkFormat format,
+			VkImageUsageFlags imageUsageFlags,
 			uint32_t texWidth, uint32_t texHeight,
 			VulkanDevice* device,
 			uint32_t mipLevels = 1,
 			VkMemoryPropertyFlags properties= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-			VkFilter filter = VK_FILTER_LINEAR,
-			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			VkFilter filter = VK_FILTER_LINEAR
+		);
 	};
 
 }

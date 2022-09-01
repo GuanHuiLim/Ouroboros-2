@@ -20,6 +20,7 @@ Technology is prohibited.
 // Project Tracker related includes
 #include <Launcher/Utilities/ImGuiManager_Launcher.h>
 #include <Ouroboros/EventSystem/EventManager.h>
+#include <App/Editor/Events/LoadProjectEvents.h>
 
 void EditorLayer::OnAttach()
 {
@@ -42,14 +43,16 @@ void EditorLayer::OnUpdate()
 	    m_editor.Update();
 
 	//top menu bar
-	Editor::MenuBar();
+	//Editor::MenuBar();
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("Project"))
 		{
-			if (ImGui::MenuItem("Open Launcher"))
+			if (ImGui::MenuItem("Open Launcher")) 
 			{
 				m_editormode = false;
+				CloseProjectEvent e;
+				oo::EventManager::Broadcast(&e);
 			}
 			ImGui::EndMenu();
 		}

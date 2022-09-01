@@ -5,7 +5,7 @@
 #include "BitContainer.h"
 
 #include <vector>
-
+#include <array>
 
 struct ObjectInstance
 {
@@ -49,6 +49,11 @@ enum class ObjectInstanceFlags : uint32_t
 class GraphicsWorld
 {
 public:
+    
+    // Call this at the beginning of the frame
+    void BeginFrame();
+    // Call this at the end of the frame
+    void EndFrame();
 
     auto& GetAllObjectInstances() { return m_ObjectInstances; }
     auto& GetAllOmniLightInstances() { return m_OmniLightInstances; }
@@ -57,10 +62,14 @@ public:
     int32_t CreateObjectInstance(ObjectInstance obj);
     ObjectInstance& GetObjectInstance(int32_t id);
 
+    // TODO: Fix Me !
+    std::array<OmniLightInstance, 6> m_HardcodedOmniLights;
+
 private:
     BitContainer<ObjectInstance> m_ObjectInstances;
     BitContainer<OmniLightInstance> m_OmniLightInstances;
     //etc
 
     // + Spatial Acceleration Structures
+    // + Culling object BV against frustum
 };

@@ -44,7 +44,7 @@ void Hierarchy::Show()
 	m_filter.empty() ? NormalView() : FilteredView();
 }
 
-bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename)
+bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
 	ImGui::PushID(static_cast<int>(handle));
@@ -93,6 +93,9 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	{
 		m_isRename = false;
 	}
+
+	if (no_Interaction)
+		return open;
 
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
@@ -257,14 +260,16 @@ void Hierarchy::NormalView()
 		if (source)
 			name = source->Name();
 
-		//prefab
-		bool contains_prefabComponent = source->HasComponent<oo::PrefabComponent>();
 		bool open = false;
-		if (contains_prefabComponent)
+		if (source->GetIsPrefab())//prefab
 		{
-			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_NoTreePushOnOpen);
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
-			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
+			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			{
+				open_prefab = true;
+				prefabobj = source;
+			}
 			ImGui::PopStyleColor();
 		}
 		else
@@ -272,13 +277,7 @@ void Hierarchy::NormalView()
 
 		if (open == true && (flags & ImGuiTreeNodeFlags_OpenOnArrow))
 		{
-			if (contains_prefabComponent == false)
-				parents.push_back(curr);
-			else
-			{
-				open_prefab = true;
-				prefabobj = source;
-			}
+			parents.push_back(curr);
 		}
 
 		//drag and drop option
@@ -436,6 +435,8 @@ void Hierarchy::RightClickOptions()
 			for (auto go : s_selected)
 			{
 				auto object = scene->FindWithInstanceID(go);
+				if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
+					continue;
 				oo::CommandStackManager::AddCommand(new oo::Delete_ActionCommand(object));
 				object->Destroy();
 			}
@@ -447,6 +448,8 @@ void Hierarchy::RightClickOptions()
 			for (auto go : s_selected)
 			{
 				auto object = scene->FindWithInstanceID(go);
+				if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
+					continue;
 				object->Duplicate();
 			}
 		}
@@ -491,5 +494,10 @@ void Hierarchy::CreateGameObjectImmediate()
 	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
 	if (s_selected.size() == 1 && m_hovered == *(s_selected.begin()))
-		scene->FindWithInstanceID(m_hovered)->AddChild(*go);
+	{
+		auto parent_object = scene->FindWithInstanceID(m_hovered);
+		if (parent_object->GetIsPrefab())
+			return;
+		parent_object->AddChild(*go);
+	}
 }
