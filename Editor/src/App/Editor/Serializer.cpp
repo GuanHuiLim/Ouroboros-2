@@ -36,8 +36,6 @@ void Serializer::InitEvents()
 
 void Serializer::Init()
 {
-	//doc.SetObject();
-
 	save_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rapidjson::Document& doc,rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
