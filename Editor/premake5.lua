@@ -148,8 +148,12 @@ project "Editor"
             {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" \"" .. binApp .. "\""},
             -- Controller Support file
             {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" \"" .. binApp .. "\""},
-            -- ImGui Default Settings
+            -- ImGui Default ini
             {"{COPY} \"%{AppDir}/default.ini\" \"" .. binApp .. "\""},
+			-- ImGui Default Style Settings
+            {"{COPY} \"%{AppDir}/EditorMode.settings\" \"" .. binApp .. "\""},
+			-- ImGui Default Style Settings
+            {"{COPY} \"%{AppDir}/PlayMode.settings\" \"" .. binApp .. "\""},
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
             -- copy launcher's Data file

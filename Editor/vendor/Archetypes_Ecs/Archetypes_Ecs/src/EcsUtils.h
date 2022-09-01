@@ -24,8 +24,8 @@ namespace Ecs
 	struct EnityToChunk;	//EntityStorage
 	struct IQuery;
 	struct IECSWorld;
-	struct ECSWorld;
-	struct System;
+	class ECSWorld;
+	class System;
 
 	inline constexpr uint64_t hash_64_fnv1a(const char* key, const uint64_t len) {
 
