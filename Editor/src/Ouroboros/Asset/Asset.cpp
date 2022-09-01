@@ -64,6 +64,9 @@ namespace oo
             if (info->copies.empty())
             {
                 // Free
+                info->onAssetDestroy();
+                if (info->data)
+                    delete info->data;
                 delete info;
             }
         }

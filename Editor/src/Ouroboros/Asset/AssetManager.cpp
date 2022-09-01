@@ -17,6 +17,7 @@ Technology is prohibited.
 #include "AssetManager.h"
 
 #include "BinaryIO.h"
+#include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
 namespace oo
@@ -80,6 +81,7 @@ namespace oo
         {
             fpMeta += Asset::EXT_META;
         }
+        const auto FP_EXT = fpContent.extension();
 
         // Ensure meta file exists
         AssetMetaContent meta;
@@ -104,9 +106,21 @@ namespace oo
         else
         {
             // Load asset
-            // TODO: store different data depending on asset type
-            //asset.meta->data = new std::ifstream(fpAsset);
             Asset asset = Asset(fpContent);
+            if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
+            {
+                // Load texture
+                auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+                auto vr = vc->getRenderer();
+                auto data = vr->CreateTexture(fpContent.string());
+                asset.info->data = new decltype(data);
+                *reinterpret_cast<decltype(data)*>(asset.info->data) = data;
+                std::cout << "image data is " << data << '\n';
+                asset.info->onAssetDestroy = [fpContent]()
+                {
+                    // TODO: Unload texture
+                };
+            }
             assets.insert({ meta.id, asset });
             return asset;
         }

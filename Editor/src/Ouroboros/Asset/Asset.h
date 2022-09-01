@@ -31,10 +31,14 @@ namespace oo
 
     struct AssetInfo
     {
+        using Callback = std::function<void(void)>;
+
         std::filesystem::path contentPath;
         std::filesystem::path metaPath;
         std::chrono::steady_clock::time_point timeLoaded = std::chrono::steady_clock::now();
         std::list<Asset*> copies;
+        Callback onAssetDestroy = []() {};
+        void* data = nullptr;
     };
 
     class Asset
@@ -64,6 +68,9 @@ namespace oo
         [[nodiscard]] inline const auto& GetTimeLoaded() const { return info->timeLoaded; };
         [[nodiscard]] inline const std::list<Asset*>& GetCopies() const { return info->copies; };
         [[nodiscard]] inline size_t GetUseCount() const { return info->copies.size(); };
+        [[nodiscard]] inline void* GetRawData() const { return info->data; };
+        template<typename T>
+        [[nodiscard]] inline T GetData() const { return *reinterpret_cast<T*>(info->data); };
 
     private:
         AssetID id;
