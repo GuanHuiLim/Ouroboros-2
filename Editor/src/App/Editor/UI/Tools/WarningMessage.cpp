@@ -33,16 +33,16 @@ void WarningMessage::Show()
 	switch (s_dtype)
 	{
 	case DisplayType::DISPLAY_LOG:
-		ImGui::TextColored({ 0.8,1,0.8,1 }, "****Log****");
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
+		ImGui::TextColored({ 0.8,1,0.8,1 }, "****Log****");
 		break;
 	case DisplayType::DISPLAY_WARNING:
-		ImGui::TextColored({ 1,0.5,0.5,1 }, "****Warning****");
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
+		ImGui::TextColored({ 1,0.5,0.5,1 }, "****Warning****");
 		break;
 	case DisplayType::DISPLAY_ERROR:
-		ImGui::TextColored({ 1,0,0,1 }, "****Error****");
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
+		ImGui::TextColored({ 1,0,0,1 }, "****Error****");
 		break;
 	default:
 		break;

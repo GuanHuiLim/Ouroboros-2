@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "PrefabSceneController.h"
-
+#include "App/Editor/Serializer.h"
 namespace oo
 {
     PrefabSceneController::PrefabSceneController(SceneManager& sceneManager)
@@ -12,9 +12,16 @@ namespace oo
         m_prefabScene = prefabScene;
     }
 
-    Scene::go_ptr PrefabSceneController::RequestForPrefab(std::string const& filepath)
-    {
-        return m_prefabScene.lock()->GetPrefab(filepath);
-    }
+	std::string& PrefabSceneController::RequestForPrefab(std::string const& filepath)
+	{
+		auto prefabscene = m_prefabScene.lock();
+		ASSERT_MSG(prefabscene == nullptr, "Prefab scene not initalized");
+		return prefabscene->GetPrefab(filepath);
+	}
+
+    //Scene::go_ptr PrefabSceneController::RequestForPrefab(std::string const& filepath)
+    //{
+    //    return m_prefabScene.lock()->GetPrefab(filepath);
+    //}
     
 }

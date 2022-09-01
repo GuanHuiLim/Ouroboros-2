@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "ImGuiObject.h"
 #include <SceneManagement/include/SceneManager.h>
+#include <Ouroboros/Prefab/PrefabSceneController.h>
 class ImGuiManager
 {
 public:
@@ -17,4 +18,5 @@ public:
 	inline static std::unordered_map<std::string, ImGuiObject> s_GUIContainer;
 
 	inline static SceneManager const* s_scenemanager = nullptr;
+	inline static oo::PrefabSceneController * s_prefab_controller = nullptr;
 };

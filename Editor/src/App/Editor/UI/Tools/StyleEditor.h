@@ -17,9 +17,12 @@ Technology is prohibited.
 class StyleEditor
 {
 public:
+	void InitStyle();
 	StyleEditor();
 	~StyleEditor();
 	void Show();
+	static constexpr const char* const defaultStyleName = "EditorMode\0";
+	static constexpr const char* const playStyleName = "PlayMode\0";
 private:
 	void MenuBar();
 	void SaveStyle();
@@ -28,7 +31,7 @@ private:
 	std::string name;
 	ImGuiStyle ref;
 	ImGuiStyle ref_saved_style;
-	char namebuffer[100];
+	char namebuffer[100] = "EditorMode\0";
 	static ImGuiID m_styleeditor_popup;
 };
 
