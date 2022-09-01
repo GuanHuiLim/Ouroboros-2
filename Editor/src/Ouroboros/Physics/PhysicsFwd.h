@@ -30,7 +30,7 @@ namespace oo
     using mat2 = glm::mat2;
     using mat3 = glm::mat3;
 
-    class Rigidbody2D;
+    class RigidbodyComponent;
     //class Collider2D;
 
     // Broadphase

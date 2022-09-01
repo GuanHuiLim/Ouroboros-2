@@ -56,7 +56,7 @@ namespace oo
     /* Describes and Enables Entites with this component attached to               */
     /* abide by the laws of physics.                                               */
     /*-----------------------------------------------------------------------------*/
-    class Rigidbody2D final
+    class RigidbodyComponent final
     {
     private:
         PhysicsMaterial m_material;

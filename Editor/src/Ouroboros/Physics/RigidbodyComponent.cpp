@@ -25,15 +25,15 @@ namespace oo
     {
         using namespace rttr;
 
-        registration::class_<Rigidbody2D>("Rigidbody2D")
-            .property("Kinematic", &Rigidbody2D::Kinematic)
-            .property("UseAutoMass", &Rigidbody2D::UseAutoMass)
-            .property("GravityScale", &Rigidbody2D::GravityScale)
-            // .property("Mass", &Rigidbody2D::GetMass, &Rigidbody2D::SetMass)
-            .property("PhysicsMaterial", &Rigidbody2D::GetMaterial, &Rigidbody2D::SetMaterial)
-            .property("Linear Drag", &Rigidbody2D::LinearDrag)
-            .property("Angular Drag", &Rigidbody2D::AngularDrag)
-            .property("DoNotRotate", &Rigidbody2D::DoNotRotate)
+        registration::class_<RigidbodyComponent>("RigidbodyComponent")
+            .property("Kinematic", &RigidbodyComponent::Kinematic)
+            .property("UseAutoMass", &RigidbodyComponent::UseAutoMass)
+            .property("GravityScale", &RigidbodyComponent::GravityScale)
+            // .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
+            .property("PhysicsMaterial", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
+            .property("Linear Drag", &RigidbodyComponent::LinearDrag)
+            .property("Angular Drag", &RigidbodyComponent::AngularDrag)
+            .property("DoNotRotate", &RigidbodyComponent::DoNotRotate)
             ;
 
         registration::class_<PhysicsMaterial>("PhysicsMaterial")
@@ -44,7 +44,7 @@ namespace oo
     }
 
         
-//    void Rigidbody2D::SetInertia()
+//    void RigidbodyComponent::SetInertia()
 //    {
 //        if (!HasComponent<Collider2D>())
 //        {
@@ -81,13 +81,13 @@ namespace oo
 //    }
 //
 //
-//    void Rigidbody2D::ApplyForce(vec2 force)
+//    void RigidbodyComponent::ApplyForce(vec2 force)
 //    {
 //        if (IsDynamic())
 //            m_force += force;
 //    }
 //
-//    void Rigidbody2D::ApplyForceAtPosition(vec2 force, vec2 globalPosition)
+//    void RigidbodyComponent::ApplyForceAtPosition(vec2 force, vec2 globalPosition)
 //    {
 //        if (IsDynamic())
 //        {
@@ -109,13 +109,13 @@ namespace oo
 //        }
 //    }
 //
-//    void Rigidbody2D::ApplyImpulse(vec2 impulse)
+//    void RigidbodyComponent::ApplyImpulse(vec2 impulse)
 //    {
 //        if (IsDynamic())
 //            m_linearVelocity += impulse * m_data.InverseMass;
 //    }
 //
-//    void Rigidbody2D::ApplyImpulseAtPosition(vec2 impulse, vec2 globalPosition)
+//    void RigidbodyComponent::ApplyImpulseAtPosition(vec2 impulse, vec2 globalPosition)
 //    {
 //        if (IsDynamic())
 //        {
@@ -136,13 +136,13 @@ namespace oo
 //        }
 //    }
 //
-//    void Rigidbody2D::ApplyVelocity(vec2 velocity)
+//    void RigidbodyComponent::ApplyVelocity(vec2 velocity)
 //    {
 //        if (IsKinematic())
 //            m_linearVelocity += velocity;
 //    }
 //
-//    void Rigidbody2D::SetMass(float newMass)
+//    void RigidbodyComponent::SetMass(float newMass)
 //    {
 //        if (newMass < 0.f) throw "Mass cannot be lesser than 0!";
 //
