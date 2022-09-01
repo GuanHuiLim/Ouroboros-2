@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           Asset.cpp
+\project        Ouroboros
+\author         Tay Yan Chong Clarence, t.yanchongclarence, 620008720 | code contribution (100%)
+\par            email: t.yanchongclarence\@digipen.edu
+\date           Aug 30, 2022
+\brief          Contains the definition for the Asset and AssetHeader classes.
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #include "pch.h"
 
 #include "Asset.h"

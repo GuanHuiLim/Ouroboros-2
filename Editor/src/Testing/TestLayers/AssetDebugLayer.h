@@ -1,11 +1,10 @@
 /************************************************************************************//*!
 \file           AssetDebugLayer.h
 \project        Ouroboros
-\author         Chuu Tack Li, c.tecklee, 390008420 | code contribution (100%)
-\par            email: c.tecklee\@digipen.edu
-\date           Jul 22, 2022
-\brief          Describes a Test scene used to test The Input Systems
-                Functionality and print out debug messages for all supported inputs.
+\author         Tay Yan Chong Clarence, t.yanchongclarence, 620008720 | code contribution (100%)
+\par            email: t.yanchongclarence\@digipen.edu
+\date           Aug 30, 2022
+\brief          Describes a Test scene used to test the Asset system.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
