@@ -67,8 +67,8 @@ namespace oo
 
         // Angular components : most components are float in 2D, vec3 in 3D
         //float m_orientation;
-        float m_angularVelocity;
-        float m_torque;
+        double m_angularVelocity;
+        double m_torque;
         // Used for interpolation
         vec3 m_prevPos;
 
@@ -87,9 +87,9 @@ namespace oo
         bool Interpolate = false;
         bool UseAutoMass = true;
         bool DoNotRotate = false;
-        float GravityScale = 1.0f;
-        float LinearDrag = 0.1f;
-        float AngularDrag = 0.1f;
+        double GravityScale = 1.0f;
+        double LinearDrag = 0.1f;
+        double AngularDrag = 0.1f;
         vec2 CenterOfMassOffset = vec2{ 0 };
 
         /*-----------------------------------------------------------------------------*/
@@ -99,11 +99,11 @@ namespace oo
         /*-----------------------------------------------------------------------------*/
         /* Getter Functions                                                            */
         /*-----------------------------------------------------------------------------*/
-        float GetMass()                 const { return m_data.Mass; }
-        float GetInverseMass()          const { return m_data.InverseMass; }
-        float GetInertia()              const { return m_data.Inertia; }
-        float GetInverseInertia()       const { return m_data.InverseInertia; }
-        float GetAngularVelocity()      const { return m_angularVelocity; }
+        double GetMass()                const { return m_data.Mass; }
+        double GetInverseMass()         const { return m_data.InverseMass; }
+        double GetInertia()             const { return m_data.Inertia; }
+        double GetInverseInertia()      const { return m_data.InverseInertia; }
+        double GetAngularVelocity()     const { return m_angularVelocity; }
         vec2 GetForce()                 const { return m_force; }
         vec2 GetVelocity()              const { return m_linearVelocity; }
         PhysicsMaterial GetMaterial()   const { return m_material; }
@@ -113,7 +113,7 @@ namespace oo
         /*-----------------------------------------------------------------------------*/
         void SetVelocity(vec2 newVel) { m_linearVelocity = newVel; }
         void SetForce(vec2 newForce) { m_force = newForce; }
-        void SetTorque(float newTorque) { m_torque = newTorque; }
+        void SetTorque(double newTorque) { m_torque = newTorque; }
         void SetMaterial(PhysicsMaterial material) { m_material = material; }
 
         /*-----------------------------------------------------------------------------*/
@@ -122,7 +122,7 @@ namespace oo
         bool IsKinematic()  const { return Kinematic; }
         bool IsDynamic()    const { return !Kinematic; }
 
-        void SetInertia();
+        //void SetInertia();
         void ResetInertia() { m_data.Inertia = m_data.Inertia = 0.f; }
 
         RTTR_ENABLE();
