@@ -20,7 +20,7 @@ Technology is prohibited.
 #include "OO_Vulkan/src/Window.h"
 
 // TODO: remove
-#include "Application/src/CameraController.h"
+#include "Ouroboros/Core/CameraController.h"
 
 //#include "vk_engine.h"
 struct SDL_Window;
