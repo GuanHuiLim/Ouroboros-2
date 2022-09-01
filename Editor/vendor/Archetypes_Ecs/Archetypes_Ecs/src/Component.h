@@ -119,8 +119,8 @@ namespace Ecs
 	// header | entityID | component 1 data | component 2 data |...
 	struct alignas(32)DataChunk 
 	{
-		std::byte storage[BLOCK_MEMORY_16K - sizeof(DataChunkHeader)];
-		DataChunkHeader header;
+		std::byte storage[BLOCK_MEMORY_16K - sizeof(DataChunkHeader)]{};
+		DataChunkHeader header{};
 	};
 	static_assert(sizeof(DataChunk) == BLOCK_MEMORY_16K, "chunk size isnt 16kb");
 
@@ -131,8 +131,8 @@ namespace Ecs
 			TypeHash hash; // hash of the component
 			uint32_t chunkOffset; //offset from start of chunk
 		};
-		int16_t chunkCapacity;
-		std::vector<ComponentIdentifier> components; //all the components in this archtype
+		int16_t chunkCapacity{};
+		std::vector<ComponentIdentifier> components{}; //all the components in this archtype
 	};
 
 	//an array for storing components
