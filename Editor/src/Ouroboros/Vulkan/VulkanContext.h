@@ -42,10 +42,8 @@ namespace oo
         void SetWindowResized() override;
         bool SetVSync(bool enable) override;
 
-        /*VulkanEngine* getRenderer()
-        {
-            return &vkEngine;
-        }*/
+        VulkanRenderer* getRenderer();
+
     private:
         SDL_Window* m_windowHandle;
         static VulkanRenderer* vr;
