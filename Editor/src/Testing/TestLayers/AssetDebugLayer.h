@@ -37,16 +37,6 @@ public:
     {
         if (oo::input::IsAnyKeyPressed())
         {
-            static oo::AssetManager manager = oo::AssetManager("./assets");
-            try
-            {
-                //Asset myFile = manager.LoadFile("assets/infile.txt");
-                oo::Asset myFile = manager.LoadPath("Arcadia.png");
-            }
-            catch (...)
-            {
-                std::cout << "not found\n";
-            }
         }
     }
 };
