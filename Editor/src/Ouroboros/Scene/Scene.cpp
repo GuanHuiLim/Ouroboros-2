@@ -101,9 +101,6 @@ namespace oo
     void Scene::Render()
     {
         PRINT(m_name);
-        
-        //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
-        //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
     }
     
     void Scene::EndOfFrameUpdate()
@@ -183,6 +180,11 @@ namespace oo
             // Broadcast event to load scene
             LoadSceneEvent lse{ this };
             EventManager::Broadcast<LoadSceneEvent>(&lse);
+
+            // TODO: Solution To tie graphics world to rendering context for now!
+            static VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            // comment because cannot 
+            //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
 
             TRACY_PROFILE_SCOPE_END();
         }
