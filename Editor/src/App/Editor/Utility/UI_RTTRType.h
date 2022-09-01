@@ -21,6 +21,10 @@ public:
 		QUAT_TYPE,
 
 		PATH_TYPE,
+
+		DOUBLE_TYPE,
+		SIZE_T_TYPE,
+		ENTITY_TYPE,
 	};
 
 	inline static std::unordered_map<rttr::type::type_id, UItypes> types;
