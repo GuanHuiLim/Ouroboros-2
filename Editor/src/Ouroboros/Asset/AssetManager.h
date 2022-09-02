@@ -30,6 +30,10 @@ namespace oo
     public:
         static constexpr size_t WATCH_INTERVAL = 1000;
 
+        /* --------------------------------------------------------------------------- */
+        /* Constructors and Destructors                                                */
+        /* -------------------------------------------------------------------------- -*/
+
         AssetManager(std::filesystem::path root);
         AssetManager(const AssetManager&) = delete;
         AssetManager(AssetManager&&) = default;
@@ -37,14 +41,42 @@ namespace oo
         AssetManager& operator=(AssetManager&&) = default;
         ~AssetManager();
 
+        /* --------------------------------------------------------------------------- */
+        /* Getters                                                                     */
+        /* --------------------------------------------------------------------------- */
+
         [[nodiscard]] inline const std::filesystem::path& GetRootDirectory() const { return root; };
 
-        // Get asset by snowflake ID
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /****************************************************************************//*!
+        @brief  Retrieves an asset using its ID.
+        @param  snowflake - The ID of the asset.
+        @return The asset.
+        *//*****************************************************************************/
         Asset Get(const AssetID& snowflake);
+
+        /****************************************************************************//*!
+        @brief  Asynchronously retrieves an asset using its ID.
+        @param  snowflake - The ID of the asset.
+        @return The future asset.
+        *//*****************************************************************************/
         std::future<Asset> GetAsync(const AssetID& snowflake);
 
-        // Load an unloaded asset into the asset store
+        /****************************************************************************//*!
+        @brief  Loads or retrieves an asset at a given file path.
+        @param  fp - The file path relative to the AssetManager's root path.
+        @return The future asset.
+        *//*****************************************************************************/
         Asset LoadPath(const std::filesystem::path& fp);
+
+        /****************************************************************************//*!
+        @brief  Asynchronously loads or retrieves an asset at a given file path.
+        @param  fp - The file path relative to the AssetManager's root path.
+        @return The future asset.
+        *//*****************************************************************************/
         std::future<Asset> LoadPathAsync(const std::filesystem::path& fp);
 
     private:
@@ -53,7 +85,9 @@ namespace oo
         std::unordered_map<AssetID, Asset> assets;
         std::thread fileWatchThread;
 
-        void indexFilesystem(std::filesystem::path dir);
+        /****************************************************************************//*!
+        @brief  Scans the filesystem for changes in files.
+        *//*****************************************************************************/
         void fileWatch();
     };
 
