@@ -74,7 +74,7 @@ namespace oo
         /****************************************************************************//*!
         @brief  Loads or retrieves an asset at a given file path.
         @param  fp - The file path relative to the AssetManager's root path.
-        @return The future asset.
+        @return The asset.
         *//*****************************************************************************/
         Asset LoadPath(const std::filesystem::path& fp);
 
@@ -84,6 +84,20 @@ namespace oo
         @return The future asset.
         *//*****************************************************************************/
         std::future<Asset> LoadPathAsync(const std::filesystem::path& fp);
+
+        /****************************************************************************//*!
+        @brief  Loads or retrieves an asset by a given file name.
+        @param  fn - The file name.
+        @return The assets matching the criteria.
+        *//*****************************************************************************/
+        std::vector<Asset> LoadName(const std::filesystem::path& fn);
+
+        /****************************************************************************//*!
+        @brief  Asynchronously loads or retrieves an asset by a given file name.
+        @param  fn - The file name.
+        @return The assets matching the criteria.
+        *//*****************************************************************************/
+        std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn);
 
     private:
         bool isRunning = true;
@@ -95,6 +109,13 @@ namespace oo
         @brief  Scans the filesystem for changes in files.
         *//*****************************************************************************/
         void fileWatch();
+
+        /****************************************************************************//*!
+        @brief  Loads or retrieves an asset at a given absolute file path.
+        @param  fp - The file path.
+        @return The asset.
+        *//*****************************************************************************/
+        Asset getOrLoadAbsolute(const std::filesystem::path& fp);
 
         /****************************************************************************//*!
         @brief  Creates an asset object from a given file.
