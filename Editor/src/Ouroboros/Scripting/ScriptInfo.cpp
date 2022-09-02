@@ -15,7 +15,7 @@ Technology is prohibited.
 #include "pch.h"
 #include "ScriptInfo.h"
 
-#include <Utility/Hash.h>
+#include "Utility/Hash.h"
 //#include "../Asset/AssetsManager.h"
 //#include "Scripting.h"
 
@@ -91,13 +91,13 @@ namespace oo
         std::vector<ScriptFieldInfo> fieldList = classInfo.GetScriptFieldInfoAll();
         for (int i = 0; i < fieldList.size(); ++i)
         {
-            fieldMap.insert({ StringHash(fieldList[i].name), fieldList[i] });
+            fieldMap.insert({ StringHash{fieldList[i].name}, fieldList[i] });
         }
     }
 
     ScriptFieldInfo* ScriptInfo::FindFieldInfo(std::string const& fieldName)
     {
-        StringHash nameHash(fieldName);
+        StringHash nameHash{ fieldName };
         auto const& search = fieldMap.find(nameHash);
         if(search == fieldMap.end())
             return nullptr;
