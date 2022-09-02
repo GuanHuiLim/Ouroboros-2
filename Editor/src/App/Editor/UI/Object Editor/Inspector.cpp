@@ -192,19 +192,18 @@ void Inspector::Show()
 }
 void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
-	ImGui::BeginGroup();
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::Transform3D>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
-	ImGui::EndGroup();
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
 {
 	float offset = (ImGui::GetContentRegionAvail().x - x) * 0.5f;
 	ImGui::Dummy({0,0});//for me to use sameline on
 	ImGui::SameLine(offset);
+	ImGui::PushID("AddC");
 	ImGui::BeginGroup();
 	m_AddComponentButton.SetSize({ x,50.0f });
 	m_AddComponentButton.UpdateToggle();
@@ -212,17 +211,17 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 	{
 		bool selected = false;
 		ImGui::BeginListBox("##AddComponents", { x,y });
-		ImGui::BeginChild("##child", { x - 10 ,y * 0.70f },true);
+		ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::Transform3D>(gameobject);
 		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 		ImGui::EndChild();
-		ImGui::ListBoxHeader("##Searcharea", {x - 10,y*0.2f});
+
 		ImGui::PushItemWidth(-75.0f);
 		ImGui::InputText("Search", &m_filterComponents);
 		ImGui::PopItemWidth();
-		ImGui::ListBoxFooter();
+
 		ImGui::EndListBox();
 		if (selected)
 		{
@@ -232,6 +231,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		}
 	}
 	ImGui::EndGroup();
+	ImGui::PopID();
 }
 void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
@@ -318,11 +318,13 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	if (iter == m_InspectorUI.end())
 		return;
 	ImGui::Text(name.c_str());
-	ImGui::PushID(id);
+	ImGui::Separator();
+	
+	ImGui::PushID(name.c_str());
+
 	ImGui::Dummy({ 5.0f,0 });
 	ImGui::SameLine();
 	ImGui::BeginGroup();
-	ImGui::Separator();
 	
 	size_t size = sqv.get_size();
 	constexpr size_t min_arrSize = 0;
@@ -349,10 +351,6 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	{
 		ImGui::PushID(i);
 		rttr::variant v = sqv.get_value(i).extract_wrapped_value();
-		//auto data = value.get_type().get_sizeof();
-		//auto & data = sqv.get_value(i).get_value<UUID>();
-		//std::string temp = v.get_type().get_name().data();
-		//std::string tmep2 = rttr::type::get<bool>().get_name().data();
 		iter->second(tempstring, v, itemEdited, itemEndEdit);
 		if (itemEdited)
 		{
