@@ -95,6 +95,13 @@ namespace oo
         @brief  Scans the filesystem for changes in files.
         *//*****************************************************************************/
         void fileWatch();
+
+        /****************************************************************************//*!
+        @brief  Creates an asset object from a given file.
+        @param  fp - The file path.
+        @return The asset.
+        *//*****************************************************************************/
+        Asset createAsset(std::filesystem::path fp);
     };
 
     class AssetNotFoundException : public std::exception

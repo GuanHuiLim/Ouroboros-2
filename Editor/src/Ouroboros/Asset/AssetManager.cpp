@@ -106,21 +106,7 @@ namespace oo
         else
         {
             // Load asset
-            Asset asset = Asset(fpContent);
-            if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
-            {
-                // Load texture
-                auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
-                auto vr = vc->getRenderer();
-                auto data = vr->CreateTexture(fpContent.string());
-                asset.info->data = new decltype(data);
-                *reinterpret_cast<decltype(data)*>(asset.info->data) = data;
-                std::cout << "image data is " << data << '\n';
-                asset.info->onAssetDestroy = [fpContent]()
-                {
-                    // TODO: Unload texture
-                };
-            }
+            Asset asset = createAsset(fpContent);
             assets.insert({ meta.id, asset });
             return asset;
         }
@@ -174,5 +160,26 @@ namespace oo
             }
             t = now;
         }
+    }
+
+    Asset AssetManager::createAsset(std::filesystem::path fp)
+    {
+        const auto FP_EXT = fp.extension();
+        Asset asset = Asset(fp);
+        if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
+        {
+            // Load texture
+            auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            auto vr = vc->getRenderer();
+            auto data = vr->CreateTexture(fp.string());
+            asset.info->data = new decltype(data);
+            *reinterpret_cast<decltype(data)*>(asset.info->data) = data;
+            std::cout << "image data is " << data << '\n';
+            asset.info->onAssetDestroy = [fp]()
+            {
+                // TODO: Unload texture
+            };
+        }
+        return asset;
     }
 }
