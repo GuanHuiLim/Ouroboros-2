@@ -22,6 +22,7 @@ Editor::Editor()
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
 	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
 	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
+	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_MenuBar, [this] {this->m_toolbar.Show(); });
 
 }
 

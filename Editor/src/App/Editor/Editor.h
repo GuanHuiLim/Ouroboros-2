@@ -4,6 +4,7 @@
 #include "UI/Object Editor/Hierarchy.h"
 #include "UI/Object Editor/Inspector.h"
 #include "UI/Object Editor/FileBrowser.h"
+#include "UI/Tools/Toolbar.h"
 class Editor
 {
 public:
@@ -17,6 +18,7 @@ public:
 	Hierarchy m_hierarchy;
 	Inspector m_inspector;
 	FileBrowser m_fileBrowser;
+	Toolbar m_toolbar;
 private:
 };
 
