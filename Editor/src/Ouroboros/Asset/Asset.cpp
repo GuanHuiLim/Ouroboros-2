@@ -23,9 +23,6 @@ namespace oo
         , info{ new AssetInfo() }
     {
         info->copies.emplace_back(this);
-        info->contentPath = contentPath;
-        info->metaPath = contentPath;
-        info->metaPath += EXT_META;
     }
 
     Asset::Asset(Asset& other)
