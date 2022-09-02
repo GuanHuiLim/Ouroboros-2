@@ -19,3 +19,12 @@ public:
 private:
 	
 };
+
+class CloseProjectEvent :public oo::Event
+{
+public:
+	CloseProjectEvent() {};
+	~CloseProjectEvent() {};
+private:
+
+};

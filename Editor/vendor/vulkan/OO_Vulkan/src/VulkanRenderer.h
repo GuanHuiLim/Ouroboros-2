@@ -265,6 +265,7 @@ public:
 
 	//textures
 	std::vector<vkutils::Texture2D> g_Textures;
+	std::vector<ImTextureID> g_imguiIDs;
 
 	// - Synchronisation
 	 std::vector<VkSemaphore> imageAvailable;
@@ -377,6 +378,8 @@ public:
 	};
 
 	static ImTextureID CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l);
+	ImTextureID GetImguiID(uint32_t textureID);
+
 	static VkPipelineShaderStageCreateInfo LoadShader(VulkanDevice& device, const std::string& fileName, VkShaderStageFlagBits stage);
 	private:
 		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);		

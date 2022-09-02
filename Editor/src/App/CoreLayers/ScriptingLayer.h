@@ -32,7 +32,7 @@ namespace oo
 
         ScriptingLayer(SceneManager const& sceneManager)
         {
-            ScriptSystem::RegisterComponent<Transform3D>("Ouroboros", "Transform");
+            ScriptSystem::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
 
             ScriptSystem::s_SceneManager = &sceneManager;
         }

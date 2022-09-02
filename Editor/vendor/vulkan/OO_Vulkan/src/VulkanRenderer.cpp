@@ -2230,8 +2230,14 @@ uint32_t VulkanRenderer::CreateTextureImage(const oGFX::FileImageData& imageInfo
 	auto indx = g_Textures.size();
 	g_Textures.push_back(vkutils::Texture2D());
 
-	g_Textures[indx].fromBuffer((void*)imageInfo.imgData.data(), imageSize, imageInfo.format, imageInfo.w, imageInfo.h,imageInfo.mipInformation, &m_device, m_device.graphicsQueue);
-	g_Textures[indx].name = imageInfo.name;
+	auto& texture = g_Textures[indx];
+	
+	texture.fromBuffer((void*)imageInfo.imgData.data(), imageSize, imageInfo.format, imageInfo.w, imageInfo.h,imageInfo.mipInformation, &m_device, m_device.graphicsQueue);
+	texture.name = imageInfo.name;
+
+	//setup imgui binding
+	g_imguiIDs.push_back(CreateImguiBinding(texture.sampler, texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
 	// Return index of new texture image
 	return static_cast<uint32_t>(indx);
 }
@@ -2274,6 +2280,11 @@ uint32_t VulkanRenderer::UpdateBindlessGlobalTexture(vkutils::Texture2D texture)
 	vkUpdateDescriptorSets(m_device.logicalDevice, static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 
 	return index;
+}
+
+ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)
+{
+	return g_imguiIDs[textureID];
 }
 
 ImTextureID VulkanRenderer::CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l)

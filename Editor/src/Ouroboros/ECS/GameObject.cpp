@@ -14,7 +14,7 @@ Technology is prohibited.
 #include "pch.h"
 #include "GameObject.h"
 
-//#include "Ouroboros/Transform/Transform3D.h"
+//#include "Ouroboros/Transform/TransformComponent.h"
 //#include "Ouroboros/Transform/TransformSystem.h"
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
@@ -47,7 +47,7 @@ namespace oo
 
     GameObject::GameObject(UUID uuid, Scene& scene)
         : m_scene { &scene }
-        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, Transform3D>() }
+        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent>() }
     {
         SetupGo(uuid, m_entity);
     }
@@ -192,6 +192,14 @@ namespace oo
         auto scenenode_ptr = GetComponent<GameObjectComponent>().Node.lock();
         scenenode_ptr->set_debug_name(name);
     }
+
+	void GameObject::SetIsPrefab(bool isprefab) const
+	{
+		ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");
+
+		// tell everyone that this is a prefab
+		GetComponent<GameObjectComponent>().IsPrefab = isprefab;
+	}
 
     void GameObject::SetupGo(UUID uuid, Ecs::EntityID entt)
     {

@@ -1243,7 +1243,7 @@ namespace Ecs
 		//create the system
 		S* system = new S();
 		if constexpr (std::derived_from<S, System> == true) {
-			system->world = this;
+			system->m_world = this;
 		}
 		system_map[hash] = static_cast<void*>(system);
 			return system;
@@ -1261,7 +1261,7 @@ namespace Ecs
 		////create the system
 		S* system = new S(std::forward<Args>(arguementList)...);
 		if constexpr (std::derived_from<S, System> == true) {
-			system->world = this;
+			system->m_world = this;
 		}
 		system_map[hash] = static_cast<void*>(system);
 		return system;

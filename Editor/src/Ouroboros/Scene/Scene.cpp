@@ -68,11 +68,11 @@ namespace oo
         
             // Initialize Default Systems
             {
-                m_ecsWorld->Add_System<oo::DeferredSystem>();
-                m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
+                m_ecsWorld->Add_System<oo::DeferredSystem>(this);
+                //m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
 
-                m_ecsWorld->Add_System<oo::TransformSystem>();
-                m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
+                m_ecsWorld->Add_System<oo::TransformSystem>(this);
+                //m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
             }
 
             PRINT(m_name);
@@ -101,6 +101,9 @@ namespace oo
     void Scene::Render()
     {
         PRINT(m_name);
+        
+        //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+        //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
     }
     
     void Scene::EndOfFrameUpdate()
