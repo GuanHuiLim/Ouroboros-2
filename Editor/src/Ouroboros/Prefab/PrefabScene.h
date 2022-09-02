@@ -14,7 +14,8 @@ Technology is prohibited.
 #pragma once
 
 #include "Ouroboros/Scene/Scene.h"
-
+#include <unordered_map>
+#include <string>
 namespace oo
 {
     class PrefabScene final : public Scene
@@ -23,13 +24,16 @@ namespace oo
         explicit PrefabScene(std::string const& filepath);
 
         // Prefab Specific functionality
-        go_ptr GetPrefab(std::string const& filepath);
-
+        //go_ptr GetPrefab(std::string const& filepath);
+		std::string& GetPrefab(std::string const& filepath);
     private:
-        bool PrefabIsLoaded(std::string const& filepath) const;
-        void LoadPrefab(std::string const& filepath);
-        Scene::go_ptr LookUpPrefab(std::string const& filepath);
+        //bool PrefabIsLoaded(std::string const& filepath) const;
+		//Scene::go_ptr LoadPrefab(std::string const& filepath);
+        //Scene::go_ptr LookUpPrefab(std::string const& filepath);
+		std::string& LoadPrefab(std::string const& filepath);
+		std::string& LookUpPrefab(std::string const& filepath);
+        //std::unordered_map<std::string, go_ptr> m_loadedPrefabMap;
+		std::unordered_map<std::string, std::string> m_loadedPrefabMap;
 
-        std::map<std::string, go_ptr> m_loadedPrefabMap;
     };
 }

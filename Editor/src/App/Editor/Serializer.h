@@ -47,21 +47,21 @@ public:
 	static void LoadScene(oo::Scene& scene);
 
 	static std::filesystem::path SavePrefab(std::shared_ptr<oo::GameObject> go, oo::Scene& scene);
-	static void LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go);
+	static UUID LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go,oo::Scene & scene);
 
 	static std::string SaveDeletedObject(std::shared_ptr<oo::GameObject> go,oo::Scene& scene);
 	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
 private:
 	//saving
-	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene);
-	static void SaveObject(oo::GameObject& go, rapidjson::Value & val);
-	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val);
+	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);
+	static void SaveObject(oo::GameObject& go, rapidjson::Value & val,rapidjson::Document& doc);
+	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
 	template <typename Component>
-	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val);
-	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop);
-	static void SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property prop);
+	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
+	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
+	static void SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
 	//loading
-	static UUID Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene);
+	static UUID Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene,rapidjson::Document & doc);
 	static void LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter, rapidjson::Value::MemberIterator& end);
 	template <typename Component>
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
@@ -75,16 +75,16 @@ protected://serialzation helpers
 private:
 	//the function requires the user to insert the variant into the value manually
 	//saving
-	inline static std::unordered_map < UI_RTTRType::UItypes, std::function<void(rapidjson::Value&, rttr::variant,rttr::property)>> save_commands;
+	inline static std::unordered_map < UI_RTTRType::UItypes, std::function<void(rapidjson::Document& doc, rapidjson::Value&, rttr::variant,rttr::property)>> save_commands;
 	//loading
 	inline static std::unordered_map < rttr::type::type_id, std::function<void(oo::GameObject&,rapidjson::Value&&)>> load_components;
 	inline static std::unordered_map < UI_RTTRType::UItypes, std::function<void(rttr::variant& , rapidjson::Value&&)>> load_commands;
-	inline static rapidjson::Document doc;
+	//inline static rapidjson::Document doc;
 	inline static constexpr int rapidjson_precision = 4;
 };
 
 template<typename Component>
-inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val)
+inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
 {
 	if (go.HasComponent<Component>() == false)
 		return;
@@ -103,19 +103,19 @@ inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val)
 			if (prop_type.is_sequential_container())
 			{
 				rttr::variant variant = prop.get_value(component);
-				SaveSequentialContainer(variant, v, prop);
+				SaveSequentialContainer(variant, v, prop,doc);
 			}
 			else if (prop_type.is_class())
 			{
 				rttr::variant component_variant = prop.get_value(component);
-				SaveNestedComponent(component_variant, v, prop);
+				SaveNestedComponent(component_variant, v, prop,doc);
 			}
 			continue;//not supported
 		}
 		auto sf = save_commands.find(iter->second);
 		if (sf == save_commands.end())
 			continue;//don't have this save function
-		sf->second(v,prop.get_value(component),prop);
+		sf->second(doc,v,prop.get_value(component),prop);
 	}
 	std::string temp = type.get_name().data();
 	rapidjson::Value name;
@@ -180,20 +180,15 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, msg);
 	}
 	oo::PrefabComponent& component = go.GetComponent<oo::PrefabComponent>();
-	//hardcoding this for now
 	component.prefab_filePath = val.FindMember("File Path")->value.GetString();
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+
+	std::string& data = ImGuiManager::s_prefab_controller->RequestForPrefab(component.prefab_filePath.string());
+	rapidjson::StringStream stream(data.c_str());
 	
-	std::ifstream ifs(component.prefab_filePath);
-	if (ifs.peek() == std::ifstream::traits_type::eof())
-	{
-		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
-		return;
-	}
-	
-	std::shared_ptr<oo::Scene> scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	rapidjson::IStreamWrapper isw(ifs);
 	rapidjson::Document document;
-	document.ParseStream(isw);
+	document.ParseStream(stream);
 
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	auto gameobj = std::make_shared<oo::GameObject>(go);
@@ -201,6 +196,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter)
 	{
 		gameobj->SetName(iter->name.GetString());
+		gameobj->SetIsPrefab(true);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
 		int order = members->value.GetInt();
@@ -223,7 +219,52 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		if (iter + 1 != document.MemberEnd())
 			gameobj = scene->CreateGameObjectImmediate();
 	}
-	ifs.close();
+
+	//oo::PrefabComponent& component = go.GetComponent<oo::PrefabComponent>();
+	////hardcoding this for now
+	//component.prefab_filePath = val.FindMember("File Path")->value.GetString();
+	//
+	//std::ifstream ifs(component.prefab_filePath);
+	//if (ifs.peek() == std::ifstream::traits_type::eof())
+	//{
+	//	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
+	//	return;
+	//}
+	//
+	//std::shared_ptr<oo::Scene> scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	//rapidjson::IStreamWrapper isw(ifs);
+	//rapidjson::Document document;
+	//document.ParseStream(isw);
+
+	//std::stack<std::shared_ptr<oo::GameObject>> parents;
+	//auto gameobj = std::make_shared<oo::GameObject>(go);
+	//parents.push(gameobj);
+	//for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter)
+	//{
+	//	gameobj->SetName(iter->name.GetString());
+	//	auto members = iter->value.MemberBegin();//get the order of hierarchy
+	//	auto membersEnd = iter->value.MemberEnd();
+	//	int order = members->value.GetInt();
+
+	//	{//when the order dont match the size it will keep poping until it matches
+	//	//then parent to it and adds itself
+	//		while (order != parents.size())
+	//			parents.pop();
+
+	//		parents.top()->AddChild(*gameobj);
+	//		parents.push(gameobj);
+	//	}
+
+	//	++members;
+	//	{//another element that will store all the component hashes and create the apporiate archtype
+	//		// go->SetArchtype(vector<hashes>);
+	//	}
+	//	//processes the components		
+	//	LoadObject(*gameobj, members, membersEnd);
+	//	if (iter + 1 != document.MemberEnd())
+	//		gameobj = scene->CreateGameObjectImmediate();
+	//}
+	//ifs.close();
 }
 
 template<typename Component>

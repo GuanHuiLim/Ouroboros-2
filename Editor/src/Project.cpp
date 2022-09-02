@@ -8,6 +8,7 @@
 #include <SceneManagement/include/SceneManager.h>
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
+#include "App/Editor/Utility/ImGuiManager.h"
 
 #include "Ouroboros/Scene/RuntimeController.h"
 #include "Ouroboros/EventSystem/EventManager.h"
@@ -16,6 +17,8 @@
 
 void Project::LoadProject(std::filesystem::path& config)
 {
+	static bool run_once = []() {	oo::EventManager::Subscribe<CloseProjectEvent>([](CloseProjectEvent*) {SaveProject(); }); return true; }();
+
 	std::ifstream ifs(config.string());
 	if (ifs.peek() == std::ifstream::traits_type::eof())
 	{
@@ -30,6 +33,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	
 	s_configFile = config;
 	s_projectFolder = s_configFile.parent_path();
+	s_prefabFolder = (*prj_setting).value.FindMember("PrefabFolder")->value.GetString();
 	s_startingScene = (*prj_setting).value.FindMember("StartScene")->value.GetString();
 	s_sceneFolder = (*prj_setting).value.FindMember("SceneFolder")->value.GetString();
 	s_scriptcoreDLL = (*prj_setting).value.FindMember("ScriptCoreDLL")->value.GetString();
@@ -46,28 +50,33 @@ void Project::LoadProject(std::filesystem::path& config)
 	{
 		m_loadpaths.emplace_back(oo::SceneInfo{ iter->name.GetString() , s_projectFolder.string() + s_sceneFolder.string() + iter->value.GetString() });
 	}
-	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_startingScene.string()), std::move(m_loadpaths));
+	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_sceneFolder.string() + s_startingScene.string()), std::move(m_loadpaths));
 	oo::EventManager::Broadcast(&lpe);
 	//end
+	ifs.close();
 }
 
 void Project::SaveProject()
 {
-	rapidjson::Document doc;
-	doc.SetObject();
-	rapidjson::Value projectsetting(rapidjson::kObjectType);
-	std::string temp = s_projectFolder.string().c_str();
-	projectsetting.AddMember("ProjectFolderPath", rapidjson::Value(temp.c_str(),static_cast<rapidjson::SizeType>(temp.size()),doc.GetAllocator()),doc.GetAllocator());
-	temp = s_startingScene.string();
-	projectsetting.AddMember("StartScene", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
-	temp = s_scriptcoreDLL.string();
-	projectsetting.AddMember("ScriptCoreDLL", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
-	temp = s_scriptmodulePath.string();
-	projectsetting.AddMember("ScriptModulePath", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
-	temp = s_scriptbuildPath.string();
-	projectsetting.AddMember("ScriptBuildPath", rapidjson::Value(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator()), doc.GetAllocator());
+	std::ifstream ifs(s_configFile.string());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Config File is not valid!");
+		return;
+	}
 
-	rapidjson::Value scenes(rapidjson::kObjectType);
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	auto prj_setting = doc.FindMember("Project Settings");
+	std::filesystem::path p = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetFilePath();
+	std::filesystem::path relative = p.lexically_relative(GetSceneFolder());
+	prj_setting->value.FindMember("StartScene")->value.SetString(relative.string().c_str(), static_cast<rapidjson::SizeType>(relative.string().size()), doc.GetAllocator());
+
+	auto scenes  = doc.FindMember("Scenes");
+	
+	//write your scenes
+	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
 	//get all scenes
 
@@ -75,8 +84,8 @@ void Project::SaveProject()
 	////
 	
 	//attatch all members to doc to be serialized
-	doc.AddMember("Project Settings", projectsetting, doc.GetAllocator());
-	doc.AddMember("Scenes", scenes, doc.GetAllocator());
+	//doc.AddMember("Project Settings", projectsetting, doc.GetAllocator());
+	//doc.AddMember("Scenes", scenes, doc.GetAllocator());
 
 	std::ofstream ofs(s_configFile);
 	if (ofs.good())
@@ -88,6 +97,7 @@ void Project::SaveProject()
 		doc.Accept(writer);
 		ofs.close();
 	}
+	ifs.close();
 }
 
 void Project::UpdateScriptingFiles()

@@ -6,6 +6,9 @@ class ToggleButton
 public:
 	ToggleButton(const std::string & name , bool default_state,ImVec2 buttonsize, ImColor color_toggled , ImColor default_color);
 	bool UpdateToggle();
+	void SetSize(ImVec2 size);
+	void SetToggle(bool toggle);
+	bool GetToggle();
 private:
 	ImColor m_toggled_color;
 	ImColor m_default_color;
