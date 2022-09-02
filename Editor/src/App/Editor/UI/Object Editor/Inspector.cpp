@@ -163,7 +163,6 @@ void Inspector::Show()
 			gameobject->SetActive(active);
 		if (gameobject->HasComponent<oo::PrefabComponent>())
 		{
-			ImGui::SameLine();
 			if (ImGui::Button("Update Prefab"))
 			{
 				OpenFileEvent ofe(gameobject->GetComponent<oo::PrefabComponent>().prefab_filePath);
@@ -172,7 +171,6 @@ void Inspector::Show()
 		}
 		else
 		{
-			ImGui::SameLine();
 			if (ImGui::Button("Create Prefab"))
 			{
 				oo::PrefabManager::MakePrefab(gameobject);

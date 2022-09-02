@@ -147,7 +147,7 @@ project "Editor"
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
 			-- copy Editor Icons
-			{"{COPY} \"%{AppDir}/icons" \"" .. binApp .. "\"" },
+			{"{COPY} \"%{AppDir}/icons\" " .. binApp .. "\"" },
             -- copy launcher's Data file
             {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
             -- tracy server copy 

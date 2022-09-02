@@ -179,7 +179,7 @@ void FileBrowser::DetailBar()
 
 void FileBrowser::OpenPopup()
 {
-	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right))
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right) && ImGui::IsWindowFocused())
 	{
 		ImGui::OpenPopup("Options");
 	}
