@@ -23,6 +23,7 @@ Technology is prohibited.
 #include <Ouroboros/Core/LayerSet.h>
 #include <Ouroboros/ImGui/ImGuiAbstraction.h>
 #include <Ouroboros/EventSystem/EventManager.h>
+#include <Ouroboros/Asset/AssetManager.h>
 
 // Debug Layers
 #include "Testing/TestLayers/InputDebugLayer.h"
@@ -56,6 +57,7 @@ class EditorApp final : public oo::Application
 private:
     // main scene manager
     SceneManager m_sceneManager;
+    oo::AssetManager m_assetManager;
 
 public:
     EditorApp(oo::CommandLineArgs args)
