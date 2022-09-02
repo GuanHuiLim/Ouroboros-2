@@ -11,6 +11,7 @@
 #include "Project.h"
 
 #include "Ouroboros/Commands/CommandStackManager.h"
+#include "SceneManagement/include/SceneManager.h"
 Editor::Editor()
 {
 	UI_RTTRType::Init();

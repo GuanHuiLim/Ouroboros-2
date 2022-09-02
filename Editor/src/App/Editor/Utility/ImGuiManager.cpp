@@ -1,7 +1,14 @@
 #include "pch.h"
 
 #include "ImGuiManager.h"
+#include <Ouroboros/Asset/AssetManager.h>
+#include <Ouroboros/Core/Application.h>
+#include <Ouroboros/Vulkan/VulkanContext.h>
 
+void ImGuiManager::InitAssetsAll()
+{
+
+}
 
 void ImGuiManager::Create(const std::string name, const bool enabled,const ImGuiWindowFlags_ flag, std::function<void()> fnc, std::function<void()> pre_window)
 {
