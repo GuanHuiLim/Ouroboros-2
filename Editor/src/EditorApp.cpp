@@ -57,7 +57,7 @@ class EditorApp final : public oo::Application
 private:
     // main scene manager
     SceneManager m_sceneManager;
-    oo::AssetManager m_assetManager;
+    oo::AssetManager m_assetManager{ "./" };
 
 public:
     EditorApp(oo::CommandLineArgs args)
@@ -76,7 +76,7 @@ public:
         m_layerset.PushLayer(std::make_shared<EditorLayer>(m_sceneManager));
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
-        
+
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
