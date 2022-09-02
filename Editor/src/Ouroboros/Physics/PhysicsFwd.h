@@ -31,17 +31,17 @@ namespace oo
     using mat3 = glm::mat3;
 
     class RigidbodyComponent;
-    //class Collider2D;
+    //class ColliderCore;
 
     // Broadphase
     //struct SortSweepCompare;
 
     // Colliders
     //struct BoundingVolume;    // broadphase AABB-Collider
-    //struct ColliderBase2D;
-    //struct BoxCollider2D;
-    //struct CircleCollider2D;
-    //struct ConvexCollider2D;
+    //struct ColliderBase;
+    //struct BoxCollider;
+    //struct SphereCollider;
+    //struct ConvexCollider;
 
     // Data Structures
     /*struct Contact2D;

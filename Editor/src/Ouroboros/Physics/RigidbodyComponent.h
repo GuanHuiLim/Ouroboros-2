@@ -66,9 +66,10 @@ namespace oo
         vec2 m_force;
 
         // Angular components : most components are float in 2D, vec3 in 3D
-        //float m_orientation;
+        //double m_orientation;
         double m_angularVelocity;
         double m_torque;
+
         // Used for interpolation
         vec3 m_prevPos;
 
@@ -77,9 +78,8 @@ namespace oo
 
         // Center of Mass
         vec2 m_centerOfMass;
-
+    
     public:
-
         /*-----------------------------------------------------------------------------*/
         /* Public Adaptable Variables                                                  */
         /*-----------------------------------------------------------------------------*/
@@ -123,7 +123,7 @@ namespace oo
         bool IsDynamic()    const { return !Kinematic; }
 
         //void SetInertia();
-        void ResetInertia() { m_data.Inertia = m_data.Inertia = 0.f; }
+        void ResetInertia() { m_data.Inertia = m_data.InverseInertia = 0.f; }
 
         RTTR_ENABLE();
     };

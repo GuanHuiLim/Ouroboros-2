@@ -25,7 +25,7 @@ namespace oo
     {
         using namespace rttr;
 
-        registration::class_<RigidbodyComponent>("RigidbodyComponent")
+        registration::class_<RigidbodyComponent>("Rigidbody")
             .property("Kinematic", &RigidbodyComponent::Kinematic)
             .property("UseAutoMass", &RigidbodyComponent::UseAutoMass)
             .property("GravityScale", &RigidbodyComponent::GravityScale)
@@ -36,7 +36,7 @@ namespace oo
             .property("DoNotRotate", &RigidbodyComponent::DoNotRotate)
             ;
 
-        registration::class_<PhysicsMaterial>("PhysicsMaterial")
+        registration::class_<PhysicsMaterial>("Physics Material")
             .property("Density", &PhysicsMaterial::Density)
             .property("Restitution", &PhysicsMaterial::Restitution)
             .property("DynamicFriction", &PhysicsMaterial::DynamicFriction)
@@ -46,27 +46,27 @@ namespace oo
         
 //    void RigidbodyComponent::SetInertia()
 //    {
-//        if (!HasComponent<Collider2D>())
+//        if (!HasComponent<ColliderCore>())
 //        {
 //            ResetInertia();
 //            return;
 //        }
 //
 //        // Set Moment of Inertia base on shape of object
-//        switch (GetComponent<Collider2D>().GetNarrowPhaseCollider())
+//        switch (GetComponent<ColliderCore>().GetNarrowPhaseCollider())
 //        {
 //        case ColliderType::BOX:
 //        {
-//            ENGINE_ASSERT_MSG(HasComponent<BoxCollider2D>(), "Box Collider Must exist at this point!");
-//            auto bounds = ColliderUtil::GetGlobalDimensions(GetComponent<BoxCollider2D>(), GetComponent<Transform3D>());
+//            ENGINE_ASSERT_MSG(HasComponent<BoxCollider>(), "Box Collider Must exist at this point!");
+//            auto bounds = ColliderUtil::GetGlobalDimensions(GetComponent<BoxCollider>(), GetComponent<Transform3D>());
 //            m_data.Inertia = m_data.Mass * (bounds.x * bounds.x + bounds.y * bounds.y) / 12;
 //            m_data.InverseInertia = 1.0f / m_data.Inertia;
 //        }
 //        break;
 //        case ColliderType::CIRCLE:
 //        {
-//            ENGINE_ASSERT_MSG(HasComponent<CircleCollider2D>(), "Circle Collider Must exist at this point!");
-//            auto rad = GetComponent<CircleCollider2D>().Radius;
+//            ENGINE_ASSERT_MSG(HasComponent<SphereCollider>(), "Circle Collider Must exist at this point!");
+//            auto rad = GetComponent<SphereCollider>().Radius;
 //            m_data.Inertia = 0.5f * m_data.Mass * rad * rad;
 //            m_data.InverseInertia = 1.0f / m_data.Inertia;
 //        }
