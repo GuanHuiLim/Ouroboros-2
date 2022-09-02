@@ -56,6 +56,15 @@ void GBufferRenderPass::Draw()
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 	
+	VkFramebuffer currentFB;
+	FramebufferBuilder::Begin(&vr.fbCache)
+		.BindImage(attachments[GBufferAttachmentIndex::POSITION])
+		.BindImage(attachments[GBufferAttachmentIndex::NORMAL  ])
+		.BindImage(attachments[GBufferAttachmentIndex::ALBEDO  ])
+		.BindImage(attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(attachments[GBufferAttachmentIndex::DEPTH   ])
+		.Build(currentFB,renderpass_GBuffer);
+
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
 	renderPassBeginInfo.renderPass =  renderpass_GBuffer;
 	renderPassBeginInfo.framebuffer = framebuffer_GBuffer;
@@ -84,8 +93,8 @@ void GBufferRenderPass::Draw()
 	
 	// Bind merged mesh vertex & index buffers, instancing buffers.
     VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-    vkCmdBindIndexBuffer(cmdlist, vr.g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr(), offsets);
+    vkCmdBindIndexBuffer(cmdlist, vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
 
     const VkBuffer idcb = vr.indirectCommandsBuffer.buffer;
@@ -93,45 +102,19 @@ void GBufferRenderPass::Draw()
 
 	DrawIndexedIndirect(cmdlist, idcb, 0, count, sizeof(VkDrawIndexedIndirectCommand));
 
-	// Other draw calls that are not supported by MDI
-    // TODO: Deprecate this, or handle it gracefully. Leaving this here.
-    if constexpr (false)
-    {
-        for (auto& entity : vr.entities)
-        {
-            auto& model = vr.models[entity.modelID];
-
-            glm::mat4 xform(1.0f);
-            xform = glm::translate(xform, entity.position);
-            xform = glm::rotate(xform, glm::radians(entity.rot), entity.rotVec);
-            xform = glm::scale(xform, entity.scale);
-
-			vkCmdPushConstants(cmdlist,
-				vr.indirectPSOLayout,
-				VK_SHADER_STAGE_ALL,        // stage to push constants to
-				0,                          // offset of push constants to update
-				sizeof(glm::mat4),          // size of data being pushed
-				glm::value_ptr(xform));     // actualy data being pushed (could be an array));
-
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindIndexBuffer(cmdlist, vr.g_MeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-            vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_MeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-            vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
-            //vkCmdDrawIndexed(commandBuffers[swapchainImageIndex], model.indices.count, 1, model.indices.offset, model.vertices.offset, 0);
-        }
-    }
-
 	vkCmdEndRenderPass(cmdlist);
 }
 
 void GBufferRenderPass::Shutdown()
 {
 	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
-	att_albedo.destroy(device);
-	att_position.destroy(device);
-	att_normal.destroy(device);
-	att_material.destroy(device);
-	att_depth.destroy(device);
+	
+	for (auto& att : attachments)
+	{
+		att.destroy();
+	}
+
+	// TODO maybe not delete here?
 	vkDestroyFramebuffer(device, framebuffer_GBuffer, nullptr);
 	vkDestroyRenderPass(device,renderpass_GBuffer, nullptr);
 	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
@@ -146,12 +129,16 @@ void GBufferRenderPass::SetupRenderpass()
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
-	// TODO: Texture format optimization/packing?
-	att_position.createAttachment(m_device, width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "GBufferPosition");
-	att_normal  .createAttachment(m_device, width, height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "GBufferNormal");
-	att_albedo  .createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "GBufferAlbedo");
-	att_material.createAttachment(m_device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, "GBufferMaterial");
-	att_depth   .createAttachment(m_device, width, height, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, "GBufferDepth");
+	attachments[GBufferAttachmentIndex::POSITION].name = "GB_Position";
+	attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
+	attachments[GBufferAttachmentIndex::NORMAL].name = "GB_Normal";
+	attachments[GBufferAttachmentIndex::NORMAL  ].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
+	attachments[GBufferAttachmentIndex::ALBEDO].name = "GB_Albedo";
+	attachments[GBufferAttachmentIndex::ALBEDO  ].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
+	attachments[GBufferAttachmentIndex::MATERIAL].name = "GB_Material";
+	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
+	attachments[GBufferAttachmentIndex::DEPTH].name = "GB_DEPTH";
+	attachments[GBufferAttachmentIndex::DEPTH   ].forFrameBuffer(vr.G_DEPTH_FORMAT,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height, &m_device);
 
 	// Set up separate renderpass with references to the color and depth attachments
 	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};
@@ -177,11 +164,11 @@ void GBufferRenderPass::SetupRenderpass()
 	}
 
 	// Formats
-	attachmentDescs[GBufferAttachmentIndex::POSITION].format = att_position.format;
-	attachmentDescs[GBufferAttachmentIndex::NORMAL]  .format = att_normal.format;
-	attachmentDescs[GBufferAttachmentIndex::ALBEDO]  .format = att_albedo.format;
-	attachmentDescs[GBufferAttachmentIndex::MATERIAL].format = att_material.format;
-	attachmentDescs[GBufferAttachmentIndex::DEPTH]   .format = att_depth.format;
+	attachmentDescs[GBufferAttachmentIndex::POSITION].format = attachments[GBufferAttachmentIndex::POSITION].format;
+	attachmentDescs[GBufferAttachmentIndex::NORMAL]  .format = attachments[GBufferAttachmentIndex::NORMAL]  .format;
+	attachmentDescs[GBufferAttachmentIndex::ALBEDO]  .format = attachments[GBufferAttachmentIndex::ALBEDO]  .format;
+	attachmentDescs[GBufferAttachmentIndex::MATERIAL].format = attachments[GBufferAttachmentIndex::MATERIAL].format;
+	attachmentDescs[GBufferAttachmentIndex::DEPTH]   .format = attachments[GBufferAttachmentIndex::DEPTH]   .format;
 
 	std::vector<VkAttachmentReference> colorReferences;
 	colorReferences.push_back({ GBufferAttachmentIndex::POSITION, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
@@ -237,50 +224,33 @@ void GBufferRenderPass::SetupFramebuffer()
 	auto& m_device = vr.m_device;
 	auto& m_swapchain = vr.m_swapchain;
 
-	std::array<VkImageView, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachments;
-	attachments[GBufferAttachmentIndex::POSITION] = att_position.view;
-	attachments[GBufferAttachmentIndex::NORMAL]   = att_normal.view;
-	attachments[GBufferAttachmentIndex::ALBEDO]   = att_albedo.view;
-	attachments[GBufferAttachmentIndex::MATERIAL] = att_material.view;
-	attachments[GBufferAttachmentIndex::DEPTH]    = vr.m_swapchain.depthAttachment.view;
-
-	
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
+	
+	FramebufferBuilder::Begin(&vr.fbCache)
+		.BindImage(attachments[GBufferAttachmentIndex::POSITION])
+		.BindImage(attachments[GBufferAttachmentIndex::NORMAL  ])
+		.BindImage(attachments[GBufferAttachmentIndex::ALBEDO  ])
+		.BindImage(attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(attachments[GBufferAttachmentIndex::DEPTH   ])
+		.Build(framebuffer_GBuffer,renderpass_GBuffer);
 
-	//vkutils::Texture2D tex[4];
-	//tex[0].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, &m_device);
-	//tex[1].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, &m_device);
-	//tex[2].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM, width, height, &m_device);
-	//tex[3].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM, width, height, &m_device);
-
-	//FramebufferCache g_cache;
-	//g_cache.Init(vr.m_device.logicalDevice);
-	//
-	//VkFramebuffer fb;
-	//FramebufferBuilder::Begin(&g_cache)
-	//	.BindImage(tex[0])
-	//	.BindImage(tex[1])
-	//	.BindImage(tex[2])
-	//	.BindImage(tex[3])
-	//	.Build(fb,renderpass_GBuffer);
-
-	VkFramebufferCreateInfo fbufCreateInfo = {};
-	fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	fbufCreateInfo.pNext = NULL;
-	fbufCreateInfo.renderPass = renderpass_GBuffer;
-	fbufCreateInfo.pAttachments = attachments.data();
-	fbufCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-	fbufCreateInfo.width = vr.m_swapchain.swapChainExtent.width;
-	fbufCreateInfo.height = vr.m_swapchain.swapChainExtent.height;
-	fbufCreateInfo.layers = 1;
-	VK_CHK(vkCreateFramebuffer(vr.m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
+	//VkFramebufferCreateInfo fbufCreateInfo = {};
+	//fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	//fbufCreateInfo.pNext = NULL;
+	//fbufCreateInfo.renderPass = renderpass_GBuffer;
+	//fbufCreateInfo.pAttachments = attachments.data();
+	//fbufCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	//fbufCreateInfo.width = vr.m_swapchain.swapChainExtent.width;
+	//fbufCreateInfo.height = vr.m_swapchain.swapChainExtent.height;
+	//fbufCreateInfo.layers = 1;
+	//VK_CHK(vkCreateFramebuffer(vr.m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
 	VK_NAME(vr.m_device.logicalDevice, "deferredFB", framebuffer_GBuffer);
 
-	deferredImg[GBufferAttachmentIndex::POSITION] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_position.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	deferredImg[GBufferAttachmentIndex::NORMAL]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_normal.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	deferredImg[GBufferAttachmentIndex::ALBEDO]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_albedo.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	deferredImg[GBufferAttachmentIndex::MATERIAL] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), att_material.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::POSITION] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::POSITION].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::NORMAL]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::NORMAL  ].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::ALBEDO]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::ALBEDO  ].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	deferredImg[GBufferAttachmentIndex::MATERIAL] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::MATERIAL].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	//deferredImg[GBufferAttachmentIndex::DEPTH]    = ImGui_ImplVulkan_AddTexture(GfxSamplerManager::GetSampler_Deferred(), att_depth.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 

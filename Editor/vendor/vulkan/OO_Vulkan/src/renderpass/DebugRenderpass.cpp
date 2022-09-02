@@ -6,6 +6,8 @@
 #include "Window.h"
 #include "VulkanRenderer.h"
 #include "VulkanUtils.h"
+#include "FramebufferBuilder.h"
+#include "GBufferRenderPass.h"
 
 #include "../shaders/shared_structs.h"
 #include "MathCommon.h"
@@ -14,7 +16,6 @@ DECLARE_RENDERPASS(DebugRenderpass);
 
 void DebugRenderpass::Init()
 {
-	CreatePushconstants();
 	CreateDebugRenderpass();
 	CreatePipeline();
 	InitDebugBuffers();
@@ -40,7 +41,23 @@ void DebugRenderpass::Draw()
 	renderPassBeginInfo.pClearValues = clearValues.data();							//list of clear values
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size()); // no clearing
 
-	renderPassBeginInfo.framebuffer =  vr.swapChainFramebuffers[swapchainIdx];
+	// TODO: CLEAN UP THIS, VERY DIRTY...
+	vkutils::Texture2D tex;
+	tex.image = vr.m_swapchain.swapChainImages[swapchainIdx].image;
+	tex.view = vr.m_swapchain.swapChainImages[swapchainIdx].imageView;
+	tex.format = vr.m_swapchain.swapChainImageFormat;
+	tex.width = vr.m_swapchain.swapChainExtent.width;
+	tex.height = vr.m_swapchain.swapChainExtent.height;
+
+	auto& depthAtt = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments[GBufferAttachmentIndex::DEPTH];
+
+	VkFramebuffer fb;
+	FramebufferBuilder::Begin(&vr.fbCache)
+		.BindImage(tex)
+		.BindImage(depthAtt)
+		.Build(fb,debugRenderpass);
+
+	renderPassBeginInfo.framebuffer = fb;
 	
 	const VkCommandBuffer cmdlist = vr.commandBuffers[swapchainIdx];
     PROFILE_GPU_CONTEXT(cmdlist);
@@ -236,6 +253,7 @@ void DebugRenderpass::CreatePipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = 
 		oGFX::vkutils::inits::pipelineLayoutCreateInfo(descriptorSetLayouts.data(),static_cast<uint32_t>(descriptorSetLayouts.size()));
+	VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -288,14 +306,6 @@ void DebugRenderpass::CreatePipeline()
 	//destroy shader modules after pipeline is created
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
-}
-
-void DebugRenderpass::CreatePushconstants()
-{
-	auto& vr = *VulkanRenderer::get();
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; //shader stage push constant will go to
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(VulkanRenderer::PushConstData);
 }
 
 void DebugRenderpass::InitDebugBuffers()

@@ -4,6 +4,7 @@
 #include "vulkan/vulkan.h"
 #include "imgui/imgui.h"
 #include "VulkanFramebufferAttachment.h"
+#include "VulkanTexture.h"
 
 #include <array>
 

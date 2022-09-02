@@ -15,6 +15,7 @@ Technology is prohibited.
 #include "pch.h"
 
 #include "Ouroboros/Vulkan/VulkanContext.h"
+#include "Ouroboros/Core/Timer.h"
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -396,15 +397,17 @@ namespace oo
 
         vr = VulkanRenderer::get();
 
-        vr->camera.type = Camera::CameraType::lookat;
-        vr->camera.target = glm::vec3(0.01f, 0.0f, 0.0f);
-        vr->camera.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-        vr->camera.SetRotationSpeed(0.5f);
-        vr->camera.SetPosition(glm::vec3(0.1f, 10.0f, 10.5f));
-        vr->camera.movementSpeed = 5.0f;
-        vr->camera.SetPerspective(60.0f, (float)m_window.m_width / (float)m_window.m_height, 0.1f, 10000.0f);
-        vr->camera.Rotate(glm::vec3(1 * vr->camera.rotationSpeed, 1 * vr->camera.rotationSpeed, 0.0f));
-        vr->camera.matrices.view = glm::lookAt(vr->camera.position, {}, { 0,1,0 });
+        auto& camera = vr->camera;
+        m_cc.SetCamera(&camera);
+
+        camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
+        camera.movementSpeed = 5.0f;
+
+        camera.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+        camera.SetRotationSpeed(0.5f);
+        camera.SetPosition(glm::vec3(0.0f, 2.0f, 4.0f));
+        camera.SetAspectRatio((float)m_window.m_width / (float)m_window.m_height);
+        
         
 
         oGFX::SetupInfo si;
@@ -484,8 +487,10 @@ namespace oo
 
     }
 
+
     void VulkanContext::OnUpdateBegin()
     {
+        m_cc.Update(oo::timer::dt());
         if (vr->PrepareFrame() == true)
         {
             auto& obj = gw.GetObjectInstance(0);
@@ -495,9 +500,51 @@ namespace oo
             obj.localToWorld = glm::rotate(obj.localToWorld,glm::radians(obj.rot), obj.rotVec);
             obj.localToWorld = glm::scale(obj.localToWorld, obj.scale);
 
-            vr->timer += 0.02f;
-            
-            vr->UpdateLights(0.002f);
+            {
+                auto& lights = gw.m_HardcodedOmniLights;
+
+                static float lightTimer = 0.0f;
+                lightTimer += oo::timer::dt() * 0.25f;
+
+                lights[0].position = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+                lights[0].color = glm::vec4(1.5f);
+                lights[0].radius.x = 15.0f;
+                // Red
+                lights[1].position = glm::vec4(-2.0f, 0.0f, 0.0f, 0.0f);
+                lights[1].color = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+                lights[1].radius.x = 15.0f;
+                // Blue
+                lights[2].position = glm::vec4(2.0f, -1.0f, 0.0f, 0.0f);
+                lights[2].color = glm::vec4(0.0f, 0.0f, 2.5f, 0.0f);
+                lights[2].radius.x = 5.0f;
+                // Yellow
+                lights[3].position = glm::vec4(0.0f, -0.9f, 0.5f, 0.0f);
+                lights[3].color = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);
+                lights[3].radius.x = 2.0f;
+                // Green
+                lights[4].position = glm::vec4(0.0f, -0.5f, 0.0f, 0.0f);
+                lights[4].color = glm::vec4(0.0f, 1.0f, 0.2f, 0.0f);
+                lights[4].radius.x = 5.0f;
+                // Yellow
+                lights[5].position = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
+                lights[5].color = glm::vec4(1.0f, 0.7f, 0.3f, 0.0f);
+                lights[5].radius.x = 25.0f;
+
+                lights[0].position.x = sin(glm::radians(360.0f * lightTimer)) * 5.0f;
+                lights[0].position.z = cos(glm::radians(360.0f * lightTimer)) * 5.0f;
+
+                lights[1].position.x = -4.0f + sin(glm::radians(360.0f * lightTimer) + 45.0f) * 2.0f;
+                lights[1].position.z = 0.0f + cos(glm::radians(360.0f * lightTimer) + 45.0f) * 2.0f;
+
+                lights[2].position.x = 4.0f + sin(glm::radians(360.0f * lightTimer)) * 2.0f;
+                lights[2].position.z = 0.0f + cos(glm::radians(360.0f * lightTimer)) * 2.0f;
+
+                lights[4].position.x = 0.0f + sin(glm::radians(360.0f * lightTimer + 90.0f)) * 5.0f;
+                lights[4].position.z = 0.0f - cos(glm::radians(360.0f * lightTimer + 45.0f)) * 5.0f;
+
+                lights[5].position.x = 0.0f + sin(glm::radians(-360.0f * lightTimer + 135.0f)) * 10.0f;
+                lights[5].position.z = 0.0f - cos(glm::radians(-360.0f * lightTimer - 45.0f)) * 10.0f;
+            }
 
             // Upload CPU light data to GPU. Ideally this should only contain lights that intersects the camera frustum.
             vr->UploadLights();
@@ -652,6 +699,11 @@ namespace oo
         UNREFERENCED(enable);
         // vulkan does not currently support vsync yet
         return false;
+    }
+
+    VulkanRenderer* VulkanContext::getRenderer()
+    {
+        return VulkanRenderer::get();
     }
 
     void VulkanContext::SetWindowResized()

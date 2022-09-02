@@ -138,25 +138,12 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 	if (setupSpecs.extensions.empty())
 	{
 		requiredExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	
-		// Enable surface extensions depending on os
-		#if defined(_WIN32)
-				requiredExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-		#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-				requiredExtensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-		#elif defined(_DIRECT2DISPLAY)
-				requiredExtensions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
-		#elif defined(VK_USE_PLATFORM_DIRECTFB_EXT)
-				requiredExtensions.push_back(VK_EXT_DIRECTFB_SURFACE_EXTENSION_NAME);
-		#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-				requiredExtensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-		#elif defined(VK_USE_PLATFORM_XCB_KHR)
-				requiredExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-		#elif defined(VK_USE_PLATFORM_IOS_MVK)
-				requiredExtensions.push_back(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
-		#elif defined(VK_USE_PLATFORM_MACOS_MVK)
-				requiredExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
-		#endif
+		// Win32 Surface
+#if defined(_WIN32)
+		requiredExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#else
+		static_assert(false, "This engine only works on WIN32...");
+#endif
 	}
 
 	//requiredExtensions.push_back(// , VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME );     // (NOT WORKING ON MANY GRAPHICS CARDS WILL HAVE TO WAIT...) Allows to change the vertex input to a pipeline (which should have been the default behavior)
@@ -210,11 +197,7 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 		createInfo.ppEnabledLayerNames = nullptr;
 	}
 
-	//create instance
-
-
 	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
-
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create a runtime instance!\n" + oGFX::vkutils::tools::VkResultString(result));
@@ -223,14 +206,14 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 	return true;
 }
 
-void VulkanInstance::CreateSurface(Window& window)
+void VulkanInstance::CreateSurface(Window& window, VkSurfaceKHR& surface)
 {
 	//
 	// Create the surface
 	//
-	
 
 	// Get the Surface creation extension since we are about to use it
+	// TODO: do once..
 	auto VKCreateWin32Surface = (PFN_vkCreateWin32SurfaceKHR)vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR");
 	if (nullptr == VKCreateWin32Surface)
 	{
@@ -250,9 +233,6 @@ void VulkanInstance::CreateSurface(Window& window)
 	{
 		throw std::runtime_error("Vulkan Fail to create window surface");
 	}
-
-	// set surface for imgui
-	Window::SurfaceFormat = (uint64_t)surface;
 
 }
 

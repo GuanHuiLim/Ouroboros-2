@@ -18,6 +18,7 @@
 #include "DescriptorBuilder.h"
 #include "DescriptorAllocator.h"
 #include "DescriptorLayoutCache.h"
+#include "FramebufferCache.h"
 #include "Geometry.h"
 
 #include "Camera.h"
@@ -52,6 +53,26 @@ struct LayoutDB // Think of a better name? Very short and sweet for easy typing 
 	inline static VkDescriptorSetLayout ForwardDecal;
 };
 
+// Moving all constant buffer structures into this CB namespace.
+// Important: Take extra care of the alignment and memory layout. Must match the shader side.
+namespace CB
+{
+	struct FrameContextUBO
+	{
+		glm::mat4 projection{ 1.0f };
+		glm::mat4 view{ 1.0f };
+		glm::mat4 viewProjection{ 1.0f };
+		glm::vec4 cameraPosition{ 1.0f };
+		glm::vec4 renderTimer{ 0.0f, 0.0f, 0.0f, 0.0f };
+	};
+
+    struct LightUBO
+    {
+        OmniLightInstance lights[6];
+        glm::vec4 viewPos;
+    };
+}
+
 class VulkanRenderer
 {
 public:
@@ -60,6 +81,8 @@ public:
 	static constexpr int MAX_FRAME_DRAWS = 2;
 	static constexpr int MAX_OBJECTS = 2048;
 	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+	static int ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface);
 
 #define OBJECT_INSTANCE_COUNT 128
 
@@ -79,7 +102,6 @@ public:
 	void CreateRenderpass();
 	void CreateDescriptorSetLayout();
 
-	void CreatePushConstantRange();
 	void CreateGraphicsPipeline();
 	//void CreateDepthBufferImage();
 	void CreateFramebuffers(); 
@@ -94,55 +116,37 @@ public:
 	void CreateOffscreenFB();
 	void ResizeOffscreenFB();
 
-	 bool m_imguiInitialized = false;
+    bool m_imguiInitialized = false;
 	bool m_initialized = false;
 
 	//---------- Device ----------
 
-	 VulkanInstance m_instance{};
-	 VulkanDevice m_device{};
-	 VulkanSwapchain m_swapchain{};
-	 std::vector<VkFramebuffer> swapChainFramebuffers;
-	 uint32_t swapchainIdx{ 0 };
+    VulkanInstance m_instance{};
+    VulkanDevice m_device{};
+	VulkanSwapchain m_swapchain{};
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+	uint32_t swapchainIdx{ 0 };
 
 	//---------- DescriptorSet ----------
 
 	// For Deferred Lighting onwards
-	 VkDescriptorSetLayout descriptorSetLayout_DeferredComposition;
-	 VkDescriptorSet descriptorSet_DeferredComposition;
-
+	VkDescriptorSet descriptorSet_DeferredComposition;
 	// For unbounded array of texture descriptors, used in bindless approach
-	 VkDescriptorSetLayout descriptorSetLayout_bindless;
-	 VkDescriptorSet descriptorSet_bindless;
-
+	VkDescriptorSet descriptorSet_bindless;
 	// For GPU Scene
-     VkDescriptorSetLayout descriptorSetLayout_gpuscene;
-     VkDescriptorSet descriptorSet_gpuscene;
-
+	VkDescriptorSet descriptorSet_gpuscene;
 	// For UBO with the corresponding swap chain image
-	 VkDescriptorSetLayout descriptorSetLayout_uniform;
-	 std::vector<VkDescriptorSet> descriptorSets_uniform;
+    std::vector<VkDescriptorSet> descriptorSets_uniform;
 
 	void ResizeDeferredFB();
 
 	void SetWorld(GraphicsWorld* world);
-	 GraphicsWorld* currWorld{ nullptr };
+	GraphicsWorld* currWorld{ nullptr };
+	
+	bool deferredRendering = true;
 
-	std::array<OmniLightInstance, 6> m_HardcodedOmniLights;
-
-	struct LightUBO
-	{
-		OmniLightInstance lights[6];
-		glm::vec4 viewPos;
-	};
-	 LightUBO lightUBO{};
-	float timer{ 0.0f };
-
-	 bool deferredRendering = true;
-
-	 vkutils::Buffer lightsBuffer;
+    vkutils::Buffer lightsBuffer;
 	void CreateLightingBuffers(); 
-	void UpdateLights(float delta);
 	void UploadLights();
 
 	void CreateSynchronisation();
@@ -171,14 +175,14 @@ public:
 
 	void InitializeRenderBuffers();
 	void DestroyRenderBuffers();
-	void UpdateIndirectDrawCommands();
+	void GenerateCPUIndirectDrawCommands();
 	void UploadInstanceData();
 	uint32_t objectCount{};
 	// Contains the instanced data
 	 vkutils::Buffer instanceBuffer;
 
 	bool PrepareFrame();
-	void Draw();
+	void BeginDraw();
 	void RenderFrame();
 	void Present();
 
@@ -189,41 +193,40 @@ public:
 	// Immediate command sending helper
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-	uint32_t CreateTexture(uint32_t width, uint32_t height,unsigned char* imgData);
-	uint32_t CreateTexture(const std::string& fileName);
-	struct TextureInfo
-	{
-		std::string name;
-		uint32_t width;
-		uint32_t height;
-		VkFormat format;
-		uint32_t mips;
-	};
-	TextureInfo GetTextureInfo(uint32_t handle);
-	
-	void InitDebugBuffers();
-	void UpdateDebugBuffers();
+    uint32_t CreateTexture(uint32_t width, uint32_t height, unsigned char* imgData);
+    uint32_t CreateTexture(const std::string& fileName);
+    struct TextureInfo
+    {
+        std::string name;
+        uint32_t width;
+        uint32_t height;
+        VkFormat format;
+        uint32_t mips;
+    };
+    TextureInfo GetTextureInfo(uint32_t handle);
 
-	struct VertexBufferObject
-	{
-		GpuVector<oGFX::Vertex> VtxBuffer;
-		GpuVector<uint32_t> IdxBuffer;
-		size_t VtxOffset{};
-		size_t IdxOffset{};
-	};
+    void InitDebugBuffers();
+    void UpdateDebugBuffers();
 
-	 VertexBufferObject g_MeshBuffers;
+    struct VertexBufferObject
+    {
+        GpuVector<oGFX::Vertex> VtxBuffer;
+        GpuVector<uint32_t> IdxBuffer;
+        uint32_t VtxOffset{};
+        uint32_t IdxOffset{};
+    };
 
-	 VertexBufferObject g_AABBMeshBuffers;
-	std::vector<oGFX::Vertex> g_AABBMeshes;
-	 VertexBufferObject g_SphereMeshBuffers;
-	std::vector<oGFX::Vertex> g_SphereMeshes;
+    VertexBufferObject g_GlobalMeshBuffers;
 
-	std::vector<int> intsVector;
-	GpuVector<oGFX::Vertex> g_debugDrawVertBuffer;
-	GpuVector<uint32_t> g_debugDrawIndxBuffer;
-	std::vector<oGFX::Vertex> g_debugDrawVerts;
-	std::vector<uint32_t> g_debugDrawIndices;
+    VertexBufferObject g_AABBMeshBuffers;
+    std::vector<oGFX::Vertex> g_AABBMeshes;
+    VertexBufferObject g_SphereMeshBuffers;
+    std::vector<oGFX::Vertex> g_SphereMeshes;
+
+    GpuVector<oGFX::Vertex> g_debugDrawVertBuffer;
+    GpuVector<uint32_t> g_debugDrawIndxBuffer;
+    std::vector<oGFX::Vertex> g_debugDrawVerts;
+    std::vector<uint32_t> g_debugDrawIndices;
 
 	//TEMP
 	struct DebugDraw
@@ -252,7 +255,7 @@ public:
 	void ShutdownTreeDebug();
 
 
-	Model* LoadMeshFromFile(const std::string& file);
+	Model* LoadModelFromFile(const std::string& file);
 	Model* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex,std::vector<uint32_t>& indices, gfxModel* model);
 	void SetMeshTextures(uint32_t modelID,uint32_t alb, uint32_t norm, uint32_t occlu, uint32_t rough);
 
@@ -262,6 +265,7 @@ public:
 
 	//textures
 	std::vector<vkutils::Texture2D> g_Textures;
+	std::vector<ImTextureID> g_imguiIDs;
 
 	// - Synchronisation
 	 std::vector<VkSemaphore> imageAvailable;
@@ -285,14 +289,6 @@ public:
 
 	// - Descriptors
 	
-
-	struct PushConstData
-	{
-		glm::mat4 xform{};
-		glm::vec3 light{};
-	};
-	 VkPushConstantRange pushConstantRange{};
-
 	VkDescriptorPool descriptorPool{};
 	VkDescriptorPool samplerDescriptorPool{};
 	
@@ -313,6 +309,8 @@ public:
 	 DescriptorAllocator DescAlloc;
 	 DescriptorLayoutCache DescLayoutCache;
 
+	 FramebufferCache fbCache;
+
 	GfxSamplerManager samplerManager;
 
 	 std::vector<VkCommandBuffer> commandBuffers;
@@ -329,14 +327,7 @@ public:
 	uint64_t uboDynamicAlignment;
 	uint32_t numCameras;
 
-	struct FrameContextUBO
-	{
-		glm::mat4 projection{ 1.0f };
-		glm::mat4 view{ 1.0f };
-		glm::mat4 viewProjection{ 1.0f };
-		glm::vec4 cameraPosition{ 1.0f };
-		glm::vec4 renderTimer{ 0.0f, 0.0f, 0.0f, 0.0f };
-	} m_FrameContextUBO;
+    
 
 	bool resizeSwapchain = false;
 	bool m_prepared = false;
@@ -345,6 +336,7 @@ public:
 
 public:
 	
+	// TODO: remove
 	struct EntityDetails
 	{
 		std::string name;
@@ -384,8 +376,10 @@ public:
 			return 8.0f * ( (width*height)*(width*depth)*(height*depth) );
 		}
 	};
-	 std::vector<EntityDetails> entities;
+
 	static ImTextureID CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l);
+	ImTextureID GetImguiID(uint32_t textureID);
+
 	static VkPipelineShaderStageCreateInfo LoadShader(VulkanDevice& device, const std::string& fileName, VkShaderStageFlagBits stage);
 	private:
 		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);		

@@ -23,10 +23,12 @@ Technology is prohibited.
 #include <Ouroboros/Core/LayerSet.h>
 #include <Ouroboros/ImGui/ImGuiAbstraction.h>
 #include <Ouroboros/EventSystem/EventManager.h>
+#include <Ouroboros/Asset/AssetManager.h>
 
 // Debug Layers
 #include "Testing/TestLayers/InputDebugLayer.h"
 #include "Testing/TestLayers/MainDebugLayer.h"
+#include "Testing/TestLayers/AssetDebugLayer.h"
 
 // Core Essential Layers
 #include "App/CoreLayers/SceneLayer.h"
@@ -55,6 +57,7 @@ class EditorApp final : public oo::Application
 private:
     // main scene manager
     SceneManager m_sceneManager;
+    oo::AssetManager m_assetManager{ "./" };
 
 public:
     EditorApp(oo::CommandLineArgs args)
@@ -66,13 +69,14 @@ public:
         //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
+        m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
 
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
         // Main Layers
         m_layerset.PushLayer(std::make_shared<EditorLayer>(m_sceneManager));
 
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
-        
+
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
