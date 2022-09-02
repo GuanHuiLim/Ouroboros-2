@@ -20,6 +20,7 @@
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
+#include <Ouroboros/Physics/Colliders.h>
 
 #include <glm/gtc/type_ptr.hpp>
 Inspector::Inspector()
@@ -30,6 +31,13 @@ Inspector::Inspector()
 		bool value = v.get_value<bool>();
 		edited = ImGui::Checkbox(name.c_str(),&value);
 		if (edited) { v = value; endEdit = true; };
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::FLOAT_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		auto value = v.get_value<float>();
+		edited = ImGui::DragFloat(name.c_str(), &value);
+		if (edited) { v = value; };
+		endEdit |= ImGui::IsItemDeactivatedAfterEdit();
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::STRING_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
@@ -172,6 +180,10 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::Transform3D>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
+	
+	//DisplayComponent<oo::ColliderComponent>(gameobject);
+	DisplayComponent<oo::SphereCollider>(gameobject);
+	DisplayComponent<oo::BoxCollider>(gameobject);
 	ImGui::EndGroup();
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
@@ -190,6 +202,10 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::Transform3D>(gameobject);
 		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+		
+		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::BoxCollider>(gameobject);
+		selected |= AddComponentSelectable<oo::SphereCollider>(gameobject);
 		ImGui::EndChild();
 		ImGui::ListBoxHeader("##Searcharea", {x - 10,y*0.2f});
 		ImGui::PushItemWidth(-75.0f);
