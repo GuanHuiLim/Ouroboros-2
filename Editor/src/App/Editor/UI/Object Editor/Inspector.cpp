@@ -193,7 +193,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::BeginGroup();
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
-	DisplayComponent<oo::Transform3D>(gameobject);
+	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
@@ -213,7 +213,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::BeginListBox("##AddComponents", { x,y });
 		ImGui::BeginChild("##child", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::Transform3D>(gameobject);
+		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 		ImGui::EndChild();
