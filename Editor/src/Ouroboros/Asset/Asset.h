@@ -33,6 +33,8 @@ namespace oo
     {
         using Callback = std::function<void(void)>;
 
+        std::filesystem::path contentPath;
+        std::filesystem::path metaPath;
         std::chrono::steady_clock::time_point timeLoaded = std::chrono::steady_clock::now();
         std::list<Asset*> copies;
         Callback onAssetDestroy = []() {};
@@ -61,6 +63,8 @@ namespace oo
         ~Asset();
 
         [[nodiscard]] inline const AssetID& GetID() const { return id; };
+        [[nodiscard]] inline const auto& GetFilePath() const { return info->contentPath; };
+        [[nodiscard]] inline const auto& GetMetaFilePath() const { return info->metaPath; };
         [[nodiscard]] inline const auto& GetTimeLoaded() const { return info->timeLoaded; };
         [[nodiscard]] inline const std::list<Asset*>& GetCopies() const { return info->copies; };
         [[nodiscard]] inline size_t GetUseCount() const { return info->copies.size(); };
