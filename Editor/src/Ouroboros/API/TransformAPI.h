@@ -10,8 +10,8 @@ namespace oo
     SCRIPT_API void Transform3D_GetLocalPosition(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z) 
     { 
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
-        Transform3D::vec3 vec3 = component.GetPosition();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GetPosition();
         *x = vec3.x;
         *y = vec3.y;
         *z = vec3.z;
@@ -20,7 +20,7 @@ namespace oo
     SCRIPT_API void Transform3D_SetLocalPosition(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
         component.SetPosition({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
@@ -30,8 +30,8 @@ namespace oo
     SCRIPT_API void Transform3D_GetGlobalPosition(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
-        Transform3D::vec3 vec3 = component.GetGlobalPosition();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GetGlobalPosition();
         *x = vec3.x;
         *y = vec3.y;
         *z = vec3.z;
@@ -40,7 +40,7 @@ namespace oo
     SCRIPT_API void Transform3D_SetGlobalPosition(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
         component.SetGlobalPosition({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
@@ -50,8 +50,8 @@ namespace oo
     SCRIPT_API void Transform3D_GetLocalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
-        Transform3D::vec3 vec3 = component.GetGlobalPosition();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GetGlobalPosition();
         *x = vec3.x;
         *y = vec3.y;
         *z = vec3.z;
@@ -60,7 +60,7 @@ namespace oo
     SCRIPT_API void Transform3D_SetLocalEulerAngles(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
         component.SetGlobalPosition({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
@@ -70,8 +70,8 @@ namespace oo
     SCRIPT_API void Transform3D_GetLocalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
-        Transform3D::vec3 vec3 = component.GetScale();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GetScale();
         *x = vec3.x;
         *y = vec3.y;
         *z = vec3.z;
@@ -80,7 +80,7 @@ namespace oo
     SCRIPT_API void Transform3D_SetLocalScale(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
         component.SetScale({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
@@ -90,8 +90,8 @@ namespace oo
     SCRIPT_API void Transform3D_GetGlobalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
-        Transform3D::vec3 vec3 = component.GetGlobalScale();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GetGlobalScale();
         *x = vec3.x;
         *y = vec3.y;
         *z = vec3.z;
@@ -100,7 +100,7 @@ namespace oo
     SCRIPT_API void Transform3D_SetGlobalScale(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
-        Transform3D& component = obj->GetComponent<Transform3D>();
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
         component.SetGlobalScale({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);

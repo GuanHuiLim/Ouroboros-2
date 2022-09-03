@@ -70,65 +70,32 @@ namespace oo
         if (!std::filesystem::exists(FP))
             throw AssetNotFoundException();
 
-        // Get file paths
-        auto fpContent = FP;
-        auto fpMeta = fpContent;
-        if (fpContent.extension() == Asset::EXT_META)
-        {
-            fpContent.replace_extension();
-        }
-        else
-        {
-            fpMeta += Asset::EXT_META;
-        }
-        const auto FP_EXT = fpContent.extension();
-
-        // Ensure meta file exists
-        AssetMetaContent meta;
-        if (!std::filesystem::exists(fpMeta))
-        {
-            meta.id = Asset::GenerateSnowflake();
-            std::ofstream ofs = std::ofstream(fpMeta);
-            BinaryIO::Write(ofs, meta);
-        }
-        else
-        {
-            std::ifstream ifs = std::ifstream(fpMeta);
-            BinaryIO::Read(ifs, meta);
-        }
-
-        // Get or load asset
-        if (assets.contains(meta.id))
-        {
-            // Get asset
-            return assets.at(meta.id);
-        }
-        else
-        {
-            // Load asset
-            Asset asset = Asset(fpContent);
-            if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
-            {
-                // Load texture
-                auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
-                auto vr = vc->getRenderer();
-                auto data = vr->CreateTexture(fpContent.string());
-                asset.info->data = new decltype(data);
-                *reinterpret_cast<decltype(data)*>(asset.info->data) = data;
-                std::cout << "image data is " << data << '\n';
-                asset.info->onAssetDestroy = [fpContent]()
-                {
-                    // TODO: Unload texture
-                };
-            }
-            assets.insert({ meta.id, asset });
-            return asset;
-        }
+        return getOrLoadAbsolute(FP);
     }
 
     std::future<Asset> AssetManager::LoadPathAsync(const std::filesystem::path& fp)
     {
         return std::async(std::launch::async, &AssetManager::LoadPath, this, fp);
+    }
+
+    std::vector<Asset> AssetManager::LoadName(const std::filesystem::path& fn)
+    {
+        const std::filesystem::path DIR = std::filesystem::canonical(root);
+
+        std::vector<Asset> v;
+        for (auto& file : std::filesystem::recursive_directory_iterator(DIR))
+        {
+            if (file.path().filename() == fn)
+            {
+                v.emplace_back(getOrLoadAbsolute(file.path()));
+            }
+        }
+        return v;
+    }
+
+    std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn)
+    {
+        return std::async(std::launch::async, &AssetManager::LoadName, this, fn);
     }
 
     void AssetManager::fileWatch()
@@ -174,5 +141,70 @@ namespace oo
             }
             t = now;
         }
+    }
+
+    Asset AssetManager::getOrLoadAbsolute(const std::filesystem::path& fp)
+    {
+        // Get file paths
+        auto fpContent = fp;
+        auto fpMeta = fpContent;
+        if (fpContent.extension() == Asset::EXT_META)
+        {
+            fpContent.replace_extension();
+        }
+        else
+        {
+            fpMeta += Asset::EXT_META;
+        }
+        const auto FP_EXT = fpContent.extension();
+
+        // Ensure meta file exists
+        AssetMetaContent meta;
+        if (!std::filesystem::exists(fpMeta))
+        {
+            meta.id = Asset::GenerateSnowflake();
+            std::ofstream ofs = std::ofstream(fpMeta);
+            BinaryIO::Write(ofs, meta);
+        }
+        else
+        {
+            std::ifstream ifs = std::ifstream(fpMeta);
+            BinaryIO::Read(ifs, meta);
+        }
+
+        // Get or load asset
+        if (assets.contains(meta.id))
+        {
+            // Get asset
+            return assets.at(meta.id);
+        }
+        else
+        {
+            // Load asset
+            Asset asset = createAsset(fpContent);
+            assets.insert({ meta.id, asset });
+            return asset;
+        }
+    }
+
+    Asset AssetManager::createAsset(std::filesystem::path fp)
+    {
+        const auto FP_EXT = fp.extension();
+        Asset asset = Asset(fp);
+        if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
+        {
+            // Load texture
+            auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            auto vr = vc->getRenderer();
+            auto data = vr->CreateTexture(fp.string());
+            asset.info->data = new decltype(data);
+            *reinterpret_cast<decltype(data)*>(asset.info->data) = data;
+            std::cout << "image data is " << data << '\n';
+            asset.info->onAssetDestroy = [fp]()
+            {
+                // TODO: Unload texture
+            };
+        }
+        return asset;
     }
 }

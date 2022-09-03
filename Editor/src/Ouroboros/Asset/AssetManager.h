@@ -30,6 +30,10 @@ namespace oo
     public:
         static constexpr size_t WATCH_INTERVAL = 1000;
 
+        /* --------------------------------------------------------------------------- */
+        /* Constructors and Destructors                                                */
+        /* -------------------------------------------------------------------------- -*/
+
         AssetManager(std::filesystem::path root);
         AssetManager(const AssetManager&) = delete;
         AssetManager(AssetManager&&) = default;
@@ -37,15 +41,63 @@ namespace oo
         AssetManager& operator=(AssetManager&&) = default;
         ~AssetManager();
 
+        /* --------------------------------------------------------------------------- */
+        /* Getters                                                                     */
+        /* --------------------------------------------------------------------------- */
+
         [[nodiscard]] inline const std::filesystem::path& GetRootDirectory() const { return root; };
 
-        // Get asset by snowflake ID
+        /* --------------------------------------------------------------------------- */
+        /* Setters                                                                     */
+        /* --------------------------------------------------------------------------- */
+
+        [[nodiscard]] inline std::filesystem::path& RootDirectory() { return root; };
+
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /****************************************************************************//*!
+        @brief  Retrieves an asset using its ID.
+        @param  snowflake - The ID of the asset.
+        @return The asset.
+        *//*****************************************************************************/
         Asset Get(const AssetID& snowflake);
+
+        /****************************************************************************//*!
+        @brief  Asynchronously retrieves an asset using its ID.
+        @param  snowflake - The ID of the asset.
+        @return The future asset.
+        *//*****************************************************************************/
         std::future<Asset> GetAsync(const AssetID& snowflake);
 
-        // Load an unloaded asset into the asset store
+        /****************************************************************************//*!
+        @brief  Loads or retrieves an asset at a given file path.
+        @param  fp - The file path relative to the AssetManager's root path.
+        @return The asset.
+        *//*****************************************************************************/
         Asset LoadPath(const std::filesystem::path& fp);
+
+        /****************************************************************************//*!
+        @brief  Asynchronously loads or retrieves an asset at a given file path.
+        @param  fp - The file path relative to the AssetManager's root path.
+        @return The future asset.
+        *//*****************************************************************************/
         std::future<Asset> LoadPathAsync(const std::filesystem::path& fp);
+
+        /****************************************************************************//*!
+        @brief  Loads or retrieves an asset by a given file name.
+        @param  fn - The file name.
+        @return The assets matching the criteria.
+        *//*****************************************************************************/
+        std::vector<Asset> LoadName(const std::filesystem::path& fn);
+
+        /****************************************************************************//*!
+        @brief  Asynchronously loads or retrieves an asset by a given file name.
+        @param  fn - The file name.
+        @return The assets matching the criteria.
+        *//*****************************************************************************/
+        std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn);
 
     private:
         bool isRunning = true;
@@ -53,8 +105,24 @@ namespace oo
         std::unordered_map<AssetID, Asset> assets;
         std::thread fileWatchThread;
 
-        void indexFilesystem(std::filesystem::path dir);
+        /****************************************************************************//*!
+        @brief  Scans the filesystem for changes in files.
+        *//*****************************************************************************/
         void fileWatch();
+
+        /****************************************************************************//*!
+        @brief  Loads or retrieves an asset at a given absolute file path.
+        @param  fp - The file path.
+        @return The asset.
+        *//*****************************************************************************/
+        Asset getOrLoadAbsolute(const std::filesystem::path& fp);
+
+        /****************************************************************************//*!
+        @brief  Creates an asset object from a given file.
+        @param  fp - The file path.
+        @return The asset.
+        *//*****************************************************************************/
+        Asset createAsset(std::filesystem::path fp);
     };
 
     class AssetNotFoundException : public std::exception

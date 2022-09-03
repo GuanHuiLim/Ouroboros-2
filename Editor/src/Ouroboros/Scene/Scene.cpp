@@ -68,11 +68,11 @@ namespace oo
         
             // Initialize Default Systems
             {
-                m_ecsWorld->Add_System<oo::DeferredSystem>();
-                m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
+                m_ecsWorld->Add_System<oo::DeferredSystem>(this);
+                //m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
 
-                m_ecsWorld->Add_System<oo::TransformSystem>();
-                m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
+                m_ecsWorld->Add_System<oo::TransformSystem>(this);
+                //m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
             }
 
             PRINT(m_name);
