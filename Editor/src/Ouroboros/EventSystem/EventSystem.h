@@ -172,7 +172,7 @@ namespace oo
             std::size_t index = 0;
             for (auto& function : function_container)
             {
-                if ((*function) == callback)
+                if (*(static_cast<EventMemberFunction<T, EventType>*>(function.get())) == callback)
                 {
                     function_container.erase(function_container.begin() + index);
                     break;

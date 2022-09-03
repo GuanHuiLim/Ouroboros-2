@@ -19,4 +19,11 @@ namespace oo
 	protected:
 		virtual ~Event() {};
 	};
+
+	/*struct TestEvent : public Event
+	{
+
+	};
+
+	class TestType {};*/
 }
