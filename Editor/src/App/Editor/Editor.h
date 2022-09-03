@@ -5,6 +5,7 @@
 #include "UI/Object Editor/Inspector.h"
 #include "UI/Object Editor/FileBrowser.h"
 #include "UI/Tools/Toolbar.h"
+#include "App/Editor/UI/Tools/LoggingView.h"
 class Editor
 {
 public:
@@ -19,6 +20,7 @@ public:
 	Inspector m_inspector;
 	FileBrowser m_fileBrowser;
 	Toolbar m_toolbar;
+	LoggingView m_loggingView;
 private:
 };
 
