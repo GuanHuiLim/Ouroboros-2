@@ -413,7 +413,7 @@ void Hierarchy::SearchFilter()
 
 void Hierarchy::RightClickOptions()
 {
-	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right))
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right) && ImGui::IsWindowHovered())
 		ImGui::OpenPopupEx(Popup_ID);
 	if (ImGui::BeginPopupEx(Popup_ID, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings))
 	{
