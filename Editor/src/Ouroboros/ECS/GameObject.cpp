@@ -19,6 +19,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
 
+#include "Ouroboros/Scripting/ScriptComponent.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
 namespace oo
 {
@@ -47,7 +49,7 @@ namespace oo
 
     GameObject::GameObject(UUID uuid, Scene& scene)
         : m_scene { &scene }
-        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent>() }
+        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent, ScriptComponent>() }
     {
         SetupGo(uuid, m_entity);
     }

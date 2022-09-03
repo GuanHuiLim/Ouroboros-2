@@ -1,6 +1,7 @@
 #include "ScriptEngine.h"
 
 #include <fstream>
+#include <assert.h>
 
 namespace oo
 {
@@ -138,9 +139,14 @@ namespace oo
     MonoClass* ScriptEngine::GetClass(const char* aLibrary, const char* aNamespace, const char* aClassName)
     {
         MonoImage* library = GetLibrary(aLibrary);
-        if (library == nullptr)
-            return nullptr;
-        return mono_class_from_name(library, aNamespace, aClassName);
+        assert(library != nullptr);
+        //if (library == nullptr)
+            //throw std::exception("ScriptEngine GetClass Exception: the Library doesn't exist");
+        MonoClass* klass = mono_class_from_name(library, aNamespace, aClassName);
+        assert(klass != nullptr);
+        //if (klass == nullptr)
+            //throw std::exception("ScriptEngine GetClass Exception: class doesn't exist");
+        return klass;
     }
 
     std::vector<MonoClass*> const ScriptEngine::GetClassesByBaseClass(const char* aLibrary, MonoClass* baseClass)
@@ -242,6 +248,14 @@ namespace oo
     }
 
     // Checks
+    bool ScriptEngine::CheckClassExists(const char* aLibrary, const char* aNamespace, const char* aClassName)
+    {
+        MonoImage* library = GetLibrary(aLibrary);
+        if (library == nullptr)
+            return false;
+        return mono_class_from_name(library, aNamespace, aClassName) != nullptr;
+    }
+
     bool ScriptEngine::CheckClassInheritance(MonoClass* derivedClass, MonoClass* baseClass)
     {
         while (derivedClass != nullptr)

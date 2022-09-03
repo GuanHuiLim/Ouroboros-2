@@ -14,7 +14,18 @@ namespace oo
         std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
         if (scene->FindWithInstanceID(uuid) == nullptr)
             ScriptEngine::ThrowNullException();
-        return scene->GetWorld().Get_System<ScriptSystem>()->AddScript(uuid, name_space, name);
+        ScriptDatabase::IntPtr ptr = scene->GetWorld().Get_System<ScriptSystem>()->AddScript(uuid, name_space, name);
+        MonoObject* script = mono_gchandle_get_target(ptr);
+        try
+        {
+            ScriptEngine::InvokeFunction(script, "Awake");
+            ScriptEngine::InvokeFunction(script, "Start");
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR(e.what());
+        }
+        return ptr;
     }
 
     SCRIPT_API ScriptDatabase::IntPtr GetScript(Scene::ID_type sceneID, UUID uuid, const char* name_space, const char* name)

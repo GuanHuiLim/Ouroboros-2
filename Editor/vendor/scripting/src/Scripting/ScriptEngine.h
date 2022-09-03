@@ -39,6 +39,7 @@ namespace oo
         static std::vector<std::string> GetEnumOptions(MonoType* type);
 
         // Checks
+        static bool CheckClassExists(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static bool CheckClassInheritance(MonoClass* derivedClass, MonoClass* baseClass);
         static bool CheckClassInheritance(MonoClass* derivedClass, const char* aLibrary, const char* aNamespace, const char* aClassName);
 

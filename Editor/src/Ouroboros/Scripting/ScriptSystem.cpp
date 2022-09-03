@@ -16,7 +16,7 @@ namespace oo
     std::string ScriptSystem::s_ProjectPath;
 
     bool ScriptSystem::s_IsPlaying = false;
-    std::vector<std::string> ScriptSystem::s_ScriptList;
+    std::vector<ScriptClassInfo> ScriptSystem::s_ScriptList;
 
     void ScriptSystem::LoadProject(std::string const& buildPath, std::string const& projectPath)
     {
@@ -71,14 +71,13 @@ namespace oo
             return;
         }
         LOG_CORE_TRACE("Script Loading Successful");
-        //std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour"));
-        //s_ClassList.clear();
-        //std::vector<std::string> classNameList;
-        //for (MonoClass* klass : classList)
-        //{
-        //    classNameList.emplace_back(std::string{ mono_class_get_namespace(klass) } + "." + mono_class_get_name(klass));
-        //    s_ClassList.emplace_back(ScriptClassInfo{ mono_class_get_namespace(klass), mono_class_get_name(klass) });
-        //}
+
+        std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour"));
+        s_ScriptList.clear();
+        for (MonoClass* klass : classList)
+        {
+            s_ScriptList.emplace_back(ScriptClassInfo{ mono_class_get_namespace(klass), mono_class_get_name(klass) });
+        }
 
         //if (refresh)
         //{
@@ -152,29 +151,27 @@ namespace oo
 
         scriptDatabase.Initialize(ScriptEngine::GetClassesByBaseClass("Scripting", ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour")));
 
-        Ecs::Query query;
-        query.with<GameObjectComponent>().build();
-        scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject)
-            {
-                if (gameObject.Id == 0)
-                    return;
-                SetUpObject(gameObject.Id);
+        static Ecs::Query query = []()
+        {
+            Ecs::Query query;
+            query.with<GameObjectComponent, ScriptComponent>().build();
+            return query;
+        }();
 
-                // create script instance
-                MonoObject* script = mono_gchandle_get_target(scriptDatabase.Instantiate(gameObject.Id, "", "TestClass"));
-
-                // set gameObject field
-                MonoClass* klass = ScriptEngine::GetClass("Scripting", "", "TestClass");
-                MonoClassField* gameObjectField = mono_class_get_field_from_name(klass, "m_GameObject");
-                MonoObject* GO = componentDatabase.RetrieveGameObjectObject(gameObject.Id);
-                mono_field_set_value(script, gameObjectField, GO);
-
-                // set componentID field
-                //unsigned int key = utility::StringHash(std::string(name_space) + "." + name);
-                //MonoClassField* idField = mono_class_get_field_from_name(klass, "m_ComponentID");
-                //mono_field_set_value(script, idField, &key);
-            });
         s_IsPlaying = true;
+        scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
+            {
+                if (gameObject.Id == GameObject::ROOTID)
+                    return;
+
+                // TESTING
+                script.AddScriptInfo(ScriptClassInfo{ "", "TestClass" });
+                script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testScript")->value = ScriptValue(ScriptValue::component_type{ gameObject.Id, "", "TestClass", true });
+                script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testComponent")->value = ScriptValue(ScriptValue::component_type{ gameObject.Id, "Ouroboros", "Transform", false });
+
+                SetUpObject(gameObject.Id, script);
+            });
+        UpdateAllScriptFieldsWithInfo();
         InvokeForAll("Awake");
         InvokeForAll("Start");
         return true;
@@ -182,7 +179,18 @@ namespace oo
 
     void ScriptSystem::SetUpObject(UUID uuid)
     {
+        std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
+        ASSERT(gameObject == nullptr);
+        SetUpObject(uuid, gameObject->GetComponent<ScriptComponent>());
+    }
+    void ScriptSystem::SetUpObject(UUID uuid, ScriptComponent const& script)
+    {
         componentDatabase.InstantiateObjectFull(uuid);
+        // Add all scripts
+        for (auto const& [key, scriptInfo] : script.GetScriptInfoAll())
+        {
+            AddScript(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+        }
     }
 
     bool ScriptSystem::StopPlay()
@@ -209,6 +217,58 @@ namespace oo
         InvokeForObject(e->Id, "OnDisable");
     }
 
+    void ScriptSystem::ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
+    {
+        auto& scriptInfoMap = script.GetScriptInfoAll();
+        auto search = scriptInfoMap.find(StringHash{ classInfo.ToString() });
+        if (search == scriptInfoMap.end())
+            return;
+        search->second.ResetFieldValues();
+        if (s_IsPlaying)
+            UpdateScriptFieldsWithInfo(uuid, script);
+    }
+    void ScriptSystem::RefreshScriptInfoAll()
+    {
+        static Ecs::Query query = []()
+        {
+            Ecs::Query query;
+            query.with<GameObjectComponent, ScriptComponent>().build();
+            return query;
+        }();
+
+        scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
+            {
+                if (gameObject.Id == GameObject::ROOTID)
+                    return;
+                auto& scriptInfoMap = script.GetScriptInfoAll();
+
+                std::vector<unsigned int> eraseKeys;
+                for (auto& [key, scriptInfo] : scriptInfoMap)
+                {
+                    if (!ScriptEngine::CheckClassExists("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str()))
+                    {
+                        eraseKeys.emplace_back(key);
+                        continue;
+                    }
+                    ScriptInfo newInfo(scriptInfo.classInfo);
+                    newInfo.CopyFieldValues(scriptInfo);
+                    scriptInfo = newInfo;
+                }
+
+                if (eraseKeys.size() > 0)
+                {
+                    for (unsigned int key : eraseKeys)
+                    {
+                        auto search = scriptInfoMap.find(key);
+                        if (search == scriptInfoMap.end())
+                            continue;
+                        LOG_TRACE("no script class found with name {0} in {1}, script was removed", search->second.classInfo.ToString(), gameObject.Name);
+                        scriptInfoMap.erase(search);
+                    }
+                }
+            });
+    }
+
     ScriptDatabase::IntPtr ScriptSystem::AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
         if (!s_IsPlaying)
@@ -224,20 +284,11 @@ namespace oo
         MonoObject* gameObject = componentDatabase.RetrieveGameObjectObject(uuid);
         mono_field_set_value(script, gameObjectField, gameObject);
 
-        //// set componentID field
-        //unsigned int key = utility::StringHash(std::string(name_space) + "." + name);
-        //MonoClassField* idField = mono_class_get_field_from_name(klass, "m_ComponentID");
-        //mono_field_set_value(script, idField, &key);
+        // set componentID field
+        unsigned int key = StringHash(std::string{ name_space } + "." + name);
+        MonoClassField* idField = mono_class_get_field_from_name(klass, "m_ComponentID");
+        mono_field_set_value(script, idField, &key);
 
-        try
-        {
-            ScriptEngine::InvokeFunction(script, "Awake");
-            ScriptEngine::InvokeFunction(script, "Start");
-        }
-        catch (std::exception const& e)
-        {
-            LOG_ERROR(e.what());
-        }
         return ptr;
     }
     ScriptDatabase::IntPtr ScriptSystem::GetScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
@@ -431,5 +482,34 @@ namespace oo
                 std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
                 return object->ActiveInHierarchy();
             });
+    }
+
+    void ScriptSystem::UpdateAllScriptFieldsWithInfo()
+    {
+        static Ecs::Query query = []()
+        {
+            Ecs::Query query;
+            query.with<GameObjectComponent, ScriptComponent>().build();
+            return query;
+        }();
+        scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
+            {
+                if (gameObject.Id == GameObject::ROOTID)
+                    return;
+                UpdateScriptFieldsWithInfo(gameObject.Id, script);
+            });
+    }
+    void ScriptSystem::UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script)
+    {
+        for (auto const& [key, scriptInfo] : script.GetScriptInfoAll())
+        {
+            MonoObject* scriptObj = scriptDatabase.RetrieveObject(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            MonoClass* scriptClass = ScriptEngine::GetClass("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            for (auto const& [key, fieldInfo] : scriptInfo.fieldMap)
+            {
+                MonoClassField* field = mono_class_get_field_from_name(scriptClass, fieldInfo.name.c_str());
+                ScriptValue::SetFieldValue(scriptObj, field, fieldInfo.value);
+            }
+        }
     }
 }

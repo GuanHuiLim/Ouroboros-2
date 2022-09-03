@@ -1074,7 +1074,7 @@ namespace oo
     ScriptValue::helper_functions const& ScriptValue::GetHelper(type_enum type)
     {
         auto search = utilityMap.find(type);
-        ASSERT(search != utilityMap.end());
+        ASSERT(search == utilityMap.end());
         return search->second;
     }
 
@@ -1193,7 +1193,7 @@ namespace oo
         MonoClass* klass = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
         if (klass == nullptr)
             klass = ScriptEngine::GetClass("ScriptCore", name_space.c_str(), name.c_str());
-        ASSERT(klass);
+        ASSERT(klass == nullptr);
         return ScriptEngine::GetEnumOptions(mono_class_get_type(klass));
     }
 
