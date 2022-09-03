@@ -114,6 +114,15 @@ void Toolbar::Show()
 		if (ImGuiUtilities::ImageButton_ToolTip(8, "Pen Tool", ImGuiManager::s_EditorIcons["ListIcon"],
 			{ btn_width,btn_height }))
 		{
+			try
+			{
+				auto& item = ImGuiManager::GetItem("PenTool");
+				item.m_enabled = !item.m_enabled;
+			}
+			catch (...)
+			{
+				WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR,"Pen Tool Not Found!");
+			}
 			//GUIglobals::s_EditorState.values.t_pentool = !GUIglobals::s_EditorState.values.t_pentool;
 		}
 

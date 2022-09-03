@@ -6,6 +6,7 @@
 #include "UI/Object Editor/FileBrowser.h"
 #include "UI/Tools/Toolbar.h"
 #include "App/Editor/UI/Tools/LoggingView.h"
+#include "UI/Tools/PenTool.h"
 class Editor
 {
 public:
@@ -21,6 +22,7 @@ public:
 	FileBrowser m_fileBrowser;
 	Toolbar m_toolbar;
 	LoggingView m_loggingView;
+	PenTool m_pentool;
 private:
 };
 

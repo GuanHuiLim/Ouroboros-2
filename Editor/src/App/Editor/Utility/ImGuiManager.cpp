@@ -76,6 +76,9 @@ void ImGuiManager::UpdateAllUI()
 
 ImGuiObject& ImGuiManager::GetItem(const std::string& item)
 {
+	auto iter = s_GUIContainer.find(item);
+	if (iter == s_GUIContainer.end())
+		throw;
 	return s_GUIContainer.at(item);
 }
 
