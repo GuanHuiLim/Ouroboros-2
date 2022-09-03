@@ -60,7 +60,8 @@ private:
 
 public:
     EditorApp(oo::CommandLineArgs args)
-        : Application{ "Ouroboros v2.0", args }
+        : Application{ "Ouroboros v2.0", args },
+		m_assetManager{oo::AssetManager("./assets")}
     {
         // Scripting Layer
         m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));

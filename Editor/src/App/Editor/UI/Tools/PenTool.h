@@ -19,5 +19,8 @@ class PenTool
 public:
 	void Show();
 private:
+	float m_lineGranularity = 30.0f;
+	float m_currTime_erase = 0;
+	const float m_timebefore_Erase = 2.0f;
 	std::deque<ImVec2> pos;
 };

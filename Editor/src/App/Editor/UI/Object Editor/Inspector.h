@@ -7,6 +7,7 @@
 //rttr stuffs
 #include <rttr/type.h>
 #include <rttr/property.h>
+#include <rttr/variant_sequential_view.h>
 //imgui stuff
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>

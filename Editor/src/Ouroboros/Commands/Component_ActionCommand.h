@@ -5,6 +5,7 @@
 #include <string>
 #include "Ouroboros/ECS/GameObject.h"
 #include "App/Editor/Utility/ImGuiManager.h"
+#include <SceneManagement/include/SceneManager.h>
 namespace oo
 {
 template <typename Component>
