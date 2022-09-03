@@ -184,6 +184,11 @@ namespace oo
             LoadSceneEvent lse{ this };
             EventManager::Broadcast<LoadSceneEvent>(&lse);
 
+            // TODO: Solution To tie graphics world to rendering context for now!
+            static VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            // comment because cannot 
+            //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
+
             TRACY_PROFILE_SCOPE_END();
         }
 
