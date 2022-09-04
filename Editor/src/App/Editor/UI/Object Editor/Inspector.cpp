@@ -21,6 +21,7 @@
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
+#include <Ouroboros/Scripting/ScriptComponent.h>
 //#include <Ouroboros/Physics/RigidbodyComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
@@ -195,6 +196,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
+	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
 {
@@ -361,4 +363,17 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	ImGui::EndGroup();
 	ImGui::PopID();
 	ImGui::Separator();
+}
+
+void Inspector::DisplayScript(oo::GameObject& gameobject)
+{
+	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
+	for (auto& scriptInfo : sc.GetScriptInfoAll())
+	{
+		for (auto sfi : scriptInfo.second.classInfo.GetScriptFieldInfoAll())
+		{
+			sfi.value.GetValueType();
+			
+		}
+	}
 }
