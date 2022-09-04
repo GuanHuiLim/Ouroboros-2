@@ -163,12 +163,6 @@ namespace oo
             {
                 if (gameObject.Id == GameObject::ROOTID)
                     return;
-
-                // TESTING
-                script.AddScriptInfo(ScriptClassInfo{ "", "TestClass" });
-                script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testScript")->value = ScriptValue(ScriptValue::component_type{ gameObject.Id, "", "TestClass", true });
-                script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testComponent")->value = ScriptValue(ScriptValue::component_type{ gameObject.Id, "Ouroboros", "Transform", false });
-
                 SetUpObject(gameObject.Id, script);
             });
         UpdateAllScriptFieldsWithInfo();
