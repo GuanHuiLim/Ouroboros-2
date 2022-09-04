@@ -25,13 +25,13 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     ScriptInfo& ScriptComponent::AddScriptInfo(ScriptClassInfo const& classInfo)
     {
-        auto const& inserted = scriptInfoMap.insert({ StringHash{ classInfo.ToString() }, ScriptInfo{ classInfo } });
+        auto const& inserted = scriptInfoMap.emplace(classInfo.ToString(), ScriptInfo{ classInfo });
         return inserted.first->second;
     }
 
     ScriptInfo* ScriptComponent::GetScriptInfo(ScriptClassInfo const& classInfo)
     {
-        auto const& search = scriptInfoMap.find(StringHash{ classInfo.ToString() });
+        auto const& search = scriptInfoMap.find(classInfo.ToString());
         if (search == scriptInfoMap.end())
             return nullptr;
         return &(search->second);
@@ -39,15 +39,15 @@ namespace oo
 
     void ScriptComponent::RemoveScriptInfo(ScriptClassInfo const& classInfo)
     {
-        scriptInfoMap.erase(StringHash{ classInfo.ToString() });
+        scriptInfoMap.erase(classInfo.ToString());
     }
 
-    std::map<StringHash::size_type, ScriptInfo>& ScriptComponent::GetScriptInfoAll()
+    ScriptComponent::map_type& ScriptComponent::GetScriptInfoAll()
     {
         return scriptInfoMap;
     }
 
-    std::map<StringHash::size_type, ScriptInfo> const& ScriptComponent::GetScriptInfoAll() const
+    ScriptComponent::map_type const& ScriptComponent::GetScriptInfoAll() const
     {
         return scriptInfoMap;
     }

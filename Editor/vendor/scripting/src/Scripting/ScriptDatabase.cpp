@@ -19,7 +19,8 @@ namespace oo
         for (MonoClass* klass : classList)
         {
             std::string key = std::string(mono_class_get_namespace(klass)) + "." + mono_class_get_name(klass);
-            scriptMap.insert(std::pair<std::string, InstancePool>(key, InstancePool{}));
+            //scriptMap.insert(std::pair<std::string, InstancePool>(key, InstancePool{}));
+            scriptMap.emplace(key, InstancePool{});
         }
     }
 

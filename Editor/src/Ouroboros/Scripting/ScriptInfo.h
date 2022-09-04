@@ -26,8 +26,6 @@ Technology is prohibited.
 //#include "Ouroboros/Asset/AssetTypes.h"
 #include "Ouroboros/ECS/GameObject.h"
 
-#include "Utility/Hash.h"
-
 namespace oo
 {
     struct ScriptFieldInfo
@@ -129,7 +127,7 @@ namespace oo
     struct ScriptInfo
     {
         ScriptClassInfo classInfo;
-        std::map<StringHash, ScriptFieldInfo> fieldMap;
+        std::unordered_map<std::string, ScriptFieldInfo> fieldMap;
 
         /*********************************************************************************//*!
         \brief      constructs a C# script's info from the given class info

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <map>
-#include <Utility/Hash.h>
+#include <unordered_map>
 
 #include "ScriptInfo.h"
 
@@ -10,14 +9,17 @@ namespace oo
     class ScriptComponent
     {
     public:
+        using map_type = std::unordered_map<std::string, ScriptInfo>;
+
+    public:
         ScriptInfo& AddScriptInfo(ScriptClassInfo const& classInfo);
         ScriptInfo* GetScriptInfo(ScriptClassInfo const& classInfo);
         void RemoveScriptInfo(ScriptClassInfo const& classInfo);
 
-        std::map<StringHash::size_type, ScriptInfo>& GetScriptInfoAll();
-        std::map<StringHash::size_type, ScriptInfo> const& GetScriptInfoAll() const;
+        map_type& GetScriptInfoAll();
+        map_type const& GetScriptInfoAll() const;
 
     private:
-        std::map<StringHash::size_type, ScriptInfo> scriptInfoMap;
+        map_type scriptInfoMap;
     };
 }

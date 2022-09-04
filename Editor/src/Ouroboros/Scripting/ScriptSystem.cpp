@@ -170,6 +170,12 @@ namespace oo
             {
                 if (gameObject.Id == GameObject::ROOTID)
                     return;
+
+                // TESTING
+                script.AddScriptInfo(ScriptClassInfo{ "", "TestClass" });
+                script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testScript")->value = ScriptValue{ ScriptValue::component_type{ gameObject.Id, "", "TestClass", true }};
+                script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testComponent")->value = ScriptValue{ ScriptValue::component_type{ gameObject.Id, "Ouroboros", "Transform", false } };
+
                 SetUpObject(gameObject.Id, script);
             });
         UpdateAllScriptFieldsWithInfo();
@@ -221,7 +227,7 @@ namespace oo
     void ScriptSystem::ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
     {
         auto& scriptInfoMap = script.GetScriptInfoAll();
-        auto search = scriptInfoMap.find(StringHash{ classInfo.ToString() });
+        auto search = scriptInfoMap.find(classInfo.ToString());
         if (search == scriptInfoMap.end())
             return;
         search->second.ResetFieldValues();
@@ -243,7 +249,7 @@ namespace oo
                     return;
                 auto& scriptInfoMap = script.GetScriptInfoAll();
 
-                std::vector<unsigned int> eraseKeys;
+                std::vector<std::string> eraseKeys;
                 for (auto& [key, scriptInfo] : scriptInfoMap)
                 {
                     if (!ScriptEngine::CheckClassExists("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str()))
@@ -258,7 +264,7 @@ namespace oo
 
                 if (eraseKeys.size() > 0)
                 {
-                    for (unsigned int key : eraseKeys)
+                    for (std::string const& key : eraseKeys)
                     {
                         auto search = scriptInfoMap.find(key);
                         if (search == scriptInfoMap.end())
@@ -286,9 +292,9 @@ namespace oo
         mono_field_set_value(script, gameObjectField, gameObject);
 
         // set componentID field
-        unsigned int key = StringHash(std::string{ name_space } + "." + name);
-        MonoClassField* idField = mono_class_get_field_from_name(klass, "m_ComponentID");
-        mono_field_set_value(script, idField, &key);
+        //std::string key = std::string{ name_space } + "." + name;
+        //MonoClassField* idField = mono_class_get_field_from_name(klass, "m_ComponentID");
+        //mono_field_set_value(script, idField, &key);
 
         return ptr;
     }
