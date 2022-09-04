@@ -15,9 +15,14 @@ project "SharedLib"
         "Isolated-Testing-Ground/SceneManagement/include/*.*",
         "Isolated-Testing-Ground/SceneManagement/src/*.*",
 
-        
         "Isolated-Testing-Ground/Scenegraph/include/*.*",
         "Isolated-Testing-Ground/Scenegraph/src/*.*",
+    }
+
+    excludes
+    {
+        "Isolated-Testing-Ground/Scenegraph/src/UUID.*",
+        "Isolated-Testing-Ground/SceneManagement/src/Hash.*",
     }
 
     includedirs

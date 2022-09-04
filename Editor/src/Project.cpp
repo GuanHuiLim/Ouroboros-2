@@ -50,7 +50,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	{
 		m_loadpaths.emplace_back(oo::SceneInfo{ iter->name.GetString() , s_projectFolder.string() + s_sceneFolder.string() + iter->value.GetString() });
 	}
-	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_sceneFolder.string() + s_startingScene.string()), std::move(m_loadpaths));
+	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_sceneFolder.string() + s_startingScene.string()), std::move(m_loadpaths),std::move(s_projectFolder.string()));
 	oo::EventManager::Broadcast(&lpe);
 	//end
 	ifs.close();

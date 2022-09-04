@@ -19,6 +19,9 @@
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Utility/ImGuiManager.h"
 
+#include <Ouroboros/Prefab/PrefabSceneController.h>
+#include <SceneManagement/include/SceneManager.h>
+
 #include "Ouroboros/Prefab/PrefabComponent.h"
 #include "Ouroboros/Scene/Scene.h"
 class Serializer

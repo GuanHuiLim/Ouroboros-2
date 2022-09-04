@@ -11,6 +11,7 @@
 #include "Project.h"
 
 #include "Ouroboros/Commands/CommandStackManager.h"
+#include "SceneManagement/include/SceneManager.h"
 Editor::Editor()
 {
 	UI_RTTRType::Init();
@@ -20,6 +21,10 @@ Editor::Editor()
 	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
 	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
+	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
+	ImGuiManager::Create("PenTool", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoDecoration), [this] {this->m_pentool.Show(); });
+	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
+	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
 }
 
 Editor::~Editor()
@@ -30,13 +35,19 @@ Editor::~Editor()
 
 void Editor::Update()
 {
-	static bool b = [this]() { m_styleEditor.InitStyle(); return true; }();
+	static bool b = [this]() 
+	{
+		m_styleEditor.InitStyle(); 
+		
+		return true; 
+	}();
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 	MenuBar();
 
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
+	
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_S))
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();

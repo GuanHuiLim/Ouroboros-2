@@ -1,19 +1,14 @@
 #pragma once
-#include "Editor/Events/OpenFileEvent.h"
-#include "Editor/Events/LoadSceneEvent.h"
+#include "App/Editor/Events/OpenFileEvent.h"
+#include "App/Editor/Events/LoadSceneEvent.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include <Windows.h>
 #include <shellapi.h>
 
 
-static void OpenSceneEvent(OpenFileEvent* e)
-{
-	if (e->m_type != OpenFileEvent::FileType::SCENE)
-		return;
-	LoadSceneEvent lse = e->m_filepath.string();
-	oo::EventManager::Broadcast<LoadSceneEvent>(&lse);
-}
+
 static void OpenAnimationEvent(OpenFileEvent* e)
 {
 	if (e->m_type != OpenFileEvent::FileType::ANIMATION)
