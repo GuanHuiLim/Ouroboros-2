@@ -72,11 +72,16 @@ namespace oo
         }
         LOG_CORE_TRACE("Script Loading Successful");
 
-        std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour"));
         s_ScriptList.clear();
-        for (MonoClass* klass : classList)
+
+        MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        if (monoBehaviour != nullptr)
         {
-            s_ScriptList.emplace_back(ScriptClassInfo{ mono_class_get_namespace(klass), mono_class_get_name(klass) });
+            std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour);
+            for (MonoClass* klass : classList)
+            {
+                s_ScriptList.emplace_back(ScriptClassInfo{ mono_class_get_namespace(klass), mono_class_get_name(klass) });
+            }
         }
 
         //if (refresh)
@@ -149,7 +154,9 @@ namespace oo
         if (DisplayErrors())
             return false;
 
-        scriptDatabase.Initialize(ScriptEngine::GetClassesByBaseClass("Scripting", ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour")));
+        MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        if (monoBehaviour != nullptr)
+            scriptDatabase.Initialize(ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour));
 
         static Ecs::Query query = []()
         {

@@ -29,6 +29,7 @@ namespace oo
         // Accessors
         static MonoImage* GetLibrary(const char* aLibrary);
         static MonoClass* GetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
+        static MonoClass* TryGetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static std::vector<MonoClass*> const GetClassesByBaseClass(const char* aLibrary, MonoClass* baseClass);
         static MonoMethod* GetFunction(MonoClass* klass, const char* functionName, int paramCount = 0);
         static MonoMethod* GetFunction(MonoObject* obj, const char* functionName, int paramCount = 0);

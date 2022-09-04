@@ -149,6 +149,17 @@ namespace oo
         return klass;
     }
 
+    MonoClass* ScriptEngine::TryGetClass(const char* aLibrary, const char* aNamespace, const char* aClassName)
+    {
+        MonoImage* library = GetLibrary(aLibrary);
+        if (library == nullptr)
+            return nullptr;
+        MonoClass* klass = mono_class_from_name(library, aNamespace, aClassName);
+        if (klass == nullptr)
+            return nullptr;
+        return klass;
+    }
+
     std::vector<MonoClass*> const ScriptEngine::GetClassesByBaseClass(const char* aLibrary, MonoClass* baseClass)
     {
         std::vector<MonoClass*> classList{};
