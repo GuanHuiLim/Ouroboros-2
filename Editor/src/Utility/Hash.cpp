@@ -34,7 +34,7 @@ inline constexpr size_t StringHash::const_strlen(const char* s)
     return size;
 }
 
-inline constexpr StringHash::size_type StringHash::GenerateFNV1aHash(const char* str)
+const StringHash::size_type StringHash::GenerateFNV1aHash(const char* str)
 {
     // Also C++ does not like static constexpr
     constexpr size_type FNV_PRIME = 16777619u;
@@ -50,7 +50,7 @@ inline constexpr StringHash::size_type StringHash::GenerateFNV1aHash(const char*
     return hash;
 }
 
-inline constexpr StringHash::size_type StringHash::GenerateFNV1aHash(std::string_view string)
+const StringHash::size_type StringHash::GenerateFNV1aHash(std::string_view string)
 {
     return GenerateFNV1aHash(string.data());
 }
@@ -78,7 +78,7 @@ StringHash::StringHash(std::string const& s) noexcept
     computedHash = GenerateFNV1aHash(s.data());
 }
 
-constexpr StringHash::operator size_type() const noexcept
+StringHash::operator size_type() const noexcept
 {
     return computedHash;
 }

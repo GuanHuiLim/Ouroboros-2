@@ -29,8 +29,8 @@ public:
     using size_type = std::uint32_t;
 
     constexpr static size_t const_strlen(char const* s);
-    constexpr static size_type  GenerateFNV1aHash(char const* str);
-    constexpr static size_type GenerateFNV1aHash(std::string_view string);
+    static const size_type  GenerateFNV1aHash(char const* str);
+    static const size_type GenerateFNV1aHash(std::string_view string);
 
 private:
     size_type computedHash;
@@ -43,7 +43,7 @@ public:
     StringHash(std::string_view s) noexcept;
     StringHash(std::string const& s) noexcept;
 
-    constexpr operator size_type() const noexcept;
+    operator size_type() const noexcept;
     //constexpr bool operator==(StringHash const& other) const noexcept;
     //constexpr bool operator<(StringHash const& other) const noexcept;// { return computedHash < other.computedHash; }
 
