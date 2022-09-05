@@ -3,6 +3,10 @@
 #include "UI/Tools/WarningMessage.h"
 #include "UI/Object Editor/Hierarchy.h"
 #include "UI/Object Editor/Inspector.h"
+#include "UI/Object Editor/FileBrowser.h"
+#include "UI/Tools/Toolbar.h"
+#include "App/Editor/UI/Tools/LoggingView.h"
+#include "UI/Tools/PenTool.h"
 class Editor
 {
 public:
@@ -15,6 +19,10 @@ public:
 	WarningMessage m_warningMessage;
 	Hierarchy m_hierarchy;
 	Inspector m_inspector;
+	FileBrowser m_fileBrowser;
+	Toolbar m_toolbar;
+	LoggingView m_loggingView;
+	PenTool m_pentool;
 private:
 };
 

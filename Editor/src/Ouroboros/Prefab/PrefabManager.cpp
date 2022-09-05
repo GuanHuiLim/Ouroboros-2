@@ -17,4 +17,7 @@ void oo::PrefabManager::MakePrefab(std::shared_ptr<oo::GameObject> go)
 	auto prefabPath = Serializer::SavePrefab(go, *ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>());
 	auto& component = go->AddComponent<oo::PrefabComponent>();
 	component.prefab_filePath = prefabPath;
+	go->SetIsPrefab(true);
+	for (auto childs : go->GetChildren(true))
+		childs.SetIsPrefab(true);
 }

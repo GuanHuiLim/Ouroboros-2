@@ -64,7 +64,8 @@ namespace oo
             //static Ecs::Query query = []()
             //{
             //    Ecs::Query query;
-            //    query.with<GameObjectComponent, TransformComponent>().exclude<DeferredComponent>().build();
+            //    query.with<GameObjectComponent, Transform3D>().exclude<DeferredComponent>().build();
+            //    query.with<GameObjectComponent, Transform3D>().include<DeferredComponent>().build();
             //    return query;
             //}();
             //world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { /*UpdateTransform(gocomp, tf); */ });
