@@ -65,10 +65,13 @@ void EditorLayer::OnUpdate()
 
 
 
-	auto num = myImageAsset.GetData<uint32_t>();
-	auto vc = reinterpret_cast<oo::VulkanContext*>(oo::Application::Get().GetWindow().GetRenderingContext());
-	auto vr = vc->getRenderer();
-	ImGui::Image(reinterpret_cast<void*>(vr->GetImguiID(num)), ImVec2(100, 100));
+    if (myImageAsset.HasData())
+    {
+        auto num = myImageAsset.GetData<uint32_t>();
+        auto vc = reinterpret_cast<oo::VulkanContext*>(oo::Application::Get().GetWindow().GetRenderingContext());
+        auto vr = vc->getRenderer();
+        ImGui::Image(reinterpret_cast<void*>(vr->GetImguiID(num)), ImVec2(100, 100));
+    }
 	//std::cout << "loaded image data is " << *myImageAsset.GetData<uint32_t>() << '\n';
 
 	//top menu bar
