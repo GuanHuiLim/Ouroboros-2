@@ -18,18 +18,18 @@ struct ShadowPass : public GfxRenderpass
 
 	void CreatePSO() override;
 	
-	VulkanFramebufferAttachment shadow_depth;
+	VulkanFramebufferAttachment shadow_depth{};
 
 	// This is for ImGui
-	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg;
-	ImTextureID shadowImg;
+	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
+	ImTextureID shadowImg{};
 
 	VkExtent2D shadowmapSize = { 1024, 1024 };
 
-	VkRenderPass renderpass_Shadow;
-	VkFramebuffer framebuffer_Shadow;
+	VkRenderPass renderpass_Shadow{};
+	VkFramebuffer framebuffer_Shadow{};
 
-	VkPipeline pso_ShadowDefault;
+	VkPipeline pso_ShadowDefault{};
 
 private:
 	void SetupRenderpass();
@@ -37,4 +37,3 @@ private:
 	void CreatePipeline();
 };
 
-inline static int y;

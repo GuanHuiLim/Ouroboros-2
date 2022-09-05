@@ -277,7 +277,7 @@ oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, std::vec
 	}
 
 	uint32_t indicesCnt{ 0 };
-	indices.reserve(indices.size() + aimesh->mNumFaces * aimesh->mFaces[0].mNumIndices);
+	indices.reserve(indices.size() + size_t(aimesh->mNumFaces) * aimesh->mFaces[0].mNumIndices);
 
 	for(uint32_t i = 0; i < aimesh->mNumFaces; i++)
 	{
