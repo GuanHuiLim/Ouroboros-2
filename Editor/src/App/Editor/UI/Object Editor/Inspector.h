@@ -72,7 +72,15 @@ inline void Inspector::SaveComponentDataHelper(Component& component, rttr::prope
 template<typename Component>
 inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
 {
-	if (ImGui::Selectable(rttr::type::get<Component>().get_name().data(), false))
+	std::string name = rttr::type::get<Component>().get_name().data();
+	auto iter = std::search(name.begin(), name.end(),
+		m_filterComponents.begin(), m_filterComponents.end(), [](char ch1, char ch2)
+		{
+			return std::toupper(ch1) == std::toupper(ch2);
+		});
+	if (iter == name.end())
+		return false;//not found
+	if (ImGui::Selectable(name.c_str(), false))
 	{
 		go.AddComponent<Component>();
 		return true;

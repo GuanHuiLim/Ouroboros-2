@@ -151,7 +151,18 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.7f, 0.7f, 1.0f));
 	for (auto& script : oo::ScriptSystem::GetScriptList())
 	{
-		if (ImGui::Selectable(script.ToString().c_str(), false))
+		auto name = script.ToString();
+		if (m_filterComponents.empty() == false)
+		{
+			auto iter = std::search(name.begin(), name.end(),
+				m_filterComponents.begin(), m_filterComponents.end(), [](char ch1, char ch2)
+				{
+					return std::toupper(ch1) == std::toupper(ch2);
+				});
+			if (iter == name.end())
+				continue;//not found
+		}
+		if (ImGui::Selectable(name.c_str(), false))
 		{
 			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
 			ImGui::PopStyleColor();
