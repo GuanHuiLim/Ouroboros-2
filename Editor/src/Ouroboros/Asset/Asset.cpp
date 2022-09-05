@@ -64,13 +64,23 @@ namespace oo
             if (info->copies.empty())
             {
                 // Free
-                info->onAssetDestroy();
+                info->onAssetDestroy(*info);
                 if (info->data)
                     delete info->data;
                 delete info;
             }
         }
         info = nullptr;
+    }
+
+    void Asset::createData()
+    {
+        info->onAssetCreate(*info);
+    }
+
+    void Asset::destroyData()
+    {
+        info->onAssetDestroy(*info);
     }
 
     AssetID Asset::GenerateSnowflake()

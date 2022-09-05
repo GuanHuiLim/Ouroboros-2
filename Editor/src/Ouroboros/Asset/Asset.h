@@ -31,13 +31,14 @@ namespace oo
 
     struct AssetInfo
     {
-        using Callback = std::function<void(void)>;
+        using Callback = std::function<void(AssetInfo&)>;
 
         std::filesystem::path contentPath;
         std::filesystem::path metaPath;
-        std::chrono::steady_clock::time_point timeLoaded = std::chrono::steady_clock::now();
+        std::chrono::file_clock::time_point timeLoaded = std::chrono::file_clock::now();
         std::list<Asset*> copies;
-        Callback onAssetDestroy = []() {};
+        Callback onAssetCreate = [](AssetInfo&) {};
+        Callback onAssetDestroy = [](AssetInfo&) {};
         void* data = nullptr;
     };
 
@@ -69,10 +70,21 @@ namespace oo
         [[nodiscard]] inline const std::list<Asset*>& GetCopies() const { return info->copies; };
         [[nodiscard]] inline size_t GetUseCount() const { return info->copies.size(); };
         [[nodiscard]] inline void* GetRawData() const { return info->data; };
+        [[nodiscard]] inline bool HasData() const { return info->data; };
         template<typename T>
         [[nodiscard]] inline T GetData() const { return *reinterpret_cast<T*>(info->data); };
 
     private:
+        /****************************************************************************//*!
+        @brief  Shorthand for calling the create callback of the asset's info.
+        *//*****************************************************************************/
+        void createData();
+
+        /****************************************************************************//*!
+        @brief  Shorthand for calling the destroy callback of the asset's info.
+        *//*****************************************************************************/
+        void destroyData();
+
         AssetID id;
         AssetInfo* info;
 
