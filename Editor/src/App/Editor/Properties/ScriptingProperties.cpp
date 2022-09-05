@@ -13,19 +13,22 @@ ScriptingProperties::ScriptingProperties()
 		{
 			bool data = v.value.GetValue<bool>();
 			bool edit = ImGui::Checkbox(v.name.c_str(), &data);
-			if (edit) { v.value = oo::ScriptValue{ data }; editing = true; edited = true; };
+			edited = ImGui::IsItemDeactivatedAfterEdit();
+			if (edit) { v.value = oo::ScriptValue{ data }; editing = edit; };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::INT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			int data = v.value.GetValue<int>();
 			bool edit = ImGui::DragInt(v.name.c_str(), &data);
-			if (edit) { v.value = oo::ScriptValue{ data }; editing = true; edited = true; };
+			edited = ImGui::IsItemDeactivatedAfterEdit();
+			if (edit) { v.value = oo::ScriptValue{ data }; editing = edit;  };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::FLOAT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			float data = v.value.GetValue<float>();
 			bool edit = ImGui::DragFloat(v.name.c_str(), &data);
-			if (edit) { v.value = oo::ScriptValue{ data }; editing = true; edited = true; };
+			edited = ImGui::IsItemDeactivatedAfterEdit();
+			if (edit) { v.value = oo::ScriptValue{ data }; editing = edit;  };
 		});
 
 }

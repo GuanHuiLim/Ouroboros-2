@@ -15,7 +15,7 @@
 #include <Ouroboros/EventSystem/EventManager.h>
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/Prefab/PrefabManager.h>
-
+#include <Ouroboros/Commands/Script_ActionCommand.h>
 
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
@@ -296,6 +296,8 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 
 void Inspector::DisplayScript(oo::GameObject& gameobject)
 {
+	static oo::ScriptFieldInfo pre_val;
+	static bool new_value = true;
 	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
 	for (auto& scriptInfo : sc.GetScriptInfoAll())
 	{
@@ -304,13 +306,34 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 		{
 			bool edit = false;
 			bool edited = false;
+			oo::ScriptFieldInfo s_value = sfi.second;
 			auto iter = m_scriptingProperties.m_scriptUI.find(sfi.second.value.GetValueType());
 			if (iter == m_scriptingProperties.m_scriptUI.end())
 				continue;
 			else	
-				iter->second(sfi.second, edit, edited);
+				iter->second(s_value, edit, edited);
 
 			//undo redo code here
+			if (edit == true)
+			{
+				if (new_value)
+				{
+					pre_val = sfi.second;
+					new_value = false;
+				}
+				sfi.second.value = s_value.value;
+			}
+			if (edited == true)
+			{
+				oo::CommandStackManager::AddCommand(
+					new oo::Script_ActionCommand(
+						scriptInfo.first,
+						sfi.first,
+						pre_val.value,
+						s_value.value,
+						gameobject.GetInstanceID()));
+				new_value = true;
+			}
 		}
 	}
 }
