@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Vulkan/RendererSystem.h"
 
 namespace oo
 {
@@ -40,6 +41,9 @@ namespace oo
             TRACY_PROFILE_SCOPE(registration);
 
             //Register All Systems
+            GetWorld().Add_System<ScriptSystem>(*this);
+            GetWorld().Add_System<MeshRendererSystem>()->Init(&GetWorld(), m_graphicsWorld.get());
+            oo::Mesh::CreateCubeMeshObject(this, m_graphicsWorld.get());
             //GetWorld().RegisterSystem<PrefabComponentSystem>();
             //GetWorld().RegisterSystem<EditorComponentSystem>();
 
