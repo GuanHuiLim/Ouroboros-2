@@ -496,4 +496,13 @@ namespace oo
         return m_rootGo;
     }
 
+    GraphicsWorld* Scene::GetGraphicsWorld() const 
+    { 
+        return m_graphicsWorld.get(); 
+    }
+
+    Scene::go_ptr Scene::GetRoot() const
+    {
+        return m_rootGo;
+    }
 }
