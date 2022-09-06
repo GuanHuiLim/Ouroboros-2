@@ -90,7 +90,7 @@ namespace oo
             //Force save when you press play [ not sure if intended ]
             m_editorScene.lock()->Save();
 
-            m_temporaryAdd = !m_runtimeController.HasScene(m_editorScene.lock()->GetSceneName());
+            m_temporaryAdd = !m_runtimeController.HasScene(m_editorScene.lock()->GetID());
             // add selected path as load path
             if (m_temporaryAdd)
                 m_runtimeController.AddLoadPath(m_editorScene.lock()->GetSceneName(), m_editorScene.lock()->GetFilePath());
