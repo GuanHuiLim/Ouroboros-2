@@ -36,7 +36,7 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, VkRenderPass renderPa
 
 	VkFramebufferCreateInfo fbInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 	fbInfo.renderPass = renderPass;
-	fbInfo.attachmentCount = attachments.size();
+	fbInfo.attachmentCount = uint32_t(attachments.size());
 	fbInfo.pAttachments = attachments.data();
 	fbInfo.width = w;
 	fbInfo.height = h;

@@ -19,16 +19,16 @@ struct GBufferRenderPass : public GfxRenderpass
 	void CreatePSO() override;
 
 
-	std::array<vkutils::Texture2D, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachments;
+	std::array<vkutils::Texture2D, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachments{};
 
 	// This is for ImGui
-	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg;
+	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
 
-	VkRenderPass renderpass_GBuffer;
-	VkFramebuffer framebuffer_GBuffer;
+	VkRenderPass renderpass_GBuffer{};
+	VkFramebuffer framebuffer_GBuffer{};
 
 	//VkPushConstantRange pushConstantRange;
-	VkPipeline pso_GBufferDefault;
+	VkPipeline pso_GBufferDefault{};
 
 private:
 	void SetupRenderpass();
