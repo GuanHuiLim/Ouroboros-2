@@ -17,10 +17,20 @@ namespace Ecs
 
 		virtual void Run(ECSWorld* world) = 0;
 	};
+
+	
 }
 
 namespace Ecs::internal
 {
+	using SystemDestructor = void(*)(void* ptr);
+
+	struct LoadedSystem
+	{
+		void* system;
+		SystemDestructor destructor;
+	};
+
 	class TestSystem : public System
 	{
 	public:

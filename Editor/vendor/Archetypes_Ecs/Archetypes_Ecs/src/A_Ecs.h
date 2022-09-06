@@ -1238,15 +1238,23 @@ namespace Ecs
 		constexpr auto hash = TypeHash::hash<base_type>();
 
 		if (system_map.contains(hash))
-			return static_cast<S*>(system_map[hash]);
+			return static_cast<S*>(system_map[hash].system);
 
 		//create the system
 		S* system = new S();
 		if constexpr (std::derived_from<S, System> == true) {
 			system->m_world = this;
 		}
-		system_map[hash] = static_cast<void*>(system);
-			return system;
+
+		internal::LoadedSystem loadedSystem;
+		loadedSystem.system = static_cast<void*>(system);
+		loadedSystem.destructor = [](void* ptr) {
+			delete static_cast<S*>(ptr);
+		};
+
+
+		system_map[hash] = loadedSystem;
+		return system;
 	}
 
 	template<typename S, typename... Args>
@@ -1256,14 +1264,22 @@ namespace Ecs
 		constexpr auto hash = TypeHash::hash<base_type>();
 
 		if (system_map.contains(hash))
-			return static_cast<S*>(system_map[hash]);
+			return static_cast<S*>(system_map[hash].system);
 
 		////create the system
 		S* system = new S(std::forward<Args>(arguementList)...);
 		if constexpr (std::derived_from<S, System> == true) {
 			system->m_world = this;
 		}
-		system_map[hash] = static_cast<void*>(system);
+
+		internal::LoadedSystem loadedSystem;
+		loadedSystem.system = static_cast<void*>(system);
+		loadedSystem.destructor = [](void* ptr) {
+			delete static_cast<S*>(ptr);
+		};
+
+
+		system_map[hash] = loadedSystem;
 		return system;
 	}
 
@@ -1275,7 +1291,7 @@ namespace Ecs
 		if (system_map.contains(hash) == false)
 			return nullptr;
 
-		return static_cast<S*>(system_map[hash]);
+		return static_cast<S*>(system_map[hash].system);
 	}
 
 	template<typename S>
