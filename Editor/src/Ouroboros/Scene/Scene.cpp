@@ -27,6 +27,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/DeferredSystem.h"
 
+#include "Ouroboros/Scripting/ScriptSystem.h"
+
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
 //#define DEBUG_PRINT
@@ -73,6 +75,8 @@ namespace oo
 
                 m_ecsWorld->Add_System<oo::TransformSystem>(this);
                 //m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
+
+                m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
             }
 
             PRINT(m_name);
@@ -88,6 +92,7 @@ namespace oo
         // Update Systems
         {
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
+            m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("Update");
         }
 
         PRINT(m_name);
@@ -95,6 +100,7 @@ namespace oo
     
     void Scene::LateUpdate()
     {
+        m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("LateUpdate");
         PRINT(m_name);
     }
     
@@ -169,6 +175,9 @@ namespace oo
             m_scenegraph = std::make_unique<scenegraph>("scenegraph");
             m_rootGo = nullptr;
 
+            m_scriptDatabase = std::make_unique<ScriptDatabase>();
+            m_componentDatabase = std::make_unique<ComponentDatabase>(GetID());
+
             // Creation of root node
             {
                 // deferred to initialization after itself exist.
@@ -211,6 +220,9 @@ namespace oo
             m_scenegraph.reset();
             m_ecsWorld.reset();
             m_graphicsWorld.reset();
+
+            m_scriptDatabase.reset();
+            m_componentDatabase.reset();
             
             TRACY_PROFILE_SCOPE_END();
         }

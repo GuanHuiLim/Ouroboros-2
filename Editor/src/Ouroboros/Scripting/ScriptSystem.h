@@ -14,7 +14,7 @@ namespace oo
     class ScriptSystem final
     {
     public:
-        ScriptSystem(Scene& scene);
+        ScriptSystem(Scene& scene, ScriptDatabase& scripts, ComponentDatabase& components);
         ~ScriptSystem();
 
         bool StartPlay();
@@ -58,8 +58,8 @@ namespace oo
         void UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script);
 
         Scene& scene;
-        ScriptDatabase scriptDatabase;
-        ComponentDatabase componentDatabase;
+        ScriptDatabase& scriptDatabase;
+        ComponentDatabase& componentDatabase;
         bool isPlaying;
     };
 }

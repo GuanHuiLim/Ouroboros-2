@@ -9,8 +9,8 @@
 namespace oo
 {
     // Scene specific script stuff
-    ScriptSystem::ScriptSystem(Scene& scene)
-    : scene{ scene }, scriptDatabase{ }, componentDatabase{ scene.GetID() }, isPlaying{ false }
+    ScriptSystem::ScriptSystem(Scene& scene, ScriptDatabase& scripts, ComponentDatabase& components)
+    : scene{ scene }, scriptDatabase{ scripts }, componentDatabase{ components }, isPlaying{ false }
     {
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);

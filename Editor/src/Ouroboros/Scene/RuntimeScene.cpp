@@ -34,8 +34,6 @@ namespace oo
     {
         Scene::Init();
 
-        GetWorld().Add_System<ScriptSystem>(*this);
-
         //constexpr const char* const registration = "registration";
         {
             //TRACY_PROFILE_SCOPE(registration);
@@ -79,8 +77,6 @@ namespace oo
         --m_framesLeft;
 
         Scene::Update();
-
-        GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
 
         //constexpr const char* const runtime_scene_update = "Runtime Scene Update";
         {

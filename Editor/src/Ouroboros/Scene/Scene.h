@@ -26,6 +26,9 @@ Technology is prohibited.
 
 #include <OO_Vulkan/src/GraphicsWorld.h>
 
+#include <Scripting/ScriptDatabase.h>
+#include <Scripting/ComponentDatabase.h>
+
 namespace oo
 {
     //forward declare
@@ -126,5 +129,9 @@ namespace oo
         std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
         go_ptr m_rootGo;
+
+        // scripting stuff
+        std::unique_ptr<ScriptDatabase> m_scriptDatabase;
+        std::unique_ptr<ComponentDatabase> m_componentDatabase;
     };
 }
