@@ -15,7 +15,7 @@
 #include <functional>
 #include <string>
 
-#include "App/Editor/Utility/UI_RTTRType.h"
+#include "App/Editor/Properties/UI_RTTRType.h"
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Utility/ImGuiManager.h"
 

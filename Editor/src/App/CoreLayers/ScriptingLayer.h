@@ -20,9 +20,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Transform/TransformComponent.h"
 
-// FOR TESTING
-#include "Ouroboros/Core/Input.h"
-#include <filesystem>
+#include "Ouroboros/EventSystem/EventSystem.h"
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 
 namespace oo
 {
@@ -35,6 +34,13 @@ namespace oo
             ScriptSystem::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
 
             ScriptSystem::s_SceneManager = &sceneManager;
+            EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)
+                {
+                    if (e->m_buttonType != ToolbarButtonEvent::ToolbarButton::COMPILE)
+                        return;
+                    if(ScriptSystem::Compile())
+                        ScriptSystem::Load();
+                });
         }
 
         ~ScriptingLayer()

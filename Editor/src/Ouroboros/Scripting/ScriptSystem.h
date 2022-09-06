@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include <Scripting/Scripting.h>
+#include "ScriptComponent.h"
 
 #include <SceneManagement/include/SceneManager.h>
 #include "Ouroboros/Scene/Scene.h"
@@ -22,7 +23,7 @@ namespace oo
         static std::string s_ProjectPath;
 
         static bool s_IsPlaying;
-        static std::vector<std::string> s_ScriptList;
+        static std::vector<ScriptClassInfo> s_ScriptList;
 
     public:
         static void LoadProject(std::string const& buildPath, std::string const& projectPath);
@@ -54,7 +55,7 @@ namespace oo
             return obj;
         }
 
-        static inline std::vector<std::string> const& GetScriptList()
+        static inline std::vector<ScriptClassInfo> const& GetScriptList()
         {
             return s_ScriptList;
         }
@@ -123,17 +124,22 @@ namespace oo
         void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
         void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
 
+        void ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
+        void RefreshScriptInfoAll();
+
         ScriptDatabase::IntPtr AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
         ScriptDatabase::IntPtr GetScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
         void RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
         void SetScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
         bool CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
 
-        ComponentDatabase::IntPtr AddComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
-        ComponentDatabase::IntPtr GetComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
-        void RemoveComponent(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
-        void SetComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
-        bool CheckComponentEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
+        ComponentDatabase::IntPtr AddComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
+        ComponentDatabase::IntPtr GetComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
+        void RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
+        void SetComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
+        bool CheckComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
+
+        ComponentDatabase::IntPtr GetGameObject(ComponentDatabase::UUID uuid);
 
         void InvokeForObject(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
         void InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
@@ -145,6 +151,11 @@ namespace oo
         void InvokeForAllEnabled(const char* functionName, int paramCount = 0, void** params = NULL);
 
     private:
+        void SetUpObject(UUID uuid, ScriptComponent const& script);
+
+        void UpdateAllScriptFieldsWithInfo();
+        void UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script);
+
         Scene& scene;
         ScriptDatabase scriptDatabase;
         ComponentDatabase componentDatabase;

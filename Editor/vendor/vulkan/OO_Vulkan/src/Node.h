@@ -6,8 +6,8 @@ namespace oGFX { struct Mesh; }
 
 struct Node
 {
-	Node* parent;
-	uint32_t index;
+	Node* parent{ nullptr };
+	uint32_t index{};
 	std::vector<Node*> children;
 	std::vector<oGFX::Mesh*> meshes;
 	std::string name;

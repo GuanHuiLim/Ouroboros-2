@@ -11,12 +11,13 @@ namespace oo
         ComponentSetAction SetEnabled, ComponentCheck CheckEnabled)
     {
         std::string key = name_space + "." + name;
-        componentTypeMap.insert(std::pair<std::string, ComponentType>
-        {   key, ComponentType
+        componentTypeMap.emplace
+        (
+            key, ComponentType
             {
                 Add, Remove, Has, SetEnabled, CheckEnabled, name_space, name, componentTypeMap.size()
             }
-        });
+        );
     }
 
     size_t ComponentDatabase::GetComponentTypeIndex(const char* name_space, const char* name)
