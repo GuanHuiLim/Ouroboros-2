@@ -32,11 +32,15 @@ namespace Ecs
 
 		//delete systems
 		for (auto s : system_map)
-			delete s.second;
+			s.second.destructor(s.second.system);
+
+		system_map.clear();
 
 		//delete singletons
 		for (auto s : singleton_map)
 			delete[] s.second;
+
+		singleton_map.clear();
 	};
 
 	size_t IECSWorld::get_num_components(EntityID id)

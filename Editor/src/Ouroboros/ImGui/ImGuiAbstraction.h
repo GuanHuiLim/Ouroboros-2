@@ -20,7 +20,8 @@ struct SDL_Window;
 namespace oo
 {
     //forward declaration
-    class GraphicsContext;
+    //class GraphicsContext;
+    class VulkanContext;
 
     class ImGuiAbstraction final
     {
@@ -45,7 +46,8 @@ namespace oo
     private:
         bool m_restart;
         SDL_Window* m_window;
-        GraphicsContext* m_renderer;
+        //GraphicsContext* m_renderer;
+        VulkanContext* m_renderer;
     };
 
 }

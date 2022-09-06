@@ -19,7 +19,7 @@ private:
 	std::vector<VkWriteDescriptorSet> writes;
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-	DescriptorLayoutCache* cache;
-	DescriptorAllocator* alloc;
+	DescriptorLayoutCache* cache{ nullptr };
+	DescriptorAllocator* alloc{nullptr};
 };
 

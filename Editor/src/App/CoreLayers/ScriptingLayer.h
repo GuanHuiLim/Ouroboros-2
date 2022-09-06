@@ -16,13 +16,12 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Layer.h"
 #include <Scripting/Scripting.h>
-#include "Ouroboros/Scripting/ScriptManager.h"
+#include "Ouroboros/Scripting/ScriptSystem.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
 
-// FOR TESTING
-#include "Ouroboros/Core/Input.h"
-#include <filesystem>
+#include "Ouroboros/EventSystem/EventSystem.h"
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 
 namespace oo
 {
@@ -32,9 +31,16 @@ namespace oo
 
         ScriptingLayer(SceneManager const& sceneManager)
         {
-            ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
+            ScriptSystem::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
 
-            ScriptManager::s_SceneManager = &sceneManager;
+            ScriptSystem::s_SceneManager = &sceneManager;
+            EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)
+                {
+                    if (e->m_buttonType != ToolbarButtonEvent::ToolbarButton::COMPILE)
+                        return;
+                    if(ScriptSystem::Compile())
+                        ScriptSystem::Load();
+                });
         }
 
         ~ScriptingLayer()

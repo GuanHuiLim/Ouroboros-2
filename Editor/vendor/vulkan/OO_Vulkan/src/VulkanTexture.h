@@ -17,17 +17,17 @@ namespace vkutils
 	{
 	public:
 		std::string name{}; // maybe remove when not debug?
-		VulkanDevice* device;
-		VkImage image;
-		VkFormat format;
-		VkImageLayout imageLayout;
-		VkDeviceMemory deviceMemory;
-		VkImageView view;
-		uint32_t width, height;
-		uint32_t mipLevels;
-		uint32_t layerCount;
-		VkDescriptorImageInfo descriptor;
-		VkSampler sampler;
+		VulkanDevice* device{ nullptr };
+		VkImage image{};
+		VkFormat format{};
+		VkImageLayout imageLayout{};
+		VkDeviceMemory deviceMemory{};
+		VkImageView view{};
+		uint32_t width{}, height{};
+		uint32_t mipLevels{};
+		uint32_t layerCount{};
+		VkDescriptorImageInfo descriptor{};
+		VkSampler sampler{};
 		
 		void updateDescriptor();
 		void destroy();

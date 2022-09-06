@@ -34,6 +34,8 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGui_Utill.h"
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Utility/ImGuiManager.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 void Toolbar::Show()
 {
 	float w = ImGui::GetWindowWidth();
@@ -45,7 +47,8 @@ void Toolbar::Show()
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
 			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::TRANSLATE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
-			//EditorCallbacks::GuizmoMode(ImGuizmo::TRANSLATE);
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::TRANSFORM);
+			oo::EventManager::Broadcast(&tbe);
 		}
 
 		ImGui::SameLine();
@@ -53,7 +56,8 @@ void Toolbar::Show()
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
 			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::ROTATE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
-			//EditorCallbacks::GuizmoMode(ImGuizmo::ROTATE);
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::ROTATE);
+			oo::EventManager::Broadcast(&tbe);
 		}
 
 		ImGui::SameLine();
@@ -61,14 +65,16 @@ void Toolbar::Show()
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
 			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::SCALE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
-			//EditorCallbacks::GuizmoMode(ImGuizmo::SCALE);
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::SCALE);
+			oo::EventManager::Broadcast(&tbe);
 		}
 
 
 		ImGui::SameLine();
 		if (ImGui::Button("Compile", { 0,btn_height }))
 		{
-			//oo::ScriptSystem::Compile();
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
+			oo::EventManager::Broadcast(&tbe);
 		}
 		if (ImGui::IsItemHovered())
 			WarningMessage::DisplayToolTip("Compiles C# scripts");
@@ -80,22 +86,22 @@ void Toolbar::Show()
 		ImGui::BeginChild("ChildToolbar2", { 0,0 });
 		if (ImGuiUtilities::ImageButton_ToolTip(4, "Start Simulation", ImGuiManager::s_EditorIcons["PlayButton"], {btn_width,btn_height}))
 		{
-			//GenericButtonEvents e = { Buttons::PLAY_BUTTON };
-			//oo::EventManager::Broadcast(&e);
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PLAY);
+			oo::EventManager::Broadcast(&tbe);
 		};
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(5, "Pause/Next frame", ImGuiManager::s_EditorIcons["PauseButton"], { btn_width,btn_height }))
 		{
-			//GenericButtonEvents e = { Buttons::PAUSE_BUTTON };
-			//oo::EventManager::Broadcast(&e);
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PAUSE);
+			oo::EventManager::Broadcast(&tbe);
 		};
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(6, "Stop Simulation", ImGuiManager::s_EditorIcons["StopButton"], { btn_width,btn_height }))
 		{
-			//GenericButtonEvents e = { Buttons::STOP_BUTTON };
-			//oo::EventManager::Broadcast(&e);
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::STOP);
+			oo::EventManager::Broadcast(&tbe);
 		};
 
 		ImGui::EndChild(); 

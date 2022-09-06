@@ -11,8 +11,14 @@
 #include <fstream>
 #include <vector>
 
+
+#pragma warning( push )
+#pragma warning( disable : 26451 ) // arithmetic overflow
+#pragma warning( disable : 26495 ) // uninitialized
+#pragma warning( disable : 26819 ) // fallthrough
 #include "stb_image.h"
 #include "DDSLoader.h"
+#pragma warning( pop )
 #include <filesystem>
 
 
@@ -141,6 +147,8 @@ namespace oGFX
 
 	const std::vector<VkDescriptorSet>& GetGFXDescriptoSetGroup()
 	{
+		// TODO : return some stuff
+		assert(true);
 		return {};
 	}
 
@@ -641,7 +649,7 @@ namespace oGFX
 		{
 			decodeType = ExtensionType::STB;
 			auto ptr = stbi_load(fileName.c_str(), &this->w, &this->h, &this->channels, STBI_rgb_alpha);
-			dataSize = this->w * this->h * STBI_rgb_alpha;
+			dataSize = size_t(this->w) * size_t(this->h) * size_t(STBI_rgb_alpha);
 			imgData.resize(dataSize);
 			memcpy(imgData.data(), ptr, dataSize);
 			stbi_image_free(ptr);

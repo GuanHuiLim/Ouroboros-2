@@ -43,18 +43,18 @@ void BspTree::Rebuild()
 	m_root = std::make_unique<BspNode>();
 	m_swapToAutoPartition = false;
 
-	uint32_t expectedTriangles = m_indices.size() / 3;
+	uint32_t expectedTriangles = uint32_t(m_indices.size() / 3);
 	m_classificationScale = 0;
 	while (expectedTriangles > m_maxNodesTriangles)
 	{
 		expectedTriangles /= 2;
 		++m_classificationScale;
 	}
-	m_classificationScale *=  m_indices.size() / 3;
+	m_classificationScale *=  uint32_t(m_indices.size() / 3);
 	m_trianglesClassified = 0;
 	
 	m_trianglesSaved = 0;
-	m_trianglesRemaining = m_indices.size() / 3;
+	m_trianglesRemaining = uint32_t(m_indices.size() / 3);
 
 	std::filesystem::path fileName = "tree/bsptree_" + std::to_string(m_maxNodesTriangles) + "_"
 		+ GetPartitionTypeString()		
@@ -111,7 +111,7 @@ bool BspTree::LoadTree(const std::filesystem::path& path)
 	while (fs)
 	{
 		Plane currPlane;
-		for (size_t i = 0; i < 4; i++)
+		for (uint32_t i = 0; i < 4; i++)
 		{
 			fs >> currPlane.normal[i];
 			fs.ignore();
@@ -247,8 +247,8 @@ void BspTree::SplitNode(BspNode* node, const Plane& plane, const std::vector<Poi
 		// Split and recurse
 		for (size_t i = 0; i < s_num_children; i++)
 		{
-			if(splitVerts[i].size())
-				m_planePartitionCount[i] += splitVerts->size()/3;
+			if (splitVerts[i].size())
+				m_planePartitionCount[i] += uint32_t(splitVerts->size() / 3);
 
 			node->children[i] = std::make_unique<BspNode>();
 			node->children[i]->depth = currDepth;
@@ -345,7 +345,7 @@ void BspTree::LoadNode(BspNode* node, const std::vector<Plane>& planes, uint32_t
 		for (size_t i = 0; i < s_num_children; i++)
 		{
 			if(splitVerts[i].size())
-				m_planePartitionCount[i] += splitVerts->size()/3;
+				m_planePartitionCount[i] += uint32_t(splitVerts->size()/3);
 
 			node->children[i] = std::make_unique<BspNode>();
 			node->children[i]->depth = currDepth;
@@ -403,9 +403,9 @@ Plane BspTree::AutoPartition(const std::vector<Point3D>& vertices, const std::ve
 		int numInFront = 0, numBehind = 0, numStraddling = 0;
 
 		Point3D v1[3];
-		v1[0] = vertices[indices[i*3 + 0]];
-		v1[1] = vertices[indices[i*3 + 1]];
-		v1[2] = vertices[indices[i*3 + 2]];
+		v1[0] = vertices[indices[i*3ull + 0ull]];
+		v1[1] = vertices[indices[i*3ull + 1ull]];
+		v1[2] = vertices[indices[i*3ull + 2ull]];
 		Triangle t1(v1[0], v1[1], v1[2]);
 
 		Plane plane = oGFX::BV::PlaneFromTriangle(t1);
@@ -415,9 +415,9 @@ Plane BspTree::AutoPartition(const std::vector<Point3D>& vertices, const std::ve
 			if (i == j) continue;
 
 			Point3D v2[3];
-			v2[0] = vertices[indices[j*3 + 0]];
-			v2[1] = vertices[indices[j*3 + 1]];
-			v2[2] = vertices[indices[j*3 + 2]];
+			v2[0] = vertices[indices[j*3ull + 0ull]];
+			v2[1] = vertices[indices[j*3ull + 1ull]];
+			v2[2] = vertices[indices[j*3ull + 2ull]];
 			Triangle t2(v2[0], v2[1], v2[2]);
 			// Keep standing count of the various poly-plane relationships
 
@@ -546,7 +546,7 @@ Plane BspTree::AxisPartition(const std::vector<Point3D>& vertices, const std::ve
 	Plane bestPlane;
 	glm::vec3 mean = std::accumulate(vertices.begin(), vertices.end(), glm::vec3{}) / (float)vertices.size();
 
-	uint32_t numTris = indices.size() / 3;
+	uint32_t numTris = uint32_t(indices.size() / 3);
 	uint32_t best = 0;
 	int numInfront = 0, numBehind = 0;
 	Plane currPlane;

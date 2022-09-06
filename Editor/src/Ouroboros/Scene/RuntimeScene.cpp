@@ -17,7 +17,7 @@ Technology is prohibited.
 
 //#include "Editor.h"
 //#include "Waypoint/WaypointSystem.h"
-//#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #include "Ouroboros/Scripting/ScriptSystem.h"
 
@@ -34,11 +34,13 @@ namespace oo
     {
         Scene::Init();
 
-        //constexpr const char* const registration = "registration";
-        {
-            //TRACY_PROFILE_SCOPE(registration);
 
-            ////Register All Systems
+        constexpr const char* const registration = "registration";
+        {
+            TRACY_PROFILE_SCOPE(registration);
+
+            //Register All Systems
+            GetWorld().Add_System<ScriptSystem>(*this);
             //GetWorld().RegisterSystem<PrefabComponentSystem>();
             //GetWorld().RegisterSystem<EditorComponentSystem>();
 
@@ -58,7 +60,7 @@ namespace oo
             //auto scriptSystem = GetWorld().RegisterSystem<oo::ScriptSystem>();
             //scriptSystem->SetCallbackInvokes();
 
-            //TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();
         }
 
         //constexpr const char* const loading_world = "loading world";
@@ -78,17 +80,20 @@ namespace oo
 
         Scene::Update();
 
-        //constexpr const char* const runtime_scene_update = "Runtime Scene Update";
+        //GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+
+        constexpr const char* const runtime_scene_update = "Runtime Scene Update";
         {
-            //TRACY_PROFILE_SCOPE(runtime_scene_update);
+            TRACY_PROFILE_SCOPE(runtime_scene_update);
 
             //Update All Systems
-            //constexpr const char* const scripts_update = "Scripts Update";
+            constexpr const char* const scripts_update = "Scripts Update";
             {
-                /*TRACY_PROFILE_SCOPE(scripts_update);
-                auto ss = GetWorld().GetSystem<oo::ScriptSystem>();
-                ss->InvokeFunctionAll("Update");
-                TRACY_PROFILE_SCOPE_END();*/
+                TRACY_PROFILE_SCOPE(scripts_update);
+                GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+                //auto ss = GetWorld().GetSystem<oo::ScriptSystem>();
+                //ss->InvokeFunctionAll("Update");
+                TRACY_PROFILE_SCOPE_END();
             }
             //constexpr const char* const ui_update = "UI Update";
             {
@@ -165,12 +170,12 @@ namespace oo
 
     void RuntimeScene::LateUpdate()
     {
-        //Scene::LateUpdate();
+        Scene::LateUpdate();
     }
 
     void RuntimeScene::Render()
     {
-        //Scene::Render();
+        Scene::Render();
 
         //constexpr const char* const text_rendering = "Text Rendering";
         {
@@ -195,7 +200,7 @@ namespace oo
 
     void RuntimeScene::Exit()
     {
-        //Scene::Exit();
+        Scene::Exit();
 
         StopSimulation();
     }
@@ -220,29 +225,30 @@ namespace oo
 
     void RuntimeScene::StartSimulation()
     {
-        //constexpr const char* const start_simulation = "Start Simulation";
+        constexpr const char* const start_simulation = "Start Simulation";
         {
+
+            TRACY_PROFILE_SCOPE(start_simulation);
+
             GetWorld().Get_System<ScriptSystem>()->StartPlay();
 
-            /*TRACY_PROFILE_SCOPE(start_simulation);
-
-            GetWorld().GetSystem<oo::ScriptSystem>()->StartPlay();
+            /*GetWorld().GetSystem<oo::ScriptSystem>()->StartPlay();
             GetWorld().GetSystem<oo::TransformSystem>()->UpdateTransform();
             GetWorld().GetSystem<oo::PhysicsSystem>()->Init();
             GetWorld().GetSystem<oo::ParticleRenderingSystem>()->Init();
-            GetWorld().GetSystem<oo::AudioSystem>()->Init();
+            GetWorld().GetSystem<oo::AudioSystem>()->Init();*/
 
-            TRACY_PROFILE_SCOPE_END();*/
+            TRACY_PROFILE_SCOPE_END();
         }
     }
 
     void RuntimeScene::StopSimulation()
     {
-        GetWorld().Get_System<oo::ScriptSystem>()->StopPlay();
-        //constexpr const char* const stop_simulation = "Stop Simulation";
+        constexpr const char* const stop_simulation = "Stop Simulation";
         {
-            //TRACY_PROFILE_SCOPE(stop_simulation);
+            TRACY_PROFILE_SCOPE(stop_simulation);
 
+            GetWorld().Get_System<oo::ScriptSystem>()->StopPlay();
             //GetWorld().GetSystem<oo::ScriptSystem>()->StopPlay();
 
             //{
@@ -250,7 +256,7 @@ namespace oo
             //    oo::Timestep::TimeScale = 1.0;
             //}
 
-            //TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();
         }
     }
 

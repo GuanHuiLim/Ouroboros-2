@@ -194,7 +194,7 @@ namespace oo
             EventManager::Broadcast<LoadSceneEvent>(&lse);
 
             // TODO: Solution To tie graphics world to rendering context for now!
-            static VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
             // comment because cannot 
             //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
 

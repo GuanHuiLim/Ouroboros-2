@@ -24,7 +24,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Input.h"
 
 // TESTING
-#include "Ouroboros/Scripting/ScriptManager.h"
+#include "Ouroboros/Scripting/ScriptSystem.h"
 
 namespace oo
 {
@@ -61,11 +61,6 @@ namespace oo
 
         void OnUpdate() override final
         {
-            if (oo::input::IsKeyHeld(KEY_LEFT_SHIFT) && oo::input::IsKeyPressed(KEY_TAB))
-            {
-                ScriptManager::Compile();
-                ScriptManager::Load();
-            }
             if (oo::input::IsKeyPressed(KEY_Q))
             {
                 m_editorController.Simulate();

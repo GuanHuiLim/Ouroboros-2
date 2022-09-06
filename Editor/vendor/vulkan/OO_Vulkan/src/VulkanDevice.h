@@ -36,7 +36,7 @@ struct VulkanDevice
 	bool CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysicalDevice device);	
 
 	VkResult CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags,
-		vkutils::Buffer* buffer, VkDeviceSize size, void* data = nullptr);
+		vkutils::Buffer* buffer, VkDeviceSize size,const void* data = nullptr);
 
 	void CopyBuffer(vkutils::Buffer* src, vkutils::Buffer* dst, VkQueue queue,
 			VkBufferCopy* copyRegion = nullptr);
