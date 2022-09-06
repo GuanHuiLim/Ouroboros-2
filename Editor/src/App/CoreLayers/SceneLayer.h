@@ -24,7 +24,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Input.h"
 
 // TESTING
-#include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Scripting/ScriptManager.h"
 
 namespace oo
 {
@@ -63,8 +63,8 @@ namespace oo
         {
             if (oo::input::IsKeyHeld(KEY_LEFT_SHIFT) && oo::input::IsKeyPressed(KEY_TAB))
             {
-                ScriptSystem::Compile();
-                ScriptSystem::Load();
+                ScriptManager::Compile();
+                ScriptManager::Load();
             }
             if (oo::input::IsKeyPressed(KEY_Q))
             {

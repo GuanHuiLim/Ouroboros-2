@@ -16,7 +16,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Layer.h"
 #include <Scripting/Scripting.h>
-#include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Scripting/ScriptManager.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
 
@@ -32,9 +32,9 @@ namespace oo
 
         ScriptingLayer(SceneManager const& sceneManager)
         {
-            ScriptSystem::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
+            ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
 
-            ScriptSystem::s_SceneManager = &sceneManager;
+            ScriptManager::s_SceneManager = &sceneManager;
         }
 
         ~ScriptingLayer()

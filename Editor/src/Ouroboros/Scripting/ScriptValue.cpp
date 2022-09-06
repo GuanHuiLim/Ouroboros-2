@@ -4,6 +4,7 @@
 #include "ScriptInfo.h"
 //#include "Scripting.h"
 
+#include "ScriptManager.h"
 #include "ScriptSystem.h"
 
 namespace oo
@@ -428,7 +429,7 @@ namespace oo
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
                     UUID entityID = value.GetValue<UUID>();
-                    std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> gameObject = scene->FindWithInstanceID(entityID);
                     if (gameObject == nullptr)
                     {
@@ -459,7 +460,7 @@ namespace oo
                     MonoClassField* idField = mono_class_get_field_from_name(typeClass, "m_InstanceID");
                     UUID entityID;
                     mono_field_get_value(fieldValue, idField, &entityID);
-                    std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
                     if (obj == nullptr)
                         return ScriptValue(static_cast<UUID>(0));
@@ -475,7 +476,7 @@ namespace oo
                     MonoClassField* idField = mono_class_get_field_from_name(objClass, "m_InstanceID");
                     UUID entityID;
                     mono_field_get_value(object, idField, &entityID);
-                    std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
                     if (obj == nullptr)
                         return ScriptValue(static_cast<UUID>(0));
@@ -488,7 +489,7 @@ namespace oo
 
                     MonoObject* entry = nullptr;
                     UUID entityID = value.GetValue<UUID>();
-                    std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
                     if (obj != nullptr)
                     {
@@ -514,7 +515,7 @@ namespace oo
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
                     ScriptValue::component_type component = value.GetValue<ScriptValue::component_type>();
-                    std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     ScriptSystem* scriptSystem = scene->GetWorld().Get_System<ScriptSystem>();
                     ScriptDatabase::IntPtr ptr = 0;
                     if (component.m_isScript)
@@ -542,7 +543,7 @@ namespace oo
                         MonoClassField* idField = mono_class_get_field_from_name(mono_object_get_class(compObj), "m_InstanceID");
                         UUID entityID;
                         mono_field_get_value(compObj, idField, &entityID);
-                        std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                        std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                         std::shared_ptr<GameObject> gameObject = scene->FindWithInstanceID(entityID);
                         if (gameObject != nullptr)
                         {
@@ -566,7 +567,7 @@ namespace oo
                         MonoClassField* idField = mono_class_get_field_from_name(mono_object_get_class(compObj), "m_InstanceID");
                         UUID entityID;
                         mono_field_get_value(compObj, idField, &entityID);
-                        std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                        std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                         std::shared_ptr<GameObject> gameObject = scene->FindWithInstanceID(entityID);
                         if (gameObject != nullptr)
                         {
@@ -584,7 +585,7 @@ namespace oo
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
                     ScriptValue::component_type component = value.GetValue<ScriptValue::component_type>();
-                    std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     ScriptSystem* scriptSystem = scene->GetWorld().Get_System<ScriptSystem>();
                     ScriptDatabase::IntPtr ptr = 0;
                     if (component.m_isScript)
@@ -1308,7 +1309,7 @@ namespace oo
             LOG_WARN("ScriptFunctionInfo Invoke failed, function not set");
             return;
         }
-        std::shared_ptr<Scene> scene = ScriptSystem::s_SceneManager->GetActiveScene<Scene>();
+        std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
         ScriptSystem* scriptSystem = scene->GetWorld().Get_System<ScriptSystem>();
         MonoObject* script = mono_gchandle_get_target(scriptSystem->GetScript(uuid, classNamespace.c_str(), className.c_str()));
         if (script == nullptr)

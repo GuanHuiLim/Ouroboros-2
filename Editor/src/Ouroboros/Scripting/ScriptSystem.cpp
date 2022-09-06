@@ -1,136 +1,16 @@
 #include "pch.h"
 #include "ScriptSystem.h"
 
-#include <fstream>
+#include "ScriptManager.h"
 
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Scene/EditorController.h"
 
 namespace oo
 {
-
-    // Global stuff that transfers between scenes
-
-    SceneManager const* ScriptSystem::s_SceneManager;
-    std::string ScriptSystem::s_BuildPath;
-    std::string ScriptSystem::s_ProjectPath;
-
-    bool ScriptSystem::s_IsPlaying = false;
-    std::vector<ScriptClassInfo> ScriptSystem::s_ScriptList;
-
-    void ScriptSystem::LoadProject(std::string const& buildPath, std::string const& projectPath)
-    {
-        s_BuildPath = buildPath;
-        s_ProjectPath = projectPath;
-        if(Compile())
-            Load();
-    }
-    bool ScriptSystem::Compile()
-    {
-        if (s_IsPlaying)
-        {
-            LOG_WARN("Script Warning: you are currently in play mode");
-            return false;
-        }
-        if (!std::filesystem::exists(s_ProjectPath))
-        {
-            LOG_ERROR("Script Compiling Error: Expected Scripting project at \"" + s_ProjectPath + "\" does not exist");
-            return false;
-        }
-        try
-        {
-            ScriptEngine::Compile(s_ProjectPath, s_BuildPath + "warnings.log", s_BuildPath + "errors.log");
-        }
-        catch (std::exception const& e)
-        {
-            LOG_ERROR(e.what());
-            return false;
-        }
-        DisplayWarnings();
-        if (DisplayErrors())
-            return false;
-        LOG_CORE_TRACE("Script Compiling Successful");
-        return true;
-    }
-    void ScriptSystem::Load()
-    {
-        // load all system info for later use
-        std::string dllPath = s_BuildPath + "Scripting.dll";
-        if (!std::filesystem::exists(dllPath))
-        {
-            LOG_WARN("No Scripting.dll to load");
-            return;
-        }
-        try
-        {
-            ScriptEngine::Load(dllPath);
-        }
-        catch (std::exception const& e)
-        {
-            LOG_ERROR(e.what());
-            return;
-        }
-        LOG_CORE_TRACE("Script Loading Successful");
-
-        s_ScriptList.clear();
-
-        MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
-        if (monoBehaviour != nullptr)
-        {
-            std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour);
-            for (MonoClass* klass : classList)
-            {
-                s_ScriptList.emplace_back(ScriptClassInfo{ mono_class_get_namespace(klass), mono_class_get_name(klass) });
-            }
-        }
-
-        //if (refresh)
-        //{
-        //    ScriptSystem* ss = WorldManager::GetActiveWorld().TryGetSystem<ScriptSystem>();
-        //    if (ss != nullptr)
-        //        ss->RefreshScriptInfoAll();
-        //}
-    }
-
-    bool ScriptSystem::DisplayWarnings()
-    {
-        std::ifstream ifsWarnings(s_BuildPath + "warnings.log");
-        if (!ifsWarnings)
-        {
-            LOG_ERROR("Script Compiling Error: Warning log file not generated");
-            return false;
-        }
-        std::string line;
-        bool hasWarnings = false;
-        while (std::getline(ifsWarnings, line))
-        {
-            LOG_WARN(line);
-            hasWarnings = true;
-        }
-        ifsWarnings.close();
-        return hasWarnings;
-    }
-    bool ScriptSystem::DisplayErrors()
-    {
-        std::ifstream ifsErrors(s_BuildPath + "errors.log");
-        if (!ifsErrors)
-        {
-            LOG_ERROR("Script Compiling Error: Error log file not generated");
-            return false;
-        }
-        std::string line;
-        bool hasErrors = false;
-        while (std::getline(ifsErrors, line))
-        {
-            LOG_ERROR(line);
-            hasErrors = true;
-        }
-        ifsErrors.close();
-        return hasErrors;
-    }
-
     // Scene specific script stuff
-    ScriptSystem::ScriptSystem(Scene& scene) : scene{ scene }, componentDatabase{ scene.GetID() }
+    ScriptSystem::ScriptSystem(Scene& scene)
+    : scene{ scene }, scriptDatabase{ }, componentDatabase{ scene.GetID() }, isPlaying{ false }
     {
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
@@ -147,11 +27,11 @@ namespace oo
 
     bool ScriptSystem::StartPlay()
     {
-        if (s_IsPlaying)
+        if (isPlaying)
             return false;
         if (!ScriptEngine::IsLoaded())
             return false;
-        if (DisplayErrors())
+        if (ScriptManager::DisplayErrors())
             return false;
 
         MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
@@ -165,14 +45,14 @@ namespace oo
             return query;
         }();
 
-        s_IsPlaying = true;
+        isPlaying = true;
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
                 if (gameObject.Id == GameObject::ROOTID)
                     return;
 
                 // TESTING
-                //script.AddScriptInfo(ScriptClassInfo{ "", "TestClass" });
+                script.AddScriptInfo(ScriptClassInfo{ "", "TestClass" });
                 //script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testScript")->value = ScriptValue{ ScriptValue::component_type{ gameObject.Id, "", "TestClass", true }};
                 //script.GetScriptInfo(ScriptClassInfo{ "", "TestClass" })->FindFieldInfo("testComponent")->value = ScriptValue{ ScriptValue::component_type{ gameObject.Id, "Ouroboros", "Transform", false } };
 
@@ -202,13 +82,18 @@ namespace oo
 
     bool ScriptSystem::StopPlay()
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return false;
 
-        s_IsPlaying = false;
+        isPlaying = false;
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
         return true;
+    }
+
+    bool ScriptSystem::IsPlaying()
+    {
+        return isPlaying;
     }
 
     void ScriptSystem::OnObjectEnabled(GameObjectComponent::OnEnableEvent* e)
@@ -231,7 +116,7 @@ namespace oo
         if (search == scriptInfoMap.end())
             return;
         search->second.ResetFieldValues();
-        if (s_IsPlaying)
+        if (isPlaying)
             UpdateScriptFieldsWithInfo(uuid, script);
     }
     void ScriptSystem::RefreshScriptInfoAll()
@@ -278,7 +163,7 @@ namespace oo
 
     ScriptDatabase::IntPtr ScriptSystem::AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return 0;
 
         // create script instance
@@ -300,19 +185,19 @@ namespace oo
     }
     ScriptDatabase::IntPtr ScriptSystem::GetScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return 0;
         return scriptDatabase.TryRetrieve(uuid, name_space, name);
     }
     void ScriptSystem::RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.Delete(uuid, name_space, name);
     }
     void ScriptSystem::SetScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.SetEnabled(uuid, name_space, name, isEnabled);
         std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
@@ -325,45 +210,45 @@ namespace oo
     }
     bool ScriptSystem::CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return false;
         return scriptDatabase.CheckEnabled(uuid, name_space, name);
     }
 
     ComponentDatabase::IntPtr ScriptSystem::AddComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return 0;
         return componentDatabase.Instantiate(uuid, name_space, name);
     }
     ComponentDatabase::IntPtr ScriptSystem::GetComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return 0;
         return componentDatabase.TryRetrieve(uuid, name_space, name);
     }
     void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         componentDatabase.Delete(uuid, name_space, name);
     }
     void ScriptSystem::SetComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         componentDatabase.SetEnabled(uuid, name_space, name, isEnabled);
     }
     bool ScriptSystem::CheckComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return false;
         return componentDatabase.CheckEnabled(uuid, name_space, name);
     }
 
     ComponentDatabase::IntPtr ScriptSystem::GetGameObject(ComponentDatabase::UUID uuid)
     {
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return 0;
         return componentDatabase.RetrieveGameObject(uuid);
     }
@@ -372,7 +257,7 @@ namespace oo
     {
         if (!ScriptEngine::IsLoaded())
             return;
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.ForEach(uuid, [&functionName, &params, &paramCount](MonoObject* object)
             {
@@ -390,7 +275,7 @@ namespace oo
     {
         if (!ScriptEngine::IsLoaded())
             return;
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.ForEachEnabled(uuid, [&functionName, &params, &paramCount](MonoObject* object)
             {
@@ -413,7 +298,7 @@ namespace oo
     {
         if (!ScriptEngine::IsLoaded())
             return;
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.ForEach(name_space, name, [&functionName, &params, &paramCount](MonoObject* object)
             {
@@ -431,7 +316,7 @@ namespace oo
     {
         if (!ScriptEngine::IsLoaded())
             return;
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.ForEach(name_space, name, [&functionName, &params, &paramCount](MonoObject* object)
             {
@@ -454,7 +339,7 @@ namespace oo
     {
         if (!ScriptEngine::IsLoaded())
             return;
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.ForAll([&functionName, &params, &paramCount](MonoObject* object)
             {
@@ -472,7 +357,7 @@ namespace oo
     {
         if (!ScriptEngine::IsLoaded())
             return;
-        if (!s_IsPlaying)
+        if (!isPlaying)
             return;
         scriptDatabase.ForAllEnabled([&functionName, &params, &paramCount](MonoObject* object)
             {
