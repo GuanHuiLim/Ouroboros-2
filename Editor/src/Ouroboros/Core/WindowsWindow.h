@@ -37,7 +37,8 @@ namespace oo
     };
 
     //forward declaration
-    class GraphicsContext;
+    //class GraphicsContext;
+    class VulkanContext;
 
     /********************************************************************************//*!
      @brief     Describes a Windows(Platform) specific windows that implements
@@ -77,7 +78,8 @@ namespace oo
         std::pair<int, int> GetWindowPos() const;
 
         void* GetNativeWindow() const { return m_window; }
-        void* GetRenderingContext() const { return m_context; }
+        //void* GetRenderingContext() const { return m_context; }
+        VulkanContext* GetVulkanContext() const { return m_context; }
 
         bool IsVSync() const;
         bool IsFullscreen() const;
@@ -97,7 +99,8 @@ namespace oo
 
     private:
         SDL_Window* m_window;
-        GraphicsContext* m_context;
+        //GraphicsContext* m_context;
+        VulkanContext* m_context;
 
     private:
         struct WindowData

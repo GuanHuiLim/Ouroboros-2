@@ -194,7 +194,8 @@ namespace oo
         if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
         {
             // Load texture
-            auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            //auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            auto vc = Application::Get().GetWindow().GetVulkanContext();
             auto vr = vc->getRenderer();
             auto data = vr->CreateTexture(fp.string());
             asset.info->data = new decltype(data);
