@@ -6,9 +6,7 @@
 #include <SceneManagement/include/SceneManager.h>
 
 #include <Ouroboros/ECS/GameObject.h>
-#include <Ouroboros/Prefab/PrefabComponent.h>
 
-#include <Ouroboros/ECS/GameObjectComponent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 
 #include <rapidjson/writer.h>
@@ -36,38 +34,9 @@ void Serializer::InitEvents()
 
 void Serializer::Init()
 {
-	save_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rapidjson::Document& doc,rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
-		std::string temp = p.get_name().data();
-		rapidjson::Value name;
-		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		obj.AddMember(name, rapidjson::Value(variant.get_value<bool>()), doc.GetAllocator());
-		});
-	save_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
-		std::string temp = p.get_name().data();
-		rapidjson::Value name;
-		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value v;
-		std::string val = variant.to_string();
-		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
-		obj.AddMember(name , v, doc.GetAllocator());
-		});
-	save_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
-		std::string temp = p.get_name().data();
-		rapidjson::Value name;
-		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value v;
-		std::string val = variant.get_value<std::filesystem::path>().string();
-		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
-		obj.AddMember(name, v, doc.GetAllocator());
-		});
-
 	AddLoadComponent<oo::GameObjectComponent>();
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
-
-	load_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetBool();});
-	load_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = static_cast<std::string>(val.GetString());});
-	load_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetString(); });
 }
 
 void Serializer::SaveScene(oo::Scene& scene)
@@ -260,8 +229,8 @@ void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value
 	auto iter_type = UI_RTTRType::types.find(sqv.get_value_type().get_id());
 	if (iter_type == UI_RTTRType::types.end())
 		return;
-	auto sf = save_commands.find(iter_type->second);
-	if (sf == save_commands.end())
+	auto sf = m_SaveProperties.m_save_commands.find(iter_type->second);
+	if (sf == m_SaveProperties.m_save_commands.end())
 		return;
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
@@ -297,8 +266,8 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 			}
 			continue;//not supported
 		}
-		auto sf = save_commands.find(iter->second);
-		if (sf == save_commands.end())
+		auto sf = m_SaveProperties.m_save_commands.find(iter->second);
+		if (sf == m_SaveProperties.m_save_commands.end())
 			continue;//don't have this save function
 		sf->second(doc,sub_component, prop.get_value(var), prop);
 	}
@@ -364,8 +333,8 @@ void Serializer::LoadSequentialContainer(rttr::variant& variant, rapidjson::Valu
 	auto arr_UITypes = UI_RTTRType::types.find(sqv.get_value_type().get_id());
 	if (arr_UITypes == UI_RTTRType::types.end())
 		return;
-	auto command = load_commands.find(arr_UITypes->second);
-	if (command == load_commands.end())
+	auto command = m_LoadProperties.m_load_commands.find(arr_UITypes->second);
+	if (command == m_LoadProperties.m_load_commands.end())
 		return;
 
 	size_t size_array = static_cast<size_t>(val.MemberCount());
@@ -404,8 +373,8 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 			}
 			continue;//not supported
 		}
-		auto command = load_commands.find(types_UI->second);
-		if (command == load_commands.end())
+		auto command = m_LoadProperties.m_load_commands.find(types_UI->second);
+		if (command == m_LoadProperties.m_load_commands.end())
 			continue;//don't have this save function
 		rttr::variant v;
 		command->second(v, std::move(iter->value));
