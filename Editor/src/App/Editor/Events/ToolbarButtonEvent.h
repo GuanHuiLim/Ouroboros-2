@@ -1,7 +1,7 @@
 #pragma once
 #include "Ouroboros/EventSystem/Event.h"
 
-class ToolbarButtonEvent
+class ToolbarButtonEvent : public oo::Event
 {
 public:
 	enum class ToolbarButton

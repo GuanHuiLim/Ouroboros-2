@@ -61,11 +61,6 @@ namespace oo
 
         void OnUpdate() override final
         {
-            if (oo::input::IsKeyHeld(KEY_LEFT_SHIFT) && oo::input::IsKeyPressed(KEY_TAB))
-            {
-                ScriptSystem::Compile();
-                ScriptSystem::Load();
-            }
             if (oo::input::IsKeyPressed(KEY_Q))
             {
                 m_editorController.Simulate();
