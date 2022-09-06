@@ -15,8 +15,10 @@ Technology is prohibited.
 #include "pch.h"
 
 #include "Ouroboros/ImGui/ImGuiAbstraction.h"
-#include "Ouroboros/Core/GraphicsContext.h"
+//#include "Ouroboros/Core/GraphicsContext.h"
+#include "Ouroboros/Vulkan/VulkanContext.h"
 #include "Ouroboros/Core/Application.h"
+
 
 #include <sdl2/SDL.h>
 
@@ -32,7 +34,7 @@ namespace oo
 #ifdef OO_PLATFORM_WINDOWS
         , m_window { static_cast<SDL_Window*>(Application::Get().GetWindow().GetNativeWindow())  }
 #endif
-        , m_renderer{ static_cast<GraphicsContext*>(Application::Get().GetWindow().GetRenderingContext()) }
+        , m_renderer{ Application::Get().GetWindow().GetVulkanContext() }
     {
         Init();
     }

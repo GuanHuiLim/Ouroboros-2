@@ -32,8 +32,8 @@ namespace oo
     
       
     VulkanRenderer* VulkanContext::vr{nullptr};
-  GraphicsWorld VulkanContext::gw;
-  Window VulkanContext::m_window;
+    GraphicsWorld VulkanContext::gw;
+    Window VulkanContext::m_window;
 
 //#define TEMPORARY_CODE
 

@@ -190,6 +190,8 @@ namespace oo
         //    oo::Timestep::TimeScale = 1.0;
         //}
 
+        LOG_INFO("Changing back to Editor Scene: {0}!", m_editorScene.lock()->GetSceneName());
+
         m_runtimeController.RemoveScenes();
         
         // remove the current scene if it was added temporarily

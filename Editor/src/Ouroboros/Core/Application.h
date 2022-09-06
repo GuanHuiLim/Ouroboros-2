@@ -118,8 +118,9 @@ namespace oo
         //Order matters!
         //Window* m_window;
         std::unique_ptr<WindowsWindow> m_window;
-        GraphicsContext* m_renderer;
-        
+        //GraphicsContext* m_renderer;
+        VulkanContext* m_renderer;
+
         static Application* s_instance;
         friend int ::main(int argc, char** argv);
     };
