@@ -92,7 +92,13 @@ namespace oo
         // Update Systems
         {
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
-            m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("Update");
+            constexpr const char* const scripts_update = "Scripts Update";
+            {
+                TRACY_PROFILE_SCOPE(scripts_update);
+                GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+                TRACY_PROFILE_SCOPE_END();
+            }
+            // m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("Update");
         }
 
         PRINT(m_name);

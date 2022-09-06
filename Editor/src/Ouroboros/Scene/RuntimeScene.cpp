@@ -40,7 +40,6 @@ namespace oo
             TRACY_PROFILE_SCOPE(registration);
 
             //Register All Systems
-            GetWorld().Add_System<ScriptSystem>(*this);
             //GetWorld().RegisterSystem<PrefabComponentSystem>();
             //GetWorld().RegisterSystem<EditorComponentSystem>();
 
@@ -87,14 +86,14 @@ namespace oo
             TRACY_PROFILE_SCOPE(runtime_scene_update);
 
             //Update All Systems
-            constexpr const char* const scripts_update = "Scripts Update";
-            {
-                TRACY_PROFILE_SCOPE(scripts_update);
-                GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
-                //auto ss = GetWorld().GetSystem<oo::ScriptSystem>();
-                //ss->InvokeFunctionAll("Update");
-                TRACY_PROFILE_SCOPE_END();
-            }
+            //constexpr const char* const scripts_update = "Scripts Update";
+            //{
+            //    TRACY_PROFILE_SCOPE(scripts_update);
+            //    GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+            //    //auto ss = GetWorld().GetSystem<oo::ScriptSystem>();
+            //    //ss->InvokeFunctionAll("Update");
+            //    TRACY_PROFILE_SCOPE_END();
+            //}
             //constexpr const char* const ui_update = "UI Update";
             {
                /* TRACY_PROFILE_SCOPE(ui_update);
