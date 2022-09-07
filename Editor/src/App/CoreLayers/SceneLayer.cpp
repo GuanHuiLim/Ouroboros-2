@@ -5,6 +5,7 @@
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "App/Editor/Events/ToolbarButtonEvent.h"
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 namespace oo
 {
@@ -16,6 +17,7 @@ namespace oo
 #endif
         , Layer("Scene Management Layer")
     {
+        // This should be the only subscriber for this event!
         EventManager::Subscribe<SceneLayer, GetCurrentSceneEvent>(this, &SceneLayer::OnGetCurrentSceneEvent);
 
 #ifdef OO_EDITOR
@@ -58,8 +60,11 @@ namespace oo
             e->IsEditor = false;
             break;
         }
-#endif
+#else
+        //TODO!
         m_runtimeController;
+
+#endif
     }
 
     void SceneLayer::OnToolbarButtonEvent(ToolbarButtonEvent* e)
