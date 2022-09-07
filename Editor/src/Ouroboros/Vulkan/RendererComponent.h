@@ -43,7 +43,7 @@ namespace oo
 
 namespace oo::Mesh
 {
-	GameObject CreateCubeMeshObject(Scene* scene, GraphicsWorld* graphicsWorld)
+	auto CreateCubeMeshObject(Scene* scene, GraphicsWorld* graphicsWorld)
 	{
 		//auto cubeMesh = CreateDefaultCubeMesh();
 
@@ -52,9 +52,11 @@ namespace oo::Mesh
 
 		meshRenderer.model_handle = 0;
 		//meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
+
+		return gameObj;
 	}
-	GameObject CreateMeshObject( Scene* scene, std::string filepath )
+	/*GameObject CreateMeshObject( Scene* scene, std::string filepath )
 	{
 
-	}
+	}*/
 }

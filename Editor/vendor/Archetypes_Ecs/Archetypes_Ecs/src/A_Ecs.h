@@ -1009,8 +1009,11 @@ namespace Ecs::internal
 		using EventType = ComponentEvent<C>;
 		//assert(std::is_same_v<Evnt, EventType> == true);
 
-		IQuery query;
-		query.with<C>().build();
+		static IQuery query = []() {
+			IQuery _query;
+			_query.with<C>().build();
+		}();
+		
 
 		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
 

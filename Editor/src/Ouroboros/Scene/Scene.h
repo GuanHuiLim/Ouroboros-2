@@ -111,7 +111,7 @@ namespace oo
         UUID GetInstanceID(GameObject const& go) const;
 
         // Variables
-    protected:
+    private:
         std::string m_name;
         std::string m_filepath;
 

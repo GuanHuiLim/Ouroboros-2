@@ -41,9 +41,10 @@ namespace oo
             TRACY_PROFILE_SCOPE(registration);
 
             //Register All Systems
-            GetWorld().Add_System<ScriptSystem>(*this);
-            GetWorld().Add_System<MeshRendererSystem>()->Init(&GetWorld(), m_graphicsWorld.get());
-            oo::Mesh::CreateCubeMeshObject(this, m_graphicsWorld.get());
+            //GetWorld().Add_System<ScriptSystem>(*this);
+            GetWorld().Add_System<MeshRendererSystem>()->Init(&GetWorld(), GetGraphicsWorld());
+            auto meshObj = oo::Mesh::CreateCubeMeshObject(this, GetGraphicsWorld());
+            meshObj->GetComponent<TransformComponent>().SetScale({ 5.f,5.f,5.f });
             //GetWorld().RegisterSystem<PrefabComponentSystem>();
             //GetWorld().RegisterSystem<EditorComponentSystem>();
 
