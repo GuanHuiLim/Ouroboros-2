@@ -44,6 +44,9 @@ namespace oo
         void Restart() { m_restart = true; };
 
     private:
+        void DetermineRestart();
+        void ReplaceImGuiSettings();
+
         bool m_restart;
         SDL_Window* m_window;
         //GraphicsContext* m_renderer;

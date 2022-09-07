@@ -81,38 +81,35 @@ namespace oo
         //SetDarkThemeColors();
 
         // Setup Platform/Renderer bindings
-        m_renderer->InitImGui();
+        if (m_restart)
+        {
+
+        }
+        else
+        {
+            m_renderer->InitImGui();
+        }
+
     }
 
     void ImGuiAbstraction::Destroy()
     {
-        m_renderer->OnImGuiShutdown();
+        if (m_restart)
+        {
+
+        }
+        else
+        {
+            m_renderer->OnImGuiShutdown();
+        }
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
     }
 
+
     void ImGuiAbstraction::Begin()
     {
-        // if restarting is required
-        if (m_restart)
-        {
-            LOG_CORE_WARN("Restarting ImGui");
-
-            Destroy();
-
-            {
-                //char exePath[1000];
-                //GetModuleFileNameA(NULL, exePath, 1000);
-                // std::filesystem::path p = exePath; hard-path
-                std::filesystem::path p = "./"; // current-path but cannot debug.
-                                                //std::string filepath = p.string();
-                std::filesystem::copy_file(p.parent_path().string() + "/default.ini", p.parent_path().string() + "/imgui.ini", std::filesystem::copy_options::overwrite_existing);
-            }
-
-            Init();
-
-            m_restart = false;
-        }
+        DetermineRestart();
 
         m_renderer->OnImGuiBegin();
 
@@ -135,8 +132,34 @@ namespace oo
         ImGui::Render();
         
         m_renderer->OnImGuiEnd();
+    }
 
-       
+    void ImGuiAbstraction::DetermineRestart()
+    {
+        // if restarting is required
+        if (m_restart)
+        {
+            LOG_CORE_WARN("Restarting ImGui");
+
+            Destroy();
+
+            ReplaceImGuiSettings();
+
+            Init();
+
+            m_restart = false;
+        }
+    }
+
+    void ImGuiAbstraction::ReplaceImGuiSettings()
+    {
+        //char exePath[1000];
+        //GetModuleFileNameA(NULL, exePath, 1000);
+        // std::filesystem::path p = exePath; hard-path
+        std::filesystem::path p = "./"; // current-path but cannot debug.
+        std::string target_file = p.parent_path().string() + "/default.ini";
+        std::string overwritten_file = p.parent_path().string() + "/imgui.ini";
+        std::filesystem::copy_file(target_file, overwritten_file, std::filesystem::copy_options::overwrite_existing);
     }
 
 }

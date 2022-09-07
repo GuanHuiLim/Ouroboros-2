@@ -63,7 +63,9 @@ namespace oo
         };
 
         STATE GetActiveState() const { return m_activeState; };
-
+        std::weak_ptr<EditorScene> GetEditorScene() const { return m_editorScene; }
+        std::weak_ptr<RuntimeScene> GetRuntimeScene() const { return m_runtimeScene; }
+        
     private:
         void OnLoadProjectEvent(LoadProjectEvent* loadProjEvent);
         void OnOpenFileEvent(OpenFileEvent* openFileEvent);

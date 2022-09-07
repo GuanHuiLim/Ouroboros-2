@@ -90,6 +90,7 @@ namespace oo
         Ecs::ECSWorld& GetWorld();
         scenegraph const GetGraph() const;
         go_ptr GetRoot() const;
+        GraphicsWorld* GetGraphicsWorld() const;
 
     protected:
         void SetFilePath(std::string_view filepath);
@@ -114,7 +115,6 @@ namespace oo
         std::string m_name;
         std::string m_filepath;
 
-        
         // set of gameobjects to initialize
         //std::vector<std::pair<go_ptr, go_on_create_callback>> m_createList;
 
