@@ -56,25 +56,30 @@ class EditorApp final : public oo::Application
 private:
     // main scene manager
     SceneManager m_sceneManager;
-    oo::AssetManager m_assetManager{ "./" };
+    //oo::AssetManager m_assetManager{ "./" };
 
 public:
     EditorApp(oo::CommandLineArgs args)
-        : Application{ "Ouroboros v2.0", args },
-        m_assetManager{oo::AssetManager("./assets")}
+        : Application{ "Ouroboros v2.0", args }
+        //, m_assetManager{oo::AssetManager("./assets")}
     {
         // Scripting Layer
         m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
 
         //Debug Layers
         //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+#ifdef OO_EDITOR
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
-        m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
-
-        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
+#endif
         // Main Layers
+        m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
+        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
+#ifndef OO_END_PRODUCT
         m_layerset.PushLayer(std::make_shared<EditorLayer>(m_sceneManager));
-
+#else
+        std::filesystem::path p("./Project/Config.json");
+        Project::LoadProject(p);
+#endif
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
 
         // binding to events
@@ -93,10 +98,13 @@ public:
 
         m_imGuiAbstract->End();
 
+#ifndef OO_END_PRODUCT
         if (oo::input::IsKeyPressed(KEY_ESCAPE))
         {
-            Close();
+            oo::WindowCloseEvent ununsed;
+            CloseApp(&ununsed);
         }
+#endif
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -108,9 +116,10 @@ public:
 
     void CloseApp(oo::WindowCloseEvent*)
     {
+#if defined OO_EDITOR 
         CloseProjectEvent e;
         oo::EventManager::Broadcast(&e);
-
+#endif
         Close();
     }
 
