@@ -1012,6 +1012,7 @@ namespace Ecs::internal
 		static IQuery query = []() {
 			IQuery _query;
 			_query.with<C>().build();
+			return _query;
 		}();
 		
 

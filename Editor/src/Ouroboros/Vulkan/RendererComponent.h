@@ -49,7 +49,7 @@ namespace oo::Mesh
 
 		auto gameObj = scene->CreateGameObjectImmediate();
 		auto& meshRenderer = gameObj->AddComponent<MeshRendererComponent>();
-
+		meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
 		meshRenderer.model_handle = 0;
 		//meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
 
