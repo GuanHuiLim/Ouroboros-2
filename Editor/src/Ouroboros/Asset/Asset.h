@@ -16,6 +16,9 @@ Technology is prohibited.
 
 #include <array>
 #include <filesystem>
+#include <typeinfo>
+#include <typeindex>
+#include <unordered_map>
 
 namespace oo
 {
@@ -32,6 +35,7 @@ namespace oo
     struct AssetInfo
     {
         using Callback = std::function<void(AssetInfo&)>;
+        using DataTypeOffsetsType = std::unordered_map<std::type_index, size_t>;
 
         std::filesystem::path contentPath;
         std::filesystem::path metaPath;
@@ -40,6 +44,7 @@ namespace oo
         Callback onAssetCreate = [](AssetInfo&) {};
         Callback onAssetDestroy = [](AssetInfo&) {};
         void* data = nullptr;
+        DataTypeOffsetsType dataTypeOffsets;
     };
 
     class Asset
@@ -72,7 +77,7 @@ namespace oo
         [[nodiscard]] inline void* GetRawData() const { return info->data; };
         [[nodiscard]] inline bool HasData() const { return info->data; };
         template<typename T>
-        [[nodiscard]] inline T GetData() const { return *reinterpret_cast<T*>(info->data); };
+        [[nodiscard]] inline T GetData() const;
 
     private:
         /****************************************************************************//*!
@@ -90,6 +95,21 @@ namespace oo
 
         friend AssetManager;
     };
+
+    template<typename T>
+    inline T Asset::GetData() const
+    {
+        // Segmented structure reinterpretation
+        if (info->dataTypeOffsets.find(std::type_index(typeid(T))) != info->dataTypeOffsets.end())
+        {
+            size_t offset = info->dataTypeOffsets[std::type_index(typeid(T))];
+            char* ptr = reinterpret_cast<char*>(info->data);
+            return *reinterpret_cast<T*>(ptr + offset);
+        }
+
+        // Direct reinterpretation
+        return *reinterpret_cast<T*>(info->data);
+    }
 
     class AssetDataNotFoundException : public std::exception
     {

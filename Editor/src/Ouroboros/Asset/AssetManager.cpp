@@ -16,6 +16,8 @@ Technology is prohibited.
 
 #include "AssetManager.h"
 
+#include <imgui/imgui.h>
+
 #include "BinaryIO.h"
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
@@ -211,9 +213,22 @@ namespace oo
             {
             	auto vc = Application::Get().GetWindow().GetVulkanContext();
                 auto vr = vc->getRenderer();
-                auto data = vr->CreateTexture(fp.string());
-                self.data = new decltype(data);
-                *reinterpret_cast<decltype(data)*>(self.data) = data;
+                auto data1 = vr->CreateTexture(fp.string());
+                auto data2 = vr->GetImguiID(data1);
+
+                struct DataStruct
+                {
+                    decltype(data1) data1;
+                    decltype(data2) data2;
+                };
+                self.data = new DataStruct;
+                *reinterpret_cast<DataStruct*>(self.data) = {
+                    .data1 = data1,
+                    .data2 = data2
+                };
+                self.dataTypeOffsets = {};
+                self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
+                self.dataTypeOffsets[std::type_index(typeid(decltype(data2)))] = offsetof(DataStruct, data2);
             };
             asset.info->onAssetDestroy = [fp](AssetInfo& self)
             {
@@ -221,6 +236,7 @@ namespace oo
                 if (self.data)
                     delete self.data;
                 self.data = nullptr;
+                self.dataTypeOffsets.clear();
             };
         }
 
