@@ -35,8 +35,15 @@ namespace oo
             return false;
 
         MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
-        if (monoBehaviour != nullptr)
-            scriptDatabase.Initialize(ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour));
+        if (monoBehaviour == nullptr)
+        {
+            LOG_WARN("ScriptSystem: No scripts found, ScriptSystem functions will not be run");
+            return true;
+        }
+
+        //MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        //if (monoBehaviour != nullptr)
+        //    scriptDatabase.Initialize(ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour));
 
         static Ecs::Query query = []()
         {
