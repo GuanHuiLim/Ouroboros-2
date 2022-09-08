@@ -86,9 +86,9 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         Asset(std::filesystem::path contentPath = {}, AssetID id = GenerateSnowflake());
-        Asset(Asset& other);
+        Asset(const Asset& other);
         Asset(Asset&& other);
-        Asset& operator=(Asset& other);
+        Asset& operator=(const Asset& other);
         Asset& operator=(Asset&& other);
         ~Asset();
 
