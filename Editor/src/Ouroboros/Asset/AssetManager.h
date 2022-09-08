@@ -28,11 +28,15 @@ namespace oo
     class AssetManager
     {
     public:
+        /* --------------------------------------------------------------------------- */
+        /* Constants                                                                   */
+        /* --------------------------------------------------------------------------- */
+
         static constexpr size_t WATCH_INTERVAL = 1000;
 
         /* --------------------------------------------------------------------------- */
         /* Constructors and Destructors                                                */
-        /* -------------------------------------------------------------------------- -*/
+        /* --------------------------------------------------------------------------- */
 
         AssetManager(std::filesystem::path root);
         AssetManager(const AssetManager&) = delete;
@@ -57,71 +61,79 @@ namespace oo
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
-        /****************************************************************************//*!
-        @brief  Retrieves an asset using its ID.
-        @param  snowflake - The ID of the asset.
-        @return The asset.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Retrieves an asset using its ID.
+        /// </summary>
+        /// <param name="snowflake">The ID of the asset.</param>
+        /// <returns>The asset.</returns>
         Asset Get(const AssetID& snowflake);
 
-        /****************************************************************************//*!
-        @brief  Asynchronously retrieves an asset using its ID.
-        @param  snowflake - The ID of the asset.
-        @return The future asset.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Asynchronously retrieves an asset using its ID.
+        /// </summary>
+        /// <param name="snowflake">The ID of the asset.</param>
+        /// <returns>The future asset.</returns>
         std::future<Asset> GetAsync(const AssetID& snowflake);
 
-        /****************************************************************************//*!
-        @brief  Loads or retrieves an asset at a given file path.
-        @param  fp - The file path relative to the AssetManager's root path.
-        @return The asset.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Loads or retrieves an asset at a given file path.
+        /// </summary>
+        /// <param name="fp">The file path relative to the AssetManager's root path.</param>
+        /// <returns>The asset.</returns>
         Asset LoadPath(const std::filesystem::path& fp);
 
-        /****************************************************************************//*!
-        @brief  Asynchronously loads or retrieves an asset at a given file path.
-        @param  fp - The file path relative to the AssetManager's root path.
-        @return The future asset.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Asynchronously loads or retrieves an asset at a given file path.
+        /// </summary>
+        /// <param name="fp">The file path relative to the AssetManager's root path.</param>
+        /// <returns>The future asset.</returns>
         std::future<Asset> LoadPathAsync(const std::filesystem::path& fp);
 
-        /****************************************************************************//*!
-        @brief  Loads or retrieves an asset by a given file name.
-        @param  fn - The file name.
-        @return The assets matching the criteria.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Loads or retrieves an asset by a given file name.
+        /// </summary>
+        /// <param name="fn">The file name.</param>
+        /// <returns>The assets matching the criteria.</returns>
         std::vector<Asset> LoadName(const std::filesystem::path& fn);
-
-        /****************************************************************************//*!
-        @brief  Asynchronously loads or retrieves an asset by a given file name.
-        @param  fn - The file name.
-        @return The assets matching the criteria.
-        *//*****************************************************************************/
+        
+        /// <summary>
+        /// Asynchronously loads or retrieves an asset by a given file name.
+        /// </summary>
+        /// <param name="fn">The file name.</param>
+        /// <returns>The assets matching the criteria.</returns>
         std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn);
 
     private:
+        /* --------------------------------------------------------------------------- */
+        /* Members                                                                     */
+        /* --------------------------------------------------------------------------- */
+
         bool isRunning = true;
         std::filesystem::path root;
         std::unordered_map<AssetID, Asset> assets;
         std::thread fileWatchThread;
 
-        /****************************************************************************//*!
-        @brief  Scans the filesystem for changes in files.
-        *//*****************************************************************************/
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Scans the filesystem for changes in files.
+        /// </summary>
         void fileWatch();
 
-        /****************************************************************************//*!
-        @brief  Loads or retrieves an asset at a given absolute file path.
-        @param  fp - The file path.
-        @return The asset.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Loads or retrieves an asset at a given absolute file path.
+        /// </summary>
+        /// <param name="fp">The file path.</param>
+        /// <returns>The asset.</returns>
         Asset getOrLoadAbsolute(const std::filesystem::path& fp);
 
-        /****************************************************************************//*!
-        @brief  Creates an asset object from a given file.
-        @param  fp - The file path.
-        @return The asset.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Creates an asset object from a given file.
+        /// </summary>
+        /// <param name="fp">The file path.</param>
+        /// <returns>The asset.</returns>
         Asset createAsset(std::filesystem::path fp);
     };
 
