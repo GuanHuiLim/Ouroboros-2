@@ -6,9 +6,7 @@
 #include <SceneManagement/include/SceneManager.h>
 
 #include <Ouroboros/ECS/GameObject.h>
-#include <Ouroboros/Prefab/PrefabComponent.h>
 
-#include <Ouroboros/ECS/GameObjectComponent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 
 #include <rapidjson/writer.h>
@@ -18,6 +16,8 @@
 
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Events/LoadSceneEvent.h"
+#include "Ouroboros/Scripting/ScriptComponent.h"
+#include "Ouroboros/Scripting/ScriptManager.h"
 Serializer::Serializer()
 {
 }
@@ -36,38 +36,15 @@ void Serializer::InitEvents()
 
 void Serializer::Init()
 {
-	save_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rapidjson::Document& doc,rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
-		std::string temp = p.get_name().data();
-		rapidjson::Value name;
-		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		obj.AddMember(name, rapidjson::Value(variant.get_value<bool>()), doc.GetAllocator());
-		});
-	save_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
-		std::string temp = p.get_name().data();
-		rapidjson::Value name;
-		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value v;
-		std::string val = variant.to_string();
-		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
-		obj.AddMember(name , v, doc.GetAllocator());
-		});
-	save_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
-		std::string temp = p.get_name().data();
-		rapidjson::Value name;
-		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value v;
-		std::string val = variant.get_value<std::filesystem::path>().string();
-		v.SetString(val.c_str(), static_cast<rapidjson::SizeType>(val.size()), doc.GetAllocator());
-		obj.AddMember(name, v, doc.GetAllocator());
-		});
-
 	AddLoadComponent<oo::GameObjectComponent>();
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
-
-	load_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetBool();});
-	load_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = static_cast<std::string>(val.GetString());});
-	load_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetString(); });
+	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
+		[](oo::GameObject& go, rapidjson::Value&& v)
+		{
+			go.AddComponent<oo::ScriptComponent>();
+			LoadScript(go, std::move(v));
+		});
 }
 
 void Serializer::SaveScene(oo::Scene& scene)
@@ -242,6 +219,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	//will have more components
 	SaveComponent<oo::GameObjectComponent>(go, val,doc);
 	SaveComponent<oo::TransformComponent>(go, val,doc);
+	SaveScript(go, val, doc);
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
@@ -249,6 +227,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
 	SaveComponent<oo::GameObjectComponent>(go, val, doc);
 	SaveComponent<oo::TransformComponent>(go, val, doc);
+	SaveScript(go, val, doc);
 	return;
 }
 
@@ -260,8 +239,8 @@ void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value
 	auto iter_type = UI_RTTRType::types.find(sqv.get_value_type().get_id());
 	if (iter_type == UI_RTTRType::types.end())
 		return;
-	auto sf = save_commands.find(iter_type->second);
-	if (sf == save_commands.end())
+	auto sf = m_SaveProperties.m_save_commands.find(iter_type->second);
+	if (sf == m_SaveProperties.m_save_commands.end())
 		return;
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
@@ -297,8 +276,8 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 			}
 			continue;//not supported
 		}
-		auto sf = save_commands.find(iter->second);
-		if (sf == save_commands.end())
+		auto sf = m_SaveProperties.m_save_commands.find(iter->second);
+		if (sf == m_SaveProperties.m_save_commands.end())
 			continue;//don't have this save function
 		sf->second(doc,sub_component, prop.get_value(var), prop);
 	}
@@ -364,8 +343,8 @@ void Serializer::LoadSequentialContainer(rttr::variant& variant, rapidjson::Valu
 	auto arr_UITypes = UI_RTTRType::types.find(sqv.get_value_type().get_id());
 	if (arr_UITypes == UI_RTTRType::types.end())
 		return;
-	auto command = load_commands.find(arr_UITypes->second);
-	if (command == load_commands.end())
+	auto command = m_LoadProperties.m_load_commands.find(arr_UITypes->second);
+	if (command == m_LoadProperties.m_load_commands.end())
 		return;
 
 	size_t size_array = static_cast<size_t>(val.MemberCount());
@@ -404,12 +383,58 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 			}
 			continue;//not supported
 		}
-		auto command = load_commands.find(types_UI->second);
-		if (command == load_commands.end())
+		auto command = m_LoadProperties.m_load_commands.find(types_UI->second);
+		if (command == m_LoadProperties.m_load_commands.end())
 			continue;//don't have this save function
 		rttr::variant v;
 		command->second(v, std::move(iter->value));
 		prop.set_value(variant, v);
+	}
+}
+
+void Serializer::SaveScript(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc)
+{
+	auto & scriptcomponent = go.GetComponent<oo::ScriptComponent>();
+	rapidjson::Value component(rapidjson::kObjectType);
+	for (auto& scriptclass : scriptcomponent.GetScriptInfoAll())
+	{
+		rapidjson::Value value_class(rapidjson::kObjectType);
+		for (auto& sfi : scriptclass.second.fieldMap)
+		{
+			auto iter = m_saveScriptProperties.m_ScriptSave.find(sfi.second.value.GetValueType());
+			if (iter == m_saveScriptProperties.m_ScriptSave.end())
+				continue;
+			iter->second(doc, value_class, sfi.second);
+		}
+		component.AddMember(rapidjson::Value(scriptclass.first.c_str(),static_cast<rapidjson::SizeType>(scriptclass.first.size()),doc.GetAllocator()), value_class, doc.GetAllocator());
+	}
+	rapidjson::Value name(scriptcomponent.get_type().get_name().data(), doc.GetAllocator());
+	val.AddMember(name, component, doc.GetAllocator());
+}
+
+void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptComponentValue)
+{
+	auto& scriptcomponent = go.GetComponent<oo::ScriptComponent>();
+	auto val = scriptComponentValue.GetObj();
+	
+	for (auto iter = val.MemberBegin(); iter != val.MemberEnd(); ++iter)
+	{
+		std::string script_name = iter->name.GetString();
+		size_t idx = script_name.find_last_of('.');
+		oo::ScriptClassInfo sci();
+		auto& scriptInfo = (idx == std::string::npos)?
+			scriptcomponent.AddScriptInfo(oo::ScriptClassInfo("", script_name))
+			:scriptcomponent.AddScriptInfo(oo::ScriptClassInfo(script_name.substr(0, idx), script_name.substr(idx)));
+		
+		for (auto classInfoIter = iter->value.MemberBegin(); classInfoIter != iter->value.MemberEnd(); ++classInfoIter)
+		{
+			auto scriptfieldIter = scriptInfo.fieldMap.find(classInfoIter->name.GetString());
+			auto type = scriptfieldIter->second.value.GetValueType();
+			auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
+			if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
+				continue;
+			sfiLoadIter->second(std::move(classInfoIter->value), scriptfieldIter->second);
+		}
 	}
 }
 

@@ -1,8 +1,13 @@
 #include "pch.h"
 #include "ScriptComponent.h"
-
+#include <rttr/registration>
 namespace oo
 {
+	RTTR_REGISTRATION
+	{
+		using namespace rttr;
+		registration::class_<ScriptComponent>("ScriptComponent");
+	}
     //ScriptValue const Scripting::GetScriptValue(const char* name_space, const char* name, const char* fieldName)
     //{
     //    ScriptClassInfo classInfo{ name_space, name };
