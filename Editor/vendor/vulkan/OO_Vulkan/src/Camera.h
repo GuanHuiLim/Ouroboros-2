@@ -24,9 +24,8 @@ public:
 	CameraMovementType m_CameraMovementType{ CameraMovementType::lookat };
 	CameraProjectionType m_CameraProjectionType{ CameraProjectionType::perspective };
 
-	glm::vec3 rotation = glm::vec3{};
-	glm::vec3 position = glm::vec3{};
-	glm::vec4 viewPos = glm::vec4{};
+	glm::vec3 m_rotation{};
+	glm::vec3 m_position{};
 
 	glm::vec3 m_TargetPosition{ 0.0f, 0.0f, 0.0f };
 	float m_TargetDistance{ 10.0f };
@@ -55,9 +54,6 @@ public:
 	float GetNearClip() const { return m_znear; };
 	float GetFarClip() const { return m_zfar; };
 
-	void SetPerspective(float fov, float aspect, float znear, float zfar);
-	void SetOrtho(float size, float aspect, float znear, float zfar);
-
 	void LookAt(const glm::vec3& pos, const glm::vec3& target, const glm::vec3& upVec = {0.0f,1.0f,0.0f});
 
 	void LookAtDirection(const glm::vec3& pos, const glm::vec3& direction, const glm::vec3& upVec = {0.0f,1.0f,0.0f});
@@ -78,8 +74,6 @@ public:
 	void SetMovementSpeed(float movementSpeed) { this->movementSpeed = movementSpeed; };
 
 	void ChangeTargetDistance(float delta);
-
-	void Update(float deltaTime);
 
 	glm::vec3 GetFront() const { return m_forward; }
 	glm::vec3 GetRight() const { return m_right; };

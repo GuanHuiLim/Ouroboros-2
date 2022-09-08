@@ -7,6 +7,9 @@
 
 GraphicsBatch GraphicsBatch::Init(GraphicsWorld* gw, VulkanRenderer* renderer, size_t maxObjects)
 {
+	assert(gw != nullptr);
+	assert(renderer != nullptr);
+
 	GraphicsBatch gb;
 	gb.m_world = gw;
 	gb.m_renderer = renderer;

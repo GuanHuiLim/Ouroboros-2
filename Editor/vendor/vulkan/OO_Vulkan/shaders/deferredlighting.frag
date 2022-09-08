@@ -17,7 +17,6 @@ layout (binding = 6) uniform UBO
 } ubo;
 
 const int lightCount = 6;
-const float ambient = 0.3f;
 
 vec3 CalculatePointLight_NonPBR(int lightIndex, in vec3 fragPos, in vec3 normal, in vec3 albedo, in float specular)
 {
@@ -57,14 +56,26 @@ vec3 CalculatePointLight_NonPBR(int lightIndex, in vec3 fragPos, in vec3 normal,
 	return result;
 }
 
+uint DecodeFlags(in float value)
+{
+    return uint(value * 255.0f);
+}
+
 void main()
 {
 	// Get G-Buffer values
 	vec3 fragPos = texture(samplerposition, inUV).rgb;
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 	vec4 albedo = texture(samplerAlbedo, inUV);
-	
+	vec4 material = texture(samplerMaterial, inUV);
+
 	// Render-target composition
+
+	float ambient = 0.5f;
+	if (DecodeFlags(material.z) == 0x1)
+	{
+		ambient = 1.0f;
+	}
 
 	// Ambient part
 	vec3 result = albedo.rgb * ambient;
