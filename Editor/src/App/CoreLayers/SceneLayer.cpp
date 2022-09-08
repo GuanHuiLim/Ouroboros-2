@@ -4,6 +4,8 @@
 #include "Ouroboros/Core/Input.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
+#include "App/Editor/Events/ToolbarButtonEvent.h"
+
 namespace oo
 {
     SceneLayer::SceneLayer(SceneManager& sceneManager)
@@ -15,6 +17,11 @@ namespace oo
         , Layer("Scene Management Layer")
     {
         EventManager::Subscribe<SceneLayer, GetCurrentSceneEvent>(this, &SceneLayer::OnGetCurrentSceneEvent);
+
+#ifdef OO_EDITOR
+        EventManager::Subscribe<SceneLayer, ToolbarButtonEvent>(this, &SceneLayer::OnToolbarButtonEvent);
+#endif
+
     }
 
     void SceneLayer::OnAttach()
@@ -29,20 +36,6 @@ namespace oo
 
     void SceneLayer::OnUpdate()
     {
-#ifdef OO_EDITOR
-        if (oo::input::IsKeyPressed(KEY_Q))
-        {
-            m_editorController.Simulate();
-        }
-        if (oo::input::IsKeyPressed(KEY_W))
-        {
-            m_editorController.Pause();
-        }
-        if (oo::input::IsKeyPressed(KEY_E))
-        {
-            m_editorController.Stop();
-        }
-#endif
         m_sceneManager.Update();
     }
 
@@ -67,6 +60,22 @@ namespace oo
         }
 #endif
         m_runtimeController;
+    }
+
+    void SceneLayer::OnToolbarButtonEvent(ToolbarButtonEvent* e)
+    {
+        switch (e->m_buttonType)
+        {
+        case ToolbarButtonEvent::ToolbarButton::PLAY:
+            m_editorController.Simulate();
+            break;
+        case ToolbarButtonEvent::ToolbarButton::PAUSE:
+            m_editorController.Pause();
+            break;
+        case ToolbarButtonEvent::ToolbarButton::STOP:
+            m_editorController.Stop();
+            break;
+        }
     }
 }
 
