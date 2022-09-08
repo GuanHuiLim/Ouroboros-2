@@ -206,7 +206,7 @@ namespace oo
 
     void RuntimeScene::ProcessFrame(int count)
     {
-        ASSERT_MSG(count > 0, "frames shouldnt be lesser at than 1!!");
+        ASSERT_MSG(count < 0, "frames shouldnt be lesser at than 1!!");
 
         /*ENGINE_ASSERT_MSG(m_isPause == true , "you should only be able to get here once paused!!!");
         m_isPause = false;

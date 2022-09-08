@@ -23,6 +23,8 @@ Technology is prohibited.
 
 #include "Ouroboros/EventSystem/Event.h"
 
+class ToolbarButtonEvent;
+
 namespace oo
 {
     struct GetCurrentSceneEvent : public Event
@@ -52,6 +54,8 @@ namespace oo
 
     private:
         void OnGetCurrentSceneEvent(GetCurrentSceneEvent* e);
+        
+        void OnToolbarButtonEvent(ToolbarButtonEvent* e);
     };
 
 }
