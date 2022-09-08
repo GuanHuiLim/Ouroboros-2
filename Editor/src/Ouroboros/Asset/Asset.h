@@ -34,8 +34,16 @@ namespace oo
 
     struct AssetInfo
     {
+        /* --------------------------------------------------------------------------- */
+        /* Type Definitions                                                            */
+        /* --------------------------------------------------------------------------- */
+
         using Callback = std::function<void(AssetInfo&)>;
         using DataTypeOffsetsType = std::unordered_map<std::type_index, size_t>;
+
+        /* --------------------------------------------------------------------------- */
+        /* Members                                                                     */
+        /* --------------------------------------------------------------------------- */
 
         std::filesystem::path contentPath;
         std::filesystem::path metaPath;
@@ -50,16 +58,32 @@ namespace oo
     class Asset
     {
     public:
+        /* --------------------------------------------------------------------------- */
+        /* Type Definitions                                                            */
+        /* --------------------------------------------------------------------------- */
+
         using Extension = const char*;
         template <size_t N>
         using ExtensionList = std::array<Extension, N>;
+
+        /* --------------------------------------------------------------------------- */
+        /* Constants                                                                   */
+        /* --------------------------------------------------------------------------- */
 
         static constexpr Extension EXT_META = ".meta";
         static constexpr ExtensionList<3> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
 
+        /* --------------------------------------------------------------------------- */
+        /* Static Functions                                                            */
+        /* --------------------------------------------------------------------------- */
+
         static AssetID GenerateSnowflake();
+
+        /* --------------------------------------------------------------------------- */
+        /* Constructors and Destructors                                                */
+        /* --------------------------------------------------------------------------- */
 
         Asset(std::filesystem::path contentPath = {}, AssetID id = GenerateSnowflake());
         Asset(Asset& other);
@@ -67,6 +91,10 @@ namespace oo
         Asset& operator=(Asset& other);
         Asset& operator=(Asset&& other);
         ~Asset();
+
+        /* --------------------------------------------------------------------------- */
+        /* Getters                                                                     */
+        /* --------------------------------------------------------------------------- */
 
         [[nodiscard]] inline const AssetID& GetID() const { return id; };
         [[nodiscard]] inline const auto& GetFilePath() const { return info->contentPath; };
@@ -80,6 +108,10 @@ namespace oo
         [[nodiscard]] inline T GetData() const;
 
     private:
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
         /****************************************************************************//*!
         @brief  Shorthand for calling the create callback of the asset's info.
         *//*****************************************************************************/
@@ -90,8 +122,16 @@ namespace oo
         *//*****************************************************************************/
         void destroyData();
 
+        /* --------------------------------------------------------------------------- */
+        /* Members                                                                     */
+        /* --------------------------------------------------------------------------- */
+
         AssetID id;
         AssetInfo* info;
+
+        /* --------------------------------------------------------------------------- */
+        /* Friends                                                                     */
+        /* --------------------------------------------------------------------------- */
 
         friend AssetManager;
     };
