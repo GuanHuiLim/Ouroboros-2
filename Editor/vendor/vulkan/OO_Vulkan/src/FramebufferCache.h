@@ -14,7 +14,7 @@ public:
 	struct FramebufferInfo {
 		//good idea to turn this into a inlined array
 		std::vector<VkImageView> attachments;
-		VkFramebufferCreateInfo createInfo;
+		VkFramebufferCreateInfo createInfo{};
 
 		bool operator==(const FramebufferInfo& other) const;
 

@@ -146,8 +146,9 @@ project "Editor"
             {"{COPY} \"%{AppDir}/PlayMode.settings\" \"" .. binApp .. "\""},
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
-			-- copy Editor Icons
-			{"{COPY} \"%{AppDir}/icons\" " .. binApp .. "\"" },
+			-- copy Editor Icons Folder in its entirety.
+			{ "mkdir \"" .. binApp .. "/Icons\"" },
+			{"{COPY} \"%{AppDir}/icons\" \"" .. binApp .. "/Icons\"" },
             -- copy launcher's Data file
             {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
             -- tracy server copy 

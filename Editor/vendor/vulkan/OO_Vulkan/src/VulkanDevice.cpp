@@ -243,7 +243,7 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
     return true;
 }
 
-VkResult VulkanDevice::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, vkutils::Buffer* buffer, VkDeviceSize size, void* data)
+VkResult VulkanDevice::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, vkutils::Buffer* buffer, VkDeviceSize size,const void* data)
 {
     buffer->device = logicalDevice;
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <Scripting/Scripting.h>
 #include <Scripting/ExportAPI.h>
+#include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Scripting/ScriptSystem.h"
 
 #include "Ouroboros/Scene/Scene.h"
@@ -10,7 +11,7 @@ namespace oo
 {
     SCRIPT_API uint64_t CreateEntity(uint32_t sceneID)
     {
-        std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         std::shared_ptr<GameObject> instance = scene->CreateGameObjectDeferred();
 
         UUID uuid = instance->GetComponent<GameObjectComponent>().Id;
@@ -55,13 +56,13 @@ namespace oo
 
     SCRIPT_API void DestroyEntity(Scene::ID_type sceneID, UUID uuid)
     {
-        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         obj->Destroy();
     }
 
     SCRIPT_API bool CheckEntityExists(Scene::ID_type sceneID, UUID uuid)
     {
-        std::weak_ptr<IScene> scene_weak = ScriptSystem::s_SceneManager->GetScene(sceneID);
+        std::weak_ptr<IScene> scene_weak = ScriptManager::s_SceneManager->GetScene(sceneID);
         if (scene_weak.expired())
         {
             return false;
@@ -73,7 +74,7 @@ namespace oo
 
     SCRIPT_API ScriptDatabase::IntPtr GameObject_GetName(Scene::ID_type sceneID, UUID uuid)
     {
-        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         std::string const& name = obj->GetComponent<GameObjectComponent>().Name;
         MonoString* string = ScriptEngine::CreateString(name.c_str());
         return mono_gchandle_new((MonoObject*)string, false);
@@ -81,26 +82,26 @@ namespace oo
 
     SCRIPT_API void GameObject_SetName(Scene::ID_type sceneID, UUID uuid, const char* newName)
     {
-        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         obj->GetComponent<GameObjectComponent>().Name = newName;
     }
 
     SCRIPT_API bool GameObject_GetActive(Scene::ID_type sceneID, UUID uuid)
     {
-        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         return obj->IsActive();
     }
 
     SCRIPT_API bool GameObject_GetActiveInHierarchy(Scene::ID_type sceneID, UUID uuid)
     {
-        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         return obj->ActiveInHierarchy();
     }
 
 
     SCRIPT_API void GameObject_SetActive(Scene::ID_type sceneID, UUID uuid, bool value)
     {
-        std::shared_ptr<GameObject> obj = ScriptSystem::GetObjectFromScene(sceneID, uuid);
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         obj->SetActive(value);
     }
 

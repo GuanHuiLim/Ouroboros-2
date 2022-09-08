@@ -209,7 +209,7 @@ namespace oo
             // Load texture
             asset.info->onAssetCreate = [fp](AssetInfo& self)
             {
-                auto vc = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
+            	auto vc = Application::Get().GetWindow().GetVulkanContext();
                 auto vr = vc->getRenderer();
                 auto data = vr->CreateTexture(fp.string());
                 self.data = new decltype(data);

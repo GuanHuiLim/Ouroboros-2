@@ -17,22 +17,14 @@ struct DeferredCompositionRenderpass : public GfxRenderpass
 
 	void CreatePSO() override;
 
-	VkRenderPass renderpass_DeferredLightingComposition;
-	VkPipelineLayout layout_DeferredLightingComposition;
-	VkPipeline pso_DeferredLightingComposition;
+	VkRenderPass renderpass_DeferredLightingComposition{};
+	VkPipelineLayout layout_DeferredLightingComposition{};
+	VkPipeline pso_DeferredLightingComposition{};
 
-	uint64_t uboDynamicAlignment;
+	uint64_t uboDynamicAlignment{};
 
 	void CreatePipeline();
 private:
 	void CreateDescriptors();
 };
 
-inline static int x;
-//
-//inline static int wahteferhtefuckyouwant = []() {
-//	auto ptr = new DeferredCompositionRenderpass;
-//	RenderPassDatabase::Get()->RegisterRenderPass(ptr);
-//	std::cout<< "KILL ME PLS" << std::endl;
-//	return 1;
-//}();

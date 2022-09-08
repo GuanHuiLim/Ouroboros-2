@@ -31,7 +31,9 @@ Technology is prohibited.
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
+#ifdef OO_EDITOR
 	ImGuiManager::InitAssetsAll();
+#endif
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -39,16 +41,14 @@ void EditorLayer::OnAttach()
 
 void EditorLayer::OnUpdate()
 {
-    if (oo::input::IsKeyPressed(KEY_F5))
-    {
-        m_showDebugInfo = !m_showDebugInfo;
-    }
-
+#ifndef OO_END_PRODUCT
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
+#endif
+#ifdef OO_EDITOR
     else
 	    m_editor.Update();
-
+#endif
 
 
     /*if (myImageAsset.HasData())
@@ -69,8 +69,10 @@ void EditorLayer::OnUpdate()
 			if (ImGui::MenuItem("Open Launcher")) 
 			{
 				m_editormode = false;
+#ifdef OO_EDITOR
 				CloseProjectEvent e;
 				oo::EventManager::Broadcast(&e);
+#endif
 			}
 			ImGui::EndMenu();
 		}

@@ -1,5 +1,10 @@
 #include "VulkanTexture.h"
+
+
+#pragma warning( push )
+#pragma warning( disable : 26451 ) // arithmetic overflow
 #include "stb_image.h"
+#pragma warning( pop )
 
 #include <cassert>
 

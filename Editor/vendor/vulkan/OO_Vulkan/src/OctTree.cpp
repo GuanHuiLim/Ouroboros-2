@@ -40,7 +40,7 @@ void OctTree::Rebuild()
 	
 	m_root.reset(nullptr);
 	m_trianglesSaved = 0;
-	m_trianglesRemaining = m_indices.size() / 3;
+	m_trianglesRemaining = uint32_t(m_indices.size() / 3);
 
 	m_root = std::make_unique<OctNode>();
 
