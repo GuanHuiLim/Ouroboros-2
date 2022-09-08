@@ -16,6 +16,8 @@
 
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Events/LoadSceneEvent.h"
+#include "Ouroboros/Scripting/ScriptComponent.h"
+#include "Ouroboros/Scripting/ScriptManager.h"
 Serializer::Serializer()
 {
 }
@@ -37,6 +39,12 @@ void Serializer::Init()
 	AddLoadComponent<oo::GameObjectComponent>();
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
+	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
+		[](oo::GameObject& go, rapidjson::Value&& v)
+		{
+			go.AddComponent<oo::ScriptComponent>();
+			LoadScript(go, std::move(v));
+		});
 }
 
 void Serializer::SaveScene(oo::Scene& scene)
@@ -211,6 +219,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	//will have more components
 	SaveComponent<oo::GameObjectComponent>(go, val,doc);
 	SaveComponent<oo::TransformComponent>(go, val,doc);
+	SaveScript(go, val, doc);
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
@@ -218,6 +227,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
 	SaveComponent<oo::GameObjectComponent>(go, val, doc);
 	SaveComponent<oo::TransformComponent>(go, val, doc);
+	SaveScript(go, val, doc);
 	return;
 }
 
@@ -379,6 +389,52 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 		rttr::variant v;
 		command->second(v, std::move(iter->value));
 		prop.set_value(variant, v);
+	}
+}
+
+void Serializer::SaveScript(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc)
+{
+	auto & scriptcomponent = go.GetComponent<oo::ScriptComponent>();
+	rapidjson::Value component(rapidjson::kObjectType);
+	for (auto& scriptclass : scriptcomponent.GetScriptInfoAll())
+	{
+		rapidjson::Value value_class(rapidjson::kObjectType);
+		for (auto& sfi : scriptclass.second.fieldMap)
+		{
+			auto iter = m_saveScriptProperties.m_ScriptSave.find(sfi.second.value.GetValueType());
+			if (iter == m_saveScriptProperties.m_ScriptSave.end())
+				continue;
+			iter->second(doc, value_class, sfi.second);
+		}
+		component.AddMember(rapidjson::Value(scriptclass.first.c_str(),static_cast<rapidjson::SizeType>(scriptclass.first.size()),doc.GetAllocator()), value_class, doc.GetAllocator());
+	}
+	rapidjson::Value name(scriptcomponent.get_type().get_name().data(), doc.GetAllocator());
+	val.AddMember(name, component, doc.GetAllocator());
+}
+
+void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptComponentValue)
+{
+	auto& scriptcomponent = go.GetComponent<oo::ScriptComponent>();
+	auto val = scriptComponentValue.GetObj();
+	
+	for (auto iter = val.MemberBegin(); iter != val.MemberEnd(); ++iter)
+	{
+		std::string script_name = iter->name.GetString();
+		size_t idx = script_name.find_last_of('.');
+		oo::ScriptClassInfo sci();
+		auto& scriptInfo = (idx == std::string::npos)?
+			scriptcomponent.AddScriptInfo(oo::ScriptClassInfo("", script_name))
+			:scriptcomponent.AddScriptInfo(oo::ScriptClassInfo(script_name.substr(0, idx), script_name.substr(idx)));
+		
+		for (auto classInfoIter = iter->value.MemberBegin(); classInfoIter != iter->value.MemberEnd(); ++classInfoIter)
+		{
+			auto scriptfieldIter = scriptInfo.fieldMap.find(classInfoIter->name.GetString());
+			auto type = scriptfieldIter->second.value.GetValueType();
+			auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
+			if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
+				continue;
+			sfiLoadIter->second(std::move(classInfoIter->value), scriptfieldIter->second);
+		}
 	}
 }
 

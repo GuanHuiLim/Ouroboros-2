@@ -26,6 +26,7 @@
 #include "Ouroboros/Scene/Scene.h"
 
 #include "App/Editor/Properties/SerializerProperties.h"
+#include "App/Editor/Properties/SerializerScriptingProperties.h"
 class Serializer
 {
 public:
@@ -72,6 +73,10 @@ private:
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
 	static void LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val);
 	static void LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val);
+
+	//scripts
+	static void SaveScript(oo::GameObject& go,rapidjson::Value& val,rapidjson::Document& doc);
+	static void LoadScript(oo::GameObject& go,rapidjson::Value&& val);
 protected://rpj wrappers
 	static void ResetDocument() noexcept;
 protected://serialzation helpers
@@ -81,10 +86,11 @@ private:
 	//the function requires the user to insert the variant into the value manually
 	//saving
 	inline static SerializerSaveProperties m_SaveProperties;
+	inline static SerializerScriptingSaveProperties m_saveScriptProperties;
 	//loading
 	inline static std::unordered_map < rttr::type::type_id, std::function<void(oo::GameObject&, rapidjson::Value&&)>> load_components;
 	inline static SerializerLoadProperties m_LoadProperties;
-
+	inline static SerializerScriptingLoadProperties m_loadScriptProperties;
 	inline static constexpr int rapidjson_precision = 4;
 };
 
