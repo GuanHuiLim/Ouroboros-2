@@ -180,7 +180,7 @@ namespace oo
     void RuntimeScene::Render()
     {
         Scene::Render();
-
+        GetWorld().Get_System<MeshRendererSystem>()->Run(&GetWorld(), GetGraphicsWorld());
         //constexpr const char* const text_rendering = "Text Rendering";
         {
             /*TRACY_PROFILE_SCOPE(text_rendering);
