@@ -44,6 +44,8 @@ namespace oo
         /*-----------------------------------------------------------------------------*/
         ScriptClassInfo(std::string const& _namespace, std::string const& _name) : name_space(_namespace), name(_name) {}
 
+        ScriptClassInfo(std::string const& fullName);
+
         /*********************************************************************************//*!
         \brief      gets a list of the info of all public fields of the C# class
          
