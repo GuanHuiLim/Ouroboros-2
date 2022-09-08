@@ -23,6 +23,7 @@
 #include <Ouroboros/Prefab/PrefabComponent.h>
 #include <Ouroboros/Scripting/ScriptComponent.h>
 #include <Ouroboros/Scripting/ScriptSystem.h>
+#include <Ouroboros/Scripting/ScriptManager.h>
 //#include <Ouroboros/Physics/RigidbodyComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
@@ -149,7 +150,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 {	
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.7f, 0.7f, 1.0f));
-	for (auto& script : oo::ScriptSystem::GetScriptList())
+	for (auto& script : oo::ScriptManager::GetScriptList())
 	{
 		auto name = script.ToString();
 		if (m_filterComponents.empty() == false)

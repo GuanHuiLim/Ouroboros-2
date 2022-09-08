@@ -33,11 +33,14 @@ class EditorLayer final : public oo::Layer
 private:
     //order matters dont change it
     bool m_demo = true;
-    bool m_showDebugInfo = false;
     bool m_editormode = false;
 	oo::PrefabSceneController m_prefab_controller;
     ProjectTracker m_tracker;
+
+#if OO_EDITOR
 	Editor m_editor;
+#endif
+
 public:
     EditorLayer(SceneManager& m_sceneManager)
         : oo::Layer{ "EditorLayer" },

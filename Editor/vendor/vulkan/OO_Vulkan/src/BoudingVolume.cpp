@@ -323,7 +323,7 @@ namespace  oGFX::BV
 		int i, j, n, p, q;
 
 		float prevoff{ FLT_MAX }, c, s;
-		Mat3 J, b, t;
+		Mat3 J;
 		// Initialize v to identity matrix
 		v = Mat3{ 1.0f };
 
@@ -538,17 +538,17 @@ namespace  oGFX::BV
 		}
 		// triangulate and add to list
 		auto pSz = static_cast<uint32_t>(positiveVerts.size());
-		for (uint32_t j = 2; j < frontList.size(); ++j)
+		for (size_t j = 2; j < frontList.size(); ++j)
 		{
 			++count;
-			uint32_t i = j - 2;
-			positiveVerts.push_back(frontList[i+0]);
-			positiveVerts.push_back(frontList[i+1]);
-			positiveVerts.push_back(frontList[i+2]);
+			uint32_t i = uint32_t(j - 2);
+			positiveVerts.push_back(frontList[i+0ull]);
+			positiveVerts.push_back(frontList[i+1ull]);
+			positiveVerts.push_back(frontList[i+2ull]);
 
-			positiveIndices.push_back(i*3 +0 + pSz);
-			positiveIndices.push_back(i*3 +1 + pSz);
-			positiveIndices.push_back(i*3 +2 + pSz);
+			positiveIndices.push_back(i*3ull +0ull + pSz);
+			positiveIndices.push_back(i*3ull +1ull + pSz);
+			positiveIndices.push_back(i*3ull +2ull + pSz);
 		}
 
 		auto nSz = static_cast<uint32_t>(negativeVerts.size());
@@ -556,9 +556,9 @@ namespace  oGFX::BV
 		{
 			++count;
 			uint32_t i = j - 2;
-			negativeVerts.push_back(backList[i+0]);
-			negativeVerts.push_back(backList[i+1]);
-			negativeVerts.push_back(backList[i+2]);
+			negativeVerts.push_back(backList[i+0ull]);
+			negativeVerts.push_back(backList[i+1ull]);
+			negativeVerts.push_back(backList[i+2ull]);
 
 			negativeIndices.push_back(i*3 +0 + nSz);
 			negativeIndices.push_back(i*3 +1 + nSz);

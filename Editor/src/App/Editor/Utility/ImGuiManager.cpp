@@ -7,7 +7,7 @@
 
 void ImGuiManager::InitAssetsAll()
 {
-	auto vc = reinterpret_cast<oo::VulkanContext*>(oo::Application::Get().GetWindow().GetRenderingContext());
+	auto vc = oo::Application::Get().GetWindow().GetVulkanContext();
 	auto vr = vc->getRenderer();
 	LoadHelper("Log Icons/ErrorIcon.png",vr);
 	LoadHelper("Log Icons/LogsIcon.png",vr);

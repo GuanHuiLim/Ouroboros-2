@@ -24,11 +24,11 @@ VkDescriptorSetLayout DescriptorLayoutCache::CreateDescriptorLayout(VkDescriptor
 	int lastBinding = -1;
 
 	//copy from the direct info struct into our own one
-	for (int i = 0; i < info->bindingCount; i++) {
+	for (uint32_t i = 0; i < info->bindingCount; i++) {
 		layoutinfo.bindings.push_back(info->pBindings[i]);
 
 		//check that the bindings are in strict increasing order
-		if (info->pBindings[i].binding > lastBinding){
+		if (int32_t(info->pBindings[i].binding) > lastBinding){
 			lastBinding = info->pBindings[i].binding;
 		}
 		else{

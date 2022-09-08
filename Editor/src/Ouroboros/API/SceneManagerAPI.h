@@ -1,7 +1,7 @@
 #pragma once
 #include <Scripting/ExportAPI.h>
 
-#include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Scripting/ScriptManager.h"
 
 #include <SceneManagement/include/SceneManager.h>
 #include "Ouroboros/Scene/Scene.h"
@@ -24,7 +24,7 @@ namespace oo
 
     SCRIPT_API Scene::ID_type SceneManager_GetActiveScene()
     {
-        return ScriptSystem::s_SceneManager->GetActiveScene<Scene>()->GetID();
+        return ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetID();
     }
 
     /*-----------------------------------------------------------------------------*/
@@ -32,7 +32,7 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     SCRIPT_API ScriptDatabase::IntPtr Scene_GetName(Scene::ID_type sceneID)
     {
-        std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         std::string const& name = scene->GetSceneName();
         MonoString* string = ScriptEngine::CreateString(name.c_str());
         return mono_gchandle_new((MonoObject*)string, false);
@@ -40,7 +40,7 @@ namespace oo
 
     SCRIPT_API ScriptDatabase::IntPtr Scene_GetPath(Scene::ID_type sceneID)
     {
-        std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         std::string const& name = scene->GetFilePath();
         MonoString* string = ScriptEngine::CreateString(name.c_str());
         return mono_gchandle_new((MonoObject*)string, false);
@@ -48,12 +48,12 @@ namespace oo
 
     SCRIPT_API bool Scene_IsLoaded(Scene::ID_type sceneID)
     {
-        std::shared_ptr<Scene> scene = ScriptSystem::GetScene(sceneID);
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         return scene->IsLoaded();
     }
 
     SCRIPT_API bool Scene_IsValid(Scene::ID_type sceneID)
     {
-        return ScriptSystem::s_SceneManager->HasScene(sceneID);
+        return ScriptManager::s_SceneManager->HasScene(sceneID);
     }
 }

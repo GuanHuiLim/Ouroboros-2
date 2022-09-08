@@ -98,9 +98,9 @@ void GBufferRenderPass::Draw()
     vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
 
     const VkBuffer idcb = vr.indirectCommandsBuffer.buffer;
-    const uint32_t count = (uint32_t)vr.m_DrawIndirectCommandsCPU.size();
+    const uint32_t count = (uint32_t)vr.objectCount;
 
-	DrawIndexedIndirect(cmdlist, idcb, 0, count, sizeof(VkDrawIndexedIndirectCommand));
+	DrawIndexedIndirect(cmdlist, idcb, 0, count, sizeof(oGFX::IndirectCommand));
 
 	vkCmdEndRenderPass(cmdlist);
 }

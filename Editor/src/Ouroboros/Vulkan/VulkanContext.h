@@ -27,23 +27,23 @@ struct SDL_Window;
 
 namespace oo
 {
-    class VulkanContext : public GraphicsContext
+    class VulkanContext //: public GraphicsContext
     {
     public:
         VulkanContext(SDL_Window* window);
         virtual ~VulkanContext();
 
-        void Init() override;
-        void OnUpdateBegin() override;
-        void SwapBuffers() override;
+        void Init();
+        void OnUpdateBegin();
+        void SwapBuffers();
 
-        void InitImGui() override;
-        void OnImGuiBegin() override;
-        void OnImGuiEnd() override;
-        void OnImGuiShutdown() override;
+        void InitImGui();
+        void OnImGuiBegin();
+        void OnImGuiEnd();
+        void OnImGuiShutdown();
 
-        void SetWindowResized() override;
-        bool SetVSync(bool enable) override;
+        void SetWindowResized();
+        bool SetVSync(bool enable);
 
         VulkanRenderer* getRenderer();
 
