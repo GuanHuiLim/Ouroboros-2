@@ -51,6 +51,9 @@ Technology is prohibited.
 
 #include <Scripting/Scripting.h>
 
+//events
+#include <App/Editor/Events/LoadProjectEvents.h>
+#include <App/Editor/Events/OpenPromtEvent.h>
 class EditorApp final : public oo::Application
 {
 private:
@@ -116,11 +119,13 @@ public:
 
     void CloseApp(oo::WindowCloseEvent*)
     {
-#if defined OO_EDITOR 
-        CloseProjectEvent e;
-        oo::EventManager::Broadcast(&e);
-#endif
+#if defined OO_EDITOR
+		CloseProjectEvent e;
+		OpenPromptEvent<CloseProjectEvent> ope(e, []() { oo::Application::Get().Close(); });
+        oo::EventManager::Broadcast(&ope);
+#else
         Close();
+#endif
     }
 
 private:
