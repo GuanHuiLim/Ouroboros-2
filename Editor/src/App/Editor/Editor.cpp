@@ -97,19 +97,46 @@ void Editor::MenuBar()
 PopupHelperWindow::PopupHelperWindow()
 {
 	oo::EventManager::Subscribe<PopupHelperWindow, OpenPromptEvent<CloseProjectEvent>>(this, &PopupHelperWindow::CloseProjectEvent_EventReceiver);
+	oo::EventManager::Subscribe<PopupHelperWindow, OpenPromptEvent<OpenFileEvent>>(this, &PopupHelperWindow::OpenFileEvent_EventReceiver);
 }
 
 void PopupHelperWindow::Popups()
+{
+	CloseProjectPopup();
+	OpenFilePopup();
+}
+
+void PopupHelperWindow::CloseProjectEvent_EventReceiver(OpenPromptEvent<CloseProjectEvent>* e)
+{
+	if (ImGui::IsPopupOpen(ImGuiID{ 0 }, ImGuiPopupFlags_::ImGuiPopupFlags_AnyPopup))
+		return;
+
+	eventAfterPrompt = e->nextAction;
+	closeproject = true;
+}
+
+void PopupHelperWindow::OpenFileEvent_EventReceiver(OpenPromptEvent<OpenFileEvent>* e)
+{
+	if (e->nextAction.nextEvent.m_type != OpenFileEvent::FileType::SCENE)
+		return;
+	if (ImGui::IsPopupOpen(ImGuiID{ 0 }, ImGuiPopupFlags_::ImGuiPopupFlags_AnyPopup))
+		return;
+
+	eventAfterPrompt_ofe = e->nextAction;
+	openfile = true;
+}
+
+void PopupHelperWindow::CloseProjectPopup()
 {
 	if (closeproject)
 	{
 		ImGui::OpenPopup("CloseProjectPrompt");
 		closeproject = false;
 	}
-	if (ImGui::BeginPopupModal("CloseProjectPrompt",0, ImGuiWindowFlags_NoDecoration))
+	if (ImGui::BeginPopupModal("CloseProjectPrompt", 0, ImGuiWindowFlags_NoDecoration))
 	{
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0,10.0f});
-		ImVec2 txtsize= ImGui::CalcTextSize("Do You Want To Save Your Project?");
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0,10.0f });
+		ImVec2 txtsize = ImGui::CalcTextSize("Do You Want To Save Your Project?");
 		ImGui::Dummy({ (ImGui::GetContentRegionAvail().x - txtsize.x) * 0.5f ,0 });
 		ImGui::SameLine();
 		ImGui::Text("Do You Want To Save Your Project?");
@@ -145,11 +172,52 @@ void PopupHelperWindow::Popups()
 	}
 }
 
-void PopupHelperWindow::CloseProjectEvent_EventReceiver(OpenPromptEvent<CloseProjectEvent>* e)
+void PopupHelperWindow::OpenFilePopup()
 {
-	if (ImGui::IsPopupOpen(ImGuiID{ 0 }, ImGuiPopupFlags_::ImGuiPopupFlags_AnyPopup))
-		return;
+	if (openfile)
+	{
+		ImGui::OpenPopup("OpenFilePopup");
+		openfile = false;
+	}
+	if (ImGui::BeginPopupModal("OpenFilePopup", 0, ImGuiWindowFlags_NoDecoration))
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0,10.0f });
+		ImVec2 txtsize = ImGui::CalcTextSize("Do You Want To Save Your Scene?");
+		ImGui::Dummy({ (ImGui::GetContentRegionAvail().x - txtsize.x) * 0.5f ,0 });
+		ImGui::SameLine();
+		ImGui::Text("Do You Want To Save Your Scene?");
+		constexpr float buttonsizeX = 50.0f;
+		float paddingX = (ImGui::GetContentRegionAvail().x - buttonsizeX * 3) / 4;
+		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
+		if (ImGui::Button("Yes", { buttonsizeX,0 }))
+		{
+			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
+			if (eventAfterPrompt.nextAction)
+				eventAfterPrompt.nextAction();
+			ImGui::CloseCurrentPopup();
+			//save the scene
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
+		}
+		ImGui::SameLine();
+		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0, 0, 1.0f));
+		if (ImGui::Button("No", { buttonsizeX,0 }))
+		{
+			if (eventAfterPrompt.nextAction)
+				eventAfterPrompt.nextAction();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::PopStyleColor(1);
 
-	eventAfterPrompt = e->nextAction;
-	closeproject = true;
+		ImGui::SameLine();
+		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
+		if (ImGui::Button("Cancel", { buttonsizeX,0 }))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::PopStyleVar();
+		ImGui::EndPopup();
+	}
 }

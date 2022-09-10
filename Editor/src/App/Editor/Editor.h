@@ -10,16 +10,22 @@
 
 #include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
-
+#include "App/Editor/Events/OpenFileEvent.h"
 class PopupHelperWindow
 {
 public:
 	PopupHelperWindow();
 	void Popups();
 	OpenPromptEvent<CloseProjectEvent>::OpenPromptAction eventAfterPrompt;
+	OpenPromptEvent<OpenFileEvent>::OpenPromptAction eventAfterPrompt_ofe;
 private:
 	bool closeproject = false;
+	bool openfile = false;
 	void CloseProjectEvent_EventReceiver(OpenPromptEvent<CloseProjectEvent>* e);
+	void OpenFileEvent_EventReceiver(OpenPromptEvent<OpenFileEvent>* e);
+private:
+	void CloseProjectPopup();
+	void OpenFilePopup();
 };
 
 class Editor
