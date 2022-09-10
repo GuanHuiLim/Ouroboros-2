@@ -15,12 +15,13 @@ namespace oo
 
     void ScriptDatabase::Initialize(std::vector<MonoClass*> const& classList)
     {
-        scriptMap.clear();
+        indexMap.clear();
+        poolList.clear();
         for (MonoClass* klass : classList)
         {
-            std::string key = std::string(mono_class_get_namespace(klass)) + "." + mono_class_get_name(klass);
-            //scriptMap.insert(std::pair<std::string, InstancePool>(key, InstancePool{}));
-            scriptMap.emplace(key, InstancePool{});
+            std::string key = std::string{ mono_class_get_namespace(klass) } + "." + mono_class_get_name(klass);
+            poolList.emplace_back();
+            indexMap.emplace(key, poolList.size() - 1UL);
         }
     }
 
@@ -91,7 +92,7 @@ namespace oo
 
     void ScriptDatabase::Delete(UUID id)
     {
-        for (auto& [key, scriptPool] : scriptMap)
+        for (InstancePool& scriptPool : poolList)
         {
             auto search = scriptPool.find(id);
             if (search != scriptPool.end())
@@ -104,14 +105,14 @@ namespace oo
 
     void ScriptDatabase::DeleteAll()
     {
-        for (auto& [key, scriptPool] : scriptMap)
+        for (InstancePool& scriptPool : poolList)
         {
             for (auto& [uuid, instance] : scriptPool)
             {
                 mono_gchandle_free(instance.handle);
             }
+            scriptPool.clear();
         }
-        scriptMap.clear();
     }
 
     void ScriptDatabase::ForEach(const char* name_space, const char* name, Callback callback, ObjectCheck filter)
@@ -143,7 +144,7 @@ namespace oo
     {
         if (filter && !filter(id))
             return;
-        for (auto& [key, scriptPool] : scriptMap)
+        for (InstancePool& scriptPool : poolList)
         {
             Instance* instance = TryGetInstance(id, scriptPool);
             if (instance == nullptr)
@@ -156,7 +157,7 @@ namespace oo
     {
         if (filter && !filter(id))
             return;
-        for (auto& [key, scriptPool] : scriptMap)
+        for (InstancePool& scriptPool : poolList)
         {
             Instance* instance = TryGetInstance(id, scriptPool);
             if (instance == nullptr || !instance->enabled)
@@ -168,7 +169,7 @@ namespace oo
 
     void ScriptDatabase::ForAll(Callback callback, ObjectCheck filter)
     {
-        for (auto& [key, scriptPool] : scriptMap)
+        for (InstancePool& scriptPool : poolList)
         {
             for (auto& [uuid, instance] : scriptPool)
             {
@@ -181,7 +182,7 @@ namespace oo
     }
     void ScriptDatabase::ForAllEnabled(Callback callback, ObjectCheck filter)
     {
-        for (auto& [key, scriptPool] : scriptMap)
+        for (InstancePool& scriptPool : poolList)
         {
             for (auto& [uuid, instance] : scriptPool)
             {
@@ -195,13 +196,21 @@ namespace oo
         }
     }
 
+    ScriptDatabase::Index ScriptDatabase::GetInstancePoolIndex(const char* name_space, const char* name)
+    {
+        std::string scriptName = std::string{ name_space } + "." + name;
+        auto search = indexMap.find(scriptName);
+        if (search == indexMap.end())
+            return INDEX_NOTFOUND;
+        return search->second;
+    }
+
     ScriptDatabase::InstancePool& ScriptDatabase::GetInstancePool(const char* name_space, const char* name)
     {
-        std::string key = std::string(name_space) + "." + name;
-        auto search = scriptMap.find(key);
-        if (search == scriptMap.end())
-            throw std::exception((std::string{ "ScriptDatabase: no such script: " } + key).c_str());
-        return search->second;
+        Index index = GetInstancePoolIndex(name_space, name);
+        if(index == INDEX_NOTFOUND)
+            throw std::exception((std::string{ "ScriptDatabase: no such script: " } + name_space + "." + name).c_str());
+        return poolList[index];
     }
 
     ScriptDatabase::Instance& ScriptDatabase::GetInstance(UUID id, InstancePool& pool)
@@ -214,11 +223,10 @@ namespace oo
 
     ScriptDatabase::InstancePool* ScriptDatabase::TryGetInstancePool(const char* name_space, const char* name)
     {
-        std::string key = std::string(name_space) + "." + name;
-        auto search = scriptMap.find(key);
-        if (search == scriptMap.end())
-            return nullptr;
-        return &(search->second);
+        Index index = GetInstancePoolIndex(name_space, name);
+        if (index == INDEX_NOTFOUND)
+            nullptr;
+        return &(poolList[index]);
     }
 
     ScriptDatabase::Instance* ScriptDatabase::TryGetInstance(UUID id, InstancePool& pool)
