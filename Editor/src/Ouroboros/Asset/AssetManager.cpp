@@ -267,11 +267,24 @@ namespace oo
         }
     }
 
+    static bool iequal(const std::string& a, const std::string& b)
+    {
+        return std::equal(a.begin(), a.end(),
+                          b.begin(), b.end(),
+                          [](char a, char b)
+        {
+            return tolower(a) == tolower(b);
+        });
+    }
+
     Asset AssetManager::createAsset(std::filesystem::path fp)
     {
         const auto FP_EXT = fp.extension();
         Asset asset = Asset(std::filesystem::canonical(fp));
-        if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
+        if (std::find_if(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), [FP_EXT](const auto& e)
+        {
+            return iequal(e, FP_EXT.string());
+        }) != Asset::EXTS_TEXTURE.end())
         {
             // Load texture
             asset.info->onAssetCreate = [fp](AssetInfo& self)
