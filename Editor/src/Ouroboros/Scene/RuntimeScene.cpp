@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Vulkan/RendererSystem.h"
 
 namespace oo
 {
@@ -40,6 +41,10 @@ namespace oo
             TRACY_PROFILE_SCOPE(registration);
 
             //Register All Systems
+            //GetWorld().Add_System<ScriptSystem>(*this);
+            GetWorld().Add_System<MeshRendererSystem>()->Init(&GetWorld(), GetGraphicsWorld());
+            auto meshObj = oo::Mesh::CreateCubeMeshObject(this, GetGraphicsWorld());
+            meshObj->GetComponent<TransformComponent>().SetScale({ 5.f,5.f,5.f });
             //GetWorld().RegisterSystem<PrefabComponentSystem>();
             //GetWorld().RegisterSystem<EditorComponentSystem>();
 
@@ -175,7 +180,7 @@ namespace oo
     void RuntimeScene::Render()
     {
         Scene::Render();
-
+        GetWorld().Get_System<MeshRendererSystem>()->Run(&GetWorld(), GetGraphicsWorld());
         //constexpr const char* const text_rendering = "Text Rendering";
         {
             /*TRACY_PROFILE_SCOPE(text_rendering);
@@ -206,7 +211,7 @@ namespace oo
 
     void RuntimeScene::ProcessFrame(int count)
     {
-        ASSERT_MSG(count > 0, "frames shouldnt be lesser at than 1!!");
+        ASSERT_MSG(count < 0, "frames shouldnt be lesser at than 1!!");
 
         /*ENGINE_ASSERT_MSG(m_isPause == true , "you should only be able to get here once paused!!!");
         m_isPause = false;

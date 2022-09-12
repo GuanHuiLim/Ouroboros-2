@@ -30,6 +30,7 @@
 #include "renderpass/ShadowPass.h"
 
 #include "GraphicsBatch.h"
+#include "DelayedDeleter.h"
 
 #include "IcoSphereCreator.h"
 
@@ -69,6 +70,8 @@ VulkanRenderer::~VulkanRenderer()
 { 
 	//wait until no actions being run on device before destorying
 	vkDeviceWaitIdle(m_device.logicalDevice);
+
+	DelayedDeleter::get()->Shutdown();
 
 	RenderPassDatabase::Shutdown();
 
@@ -871,10 +874,12 @@ void VulkanRenderer::UploadLights()
 	if (currWorld == nullptr)
 		return;
 
+	PROFILE_SCOPED();
+
 	CB::LightUBO lightUBO{};
 
 	// Current view position
-	lightUBO.viewPos = glm::vec4(camera.position, 0.0f);
+	lightUBO.viewPos = glm::vec4(camera.m_position, 0.0f);
 
 	// Temporary reroute
 	auto& allLights = currWorld->m_HardcodedOmniLights;
@@ -987,7 +992,7 @@ void VulkanRenderer::CreateDescriptorPool()
 
 	// Create Sampler Descriptor pool
 	// Texture sampler pool
-	VkDescriptorPoolSize samplerPoolSize = oGFX::vkutils::inits::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);// or MAX_OBJECTS?
+	VkDescriptorPoolSize samplerPoolSize = oGFX::vkutils::inits::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_OBJECTS);// or MAX_OBJECTS?
 	std::vector<VkDescriptorPoolSize> samplerpoolSizes = { samplerPoolSize };
 
 	VkDescriptorPoolCreateInfo samplerPoolCreateInfo = oGFX::vkutils::inits::descriptorPoolCreateInfo(samplerpoolSizes,1); // or MAX_OBJECTS?
@@ -1126,7 +1131,7 @@ void VulkanRenderer::InitImGUI()
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.DescriptorPool = m_imguiConfig.descriptorPools;
 	init_info.Allocator = nullptr;
-	init_info.MinImageCount = m_swapchain.minImageCount;
+	init_info.MinImageCount = m_swapchain.minImageCount + 1;
 	init_info.ImageCount = static_cast<uint32_t>(m_swapchain.swapChainImages.size());
 	init_info.CheckVkResultFn = VK_NULL_HANDLE; // can be used to handle the error checking
 
@@ -1238,6 +1243,8 @@ void VulkanRenderer::DebugGUIcalls()
 
 void VulkanRenderer::DrawGUI()
 {
+	PROFILE_SCOPED();
+	
 	VkRenderPassBeginInfo GUIpassInfo = {};
 	GUIpassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	GUIpassInfo.renderPass  = m_imguiConfig.renderPass;
@@ -1269,6 +1276,15 @@ void VulkanRenderer::DestroyImGUI()
 		ImGui_ImplWin32_Shutdown();
 	}
 	m_imguiInitialized = false;
+}
+
+void VulkanRenderer::AddDebugLine(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Color& col, size_t loc)
+{
+	auto sz = g_debugDrawVerts.size();
+	g_debugDrawVerts.push_back(oGFX::Vertex{ p0,{/*normal*/},col });
+	g_debugDrawVerts.push_back(oGFX::Vertex{ p1,{/*normal*/},col });
+	g_debugDrawIndices.push_back(0 + static_cast<uint32_t>(sz));
+	g_debugDrawIndices.push_back(1 + static_cast<uint32_t>(sz));
 }
 
 void VulkanRenderer::AddDebugBox(const AABB& aabb, const oGFX::Color& col, size_t loc)
@@ -1492,6 +1508,11 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 {
 	PROFILE_SCOPED();
 
+	if (currWorld == nullptr)
+	{
+		return;
+	}
+
 	auto gb = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
 	gb.GenerateBatches();
 	auto& allObjectsCommands = gb.GetBatch(GraphicsBatch::ALL_OBJECTS);
@@ -1501,6 +1522,11 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 	{
 		objectCount += indirectCmd.instanceCount;
 	}
+
+	auto* del = DelayedDeleter::get();
+
+	if (objectCount == 0)
+		return;
 
 	vkutils::Buffer stagingBuffer;	
 	m_device.CreateBuffer(
@@ -1516,9 +1542,20 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 	{
 		MESSAGE_BOX_ONCE(windowPtr->GetRawHandle(), L"You just busted the max size of indirect command buffer.", L"BAD ERROR");
 	}
+	auto oldbuffer = indirectCommandsBuffer.buffer;
+	auto oldMemory = indirectCommandsBuffer.memory;
+	m_device.CreateBuffer(
+		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		&indirectCommandsBuffer,
+		MAX_OBJECTS * sizeof(oGFX::IndirectCommand));
+	VK_NAME(m_device.logicalDevice, "Indirect Command Buffer", indirectCommandsBuffer.buffer);
 
 	m_device.CopyBuffer(&stagingBuffer, &indirectCommandsBuffer, m_device.graphicsQueue);
 
+	del->DeleteAfterFrames([=]() { vkDestroyBuffer(m_device.logicalDevice, oldbuffer, nullptr); });
+	del->DeleteAfterFrames([=]() { vkFreeMemory(m_device.logicalDevice, oldMemory, nullptr); });
+	
 	stagingBuffer.destroy();
 }
 
@@ -1578,20 +1615,35 @@ void VulkanRenderer::UploadInstanceData()
 				uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
 				uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
 				uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
+				const uint8_t perInstanceData = ent.instanceData;
 				constexpr uint32_t invalidIndex = 0xFFFFFFFF;
 				if (albedo == invalidIndex)
-					albedo = 0;
+					albedo = 0; // TODO: Dont hardcode this bindless texture index
 				if (normal == invalidIndex)
-					normal = 1;
+					normal = 1; // TODO: Dont hardcode this bindless texture index
 				if (roughness == invalidIndex)
-					roughness = 0;
+					roughness = 0; // TODO: Dont hardcode this bindless texture index
 				if (metallic == invalidIndex)
-					metallic = 1;
+					metallic = 1; // TODO: Dont hardcode this bindless texture index
 
-				uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF) ;
-				uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
+				// Important: Make sure this index packing matches the unpacking in the shader
+				const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
+				const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
+				const uint32_t instanceID = uint32_t(sz + x);
+				const uint32_t unused = (uint32_t)perInstanceData; //matCnt;
+                // Putting these ranges here for easy reference:
+				// 9-bit:  [0 to 511]
+                // 10-bit: [0 to 1023]
+                // 11-bit: [0 to 2047]
+                // 12-bit: [0 to 4095]
+                // 13-bit: [0 to 8191]
+                // 14-bit: [0 to 16383]
+                // 15-bit: [0 to 32767]
+                // 16-bit: [0 to 65535]
 
-				id.instanceAttributes = uvec4(sz+x, matCnt, albedo_normal, roughness_metallic);
+				// TODO: This is the solution for now.
+				// In the future, we can just use an index for all the materials (indirection) to fetch from another buffer.
+				id.instanceAttributes = uvec4(instanceID, unused, albedo_normal, roughness_metallic);
 				instanceData.emplace_back(id);
 			}
 			++matCnt;
@@ -1599,6 +1651,11 @@ void VulkanRenderer::UploadInstanceData()
 		
 	}
 	
+
+	if (instanceData.empty())
+	{
+		return;
+	}
 
 	vkutils::Buffer stagingBuffer;
 	m_device.CreateBuffer(
@@ -1630,24 +1687,25 @@ bool VulkanRenderer::PrepareFrame()
 		resizeSwapchain = false;
 	}
 
+	DelayedDeleter::get()->Update();
+
 	return true;
 }
 
 void VulkanRenderer::BeginDraw()
 {
-	if (currWorld == nullptr) 
-		return;
 
 	PROFILE_SCOPED();
+
+	UpdateUniformBuffers();
+	UploadInstanceData();	
+	GenerateCPUIndirectDrawCommands();
 
 	//wait for given fence to signal from last draw before continuing
 	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max()));
 	//mainually reset fences
 	VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[currentFrame]));
-	
-	UpdateUniformBuffers();
-	UploadInstanceData();	
-	GenerateCPUIndirectDrawCommands();
+
 
 	{
 		PROFILE_SCOPED("vkAcquireNextImageKHR");
@@ -1680,12 +1738,12 @@ void VulkanRenderer::BeginDraw()
 
 void VulkanRenderer::RenderFrame()
 {
-	if (currWorld == nullptr)
-		return;
+
+	PROFILE_SCOPED();
 
 	this->BeginDraw(); // TODO: Clean this up...
 
-	UpdateDebugBuffers();
+	UploadDebugDrawBuffers();
     {
 		// Command list has already started inside VulkanRenderer::Draw
         PROFILE_GPU_CONTEXT(commandBuffers[swapchainIdx]);
@@ -1693,6 +1751,7 @@ void VulkanRenderer::RenderFrame()
 
         //this->SimplePass(); // Unsued
 		// Manually schedule the order of the render pass execution. (single threaded)
+		if(currWorld)
 		{
             RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
             RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
@@ -1704,8 +1763,8 @@ void VulkanRenderer::RenderFrame()
 
 void VulkanRenderer::Present()
 {
-	if (currWorld == nullptr) 
-		return;
+
+	PROFILE_SCOPED();
 
 	//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[swapchainImageIndex]);
 	//stop recording to command buffer
@@ -1834,6 +1893,11 @@ Model* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	{
 		return nullptr; // Dont explode...
 		//throw std::runtime_error("Failed to load model! (" + file + ")");
+	}
+
+	if (scene->HasAnimations())
+	{
+
 	}
 
 	std::vector<std::string> textureNames = MeshContainer::LoadMaterials(scene);
@@ -2106,13 +2170,20 @@ void VulkanRenderer::InitDebugBuffers()
 	g_debugDrawIndxBuffer.Init(&m_device,VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 }
 
-void VulkanRenderer::UpdateDebugBuffers()
+void VulkanRenderer::UploadDebugDrawBuffers()
 {
+	PROFILE_SCOPED();
+
 	g_debugDrawVertBuffer.reserve(g_debugDrawVerts.size() );
 	g_debugDrawIndxBuffer.reserve(g_debugDrawIndices.size());
 
+	// Copy CPU debug draw buffers to the GPU
 	g_debugDrawVertBuffer.writeTo(g_debugDrawVerts.size() , g_debugDrawVerts.data());
 	g_debugDrawIndxBuffer.writeTo(g_debugDrawIndices.size() , g_debugDrawIndices.data());
+
+	// Clear the CPU debug draw buffers for this frame
+	g_debugDrawVerts.clear();
+	g_debugDrawIndices.clear();
 }
 
 void VulkanRenderer::UpdateUniformBuffers()
@@ -2127,10 +2198,10 @@ void VulkanRenderer::UpdateUniformBuffers()
 	m_FrameContextUBO.projection = camera.matrices.perspective;
 	m_FrameContextUBO.view = camera.matrices.view;
 	m_FrameContextUBO.viewProjection = m_FrameContextUBO.projection * m_FrameContextUBO.view;
-	m_FrameContextUBO.cameraPosition = glm::vec4(camera.position,1.0);
-	m_FrameContextUBO.renderTimer.x += 1 / 60.0f; // Fake total time... (TODO: Fix me)
-	m_FrameContextUBO.renderTimer.y = glm::sin(m_FrameContextUBO.renderTimer.x * 0.5f * glm::pi<float>());
-	m_FrameContextUBO.renderTimer.z = glm::cos(m_FrameContextUBO.renderTimer.x * 0.5f * glm::pi<float>());
+	m_FrameContextUBO.cameraPosition = glm::vec4(camera.m_position,1.0);
+	m_FrameContextUBO.renderTimer.x = renderClock;
+    m_FrameContextUBO.renderTimer.y = std::sin(renderClock * glm::pi<float>());
+    m_FrameContextUBO.renderTimer.z = std::cos(renderClock * glm::pi<float>());
 	m_FrameContextUBO.renderTimer.w = 0.0f; // unused
 
 	void *data;
@@ -2144,7 +2215,6 @@ void VulkanRenderer::UpdateUniformBuffers()
 	VK_CHK(vkFlushMappedMemoryRanges(m_device.logicalDevice, 1, &memRng));
 
 	vkUnmapMemory(m_device.logicalDevice, vpUniformBufferMemory[swapchainIdx]);
-
 }
 
 uint32_t VulkanRenderer::CreateTextureImage(const std::string& fileName)

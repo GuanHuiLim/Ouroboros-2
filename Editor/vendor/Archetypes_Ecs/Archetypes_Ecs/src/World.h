@@ -44,6 +44,9 @@ namespace Ecs
 		EventCallback onAddEntity_callbacks;
 		EventCallback onDestroyEntity_callbacks;
 
+		std::unordered_map<std::size_t, EventCallback> onAddComponent_Callbacks;
+		std::unordered_map<std::size_t, EventCallback> onRemoveComponent_Callbacks;
+
 		inline IECSWorld();
 		~IECSWorld();
 

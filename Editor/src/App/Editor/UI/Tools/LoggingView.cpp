@@ -100,7 +100,7 @@ void LoggingView::Show()
 	std::string msg_processor;
 	msg_processor.resize(textCount +10);
 	//draw ui here
-	if (ImGui::BeginChild("LogView Child", { 0, ImGui::GetWindowHeight() * 0.64f }))
+	if (ImGui::BeginChild("LogView Child", { 0, ImGui::GetWindowHeight() - 160.0f }))
 	{
 		if (m_collapse_similar)
 			DrawCollapsed(msgitem, msg_processor, interacted, textCount, textSize, imageSize);
@@ -114,9 +114,9 @@ void LoggingView::Show()
 		}
 	}
 	ImGui::EndChild();
-	ImGui::SetCursorPosY(ImGui::GetWindowContentRegionMax().y - 60.f);
+	ImGui::SetCursorPosY(ImGui::GetWindowContentRegionMax().y - 100.f);
 	ImGui::Separator();
-	ImGui::BeginChild("FullLogView", { 0, 60.f }, false);
+	ImGui::BeginChild("FullLogView", { 0, 100.f }, false);
 	ImGui::Text(m_msgitem.msg.c_str());
 	ImGui::Text(LogMessageType(m_msgitem.type).c_str());
 	ImGui::Text(m_msgitem.filename.c_str());

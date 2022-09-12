@@ -37,6 +37,8 @@ struct ObjectInstance
     uint32_t bindlessGlobalTextureIndex_Metallic{ 0xFFFFFFFF };
     // End temp stuff
 
+    uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
+
     glm::mat4x4 localToWorld{ 1.0f };
     
     ObjectInstanceFlags flags{};

@@ -1,78 +1,118 @@
 #extension GL_EXT_nonuniform_qualifier : require
 
-layout (set = 2, binding = 0) uniform sampler2D textureDesArr[];
-//layout(set = 1, binding= 0) uniform sampler2D textureSampler;
+#include "material.shader"
 
-layout(location = 0) in vec4 inPos;
+layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec2 inUV;
-layout(location = 2) in vec3 inCol;
-
+layout(location = 2) in vec3 inColor;
 layout(location = 15) in flat uvec4 inInstanceData;
+layout(location = 7) in struct
+{
+    mat3 btn;
+}inLightData;
+
+layout(location = 0) out vec4 outPosition; // TODO: Optimization for space, not necessary as position can be reconstructed from depth.
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outAlbedo;
+layout(location = 3) out vec4 outMaterial;
+
+#include "shader_utility.shader"
 
 #include "frame.shader"
 layout(set = 1, binding = 0) uniform UboFrameContext
 {
-	FrameContext uboFrameContext;
+    FrameContext uboFrameContext;
 };
 
-//layout(location = 1) in flat struct
-//{
-// ivec4 maps;
-// //int albedo;	
-// //int normal;	
-// //int occlusion;
-// //int roughness;
-//}inTexIndex;
+layout (set = 2, binding = 0) uniform sampler2D textureDescriptorArray[];
+//layout(set = 1, binding= 0) uniform sampler2D textureSampler;
 
-layout(location = 7) in struct 
+vec4 PackPBRMaterialOutputs(in float roughness, in float metallic) // TODO: Add other params as needed
 {
-	mat3 btn;
-}inLightData;
-
-layout (location = 0) out vec4 outPosition; // TODO: Optimization for space, not necessary as position can be reconstructed from depth.
-layout (location = 1) out vec4 outNormal;
-layout (location = 2) out vec4 outAlbedo;
-layout (location = 3) out vec4 outMaterial;
-
-#include "shader_utility.shader"
-
-float RandomUnsignedNormalizedFloat(uint x)
-{
-    return wang_hash(x) / 4294967295.0;
+    // Precision of 0.03921568627451 for UNORM format, typically should be enough. Try not to change the format.
+    const float todo_something = 0.0f;
+    return vec4(roughness, metallic, todo_something, 1.0f);
 }
 
-void PackPBRMaterialOutputs(in float roughness, in float metallic) // TODO: Add other params as needed
+// Subject to change
+float EncodeFlags(uint flags)
 {
-	// Precision of 0.03921568627451 for UNORM format, typically should be enough. Try not to change the format.
-	const float todo_something = 0.0f;
-	outMaterial = vec4(roughness, metallic, todo_something, 1.0f);
+    return (flags) / 255.0f;
+} 
+
+vec2 GenerateRandom_RoughnessMetallic(in uint seed)
+{
+    const float roughness = RandomUnsignedNormalizedFloat(seed);
+    const float metallic  = RandomUnsignedNormalizedFloat(seed + 0xDEADDEAD);
+    return vec2(roughness, metallic);
+}
+
+// !! DANGER !! - Dont ever learn this... Look at assembly/performance first.
+void Jump(inout uint perInstanceData, inout float3 albedo)
+{
+    switch (perInstanceData)
+    {
+        case 1:
+        {
+            albedo.rgb *= (0.5f * uboFrameContext.renderTimer.y + 0.5f);
+            break;
+        }
+        case 2:
+        {
+            const float sine_normalized = 0.5f * sin(uboFrameContext.renderTimer.x * 3.14159f * 15.0f) + 0.5f;
+            albedo.rgb *= float3(1.0f * sine_normalized);
+            perInstanceData = 1; // Hack
+            break;
+        }
+        case 3:
+        {
+            albedo.rgb = main_voronoi(uboFrameContext.renderTimer.x, inUV.xy).xyz;
+            perInstanceData = 1; // Hack
+            break;
+        }
+    }
 }
 
 void main()
 {
-	outAlbedo = vec4(inCol, 1.0);
+    outAlbedo = vec4(inColor, 1.0);
+    outPosition = inPosition;
 
-	const uint textureIndex = inInstanceData.y;
+    // TODO: We need to use a mask to check whether to use textures or values.
+    const bool useAlbedoTexture = true;
+    const bool useNormalMapTexture = true;
+    const bool useRoughnessTexture = true;
+    const bool useMetallicTexture = true;
+    const bool useAmbientOcclusionTexture = true;
 
-	if(textureIndex > uint(0))
-	{
-		outAlbedo.rgb = texture(textureDesArr[textureIndex], inUV.xy).rgb;
-	}
+    // Unpack per instance data
+    const uint textureIndex_Albedo    = inInstanceData.z >> 16;
+    const uint textureIndex_Normal    = inInstanceData.z & 0xFFFF;
+    const uint textureIndex_Roughness = inInstanceData.w >> 16;
+    const uint textureIndex_Metallic  = inInstanceData.w & 0xFFFF;
+    uint perInstanceData              = inInstanceData.y & 0xFF;
 
-	outNormal = vec4(inLightData.btn[2], 1.0f);
-	outPosition = inPos;
+    {
+        outAlbedo.rgb = texture(textureDescriptorArray[textureIndex_Albedo], inUV.xy).rgb;
+        
+        // !! DANGER !! - Dont ever learn this... Look at assembly/performance first.
+        Jump(perInstanceData, outAlbedo.rgb);
+    }
 
-	// TODO: Fix this hardcoded value properly...
-	{
-		const uint seed = inInstanceData.x; // Generate random PBR params based on object ID or something.
-		//const float roughness = RandomUnsignedNormalizedFloat(seed);
-		//const float metallic  = RandomUnsignedNormalizedFloat(seed + 0xDEADDEAD);
+    {
+        outNormal = vec4(inLightData.btn[2], 1.0f);
+    }
 
-		const float roughness = texture(textureDesArr[inInstanceData.w >> 16], inUV.xy).r;
-		const float metallic = texture(textureDesArr[inInstanceData.w & 0xFFFF], inUV.xy).r;
+    {
+        // Commented out because unused.
+        //const vec2 roughness_metallic = GenerateRandom_RoughnessMetallic(inInstanceData.x);
 
-		PackPBRMaterialOutputs(roughness, metallic);
-	}
+        // TODO Optimization: Bake these kinds of individual material textures together. Reduce the number of texture samples.
+        const float roughness = texture(textureDescriptorArray[textureIndex_Roughness], inUV.xy).r;
+        const float metallic = texture(textureDescriptorArray[textureIndex_Metallic], inUV.xy).r;
 
-	outAlbedo.rgb = texture(textureDesArr[inInstanceData.z >> 16], inUV.xy).rgb;
+        outMaterial = PackPBRMaterialOutputs(roughness, metallic);
+        uint flags = perInstanceData;
+        outMaterial.z = EncodeFlags(flags);
+    }
 }

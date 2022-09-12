@@ -955,52 +955,60 @@ namespace Ecs::internal
 	template<typename C>
 	inline void broadcast_add_component_callback(IECSWorld* world, EntityID eid, C& component)
 	{
-		static const IQuery query = []() {
+		/*static const IQuery query = []() {
 			IQuery _query;
 			_query.with<C>().build();
 			return _query;
-		}();
-
+		}();*/
+		const ComponentInfo* type = get_ComponentInfo<C>();
+		const auto hash = type->hash.name_hash;
 		ComponentEvent evnt{ eid,component };
+		world->onAddComponent_Callbacks[hash].Broadcast(&evnt);
 
-		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+		/*internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
 
 			arch->addition_callbacks.Broadcast(&evnt);
 
-			});
+			});*/
 	}
 
 	template<typename C>
 	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, C& component)
 	{
-		static const IQuery query = []() {
+		/*static const IQuery query = []() {
 			IQuery _query;
 			_query.with<C>().build();
 			return _query;
-		}();
+		}();*/
 
+		const ComponentInfo* type = get_ComponentInfo<C>();
+		const auto hash = type->hash.name_hash;
 		ComponentEvent evnt{ eid,component };
+		world->onRemoveComponent_Callbacks[hash].Broadcast(&evnt);
 
-		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
+		/*internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
 
 			arch->deletion_callbacks.Broadcast(&evnt);
 
-			});
+			});*/
 	}
 
 	template<typename C>
 	inline void subscribe_on_add_component(IECSWorld* world, IECSWorld::CompEventFnPtr<C> function)
 	{
 		using EventType = ComponentEvent<C>;
+		const ComponentInfo* type = get_ComponentInfo<C>();
+		const auto hash = type->hash.name_hash;
 
-		IQuery query;
+		world->onAddComponent_Callbacks[hash].Subscribe<EventType>(function);
+		/*IQuery query;
 		query.with<C>().build();
 
 		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
 
 			arch->addition_callbacks.Subscribe<EventType>(function);
 
-			});
+			});*/
 	}
 
 	template<typename T, typename C>
@@ -1009,14 +1017,19 @@ namespace Ecs::internal
 		using EventType = ComponentEvent<C>;
 		//assert(std::is_same_v<Evnt, EventType> == true);
 
-		IQuery query;
+		const ComponentInfo* type = get_ComponentInfo<C>();
+		const auto hash = type->hash.name_hash;
+
+		world->onAddComponent_Callbacks[hash].Subscribe<T, EventType>(instance, function);
+
+		/*IQuery query;
 		query.with<C>().build();
 
 		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
 
 			arch->addition_callbacks.Subscribe<T, EventType>(instance,function);
 
-			});
+			});*/
 	}
 
 	template<typename C>
@@ -1024,14 +1037,18 @@ namespace Ecs::internal
 	{
 		using EventType = ComponentEvent<C>;
 
-		IQuery query;
+		const ComponentInfo* type = get_ComponentInfo<C>();
+		const auto hash = type->hash.name_hash;
+
+		world->onRemoveComponent_Callbacks[hash].Subscribe<EventType>(function);
+		/*IQuery query;
 		query.with<C>().build();
 
 		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
 
 			arch->deletion_callbacks.Subscribe<EventType>(function);
 
-			});
+			});*/
 	}
 
 	template<typename T, typename C>
@@ -1040,14 +1057,18 @@ namespace Ecs::internal
 		using EventType = ComponentEvent<C>;
 		//assert(std::is_same_v<Evnt, EventType> == true);
 
-		IQuery query;
+		const ComponentInfo* type = get_ComponentInfo<C>();
+		const auto hash = type->hash.name_hash;
+
+		world->onRemoveComponent_Callbacks[hash].Subscribe<T, EventType>(instance, function);
+		/*IQuery query;
 		query.with<C>().build();
 
 		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
 
 			arch->deletion_callbacks.Subscribe<T, EventType>(instance, function);
 
-			});
+			});*/
 	}
 }
 

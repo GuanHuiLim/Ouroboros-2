@@ -54,11 +54,11 @@ void Editor::Update()
 		Serializer::SaveScene(*(scene));
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 	}
-	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_D))
+	/*if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_D))
 	{
 		OpenFileEvent ofe(Project::GetSceneFolder().string() + "Scene1.scn");
 		oo::EventManager::Broadcast(&ofe);
-	}
+	}*/
 
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Z))
 	{

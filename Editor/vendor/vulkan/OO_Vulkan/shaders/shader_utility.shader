@@ -11,4 +11,9 @@ uint wang_hash(uint seed)
     return seed;
 }
 
+float RandomUnsignedNormalizedFloat(uint seed)
+{
+    return wang_hash(seed) / 4294967295.0;
+}
+
 #endif//INCLUDE_GUARD

@@ -23,15 +23,12 @@ Technology is prohibited.
 
 #include "Ouroboros/EventSystem/Event.h"
 
+class ToolbarButtonEvent;
+
 namespace oo
 {
-    struct GetCurrentSceneEvent : public Event
-    {
-        std::shared_ptr<EditorScene> CurrentEditorScene = nullptr;
-        std::shared_ptr<RuntimeScene> CurrentRuntimeScene = nullptr;
-        std::shared_ptr<Scene> CurrentScene = nullptr;
-        bool IsEditor = true;
-    };
+    // forward declare event
+    struct GetCurrentSceneEvent;
 
     class SceneLayer final : public oo::Layer
     {
@@ -52,6 +49,8 @@ namespace oo
 
     private:
         void OnGetCurrentSceneEvent(GetCurrentSceneEvent* e);
+        
+        void OnToolbarButtonEvent(ToolbarButtonEvent* e);
     };
 
 }

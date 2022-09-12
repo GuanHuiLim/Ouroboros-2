@@ -183,6 +183,20 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* ScriptClassInfo                                                             */
     /*-----------------------------------------------------------------------------*/
+    ScriptClassInfo::ScriptClassInfo(std::string const& fullName)
+    {
+        size_t separator = fullName.find_last_of('.');
+        if (separator == std::string::npos)
+        {
+            name_space = "";
+            name = fullName;
+        }
+        else
+        {
+            name_space = fullName.substr(0, separator);
+            name = fullName.substr(separator);
+        }
+    }
 
     std::vector<ScriptFieldInfo> const ScriptClassInfo::GetScriptFieldInfoAll() const
     {

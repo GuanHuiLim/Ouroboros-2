@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 #include "ScriptInfo.h"
-
+#include <rttr/type>
 namespace oo
 {
     class ScriptComponent
@@ -18,7 +18,7 @@ namespace oo
 
         map_type& GetScriptInfoAll();
         map_type const& GetScriptInfoAll() const;
-
+		RTTR_ENABLE();
     private:
         map_type scriptInfoMap;
     };

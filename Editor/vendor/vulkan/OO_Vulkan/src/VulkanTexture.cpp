@@ -3,7 +3,7 @@
 
 #pragma warning( push )
 #pragma warning( disable : 26451 ) // arithmetic overflow
-#include "stb_image.h"
+#include "loader/stb_image.h"
 #pragma warning( pop )
 
 #include <cassert>
