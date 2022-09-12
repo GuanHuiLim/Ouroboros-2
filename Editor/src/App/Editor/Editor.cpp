@@ -32,6 +32,9 @@ Editor::Editor()
 	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
 	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
 
+	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
+
+
 	//ImGuiManager::Create("##helper", true, ImGuiWindowFlags_None, [this] {this->helper.Popups(); });
 }
 
@@ -89,6 +92,15 @@ void Editor::MenuBar()
 					oo::OO_TracyProfiler::CloseTracyServer();
 				else
 					oo::OO_TracyProfiler::StartTracyServer();
+			}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Windows"))
+		{
+			if (ImGui::MenuItem("Scene Manager"))
+			{
+
+				ImGuiManager::GetItem("Scene Manager").m_enabled = !ImGuiManager::GetItem("Scene Manager").m_enabled;
 			}
 			ImGui::EndMenu();
 		}

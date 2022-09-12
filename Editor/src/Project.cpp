@@ -8,9 +8,11 @@
 #include <SceneManagement/include/SceneManager.h>
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
-#include "App/Editor/Utility/ImGuiManager.h"
+
 
 #include "Ouroboros/Scene/RuntimeController.h"
+#include "App/Editor/Utility/ImGuiManager.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Scripting/ScriptManager.h"
@@ -74,8 +76,16 @@ void Project::SaveProject()
 	prj_setting->value.FindMember("StartScene")->value.SetString(relative.string().c_str(), static_cast<rapidjson::SizeType>(relative.string().size()), doc.GetAllocator());
 
 	auto scenes  = doc.FindMember("Scenes");
-	
-	//write your scenes
+	scenes->value.RemoveAllMembers();
+	auto* runtimecontroller = ImGuiManager::s_runtime_controller;
+	auto loadpaths = runtimecontroller->GetLoadPaths();
+	for(auto scene_info : loadpaths)
+	{
+		rapidjson::Value name(scene_info.SceneName.c_str(),doc.GetAllocator());
+		rapidjson::Value data(scene_info.LoadPath.c_str(), doc.GetAllocator());
+		scenes->value.AddMember(name, data, doc.GetAllocator());
+	}
+		//write your scenes
 	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
 	//get all scenes
