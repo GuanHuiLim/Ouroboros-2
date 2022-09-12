@@ -2,6 +2,7 @@
 
 #include "FileBrowser.h"
 #include "App/Editor/Events/OpenFileEvent.h"
+#include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/FileEventsFunction.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Utility/FileSystemUtills.h"
@@ -345,6 +346,12 @@ void FileBrowser::CreateIconButton(DirectoryInfo& info, ImVec2 size, const float
 
 	ImGui::SetCursorPos(orignal_cursorPos);
 	bool selected = ImGui::Selectable("##IconSelection", &info.selected, ImGuiSelectableFlags_AllowDoubleClick, icon_dimensions);
+	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload) && info.name.has_extension())
+	{
+		ImGui::SetDragDropPayload(info.name.extension().string().c_str(), &info.name, sizeof(std::filesystem::path));
+		ImGui::Text("Dragging type : %s", info.name.extension().string().c_str());
+		ImGui::EndDragDropSource();
+	}
 	if (ImGui::IsItemClicked(ImGuiMouseButton_Right) && m_selectedList.empty())
 	{
 		info.selected = true;
@@ -463,7 +470,8 @@ void FileBrowser::FileBehaviour(DirectoryInfo info)
 		BuildDirectoryList(info.name.string());
 
 	OpenFileEvent e = info.name;
-	oo::EventManager::Broadcast<OpenFileEvent>(&e);
+	OpenPromptEvent<OpenFileEvent> ope(e, 0);
+	oo::EventManager::Broadcast(&ope);
 }
 
 void FileBrowser::FileBehaviour(const std::filesystem::path& path)
@@ -473,7 +481,8 @@ void FileBrowser::FileBehaviour(const std::filesystem::path& path)
 		BuildDirectoryList(path.string());
 
 	OpenFileEvent e = path;
-	oo::EventManager::Broadcast<OpenFileEvent>(&e);
+	OpenPromptEvent<OpenFileEvent> ope(e,0);
+	oo::EventManager::Broadcast(&ope);
 }
 
 void FileBrowser::RecursiveDirective(const std::filesystem::path& path)

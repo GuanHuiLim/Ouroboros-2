@@ -19,6 +19,8 @@ namespace oo
         static std::string s_ProjectPath;
 
         static std::vector<ScriptClassInfo> s_ScriptList;
+        static std::vector<ScriptClassInfo> s_BeforeDefaultOrder;
+        static std::vector<ScriptClassInfo> s_AfterDefaultOrder;
 
     public:
         static void LoadProject(std::string const& buildPath, std::string const& projectPath);
@@ -54,6 +56,18 @@ namespace oo
         {
             return s_ScriptList;
         }
+
+        static inline std::vector<ScriptClassInfo>& GetBeforeDefaultOrder()
+        {
+            return s_BeforeDefaultOrder;
+        }
+
+        static inline std::vector<ScriptClassInfo>& GetAfterDefaultOrder()
+        {
+            return s_AfterDefaultOrder;
+        }
+
+        static std::vector<MonoClass*> const GetScriptExecutionOrder();
 
         template<typename T>
         static void RegisterComponent(std::string const& name_space, std::string const& name)

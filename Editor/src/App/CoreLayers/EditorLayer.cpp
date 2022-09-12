@@ -66,10 +66,12 @@ void EditorLayer::OnUpdate()
 		{
 			if (ImGui::MenuItem("Open Launcher")) 
 			{
-				m_editormode = false;
 #ifdef OO_EDITOR
 				CloseProjectEvent e;
-				oo::EventManager::Broadcast(&e);
+				OpenPromptEvent<CloseProjectEvent> ope(e, [this]() {this->SetEditorMode(false); });
+				oo::EventManager::Broadcast(&ope);
+#else
+				m_editormode = false;
 #endif
 			}
 			ImGui::EndMenu();

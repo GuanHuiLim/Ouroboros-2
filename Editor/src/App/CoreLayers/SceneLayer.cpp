@@ -7,6 +7,8 @@
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
 
+#include "App/Editor/Utility/ImGuiManager.h"
+
 namespace oo
 {
     SceneLayer::SceneLayer(SceneManager& sceneManager)
@@ -22,6 +24,7 @@ namespace oo
 
 #ifdef OO_EDITOR
         EventManager::Subscribe<SceneLayer, ToolbarButtonEvent>(this, &SceneLayer::OnToolbarButtonEvent);
+		ImGuiManager::s_runtime_controller = &m_runtimeController;
 #endif
 
     }
