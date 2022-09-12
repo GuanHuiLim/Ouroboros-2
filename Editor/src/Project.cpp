@@ -77,12 +77,14 @@ void Project::SaveProject()
 
 	auto scenes  = doc.FindMember("Scenes");
 	scenes->value.RemoveAllMembers();
+	auto size = scenes->value.MemberCount();
 	auto* runtimecontroller = ImGuiManager::s_runtime_controller;
 	auto loadpaths = runtimecontroller->GetLoadPaths();
 	for(auto scene_info : loadpaths)
 	{
 		rapidjson::Value name(scene_info.SceneName.c_str(),doc.GetAllocator());
-		rapidjson::Value data(scene_info.LoadPath.c_str(), doc.GetAllocator());
+		std::filesystem::path scene_loadpath = std::filesystem::relative(scene_info.LoadPath, GetSceneFolder());
+		rapidjson::Value data(scene_loadpath.string().c_str(),doc.GetAllocator());
 		scenes->value.AddMember(name, data, doc.GetAllocator());
 	}
 		//write your scenes

@@ -125,11 +125,11 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 
-
 		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+
 		//selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 
-		AddScriptsSelectable(gameobject);
+		selected |= AddScriptsSelectable(gameobject);
 		ImGui::EndChild();
 
 		ImGui::PushItemWidth(-75.0f);
@@ -141,6 +141,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		{
 			m_AddComponentButton.SetToggle(false);
 			ImGui::EndGroup();
+			ImGui::PopID();
 			return;
 		}
 	}
