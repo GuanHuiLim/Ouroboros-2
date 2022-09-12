@@ -25,8 +25,9 @@ Technology is prohibited.
 #include <Ouroboros/Core/Application.h>
 #include <Ouroboros/Vulkan/VulkanContext.h>
 
-
-
+//ASSET MANAGER EXAMPLE
+//static oo::AssetManager manager = oo::AssetManager("./assets");
+//static oo::Asset myImageAsset;
 
 void EditorLayer::OnAttach()
 {
@@ -34,6 +35,20 @@ void EditorLayer::OnAttach()
 #ifdef OO_EDITOR
 	ImGuiManager::InitAssetsAll();
 #endif
+
+	//ASSET MANAGER EXAMPLE
+	/*try
+	{
+		//Asset myFile = manager.LoadFile("assets/infile.txt");
+		manager.LoadDirectory("./");
+		auto v = manager.LoadName("Arcadia.png", false);
+		if (v.size() > 0)
+			myImageAsset = v[0];
+	}
+	catch (...)
+	{
+		std::cout << "not found\n";
+	}*/
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -50,15 +65,11 @@ void EditorLayer::OnUpdate()
 	    m_editor.Update();
 #endif
 
-
-    /*if (myImageAsset.HasData())
-    {
-        auto num = myImageAsset.GetData<uint32_t>();
-        auto vc = reinterpret_cast<oo::VulkanContext*>(oo::Application::Get().GetWindow().GetRenderingContext());
-        auto vr = vc->getRenderer();
-        ImGui::Image(reinterpret_cast<void*>(vr->GetImguiID(num)), ImVec2(100, 100));
-    }*/
-	//std::cout << "loaded image data is " << *myImageAsset.GetData<uint32_t>() << '\n';
+	//ASSET MANAGER EXAMPLE
+	/*if (myImageAsset.HasData())
+	{
+		ImGui::Image(reinterpret_cast<void*>(myImageAsset.GetData<ImTextureID>()), ImVec2(100, 100));
+	}*/
 
 	//top menu bar
 	//Editor::MenuBar();
