@@ -10,9 +10,13 @@
 #include "UI/Tools/Toolbar.h"
 #include "UI/Tools/PenTool.h"
 
+#include "UI/Optional Windows/SceneOrderingWindow.h"
+
 #include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Events/OpenFileEvent.h"
+
+
 class PopupHelperWindow
 {
 public:
@@ -48,6 +52,8 @@ public:
 	Toolbar m_toolbar;
 	LoggingView m_loggingView;
 	PenTool m_pentool;
+
+	SceneOrderingWindow m_sceneOderingWindow;
 public:
 	PopupHelperWindow helper;
 private:

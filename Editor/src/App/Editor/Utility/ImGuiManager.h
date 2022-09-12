@@ -12,6 +12,7 @@
 namespace oo
 {
 	class PrefabSceneController;
+	class RuntimeController;
 };
 class SceneManager;
 
@@ -27,6 +28,7 @@ public:
 	inline static std::unordered_map<std::string, ImTextureID> s_EditorIcons;
 	inline static SceneManager const* s_scenemanager = nullptr;
 	inline static oo::PrefabSceneController * s_prefab_controller = nullptr;
+	inline static oo::RuntimeController* s_runtime_controller = nullptr;
 	inline static oo::AssetManager s_editorAssetManager = oo::AssetManager("./icons");
 
 private:

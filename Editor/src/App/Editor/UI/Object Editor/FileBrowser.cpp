@@ -346,6 +346,12 @@ void FileBrowser::CreateIconButton(DirectoryInfo& info, ImVec2 size, const float
 
 	ImGui::SetCursorPos(orignal_cursorPos);
 	bool selected = ImGui::Selectable("##IconSelection", &info.selected, ImGuiSelectableFlags_AllowDoubleClick, icon_dimensions);
+	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload) && info.name.has_extension())
+	{
+		ImGui::SetDragDropPayload(info.name.extension().string().c_str(), &info.name, sizeof(std::filesystem::path));
+		ImGui::Text("Dragging type : %s", info.name.extension().string().c_str());
+		ImGui::EndDragDropSource();
+	}
 	if (ImGui::IsItemClicked(ImGuiMouseButton_Right) && m_selectedList.empty())
 	{
 		info.selected = true;
