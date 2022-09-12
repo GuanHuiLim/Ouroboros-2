@@ -114,15 +114,17 @@ namespace oo
         /// Loads or retrieves an asset by a given file name.
         /// </summary>
         /// <param name="fn">The file name.</param>
+        /// <param name="caseSensitive">Whether the file name is case sensitive.</param>
         /// <returns>The assets matching the criteria.</returns>
-        std::vector<Asset> LoadName(const std::filesystem::path& fn);
+        std::vector<Asset> LoadName(const std::filesystem::path& fn, bool caseSensitive = true);
 
         /// <summary>
         /// Asynchronously loads or retrieves an asset by a given file name.
         /// </summary>
         /// <param name="fn">The file name.</param>
+        /// <param name="caseSensitive">Whether the file name is case sensitive.</param>
         /// <returns>The assets matching the criteria.</returns>
-        std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn);
+        std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive = true);
 
     private:
         /* --------------------------------------------------------------------------- */

@@ -22,6 +22,19 @@ Technology is prohibited.
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
+namespace
+{
+    bool iequal(const std::string& a, const std::string& b)
+    {
+        return std::equal(a.begin(), a.end(),
+                          b.begin(), b.end(),
+                          [](char a, char b)
+        {
+            return tolower(a) == tolower(b);
+        });
+    }
+}
+
 namespace oo
 {
     AssetManager::AssetManager(std::filesystem::path root)
@@ -100,14 +113,15 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::LoadDirectory, this, path);
     }
 
-    std::vector<Asset> AssetManager::LoadName(const std::filesystem::path& fn)
+    std::vector<Asset> AssetManager::LoadName(const std::filesystem::path& fn, bool caseSensitive)
     {
         const std::filesystem::path DIR = std::filesystem::canonical(root);
 
         std::vector<Asset> v;
         for (auto& file : std::filesystem::recursive_directory_iterator(DIR))
         {
-            if (file.path().filename() == fn)
+            if ((caseSensitive && file.path().filename() == fn) ||
+                (!caseSensitive && iequal(file.path().filename().string(), fn.string())))
             {
                 v.emplace_back(getOrLoadAbsolute(file.path()));
             }
@@ -115,9 +129,9 @@ namespace oo
         return v;
     }
 
-    std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn)
+    std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive)
     {
-        return std::async(std::launch::async, &AssetManager::LoadName, this, fn);
+        return std::async(std::launch::async, &AssetManager::LoadName, this, fn, caseSensitive);
     }
 
     void AssetManager::fileWatch()
@@ -265,16 +279,6 @@ namespace oo
             assets.insert({ meta.id, asset });
             return asset;
         }
-    }
-
-    static bool iequal(const std::string& a, const std::string& b)
-    {
-        return std::equal(a.begin(), a.end(),
-                          b.begin(), b.end(),
-                          [](char a, char b)
-        {
-            return tolower(a) == tolower(b);
-        });
     }
 
     Asset AssetManager::createAsset(std::filesystem::path fp)
