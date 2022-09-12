@@ -39,11 +39,12 @@ namespace oo
         // Check for valid parent
         if (m_scene->IsValid(go->GetParentUUID()))
         {
-            // Check if parent has changed locally or if hierarchy above has changed [optimization step]
+            // Check if transform has changed locally or if parent has changed [optimization step]
             if (tf.m_transform.HasChanged() || go->GetParent().Transform().HasChanged())
             {
                 tf.m_transform.m_hasChanged = true;
-                tf.m_transform.m_globalTransform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform;
+                tf.m_transform.SetGlobalTransform(go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform);
+                //tf.m_transform.m_globalTransform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform;
             }
         }
 

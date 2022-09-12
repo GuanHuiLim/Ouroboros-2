@@ -55,6 +55,7 @@ namespace oo
         mat4 GetGlobalRotationMatrix()  const;
         vec3 GetGlobalRotationRad()     const;  // return vec3 for rotation of each component (euler angles)
         vec3 GetGlobalRotationDeg()     const;  // return vec3 for rotation of each component (euler angles)
+        quat GetGlobalRotationQuat()    const;
         vec3 GetGlobalScale()           const;
 
         /*-----------------------------------------------------------------------------*/
@@ -67,13 +68,13 @@ namespace oo
 
         // Local Setters
         void SetPosition(vec3 pos);
-        void SetEulerAngles(vec3 eulerAngle);
+        void SetRotation(vec3 eulerAngle);
         void SetScale(vec3 scale);
 
         // Global Setters
         void SetGlobalPosition(vec3 position);
         void SetGlobalScale(vec3 scale);
-        void SetGlobalAngle(vec3 euler_angles);
+        void SetGlobalRotation(vec3 euler_angles);
         void SetGlobalTransform(vec3 position, vec3 euler_angles, vec3 scale);
         //void SetGlobalTransform(glm::mat4 const& targetGlobalTransform);
 
