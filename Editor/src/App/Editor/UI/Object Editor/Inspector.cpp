@@ -25,6 +25,7 @@
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
 //#include <Ouroboros/Physics/RigidbodyComponent.h>
+#include <Ouroboros/Vulkan/RendererComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -124,6 +125,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 
 
 		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);

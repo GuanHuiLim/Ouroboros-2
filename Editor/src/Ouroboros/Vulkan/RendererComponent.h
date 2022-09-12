@@ -6,6 +6,7 @@
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
 
+#include <rttr/type>
 namespace oo
 {
 	class Material;
@@ -15,7 +16,7 @@ namespace oo
 		Asset mesh_handle;
 
 		//no need to serialize
-		uint32_t model_handle;
+		uint32_t model_handle{0};
 		uint32_t graphicsWorld_ID;
 
 		void GetModelHandle()
@@ -30,6 +31,7 @@ namespace oo
 		//Probes
 
 		//Additional Settings
+		RTTR_ENABLE();
 	};
 
 	struct SkinMeshRendererComponent

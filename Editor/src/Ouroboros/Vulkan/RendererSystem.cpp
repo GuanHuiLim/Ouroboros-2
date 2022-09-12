@@ -1,12 +1,24 @@
 #include "pch.h"
 #include "RendererSystem.h"
 
+#include <rttr/registration>
 namespace oo
 {
+	RTTR_REGISTRATION
+	{
+		using namespace rttr;
+		registration::class_<MeshRendererComponent>("MeshRendererComponent")
+			.property_readonly("Model handle", &MeshRendererComponent::model_handle);
+	}
+
+
 	void oo::MeshRendererSystem::AssignObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
 	{
 		auto& comp = evnt->component;
 		comp.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
+		//HARDCODED AS CUBE, TO BE REMOVED LATER
+		comp.model_handle = 0;
+
 	}
 
 	void oo::MeshRendererSystem::ReleaseObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
