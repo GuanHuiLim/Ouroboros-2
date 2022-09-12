@@ -40,7 +40,9 @@ private:
 #if OO_EDITOR
 	Editor m_editor;
 #endif
-
+public://helpers
+	bool GetEditorMode()const { return m_editormode; }
+	void SetEditorMode(bool mode) { m_editormode = mode; };
 public:
     EditorLayer(SceneManager& m_sceneManager)
         : oo::Layer{ "EditorLayer" },

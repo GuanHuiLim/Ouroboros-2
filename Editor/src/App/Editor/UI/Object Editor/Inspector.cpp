@@ -315,7 +315,10 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
 	for (auto& scriptInfo : sc.GetScriptInfoAll())
 	{
-		
+		bool opened = ImGui::TreeNodeEx(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		ImGui::Separator();
+		if (opened == false)
+			continue;
 		for (auto& sfi : scriptInfo.second.fieldMap)
 		{
 			bool edit = false;

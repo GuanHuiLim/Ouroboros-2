@@ -18,6 +18,7 @@ Technology is prohibited.
 // specially include this file only at the entry point of the engine.
 #include <EntryPoint.h>
 
+// Basic files
 #include <Ouroboros/Core/Input.h>
 #include <Ouroboros/Core/Timer.h>
 #include <Ouroboros/Core/LayerSet.h>
@@ -44,12 +45,18 @@ Technology is prohibited.
 #include <Quaternion/include/Quaternion.h>
 #include <Scenegraph/include/scenegraph.h>
 
+// General Events
 #include <Ouroboros/Core/Events/ApplicationEvent.h>
+//events
+#include <App/Editor/Events/LoadProjectEvents.h>
+#include <App/Editor/Events/OpenPromtEvent.h>
 
 //Tracy
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
+// Scripting
 #include <Scripting/Scripting.h>
+
 
 class EditorApp final : public oo::Application
 {
@@ -57,6 +64,9 @@ private:
     // main scene manager
     SceneManager m_sceneManager;
     //oo::AssetManager m_assetManager{ "./" };
+#ifndef OO_END_PRODUCT
+    std::shared_ptr<EditorLayer> m_editorLayer;
+#endif
 
 public:
     EditorApp(oo::CommandLineArgs args)
@@ -74,12 +84,15 @@ public:
         // Main Layers
         m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
+
 #ifndef OO_END_PRODUCT
-        m_layerset.PushLayer(std::make_shared<EditorLayer>(m_sceneManager));
-#else
+        m_editorLayer = std::make_shared<EditorLayer>(m_sceneManager);
+        m_layerset.PushLayer(m_editorLayer);
+#else   // only for the end product we do this instead
         std::filesystem::path p("./Project/Config.json");
         Project::LoadProject(p);
 #endif
+
         m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
 
         // binding to events
@@ -116,11 +129,16 @@ public:
 
     void CloseApp(oo::WindowCloseEvent*)
     {
-#if defined OO_EDITOR 
-        CloseProjectEvent e;
-        oo::EventManager::Broadcast(&e);
-#endif
-        Close();
+        if (m_editorLayer->GetEditorMode() == true)
+        {
+            CloseProjectEvent e;
+            OpenPromptEvent<CloseProjectEvent> ope(e, [&]() { Close(); });
+            oo::EventManager::Broadcast(&ope);
+        }
+        else
+        {
+            Close();
+        }
     }
 
 private:

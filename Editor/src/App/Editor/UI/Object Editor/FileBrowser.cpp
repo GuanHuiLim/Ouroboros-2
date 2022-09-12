@@ -2,6 +2,7 @@
 
 #include "FileBrowser.h"
 #include "App/Editor/Events/OpenFileEvent.h"
+#include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/FileEventsFunction.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Utility/FileSystemUtills.h"
@@ -463,7 +464,8 @@ void FileBrowser::FileBehaviour(DirectoryInfo info)
 		BuildDirectoryList(info.name.string());
 
 	OpenFileEvent e = info.name;
-	oo::EventManager::Broadcast<OpenFileEvent>(&e);
+	OpenPromptEvent<OpenFileEvent> ope(e, 0);
+	oo::EventManager::Broadcast(&ope);
 }
 
 void FileBrowser::FileBehaviour(const std::filesystem::path& path)
@@ -473,7 +475,8 @@ void FileBrowser::FileBehaviour(const std::filesystem::path& path)
 		BuildDirectoryList(path.string());
 
 	OpenFileEvent e = path;
-	oo::EventManager::Broadcast<OpenFileEvent>(&e);
+	OpenPromptEvent<OpenFileEvent> ope(e,0);
+	oo::EventManager::Broadcast(&ope);
 }
 
 void FileBrowser::RecursiveDirective(const std::filesystem::path& path)
