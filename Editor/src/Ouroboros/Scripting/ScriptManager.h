@@ -57,15 +57,19 @@ namespace oo
             return s_ScriptList;
         }
 
-        static inline std::vector<ScriptClassInfo>& GetBeforeDefaultOrder()
+        static inline std::vector<ScriptClassInfo> const& GetBeforeDefaultOrder()
         {
             return s_BeforeDefaultOrder;
         }
+        static void InsertBeforeDefaultOrder(ScriptClassInfo const& classInfo, size_t pos);
+        static void RemoveBeforeDefaultOrder(ScriptClassInfo const& classInfo);
 
-        static inline std::vector<ScriptClassInfo>& GetAfterDefaultOrder()
+        static inline std::vector<ScriptClassInfo> const& GetAfterDefaultOrder()
         {
             return s_AfterDefaultOrder;
         }
+        static void InsertAfterDefaultOrder(ScriptClassInfo const& classInfo, size_t pos);
+        static void RemoveAfterDefaultOrder(ScriptClassInfo const& classInfo);
 
         static std::vector<MonoClass*> const GetScriptExecutionOrder();
 

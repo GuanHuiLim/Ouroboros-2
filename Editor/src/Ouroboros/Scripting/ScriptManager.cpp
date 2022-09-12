@@ -134,6 +134,45 @@ namespace oo
         return hasErrors;
     }
 
+    void ScriptManager::InsertBeforeDefaultOrder(ScriptClassInfo const& classInfo, size_t pos)
+    {
+        if (std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo) != s_BeforeDefaultOrder.end())
+            throw std::exception{ "script is already in before default order" };
+        if (std::find(s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end(), classInfo) != s_AfterDefaultOrder.end())
+            throw std::exception{ "script is already in before after order" };
+
+        if (pos > s_BeforeDefaultOrder.size())
+            s_BeforeDefaultOrder.emplace_back(classInfo);
+        else
+            s_BeforeDefaultOrder.emplace(s_BeforeDefaultOrder.begin() + pos, classInfo);
+    }
+    void ScriptManager::RemoveBeforeDefaultOrder(ScriptClassInfo const& classInfo)
+    {
+        auto search = std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo);
+        if (search == s_BeforeDefaultOrder.end())
+            throw std::exception{ "removing element from after order that does not exist" };
+        s_BeforeDefaultOrder.erase(search);
+    }
+    void ScriptManager::InsertAfterDefaultOrder(ScriptClassInfo const& classInfo, size_t pos)
+    {
+        if (std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo) != s_BeforeDefaultOrder.end())
+            throw std::exception{ "script is already in before default order" };
+        if (std::find(s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end(), classInfo) != s_AfterDefaultOrder.end())
+            throw std::exception{ "script is already in before after order" };
+
+        if (pos > s_AfterDefaultOrder.size())
+            s_AfterDefaultOrder.emplace_back(classInfo);
+        else
+            s_AfterDefaultOrder.emplace(s_AfterDefaultOrder.begin() + pos, classInfo);
+    }
+    void ScriptManager::RemoveAfterDefaultOrder(ScriptClassInfo const& classInfo)
+    {
+        auto search = std::find(s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end(), classInfo);
+        if (search == s_AfterDefaultOrder.end())
+            throw std::exception{ "removing element from after order that does not exist" };
+        s_AfterDefaultOrder.erase(search);
+    }
+
     std::vector<MonoClass*> const ScriptManager::GetScriptExecutionOrder()
     {
         std::vector<MonoClass*> executionOrder;
