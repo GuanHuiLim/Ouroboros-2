@@ -9,7 +9,7 @@ public:
 	static void LoadProject(std::filesystem::path& p);
 	static void SaveProject();
 public:
-	static std::shared_ptr<oo::AssetManager> GetAssetManager() {};
+	static std::shared_ptr<oo::AssetManager> GetAssetManager() { return s_AssetManager; };
 	
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };

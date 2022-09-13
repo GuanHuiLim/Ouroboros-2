@@ -25,6 +25,7 @@ public:
 		DOUBLE_TYPE,
 		SIZE_T_TYPE,
 		ENTITY_TYPE,
+		ASSET_TYPE,
 	};
 
 	inline static std::unordered_map<rttr::type::type_id, UItypes> types;

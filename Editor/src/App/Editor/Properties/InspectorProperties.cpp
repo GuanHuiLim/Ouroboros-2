@@ -3,10 +3,12 @@
 #include <Utility/UUID.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+
 #include <imgui/imgui/misc/cpp/imgui_stdlib.h>
 #include <glm/gtc/type_ptr.hpp>
 #include "Quaternion/include/Quaternion.h"
 #include "Ouroboros/ECS/GameObject.h"
+#include "App/Editor/UI/Object Editor/AssetBrowser.h"
 InspectorProperties::InspectorProperties()
 {
 	m_InspectorUI[UI_RTTRType::UItypes::BOOL_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
@@ -101,5 +103,21 @@ InspectorProperties::InspectorProperties()
 		edited = ImGui::DragScalarN(name.c_str(), ImGuiDataType_::ImGuiDataType_U64, &value, 1);
 		if (edited) { v = value; };
 		endEdit |= ImGui::IsItemDeactivatedAfterEdit();
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::ASSET_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		auto value = v.get_value<oo::Asset>();
+		static ImGuiID open = 0;
+		std::string string_temp = value.GetFilePath().stem().string();
+		ImGui::InputText(name.c_str(), &string_temp,ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+		ImGui::SameLine();
+		ImGuiID temp = ImGui::GetItemID();
+		if (ImGui::Button("Edit"))
+		{
+			open = temp;
+			edited = true;
+		}
+		if (open == temp)
+			AssetBrowser::AssetPickerUI(v, endEdit);
 	};
 }

@@ -4,7 +4,7 @@
 class AssetBrowser
 {
 public:
-	static void AssetPickerUI(rttr::variant& data, bool& edit, bool& edited);
+	static void AssetPickerUI(rttr::variant& data, bool& edited);
 private:
 
 };

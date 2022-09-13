@@ -21,7 +21,7 @@ Technology is prohibited.
 #include <rttr/type>
 #include <Ouroboros/EventSystem/Event.h>
 #include <Archetypes_Ecs/src/A_Ecs.h>
-
+#include "Ouroboros/Asset/Asset.h"
 namespace oo
 {
     class GameObjectComponent
@@ -33,7 +33,7 @@ namespace oo
         UUID Id;
         std::string Name = "Default Name Long enough for no short string optimization";
         scenenode::weak_pointer Node = {};
-
+		oo::Asset TestAsset;
         struct OnEnableEvent : public Event
         {
             OnEnableEvent(UUID id) : Id{ id } {}
