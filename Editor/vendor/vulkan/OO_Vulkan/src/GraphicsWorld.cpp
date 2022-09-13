@@ -17,10 +17,23 @@ int32_t GraphicsWorld::CreateObjectInstance()
 
 int32_t GraphicsWorld::CreateObjectInstance(ObjectInstance obj)
 {
+	++entityCount;
 	return m_ObjectInstances.Add(obj);
 }
 
 ObjectInstance& GraphicsWorld::GetObjectInstance(int32_t id)
 {
 	return m_ObjectInstances.Get(id);
+}
+
+void GraphicsWorld::DestroyObjectInstance(int32_t id)
+{
+	m_ObjectInstances.Remove(id);
+	--entityCount;
+}
+
+void GraphicsWorld::ClearObjectInstances()
+{
+	m_ObjectInstances.Clear();
+	entityCount = 0;
 }
