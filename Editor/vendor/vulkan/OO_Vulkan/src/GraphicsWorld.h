@@ -68,11 +68,15 @@ public:
     int32_t CreateObjectInstance();
     int32_t CreateObjectInstance(ObjectInstance obj);
     ObjectInstance& GetObjectInstance(int32_t id);
+    void DestroyObjectInstance(int32_t id);
+
+    void ClearObjectInstances();
 
     // TODO: Fix Me !
     std::array<OmniLightInstance, 6> m_HardcodedOmniLights;
 
 private:
+    int32_t entityCount{};
     BitContainer<ObjectInstance> m_ObjectInstances;
     BitContainer<OmniLightInstance> m_OmniLightInstances;
     //etc
