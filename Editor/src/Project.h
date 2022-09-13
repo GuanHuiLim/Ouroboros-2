@@ -10,8 +10,10 @@ public:
 	static void SaveProject();
 public:
 	static std::shared_ptr<oo::AssetManager> GetAssetManager() {};
+	
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
+	static std::filesystem::path GetAssetFolder() { return s_projectFolder.string() + s_assetFolder.string(); };
 	static std::filesystem::path GetSceneFolder() { return s_projectFolder.string() + s_sceneFolder.string(); };
 	static std::filesystem::path GetPrefabFolder() { return s_projectFolder.string() + s_prefabFolder.string(); };
 

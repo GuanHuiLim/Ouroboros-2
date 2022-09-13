@@ -60,7 +60,8 @@ void Project::LoadProject(std::filesystem::path& config)
 
 	//load assets here
 
-
+	s_AssetManager = std::make_shared<oo::AssetManager>(GetAssetFolder());
+	
 }
 
 void Project::SaveProject()
