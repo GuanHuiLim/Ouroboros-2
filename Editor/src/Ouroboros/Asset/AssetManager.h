@@ -100,15 +100,17 @@ namespace oo
         /// Loads or retrieves all assets in a given directory path.
         /// </summary>
         /// <param name="path">The directory path relative to the AssetManager's root path.</param>
+        /// <param name="recursive">Whether to load directories recursively.</param>
         /// <returns>The assets.</returns>
-        std::vector<Asset> LoadDirectory(const std::filesystem::path& path);
+        std::vector<Asset> LoadDirectory(const std::filesystem::path& path, bool recursive = false);
 
         /// <summary>
         /// Loads or retrieves all assets in a given directory path.
         /// </summary>
         /// <param name="path">The directory path relative to the AssetManager's root path.</param>
+        /// <param name="recursive">Whether to load directories recursively.</param>
         /// <returns>The assets.</returns>
-        std::future<std::vector<Asset>> LoadDirectoryAsync(const std::filesystem::path& path);
+        std::future<std::vector<Asset>> LoadDirectoryAsync(const std::filesystem::path& path, bool recursive = false);
 
         /// <summary>
         /// Loads or retrieves an asset by a given file name.
