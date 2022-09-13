@@ -301,6 +301,7 @@ namespace oo
         }) != Asset::EXTS_TEXTURE.end())
         {
             // Load texture
+            asset.info->type = AssetInfo::Type::Texture;
             asset.info->onAssetCreate = [fp](AssetInfo& self)
             {
                 auto vc = Application::Get().GetWindow().GetVulkanContext();
