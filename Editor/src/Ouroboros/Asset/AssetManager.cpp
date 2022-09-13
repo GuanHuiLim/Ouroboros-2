@@ -22,6 +22,19 @@ Technology is prohibited.
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
+namespace
+{
+    bool iequal(const std::string& a, const std::string& b)
+    {
+        return std::equal(a.begin(), a.end(),
+                          b.begin(), b.end(),
+                          [](char a, char b)
+        {
+            return tolower(a) == tolower(b);
+        });
+    }
+}
+
 namespace oo
 {
     AssetManager::AssetManager(std::filesystem::path root)
@@ -80,14 +93,35 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::LoadPath, this, fp);
     }
 
-    std::vector<Asset> AssetManager::LoadName(const std::filesystem::path& fn)
+    std::vector<Asset> AssetManager::LoadDirectory(const std::filesystem::path& path)
+    {
+        const auto PATH = root / path;
+
+        if (!std::filesystem::exists(PATH) || !std::filesystem::is_directory(PATH))
+            return {};
+
+        std::vector<Asset> v;
+        for (auto& file : std::filesystem::directory_iterator(PATH))
+        {
+            v.emplace_back(getOrLoadAbsolute(file.path()));
+        }
+        return v;
+    }
+
+    std::future<std::vector<Asset>> AssetManager::LoadDirectoryAsync(const std::filesystem::path& path)
+    {
+        return std::async(std::launch::async, &AssetManager::LoadDirectory, this, path);
+    }
+
+    std::vector<Asset> AssetManager::LoadName(const std::filesystem::path& fn, bool caseSensitive)
     {
         const std::filesystem::path DIR = std::filesystem::canonical(root);
 
         std::vector<Asset> v;
         for (auto& file : std::filesystem::recursive_directory_iterator(DIR))
         {
-            if (file.path().filename() == fn)
+            if ((caseSensitive && file.path().filename() == fn) ||
+                (!caseSensitive && iequal(file.path().filename().string(), fn.string())))
             {
                 v.emplace_back(getOrLoadAbsolute(file.path()));
             }
@@ -95,9 +129,9 @@ namespace oo
         return v;
     }
 
-    std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn)
+    std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive)
     {
-        return std::async(std::launch::async, &AssetManager::LoadName, this, fn);
+        return std::async(std::launch::async, &AssetManager::LoadName, this, fn, caseSensitive);
     }
 
     void AssetManager::fileWatch()
@@ -109,39 +143,49 @@ namespace oo
             const std::filesystem::path DIR = std::filesystem::canonical(root);
             if (std::filesystem::exists(DIR))
             {
-                // Check for creation or modification
-                for (auto& file : std::filesystem::recursive_directory_iterator(DIR))
+                // Check root
+                const auto ROOT_WRITE_TIME = std::filesystem::last_write_time(DIR);
+                if (tLast < ROOT_WRITE_TIME && ROOT_WRITE_TIME <= t)
                 {
-                    const std::filesystem::path FP = std::filesystem::canonical(file.path());
-                    const std::filesystem::path FP_EXT = FP.extension();
+                    updateAssetPaths(DIR);
+                }
 
+                // Iterate root
+                for (auto& fp : std::filesystem::recursive_directory_iterator(DIR))
+                {
+                    const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+                    if (!std::filesystem::is_regular_file(FP))
+                        continue;
+
+                    const std::filesystem::path FP_EXT = FP.extension();
                     if (FP_EXT == Asset::EXT_META)
+                        continue;
+
+                    const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
+                    if (WRITE_TIME <= tLast || t < WRITE_TIME)
                         continue;
 
                     auto fpMeta = FP;
                     fpMeta += Asset::EXT_META;
 
-                    const auto WRITE_TIME = std::filesystem::last_write_time(file.path());
-                    if (tLast < WRITE_TIME && WRITE_TIME <= t)
+                    AssetMetaContent meta;
+                    std::ifstream ifs = std::ifstream(fpMeta);
+                    BinaryIO::Read(ifs, meta);
+                    if (!assets.contains(meta.id))
                     {
-                        // Updated
-                        AssetMetaContent meta;
-                        std::ifstream ifs = std::ifstream(fpMeta);
-                        BinaryIO::Read(ifs, meta);
-                        if (!assets.contains(meta.id))
-                        {
-                            // Created
-                            LoadPath(FP);
-                            std::cout << "Created " << FP << "\n";
-                        }
-                        else
-                        {
-                            // Modified
-                            assets[meta.id].info->timeLoaded = t;
-                            assets[meta.id].destroyData();
-                            assets[meta.id].createData();
-                            std::cout << "Modified " << FP << "\n";
-                        }
+                        // Created
+                        LoadPath(FP);
+                        std::cout << "Created " << FP << "\n";
+                    }
+                    else
+                    {
+                        // Modified
+                        assets[meta.id].info->contentPath = FP;
+                        assets[meta.id].info->metaPath = fpMeta;
+                        assets[meta.id].info->timeLoaded = t;
+                        assets[meta.id].destroyData();
+                        assets[meta.id].createData();
+                        std::cout << "Modified " << FP << "\n";
                     }
                 }
             }
@@ -155,6 +199,41 @@ namespace oo
             }
             tLast = t;
             t = now;
+        }
+    }
+
+    void AssetManager::updateAssetPaths(const std::filesystem::path& dir)
+    {
+        for (auto& fp : std::filesystem::directory_iterator(dir))
+        {
+            if (std::filesystem::is_regular_file(fp))
+            {
+                const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+
+                const std::filesystem::path FP_EXT = FP.extension();
+                if (FP_EXT == Asset::EXT_META)
+                    continue;
+
+                auto fpMeta = FP;
+                fpMeta += Asset::EXT_META;
+                if (!std::filesystem::exists(fpMeta))
+                    continue;
+
+                AssetMetaContent meta;
+                std::ifstream ifs = std::ifstream(fpMeta);
+                BinaryIO::Read(ifs, meta);
+                if (assets.contains(meta.id) && assets[meta.id].info->contentPath != FP)
+                {
+                    // Moved
+                    assets[meta.id].info->contentPath = FP;
+                    assets[meta.id].info->metaPath = fpMeta;
+                    std::cout << "Moved " << FP << "\n";
+                }
+            }
+            else if (std::filesystem::is_directory(fp))
+            {
+                updateAssetPaths(fp);
+            }
         }
     }
 
@@ -205,13 +284,16 @@ namespace oo
     Asset AssetManager::createAsset(std::filesystem::path fp)
     {
         const auto FP_EXT = fp.extension();
-        Asset asset = Asset(fp);
-        if (std::find(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), FP_EXT) != Asset::EXTS_TEXTURE.end())
+        Asset asset = Asset(std::filesystem::canonical(fp));
+        if (std::find_if(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), [FP_EXT](const auto& e)
+        {
+            return iequal(e, FP_EXT.string());
+        }) != Asset::EXTS_TEXTURE.end())
         {
             // Load texture
             asset.info->onAssetCreate = [fp](AssetInfo& self)
             {
-            	auto vc = Application::Get().GetWindow().GetVulkanContext();
+                auto vc = Application::Get().GetWindow().GetVulkanContext();
                 auto vr = vc->getRenderer();
                 auto data1 = vr->CreateTexture(fp.string());
                 auto data2 = vr->GetImguiID(data1);

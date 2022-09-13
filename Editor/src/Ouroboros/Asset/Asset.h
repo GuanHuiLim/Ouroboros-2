@@ -71,7 +71,7 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         static constexpr Extension EXT_META = ".meta";
-        static constexpr ExtensionList<3> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg" };
+        static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".ogg" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
 
@@ -86,9 +86,9 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         Asset(std::filesystem::path contentPath = {}, AssetID id = GenerateSnowflake());
-        Asset(Asset& other);
+        Asset(const Asset& other);
         Asset(Asset&& other);
-        Asset& operator=(Asset& other);
+        Asset& operator=(const Asset& other);
         Asset& operator=(Asset&& other);
         ~Asset();
 
