@@ -40,6 +40,13 @@ namespace oo
 
         using Callback = std::function<void(AssetInfo&)>;
         using DataTypeOffsetsType = std::unordered_map<std::type_index, size_t>;
+        enum class Type
+        {
+            Text = 0,
+            Texture,
+            Font,
+            Audio,
+        };
 
         /* --------------------------------------------------------------------------- */
         /* Members                                                                     */
@@ -53,6 +60,7 @@ namespace oo
         Callback onAssetDestroy = [](AssetInfo&) {};
         void* data = nullptr;
         DataTypeOffsetsType dataTypeOffsets;
+        Type type = Type::Text;
     };
 
     class Asset
@@ -106,6 +114,7 @@ namespace oo
         [[nodiscard]] inline bool HasData() const { return info->data; };
         template<typename T>
         [[nodiscard]] inline T GetData() const;
+        [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
 
     private:
         /* --------------------------------------------------------------------------- */

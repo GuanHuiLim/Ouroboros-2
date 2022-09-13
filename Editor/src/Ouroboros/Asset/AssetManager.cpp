@@ -93,7 +93,7 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::LoadPath, this, fp);
     }
 
-    std::vector<Asset> AssetManager::LoadDirectory(const std::filesystem::path& path)
+    std::vector<Asset> AssetManager::LoadDirectory(const std::filesystem::path& path, bool recursive)
     {
         const auto PATH = root / path;
 
@@ -101,16 +101,26 @@ namespace oo
             return {};
 
         std::vector<Asset> v;
-        for (auto& file : std::filesystem::directory_iterator(PATH))
+        if (recursive)
         {
-            v.emplace_back(getOrLoadAbsolute(file.path()));
+            for (auto& file : std::filesystem::recursive_directory_iterator(PATH))
+            {
+                v.emplace_back(getOrLoadAbsolute(file.path()));
+            }
+        }
+        else
+        {
+            for (auto& file : std::filesystem::directory_iterator(PATH))
+            {
+                v.emplace_back(getOrLoadAbsolute(file.path()));
+            }
         }
         return v;
     }
 
-    std::future<std::vector<Asset>> AssetManager::LoadDirectoryAsync(const std::filesystem::path& path)
+    std::future<std::vector<Asset>> AssetManager::LoadDirectoryAsync(const std::filesystem::path& path, bool recursive)
     {
-        return std::async(std::launch::async, &AssetManager::LoadDirectory, this, path);
+        return std::async(std::launch::async, &AssetManager::LoadDirectory, this, path, recursive);
     }
 
     std::vector<Asset> AssetManager::LoadName(const std::filesystem::path& fn, bool caseSensitive)
@@ -291,6 +301,7 @@ namespace oo
         }) != Asset::EXTS_TEXTURE.end())
         {
             // Load texture
+            asset.info->type = AssetInfo::Type::Texture;
             asset.info->onAssetCreate = [fp](AssetInfo& self)
             {
                 auto vc = Application::Get().GetWindow().GetVulkanContext();
