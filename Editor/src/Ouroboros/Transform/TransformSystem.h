@@ -35,6 +35,8 @@ namespace oo
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
+        void UpdateSubTree(GameObject go);
+
         void UpdateAllTransforms()
         {
             /*std::shared_ptr<oo::GameObject> rootGo = m_activeScene.GetRoot();
@@ -96,6 +98,7 @@ namespace oo
     private:
         void UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf);
 
+        void UpdateTree(scenenode::shared_pointer node);
     private:
         Scene* m_scene = nullptr;
 
