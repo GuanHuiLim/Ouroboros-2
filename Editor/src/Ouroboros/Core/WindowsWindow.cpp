@@ -167,7 +167,7 @@ namespace oo
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
-#ifdef OO_EDITOR
+#ifndef OO_END_PRODUCT
             // this should only run if there's imgui on
             ImGui_ImplSDL2_ProcessEvent(&event);
 #endif 

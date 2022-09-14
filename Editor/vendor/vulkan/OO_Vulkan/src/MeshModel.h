@@ -14,7 +14,7 @@
 class MeshContainer
 {
 public:
-    MeshContainer();
+    MeshContainer() = default;
     MeshContainer(std::vector<Mesh> newMeshList);
 
     size_t getMeshCount();
@@ -38,12 +38,12 @@ private:
 
 struct Model
 {
-    uint32_t gfxIndex;
+    uint32_t gfxIndex{};
     std::string fileName;
     std::vector<oGFX::Vertex> vertices;
     std::vector<uint32_t> indices;
-    Sphere s;
-    AABB aabb;
+    Sphere s{};
+    AABB aabb{};
 };
 
 struct gfxModel
@@ -66,13 +66,13 @@ struct gfxModel
 
     struct Textures
     {
-        uint32_t albedo;
-        uint32_t normal;
-        uint32_t occlusion;
-        uint32_t roughness;
-    }textures;
+        uint32_t albedo{};
+        uint32_t normal{};
+        uint32_t occlusion{};
+        uint32_t roughness{};
+    }textures{};
 
-    Model* cpuModel;
+    Model* cpuModel{ nullptr };
 
     void destroy(VkDevice device);
 
@@ -80,7 +80,7 @@ struct gfxModel
                   std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices);
 
     std::vector<Node*> nodes;
-    uint32_t meshCount;
+    uint32_t meshCount{};
 
 private:
     oGFX::Mesh* processMesh(aiMesh* mesh, const aiScene* scene, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices);

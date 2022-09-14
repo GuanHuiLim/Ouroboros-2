@@ -29,7 +29,7 @@ namespace oo
         Scene* m_scene = nullptr;
 
     public:
-        void Link(Scene* scene) { m_scene = scene; }
+        DeferredSystem(Scene* scene) : m_scene{ scene } {}
 
         // Removes all deferred component from the system
         virtual void Run(Ecs::ECSWorld* world) override

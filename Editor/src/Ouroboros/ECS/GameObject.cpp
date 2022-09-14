@@ -14,12 +14,15 @@ Technology is prohibited.
 #include "pch.h"
 #include "GameObject.h"
 
-//#include "Ouroboros/Transform/Transform3D.h"
+//#include "Ouroboros/Transform/TransformComponent.h"
 //#include "Ouroboros/Transform/TransformSystem.h"
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
 
+#include "Ouroboros/Scripting/ScriptComponent.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
+
 namespace oo
 {
     /*---------------------------------------------------------------------------------*/
@@ -47,7 +50,7 @@ namespace oo
 
     GameObject::GameObject(UUID uuid, Scene& scene)
         : m_scene { &scene }
-        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, Transform3D>() }
+        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent, ScriptComponent>() }
     {
         SetupGo(uuid, m_entity);
     }
@@ -69,6 +72,8 @@ namespace oo
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
         // TODO! [preserve transforms needs to be used]
+        UNREFERENCED(preserveTransforms);
+
         scenenode::shared_pointer parentNode = GetSceneNode().lock();
         scenenode::shared_pointer childNode = child.GetSceneNode().lock();
         if (parentNode && childNode)
@@ -120,7 +125,7 @@ namespace oo
     {
         std::vector<GameObject> gos;
         
-        for (auto& go : GetDirectChildsUUID())
+        for (auto& go : GetDirectChildsUUID(includeItself))
             gos.emplace_back(*m_scene->FindWithInstanceID(go));
         
         return gos;
@@ -130,7 +135,7 @@ namespace oo
     {
         std::vector<GameObject> gos;
 
-        for (auto& go : GetChildrenUUID())
+        for (auto& go : GetChildrenUUID(includeItself))
             gos.emplace_back(*m_scene->FindWithInstanceID(go));
 
         return gos;
@@ -156,7 +161,7 @@ namespace oo
     {
         auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
-        auto container = scenenode->get_direct_child_handles();
+        auto container = scenenode->get_direct_child_handles(includeItself);
         std::vector<UUID> result;
         for (auto& elem : container)
             result.emplace_back(elem);
@@ -167,7 +172,7 @@ namespace oo
     {
         auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
-        auto container = scenenode->get_all_child_handles();
+        auto container = scenenode->get_all_child_handles(includeItself);
         std::vector<UUID> result;
         for (auto& elem : container)
             result.emplace_back(elem);
@@ -193,22 +198,22 @@ namespace oo
         scenenode_ptr->set_debug_name(name);
     }
 
-	void GameObject::SetIsPrefab(bool isprefab) const
-	{
-		ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");
+    void GameObject::SetIsPrefab(bool isprefab) const
+    {
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");
 
-		// tell everyone that this is a prefab
-		GetComponent<GameObjectComponent>().IsPrefab = isprefab;
-	}
+        // tell everyone that this is a prefab
+        GetComponent<GameObjectComponent>().IsPrefab = isprefab;
+    }
 
     void GameObject::SetupGo(UUID uuid, Ecs::EntityID entt)
     {
         // add debugging component
-#if not define OO_PRODUCTION
+#if not defined OO_PRODUCTION
         oo::GameObjectDebugComponent comp{ this };
-        m_scene->GetWorld().add_component<oo::GameObjectDebugComponent>(m_entity, comp);
+        m_scene->GetWorld().add_component<oo::GameObjectDebugComponent>(entt, comp);
 #endif
-        auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(m_entity);
+        auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(entt);
         goComp.Id = uuid;
     }
 

@@ -21,67 +21,36 @@ Technology is prohibited.
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Scene/EditorController.h"
 
-#include "Ouroboros/Core/Input.h"
+#include "Ouroboros/EventSystem/Event.h"
 
-// TESTING
-#include "Ouroboros/Scripting/ScriptSystem.h"
+class ToolbarButtonEvent;
 
 namespace oo
 {
+    // forward declare event
+    struct GetCurrentSceneEvent;
+
     class SceneLayer final : public oo::Layer
     {
     private:
         SceneManager& m_sceneManager;
         RuntimeController m_runtimeController;
+#ifdef OO_EDITOR 
         EditorController m_editorController;
+#endif
     public:
 
-        SceneLayer(SceneManager& sceneManager)
-            : m_sceneManager { sceneManager }
-            , m_runtimeController { m_sceneManager }
-            , m_editorController{ m_sceneManager, m_runtimeController }
-            , Layer("Scene Management Layer")
-        {
-            //m_editorController.Init();
-        }
+        SceneLayer(SceneManager& sceneManager);
+        virtual ~SceneLayer() = default;
         
-        ~SceneLayer()
-        {
-        }
+        void OnAttach() override final;
+        void OnDetach() override final;
+        void OnUpdate() override final;
+
+    private:
+        void OnGetCurrentSceneEvent(GetCurrentSceneEvent* e);
         
-        void OnAttach() override final
-        {
-            m_sceneManager.Init();
-        }
-
-        void OnDetach() override final
-        {
-            m_sceneManager.Terminate();
-        }
-
-        void OnUpdate() override final
-        {
-            if (oo::input::IsKeyHeld(KEY_LEFT_SHIFT) && oo::input::IsKeyPressed(KEY_TAB))
-            {
-                ScriptSystem::Compile();
-                ScriptSystem::Load();
-            }
-            if (oo::input::IsKeyPressed(KEY_Q))
-            {
-                m_editorController.Simulate();
-            }
-            if (oo::input::IsKeyPressed(KEY_W))
-            {
-                m_editorController.Pause();
-            }
-            if (oo::input::IsKeyPressed(KEY_E))
-            {
-                m_editorController.Stop();
-            }
-
-            m_sceneManager.Update();
-        }
-
+        void OnToolbarButtonEvent(ToolbarButtonEvent* e);
     };
 
 }

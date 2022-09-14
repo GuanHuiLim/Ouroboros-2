@@ -9,20 +9,28 @@
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Utility/ImGui_ToggleButton.h"
 #include "App/Editor/Events/OpenFileEvent.h"
+#include "Utility/UUID.h"
 
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/Prefab/PrefabManager.h>
-
+#include <Ouroboros/Commands/Script_ActionCommand.h>
 
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
+
 #include <Ouroboros/Physics/Colliders.h>
+#include <Ouroboros/Scripting/ScriptComponent.h>
+#include <Ouroboros/Scripting/ScriptSystem.h>
+#include <Ouroboros/Scripting/ScriptManager.h>
+//#include <Ouroboros/Physics/RigidbodyComponent.h>
+#include <Ouroboros/Vulkan/RendererComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <Ouroboros/ECS/GameObjectDebugComponent.h>
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
@@ -147,7 +155,6 @@ void Inspector::Show()
 			gameobject->SetActive(active);
 		if (gameobject->HasComponent<oo::PrefabComponent>())
 		{
-			ImGui::SameLine();
 			if (ImGui::Button("Update Prefab"))
 			{
 				OpenFileEvent ofe(gameobject->GetComponent<oo::PrefabComponent>().prefab_filePath);
@@ -156,7 +163,6 @@ void Inspector::Show()
 		}
 		else
 		{
-			ImGui::SameLine();
 			if (ImGui::Button("Create Prefab"))
 			{
 				oo::PrefabManager::MakePrefab(gameobject);
@@ -176,21 +182,24 @@ void Inspector::Show()
 }
 void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
-	ImGui::BeginGroup();
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
-	DisplayComponent<oo::Transform3D>(gameobject);
+	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
-	
+
 	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereCollider>(gameobject);
 	DisplayComponent<oo::BoxCollider>(gameobject);
-	ImGui::EndGroup();
+
+	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
+	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
+	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
 {
 	float offset = (ImGui::GetContentRegionAvail().x - x) * 0.5f;
 	ImGui::Dummy({0,0});//for me to use sameline on
 	ImGui::SameLine(offset);
+	ImGui::PushID("AddC");
 	ImGui::BeginGroup();
 	m_AddComponentButton.SetSize({ x,50.0f });
 	m_AddComponentButton.UpdateToggle();
@@ -198,25 +207,66 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 	{
 		bool selected = false;
 		ImGui::BeginListBox("##AddComponents", { x,y });
-		ImGui::BeginChild("##child", { x - 10 ,y * 0.70f },true);
+		ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::Transform3D>(gameobject);
-		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 		
 		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::BoxCollider>(gameobject);
 		selected |= AddComponentSelectable<oo::SphereCollider>(gameobject);
+
+		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+
+		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+
+		//selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
+
+		selected |= AddScriptsSelectable(gameobject);
+
 		ImGui::EndChild();
-		ImGui::ListBoxHeader("##Searcharea", {x - 10,y*0.2f});
+
 		ImGui::PushItemWidth(-75.0f);
 		ImGui::InputText("Search", &m_filterComponents);
 		ImGui::PopItemWidth();
-		ImGui::ListBoxFooter();
+
 		ImGui::EndListBox();
 		if (selected)
+		{
 			m_AddComponentButton.SetToggle(false);
+			ImGui::EndGroup();
+			ImGui::PopID();
+			return;
+		}
 	}
 	ImGui::EndGroup();
+	ImGui::PopID();
+}
+bool Inspector::AddScriptsSelectable(oo::GameObject& go)
+{	
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.7f, 0.7f, 1.0f));
+	for (auto& script : oo::ScriptManager::GetScriptList())
+	{
+		auto name = script.ToString();
+		if (m_filterComponents.empty() == false)
+		{
+			auto iter = std::search(name.begin(), name.end(),
+				m_filterComponents.begin(), m_filterComponents.end(), [](char ch1, char ch2)
+				{
+					return std::toupper(ch1) == std::toupper(ch2);
+				});
+			if (iter == name.end())
+				continue;//not found
+		}
+		if (ImGui::Selectable(name.c_str(), false))
+		{
+			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
+			ImGui::PopStyleColor();
+			return true;
+		}
+		ImGui::Separator();
+	}
+	ImGui::PopStyleColor();
+	return false;
 }
 void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
@@ -256,8 +306,8 @@ void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type,
 			continue;
 		}
 
-		auto iter = m_InspectorUI.find(ut->second);
-		if (iter == m_InspectorUI.end())
+		auto iter = m_inspectorProperties.m_InspectorUI.find(ut->second);
+		if (iter == m_inspectorProperties.m_InspectorUI.end())
 			continue;
 
 		rttr::variant v = prop.get_value(value);
@@ -299,15 +349,17 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	auto ut = UI_RTTRType::types.find(id);
 	if (ut == UI_RTTRType::types.end())
 		return;
-	auto iter = m_InspectorUI.find(ut->second);
-	if (iter == m_InspectorUI.end())
+	auto iter = m_inspectorProperties.m_InspectorUI.find(ut->second);
+	if (iter == m_inspectorProperties.m_InspectorUI.end())
 		return;
 	ImGui::Text(name.c_str());
-	ImGui::PushID(id);
+	ImGui::Separator();
+	
+	ImGui::PushID(name.c_str());
+
 	ImGui::Dummy({ 5.0f,0 });
 	ImGui::SameLine();
 	ImGui::BeginGroup();
-	ImGui::Separator();
 	
 	size_t size = sqv.get_size();
 	constexpr size_t min_arrSize = 0;
@@ -329,12 +381,11 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	bool itemEdited = false;
 	bool itemEndEdit = false;
 	std::string tempstring = "##empty";
+
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
 		ImGui::PushID(i);
-		rttr::variant v = sqv.get_value(i);
-		std::string temp = v.get_type().get_name().data();
-		std::string tmep2 = rttr::type::get<bool>().get_name().data();
+		rttr::variant v = sqv.get_value(i).extract_wrapped_value();
 		iter->second(tempstring, v, itemEdited, itemEndEdit);
 		if (itemEdited)
 		{
@@ -347,4 +398,51 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	ImGui::EndGroup();
 	ImGui::PopID();
 	ImGui::Separator();
+}
+
+void Inspector::DisplayScript(oo::GameObject& gameobject)
+{
+	static oo::ScriptFieldInfo pre_val;
+	static bool new_value = true;
+	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
+	for (auto& scriptInfo : sc.GetScriptInfoAll())
+	{
+		bool opened = ImGui::TreeNodeEx(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		ImGui::Separator();
+		if (opened == false)
+			continue;
+		for (auto& sfi : scriptInfo.second.fieldMap)
+		{
+			bool edit = false;
+			bool edited = false;
+			oo::ScriptFieldInfo s_value = sfi.second;
+			auto iter = m_scriptingProperties.m_scriptUI.find(sfi.second.value.GetValueType());
+			if (iter == m_scriptingProperties.m_scriptUI.end())
+				continue;
+			else	
+				iter->second(s_value, edit, edited);
+
+			//undo redo code here
+			if (edit == true)
+			{
+				if (new_value)
+				{
+					pre_val = sfi.second;
+					new_value = false;
+				}
+				sfi.second.value = s_value.value;
+			}
+			if (edited == true)
+			{
+				oo::CommandStackManager::AddCommand(
+					new oo::Script_ActionCommand(
+						scriptInfo.first,
+						sfi.first,
+						pre_val.value,
+						s_value.value,
+						gameobject.GetInstanceID()));
+				new_value = true;
+			}
+		}
+	}
 }

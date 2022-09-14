@@ -143,7 +143,7 @@ project "Editor"
         -- if Editor needs any postbuild commands regardless of debug/release/production
         postbuildcommands
         {
-                -- [IMPORTANT] copy command requires a space after the target directory.
+			-- [IMPORTANT] copy command requires a space after the target directory.
             -- SDL2.0 
             {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" \"" .. binApp .. "\""},
             -- Controller Support file
@@ -156,6 +156,9 @@ project "Editor"
             {"{COPY} \"%{AppDir}/PlayMode.settings\" \"" .. binApp .. "\""},
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
+			-- copy Editor Icons Folder in its entirety.
+			{ "mkdir \"" .. binApp .. "/Icons\"" },
+			{"{COPY} \"%{AppDir}/icons\" \"" .. binApp .. "/Icons\"" },
             -- copy launcher's Data file
             {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
             -- tracy server copy 

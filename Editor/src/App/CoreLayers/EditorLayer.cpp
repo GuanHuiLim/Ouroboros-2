@@ -22,9 +22,16 @@ Technology is prohibited.
 #include <Ouroboros/EventSystem/EventManager.h>
 #include <App/Editor/Events/LoadProjectEvents.h>
 
+#include <Ouroboros/Core/Application.h>
+#include <Ouroboros/Vulkan/VulkanContext.h>
+
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
+#ifdef OO_EDITOR
+	ImGuiManager::InitAssetsAll();
+#endif
+
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -32,15 +39,24 @@ void EditorLayer::OnAttach()
 
 void EditorLayer::OnUpdate()
 {
-    if (oo::input::IsKeyPressed(KEY_F5))
-    {
-        m_showDebugInfo = !m_showDebugInfo;
-    }
-
+#ifndef OO_END_PRODUCT
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
+#endif
+#ifdef OO_EDITOR
     else
 	    m_editor.Update();
+#endif
+
+
+    /*if (myImageAsset.HasData())
+    {
+        auto num = myImageAsset.GetData<uint32_t>();
+        auto vc = reinterpret_cast<oo::VulkanContext*>(oo::Application::Get().GetWindow().GetRenderingContext());
+        auto vr = vc->getRenderer();
+        ImGui::Image(reinterpret_cast<void*>(vr->GetImguiID(num)), ImVec2(100, 100));
+    }*/
+	//std::cout << "loaded image data is " << *myImageAsset.GetData<uint32_t>() << '\n';
 
 	//top menu bar
 	//Editor::MenuBar();
@@ -50,9 +66,13 @@ void EditorLayer::OnUpdate()
 		{
 			if (ImGui::MenuItem("Open Launcher")) 
 			{
-				m_editormode = false;
+#ifdef OO_EDITOR
 				CloseProjectEvent e;
-				oo::EventManager::Broadcast(&e);
+				OpenPromptEvent<CloseProjectEvent> ope(e, [this]() {this->SetEditorMode(false); });
+				oo::EventManager::Broadcast(&ope);
+#else
+				m_editormode = false;
+#endif
 			}
 			ImGui::EndMenu();
 		}

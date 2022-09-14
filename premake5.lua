@@ -34,6 +34,13 @@ workspace "Ouroboros"
         defines "OO_EDITOR"
     filter{}
 
+    filter{ "configurations:Production", "platforms:Executable"}
+        defines { "OO_END_PRODUCT" }
+    -- ONLY UNCOMMENT FOR TESTING
+    -- filter{ "configurations:Debug", "platforms:Executable"}
+    --     defines { "OO_END_PRODUCT" }
+    filter{}
+
     flags
     {
         "MultiProcessorCompile", -- enable multicore compilation

@@ -7,7 +7,7 @@
 \brief          Defines the data and functions required to allow for operations
                 to move objects around in a define 3D space 
 
-\note           Name of component Transform3D
+\note           Name of component TransformComponent
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -22,7 +22,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    class Transform3D
+    class TransformComponent
     {
     public:
         using vec3 = Transform::vec3;

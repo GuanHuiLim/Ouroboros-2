@@ -16,6 +16,6 @@ private:
 
 	std::vector<vkutils::Texture2D> textures;
 
-	FramebufferCache* cache;
+	FramebufferCache* cache{ nullptr };
 };
 

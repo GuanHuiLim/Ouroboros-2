@@ -21,7 +21,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go, Transform3D& tf)
+    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf)
     {
         static constexpr const char* const per_transform_update = "per_transform_update";
         TRACY_TRACK_PERFORMANCE(per_transform_update);
@@ -65,14 +65,15 @@ namespace oo
             //{
             //    Ecs::Query query;
             //    query.with<GameObjectComponent, Transform3D>().exclude<DeferredComponent>().build();
+            //    query.with<GameObjectComponent, Transform3D>().include<DeferredComponent>().build();
             //    return query;
             //}();
-            //world->for_each(query, [&](GameObjectComponent& gocomp, Transform3D& tf) { /*UpdateTransform(gocomp, tf); */ });
+            //world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { /*UpdateTransform(gocomp, tf); */ });
 
             // Option 2
             //Ecs::Query query;
-            //query.with<GameObjectComponent, Transform3D>().exclude<DeferredComponent>().build();
-            //world->for_each(query, [&](GameObjectComponent& gocomp, Transform3D& tf) { UpdateTransform(gocomp, tf); });
+            //query.with<GameObjectComponent, TransformComponent>().exclude<DeferredComponent>().build();
+            //world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { UpdateTransform(gocomp, tf); });
             
             // Transform System updates via the scenegraph because the order matters
             {
@@ -81,7 +82,7 @@ namespace oo
                 TRACY_PROFILE_SCOPE_NC(pre_transform_collect, tracy::Color::Gold3);
 
                 //std::vector<Scene::go_ptr> objects_to_update;
-                auto& const graph = m_scene->GetGraph();
+                auto const&  graph = m_scene->GetGraph();
                 //graph.get_childs(graph.get_root());
 
                 scenegraph::shared_pointer root_node = graph.get_root();
@@ -137,7 +138,7 @@ namespace oo
                     static constexpr const char* const get_transform = "get_transform";
                     TRACY_TRACK_PERFORMANCE(get_transform);
                     TRACY_PROFILE_SCOPE_NC(get_transform, tracy::Color::Gold4);
-                    Transform3D& tf = go->Transform();
+                    TransformComponent& tf = go->Transform();
                     TRACY_PROFILE_SCOPE_END();
                     TRACY_DISPLAY_PERFORMANCE_SELECTED(get_transform);
                     

@@ -11,8 +11,14 @@
 #include <fstream>
 #include <vector>
 
-#include "stb_image.h"
-#include "DDSLoader.h"
+
+#pragma warning( push )
+#pragma warning( disable : 26451 ) // arithmetic overflow
+#pragma warning( disable : 26495 ) // uninitialized
+#pragma warning( disable : 26819 ) // fallthrough
+#include "loader/stb_image.h"
+#include "loader/DDSLoader.h"
+#pragma warning( pop )
 #include <filesystem>
 
 
@@ -20,6 +26,13 @@
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
 #include "VulkanRenderer.h" // pfn
+
+#include <algorithm>
+#include <stdexcept>
+#include <fstream>
+#include <vector>
+#include <filesystem>
+
 namespace oGFX
 {
 	oGFX::QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
@@ -141,6 +154,8 @@ namespace oGFX
 
 	const std::vector<VkDescriptorSet>& GetGFXDescriptoSetGroup()
 	{
+		// TODO : return some stuff
+		assert(true);
 		return {};
 	}
 
@@ -179,18 +194,20 @@ namespace oGFX
 
 	VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
 	{
+		//return { VK_FORMAT_B8G8R8A8_SRGB,  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+		
 		//If only 1 format available and is VK_FORMAT_UNDEFINED return what format we want.
 		// VK_FORMAT_UNDEFINED - means that all formats are available (no restrictions) so we can return what we want
 		if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
 		{
-			return { VK_FORMAT_R8G8B8A8_UNORM , VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+			return { VK_FORMAT_R8G8B8A8_SRGB , VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 		}
 
 		//If we are restricted, search for optimal format
 		//Could write proper algorithm for finding best colorspace and color format combination
 		for (const auto &format : formats)
 		{
-			if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			if ((format.format == VK_FORMAT_R8G8B8A8_SRGB || format.format == VK_FORMAT_B8G8R8A8_SRGB) && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			{
 				return format;
 			}
@@ -641,7 +658,7 @@ namespace oGFX
 		{
 			decodeType = ExtensionType::STB;
 			auto ptr = stbi_load(fileName.c_str(), &this->w, &this->h, &this->channels, STBI_rgb_alpha);
-			dataSize = this->w * this->h * STBI_rgb_alpha;
+			dataSize = size_t(this->w) * size_t(this->h) * size_t(STBI_rgb_alpha);
 			imgData.resize(dataSize);
 			memcpy(imgData.data(), ptr, dataSize);
 			stbi_image_free(ptr);

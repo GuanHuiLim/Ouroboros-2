@@ -26,8 +26,9 @@ VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info)
 
 	int lastBinding = -1;
 
+	// signed unsigned changed care...
 	//copy from the direct info struct into our own one
-	for (int i = 0; i < info->attachmentCount; i++) {
+	for (uint32_t i = 0; i < info->attachmentCount; i++) {
 		bufferInfo.attachments.push_back(info->pAttachments[i]);
 	}
 
@@ -38,6 +39,7 @@ VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info)
 	}
 	else {
 		//create a new one (not found)
+		std::cout << "[FBCache] Creating a new framebuffer.." << std::endl;
 		VkFramebuffer frameBuffer;
 		VK_CHK(vkCreateFramebuffer(device, info, nullptr, &frameBuffer));
 		VK_NAME(device, "famebufferCache::framebuffer", frameBuffer);
@@ -77,7 +79,7 @@ size_t FramebufferCache::FramebufferInfo::hash() const
 	for (const VkImageView& b : attachments)
 	{
 		//pack the binding data into a single int64. Not fully correct but it's ok
-		size_t binding_hash = reinterpret_cast<uint64_t>(b) | count << 8 | attachments.size() << 16 | 0 << 24;
+		size_t binding_hash = reinterpret_cast<uint64_t>(b) | size_t(count) << 8 | attachments.size() << 16 | 0 << 24;
 
 		++count;
 

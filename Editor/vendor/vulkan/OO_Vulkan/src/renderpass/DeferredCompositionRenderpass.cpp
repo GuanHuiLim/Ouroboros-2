@@ -10,17 +10,6 @@
 
 DECLARE_RENDERPASS(DeferredCompositionRenderpass);
 
-
-//struct test
-//{
-//	test()
-//	{
-//		auto ptr = new DeferredCompositionRenderpass;
-//		RenderPassDatabase::Get()->RegisterRenderPass(ptr);
-//		std::cout<< "KILL ME PLS" << std::endl;
-//	}
-//}t;
-
 void DeferredCompositionRenderpass::Init()
 {
 
@@ -94,27 +83,27 @@ void DeferredCompositionRenderpass::CreateDescriptors()
     // Image descriptors for the offscreen color attachments
     VkDescriptorImageInfo texDescriptorPosition = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
-		gbuffer->att_position.view,
+		gbuffer->attachments[GBufferAttachmentIndex::POSITION].view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     VkDescriptorImageInfo texDescriptorNormal = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
-		gbuffer->att_normal.view,
+		gbuffer->attachments[GBufferAttachmentIndex::NORMAL]  .view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     VkDescriptorImageInfo texDescriptorAlbedo = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
-		gbuffer->att_albedo.view,
+		gbuffer->attachments[GBufferAttachmentIndex::ALBEDO]  .view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     VkDescriptorImageInfo texDescriptorMaterial = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
-        gbuffer->att_material.view,
+        gbuffer->attachments[GBufferAttachmentIndex::MATERIAL].view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     VkDescriptorImageInfo texDescriptorDepth = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
-        gbuffer->att_depth.view,
+        gbuffer->attachments[GBufferAttachmentIndex::DEPTH]   .view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	
 	// TODO: Proper light buffer
@@ -137,8 +126,9 @@ void DeferredCompositionRenderpass::CreatePipeline()
 	std::vector<VkDescriptorSetLayout> setLayouts{ LayoutDB::DeferredComposition };
 
 	VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(setLayouts.data(),static_cast<uint32_t>(setLayouts.size()));	
+	VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
 	plci.pushConstantRangeCount = 1;
-	plci.pPushConstantRanges = &vr.pushConstantRange;
+	plci.pPushConstantRanges = &pushConstantRange;
 
 	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &layout_DeferredLightingComposition));
 	VK_NAME(m_device.logicalDevice, "compositionPipeLayout", layout_DeferredLightingComposition);

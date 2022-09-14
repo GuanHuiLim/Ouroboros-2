@@ -24,6 +24,11 @@ Technology is prohibited.
 #include <functional>
 #include "Utility/UUID.h"
 
+#include <OO_Vulkan/src/GraphicsWorld.h>
+
+#include <Scripting/ScriptDatabase.h>
+#include <Scripting/ComponentDatabase.h>
+
 namespace oo
 {
     //forward declare
@@ -85,6 +90,7 @@ namespace oo
         Ecs::ECSWorld& GetWorld();
         scenegraph const GetGraph() const;
         go_ptr GetRoot() const;
+        GraphicsWorld* GetGraphicsWorld() const;
 
     protected:
         void SetFilePath(std::string_view filepath);
@@ -109,7 +115,6 @@ namespace oo
         std::string m_name;
         std::string m_filepath;
 
-        
         // set of gameobjects to initialize
         //std::vector<std::pair<go_ptr, go_on_create_callback>> m_createList;
 
@@ -120,8 +125,13 @@ namespace oo
         // direct copy of all gameobjects in the scene
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 
+        std::unique_ptr<GraphicsWorld> m_graphicsWorld;
         std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
         go_ptr m_rootGo;
+
+        // scripting stuff
+        std::unique_ptr<ScriptDatabase> m_scriptDatabase;
+        std::unique_ptr<ComponentDatabase> m_componentDatabase;
     };
 }

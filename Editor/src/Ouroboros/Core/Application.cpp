@@ -17,7 +17,9 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Input.h"
 
-#include "Ouroboros/Core/GraphicsContext.h"
+//#include "Ouroboros/Core/GraphicsContext.h"
+#include "Ouroboros/Vulkan/VulkanContext.h"
+
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #include "Timer.h"
@@ -34,7 +36,8 @@ namespace oo
         s_instance = this;
         m_window = std::make_unique<WindowsWindow>(WindowProperties{ name });
         //Retrieve renderer from window
-        m_renderer = static_cast<GraphicsContext*>(m_window->GetRenderingContext());
+        //m_renderer = static_cast<GraphicsContext*>(m_window->GetRenderingContext());
+        m_renderer = m_window->GetVulkanContext();
 
         /*Initialize Input Management*/
         input::Init();

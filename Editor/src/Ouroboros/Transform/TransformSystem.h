@@ -26,11 +26,11 @@ namespace oo
     {
     public:
         
-        //TransformSystem(Scene* scene) : m_scene{ scene } {};
-        TransformSystem() = default;
+        TransformSystem(Scene* scene) : m_scene{ scene } {};
+        //TransformSystem() = default;
         virtual ~TransformSystem() = default;
         
-        void Link(Scene* scene) { m_scene = scene; }
+        //void Link(Scene* scene) { m_scene = scene; }
 
         void UpdateAllTransforms()
         {
@@ -53,7 +53,7 @@ namespace oo
             //readonlygraph = newgraph;
             
             /*Ecs::Query some_query;
-            some_query.with<Transform3D>().build();
+            some_query.with<TransformComponent>().build();
             
             scenegraph sg = m_activeScene.GetGraph();
             
@@ -86,14 +86,14 @@ namespace oo
             //}
 
             //std::shared_ptr<oo::GameObject> rootGo = m_activeScene.FindWithInstanceID(root_node->get_handle());
-            //rootGo->GetComponent<Transform3D>();
+            //rootGo->GetComponent<TransformComponent>();
             
         }
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
     private:
-        void UpdateTransform(std::shared_ptr<GameObject> const& go, Transform3D& tf);
+        void UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf);
 
     private:
         Scene* m_scene = nullptr;

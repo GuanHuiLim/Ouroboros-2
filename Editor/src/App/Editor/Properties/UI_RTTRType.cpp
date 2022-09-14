@@ -6,6 +6,8 @@
 #include <glm/vec3.hpp>
 #include <Quaternion/include/Quaternion.h>
 #include <filesystem>
+#include <Archetypes_Ecs/src/A_Ecs.h>
+
 void UI_RTTRType::Init()
 {
 	types.emplace(rttr::type::get<bool>().get_id(), UItypes::BOOL_TYPE);
@@ -19,5 +21,8 @@ void UI_RTTRType::Init()
 	types.emplace(rttr::type::get<glm::mat4>().get_id(), UItypes::MAT4_TYPE);
 	types.emplace(rttr::type::get<quaternion>().get_id(), UItypes::QUAT_TYPE);
 	types.emplace(rttr::type::get<std::filesystem::path>().get_id(), UItypes::PATH_TYPE);
+	types.emplace(rttr::type::get<double>().get_id(), UItypes::DOUBLE_TYPE);
+	types.emplace(rttr::type::get<std::size_t>().get_id(), UItypes::SIZE_T_TYPE);
+	types.emplace(rttr::type::get<Ecs::EntityID>().get_id(), UItypes::ENTITY_TYPE);
 
 }

@@ -60,7 +60,7 @@ private:
 
 	bool m_swapToAutoPartition = false;
 
-	uint32_t m_planePartitionCount[s_num_children];
+	uint32_t m_planePartitionCount[s_num_children]{};
 	bool LoadTree(const std::filesystem::path& path);
 
 	void SplitNode(BspNode* node,const Plane& plane,const std::vector<Point3D>& vertices, const std::vector<uint32_t>& indices);

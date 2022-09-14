@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "EcsUtils.h"
 #include "Archetype.h"
+#include "System.h"
 
 #include <vector>
 #include <unordered_map>
@@ -32,7 +33,7 @@ namespace Ecs
 		std::unordered_map<uint64_t, void*> singleton_map{};
 		std::unordered_map<uint64_t, ComponentInfo> singleton_info_map{};
 
-		std::unordered_map<size_t, void*> system_map{};
+		std::unordered_map<size_t, internal::LoadedSystem> system_map{};
 
 		int live_entities{ 0 }; //tracks number of active entity IDs
 		int dead_entities{ 0 }; //tracks number of dead entity IDs
@@ -42,6 +43,9 @@ namespace Ecs
 
 		EventCallback onAddEntity_callbacks;
 		EventCallback onDestroyEntity_callbacks;
+
+		std::unordered_map<std::size_t, EventCallback> onAddComponent_Callbacks;
+		std::unordered_map<std::size_t, EventCallback> onRemoveComponent_Callbacks;
 
 		inline IECSWorld();
 		~IECSWorld();

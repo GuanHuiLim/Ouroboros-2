@@ -15,12 +15,18 @@
 #include <functional>
 #include <string>
 
-#include "App/Editor/Utility/UI_RTTRType.h"
+#include "App/Editor/Properties/UI_RTTRType.h"
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Utility/ImGuiManager.h"
 
+#include <Ouroboros/Prefab/PrefabSceneController.h>
+#include <SceneManagement/include/SceneManager.h>
+
 #include "Ouroboros/Prefab/PrefabComponent.h"
 #include "Ouroboros/Scene/Scene.h"
+
+#include "App/Editor/Properties/SerializerProperties.h"
+#include "App/Editor/Properties/SerializerScriptingProperties.h"
 class Serializer
 {
 public:
@@ -67,6 +73,10 @@ private:
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
 	static void LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val);
 	static void LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val);
+
+	//scripts
+	static void SaveScript(oo::GameObject& go,rapidjson::Value& val,rapidjson::Document& doc);
+	static void LoadScript(oo::GameObject& go,rapidjson::Value&& val);
 protected://rpj wrappers
 	static void ResetDocument() noexcept;
 protected://serialzation helpers
@@ -75,11 +85,12 @@ protected://serialzation helpers
 private:
 	//the function requires the user to insert the variant into the value manually
 	//saving
-	inline static std::unordered_map < UI_RTTRType::UItypes, std::function<void(rapidjson::Document& doc, rapidjson::Value&, rttr::variant,rttr::property)>> save_commands;
+	inline static SerializerSaveProperties m_SaveProperties;
+	inline static SerializerScriptingSaveProperties m_saveScriptProperties;
 	//loading
-	inline static std::unordered_map < rttr::type::type_id, std::function<void(oo::GameObject&,rapidjson::Value&&)>> load_components;
-	inline static std::unordered_map < UI_RTTRType::UItypes, std::function<void(rttr::variant& , rapidjson::Value&&)>> load_commands;
-	//inline static rapidjson::Document doc;
+	inline static std::unordered_map < rttr::type::type_id, std::function<void(oo::GameObject&, rapidjson::Value&&)>> load_components;
+	inline static SerializerLoadProperties m_LoadProperties;
+	inline static SerializerScriptingLoadProperties m_loadScriptProperties;
 	inline static constexpr int rapidjson_precision = 4;
 };
 
@@ -112,8 +123,8 @@ inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val,
 			}
 			continue;//not supported
 		}
-		auto sf = save_commands.find(iter->second);
-		if (sf == save_commands.end())
+		auto sf = m_SaveProperties.m_save_commands.find(iter->second);
+		if (sf == m_SaveProperties.m_save_commands.end())
 			continue;//don't have this save function
 		sf->second(doc,v,prop.get_value(component),prop);
 	}
@@ -158,8 +169,8 @@ inline void Serializer::LoadComponent(oo::GameObject& go, rapidjson::Value&& val
 			}
 			continue;//not supported
 		}
-		auto command = load_commands.find(types_UI->second);
-		if (command == load_commands.end())
+		auto command = m_LoadProperties.m_load_commands.find(types_UI->second);
+		if (command == m_LoadProperties.m_load_commands.end())
 			continue;//don't have this save function
 		rttr::variant v;
 		command->second(v, std::move(iter->value));

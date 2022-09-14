@@ -36,6 +36,10 @@ namespace oo
 
         EventMemberFunction(T* instance, MemberFunctionPointer memberFunction) : m_instance{ instance }, m_memberFunction{ memberFunction } {};
 
+        bool operator==(EventMemberFunction& rhs)
+        {
+            return (m_instance == rhs.m_instance) && (m_memberFunction == rhs.m_memberFunction);
+        }
     protected:
         void Invoke(Event* event) override
         {

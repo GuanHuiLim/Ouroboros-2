@@ -10,17 +10,27 @@ namespace Ecs
 	{
 		friend struct IECSWorld;
 	protected:
-		IECSWorld* world;
+		IECSWorld* m_world;
 	public:
 		System() = default;
 		virtual ~System() = default;
 
 		virtual void Run(ECSWorld* world) = 0;
 	};
+
+	
 }
 
 namespace Ecs::internal
 {
+	using SystemDestructor = void(*)(void* ptr);
+
+	struct LoadedSystem
+	{
+		void* system;
+		SystemDestructor destructor;
+	};
+
 	class TestSystem : public System
 	{
 	public:

@@ -103,7 +103,7 @@ namespace oGFX
 	struct SwapChainDetails
 	{
 		//surfaces properties , image sizes/extents etc...
-		VkSurfaceCapabilitiesKHR surfaceCapabilities;
+		VkSurfaceCapabilitiesKHR surfaceCapabilities{};
 		//surface image formats, eg. RGBA, data size of each color
 		std::vector<VkSurfaceFormatKHR> formats;
 		//how images should be presentated to screen, filo fifo etc..
@@ -113,8 +113,8 @@ namespace oGFX
 
 	struct SwapChainImage
 	{
-		VkImage image;
-		VkImageView imageView;
+		VkImage image{};
+		VkImageView imageView{};
 	};
 
 	struct Vertex
@@ -123,10 +123,10 @@ namespace oGFX
 		//float col[3] ; // Vertex colour (r, g, b)
 		//float tex[2] ; // Texture Coords(u,v)
 		glm::vec3 pos{0.0f}; // Vertex position (x, y, z)
-		glm::vec3 norm; // Vertex normal (x, y, z)
+		glm::vec3 norm{}; // Vertex normal (x, y, z)
 		glm::vec3 col{0.0f,1.0f,0.0f}; // Vertex colour (r, g, b)
-		glm::vec2 tex; // Texture Coords(u,v)
-		glm::vec3 tangent; // Vertex normal (x, y, z)
+		glm::vec2 tex{}; // Texture Coords(u,v)
+		glm::vec3 tangent{}; // Vertex normal (x, y, z)
 	};
 
 	// Per-instance data block
@@ -589,6 +589,12 @@ namespace oGFX
 				pipelineLayoutCreateInfo.pSetLayouts = pSetLayouts;
 				return pipelineLayoutCreateInfo;
 			}
+
+			template<typename T>
+            inline VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(const T& setLayouts)
+            {
+                return pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
+            }
 
 			inline VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
 				VkDescriptorPool descriptorPool,

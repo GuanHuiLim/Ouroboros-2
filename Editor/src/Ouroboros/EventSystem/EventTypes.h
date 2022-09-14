@@ -17,4 +17,21 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
+#include "Ouroboros/EventSystem/Event.h"
 
+namespace oo
+{
+    //forward declare
+    class EditorScene;
+    class RuntimeScene;
+    class Scene;
+
+    struct GetCurrentSceneEvent : public Event
+    {
+        std::shared_ptr<EditorScene> CurrentEditorScene = nullptr;
+        std::shared_ptr<RuntimeScene> CurrentRuntimeScene = nullptr;
+        std::shared_ptr<Scene> CurrentScene = nullptr;
+        bool IsEditor = true;
+    };
+
+}

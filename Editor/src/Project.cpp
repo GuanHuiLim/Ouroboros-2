@@ -8,12 +8,14 @@
 #include <SceneManagement/include/SceneManager.h>
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
-#include "App/Editor/Utility/ImGuiManager.h"
+
 
 #include "Ouroboros/Scene/RuntimeController.h"
+#include "App/Editor/Utility/ImGuiManager.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
 
-#include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Scripting/ScriptManager.h"
 
 void Project::LoadProject(std::filesystem::path& config)
 {
@@ -41,7 +43,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_scriptbuildPath = (*prj_setting).value.FindMember("ScriptBuildPath")->value.GetString();
 
     UpdateScriptingFiles();
-    oo::ScriptSystem::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
+    oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
 
 	//scenes to add to scene manager
 	oo::RuntimeController::container_type m_loadpaths;
@@ -50,7 +52,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	{
 		m_loadpaths.emplace_back(oo::SceneInfo{ iter->name.GetString() , s_projectFolder.string() + s_sceneFolder.string() + iter->value.GetString() });
 	}
-	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_sceneFolder.string() + s_startingScene.string()), std::move(m_loadpaths));
+	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_sceneFolder.string() + s_startingScene.string()), std::move(m_loadpaths),std::move(s_projectFolder.string()));
 	oo::EventManager::Broadcast(&lpe);
 	//end
 	ifs.close();
@@ -74,8 +76,18 @@ void Project::SaveProject()
 	prj_setting->value.FindMember("StartScene")->value.SetString(relative.string().c_str(), static_cast<rapidjson::SizeType>(relative.string().size()), doc.GetAllocator());
 
 	auto scenes  = doc.FindMember("Scenes");
-	
-	//write your scenes
+	scenes->value.RemoveAllMembers();
+	auto size = scenes->value.MemberCount();
+	auto* runtimecontroller = ImGuiManager::s_runtime_controller;
+	auto loadpaths = runtimecontroller->GetLoadPaths();
+	for(auto scene_info : loadpaths)
+	{
+		rapidjson::Value name(scene_info.SceneName.c_str(),doc.GetAllocator());
+		std::filesystem::path scene_loadpath = std::filesystem::relative(scene_info.LoadPath, GetSceneFolder());
+		rapidjson::Value data(scene_loadpath.string().c_str(),doc.GetAllocator());
+		scenes->value.AddMember(name, data, doc.GetAllocator());
+	}
+		//write your scenes
 	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
 	//get all scenes
