@@ -59,9 +59,9 @@ void Project::LoadProject(std::filesystem::path& config)
 	ifs.close();
 
 	//load assets here
-	std::filesystem::path somepath = GetAssetFolder();
-	s_AssetManager = std::make_shared<oo::AssetManager>(somepath);
-	
+	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
+	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
+	s_AssetManager->LoadDirectoryAsync(hard_assetfolderpath, true);
 }
 
 void Project::SaveProject()

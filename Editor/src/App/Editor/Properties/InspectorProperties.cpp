@@ -118,6 +118,13 @@ InspectorProperties::InspectorProperties()
 			edited = true;
 		}
 		if (open == temp)
+		{
 			AssetBrowser::AssetPickerUI(v, endEdit);
+		}
+		if (endEdit)
+		{
+			edited = true;
+			open = 0;
+		}
 	};
 }

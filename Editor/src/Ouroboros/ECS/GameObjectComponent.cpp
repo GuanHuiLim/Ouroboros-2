@@ -27,7 +27,6 @@ namespace oo
 		.property("Name", &GameObjectComponent::Name)
 		.property("UUID", &GameObjectComponent::Id)
 		//.property("Layer", &GameObjectComponent::GetLayer, &GameObjectComponent::SetLayer)
-		.property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy)
-		.property("TestAsset", &GameObjectComponent::TestAsset);
+		.property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy);
     }
 }
