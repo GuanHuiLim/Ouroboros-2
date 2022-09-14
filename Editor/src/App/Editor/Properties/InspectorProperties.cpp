@@ -17,6 +17,12 @@ InspectorProperties::InspectorProperties()
 		edited = ImGui::Checkbox(name.c_str(), &value);
 		if (edited) { v = value; endEdit = true; };
 	};
+	m_InspectorUI[UI_RTTRType::UItypes::FLOAT_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		float value = v.get_value<float>();
+		edited = ImGui::DragFloat(name.c_str(), &value);
+		if (edited) { v = value; endEdit = true; };
+	};
 	m_InspectorUI[UI_RTTRType::UItypes::STRING_TYPE] = [](std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
 		auto value = v.to_string();

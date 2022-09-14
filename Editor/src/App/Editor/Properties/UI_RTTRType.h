@@ -10,6 +10,7 @@ public:
 	enum class UItypes
 	{
 		BOOL_TYPE = 0,
+		FLOAT_TYPE,
 		STRING_TYPE,
 		UUID_TYPE,
 
