@@ -29,7 +29,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		rapidjson::Value data;
-		auto vec = obj.Get<glm::vec2>();
+		auto vec = variant.get_value<glm::vec2>();
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
 		obj.AddMember(name, data, doc.GetAllocator());
@@ -39,7 +39,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		rapidjson::Value data;
-		auto vec = obj.Get<glm::vec3>();
+		auto vec = variant.get_value<glm::vec3>();
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
 		data.PushBack(vec.z, doc.GetAllocator());
@@ -50,7 +50,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		rapidjson::Value data;
-		auto vec = obj.Get<glm::vec4>();
+		auto vec = variant.get_value<glm::vec4>();
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
 		data.PushBack(vec.z, doc.GetAllocator());
@@ -62,7 +62,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		rapidjson::Value data;
-		auto vec = obj.Get<quaternion>().value;
+		auto vec = variant.get_value<quaternion>().value;
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
 		data.PushBack(vec.z, doc.GetAllocator());
