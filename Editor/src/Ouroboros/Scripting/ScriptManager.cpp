@@ -134,6 +134,15 @@ namespace oo
         return hasErrors;
     }
 
+    void ScriptManager::InsertBeforeDefaultOrder(ScriptClassInfo const& classInfo)
+    {
+        if (std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo) != s_BeforeDefaultOrder.end())
+            throw std::exception{ "script is already in before default order" };
+        if (std::find(s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end(), classInfo) != s_AfterDefaultOrder.end())
+            throw std::exception{ "script is already in before after order" };
+
+        s_BeforeDefaultOrder.emplace_back(classInfo);
+    }
     void ScriptManager::InsertBeforeDefaultOrder(ScriptClassInfo const& classInfo, size_t pos)
     {
         if (std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo) != s_BeforeDefaultOrder.end())
@@ -146,12 +155,30 @@ namespace oo
         else
             s_BeforeDefaultOrder.emplace(s_BeforeDefaultOrder.begin() + pos, classInfo);
     }
+    void ScriptManager::InsertBeforeDefaultOrder(ScriptClassInfo const& classInfo, std::vector<ScriptClassInfo>::iterator iter)
+    {
+        if (std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo) != s_BeforeDefaultOrder.end())
+            throw std::exception{ "script is already in before default order" };
+        if (std::find(s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end(), classInfo) != s_AfterDefaultOrder.end())
+            throw std::exception{ "script is already in before after order" };
+
+        s_BeforeDefaultOrder.emplace(iter, classInfo);
+    }
     void ScriptManager::RemoveBeforeDefaultOrder(ScriptClassInfo const& classInfo)
     {
         auto search = std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo);
         if (search == s_BeforeDefaultOrder.end())
             throw std::exception{ "removing element from after order that does not exist" };
         s_BeforeDefaultOrder.erase(search);
+    }
+    void ScriptManager::InsertAfterDefaultOrder(ScriptClassInfo const& classInfo)
+    {
+        if (std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo) != s_BeforeDefaultOrder.end())
+            throw std::exception{ "script is already in before default order" };
+        if (std::find(s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end(), classInfo) != s_AfterDefaultOrder.end())
+            throw std::exception{ "script is already in before after order" };
+
+        s_AfterDefaultOrder.emplace_back(classInfo);
     }
     void ScriptManager::InsertAfterDefaultOrder(ScriptClassInfo const& classInfo, size_t pos)
     {
@@ -164,6 +191,15 @@ namespace oo
             s_AfterDefaultOrder.emplace_back(classInfo);
         else
             s_AfterDefaultOrder.emplace(s_AfterDefaultOrder.begin() + pos, classInfo);
+    }
+    void ScriptManager::InsertAfterDefaultOrder(ScriptClassInfo const& classInfo, std::vector<ScriptClassInfo>::iterator iter)
+    {
+        if (std::find(s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end(), classInfo) != s_BeforeDefaultOrder.end())
+            throw std::exception{ "script is already in before default order" };
+        if (std::find(s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end(), classInfo) != s_AfterDefaultOrder.end())
+            throw std::exception{ "script is already in before after order" };
+
+        s_AfterDefaultOrder.emplace(iter, classInfo);
     }
     void ScriptManager::RemoveAfterDefaultOrder(ScriptClassInfo const& classInfo)
     {
