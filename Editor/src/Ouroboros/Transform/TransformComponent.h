@@ -89,6 +89,8 @@ namespace oo
         bool m_dirty = false;
         bool m_hasChanged = false;
 
+        glm::vec3 m_eulerAngles;
+        
         friend class TransformSystem;
     };
 }

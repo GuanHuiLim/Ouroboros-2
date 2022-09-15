@@ -34,16 +34,16 @@ namespace oo
             .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)
             .property_readonly("Local Matrix", &TransformComponent::GetLocalMatrix)
             .property_readonly("Global Matrix", &TransformComponent::GetGlobalMatrix)
-            .property("Global Position", &TransformComponent::GetGlobalPosition, &TransformComponent::SetGlobalPosition)
-            .property("Global Rotation", &TransformComponent::GetGlobalRotationDeg, &TransformComponent::SetGlobalRotation)
+            .property_readonly("Global Position", &TransformComponent::GetGlobalPosition)
+            .property_readonly("Global Rotation", &TransformComponent::GetGlobalRotationDeg)
             .property_readonly("Global Quaternion", &TransformComponent::GetGlobalRotationQuat)
-            .property("Global Scale", &TransformComponent::GetGlobalScale, &TransformComponent::SetGlobalScale); 
+            .property_readonly("Global Scale", &TransformComponent::GetGlobalScale);
         //added readonly for debugging purposes
     }
 
     TransformComponent::vec3 TransformComponent::GetPosition()                const { return m_transform.GetPosition(); }
     TransformComponent::quat TransformComponent::GetRotationQuat()            const { return m_transform.GetRotationQuat(); }
-    TransformComponent::vec3 TransformComponent::GetEulerAngles()             const { return m_transform.GetEulerAngles(); }
+    TransformComponent::vec3 TransformComponent::GetEulerAngles()             const { return m_eulerAngles; }
     TransformComponent::vec3 TransformComponent::GetScale()                   const { return m_transform.GetScale(); }
 
     TransformComponent::vec3 TransformComponent::LocalRight()                 const { return m_transform.LocalRight(); }
@@ -73,13 +73,25 @@ namespace oo
 
     // Local Setters
     void TransformComponent::SetPosition(vec3 pos)                          { m_dirty = true; m_transform.SetPosition(pos); }
-    void TransformComponent::SetRotation(vec3 euler_angles_degrees)         { m_dirty = true; m_transform.SetRotation(euler_angles_degrees); }
+    
+    void TransformComponent::SetRotation(vec3 euler_angles_degrees)         
+    { 
+        m_dirty = true; 
+        m_eulerAngles = euler_angles_degrees;
+        m_transform.SetRotation(quaternion::from_euler(glm::radians(m_eulerAngles)));
+    }
+
     void TransformComponent::SetScale(vec3 scale)                           { m_dirty = true; m_transform.SetScale(scale);}
 
     // Global Setters
     void TransformComponent::SetGlobalPosition(vec3 position)               { m_dirty = true; m_transform.SetGlobalPosition(position); }
     void TransformComponent::SetGlobalScale(vec3 scale)                     { m_dirty = true; m_transform.SetGlobalScale(scale); }
-    void TransformComponent::SetGlobalRotation(vec3 euler_angles_degrees)   { m_dirty = true; m_transform.SetGlobalRotation(euler_angles_degrees); }
+    void TransformComponent::SetGlobalRotation(vec3 euler_angles_degrees)   
+    { 
+        m_dirty = true; 
+        m_transform.SetGlobalRotation(quaternion::from_euler(glm::radians(euler_angles_degrees))); 
+    }
+
     void TransformComponent::SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale) 
     { 
         m_dirty = true;
