@@ -37,6 +37,59 @@ namespace
 
 namespace oo
 {
+    Asset& AssetManager::AssetStore::At(AssetID id)
+    {
+        return assets.at(id);
+    }
+
+    Asset AssetManager::AssetStore::At(AssetID id) const
+    {
+        return assets.at(id);
+    }
+
+    std::vector<std::reference_wrapper<Asset>> AssetManager::AssetStore::At(AssetInfo::Type type)
+    {
+        std::vector<std::reference_wrapper<Asset>> v;
+        auto& vid = assetsByType.at(type);
+        std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
+        {
+            return std::ref(assets.at(e));
+        });
+        return v;
+    }
+
+    std::vector<Asset> AssetManager::AssetStore::At(AssetInfo::Type type) const
+    {
+        std::vector<Asset> v;
+        auto& vid = assetsByType.at(type);
+        std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
+        {
+            return assets.at(e);
+        });
+        return v;
+    }
+
+    Asset AssetManager::AssetStore::Insert(AssetID id, const Asset& asset)
+    {
+        assets.insert({ id, asset });
+        if (!assetsByType.contains(asset.GetType()))
+            assetsByType.insert({ asset.GetType(), {} });
+        assetsByType.at(asset.GetType()).insert(id);
+        return asset;
+    }
+
+    void AssetManager::AssetStore::Erase(AssetID id)
+    {
+        const auto& ASSET = assets.at(id);
+        assetsByType.at(ASSET.GetType()).erase(id);
+        assets.erase(id);
+    }
+
+    bool AssetManager::AssetStore::Contains(AssetID id) const
+    {
+        return assets.contains(id);
+    }
+
     AssetManager::AssetManager(std::filesystem::path root)
         : root{ root }
     {
@@ -52,12 +105,13 @@ namespace oo
     Asset AssetManager::Get(const AssetID& snowflake)
     {
         // Get asset from asset store
-        if (assets.contains(snowflake))
+        if (assets.Contains(snowflake))
         {
-            const auto FP = assets[snowflake].GetFilePath();
+            const auto& ASSET = assets.At(snowflake);
+            const auto FP = ASSET.GetFilePath();
             if (std::filesystem::exists(FP))
             {
-                return assets.at(snowflake);
+                return ASSET;
             }
 
             // Remove meta file
@@ -68,7 +122,7 @@ namespace oo
                 std::filesystem::remove(fpMeta);
             }
 
-            assets.erase(snowflake);
+            assets.Erase(snowflake);
         }
         throw AssetNotFoundException();
     }
@@ -76,6 +130,11 @@ namespace oo
     std::future<Asset> AssetManager::GetAsync(const AssetID& snowflake)
     {
         return std::async(std::launch::async, &AssetManager::Get, this, snowflake);
+    }
+
+    std::vector<Asset> AssetManager::GetLoadedAssetsByType(AssetInfo::Type type) const
+    {
+        return assets.At(type);
     }
 
     Asset AssetManager::LoadPath(const std::filesystem::path& fp)
@@ -181,7 +240,7 @@ namespace oo
                     AssetMetaContent meta;
                     std::ifstream ifs = std::ifstream(fpMeta);
                     BinaryIO::Read(ifs, meta);
-                    if (!assets.contains(meta.id))
+                    if (!assets.Contains(meta.id))
                     {
                         // Created
                         LoadPath(FP);
@@ -190,11 +249,11 @@ namespace oo
                     else
                     {
                         // Modified
-                        assets[meta.id].info->contentPath = FP;
-                        assets[meta.id].info->metaPath = fpMeta;
-                        assets[meta.id].info->timeLoaded = t;
-                        assets[meta.id].destroyData();
-                        assets[meta.id].createData();
+                        assets.At(meta.id).info->contentPath = FP;
+                        assets.At(meta.id).info->metaPath = fpMeta;
+                        assets.At(meta.id).info->timeLoaded = t;
+                        assets.At(meta.id).destroyData();
+                        assets.At(meta.id).createData();
                         std::cout << "Modified " << FP << "\n";
                     }
                 }
@@ -232,11 +291,11 @@ namespace oo
                 AssetMetaContent meta;
                 std::ifstream ifs = std::ifstream(fpMeta);
                 BinaryIO::Read(ifs, meta);
-                if (assets.contains(meta.id) && assets[meta.id].info->contentPath != FP)
+                if (assets.Contains(meta.id) && assets.At(meta.id).info->contentPath != FP)
                 {
                     // Moved
-                    assets[meta.id].info->contentPath = FP;
-                    assets[meta.id].info->metaPath = fpMeta;
+                    assets.At(meta.id).info->contentPath = FP;
+                    assets.At(meta.id).info->metaPath = fpMeta;
                     std::cout << "Moved " << FP << "\n";
                 }
             }
@@ -277,16 +336,16 @@ namespace oo
         }
 
         // Get or load asset
-        if (assets.contains(meta.id))
+        if (assets.Contains(meta.id))
         {
             // Get asset
-            return assets.at(meta.id);
+            return assets.At(meta.id);
         }
         else
         {
             // Load asset
             Asset asset = createAsset(fpContent);
-            assets.insert({ meta.id, asset });
+            assets.Insert(meta.id, asset);
             return asset;
         }
     }

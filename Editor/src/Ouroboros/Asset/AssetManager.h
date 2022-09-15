@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <optional>
 #include <thread>
 #include <unordered_map>
+#include <set>
 #include <vector>
 
 #include "Asset.h"
@@ -33,6 +34,36 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         using AssetMap = std::unordered_map<AssetID, Asset>;
+        using TypeAssetIDsMap = std::unordered_map<AssetInfo::Type, std::set<AssetID>>;
+        class AssetStore
+        {
+        public:
+            /* ----------------------------------------------------------------------- */
+            /* Getters                                                                 */
+            /* ----------------------------------------------------------------------- */
+
+            [[nodiscard]] inline const AssetMap& GetAssets() const { return assets; };
+
+            /* ----------------------------------------------------------------------- */
+            /* Functions                                                               */
+            /* ----------------------------------------------------------------------- */
+
+            Asset& At(AssetID id);
+            Asset At(AssetID id) const;
+            std::vector<std::reference_wrapper<Asset>> At(AssetInfo::Type type);
+            std::vector<Asset> At(AssetInfo::Type type) const;
+            Asset Insert(AssetID id, const Asset& asset);
+            void Erase(AssetID id);
+            bool Contains(AssetID id) const;
+
+        private:
+            /* ----------------------------------------------------------------------- */
+            /* Members                                                                 */
+            /* ----------------------------------------------------------------------- */
+
+            AssetMap assets;
+            TypeAssetIDsMap assetsByType;
+        };
 
         /* --------------------------------------------------------------------------- */
         /* Constants                                                                   */
@@ -56,7 +87,7 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         [[nodiscard]] inline const std::filesystem::path& GetRootDirectory() const { return root; };
-        [[nodiscard]] inline const AssetMap& GetAssets() const { return assets; };
+        [[nodiscard]] inline const AssetMap& GetAssets() const { return assets.GetAssets(); };
 
         /* --------------------------------------------------------------------------- */
         /* Setters                                                                     */
@@ -81,6 +112,13 @@ namespace oo
         /// <param name="snowflake">The ID of the asset.</param>
         /// <returns>The future asset.</returns>
         std::future<Asset> GetAsync(const AssetID& snowflake);
+
+        /// <summary>
+        /// Retrieves all loaded assets of a given type.
+        /// </summary>
+        /// <param name="type">The type of asset.</param>
+        /// <returns>The loaded assets.</returns>
+        std::vector<Asset> GetLoadedAssetsByType(AssetInfo::Type type) const;
 
         /// <summary>
         /// Loads or retrieves an asset at a given file path.
@@ -135,7 +173,7 @@ namespace oo
 
         bool isRunning = true;
         std::filesystem::path root;
-        AssetMap assets;
+        AssetStore assets;
         std::thread fileWatchThread;
 
         /* --------------------------------------------------------------------------- */
