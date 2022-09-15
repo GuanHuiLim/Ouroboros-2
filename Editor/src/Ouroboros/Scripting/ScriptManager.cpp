@@ -15,6 +15,8 @@ namespace oo
     std::string ScriptManager::s_ProjectPath;
 
     std::vector<ScriptClassInfo> ScriptManager::s_ScriptList;
+    std::vector<ScriptClassInfo> ScriptManager::s_BeforeDefaultOrder;
+    std::vector<ScriptClassInfo> ScriptManager::s_AfterDefaultOrder;
 
     void ScriptManager::LoadProject(std::string const& buildPath, std::string const& projectPath)
     {
@@ -132,4 +134,38 @@ namespace oo
         return hasErrors;
     }
 
+    std::vector<MonoClass*> const ScriptManager::GetScriptExecutionOrder()
+    {
+        std::vector<MonoClass*> executionOrder;
+        
+        MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        if (monoBehaviour == nullptr)
+            return executionOrder;
+
+        std::vector<MonoClass*> baseClasses = ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour);
+        for (ScriptClassInfo const& classInfo : s_BeforeDefaultOrder)
+        {
+            MonoClass* klass = ScriptEngine::TryGetClass("Scripting", classInfo.name_space.c_str(), classInfo.name.c_str());
+            if (klass == nullptr)
+                continue;
+            baseClasses.erase(std::find(baseClasses.begin(), baseClasses.end(), klass));
+            executionOrder.emplace_back(klass);
+        }
+        std::vector<MonoClass*> afterExecutionOrder;
+        for (ScriptClassInfo const& classInfo : s_AfterDefaultOrder)
+        {
+            MonoClass* klass = ScriptEngine::TryGetClass("Scripting", classInfo.name_space.c_str(), classInfo.name.c_str());
+            if (klass == nullptr)
+                continue;
+            afterExecutionOrder.emplace_back(klass);
+        }
+        for (MonoClass* klass : baseClasses)
+        {
+            if (std::find(afterExecutionOrder.begin(), afterExecutionOrder.end(), klass) != afterExecutionOrder.end())
+                continue;
+            executionOrder.emplace_back(klass);
+        }
+        executionOrder.insert(executionOrder.end(), afterExecutionOrder.begin(), afterExecutionOrder.end());
+        return executionOrder;
+    }
 }

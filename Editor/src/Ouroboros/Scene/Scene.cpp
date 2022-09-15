@@ -31,6 +31,9 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
+
+#include "Ouroboros/Vulkan/RendererSystem.h"
+
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -77,6 +80,9 @@ namespace oo
                 //m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
 
                 m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
+
+                //rendering system initialization
+                m_ecsWorld->Add_System<oo::MeshRendererSystem>()->Init(&GetWorld(), GetGraphicsWorld());
             }
 
             PRINT(m_name);
@@ -113,6 +119,8 @@ namespace oo
     void Scene::Render()
     {
         PRINT(m_name);
+
+        GetWorld().Get_System<oo::MeshRendererSystem>()->Run();
         
         //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
         //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());

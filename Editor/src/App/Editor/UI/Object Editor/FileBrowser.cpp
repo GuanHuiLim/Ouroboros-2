@@ -2,6 +2,7 @@
 
 #include "FileBrowser.h"
 #include "App/Editor/Events/OpenFileEvent.h"
+#include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/FileEventsFunction.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Utility/FileSystemUtills.h"
@@ -17,14 +18,14 @@ FileBrowser::FileBrowser()
 {
 	s_Icons =
 	{
-		{ ".png" , "PNGIcon"},
-		{ ".obj" , "OBJFileIcon"},
-		{ ".mp3" , "MP3FileIcon"},
-		{ ".prefab" ,"PrefabIcon"},
-		{ ".scn" , "SceneIcon"},
-		{ ".anim" , "AnimationClipIcon"},
-		{ ".controller" , "AnimatorIcon"},
-		{ ".cs" , "CSFileIcon"},
+		{ ".png" , "PNGIcon.png"},
+		{ ".obj" , "OBJFileIcon.png"},
+		{ ".mp3" , "MP3FileIcon.png"},
+		{ ".prefab" ,"PrefabIcon.png"},
+		{ ".scn" , "SceneIcon.png"},
+		{ ".anim" , "AnimationClipIcon.png"},
+		{ ".controller" , "AnimatorIcon.png"},
+		{ ".cs" , "CSFileIcon.png"},
 	};
 	
 	oo::EventManager::Subscribe<OpenFileEvent>(&OpenAnimationEvent);
@@ -282,21 +283,21 @@ void FileBrowser::DirectoryBrowser()
 	ImGui::BeginGroup();
 
 	ImGui::BeginGroup();
-	ImGui::Image(ImGuiManager::s_EditorIcons["GenericFileIcon"], ImGui_StylePresets::image_small);
+	ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_small);
 	ImGui::SameLine();
 	if (ImGui::Selectable("Assets"))
 		FileBehaviour(Project::GetProjectFolder());
 	ImGui::EndGroup();
 
 	ImGui::BeginGroup();
-	ImGui::Image(ImGuiManager::s_EditorIcons["PrefabIcon"], ImGui_StylePresets::image_small);
+	ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("PrefabIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_small);
 	ImGui::SameLine();
 	if (ImGui::Selectable("Prefab"))
 		FileBehaviour(Project::GetPrefabFolder());
 	ImGui::EndGroup();
 
 	ImGui::BeginGroup();
-	ImGui::Image(ImGuiManager::s_EditorIcons["SceneIcon"], ImGui_StylePresets::image_small);
+	ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("SceneIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_small);
 	ImGui::SameLine();
 	if (ImGui::Selectable("Scene"))
 		FileBehaviour(Project::GetSceneFolder());
@@ -345,6 +346,12 @@ void FileBrowser::CreateIconButton(DirectoryInfo& info, ImVec2 size, const float
 
 	ImGui::SetCursorPos(orignal_cursorPos);
 	bool selected = ImGui::Selectable("##IconSelection", &info.selected, ImGuiSelectableFlags_AllowDoubleClick, icon_dimensions);
+	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload) && info.name.has_extension())
+	{
+		ImGui::SetDragDropPayload(info.name.extension().string().c_str(), &info.name, sizeof(std::filesystem::path));
+		ImGui::Text("Dragging type : %s", info.name.extension().string().c_str());
+		ImGui::EndDragDropSource();
+	}
 	if (ImGui::IsItemClicked(ImGuiMouseButton_Right) && m_selectedList.empty())
 	{
 		info.selected = true;
@@ -445,15 +452,15 @@ void FileBrowser::BuildDirectoryList(const std::string& path)
 ImTextureID FileBrowser::GetIcon(const std::string& ext)
 {
 	if (ext.empty())
-		return ImGuiManager::s_EditorIcons["FolderIcon"];
+		return ImGuiManager::s_editorAssetManager.LoadName("FolderIcon.png").begin()->GetData<ImTextureID>();
 
 	auto iter = s_Icons.find(ext);
 	if (iter == s_Icons.end())
-		return ImGuiManager::s_EditorIcons["GenericFileIcon"];
-	auto iconIter = ImGuiManager::s_EditorIcons.find(iter->second);
-	if (iconIter == ImGuiManager::s_EditorIcons.end())
-		return ImGuiManager::s_EditorIcons["GenericFileIcon"];
-	return iconIter->second;
+		return ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png").begin()->GetData<ImTextureID>();
+	auto list = ImGuiManager::s_editorAssetManager.LoadName(iter->second);
+	if (list.empty() == false)
+		return ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png").begin()->GetData<ImTextureID>();
+	return list[0].GetData<ImTextureID>();
 }
 
 void FileBrowser::FileBehaviour(DirectoryInfo info)
@@ -463,7 +470,8 @@ void FileBrowser::FileBehaviour(DirectoryInfo info)
 		BuildDirectoryList(info.name.string());
 
 	OpenFileEvent e = info.name;
-	oo::EventManager::Broadcast<OpenFileEvent>(&e);
+	OpenPromptEvent<OpenFileEvent> ope(e, 0);
+	oo::EventManager::Broadcast(&ope);
 }
 
 void FileBrowser::FileBehaviour(const std::filesystem::path& path)
@@ -473,7 +481,8 @@ void FileBrowser::FileBehaviour(const std::filesystem::path& path)
 		BuildDirectoryList(path.string());
 
 	OpenFileEvent e = path;
-	oo::EventManager::Broadcast<OpenFileEvent>(&e);
+	OpenPromptEvent<OpenFileEvent> ope(e,0);
+	oo::EventManager::Broadcast(&ope);
 }
 
 void FileBrowser::RecursiveDirective(const std::filesystem::path& path)
@@ -488,7 +497,7 @@ void FileBrowser::RecursiveDirective(const std::filesystem::path& path)
 		{
 			continue;
 		}
-		ImGui::Image(ImGuiManager::s_EditorIcons["FolderIcon"], { 15,15 });
+		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("FolderIcon.png").begin()->GetData<ImTextureID>(), { 15,15 });
 		flag = ImGuiTreeNodeFlags_OpenOnArrow;
 
 		ImGui::SameLine();

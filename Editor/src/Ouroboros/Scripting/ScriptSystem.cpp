@@ -34,13 +34,13 @@ namespace oo
         if (ScriptManager::DisplayErrors())
             return false;
 
-        MonoClass* monoBehaviour = ScriptEngine::TryGetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
-        if (monoBehaviour == nullptr)
+        std::vector<MonoClass*> executionOrder = ScriptManager::GetScriptExecutionOrder();
+        if (executionOrder.size() <= 0)
         {
             LOG_WARN("ScriptSystem: No scripts found, ScriptSystem functions will not be run");
             return true;
         }
-        scriptDatabase.Initialize(ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour));
+        scriptDatabase.Initialize(executionOrder);
 
         static Ecs::Query query = []()
         {

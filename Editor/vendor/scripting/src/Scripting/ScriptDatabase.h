@@ -21,6 +21,9 @@ namespace oo
         using ObjectCheck = std::function<bool(UUID)>;
 
     private:
+        using Index = size_t;
+        static constexpr Index INDEX_NOTFOUND = std::numeric_limits<Index>::max();
+
         struct Instance
         {
             IntPtr handle;
@@ -29,7 +32,9 @@ namespace oo
             Instance(IntPtr ptr) : handle{ ptr }, enabled{ true } {}
         };
         using InstancePool = std::unordered_map<UUID, Instance>;
-        std::unordered_map<std::string, InstancePool> scriptMap;
+        std::unordered_map<std::string, Index> indexMap;
+        std::vector<InstancePool> poolList;
+        // std::unordered_map<std::string, InstancePool> scriptMap;
 
     public:
         ScriptDatabase();
@@ -70,6 +75,8 @@ namespace oo
         void ForAllEnabled(Callback callback, ObjectCheck filter = nullptr);
 
     private:
+        Index GetInstancePoolIndex(const char* name_space, const char* name);
+
         InstancePool& GetInstancePool(const char* name_space, const char* name);
         Instance& GetInstance(UUID id, InstancePool& pool);
 

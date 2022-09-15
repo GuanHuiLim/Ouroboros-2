@@ -31,11 +31,13 @@ public:
 		FOLDER,
 		OTHERS,
 	};
-
+	OpenFileEvent() :m_filepath{ "" }, m_type{0} {};
 	OpenFileEvent(const std::filesystem::path& path) : m_filepath{ path }, m_type{ PathToFileType(path) } {};
+	OpenFileEvent(const OpenFileEvent&  ofe) : m_filepath{ ofe.m_filepath }, m_type{ ofe.m_type } {};
+	OpenFileEvent operator= (OpenFileEvent const& ofe) { this->m_filepath = ofe.m_filepath; this->m_type = ofe.m_type; return *this; };
 	~OpenFileEvent() {};
-	const FileType m_type;
-	const std::filesystem::path m_filepath;
+	FileType m_type;
+	std::filesystem::path m_filepath;
 private:
 	const FileType PathToFileType(const std::filesystem::path& path)
 	{

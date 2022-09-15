@@ -25,6 +25,7 @@
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
 //#include <Ouroboros/Physics/RigidbodyComponent.h>
+#include <Ouroboros/Vulkan/RendererComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -124,12 +125,13 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
-
+		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 
 		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+
 		//selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 
-		AddScriptsSelectable(gameobject);
+		selected |= AddScriptsSelectable(gameobject);
 		ImGui::EndChild();
 
 		ImGui::PushItemWidth(-75.0f);
@@ -141,6 +143,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		{
 			m_AddComponentButton.SetToggle(false);
 			ImGui::EndGroup();
+			ImGui::PopID();
 			return;
 		}
 	}
@@ -313,7 +316,10 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
 	for (auto& scriptInfo : sc.GetScriptInfoAll())
 	{
-		
+		bool opened = ImGui::TreeNodeEx(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		ImGui::Separator();
+		if (opened == false)
+			continue;
 		for (auto& sfi : scriptInfo.second.fieldMap)
 		{
 			bool edit = false;

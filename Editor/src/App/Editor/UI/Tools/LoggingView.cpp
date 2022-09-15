@@ -211,27 +211,27 @@ void LoggingView::LogSelectable(MessageData& item,
 	{
 	case 0://trace
 		ImGui::PushStyleColor(ImGuiCol_Text, { 0.2f,0.5f,0.2f,1 });
-		ImGui::Image(ImGuiManager::s_EditorIcons["LogsIcon"], {imageSize,imageSize});
+		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png").begin()->GetData<ImTextureID>(), {imageSize,imageSize});
 		break;
 	case 1://debug
 		ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f,0.5f,0.5f,1 });
-		ImGui::Image(ImGuiManager::s_EditorIcons["LogsIcon"], { imageSize,imageSize });
+		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 2://info
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1,1,1,1 });
-		ImGui::Image(ImGuiManager::s_EditorIcons["LogsIcon"], { imageSize,imageSize });
+		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 3://warn
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1,1,0,1 });
-		ImGui::Image(ImGuiManager::s_EditorIcons["WarningIcon"], { imageSize,imageSize });
+		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("WarningIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 4://err
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f,0.3f,0.3f,1 });
-		ImGui::Image(ImGuiManager::s_EditorIcons["ErrorIcon"], { imageSize,imageSize });
+		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("ErrorIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 5://critical
 		ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f,0.5f,1,1 });
-		ImGui::Image(ImGuiManager::s_EditorIcons["ErrorIcon"], { imageSize,imageSize });
+		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("ErrorIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	}
 	ImGui::SameLine();
