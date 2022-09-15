@@ -18,7 +18,8 @@ Mesh* MeshContainer::getMesh(size_t index)
 {
 	if (index >= meshList.size())
 	{
-		throw std::runtime_error("Attempted to access invad mesh index!");
+		std::cerr << "Attempted to access invalid mesh index!" << std::endl;
+		throw std::runtime_error("Attempted to access invalid mesh index!");
 	}
 
 	return &meshList[index];
@@ -40,6 +41,21 @@ void MeshContainer::destroyMeshModel()
 	{
 		mesh.destroyBuffers();
 	}
+}
+
+
+inline glm::vec3 aiVector3D_to_glm(const aiVector3D& v)
+{
+	return glm::vec3{ v.x, v.y, v.z };
+}
+
+inline glm::mat4 aiMat4_to_glm(const aiMatrix4x4& m)
+{
+	return glm::mat4{
+		{ m.a1, m.b1, m.c1, m.d1 },
+		{ m.a2, m.b2, m.c2, m.d2 },
+		{ m.a3, m.b3, m.c3, m.d3 },
+		{ m.a4, m.b4, m.c4, m.d4 },	};
 }
 
 std::vector<std::string> MeshContainer::LoadMaterials(const aiScene *scene)
@@ -203,7 +219,8 @@ void gfxModel::destroy(VkDevice device)
 	}
 }
 
-void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, uint32_t nodeIndex, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices)
+void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, uint32_t nodeIndex,
+	Model& cpuModel)
 {
 	Node* newNode = new Node();
 	newNode->parent = parent;
@@ -214,7 +231,7 @@ void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, u
 	{
 		for (size_t i = 0; i < node.mNumChildren; i++)
 		{
-			loadNode(newNode, scene, *node.mChildren[i], nodeIndex + static_cast<uint32_t>(i), vertices, indices);
+			loadNode(newNode, scene, *node.mChildren[i], nodeIndex + static_cast<uint32_t>(i), cpuModel);
 		}
 	}
 
@@ -223,7 +240,32 @@ void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, u
 		for (size_t i = 0; i < node.mNumMeshes; i++)
 		{
 			aiMesh* aimesh = scene->mMeshes[node.mMeshes[i]];
-			newNode->meshes.push_back( processMesh(aimesh, scene, vertices, indices));
+			newNode->meshes.push_back( processMesh(aimesh, scene, cpuModel.vertices, cpuModel.indices));
+
+			if (scene->HasAnimations() &&aimesh->HasBones())
+			{
+				for (size_t x = 0; x < aimesh->mNumBones; x++)
+				{
+					auto& bone = aimesh->mBones[x];
+					std::string name(bone->mName.C_Str());
+
+					auto iter = cpuModel.strToBone.find(name);
+					if (iter != cpuModel.strToBone.end())
+					{
+						// Duplicate bone name!
+						assert(true);
+					}
+					cpuModel.strToBone[name].offset = aiMat4_to_glm(bone->mOffsetMatrix);
+
+					std::cout << "Bone :" << name << std::endl;
+					std::cout << "Bone weights:" << bone->mNumWeights << std::endl;
+					for (size_t y = 0; y < bone->mNumWeights; y++)
+					{
+						std::cout << "\t v" << bone->mWeights[y].mVertexId << ":" << bone->mWeights[y].mWeight << std::endl;
+					}
+				}
+				
+			}
 		}
 	}
 
@@ -237,9 +279,27 @@ void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, u
 	}
 }
 
-inline glm::vec3 aiVector3D_to_glm(const aiVector3D& v)
+void offsetUpdateHelper(Node* parent, uint32_t& meshcount, uint32_t idxOffset, uint32_t vertOffset)
 {
-	return glm::vec3{ v.x, v.y, v.z };
+	for (auto& node : parent->children)
+	{
+		offsetUpdateHelper(node, meshcount, idxOffset, vertOffset);
+	}
+	for (auto& mesh :parent->meshes)
+	{
+		mesh->indicesOffset += idxOffset;
+		mesh->vertexOffset += vertOffset;
+
+		++meshcount;
+	}		
+}
+
+void gfxModel::updateOffsets(uint32_t idxOffset, uint32_t vertOffset)
+{
+	for (auto& node : nodes)
+	{
+		offsetUpdateHelper(node,this->meshCount, idxOffset, vertOffset);
+	}
 }
 
 oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices)

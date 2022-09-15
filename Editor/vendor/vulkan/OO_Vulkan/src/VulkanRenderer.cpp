@@ -75,9 +75,9 @@ VulkanRenderer::~VulkanRenderer()
 
 	RenderPassDatabase::Shutdown();
 
-	DestroyRenderBuffers();
+	fbCache.Cleanup();
 
-	ShutdownTreeDebug();
+	DestroyRenderBuffers();
 
 	samplerManager.Shutdown();
 
@@ -97,16 +97,6 @@ VulkanRenderer::~VulkanRenderer()
 
 	lightsBuffer.destroy();
 
-	vkDestroyFramebuffer(m_device.logicalDevice, offscreenFramebuffer, nullptr);
-	offscreenFB.destroy(m_device.logicalDevice);
-	offscreenDepth.destroy(m_device.logicalDevice);
-
-	if (offscreenPass)
-	{
-		vkDestroyRenderPass(m_device.logicalDevice, offscreenPass, nullptr);
-		offscreenPass = VK_NULL_HANDLE;
-	}
-
 	for (size_t i = 0; i < models.size(); i++)
 	{
 		models[i].destroy(m_device.logicalDevice);
@@ -118,7 +108,7 @@ VulkanRenderer::~VulkanRenderer()
 
 	// global sampler pool
 	vkDestroyDescriptorPool(m_device.logicalDevice, samplerDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_device.logicalDevice, LayoutDB::bindless, nullptr);
+	vkDestroyDescriptorSetLayout(m_device.logicalDevice, SetLayoutDB::bindless, nullptr);
 
 	for (auto framebuffer : swapChainFramebuffers)
 	{
@@ -139,12 +129,7 @@ VulkanRenderer::~VulkanRenderer()
 		vkDestroySemaphore(m_device.logicalDevice, imageAvailable[i], nullptr);
 	}
 
-	vkDestroyPipeline(m_device.logicalDevice, graphicsPSO, nullptr);
-	vkDestroyPipeline(m_device.logicalDevice, wireframePSO, nullptr);
-
-	vkDestroyPipeline(m_device.logicalDevice, indirectPSO, nullptr);
-	vkDestroyPipelineLayout(m_device.logicalDevice, indirectPSOLayout, nullptr);
-
+	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::indirectPSOLayout, nullptr);
 	
 	if (renderPass_default)
 	{
@@ -190,7 +175,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		InitializeRenderBuffers();
 
-		CreateRenderpass();
+		CreateDefaultRenderpass();
 		CreateUniformBuffers();
 		CreateDescriptorSetLayout();
 
@@ -209,7 +194,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		CreateDescriptorSets_GPUScene();
 
-		CreateGraphicsPipeline();
+		CreateDefaultPSOLayouts();
 
 		if (setupSpecs.useOwnImgui)
 		{
@@ -226,7 +211,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		GfxRenderpass* ptr;
 		ptr = new ShadowPass;
 		rpd->RegisterRenderPass(ptr);
-		 ptr = new DebugRenderpass;
+		 ptr = new DebugDrawRenderpass;
 		rpd->RegisterRenderPass(ptr);
 		 ptr = new GBufferRenderPass;
 		rpd->RegisterRenderPass(ptr);
@@ -237,24 +222,20 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		CreateFramebuffers();
 
-		CreateOffscreenPass();
-		CreateOffscreenFB();
-
 		CreateCommandBuffers();
 		CreateDescriptorPool();
 		CreateSynchronisation();
 
-
-		InitTreeDebugDraws();
 		InitDebugBuffers();
 		g_GlobalMeshBuffers.IdxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 		g_GlobalMeshBuffers.VtxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 		
 		PROFILE_INIT_VULKAN(&m_device.logicalDevice, &m_device.physicalDevice, &m_device.graphicsQueue, (uint32_t*)&m_device.queueIndices.graphicsFamily, 1, nullptr);
 	}
-	catch (std::runtime_error e)
+	catch (const std::exception& e)
 	{
-		throw e;
+		std::cout << "VulkanRenderer::Init failed: " << e.what() << std::endl;
+		throw e; // ???? wtf?
 	}
 	catch (...)
 	{
@@ -268,8 +249,13 @@ void VulkanRenderer::CreateInstance(const oGFX::SetupInfo& setupSpecs)
 	{
 		m_instance.Init(setupSpecs);
 	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Exception caught: " << e.what() << std::endl;
+	}
 	catch(...)
 	{
+		std::cerr << "Caught something, re-throwing from : " << __FUNCSIG__ << std::endl;
 		throw;
 	}
 }
@@ -305,7 +291,7 @@ void VulkanRenderer::SetupSwapchain()
 	m_swapchain.Init(m_instance,m_device);
 }
 
-void VulkanRenderer::CreateRenderpass()
+void VulkanRenderer::CreateDefaultRenderpass()
 {
 	if (renderPass_default)
 	{
@@ -323,8 +309,8 @@ void VulkanRenderer::CreateRenderpass()
 	colourAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; //describes what do with with stencil before rendering
 	colourAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; //describes what do with with stencil before rendering
 
-																		//frame buffer data will be stored as image, but images can be given different data layouts
-																		//to give optimal use for certain operations
+	//frame buffer data will be stored as image, but images can be given different data layouts
+	//to give optimal use for certain operations
 	colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //image data layout before render pass starts
 	//colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
 	colourAttachment.finalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL; //image data layout aftet render pass ( to change to)
@@ -332,12 +318,9 @@ void VulkanRenderer::CreateRenderpass()
 	// todo editor??
 	//colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
 
-																	// Depth attachment of render pass
+	// Depth attachment of render pass
 	VkAttachmentDescription depthAttachment{};
-	depthAttachment.format = oGFX::ChooseSupportedFormat(m_device,
-		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depthAttachment.format = G_DEPTH_FORMAT;
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -410,7 +393,7 @@ void VulkanRenderer::CreateRenderpass()
 	VK_NAME(m_device.logicalDevice, "defaultRenderPass",renderPass_default);
 
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default2));
+	//VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default2));
 	VK_NAME(m_device.logicalDevice, "defaultRenderPass_2",renderPass_default2);
 	//depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	//result = vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &compositionPass);
@@ -449,7 +432,7 @@ void VulkanRenderer::CreateDescriptorSetLayout()
 
 		DescriptorBuilder::Begin(&DescLayoutCache, &DescAlloc)
 			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(descriptorSets_uniform[i], LayoutDB::uniform);
+			.Build(descriptorSets_uniform[i], SetLayoutDB::uniform);
 	}
 	//UNIFORM VALUES DESCRIPTOR SET LAYOUT
 	// UboViewProejction binding info
@@ -473,169 +456,47 @@ void VulkanRenderer::CreateDescriptorSetLayout()
 	// Texture binding info
 	VkDescriptorSetLayoutBinding samplerLayoutBinding =
 		oGFX::vkutils::inits::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, MAX_OBJECTS);
-	
-	// create a descriptor set layout with given bindings for texture
-	VkDescriptorSetLayoutCreateInfo textureLayoutCreateInfo = 
-		oGFX::vkutils::inits::descriptorSetLayoutCreateInfo(&samplerLayoutBinding,1);
 
-
-	VkDescriptorBindingFlags flags[3];
-	//flags[0] = 0;
-	//flags[1] = 0;
-	flags[0] = 	VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
-
+	VkDescriptorBindingFlags flags = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
 	VkDescriptorSetLayoutBindingFlagsCreateInfo flaginfo{};
 	flaginfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-	flaginfo.pBindingFlags = flags;
+	flaginfo.pBindingFlags = &flags;
 	flaginfo.bindingCount = 1;
 
+	// create a descriptor set layout with given bindings for texture
+	VkDescriptorSetLayoutCreateInfo textureLayoutCreateInfo =
+		oGFX::vkutils::inits::descriptorSetLayoutCreateInfo(&samplerLayoutBinding, 1);
 	textureLayoutCreateInfo.pNext = &flaginfo;
 
-
-	VkResult result = vkCreateDescriptorSetLayout(m_device.logicalDevice, &textureLayoutCreateInfo, nullptr, &LayoutDB::bindless);
-	VK_NAME(m_device.logicalDevice, "samplerSetLayout", LayoutDB::bindless);
+	VkResult result = vkCreateDescriptorSetLayout(m_device.logicalDevice, &textureLayoutCreateInfo, nullptr, &SetLayoutDB::bindless);
+	VK_NAME(m_device.logicalDevice, "samplerSetLayout", SetLayoutDB::bindless);
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create a descriptor set layout!");
 	}
-
 }
 
-void VulkanRenderer::CreateGraphicsPipeline()
+void VulkanRenderer::CreateDefaultPSOLayouts()
 {
-	using namespace oGFX;
-	//create pipeline
-
-	//how the data for a single vertex (including infos such as pos, colour, texture, coords, normals etc) is as a whole
-	std::vector<VkVertexInputBindingDescription> bindingDescription = oGFX::GetGFXVertexInputBindings();
-
-	//how the data for an attirbute is define in the vertex
-	std::vector<VkVertexInputAttributeDescription>attributeDescriptions = oGFX::GetGFXVertexInputAttributes();
-	// -- VERTEX INPUT -- 
-	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo(bindingDescription,attributeDescriptions);
-	// __ INPUT ASSEMBLY __
-	VkPipelineInputAssemblyStateCreateInfo inputAssembly = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0 ,VK_FALSE);
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1,1,0);
-	//Dynami states to enable	
-	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
-	// -- RASTERIZER --
-	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL,VK_CULL_MODE_BACK_BIT,VK_FRONT_FACE_COUNTER_CLOCKWISE,0);
-	// -- MULTI SAMPLING --
-	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT,0);
-
-	//-- BLENDING --
-	//Blending decies how to blend a new color being written to a a fragment with the old value
-	//blend attachment state (how blending is handled
-	
-	VkPipelineColorBlendAttachmentState colourState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0x0000000F,VK_TRUE);
-
-	//blending uses equation : (srcColourBlendFactor * new colour ) colourBlendOp ( dstColourBlendFActor*old colour)
-	colourState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	colourState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	colourState.colorBlendOp = VK_BLEND_OP_ADD;
-
-	//summarsed : (VK_BLEND_FACTOR_SRC_ALPHA * new colour) + (VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA * old colour)
-	//			  (new colour alpha * new colour) + ((1 - new colour alpha) * old colour)
-
-	colourState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colourState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colourState.alphaBlendOp = VK_BLEND_OP_ADD;
-	//summarised : (1 * new alpha) + (0 * old alpha) = new alpha
-
-
-	VkPipelineColorBlendStateCreateInfo colourBlendingCreateInfo = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1,&colourState);
-
-	// -- PIPELINE LAYOUT 
 	std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = 
 	{
-		LayoutDB::gpuscene, // (set = 0)
-		LayoutDB::uniform,  // (set = 1)
-		LayoutDB::bindless // (set = 2)
+		SetLayoutDB::gpuscene, // (set = 0)
+		SetLayoutDB::uniform,  // (set = 1)
+		SetLayoutDB::bindless  // (set = 2)
 	};
 
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-		oGFX::vkutils::inits::pipelineLayoutCreateInfo(descriptorSetLayouts.data(),static_cast<uint32_t>(descriptorSetLayouts.size()));
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = oGFX::vkutils::inits::pipelineLayoutCreateInfo(descriptorSetLayouts);
+	
 	VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
-	// indirect pipeline
-	VkResult result = vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &indirectPSOLayout);
-	VK_NAME(m_device.logicalDevice, "indirectPipeLayout", indirectPSOLayout);
+	VkResult result = vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &PSOLayoutDB::indirectPSOLayout);
+	VK_NAME(m_device.logicalDevice, "indirectPSOLayout", PSOLayoutDB::indirectPSOLayout);
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create Pipeline Layout!");
 	}
-	// go back to normal pipelines
-
-	// Create Pipeline Layout
-	//result = vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-	//if (result != VK_SUCCESS)
-	//{
-	//	throw std::runtime_error("Failed to create Pipeline Layout!");
-	//}
-	std::array<VkPipelineShaderStageCreateInfo,2>shaderStages = {};
-	
-	// -- DEPTH STENCIL TESTING --	
-	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE,VK_TRUE, VK_COMPARE_OP_LESS);
-
-																	// -- GRAPHICS PIPELINE CREATION --
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vkutils::inits::pipelineCreateInfo(indirectPSOLayout,renderPass_default);
-	pipelineCreateInfo.stageCount = 2;								//number of shader stages
-	pipelineCreateInfo.pStages = shaderStages.data();				//list of sader stages
-	pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;	//all the fixed funciton pipeline states
-	pipelineCreateInfo.pInputAssemblyState = &inputAssembly;
-	pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
-	pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-	pipelineCreateInfo.pRasterizationState = &rasterizerCreateInfo;
-	pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-	pipelineCreateInfo.pColorBlendState = &colourBlendingCreateInfo;
-	pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-
-
-	//graphics pipeline creation requires array of shader stages create
-
-	//create graphics pipeline
-	shaderStages[0] = LoadShader(m_device,"Shaders/bin/indirect.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = LoadShader(m_device,"Shaders/bin/indirect.frag.spv",VK_SHADER_STAGE_FRAGMENT_BIT);
-
-	pipelineCreateInfo.layout = indirectPSOLayout;
-	// Indirect pipeline
-	result = vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &indirectPSO);
-	VK_NAME(m_device.logicalDevice, "indirectPSO", indirectPSO);
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a Graphics Pipeline!");
-	}
-	//destroy indirect shader modules 
-	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
-	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
-
-
-	pipelineCreateInfo.layout = indirectPSOLayout;
-	// we use less for normal pipeline
-	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 5;
-
-	shaderStages[0] = LoadShader(m_device,"Shaders/bin/shader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = LoadShader(m_device,"Shaders/bin/shader.frag.spv",VK_SHADER_STAGE_FRAGMENT_BIT);
-
-	result = vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPSO);
-	VK_NAME(m_device.logicalDevice, "graphicsPSO", graphicsPSO);
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a Graphics Pipeline!");
-	}
-	rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_LINE;
-	pipelineCreateInfo.renderPass = renderPass_default;
-	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &wireframePSO));
-	VK_NAME(m_device.logicalDevice, "wireframePSO", wireframePSO);
-
-	//destroy shader modules after pipeline is created
-	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
-	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
-
 }
 
 void VulkanRenderer::CreateFramebuffers()
@@ -652,15 +513,15 @@ void VulkanRenderer::CreateFramebuffers()
 	for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
 	{
 		std::array<VkImageView, 2> attachments = {
-			m_swapchain.swapChainImages[i].imageView,
+			m_swapchain.swapChainImages[i].view,
 			m_swapchain.depthAttachment.view
 		};
 
 		VkFramebufferCreateInfo framebufferCreateInfo = {};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass_default;										//render pass layout the frame buffer will be used with
+		framebufferCreateInfo.renderPass = renderPass_default; //render pass layout the frame buffer will be used with
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		framebufferCreateInfo.pAttachments = attachments.data();							//list of attachments (1:1 with render pass)
+		framebufferCreateInfo.pAttachments = attachments.data(); //list of attachments (1:1 with render pass)
 		framebufferCreateInfo.width = m_swapchain.swapChainExtent.width;
 		framebufferCreateInfo.height = m_swapchain.swapChainExtent.height;
 		framebufferCreateInfo.layers = 1;
@@ -692,154 +553,6 @@ void VulkanRenderer::CreateCommandBuffers()
 	{
 		throw std::runtime_error("Failed to allocate Command Buffers!");
 	}
-}
-
-void VulkanRenderer::CreateOffscreenPass()
-{
-	if (offscreenPass)
-	{
-		vkDestroyRenderPass(m_device.logicalDevice, offscreenPass, nullptr);
-		offscreenPass = VK_NULL_HANDLE;
-	}
-
-	// ATTACHMENTS
-	// Colour attachment of render pass
-	VkAttachmentDescription colourAttachment = {};
-	colourAttachment.format = m_swapchain.swapChainImageFormat;  //format to use for attachment
-	colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;//number of samples to use for multisampling
-	colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;//descripts what to do with attachment before rendering
-	colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;//describes what to do with attachment after rendering
-	colourAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; //describes what do with with stencil before rendering
-	colourAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; //describes what do with with stencil before rendering
-
-																		//frame buffer data will be stored as image, but images can be given different data layouts
-																		//to give optimal use for certain operations
-	colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //image data layout before render pass starts
-																//colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
-	colourAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; //image data layout aftet render pass ( to change to)
-
-																	   // Depth attachment of render pass
-	VkAttachmentDescription depthAttachment{};
-	depthAttachment.format = oGFX::ChooseSupportedFormat(m_device,
-		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	// REFERENCES 
-	//Attachment reference uses an atttachment index that refers to index i nthe attachment list passed to renderPassCreataeInfo
-	VkAttachmentReference  colourAttachmentReference = {};
-	colourAttachmentReference.attachment = 0;
-	colourAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	// Depth attachment reference
-	VkAttachmentReference depthAttachmentReference{};
-	depthAttachmentReference.attachment = 1;
-	depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	//information about a particular subpass the render pass is using
-	VkSubpassDescription subpass = {};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; //pipeline type subpass is to be bound to
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colourAttachmentReference;
-	subpass.pDepthStencilAttachment = &depthAttachmentReference;
-
-	// Need to determine when layout transitions occur using subpass dependancies
-	std::array<VkSubpassDependency, 2> subpassDependancies;
-
-	//conversion from VK_IMAGE_LAYOUT_UNDEFINED to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	// Transiotion msut happen after...
-	subpassDependancies[0].srcSubpass = VK_SUBPASS_EXTERNAL; //subpass index (VK_SUBPASS_EXTERNAL = special vallue meaning outside of renderpass)
-	subpassDependancies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; // Pipeline stage
-	subpassDependancies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; //Stage acces mas (memory access)
-																	  // but must happen before...
-	subpassDependancies[0].dstSubpass = 0;
-	subpassDependancies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	subpassDependancies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	subpassDependancies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-
-	//conversion from VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-	// Transiotion msut happen after...
-	subpassDependancies[1].srcSubpass = 0;
-	subpassDependancies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	subpassDependancies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	// but must happen before...
-	subpassDependancies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-	subpassDependancies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-	subpassDependancies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-	subpassDependancies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-	std::array<VkAttachmentDescription, 2> renderpassAttachments = { colourAttachment,depthAttachment };
-
-	//create info for render pass
-	VkRenderPassCreateInfo renderPassCreateInfo = {};
-	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(renderpassAttachments.size());
-	renderPassCreateInfo.pAttachments = renderpassAttachments.data();
-	renderPassCreateInfo.subpassCount = 1;
-	renderPassCreateInfo.pSubpasses = &subpass;
-	renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependancies.size());
-	renderPassCreateInfo.pDependencies = subpassDependancies.data();
-
-	VkResult result = vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &offscreenPass);
-	VK_NAME(m_device.logicalDevice, "offscreenPass", offscreenPass);
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create Render Pass");
-	}
-}
-
-void VulkanRenderer::CreateOffscreenFB()
-{
-	
-	offscreenFB.createAttachment(m_device, m_swapchain.swapChainExtent.width, m_swapchain.swapChainExtent.height,
-		m_swapchain.swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);	
-	
-	
-	VkFormat attDepthFormat = oGFX::ChooseSupportedFormat(m_device,
-		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
-	offscreenDepth.createAttachment(m_device, m_swapchain.swapChainExtent.width, m_swapchain.swapChainExtent.height,
-		attDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
-	std::vector<VkImageView> attachments{offscreenFB.view, offscreenDepth.view}; // color attachment
-
-	VkFramebufferCreateInfo framebufferCreateInfo = {};
-	framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	framebufferCreateInfo.renderPass = renderPass_default;										//render pass layout the frame buffer will be used with
-	framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-	framebufferCreateInfo.pAttachments = attachments.data();							//list of attachments (1:1 with render pass)
-	framebufferCreateInfo.width = m_swapchain.swapChainExtent.width;
-	framebufferCreateInfo.height = m_swapchain.swapChainExtent.height;
-	framebufferCreateInfo.layers = 1;
-
-
-	VkResult result = vkCreateFramebuffer(m_device.logicalDevice, &framebufferCreateInfo, nullptr, &offscreenFramebuffer);
-	VK_NAME(m_device.logicalDevice, "offscreenFramebuffer", offscreenFramebuffer);
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a Framebuffer!");
-	}
-	myImg = CreateImguiBinding(samplerManager.GetDefaultSampler(), offscreenFB.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	
-}
-
-void VulkanRenderer::ResizeOffscreenFB()
-{
-	vkDestroyFramebuffer(m_device.logicalDevice, offscreenFramebuffer,nullptr);
-	offscreenFB.destroy(m_device.logicalDevice);
-	offscreenDepth.destroy(m_device.logicalDevice);
-
-	CreateOffscreenFB();
 }
 
 void VulkanRenderer::ResizeDeferredFB()
@@ -952,7 +665,7 @@ void VulkanRenderer::CreateUniformBuffers()
 	//create uniform buffers
 	for (size_t i = 0; i < m_swapchain.swapChainImages.size(); i++)
 	{
-		// TODO: Disasble host coherent bit and manuall flush buffers for application
+		// TODO: Disable host coherent bit and manuall flush buffers for application
 		oGFX::CreateBuffer(m_device.physicalDevice, m_device.logicalDevice, vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
 			//| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -1012,13 +725,14 @@ void VulkanRenderer::CreateDescriptorPool()
 	variableDescriptorCountAllocInfo.pDescriptorCounts  = variableDescCounts;
 
 	//Descriptor set allocation info
-	VkDescriptorSetAllocateInfo setAllocInfo = oGFX::vkutils::inits::descriptorSetAllocateInfo(samplerDescriptorPool,&LayoutDB::bindless,1);
+	VkDescriptorSetAllocateInfo setAllocInfo = oGFX::vkutils::inits::descriptorSetAllocateInfo(samplerDescriptorPool,&SetLayoutDB::bindless,1);
 	setAllocInfo.pNext = &variableDescriptorCountAllocInfo;
 
 	//Allocate our descriptor sets
 	result = vkAllocateDescriptorSets(m_device.logicalDevice, &setAllocInfo, &descriptorSet_bindless);
 	if (result != VK_SUCCESS)
 	{
+		std::cerr << "Failed to allocate texture descriptor sets!" << std::endl;
 		throw std::runtime_error("Failed to allocate texture descriptor sets!");
 	}
 }
@@ -1032,7 +746,7 @@ void VulkanRenderer::CreateDescriptorSets_GPUScene()
 
 	DescriptorBuilder::Begin(&DescLayoutCache, &DescAlloc)
 		.BindBuffer(3, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.Build(descriptorSet_gpuscene,LayoutDB::gpuscene);
+		.Build(descriptorSet_gpuscene,SetLayoutDB::gpuscene);
 }
 
 void VulkanRenderer::InitImGUI()
@@ -1160,7 +874,7 @@ void VulkanRenderer::InitImGUI()
 	for(uint32_t i = 0; i < m_swapchain.swapChainImages.size(); i++) 
 	{
 		// TODO make sure all images resize for imgui
-		fbattachments[0] = m_swapchain.swapChainImages[i].imageView;         // A color attachment from the swap chain
+		fbattachments[0] = m_swapchain.swapChainImages[i].view;         // A color attachment from the swap chain
 													//fbattachments[1] = m_depthImage.imageView;  // A depth attachment
 		VK_CHK(vkCreateFramebuffer(m_device.logicalDevice, &_ci, nullptr, &m_imguiConfig.buffers[i])); 
 		VK_NAME(m_device.logicalDevice, "imguiconfig_Framebuffer", m_imguiConfig.buffers[i]);
@@ -1191,7 +905,7 @@ void VulkanRenderer::ResizeGUIBuffers()
 	for(uint32_t i = 0; i < m_swapchain.swapChainImages.size(); i++) 
 	{
 		// TODO make sure all images resize for imgui
-		fbattachments[0] = m_swapchain.swapChainImages[i].imageView;         // A color attachment from the swap chain
+		fbattachments[0] = m_swapchain.swapChainImages[i].view;         // A color attachment from the swap chain
 																			 //fbattachments[1] = m_depthImage.imageView;  // A depth attachment
 		VK_CHK(vkCreateFramebuffer(m_device.logicalDevice, &_ci, nullptr, &m_imguiConfig.buffers[i]));
 		VK_NAME(m_device.logicalDevice, "imguiconfig_buffers", m_imguiConfig.buffers[i]);
@@ -1280,11 +994,11 @@ void VulkanRenderer::DestroyImGUI()
 
 void VulkanRenderer::AddDebugLine(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Color& col, size_t loc)
 {
-	auto sz = g_debugDrawVerts.size();
-	g_debugDrawVerts.push_back(oGFX::Vertex{ p0,{/*normal*/},col });
-	g_debugDrawVerts.push_back(oGFX::Vertex{ p1,{/*normal*/},col });
-	g_debugDrawIndices.push_back(0 + static_cast<uint32_t>(sz));
-	g_debugDrawIndices.push_back(1 + static_cast<uint32_t>(sz));
+	auto sz = g_DebugDrawVertexBufferCPU.size();
+	g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ p0, col });
+	g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ p1, col });
+	g_DebugDrawIndexBufferCPU.emplace_back(0 + static_cast<uint32_t>(sz));
+	g_DebugDrawIndexBufferCPU.emplace_back(1 + static_cast<uint32_t>(sz));
 }
 
 void VulkanRenderer::AddDebugBox(const AABB& aabb, const oGFX::Color& col, size_t loc)
@@ -1306,40 +1020,20 @@ void VulkanRenderer::AddDebugBox(const AABB& aabb, const oGFX::Color& col, size_
 		
 	if (loc == size_t(-1))
 	{
-		auto sz = g_debugDrawVerts.size();
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); //0
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); // 1
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 2
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); // 3
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 4
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); // 5
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 6
-		g_debugDrawVerts.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 7
+		auto sz = g_DebugDrawVertexBufferCPU.size();
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },col }); //0
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },col }); // 1
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },col }); // 2
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },col }); // 3
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },col }); // 4
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },col }); // 5
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },col }); // 6
+		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },col }); // 7
 		for (auto x : boxindices)
 		{
-			g_debugDrawIndices.push_back(x + static_cast<uint32_t>(sz));
+			g_DebugDrawIndexBufferCPU.emplace_back(x + static_cast<uint32_t>(sz));
 		}
 	}
-	else
-	{
-		auto& debug = g_DebugDraws[loc];
-
-		auto sz = debug.vertex.size();
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); //0
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); // 1
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 2
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); // 3
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 4
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },{/*normal*/},col }); // 5
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 6
-		debug.vertex.push_back(oGFX::Vertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },{/*normal*/},col }); // 7
-		for (auto x : boxindices)
-		{
-			debug.indices.push_back(x + static_cast<uint32_t>(sz));
-		}
-	}
-
-	
 }
 
 void VulkanRenderer::AddDebugSphere(const Sphere& sphere, const oGFX::Color& col, size_t loc)
@@ -1368,80 +1062,41 @@ void VulkanRenderer::AddDebugSphere(const Sphere& sphere, const oGFX::Color& col
 	
 	if (loc == size_t(-1))
 	{
-		auto currsz = g_debugDrawVerts.size();
-		g_debugDrawVerts.reserve(g_debugDrawVerts.size() + vertices.size());
+		auto currsz = g_DebugDrawVertexBufferCPU.size();
+		g_DebugDrawVertexBufferCPU.reserve(g_DebugDrawVertexBufferCPU.size() + vertices.size());
+		oGFX::DebugVertex vert;
 		for (const auto& v : vertices)
 		{
-			oGFX::Vertex vert{ v };
 			vert.pos = vert.pos*sphere.radius + sphere.center;
 			vert.col = col;
-			g_debugDrawVerts.push_back(vert);
+			g_DebugDrawVertexBufferCPU.push_back(vert);
 		}
 
-		g_debugDrawIndices.reserve( g_debugDrawIndices.size() + indices.size());
+		g_DebugDrawIndexBufferCPU.reserve( g_DebugDrawIndexBufferCPU.size() + indices.size());
 		for (const auto ind : indices) 
 		{
-			g_debugDrawIndices.emplace_back(ind+static_cast<uint32_t>(currsz));
+			g_DebugDrawIndexBufferCPU.emplace_back(ind+static_cast<uint32_t>(currsz));
 		}
-	}
-	else
-	{
-		auto& debug = g_DebugDraws[loc];
-		auto currsz = debug.vertex.size();
-		debug.vertex.reserve(debug.vertex.size() + vertices.size());
-		for (const auto& v : vertices)
-		{
-			oGFX::Vertex vert{ v };
-			vert.pos = vert.pos*sphere.radius + sphere.center;
-			vert.col = col;
-			debug.vertex.push_back(vert);
-		}
-		debug.indices.reserve( debug.indices.size() + indices.size());
-		for (const auto ind : indices) 
-		{
-			debug.indices.emplace_back(ind+static_cast<uint32_t>(currsz));
-		}
-	}
-	
+	}	
 }
 
 void VulkanRenderer::AddDebugTriangle(const Triangle& tri, const oGFX::Color& col, size_t loc)
 {
-
 	if (loc == size_t(-1))
 	{
-		auto sz = g_debugDrawVerts.size();
-		g_debugDrawVerts.push_back(oGFX::Vertex{ tri.v0,{/*normal*/},col }); //0
-		g_debugDrawVerts.push_back(oGFX::Vertex{ tri.v1,{/*normal*/},col }); //1
-		g_debugDrawVerts.push_back(oGFX::Vertex{ tri.v2,{/*normal*/},col }); //2
+		auto sz = g_DebugDrawVertexBufferCPU.size();
+		g_DebugDrawVertexBufferCPU.push_back(oGFX::DebugVertex{ tri.v0, col }); //0
+		g_DebugDrawVertexBufferCPU.push_back(oGFX::DebugVertex{ tri.v1, col }); //1
+		g_DebugDrawVertexBufferCPU.push_back(oGFX::DebugVertex{ tri.v2, col }); //2
 		
-		g_debugDrawIndices.push_back(0 + static_cast<uint32_t>(sz)); // E0
-		g_debugDrawIndices.push_back(1 + static_cast<uint32_t>(sz)); // E0
-		g_debugDrawIndices.push_back(1 + static_cast<uint32_t>(sz)); // E1
-		g_debugDrawIndices.push_back(2 + static_cast<uint32_t>(sz)); // E1
-		g_debugDrawIndices.push_back(2 + static_cast<uint32_t>(sz)); // E2
-		g_debugDrawIndices.push_back(0 + static_cast<uint32_t>(sz)); // E2
-		
-	}
-	else
-	{
-		auto& debug = g_DebugDraws[loc];
-
-		auto sz = debug.vertex.size();
-		debug.vertex.push_back(oGFX::Vertex{ tri.v0,{/*normal*/},col }); //0
-		debug.vertex.push_back(oGFX::Vertex{ tri.v1,{/*normal*/},col }); //1
-		debug.vertex.push_back(oGFX::Vertex{ tri.v2,{/*normal*/},col }); //2
-
-		debug.indices.push_back(0 + static_cast<uint32_t>(sz)); // E0
-		debug.indices.push_back(1 + static_cast<uint32_t>(sz)); // E0
-		debug.indices.push_back(1 + static_cast<uint32_t>(sz)); // E1
-		debug.indices.push_back(2 + static_cast<uint32_t>(sz)); // E1
-		debug.indices.push_back(2 + static_cast<uint32_t>(sz)); // E2
-		debug.indices.push_back(0 + static_cast<uint32_t>(sz)); // E2
+		g_DebugDrawIndexBufferCPU.push_back(0 + static_cast<uint32_t>(sz)); // E0
+		g_DebugDrawIndexBufferCPU.push_back(1 + static_cast<uint32_t>(sz)); // E0
+		g_DebugDrawIndexBufferCPU.push_back(1 + static_cast<uint32_t>(sz)); // E1
+		g_DebugDrawIndexBufferCPU.push_back(2 + static_cast<uint32_t>(sz)); // E1
+		g_DebugDrawIndexBufferCPU.push_back(2 + static_cast<uint32_t>(sz)); // E2
+		g_DebugDrawIndexBufferCPU.push_back(0 + static_cast<uint32_t>(sz)); // E2
 	}
 }
-
-
 
 void VulkanRenderer::InitializeRenderBuffers()
 {
@@ -1581,24 +1236,21 @@ void VulkanRenderer::UploadInstanceData()
 	{
 		for (auto& ent :  currWorld->GetAllObjectInstances())
 		{
-			// TODO: This needs urgent fixing..
+			// creates a single transform reference for each entity in the scene
 			size_t x = gpuTransform.size();
-			size_t len = x + models[ent.modelID].meshCount;
 			mat4 xform = ent.localToWorld;
-			for (; x < len; x++)
-			{
-				GPUTransform gpt;
-				gpt.row0 = vec4(xform[0][0], xform[1][0], xform[2][0], xform[3][0]);
-				gpt.row1 = vec4(xform[0][1], xform[1][1], xform[2][1], xform[3][1]);
-				gpt.row2 = vec4(xform[0][2], xform[1][2], xform[2][2], xform[3][2]);
-				gpuTransform.emplace_back(gpt);
-			}
+			GPUTransform gpt;
+			gpt.row0 = vec4(xform[0][0], xform[1][0], xform[2][0], xform[3][0]);
+			gpt.row1 = vec4(xform[0][1], xform[1][1], xform[2][1], xform[3][1]);
+			gpt.row2 = vec4(xform[0][2], xform[1][2], xform[2][2], xform[3][2]);
+			gpuTransform.emplace_back(gpt);
 		}
 	}
 	
 	gpuTransformBuffer.writeTo(gpuTransform.size(), gpuTransform.data());
 	// TODO: Must the entire buffer be uploaded every frame?
 
+	uint32_t indexCounter = 0;
 	std::vector<oGFX::InstanceData> instanceData;
 	instanceData.reserve(objectCount);
 	if (currWorld)
@@ -1607,8 +1259,8 @@ void VulkanRenderer::UploadInstanceData()
 		for (auto& ent: currWorld->GetAllObjectInstances())
 		{
 			oGFX::InstanceData id;
-			size_t sz = instanceData.size();
-			for (size_t x = 0; x < models[ent.modelID].meshCount; x++)
+			//size_t sz = instanceData.size();
+			//for (size_t x = 0; x < models[ent.modelID].meshCount; x++)
 			{
 				// This is per entity. Should be per material.
 				uint32_t albedo = ent.bindlessGlobalTextureIndex_Albedo;
@@ -1629,7 +1281,7 @@ void VulkanRenderer::UploadInstanceData()
 				// Important: Make sure this index packing matches the unpacking in the shader
 				const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
 				const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
-				const uint32_t instanceID = uint32_t(sz + x);
+				const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
 				const uint32_t unused = (uint32_t)perInstanceData; //matCnt;
                 // Putting these ranges here for easy reference:
 				// 9-bit:  [0 to 511]
@@ -1644,9 +1296,11 @@ void VulkanRenderer::UploadInstanceData()
 				// TODO: This is the solution for now.
 				// In the future, we can just use an index for all the materials (indirection) to fetch from another buffer.
 				id.instanceAttributes = uvec4(instanceID, unused, albedo_normal, roughness_metallic);
+				
 				instanceData.emplace_back(id);
 			}
 			++matCnt;
+			++indexCounter;
 		}
 		
 	}
@@ -1753,10 +1407,14 @@ void VulkanRenderer::RenderFrame()
 		// Manually schedule the order of the render pass execution. (single threaded)
 		if(currWorld)
 		{
-            RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
-            RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
+			RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
+			//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
+			RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
+			//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
 			RenderPassDatabase::GetRenderPass<DeferredCompositionRenderpass>()->Draw();
-			RenderPassDatabase::GetRenderPass<DebugRenderpass>()->Draw();
+			//RenderPassDatabase::GetRenderPass<ForwardRenderpass>()->Draw();
+			//RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();
+			RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->Draw();
 		}
     }
 }
@@ -1840,33 +1498,15 @@ bool VulkanRenderer::ResizeSwapchain()
 		if (windowPtr->windowShouldClose) return false;
 	}
 	m_swapchain.Init(m_instance, m_device);
-	CreateRenderpass();
+	CreateDefaultRenderpass();
 	//CreateDepthBufferImage();
 	CreateFramebuffers();
 
+	fbCache.ResizeSwapchain(m_swapchain.swapChainExtent.width, m_swapchain.swapChainExtent.height);
+
 	ResizeGUIBuffers();
-	ResizeOffscreenFB();
-	ResizeDeferredFB();
 
 	return true;
-}
-
-void VulkanRenderer::InitTreeDebugDraws()
-{
-	for (size_t i = 0; i < debugDrawBufferCnt; i++)
-	{
-		g_DebugDraws[i].vbo.Init(&m_device,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		g_DebugDraws[i].ibo.Init(&m_device,VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-	}
-}
-
-void VulkanRenderer::ShutdownTreeDebug()
-{
-	for (size_t i = 0; i < debugDrawBufferCnt; i++)
-	{
-		g_DebugDraws[i].vbo.destroy();
-		g_DebugDraws[i].ibo.destroy();
-	}
 }
 
 Model* VulkanRenderer::LoadModelFromFile(const std::string& file)
@@ -1874,19 +1514,24 @@ Model* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	// new model loader
 	
 	Assimp::Importer importer;
-	const aiScene *scene = importer.ReadFile(file,
-		  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
-		| aiProcess_LimitBoneWeights           // 4 weights for skin model max
-		| aiProcess_GenUVCoords                // Convert any type of mapping to uv mapping
-		| aiProcess_TransformUVCoords          // preprocess UV transformations (scaling, translation ...)
-		| aiProcess_FindInstances              // search for instanced meshes and remove them by references to one master
-		| aiProcess_CalcTangentSpace           // calculate tangents and bitangents if possible
-		| aiProcess_JoinIdenticalVertices      // join identical vertices/ optimize indexing
-		| aiProcess_RemoveRedundantMaterials   // remove redundant materials
-		| aiProcess_FindInvalidData            // detect invalid model data, such as invalid normal vectors
-		| aiProcess_PreTransformVertices       // TODO: remove for skinning?
-		| aiProcess_FlipUVs						// TODO: some mesh need
-		| aiProcess_GenNormals					// TODO: some mesh need
+	uint flags = 0;
+	flags |= aiProcess_Triangulate;
+	flags |= aiProcess_GenSmoothNormals;
+	flags |= aiProcess_ImproveCacheLocality;
+	flags |= aiProcess_CalcTangentSpace;
+	const aiScene *scene = importer.ReadFile(file,flags
+		//  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
+		//| aiProcess_LimitBoneWeights           // 4 weights for skin model max
+		//| aiProcess_GenUVCoords                // Convert any type of mapping to uv mapping
+		//| aiProcess_TransformUVCoords          // preprocess UV transformations (scaling, translation ...)
+		//| aiProcess_FindInstances              // search for instanced meshes and remove them by references to one master
+		//| aiProcess_CalcTangentSpace           // calculate tangents and bitangents if possible
+		////| aiProcess_JoinIdenticalVertices      // join identical vertices/ optimize indexing
+		//| aiProcess_RemoveRedundantMaterials   // remove redundant materials
+		//| aiProcess_FindInvalidData            // detect invalid model data, such as invalid normal vectors
+		////| aiProcess_PreTransformVertices       // TODO: remove for skinning?
+		//| aiProcess_FlipUVs						// TODO: some mesh need
+		//| aiProcess_GenNormals					// TODO: some mesh need
 	);
 
 	if (!scene)
@@ -1895,10 +1540,7 @@ Model* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//throw std::runtime_error("Failed to load model! (" + file + ")");
 	}
 
-	if (scene->HasAnimations())
-	{
-
-	}
+	std::cout <<"[Loading] " << file << std::endl;
 
 	std::vector<std::string> textureNames = MeshContainer::LoadMaterials(scene);
 	std::vector<int> matToTex(textureNames.size());
@@ -1931,29 +1573,38 @@ Model* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	Model* m = new Model;
 	m->gfxIndex = static_cast<uint32_t>(modelResourceIndex);
 	model.cpuModel = m;
-	//std::vector<oGFX::Vertex> verticeBuffer;
-	//std::vector<uint32_t> indexBuffer;
-	model.meshCount= 0 ;
-	model.loadNode(nullptr, scene, *scene->mRootNode, 0, m->vertices, m->indices);
+	m->fileName = file;
 
-	for (auto& node : model.nodes)
+	if (scene->HasAnimations())
 	{
-		for (auto& mesh : node->meshes)
+		std::cout << "Animated scene\n";
+		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
-			model.meshCount += 1;
-			mesh->indicesOffset += g_GlobalMeshBuffers.IdxOffset;
-			mesh->vertexOffset += g_GlobalMeshBuffers.VtxOffset;
-		}
-		for (auto& child: node->children)
-		{
-			for (auto& mesh : child->meshes)
+			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+			std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
+			std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
+			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
+			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
+			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
-				model.meshCount += 1;
-				mesh->indicesOffset += g_GlobalMeshBuffers.IdxOffset;
-				mesh->vertexOffset += g_GlobalMeshBuffers.VtxOffset;
+				auto& channel = scene->mAnimations[i]->mChannels[x];
+				std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
+				for (size_t y = 0; y < channel->mNumPositionKeys; y++)
+				{
+					std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
+					auto& pos = channel->mPositionKeys[y].mValue;
+					std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
+				}
 			}
 		}
 	}
+	std::cout << std::endl;
+
+	model.meshCount= 0 ;
+	model.loadNode(nullptr, scene, *scene->mRootNode, 0, *m);
+	model.updateOffsets(g_GlobalMeshBuffers.IdxOffset, g_GlobalMeshBuffers.VtxOffset);
 	
 	LoadMeshFromBuffers(m->vertices, m->indices, &model);
 
@@ -2166,24 +1817,24 @@ VulkanRenderer::TextureInfo VulkanRenderer::GetTextureInfo(uint32_t handle)
 void VulkanRenderer::InitDebugBuffers()
 {
 	// TODO remove this
-	g_debugDrawVertBuffer.Init(&m_device,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-	g_debugDrawIndxBuffer.Init(&m_device,VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+	g_DebugDrawVertexBufferGPU.Init(&m_device,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	g_DebugDrawIndexBufferGPU.Init(&m_device,VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 }
 
 void VulkanRenderer::UploadDebugDrawBuffers()
 {
 	PROFILE_SCOPED();
 
-	g_debugDrawVertBuffer.reserve(g_debugDrawVerts.size() );
-	g_debugDrawIndxBuffer.reserve(g_debugDrawIndices.size());
+	g_DebugDrawVertexBufferGPU.reserve(g_DebugDrawVertexBufferCPU.size() );
+	g_DebugDrawIndexBufferGPU.reserve(g_DebugDrawIndexBufferCPU.size());
 
 	// Copy CPU debug draw buffers to the GPU
-	g_debugDrawVertBuffer.writeTo(g_debugDrawVerts.size() , g_debugDrawVerts.data());
-	g_debugDrawIndxBuffer.writeTo(g_debugDrawIndices.size() , g_debugDrawIndices.data());
+	g_DebugDrawVertexBufferGPU.writeTo(g_DebugDrawVertexBufferCPU.size() , g_DebugDrawVertexBufferCPU.data());
+	g_DebugDrawIndexBufferGPU.writeTo(g_DebugDrawIndexBufferCPU.size() , g_DebugDrawIndexBufferCPU.data());
 
 	// Clear the CPU debug draw buffers for this frame
-	g_debugDrawVerts.clear();
-	g_debugDrawIndices.clear();
+	g_DebugDrawVertexBufferCPU.clear();
+	g_DebugDrawIndexBufferCPU.clear();
 }
 
 void VulkanRenderer::UpdateUniformBuffers()

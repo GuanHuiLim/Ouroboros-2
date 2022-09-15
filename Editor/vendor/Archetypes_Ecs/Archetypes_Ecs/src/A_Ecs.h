@@ -822,6 +822,19 @@ namespace Ecs::internal
 			function(eidptr[i]);
 		}
 	}
+	template<typename... Args, typename Func>
+	void entity_chunk_iterate_with_entity_and_component(DataChunk* chnk, Func&& function)
+	{
+		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
+#ifndef NDEBUG
+		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
+#endif
+
+		EntityID* eidptr = ((EntityID*)chnk);
+		for (int i = chnk->header.last - 1; i >= 0; i--) {
+			function(eidptr[i], std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
+		}
+	}
 
 
 	template<typename ...Args, typename Func>
@@ -833,6 +846,12 @@ namespace Ecs::internal
 	void unpack_chunk_with_entity(DataChunk* chunk, Func&& function)
 	{
 		entity_chunk_iterate_with_entity<Func>(chunk, function);
+	}
+
+	template<typename Func>
+	void unpack_chunk_with_entity_and_component(DataChunk* chunk, Func&& function)
+	{
+		entity_chunk_iterate_with_entity_and_component<Func>(chunk, function);
 	}
 
 	template<typename ...Args>
@@ -1097,6 +1116,21 @@ namespace Ecs
 			}
 			});
 	}
+
+	template<typename Func>
+	void IECSWorld::for_each_entity_and_component(IQuery& query, Func&& function)
+	{
+		using params = decltype(internal::args(&Func::operator()));
+
+		internal::iterate_matching_archetypes(this, query, [&](Archetype* arch) {
+
+			for (auto chnk : arch->chunks) {
+
+				internal::unpack_chunk_with_entity_and_component(params{}, chnk, function);
+			}
+			});
+	}
+
 
 	template<typename Func>
 	void IECSWorld::for_each(Func&& function)

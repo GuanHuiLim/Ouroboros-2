@@ -56,7 +56,6 @@ bool DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layou
 	}
 
 	vkUpdateDescriptorSets(alloc->device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-	std::cout << "Descriptor set allocated\n";
 	return true;
 }
 

@@ -9,23 +9,16 @@ layout(set = 1,binding = 0) uniform UboFrameContext
 	FrameContext uboFrameContext;
 };
 
-//
-//layout(set = 0,binding = 1) uniform UboModel{
-//	mat4 model;
-//}uboModel;
-
 layout(push_constant)uniform PushModel
 {
 		mat4 model;
 }pushModel;
 
 layout(location = 0) out vec3 outCol;
-layout(location = 1) out vec2 fragTex;
 
 void main()
 {
-	gl_Position = uboFrameContext.projection * uboFrameContext.view *  vec4(pos, 1.0);
+	gl_Position = uboFrameContext.viewProjection * vec4(pos, 1.0);
 
 	outCol = inCol;
-	fragTex = tex;
 }
