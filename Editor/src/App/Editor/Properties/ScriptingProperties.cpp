@@ -111,7 +111,7 @@ ScriptingProperties::ScriptingProperties()
 				ImGui::EndDragDropTarget();
 			}
 		});
-	m_scriptUI.emplace(oo::ScriptValue::type_enum::FUNCTION, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.value.GetValue<oo::ScriptValue::function_type>();
 			//assign UUID
@@ -137,8 +137,10 @@ ScriptingProperties::ScriptingProperties()
 				return;
 			};
 			//function part
+			ImGui::Separator();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::InputText("Function", &data.m_info.functionName);
+			std::string funcName = data.m_info.functionName.size() ? data.m_info.functionName : "NOT ASSIGNED";
+			ImGui::InputText("##Function", &funcName);
 			ImGui::PopItemFlag();
 
 			auto gameobject = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(uuid);
@@ -160,7 +162,6 @@ ScriptingProperties::ScriptingProperties()
 								data.m_info = fnc;
 								editing = true;
 								edited = true;
-								v.value = oo::ScriptValue{ data };
 								ImGui::CloseCurrentPopup();
 							}
 						}
@@ -169,6 +170,28 @@ ScriptingProperties::ScriptingProperties()
 				}
 				ImGui::EndPopup();
 			}
+			if (editing)
+			{
+				v.value = oo::ScriptValue{ data };
+				return;
+			};
+			for (auto& param : data.m_info.paramList)
+			{
+				auto iter = m_scriptUI.find(param.value.GetValueType());
+				if (m_scriptUI.end() == iter)
+					continue;
+				ImGui::PushID(ImGui::GetItemID());
+				ImGui::PushItemWidth(50.0f);
+				iter->second(param, editing, edited);
+				ImGui::PopItemWidth();
+				ImGui::PopID();
+			}
+			ImGui::Separator();
+			if (editing)
+			{
+				v.value = oo::ScriptValue{ data };
+				return;
+			};
 		});
 
 }
