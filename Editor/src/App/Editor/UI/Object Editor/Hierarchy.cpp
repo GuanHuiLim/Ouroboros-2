@@ -99,7 +99,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
-		ImGui::SetDragDropPayload(payload_name, nullptr, 0);
+		UUID goID = node.get_handle();
+		ImGui::SetDragDropPayload(payload_name, &goID , sizeof(UUID));
 		m_isDragging = true;
 		m_dragged = handle;
 		m_dragged_parent = node.get_parent_handle();

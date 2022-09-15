@@ -3,6 +3,7 @@
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include "App/Editor/UI/Tools/WarningMessage.h"
 ScriptSequencer::ScriptSequencer()
 {
 }
@@ -29,16 +30,31 @@ void ScriptSequencer::Show()
 			if (payload)
 			{
 				oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
-				auto& afterlist = oo::ScriptManager::GetAfterDefaultOrder();
-				auto iter = std::find(afterlist.begin(), afterlist.end(), sci);
-				afterlist.erase(iter);
-				oo::ScriptManager::GetBeforeDefaultOrder().emplace_back(sci);
+				//auto& afterlist = oo::ScriptManager::GetAfterDefaultOrder();
+				//auto iter = std::find(afterlist.begin(), afterlist.end(), sci);
+				//afterlist.erase(iter);
+                try
+                {
+                    oo::ScriptManager::RemoveBeforeDefaultOrder(sci);
+                    oo::ScriptManager::InsertBeforeDefaultOrder(sci);
+                }
+                catch (std::exception const& e)
+                {
+                    WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+                }
 			}
 			payload = ImGui::AcceptDragDropPayload("DEFAULT");
 			if (payload)
 			{
 				oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
-				oo::ScriptManager::GetBeforeDefaultOrder().emplace_back(sci);
+                try
+                {
+                    oo::ScriptManager::InsertBeforeDefaultOrder(sci);
+                }
+                catch (std::exception const& e)
+                {
+                    WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+                }
 			}
 		}
 		ImGui::SetCursorPos(pos);
@@ -48,10 +64,18 @@ void ScriptSequencer::Show()
 			ImGui::PushID(++counter);
 			if (ImGui::SmallButton("X"))
 			{
-				auto& beforelist = oo::ScriptManager::GetBeforeDefaultOrder();
-				auto iter = std::find(beforelist.begin(), beforelist.end(), item);
-				if(iter != beforelist.end())
-					beforelist.erase(iter);
+                try
+                {
+                    oo::ScriptManager::RemoveBeforeDefaultOrder(item);
+                }
+                catch (std::exception const& e)
+                {
+                    LOG_TRACE(e.what());
+                }
+				//auto& beforelist = oo::ScriptManager::GetBeforeDefaultOrder();
+				//auto iter = std::find(beforelist.begin(), beforelist.end(), item);
+				//if(iter != beforelist.end())
+				//	beforelist.erase(iter);
 			}
 			ImGui::SameLine();
 			ImGui::Selectable(item.ToString().c_str(), false);
@@ -80,16 +104,31 @@ void ScriptSequencer::Show()
 			if (payload)
 			{
 				oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
-				auto& beforelist = oo::ScriptManager::GetBeforeDefaultOrder();
-				auto iter = std::find(beforelist.begin(), beforelist.end(), sci);
-				beforelist.erase(iter);
-				oo::ScriptManager::GetAfterDefaultOrder().emplace_back(sci);
+				//auto& beforelist = oo::ScriptManager::GetBeforeDefaultOrder();
+				//auto iter = std::find(beforelist.begin(), beforelist.end(), sci);
+				//beforelist.erase(iter);
+                try
+                {
+                    oo::ScriptManager::RemoveAfterDefaultOrder(sci);
+                    oo::ScriptManager::InsertAfterDefaultOrder(sci);
+                }
+                catch (std::exception const& e)
+                {
+                    WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+                }
 			}
 			payload = ImGui::AcceptDragDropPayload("DEFAULT");
 			if (payload)
 			{
 				oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
-				oo::ScriptManager::GetAfterDefaultOrder().emplace_back(sci);
+                try
+                {
+                    oo::ScriptManager::InsertAfterDefaultOrder(sci);
+                }
+                catch (std::exception const& e)
+                {
+                    WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+                }
 			}
 		}
 		ImGui::SetCursorPos(pos);
@@ -99,10 +138,18 @@ void ScriptSequencer::Show()
 			ImGui::PushID(++counter);
 			if (ImGui::SmallButton("X"))
 			{
-				auto& afterlist = oo::ScriptManager::GetAfterDefaultOrder();
-				auto iter = std::find(afterlist.begin(), afterlist.end(), item);
-				if (iter != afterlist.end())
-					afterlist.erase(iter);
+                try
+                {
+                    oo::ScriptManager::RemoveAfterDefaultOrder(item);
+                }
+                catch (std::exception const& e)
+                {
+                    WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+                }
+				//auto& afterlist = oo::ScriptManager::GetAfterDefaultOrder();
+				//auto iter = std::find(afterlist.begin(), afterlist.end(), item);
+				//if (iter != afterlist.end())
+				//	afterlist.erase(iter);
 			}
 			ImGui::SameLine();
 			ImGui::Selectable(item.ToString().c_str(), false);

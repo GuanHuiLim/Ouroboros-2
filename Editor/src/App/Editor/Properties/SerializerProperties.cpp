@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SerializerProperties.h"
-
+#include "Project.h"
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 #include <Ouroboros/ECS/GameObjectComponent.h>
@@ -28,7 +28,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value data;
+		rapidjson::Value data(rapidjson::kArrayType);
 		auto vec = variant.get_value<glm::vec2>();
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
@@ -38,7 +38,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value data;
+		rapidjson::Value data(rapidjson::kArrayType);
 		auto vec = variant.get_value<glm::vec3>();
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
@@ -49,7 +49,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value data;
+		rapidjson::Value data(rapidjson::kArrayType);
 		auto vec = variant.get_value<glm::vec4>();
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
@@ -61,7 +61,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		rapidjson::Value data;
+		rapidjson::Value data(rapidjson::kArrayType);
 		auto vec = variant.get_value<quaternion>().value;
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
@@ -124,6 +124,6 @@ SerializerLoadProperties::SerializerLoadProperties()
 
 	m_load_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = static_cast<std::string>(val.GetString()); });
 	m_load_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetString(); });
-	m_load_commands.emplace(UI_RTTRType::UItypes::ASSET_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetUint64(); });
+	m_load_commands.emplace(UI_RTTRType::UItypes::ASSET_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = Project::GetAssetManager()->Get(val.GetUint64());});
 
 }
