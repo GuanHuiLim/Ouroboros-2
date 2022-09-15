@@ -10,6 +10,7 @@ public:
 	enum class UItypes
 	{
 		BOOL_TYPE = 0,
+		FLOAT_TYPE,
 		STRING_TYPE,
 		UUID_TYPE,
 
@@ -25,6 +26,7 @@ public:
 		DOUBLE_TYPE,
 		SIZE_T_TYPE,
 		ENTITY_TYPE,
+		ASSET_TYPE,
 	};
 
 	inline static std::unordered_map<rttr::type::type_id, UItypes> types;

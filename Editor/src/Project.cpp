@@ -8,9 +8,11 @@
 #include <SceneManagement/include/SceneManager.h>
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
-#include "App/Editor/Utility/ImGuiManager.h"
+
 
 #include "Ouroboros/Scene/RuntimeController.h"
+#include "App/Editor/Utility/ImGuiManager.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Scripting/ScriptManager.h"
@@ -33,6 +35,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	
 	s_configFile = config;
 	s_projectFolder = s_configFile.parent_path();
+	s_assetFolder = (*prj_setting).value.FindMember("AssetFolder")->value.GetString();
 	s_prefabFolder = (*prj_setting).value.FindMember("PrefabFolder")->value.GetString();
 	s_startingScene = (*prj_setting).value.FindMember("StartScene")->value.GetString();
 	s_sceneFolder = (*prj_setting).value.FindMember("SceneFolder")->value.GetString();
@@ -54,6 +57,11 @@ void Project::LoadProject(std::filesystem::path& config)
 	oo::EventManager::Broadcast(&lpe);
 	//end
 	ifs.close();
+
+	//load assets here
+	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
+	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
+	s_AssetManager->LoadDirectoryAsync(hard_assetfolderpath, true);
 }
 
 void Project::SaveProject()
@@ -74,8 +82,18 @@ void Project::SaveProject()
 	prj_setting->value.FindMember("StartScene")->value.SetString(relative.string().c_str(), static_cast<rapidjson::SizeType>(relative.string().size()), doc.GetAllocator());
 
 	auto scenes  = doc.FindMember("Scenes");
-	
-	//write your scenes
+	scenes->value.RemoveAllMembers();
+	auto size = scenes->value.MemberCount();
+	auto* runtimecontroller = ImGuiManager::s_runtime_controller;
+	auto loadpaths = runtimecontroller->GetLoadPaths();
+	for(auto scene_info : loadpaths)
+	{
+		rapidjson::Value name(scene_info.SceneName.c_str(),doc.GetAllocator());
+		std::filesystem::path scene_loadpath = std::filesystem::relative(scene_info.LoadPath, GetSceneFolder());
+		rapidjson::Value data(scene_loadpath.string().c_str(),doc.GetAllocator());
+		scenes->value.AddMember(name, data, doc.GetAllocator());
+	}
+		//write your scenes
 	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
 	//get all scenes

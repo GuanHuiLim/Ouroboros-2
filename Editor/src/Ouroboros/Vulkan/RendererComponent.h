@@ -5,19 +5,18 @@
 #include "OO_Vulkan/src/MeshModel.h"
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
+
+#include <rttr/type>
 namespace oo
 {
 	class Material;
-
-
-	
 
 	struct MeshRendererComponent
 	{
 		Asset mesh_handle;
 
 		//no need to serialize
-		uint32_t model_handle;
+		uint32_t model_handle{0};
 		uint32_t graphicsWorld_ID;
 
 		void GetModelHandle()
@@ -32,6 +31,7 @@ namespace oo
 		//Probes
 
 		//Additional Settings
+		RTTR_ENABLE();
 	};
 
 	struct SkinMeshRendererComponent
@@ -41,22 +41,19 @@ namespace oo
 
 }
 
-namespace oo::Mesh
-{
-	auto CreateCubeMeshObject(Scene* scene, GraphicsWorld* graphicsWorld)
-	{
-		//auto cubeMesh = CreateDefaultCubeMesh();
-
-		auto gameObj = scene->CreateGameObjectImmediate();
-		auto& meshRenderer = gameObj->AddComponent<MeshRendererComponent>();
-		meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
-		meshRenderer.model_handle = 0;
-		//meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
-
-		return gameObj;
-	}
-	/*GameObject CreateMeshObject( Scene* scene, std::string filepath )
-	{
-
-	}*/
-}
+// testing code i assume
+//namespace oo::Mesh
+//{
+//	auto CreateCubeMeshObject(Scene* scene, GraphicsWorld* graphicsWorld)
+//	{
+//		//auto cubeMesh = CreateDefaultCubeMesh();
+//
+//		auto gameObj = scene->CreateGameObjectImmediate();
+//		auto& meshRenderer = gameObj->AddComponent<MeshRendererComponent>();
+//		meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
+//		meshRenderer.model_handle = 0;
+//		//meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
+//
+//		return gameObj;
+//	}
+//}

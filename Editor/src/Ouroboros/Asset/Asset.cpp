@@ -28,7 +28,7 @@ namespace oo
         info->metaPath += EXT_META;
     }
 
-    Asset::Asset(Asset& other)
+    Asset::Asset(const Asset& other)
         : info{ other.info }
     {
         info->copies.emplace_back(this);
@@ -42,7 +42,7 @@ namespace oo
         other.info = nullptr;
     }
 
-    Asset& Asset::operator=(Asset& other)
+    Asset& Asset::operator=(const Asset& other)
     {
         this->Asset::~Asset();
         this->Asset::Asset(other);
