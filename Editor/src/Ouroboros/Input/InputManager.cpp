@@ -48,17 +48,17 @@ namespace oo
         case InputType::MouseButton:
         {
             if (IsMouseButtonHeld(axis.GetPositiveButton()) || IsMouseButtonHeld(axis.GetPositiveAltButton()))
-                value = 1.0f;
-            else if (IsMouseButtonHeld(axis.GetNegativeButton()) || IsMouseButtonHeld(axis.GetNegativeAltButton()))
-                value = -1.0f;
+                value += 1.0f;
+            if (IsMouseButtonHeld(axis.GetNegativeButton()) || IsMouseButtonHeld(axis.GetNegativeAltButton()))
+                value += -1.0f;
         }
         break;
         case InputType::KeyboardButton:
         {
             if (IsKeyboardKeyHeld(axis.GetPositiveButton()) || IsKeyboardKeyHeld(axis.GetPositiveAltButton()))
-                value = 1.0f;
-            else if (IsKeyboardKeyHeld(axis.GetNegativeButton()) || IsKeyboardKeyHeld(axis.GetNegativeAltButton()))
-                value = -1.0f;
+                value += 1.0f;
+            if (IsKeyboardKeyHeld(axis.GetNegativeButton()) || IsKeyboardKeyHeld(axis.GetNegativeAltButton()))
+                value += -1.0f;
         }
         break;
         }
