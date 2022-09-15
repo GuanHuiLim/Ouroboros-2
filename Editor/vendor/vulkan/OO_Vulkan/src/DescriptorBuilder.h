@@ -5,7 +5,8 @@
 class DescriptorLayoutCache;
 class DescriptorAllocator;
 
-class DescriptorBuilder {
+class DescriptorBuilder
+{
 public:
 	static DescriptorBuilder Begin(DescriptorLayoutCache* layoutCache, DescriptorAllocator* allocator );
 

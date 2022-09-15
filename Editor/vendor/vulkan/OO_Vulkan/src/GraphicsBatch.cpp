@@ -52,7 +52,8 @@ void GraphicsBatch::GenerateBatches()
 			s_scratchBuffer.clear();
 			for (auto& node :model.nodes)
 			{
-				oGFX::IndirectCommandsHelper(node, s_scratchBuffer);
+				uint32_t counter = 0;
+				oGFX::IndirectCommandsHelper(node, s_scratchBuffer,counter);
 			}
 		}
 		
@@ -86,7 +87,9 @@ void GraphicsBatch::GenerateBatches()
 	{
 		// set up first instance index
 		std::for_each(batch.begin(), batch.end(),
-			[x = uint32_t{ 0 }](oGFX::IndirectCommand& c) mutable { c.firstInstance = x++; });
+			[x = uint32_t{ 0 }](oGFX::IndirectCommand& c) mutable { 
+			c.firstInstance = c.firstInstance == 0 ? x++ : x - 1;
+		});
 	}
 
 }
