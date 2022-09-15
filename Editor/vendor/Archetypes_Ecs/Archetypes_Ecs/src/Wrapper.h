@@ -57,6 +57,12 @@ namespace Ecs
 			world.for_each(std::forward<Func>(function));
 		}
 
+		template<typename Func>
+		inline void for_each_entity(IQuery& query, Func&& function)
+		{
+			world.for_each_entity(query, std::forward<Func>(function));
+		}
+
 		template<typename C>
 		void add_component(EntityID id, C& comp)
 		{
