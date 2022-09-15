@@ -107,6 +107,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
+	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)

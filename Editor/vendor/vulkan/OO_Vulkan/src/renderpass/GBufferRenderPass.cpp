@@ -58,16 +58,16 @@ void GBufferRenderPass::Draw()
 	
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(attachments[GBufferAttachmentIndex::POSITION])
-		.BindImage(attachments[GBufferAttachmentIndex::NORMAL  ])
-		.BindImage(attachments[GBufferAttachmentIndex::ALBEDO  ])
-		.BindImage(attachments[GBufferAttachmentIndex::MATERIAL])
-		.BindImage(attachments[GBufferAttachmentIndex::DEPTH   ])
+		.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
+		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
+		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
+		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
 		.Build(currentFB,renderpass_GBuffer);
 
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
 	renderPassBeginInfo.renderPass =  renderpass_GBuffer;
-	renderPassBeginInfo.framebuffer = framebuffer_GBuffer;
+	renderPassBeginInfo.framebuffer = currentFB;
 	renderPassBeginInfo.renderArea.extent.width = swapchain.swapChainExtent.width;
 	renderPassBeginInfo.renderArea.extent.height = swapchain.swapChainExtent.height;
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -88,7 +88,7 @@ void GBufferRenderPass::Draw()
 	};
 	
 	uint32_t dynamicOffset = 0;
-	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, vr.indirectPSOLayout,
+	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, PSOLayoutDB::indirectPSOLayout,
 		0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
 	
 	// Bind merged mesh vertex & index buffers, instancing buffers.
@@ -114,8 +114,6 @@ void GBufferRenderPass::Shutdown()
 		att.destroy();
 	}
 
-	// TODO maybe not delete here?
-	vkDestroyFramebuffer(device, framebuffer_GBuffer, nullptr);
 	vkDestroyRenderPass(device,renderpass_GBuffer, nullptr);
 	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
 }
@@ -130,15 +128,15 @@ void GBufferRenderPass::SetupRenderpass()
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
 	attachments[GBufferAttachmentIndex::POSITION].name = "GB_Position";
-	attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
-	attachments[GBufferAttachmentIndex::NORMAL].name = "GB_Normal";
-	attachments[GBufferAttachmentIndex::NORMAL  ].forFrameBuffer(VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
-	attachments[GBufferAttachmentIndex::ALBEDO].name = "GB_Albedo";
-	attachments[GBufferAttachmentIndex::ALBEDO  ].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
+	attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::NORMAL	].name = "GB_Normal";
+	attachments[GBufferAttachmentIndex::NORMAL	].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::ALBEDO	].name = "GB_Albedo";
+	attachments[GBufferAttachmentIndex::ALBEDO	].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::MATERIAL].name = "GB_Material";
-	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, &m_device);
-	attachments[GBufferAttachmentIndex::DEPTH].name = "GB_DEPTH";
-	attachments[GBufferAttachmentIndex::DEPTH   ].forFrameBuffer(vr.G_DEPTH_FORMAT,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height, &m_device);
+	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::DEPTH	].name = "GB_DEPTH";
+	attachments[GBufferAttachmentIndex::DEPTH	].forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height);
 
 	// Set up separate renderpass with references to the color and depth attachments
 	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};
@@ -228,11 +226,11 @@ void GBufferRenderPass::SetupFramebuffer()
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 	
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(attachments[GBufferAttachmentIndex::POSITION])
-		.BindImage(attachments[GBufferAttachmentIndex::NORMAL  ])
-		.BindImage(attachments[GBufferAttachmentIndex::ALBEDO  ])
-		.BindImage(attachments[GBufferAttachmentIndex::MATERIAL])
-		.BindImage(attachments[GBufferAttachmentIndex::DEPTH   ])
+		.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
+		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
+		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
+		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
 		.Build(framebuffer_GBuffer,renderpass_GBuffer);
 
 	//VkFramebufferCreateInfo fbufCreateInfo = {};
@@ -260,6 +258,9 @@ void GBufferRenderPass::CreatePipeline()
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
 
+	const char* shaderVS = "Shaders/bin/gbuffer.vert.spv";
+	const char* shaderPS = "Shaders/bin/gbuffer.frag.spv";
+
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
@@ -269,9 +270,13 @@ void GBufferRenderPass::CreatePipeline()
 	VkPipelineMultisampleStateCreateInfo multisampleState = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
-	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages	= 
+	{
+		vr.LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
+		vr.LoadShader(m_device, shaderPS, VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(vr.indirectPSOLayout, vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::indirectPSOLayout, vr.renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -291,19 +296,13 @@ void GBufferRenderPass::CreatePipeline()
 	auto& attributeDescriptions = oGFX::GetGFXVertexInputAttributes();
 
 	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-	// -- VERTEX INPUT -- 
+	
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo(bindingDescription,attributeDescriptions);
-	//vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-	//vertexInputCreateInfo.vertexAttributeDescriptionCount = 5;
 
 	vertexInputCreateInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescription.size());
 	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 
 	pipelineCI.pVertexInputState = &vertexInputCreateInfo;
-
-	// Offscreen pipeline
-	shaderStages[0] = vr.LoadShader(m_device, "Shaders/bin/gbuffer.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/gbuffer.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Separate render pass
 	pipelineCI.renderPass = renderpass_GBuffer;
@@ -324,6 +323,7 @@ void GBufferRenderPass::CreatePipeline()
 
 	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_GBufferDefault));
 	VK_NAME(m_device.logicalDevice, "GBufferDefaultPSO", pso_GBufferDefault);
+
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
 }

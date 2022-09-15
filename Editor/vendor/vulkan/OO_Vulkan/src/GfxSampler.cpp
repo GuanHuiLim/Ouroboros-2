@@ -33,6 +33,7 @@ void GfxSamplerManager::Init()
         VK_NAME(device, "textureSampler", textureSampler);
         if (result != VK_SUCCESS)
         {
+            std::cerr << "Failed to create a texture sampler!" << std::endl;
             throw std::runtime_error("Failed to create a texture sampler!");
         }
     }

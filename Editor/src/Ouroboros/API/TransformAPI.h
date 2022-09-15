@@ -52,7 +52,7 @@ namespace oo
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
-        TransformComponent::vec3 vec3 = component.GetGlobalPosition();
+        TransformComponent::vec3 vec3 = component.GetEulerAngles();
         *x = vec3.x;
         *y = vec3.y;
         *z = vec3.z;
@@ -62,7 +62,27 @@ namespace oo
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
-        component.SetGlobalPosition({ x, y, z });
+        component.SetEulerAngles({ x, y, z });
+
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+    }
+
+    SCRIPT_API void Transform3D_GetGlobalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GetGlobalRotationDeg();
+        *x = vec3.x;
+        *y = vec3.y;
+        *z = vec3.z;
+    }
+
+    SCRIPT_API void Transform3D_SetGlobalEulerAngles(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        component.SetGlobalAngle({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));

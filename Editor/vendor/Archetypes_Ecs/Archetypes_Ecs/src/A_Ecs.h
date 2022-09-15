@@ -684,6 +684,9 @@ namespace Ecs::internal
 		auto acrray = get_chunk_array<C>(storage.chunk);
 		return acrray.chunkOwner != nullptr;
 	}
+
+	
+
 	template<typename C>
 	void add_component_to_entity(IECSWorld* world, EntityID id)
 	{
@@ -722,6 +725,9 @@ namespace Ecs::internal
 
 
 			set_entity_archetype(newArch, id);
+
+			//broadcast callback
+			internal::broadcast_add_component_callback(world, id, get_entity_component<C>(world,id));
 		}
 
 		
@@ -764,6 +770,8 @@ namespace Ecs::internal
 
 		Archetype* newArch = oldarch;
 		if (typeFound) {
+			//broadcast callback
+			broadcast_remove_component_callback(world, id, get_entity_component<C>(world, id));
 
 			lenght--;
 			sort_ComponentInfos(temporalComponentInfoArray, lenght);
@@ -771,6 +779,7 @@ namespace Ecs::internal
 			newArch = find_or_create_archetype(world, temporalComponentInfoArray, lenght);
 
 			set_entity_archetype(newArch, id);
+
 		}
 	}
 
@@ -813,6 +822,19 @@ namespace Ecs::internal
 			function(eidptr[i]);
 		}
 	}
+	template<typename... Args, typename Func>
+	void entity_chunk_iterate_with_entity_and_component(DataChunk* chnk, Func&& function)
+	{
+		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
+#ifndef NDEBUG
+		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
+#endif
+
+		EntityID* eidptr = ((EntityID*)chnk);
+		for (int i = chnk->header.last - 1; i >= 0; i--) {
+			function(eidptr[i], std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
+		}
+	}
 
 
 	template<typename ...Args, typename Func>
@@ -824,6 +846,12 @@ namespace Ecs::internal
 	void unpack_chunk_with_entity(DataChunk* chunk, Func&& function)
 	{
 		entity_chunk_iterate_with_entity<Func>(chunk, function);
+	}
+
+	template<typename Func>
+	void unpack_chunk_with_entity_and_component(DataChunk* chunk, Func&& function)
+	{
+		entity_chunk_iterate_with_entity_and_component<Func>(chunk, function);
 	}
 
 	template<typename ...Args>
@@ -955,42 +983,21 @@ namespace Ecs::internal
 	template<typename C>
 	inline void broadcast_add_component_callback(IECSWorld* world, EntityID eid, C& component)
 	{
-		/*static const IQuery query = []() {
-			IQuery _query;
-			_query.with<C>().build();
-			return _query;
-		}();*/
 		const ComponentInfo* type = get_ComponentInfo<C>();
 		const auto hash = type->hash.name_hash;
 		ComponentEvent evnt{ eid,component };
 		world->onAddComponent_Callbacks[hash].Broadcast(&evnt);
 
-		/*internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
-
-			arch->addition_callbacks.Broadcast(&evnt);
-
-			});*/
 	}
 
 	template<typename C>
 	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, C& component)
 	{
-		/*static const IQuery query = []() {
-			IQuery _query;
-			_query.with<C>().build();
-			return _query;
-		}();*/
-
 		const ComponentInfo* type = get_ComponentInfo<C>();
 		const auto hash = type->hash.name_hash;
 		ComponentEvent evnt{ eid,component };
 		world->onRemoveComponent_Callbacks[hash].Broadcast(&evnt);
 
-		/*internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
-
-			arch->deletion_callbacks.Broadcast(&evnt);
-
-			});*/
 	}
 
 	template<typename C>
@@ -1001,14 +1008,7 @@ namespace Ecs::internal
 		const auto hash = type->hash.name_hash;
 
 		world->onAddComponent_Callbacks[hash].Subscribe<EventType>(function);
-		/*IQuery query;
-		query.with<C>().build();
-
-		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
-
-			arch->addition_callbacks.Subscribe<EventType>(function);
-
-			});*/
+		
 	}
 
 	template<typename T, typename C>
@@ -1022,14 +1022,6 @@ namespace Ecs::internal
 
 		world->onAddComponent_Callbacks[hash].Subscribe<T, EventType>(instance, function);
 
-		/*IQuery query;
-		query.with<C>().build();
-
-		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
-
-			arch->addition_callbacks.Subscribe<T, EventType>(instance,function);
-
-			});*/
 	}
 
 	template<typename C>
@@ -1041,14 +1033,7 @@ namespace Ecs::internal
 		const auto hash = type->hash.name_hash;
 
 		world->onRemoveComponent_Callbacks[hash].Subscribe<EventType>(function);
-		/*IQuery query;
-		query.with<C>().build();
-
-		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
-
-			arch->deletion_callbacks.Subscribe<EventType>(function);
-
-			});*/
+		
 	}
 
 	template<typename T, typename C>
@@ -1061,14 +1046,7 @@ namespace Ecs::internal
 		const auto hash = type->hash.name_hash;
 
 		world->onRemoveComponent_Callbacks[hash].Subscribe<T, EventType>(instance, function);
-		/*IQuery query;
-		query.with<C>().build();
-
-		internal::iterate_matching_archetypes(world, query, [&](Archetype* arch) {
-
-			arch->deletion_callbacks.Subscribe<T, EventType>(instance, function);
-
-			});*/
+		
 	}
 }
 
@@ -1140,6 +1118,21 @@ namespace Ecs
 	}
 
 	template<typename Func>
+	void IECSWorld::for_each_entity_and_component(IQuery& query, Func&& function)
+	{
+		using params = decltype(internal::args(&Func::operator()));
+
+		internal::iterate_matching_archetypes(this, query, [&](Archetype* arch) {
+
+			for (auto chnk : arch->chunks) {
+
+				internal::unpack_chunk_with_entity_and_component(params{}, chnk, function);
+			}
+			});
+	}
+
+
+	template<typename Func>
 	void IECSWorld::for_each(Func&& function)
 	{
 		using params = decltype(internal::args(&Func::operator()));
@@ -1163,13 +1156,13 @@ namespace Ecs
 	{
 		internal::add_component_to_entity<C>(this, id);
 
-		internal::broadcast_add_component_callback(this, id, get_component<C>(id));
+		//internal::broadcast_add_component_callback(this, id, get_component<C>(id));
 	}
 
 	template<typename C>
 	inline void IECSWorld::remove_component(EntityID id)
 	{
-		internal::broadcast_remove_component_callback(this, id, get_component<C>(id));
+		//internal::broadcast_remove_component_callback(this, id, get_component<C>(id));
 
 		internal::remove_component_from_entity<C>(this, id);
 	}
