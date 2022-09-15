@@ -487,9 +487,13 @@ namespace oo
 
     }
 
-
     void VulkanContext::OnUpdateBegin()
     {
+        int w, h;
+        SDL_Vulkan_GetDrawableSize(m_windowHandle, &w, &h);
+        m_window.m_width = w;
+        m_window.m_height = h;
+
         m_cc.Update(oo::timer::dt());
         if (vr->PrepareFrame() == true)
         {

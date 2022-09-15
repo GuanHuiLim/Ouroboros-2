@@ -51,6 +51,7 @@ bool DescriptorAllocator::Allocate(VkDescriptorSet* set, VkDescriptorSetLayout l
 
 		allocInfo.descriptorPool = currentPool;
 		allocResult = vkAllocateDescriptorSets(device, &allocInfo, set);
+		std::cout << "Descriptor set allocated: " << std::endl;;
 
 		//if it still fails then we have big issues
 		VK_CHK(allocResult);

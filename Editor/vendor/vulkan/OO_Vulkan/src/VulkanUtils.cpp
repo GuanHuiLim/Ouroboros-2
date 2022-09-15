@@ -423,6 +423,7 @@ namespace oGFX
 		//check if file stream success fully opened
 		if (!file.is_open())
 		{
+			std::cerr << "Failed to open a file! : " << filename << std::endl;
 			throw std::runtime_error("Failed to open a file! : " + filename);
 		}
 
