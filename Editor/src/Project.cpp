@@ -35,6 +35,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	
 	s_configFile = config;
 	s_projectFolder = s_configFile.parent_path();
+	s_assetFolder = (*prj_setting).value.FindMember("AssetFolder")->value.GetString();
 	s_prefabFolder = (*prj_setting).value.FindMember("PrefabFolder")->value.GetString();
 	s_startingScene = (*prj_setting).value.FindMember("StartScene")->value.GetString();
 	s_sceneFolder = (*prj_setting).value.FindMember("SceneFolder")->value.GetString();
@@ -56,6 +57,11 @@ void Project::LoadProject(std::filesystem::path& config)
 	oo::EventManager::Broadcast(&lpe);
 	//end
 	ifs.close();
+
+	//load assets here
+	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
+	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
+	s_AssetManager->LoadDirectoryAsync(hard_assetfolderpath, true);
 }
 
 void Project::SaveProject()

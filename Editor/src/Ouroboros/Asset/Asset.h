@@ -40,6 +40,13 @@ namespace oo
 
         using Callback = std::function<void(AssetInfo&)>;
         using DataTypeOffsetsType = std::unordered_map<std::type_index, size_t>;
+        enum class Type
+        {
+            Text = 0,
+            Texture,
+            Font,
+            Audio,
+        };
 
         /* --------------------------------------------------------------------------- */
         /* Members                                                                     */
@@ -53,6 +60,7 @@ namespace oo
         Callback onAssetDestroy = [](AssetInfo&) {};
         void* data = nullptr;
         DataTypeOffsetsType dataTypeOffsets;
+        Type type = Type::Text;
     };
 
     class Asset
@@ -71,7 +79,7 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         static constexpr Extension EXT_META = ".meta";
-        static constexpr ExtensionList<3> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg" };
+        static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".ogg" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
 
@@ -86,9 +94,9 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         Asset(std::filesystem::path contentPath = {}, AssetID id = GenerateSnowflake());
-        Asset(Asset& other);
+        Asset(const Asset& other);
         Asset(Asset&& other);
-        Asset& operator=(Asset& other);
+        Asset& operator=(const Asset& other);
         Asset& operator=(Asset&& other);
         ~Asset();
 
@@ -106,6 +114,7 @@ namespace oo
         [[nodiscard]] inline bool HasData() const { return info->data; };
         template<typename T>
         [[nodiscard]] inline T GetData() const;
+        [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
 
     private:
         /* --------------------------------------------------------------------------- */

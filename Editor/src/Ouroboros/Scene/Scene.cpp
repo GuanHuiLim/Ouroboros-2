@@ -120,7 +120,7 @@ namespace oo
     {
         PRINT(m_name);
 
-        GetWorld().Get_System<oo::MeshRendererSystem>()->Run(&GetWorld(), GetGraphicsWorld());
+        GetWorld().Get_System<oo::MeshRendererSystem>()->Run();
         
         //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
         //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
