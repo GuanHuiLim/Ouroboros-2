@@ -68,12 +68,14 @@ namespace oo
         // Local Setters
         void SetPosition(vec3 pos);
         void SetRotation(vec3 euler_angles_degrees);
+        void SetOrientation(quat quaternion);
         void SetScale(vec3 scale);
 
         // Global Setters
         void SetGlobalPosition(vec3 position);
         void SetGlobalScale(vec3 scale);
         void SetGlobalRotation(vec3 euler_angles_degrees);
+        void SetGlobalOrientation(quat quaternion);
         void SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale);
         void SetGlobalTransform(mat4 target_global_matrix);
 

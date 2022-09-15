@@ -34,10 +34,10 @@ namespace oo
             .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)
             .property_readonly("Local Matrix", &TransformComponent::GetLocalMatrix)
             .property_readonly("Global Matrix", &TransformComponent::GetGlobalMatrix)
-            .property_readonly("Global Position", &TransformComponent::GetGlobalPosition)
-            .property_readonly("Global Rotation", &TransformComponent::GetGlobalRotationDeg)
+            .property("Global Position", &TransformComponent::GetGlobalPosition, &TransformComponent::SetGlobalPosition)
+            .property("Global Rotation", &TransformComponent::GetGlobalRotationDeg, &TransformComponent::SetGlobalRotation)
             .property_readonly("Global Quaternion", &TransformComponent::GetGlobalRotationQuat)
-            .property_readonly("Global Scale", &TransformComponent::GetGlobalScale);
+            .property("Global Scale", &TransformComponent::GetGlobalScale, &TransformComponent::SetGlobalScale);
         //added readonly for debugging purposes
     }
 
@@ -81,6 +81,13 @@ namespace oo
         m_transform.SetRotation(quaternion::from_euler(glm::radians(m_eulerAngles)));
     }
 
+    void oo::TransformComponent::SetOrientation(quat quaternion)
+    {
+        m_dirty = true;
+        m_transform.SetRotation(quaternion);
+        m_eulerAngles = m_transform.GetEulerAngles();
+    }
+
     void TransformComponent::SetScale(vec3 scale)                           { m_dirty = true; m_transform.SetScale(scale);}
 
     // Global Setters
@@ -90,6 +97,12 @@ namespace oo
     { 
         m_dirty = true; 
         m_transform.SetGlobalRotation(quaternion::from_euler(glm::radians(euler_angles_degrees))); 
+    }
+
+    void TransformComponent::SetGlobalOrientation(quat quaternion)
+    {
+        m_dirty = true;
+        m_transform.SetGlobalRotation(quaternion);
     }
 
     void TransformComponent::SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale) 
