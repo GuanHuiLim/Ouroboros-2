@@ -36,12 +36,30 @@ private:
     glm::mat4 model{ 1.0f };
 };
 
+struct BoneInfo
+{
+    int id;
+
+    /*offset matrix transforms vertex from model space to bone space*/
+    glm::mat4 offset;
+};
+
+struct Bone
+{
+    glm::vec3 position;
+    glm::quat orientation;
+    glm::vec3 scale;
+};
+
 struct Model
 {
     uint32_t gfxIndex{};
     std::string fileName;
     std::vector<oGFX::Vertex> vertices;
     std::vector<uint32_t> indices;
+    std::unordered_map<std::string, BoneInfo> strToBone;
+    std::vector<Bone> bones;
+    uint32_t boneCnt{};
     Sphere s{};
     AABB aabb{};
 };
@@ -77,7 +95,9 @@ struct gfxModel
     void destroy(VkDevice device);
 
     void loadNode(Node* parent, const aiScene* scene, const aiNode& node, uint32_t nodeIndex,
-                  std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices);
+                 Model& cpumodel);
+
+    void updateOffsets(uint32_t idxOffset, uint32_t vertOffset);
 
     std::vector<Node*> nodes;
     uint32_t meshCount{};

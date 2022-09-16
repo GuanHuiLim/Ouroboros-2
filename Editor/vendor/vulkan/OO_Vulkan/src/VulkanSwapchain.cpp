@@ -2,20 +2,21 @@
 #include  <stdexcept>
 #include  <array>
 
-
+#include "VulkanRenderer.h"
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
 #include "VulkanUtils.h"
 
 VulkanSwapchain::~VulkanSwapchain()
 {
-	depthAttachment.destroy(m_devicePtr->logicalDevice);
+	depthAttachment.destroy();
 	for (auto& img : swapChainImages)
 	{
-		vkDestroyImageView(m_devicePtr->logicalDevice, img.imageView, nullptr);
+		vkDestroyImageView(m_devicePtr->logicalDevice, img.view, nullptr);
 	}
 	if (swapchain)
 	{
+		// swapchain handles the images
 		vkDestroySwapchainKHR(m_devicePtr->logicalDevice,swapchain, nullptr);
 	}
 }
@@ -33,7 +34,7 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 	{
 		for (auto& img : swapChainImages)
 		{
-			vkDestroyImageView(m_devicePtr->logicalDevice, img.imageView, nullptr);
+			vkDestroyImageView(m_devicePtr->logicalDevice, img.view, nullptr);
 		}
 		swapChainImages.clear();
 	}
@@ -122,15 +123,15 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 	std::vector<VkImage> images(swapChainImageCount);
 	vkGetSwapchainImagesKHR(device.logicalDevice, swapchain, &swapChainImageCount, images.data());
 
-	for (VkImage image : images)
+	//add to swapchain image list
+	swapChainImages.resize(images.size());
+	for (size_t i = 0; i < images.size(); i++)
 	{
 		//store image handles
-		SwapChainImage swapChainImage = {};
-		swapChainImage.image = image;
-		swapChainImage.imageView = CreateImageView(device,image, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		//add to swapchain image list
-		swapChainImages.push_back(swapChainImage);
+		swapChainImages[i].image = images[i];
+		swapChainImages[i].view = CreateImageView(device,images[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		swapChainImages[i].width = swapChainExtent.width;
+		swapChainImages[i].height = swapChainExtent.height;
 	}
 
 	CreateDepthBuffer();
@@ -148,12 +149,7 @@ void VulkanSwapchain::CreateDepthBuffer()
 {
 	if (depthAttachment.image)
 	{
-		depthAttachment.destroy(m_devicePtr->logicalDevice);
+		depthAttachment.destroy();
 	}
-	VkFormat depF = oGFX::ChooseSupportedFormat(*m_devicePtr,
-		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-	depthAttachment.createAttachment(*m_devicePtr, swapChainExtent.width,  swapChainExtent.height,
-		depF, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depthAttachment.forFrameBuffer(m_devicePtr, VulkanRenderer::get()->G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, swapChainExtent.width, swapChainExtent.height);
 }

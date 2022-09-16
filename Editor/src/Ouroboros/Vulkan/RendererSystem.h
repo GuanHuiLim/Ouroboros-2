@@ -1,6 +1,6 @@
 #pragma once
 #include "RendererComponent.h"
-#include "Archetypes_Ecs/src/Archetype.h"
+#include "Archetypes_Ecs/src/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 namespace oo
@@ -8,8 +8,8 @@ namespace oo
 	class MeshRendererSystem
 	{
 	private:
-		GraphicsWorld* graphicsWorld;
-
+		GraphicsWorld* graphicsWorld{nullptr};
+		Ecs::ECSWorld* ecs_world{nullptr};
 	public:
 		void AssignObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
 
@@ -17,6 +17,6 @@ namespace oo
 
 		void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
 
-		void Run(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
+		void Run();
 	};
 }

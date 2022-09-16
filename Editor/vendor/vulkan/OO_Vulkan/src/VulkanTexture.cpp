@@ -50,6 +50,7 @@ namespace vkutils
 		width = _width;
 		height = _height;
 		format = _format;
+		usage = imageUsageFlags;
 		int ktxTextureSize = (width * height * STBI_rgb_alpha);
 
 		//TODO mips
@@ -335,6 +336,7 @@ namespace vkutils
 		width = texWidth;
 		height = texHeight;
 		format = _format;
+		usage = imageUsageFlags;
 		mipLevels =static_cast<uint32_t>(mipInfo.size());
 
 		VkMemoryAllocateInfo memAllocInfo = oGFX::vkutils::inits::memoryAllocateInfo();
@@ -484,11 +486,12 @@ namespace vkutils
 		updateDescriptor();
 	}
 
-	void Texture2D::forFrameBuffer(VkFormat _format, 
+	void Texture2D::forFrameBuffer(VulkanDevice* device,
+		VkFormat _format,
 		VkImageUsageFlags imageUsageFlags,
 		uint32_t texWidth, uint32_t texHeight,
-		VulkanDevice* device,
-		uint32_t mipLevels,
+		bool forFullscr,
+		uint32_t _mipLevels,
 		VkMemoryPropertyFlags properties,
 		VkFilter filter
 	)
@@ -497,8 +500,10 @@ namespace vkutils
 		width = texWidth;
 		height = texHeight;
 		format = _format;
-		
-		VkImageAspectFlags aspectMask = 0;
+		MemProps = properties;
+		targetSwapchain = forFullscr;
+
+		aspectMask = 0;
 
 		if (imageUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		{
@@ -510,6 +515,8 @@ namespace vkutils
 			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;// | VK_IMAGE_ASPECT_STENCIL_BIT;
 			imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		}
+
+		usage = imageUsageFlags;
 		
 		assert(aspectMask > 0);
 
@@ -583,6 +590,65 @@ namespace vkutils
 		VK_NAME(device->logicalDevice, n? "forFramebuffer::sampler" : name.c_str(), sampler);
 
 		imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+	}
+
+	void Texture2D::Resize(uint32_t texWidth, uint32_t texHeight)
+	{
+		if (device == nullptr)
+			return;
+
+		width = texWidth;
+		height = texHeight;
+
+		VkImageView oldview = view;
+		VkDeviceMemory oldMemory = deviceMemory;
+		VkImage oldImage = image;
+
+		vkDestroyImageView(device->logicalDevice, oldview, nullptr);
+		vkFreeMemory(device->logicalDevice, oldMemory,nullptr);
+		vkDestroyImage(device->logicalDevice, oldImage,nullptr);
+
+		bool n = name.empty();
+
+		VkImageCreateInfo imageinfo = oGFX::vkutils::inits::imageCreateInfo();
+		imageinfo.imageType = VK_IMAGE_TYPE_2D;
+		imageinfo.extent.width = width;
+		imageinfo.extent.height = height;
+		imageinfo.extent.depth = 1;
+		imageinfo.mipLevels = mipLevels;
+		imageinfo.arrayLayers = 1;
+		imageinfo.format = format;
+		imageinfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageinfo.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageinfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VK_CHK(vkCreateImage(device->logicalDevice, &imageinfo, nullptr, &image));
+		VK_NAME(device->logicalDevice, n? "forFramebuffer::image" :name.c_str(), image);
+
+		VkMemoryRequirements memReqs;
+		vkGetImageMemoryRequirements(device->logicalDevice, image, &memReqs);
+
+		VkMemoryAllocateInfo memAllocInfo = oGFX::vkutils::inits::memoryAllocateInfo();
+		memAllocInfo.allocationSize = memReqs.size;
+		// Get memory type index for a host visible buffer
+		memAllocInfo.memoryTypeIndex = oGFX::FindMemoryTypeIndex(device->physicalDevice,memReqs.memoryTypeBits,MemProps);
+
+		VK_CHK(vkAllocateMemory(device->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+		VK_NAME(device->logicalDevice, n?"forFramebuffer::deviceMemory" : name.c_str(), deviceMemory);
+
+		VK_CHK(vkBindImageMemory(device->logicalDevice, image, deviceMemory, 0));
+
+		// Create image view
+		VkImageViewCreateInfo viewCreateInfo = {};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.pNext = NULL;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.format = format;
+		viewCreateInfo.subresourceRange = { aspectMask, 0, 1, 0, 1 };
+		viewCreateInfo.image = image;
+		VK_CHK(vkCreateImageView(device->logicalDevice, &viewCreateInfo, nullptr, &view));
+		VK_NAME(device->logicalDevice, n?"forFramebuffer::view" : name.c_str(), view);
+
 	}
 
 

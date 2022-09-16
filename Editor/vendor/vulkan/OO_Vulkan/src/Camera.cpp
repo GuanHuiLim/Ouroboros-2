@@ -199,6 +199,9 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 
 void Camera::UpdateProjectionMatrix()
 {
+
+	if (m_aspectRatio != m_aspectRatio) return;
+
 	if (m_CameraProjectionType == CameraProjectionType::orthographic)
 	{
 		const float h = m_orthoSize / m_aspectRatio;

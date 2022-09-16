@@ -44,17 +44,29 @@ namespace Ecs
 		using MemberFnPtr = typename IECSWorld::MemberFnPtr<T>;
 
 
-
+		//supports functions of the format: exampleFunction(ComponentA, ComponentB,...)
 		template<typename Func>
 		inline void for_each(IQuery& query, Func&& function)
 		{
 			world.for_each(query,std::forward<Func>(function));
 		}
-
+		//supports functions of the format: exampleFunction()
 		template<typename Func>
 		inline void for_each(Func&& function)
 		{
 			world.for_each(std::forward<Func>(function));
+		}
+		//supports functions of the format: exampleFunction(Ecs::EntityID)
+		template<typename Func>
+		inline void for_each_entity(IQuery& query, Func&& function)
+		{
+			world.for_each_entity(query, std::forward<Func>(function));
+		}
+		//supports functions of the format: exampleFunction(Ecs::EntityID, ComponentA, ComponentB,...)
+		template<typename Func>
+		inline void for_each_entity_and_component(IQuery& query, Func&& function)
+		{
+			world.for_each_entity_and_component(query, std::forward<Func>(function));
 		}
 
 		template<typename C>

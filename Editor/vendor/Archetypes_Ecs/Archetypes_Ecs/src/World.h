@@ -60,6 +60,9 @@ namespace Ecs
 		template<typename Func>
 		void for_each_entity(IQuery& query, Func&& function);
 
+		template<typename Func>
+		void for_each_entity_and_component(IQuery& query, Func&& function);
+
 		//priority
 		template<typename Func>
 		void for_each(Func&& function);
