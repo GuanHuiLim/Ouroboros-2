@@ -16,7 +16,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "TransformComponent.h"
-
+#include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
 namespace oo
 {
@@ -28,10 +28,10 @@ namespace oo
     {
         using namespace rttr;
         registration::class_<TransformComponent>("Transform Component")
-            .property("Position", &TransformComponent::GetPosition, &TransformComponent::SetPosition)
-            .property("Euler Angles", &TransformComponent::GetEulerAngles, &TransformComponent::SetRotation)
+            .property("Position", &TransformComponent::GetPosition, &TransformComponent::SetPosition)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Euler Angles", &TransformComponent::GetEulerAngles, &TransformComponent::SetRotation)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property_readonly("Quaternion", &TransformComponent::GetRotationQuat)
-            .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)
+            .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property_readonly("Local Matrix", &TransformComponent::GetLocalMatrix)
             .property_readonly("Global Matrix", &TransformComponent::GetGlobalMatrix)
             .property("Global Position", &TransformComponent::GetGlobalPosition, &TransformComponent::SetGlobalPosition)
