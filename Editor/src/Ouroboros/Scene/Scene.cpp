@@ -85,6 +85,10 @@ namespace oo
                 m_ecsWorld->Add_System<oo::MeshRendererSystem>()->Init(&GetWorld(), GetGraphicsWorld());
             }
 
+            // Broadcast event to load scene
+            LoadSceneEvent lse{ this };
+            EventManager::Broadcast<LoadSceneEvent>(&lse);
+
             PRINT(m_name);
             
             TRACY_PROFILE_SCOPE_END();
@@ -202,10 +206,6 @@ namespace oo
             }
 
             ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
-
-            // Broadcast event to load scene
-            LoadSceneEvent lse{ this };
-            EventManager::Broadcast<LoadSceneEvent>(&lse);
 
             // TODO: Solution To tie graphics world to rendering context for now!
             static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
