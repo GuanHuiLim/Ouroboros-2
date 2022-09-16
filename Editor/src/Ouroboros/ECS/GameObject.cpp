@@ -71,16 +71,24 @@ namespace oo
 
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
-        // TODO! [preserve transforms needs to be used]
-        UNREFERENCED(preserveTransforms);
-
+        TransformComponent& child_tf = child.Transform();
+        mat4 og_parent_tf = child.GetParent().Transform().GetGlobalMatrix();
         scenenode::shared_pointer parentNode = GetSceneNode().lock();
         scenenode::shared_pointer childNode = child.GetSceneNode().lock();
-        if (parentNode && childNode)
+        // if parent and child are valid and parent successfully added child
+        if (parentNode && childNode && parentNode->add_child(childNode))
         {
-            parentNode->add_child(childNode);
             // notify child node that its parent has changed.
-            child.Transform().ParentChanged();
+            child_tf.ParentChanged();
+
+            if (preserveTransforms)
+            {
+                mat4 new_parent_inv = glm::inverse(Transform().GetGlobalMatrix());
+                child_tf.SetLocalTransform(new_parent_inv * og_parent_tf * child_tf.GetLocalMatrix());
+            }
+
+            // Properly propagate parent gameobject's active downwards
+            SetActive(IsActive());
         }
         
     }
@@ -101,6 +109,11 @@ namespace oo
         return GetChildren().size() != 0;
     }
 
+    bool GameObject::HasValidParent() const
+    {
+        return TryGetParent() != nullptr;
+    }
+
     std::size_t GameObject::GetChildCount() const
     {
         return GetSceneNode().lock()->get_total_child_count();
@@ -116,9 +129,17 @@ namespace oo
         return m_scene->GetWorld().get_num_components(m_entity);
     }
 
+    Scene::go_ptr GameObject::TryGetParent() const
+    {
+        UUID parent_uuid = GetParentUUID();
+        return m_scene->FindWithInstanceID(parent_uuid);
+    }
+
     GameObject GameObject::GetParent() const
     {
-        return *m_scene->FindWithInstanceID(GetParentUUID());
+        UUID parent_uuid = GetParentUUID();
+        ASSERT(parent_uuid == scenenode::NOTFOUND, "this should never happen except for the root node");
+        return *m_scene->FindWithInstanceID(parent_uuid);
     }
 
     std::vector<GameObject> GameObject::GetDirectChilds(bool includeItself) const
@@ -179,6 +200,64 @@ namespace oo
         return result;
     }
 
+
+    // Helper Getters
+
+    TransformComponent& GameObject::Transform() const 
+    { 
+        ASSERT_MSG(!HasComponent<TransformComponent>(), "Invalid ID");   
+        return GetComponent<TransformComponent>(); 
+    }
+
+    bool GameObject::IsActive() const 
+    {
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  
+        return GetComponent<GameObjectComponent>().Active; 
+    }
+
+
+    bool GameObject::ActiveInHierarchy() const 
+    { 
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");
+        return GetComponent<GameObjectComponent>().ActiveInHierarchy; 
+    }
+
+    // only done after ecs able to return dynamic objects
+
+    std::string& GameObject::Name() const 
+    {
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  
+        return GetComponent<GameObjectComponent>().Name; 
+    }
+
+    UUID GameObject::GetInstanceID() const 
+    { 
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  
+        return GetComponent<GameObjectComponent>().Id; 
+    }
+
+    scenenode::weak_pointer GameObject::GetSceneNode() const 
+    { 
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  
+        return GetComponent<GameObjectComponent>().Node; 
+    }
+
+    bool GameObject::GetIsPrefab() const 
+    {
+        ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  
+        return GetComponent<GameObjectComponent>().IsPrefab; 
+    }
+
+    GameObject::Entity GameObject::GetEntity() const 
+    { 
+        return m_entity; 
+    }
+
+    Scene const* GameObject::GetScene() const 
+    { 
+        return m_scene; 
+    }
+
     void GameObject::SetActive(bool active) const
     {
         ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");
@@ -187,7 +266,13 @@ namespace oo
         GetComponent<GameObjectComponent>().Active = active;
 
         //// Determine state of this object's active state in hierarchy
-        bool hierarchyActive = GetParent().ActiveInHierarchy() && active;
+        bool hierarchyActive = active;
+        
+        if(HasValidParent())
+        {
+            hierarchyActive &= GetParent().ActiveInHierarchy();
+        }
+
         CalculateHierarchyActive(*this, hierarchyActive);
     }
 
@@ -255,5 +340,22 @@ namespace oo
         {
             CalculateHierarchyActive(child, hierarchyActive);
         }
+    }
+
+    bool GameObject::operator==(GameObject rhs)
+    {
+        return m_entity.value == rhs.GetEntity().value && m_scene == rhs.m_scene;
+    }
+
+    // equality comparison
+    bool GameObject::operator<(GameObject rhs)
+    {
+        return m_entity.value < rhs.m_entity.value && m_scene == rhs.m_scene;
+    }
+
+    // equality comparison
+    bool GameObject::operator>(GameObject rhs)
+    {
+        return !(rhs < *this);
     }
 }

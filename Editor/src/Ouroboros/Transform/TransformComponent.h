@@ -70,6 +70,7 @@ namespace oo
         void SetRotation(vec3 euler_angles_degrees);
         void SetOrientation(quat quaternion);
         void SetScale(vec3 scale);
+        void SetLocalTransform(mat4 target_local_matrix);
 
         // Global Setters
         void SetGlobalPosition(vec3 position);
@@ -79,6 +80,9 @@ namespace oo
         void SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale);
         void SetGlobalTransform(mat4 target_global_matrix);
 
+        // Extra Functions
+        void LookAt(vec3 target);
+        
         // scenegraph related setters
         void ParentChanged();
 

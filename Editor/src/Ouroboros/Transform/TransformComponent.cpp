@@ -90,6 +90,12 @@ namespace oo
 
     void TransformComponent::SetScale(vec3 scale)                           { m_dirty = true; m_transform.SetScale(scale);}
 
+    void TransformComponent::SetLocalTransform(mat4 target_local_matrix)
+    {
+        m_hasChanged = true;
+        m_transform.SetLocalTransform(target_local_matrix);
+    }
+
     // Global Setters
     void TransformComponent::SetGlobalPosition(vec3 position)               { m_dirty = true; m_transform.SetGlobalPosition(position); }
     void TransformComponent::SetGlobalScale(vec3 scale)                     { m_dirty = true; m_transform.SetGlobalScale(scale); }
@@ -117,6 +123,12 @@ namespace oo
     {
         m_hasChanged = true;
         m_transform.SetGlobalTransform(target_global_matrix);
+    }
+
+    void oo::TransformComponent::LookAt(vec3 target)
+    {
+        m_dirty = true;
+        m_transform.LookAt(target);
     }
 
     void TransformComponent::CalculateLocalTransform()
