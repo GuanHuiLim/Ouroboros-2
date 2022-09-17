@@ -28,7 +28,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    // NOTE Gameobject is no longer directly convertible to Entity.
+    // WARNING: Entity is no longer directly convertible to Gameobject.
     class GameObject final
     {
     public:
@@ -49,17 +49,17 @@ namespace oo
     /*---------------------------------------------------------------------------------*/
     public:
         // Helper Getters
-        TransformComponent& Transform()             const { ASSERT_MSG(!HasComponent<TransformComponent>(), "Invalid ID");   return GetComponent<TransformComponent>(); };
-        bool IsActive()                             const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Active; }
-        bool ActiveInHierarchy()                    const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().ActiveInHierarchy; }
+        TransformComponent& Transform()             const;
+        bool IsActive()                             const;
+        bool ActiveInHierarchy()                    const;
 
         // only done after ecs able to return dynamic objects
-        std::string& Name()                         const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Name; }
-        UUID GetInstanceID()                        const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Id; }
-        scenenode::weak_pointer GetSceneNode()      const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().Node; }
-        bool GetIsPrefab()                          const { ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  return GetComponent<GameObjectComponent>().IsPrefab; }
-        Entity GetEntity()                          const { return m_entity; }
-        Scene const* GetScene()                     const { return m_scene; }
+        std::string& Name()                         const;
+        UUID GetInstanceID()                        const;
+        scenenode::weak_pointer GetSceneNode()      const;
+        bool GetIsPrefab()                          const;
+        Entity GetEntity()                          const;
+        Scene const* GetScene()                     const;
 
         // Setters
         void SetActive(bool active) const;
@@ -92,22 +92,13 @@ namespace oo
         GameObject(Entity entt, Scene& scene);
 
         // equality comparison
-        inline friend bool operator==(GameObject const& lhs, GameObject const& rhs)
-        {
-            return lhs.m_entity.value == rhs.m_entity.value && lhs.m_scene == rhs.m_scene;
-        }
+        bool operator==(GameObject rhs);
 
         // equality comparison
-        inline friend bool operator<(GameObject const& lhs, GameObject const& rhs)
-        {
-            return lhs.m_entity.value < rhs.m_entity.value&& lhs.m_scene == rhs.m_scene;
-        }
+        bool operator<(GameObject rhs);
 
         // equality comparison
-        inline friend bool operator>(GameObject const& lhs, GameObject const& rhs)
-        {
-            return rhs < lhs;
-        }
+        bool operator>(GameObject rhs);
 
         // Destroy
         void Destroy();
@@ -115,11 +106,11 @@ namespace oo
         /*---------------------------------------------------------------------------------*/
         /* Scene Graph Functions                                                           */
         /*---------------------------------------------------------------------------------*/
-        // Scene-graph Related Functions
         void AddChild(GameObject const& child, bool preserveTransforms = false) const;
         void AddChild(std::initializer_list<GameObject> gameObjs, bool preserveTransforms = false) const;
         /*void SwapChildren(GameObject const& other);*/
         
+        Scene::go_ptr TryGetParent() const;
         GameObject GetParent() const;
         std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
         std::vector<GameObject> GetChildren(bool includeItself = false) const;
@@ -127,6 +118,11 @@ namespace oo
         UUID GetParentUUID() const;
         std::vector<UUID> GetDirectChildsUUID(bool includeItself = false) const;
         std::vector<UUID> GetChildrenUUID(bool includeItself = false) const;
+        
+        bool HasChild() const;
+        bool HasValidParent() const;
+        std::size_t GetChildCount() const;
+        std::size_t GetDirectChildCount() const;
 
         /*---------------------------------------------------------------------------------*/
         /* Static Functions                                                                */
@@ -137,59 +133,29 @@ namespace oo
         /* Queries                                                                         */
         /*---------------------------------------------------------------------------------*/
         
-        bool HasChild() const;
-        std::size_t GetChildCount() const;
-        std::size_t GetDirectChildCount() const;
-
         std::size_t GetComponentCount() const;
 
         template<typename Component>
-        Component& GetComponent() const
-        {
-            ASSERT_MSG(HasComponent<Component>() == false, "Use TryGet instead if youre Unsure.");
-            return m_scene->GetWorld().get_component<Component>(m_entity);
-        }
+        Component& GetComponent() const;
 
         template<typename Component>
-        Component* TryGetComponent() const
-        {
-            return HasComponent<Component>() ? &GetComponent<Component>() : nullptr;
-        }
+        Component* TryGetComponent() const;
 
         template<typename Component>
-        bool HasComponent() const
-        {
-            ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
-            ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
-            return m_scene->GetWorld().has_component<Component>(m_entity);
-        }
+        bool HasComponent() const;
 
         /*---------------------------------------------------------------------------------*/
         /* Manipulation                                                                    */
         /*---------------------------------------------------------------------------------*/
 
         template<typename Component, typename... Args>
-        Component& AddComponent(Args... args) const
-        {
-            ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
-            ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
-            m_scene->GetWorld().add_component<Component>(m_entity, args...);
-            return GetComponent<Component>();
-        }
+        Component& AddComponent(Args... args) const;
 
         template<typename Component>
-        void RemoveComponent() const
-        {
-            ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
-            ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
-            m_scene->GetWorld().remove_component<Component>(m_entity);
-        }
+        void RemoveComponent() const;
 
         template<typename Component, typename...Args>
-        Component& EnsureComponent(Args...args) const
-        {
-            return HasComponent<Component>() ? GetComponent<Component>() : AddComponent<Component>(args...);
-        }
+        Component& EnsureComponent(Args...args) const;
 
     private:
         void SetupGo(UUID uuid, Ecs::EntityID entt);
@@ -197,4 +163,49 @@ namespace oo
         void SetHierarchyActive(GameObjectComponent& comp, bool active) const;
         void CalculateHierarchyActive(GameObject parent, bool IsActiveInHierarchy) const;
     };
+
+
+    template<typename Component>
+    inline Component& GameObject::GetComponent() const
+    {
+        ASSERT_MSG(HasComponent<Component>() == false, "Use TryGet instead if youre Unsure.");
+        return m_scene->GetWorld().get_component<Component>(m_entity);
+    }
+
+    template<typename Component>
+    inline Component* GameObject::TryGetComponent() const
+    {
+        return HasComponent<Component>() ? &GetComponent<Component>() : nullptr;
+    }
+
+    template<typename Component>
+    inline bool GameObject::HasComponent() const
+    {
+        ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+        ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
+        return m_scene->GetWorld().has_component<Component>(m_entity);
+    }
+
+    template<typename Component, typename ...Args>
+    inline Component& GameObject::AddComponent(Args ...args) const
+    {
+        ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+        ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
+        m_scene->GetWorld().add_component<Component>(m_entity, args...);
+        return GetComponent<Component>();
+    }
+
+    template<typename Component>
+    inline void GameObject::RemoveComponent() const
+    {
+        ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
+        ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
+        m_scene->GetWorld().remove_component<Component>(m_entity);
+    }
+
+    template<typename Component, typename ...Args>
+    inline Component& GameObject::EnsureComponent(Args ...args) const
+    {
+        return HasComponent<Component>() ? GetComponent<Component>() : AddComponent<Component>(args...);
+    }
 }
