@@ -68,8 +68,8 @@ namespace oo
         std::string GetFilePath() const;
         std::string GetSceneName() const;
 
-        go_ptr CreateGameObjectDeferred();
-        go_ptr CreateGameObjectImmediate();
+        go_ptr CreateGameObjectDeferred(UUID uuid = {});
+        go_ptr CreateGameObjectImmediate(UUID uuid = {});
         void DestroyGameObject(GameObject go);
         void DestroyGameObjectImmediate(GameObject go);
         
