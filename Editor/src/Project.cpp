@@ -16,6 +16,7 @@
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Scripting/ScriptManager.h"
+#include "Ouroboros/Input/InputManager.h"
 
 void Project::LoadProject(std::filesystem::path& config)
 {
@@ -43,8 +44,12 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_scriptmodulePath = (*prj_setting).value.FindMember("ScriptModulePath")->value.GetString();
 	s_scriptbuildPath = (*prj_setting).value.FindMember("ScriptBuildPath")->value.GetString();
 
+    // create/load scripting stuff
     UpdateScriptingFiles();
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
+
+    // load input manager
+    oo::InputManager::LoadDefault();
 
 	//scenes to add to scene manager
 	oo::RuntimeController::container_type m_loadpaths;
