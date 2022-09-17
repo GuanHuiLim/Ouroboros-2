@@ -50,22 +50,28 @@ namespace oo
     std::vector<std::reference_wrapper<Asset>> AssetManager::AssetStore::At(AssetInfo::Type type)
     {
         std::vector<std::reference_wrapper<Asset>> v;
-        auto& vid = assetsByType.at(type);
-        std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
+        if (assetsByType.contains(type))
         {
-            return std::ref(assets.at(e));
-        });
+            auto& vid = assetsByType.at(type);
+            std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
+            {
+                return std::ref(assets.at(e));
+            });
+        }
         return v;
     }
 
     std::vector<Asset> AssetManager::AssetStore::At(AssetInfo::Type type) const
     {
         std::vector<Asset> v;
-        auto& vid = assetsByType.at(type);
-        std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
+        if (assetsByType.contains(type))
         {
-            return assets.at(e);
-        });
+            auto& vid = assetsByType.at(type);
+            std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
+            {
+                return assets.at(e);
+            });
+        }
         return v;
     }
 
@@ -80,9 +86,12 @@ namespace oo
 
     void AssetManager::AssetStore::Erase(AssetID id)
     {
-        const auto& ASSET = assets.at(id);
-        assetsByType.at(ASSET.GetType()).erase(id);
-        assets.erase(id);
+        if (assets.contains(id))
+        {
+            const auto& ASSET = assets.at(id);
+            assetsByType.at(ASSET.GetType()).erase(id);
+            assets.erase(id);
+        }
     }
 
     bool AssetManager::AssetStore::Contains(AssetID id) const
