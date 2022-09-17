@@ -15,11 +15,19 @@ Technology is prohibited.
 #include "Scripting/ExportAPI.h"
 #include "Ouroboros/Core/Input.h"
 
+#include "Ouroboros/Input/InputSystem.h"
+#include "Ouroboros/Scripting/ScriptManager.h"
+
 namespace oo
 {
     /*-----------------------------------------------------------------------------*/
     /* Input Functions for C#                                                      */
     /*-----------------------------------------------------------------------------*/
+    SCRIPT_API float GetAxis(const char* axisName)
+    {
+        return ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+    }
+
     SCRIPT_API bool IsAnyKeyPressed()
     {
         return input::IsAnyKeyPressed();

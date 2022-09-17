@@ -6,6 +6,9 @@ namespace Ouroboros
     public static class Input
     {
         [DllImport("__Internal")]
+        public static extern float GetAxis(string axisName);
+
+        [DllImport("__Internal")]
         public static extern bool IsAnyKeyPressed();
 
         [DllImport("__Internal")]

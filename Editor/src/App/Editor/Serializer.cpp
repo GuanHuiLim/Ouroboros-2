@@ -103,7 +103,7 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 	rapidjson::Document doc;
 	doc.SetObject();
 	Saving(s,parents, scene,doc);
-	std::filesystem::path newprefabPath = Project::GetPrefabFolder().string() + go->Name() + ".prefab";
+	std::filesystem::path newprefabPath = go->Name() + ".prefab";
 	std::ofstream ofs(Project::GetPrefabFolder().string() + go->Name() + ".prefab", std::fstream::out | std::fstream::trunc);
 	if (ofs.good())
 	{
@@ -176,7 +176,8 @@ void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenen
 		auto go = scene.FindWithInstanceID(curr->get_handle());
 		//bulk of code here
 		rapidjson::Value name;
-		name.SetString(go->Name().c_str(), static_cast<rapidjson::SizeType>(go->Name().size()));
+		std::string id = std::to_string(curr->get_handle());
+		name.SetString(id.c_str(),id.size(),doc.GetAllocator());
 
 		rapidjson::Value gameobject_start;
 		gameobject_start.SetObject();
@@ -221,16 +222,88 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	//will have more components
 	SaveComponent<oo::GameObjectComponent>(go, val,doc);
 	SaveComponent<oo::TransformComponent>(go, val,doc);
+
 	SaveComponent<oo::MeshRendererComponent>(go, val,doc);
 	SaveScript(go, val, doc);
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
 {
+	//save everything
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
-	SaveComponent<oo::GameObjectComponent>(go, val, doc);
-	SaveComponent<oo::TransformComponent>(go, val, doc);
+	//SaveComponent<oo::GameObjectComponent>(go, val, doc);
+	//SaveComponent<oo::TransformComponent>(go, val, doc);
+	//SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveScript(go, val, doc);
+
+	auto rpj_prefabComponent = val.FindMember(rttr::type::get<oo::PrefabComponent>().get_name().data());
+
+	auto& prefabcomponent = go.GetComponent<oo::PrefabComponent>();
+	std::string& prefab_data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder()/prefabcomponent.prefab_filePath).string());
+	rapidjson::Document prefab_doc;
+	rapidjson::StringStream stream(prefab_data.c_str());
+	prefab_doc.ParseStream(stream);
+	//+1 to skip the first value
+	int child_counter = 0;
+	auto childrens = go.GetChildren(true);
+	//per child
+	for (auto iter_member = prefab_doc.MemberBegin(); iter_member != prefab_doc.MemberEnd(); ++iter_member)
+	{
+		rapidjson::Value child_value(rapidjson::kObjectType);
+		auto orignal_obj = iter_member->value.GetObj();
+		SaveObject(childrens[child_counter], child_value, doc);
+		std::vector<std::string> component_delete_list;
+		//each component
+		for (auto iter_childcomponent = child_value.MemberBegin(); iter_childcomponent != child_value.MemberEnd(); ++iter_childcomponent)
+		{
+			if (orignal_obj.HasMember(iter_childcomponent->name) == false)
+			{
+				continue;
+			}
+			auto& orignal_component = orignal_obj.FindMember(iter_childcomponent->name)->value;
+			auto& current_component = iter_childcomponent->value;
+			//each variable
+			std::vector<std::string> delete_list;
+			for (auto iter_childVariables = current_component.MemberBegin(); iter_childVariables != current_component.MemberEnd(); ++iter_childVariables)
+			{
+				std::string debug_stirng = iter_childVariables->name.GetString();
+				if (orignal_component.HasMember(iter_childVariables->name) == false)
+				{
+					continue;
+				}
+				auto member = orignal_component.FindMember(iter_childVariables->name);
+				if (member->value == iter_childVariables->value)
+				{
+					delete_list.push_back(iter_childVariables->name.GetString());
+				}
+			}
+			if (delete_list.size() == current_component.MemberCount())
+				current_component.RemoveAllMembers();
+			else
+			{
+				for (auto iters : delete_list)
+					current_component.RemoveMember(iters.c_str());
+			}
+			//remove the component
+			//usually there will be a 100% match which will make child_value empty
+			if (current_component.MemberCount() == 0)
+			{
+				component_delete_list.push_back(iter_childcomponent->name.GetString());
+			}
+		}
+		if (child_value.MemberCount() == component_delete_list.size())
+			child_value.RemoveAllMembers();
+		else
+		{
+			for (auto iters : component_delete_list)
+				child_value.RemoveMember(iters.c_str());
+			rapidjson::Value orignalID(iter_member->name.GetString(),doc.GetAllocator());
+			rpj_prefabComponent->value.AddMember(orignalID, child_value, doc.GetAllocator());
+		}
+
+		child_counter++;
+	}
+	//default overwrite
 	return;
 }
 
@@ -297,8 +370,8 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 	parents.push(starting);
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
-		auto go = scene.CreateGameObjectImmediate();
-		go->SetName(iter->name.GetString());
+		uint64_t id = std::stoull(iter->name.GetString());
+		auto go = scene.CreateGameObjectImmediate(id);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
 		int order = members->value.GetInt();
@@ -308,7 +381,7 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 			while (order != parents.size())
 				parents.pop();
 
-			parents.top()->AddChild(*go);
+			parents.top()->AddChild(*go,true);
 			parents.push(go);
 			if (iter == doc.MemberBegin())
 				firstobj = go->GetInstanceID();
