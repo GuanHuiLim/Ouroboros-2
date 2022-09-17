@@ -231,8 +231,8 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 {
 	//save everything
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
-	SaveComponent<oo::GameObjectComponent>(go, val, doc);
-	SaveComponent<oo::TransformComponent>(go, val, doc);
+	//SaveComponent<oo::GameObjectComponent>(go, val, doc);
+	//SaveComponent<oo::TransformComponent>(go, val, doc);
 	//SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 
@@ -245,9 +245,9 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 	prefab_doc.ParseStream(stream);
 	//+1 to skip the first value
 	int child_counter = 0;
-	auto childrens = go.GetChildren();
+	auto childrens = go.GetChildren(true);
 	//per child
-	for (auto iter_member = prefab_doc.MemberBegin() + 1; iter_member != prefab_doc.MemberEnd(); ++iter_member)
+	for (auto iter_member = prefab_doc.MemberBegin(); iter_member != prefab_doc.MemberEnd(); ++iter_member)
 	{
 		rapidjson::Value child_value(rapidjson::kObjectType);
 		auto orignal_obj = iter_member->value.GetObj();
