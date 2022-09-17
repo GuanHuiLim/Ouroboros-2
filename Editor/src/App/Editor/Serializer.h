@@ -204,9 +204,9 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	auto gameobj = std::make_shared<oo::GameObject>(go);
 	parents.push(gameobj);
-	for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter)
+	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
-		gameobj->SetName(iter->name.GetString());
+		//gameobj->SetName(iter->name.GetString());
 		gameobj->SetIsPrefab(true);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
@@ -227,8 +227,18 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		}
 		//processes the components		
 		LoadObject(*gameobj, members, membersEnd);
-		if (iter + 1 != document.MemberEnd())
+		if (val.HasMember(iter->name))
+		{
+			auto& overide_component = val.FindMember(iter->name)->value;
+			auto overideBegin = overide_component.MemberBegin();
+			auto overideEnd = overide_component.MemberEnd();
+			LoadObject(*gameobj, overideBegin, overideEnd);
+		}
+		++iter;
+		if (iter != document.MemberEnd())
+		{
 			gameobj = scene->CreateGameObjectImmediate();
+		}
 	}
 
 	//oo::PrefabComponent& component = go.GetComponent<oo::PrefabComponent>();

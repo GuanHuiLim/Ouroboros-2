@@ -176,7 +176,8 @@ void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenen
 		auto go = scene.FindWithInstanceID(curr->get_handle());
 		//bulk of code here
 		rapidjson::Value name;
-		name.SetString(go->Name().c_str(), static_cast<rapidjson::SizeType>(go->Name().size()));
+		std::string id = std::to_string(curr->get_handle());
+		name.SetString(id.c_str(),id.size(),doc.GetAllocator());
 
 		rapidjson::Value gameobject_start;
 		gameobject_start.SetObject();
@@ -221,16 +222,70 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	//will have more components
 	SaveComponent<oo::GameObjectComponent>(go, val,doc);
 	SaveComponent<oo::TransformComponent>(go, val,doc);
+
 	SaveComponent<oo::MeshRendererComponent>(go, val,doc);
 	SaveScript(go, val, doc);
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
 {
+	//save everything
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
 	SaveComponent<oo::GameObjectComponent>(go, val, doc);
 	SaveComponent<oo::TransformComponent>(go, val, doc);
+	//SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveScript(go, val, doc);
+
+	auto rpj_prefabComponent = val.FindMember(rttr::type::get<oo::PrefabComponent>().get_name().data());
+
+	auto& prefabcomponent = go.GetComponent<oo::PrefabComponent>();
+	std::string& prefab_data = ImGuiManager::s_prefab_controller->RequestForPrefab(prefabcomponent.prefab_filePath.string());
+	rapidjson::Document prefab_doc;
+	rapidjson::StringStream stream(prefab_data.c_str());
+	prefab_doc.ParseStream(stream);
+	//+1 to skip the first value
+	int child_counter = 0;
+	auto childrens = go.GetChildren();
+	//per child
+	for (auto iter_member = prefab_doc.MemberBegin() + 1; iter_member != prefab_doc.MemberEnd(); ++iter_member)
+	{
+		rapidjson::Value child_value(rapidjson::kObjectType);
+		auto orignal_obj = iter_member->value.GetObj();
+		SaveObject(childrens[child_counter], child_value, prefab_doc);
+		//each component
+		for (auto iter_childcomponent = child_value.MemberBegin(); iter_childcomponent != child_value.MemberEnd(); ++iter_childcomponent)
+		{
+			if (orignal_obj.HasMember(iter_childcomponent->name) == false)
+			{
+				continue;
+			}
+			auto orignal_component = orignal_obj.FindMember(iter_childcomponent->name)->value.GetObj();
+			auto& current_component = iter_childcomponent->value;
+			//each variable
+			for (auto iter_childVariables = current_component.MemberBegin(); iter_childVariables != current_component.MemberEnd(); ++iter_childVariables)
+			{
+				if (orignal_component.HasMember(iter_childVariables->name) == false)
+				{
+					continue;
+				}
+				auto member = orignal_component.FindMember(iter_childVariables->name);
+				if (member == iter_childVariables->value)
+				{
+					current_component.RemoveMember(iter_childVariables);
+				}
+			}
+			//remove the component
+			//usually there will be a 100% match which will make child_value empty
+			if (current_component.MemberCount() == 0)
+			{
+				child_value.RemoveMember(iter_childcomponent);
+			}
+		}
+		if(child_value.MemberCount() == 0)//if no member then no use adding
+			rpj_prefabComponent->value.AddMember(iter_member->name, child_value, doc.GetAllocator());
+		child_counter++;
+	}
+	//default overwrite
 	return;
 }
 
@@ -297,8 +352,8 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 	parents.push(starting);
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
-		auto go = scene.CreateGameObjectImmediate();
-		go->SetName(iter->name.GetString());
+		uint64_t id = std::stoull(iter->name.GetString());
+		auto go = oo::GameObject(id,scene);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
 		int order = members->value.GetInt();
@@ -308,10 +363,10 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 			while (order != parents.size())
 				parents.pop();
 
-			parents.top()->AddChild(*go);
-			parents.push(go);
+			parents.top()->AddChild(go);
+			parents.push(std::make_shared<oo::GameObject>(go));
 			if (iter == doc.MemberBegin())
-				firstobj = go->GetInstanceID();
+				firstobj = go.GetInstanceID();
 		}
 
 		++members;
@@ -319,7 +374,7 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 			// go->SetArchtype(vector<hashes>);
 		}
 		//processes the components		
-		LoadObject(*go, members, membersEnd);
+		LoadObject(go, members, membersEnd);
 	}
 	ResetDocument();//clear it after using
 	return firstobj;
