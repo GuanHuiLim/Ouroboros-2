@@ -79,7 +79,7 @@ namespace oo
         inline void SetPressesRequired(unsigned requiredCount) { pressesRequired = requiredCount; }
 
         inline float const GetMaxGapTime() const { return maxGapTime; }
-        inline void SetMaxGapTime(float gapTime) { pressesRequired = gapTime; }
+        inline void SetMaxGapTime(float gapTime) { maxGapTime = gapTime; }
 
         inline float const GetHoldDurationRequired() const { return holdDurationRequired; }
         inline void SetHoldDurationRequired(float holdDuration) { holdDurationRequired = holdDuration; }

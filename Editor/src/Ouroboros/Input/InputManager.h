@@ -36,7 +36,7 @@ namespace oo
             return search->second;
         }
 
-    private:
         static inline std::unordered_map<std::string, InputAxis> axes;
+    private:
     };
 }
