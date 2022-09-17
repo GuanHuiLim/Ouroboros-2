@@ -103,7 +103,7 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 	rapidjson::Document doc;
 	doc.SetObject();
 	Saving(s,parents, scene,doc);
-	std::filesystem::path newprefabPath = Project::GetPrefabFolder().string() + go->Name() + ".prefab";
+	std::filesystem::path newprefabPath = go->Name() + ".prefab";
 	std::ofstream ofs(Project::GetPrefabFolder().string() + go->Name() + ".prefab", std::fstream::out | std::fstream::trunc);
 	if (ofs.good())
 	{
@@ -239,7 +239,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 	auto rpj_prefabComponent = val.FindMember(rttr::type::get<oo::PrefabComponent>().get_name().data());
 
 	auto& prefabcomponent = go.GetComponent<oo::PrefabComponent>();
-	std::string& prefab_data = ImGuiManager::s_prefab_controller->RequestForPrefab(prefabcomponent.prefab_filePath.string());
+	std::string& prefab_data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder()/prefabcomponent.prefab_filePath).string());
 	rapidjson::Document prefab_doc;
 	rapidjson::StringStream stream(prefab_data.c_str());
 	prefab_doc.ParseStream(stream);

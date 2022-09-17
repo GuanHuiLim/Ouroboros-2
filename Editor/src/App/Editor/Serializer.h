@@ -27,6 +27,7 @@
 
 #include "App/Editor/Properties/SerializerProperties.h"
 #include "App/Editor/Properties/SerializerScriptingProperties.h"
+#include "Project.h"
 class Serializer
 {
 public:
@@ -195,7 +196,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 
-	std::string& data = ImGuiManager::s_prefab_controller->RequestForPrefab(component.prefab_filePath.string());
+	std::string& data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder()/component.prefab_filePath).string());
 	rapidjson::StringStream stream(data.c_str());
 	
 	rapidjson::Document document;
