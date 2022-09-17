@@ -67,7 +67,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 			auto source = scene->FindWithInstanceID(m_dragged);
 			auto targetparent = scene->FindWithInstanceID(node.get_handle());
-			targetparent->AddChild(*source);//s_selected
+			targetparent->AddChild(*source, true);//s_selected
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -99,7 +99,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
-		ImGui::SetDragDropPayload(payload_name, nullptr, 0);
+		UUID goID = node.get_handle();
+		ImGui::SetDragDropPayload(payload_name, &goID , sizeof(UUID));
 		m_isDragging = true;
 		m_dragged = handle;
 		m_dragged_parent = node.get_parent_handle();
@@ -177,7 +178,7 @@ void Hierarchy::NormalView()
 			{
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
-				scene->GetRoot()->AddChild(*source);//s_selected
+				scene->GetRoot()->AddChild(*source, true);//s_selected
 			}
 			ImGui::EndDragDropTarget();
 		}

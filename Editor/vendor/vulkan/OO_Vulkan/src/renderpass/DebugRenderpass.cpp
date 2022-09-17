@@ -14,14 +14,16 @@
 
 DECLARE_RENDERPASS(DebugRenderpass);
 
-void DebugRenderpass::Init()
+DECLARE_RENDERPASS(DebugDrawRenderpass);
+
+void DebugDrawRenderpass::Init()
 {
 	CreateDebugRenderpass();
 	CreatePipeline();
 	InitDebugBuffers();
 }
 
-void DebugRenderpass::Draw()
+void DebugDrawRenderpass::Draw()
 {
 	auto& vr = *VulkanRenderer::get();
 
@@ -41,85 +43,68 @@ void DebugRenderpass::Draw()
 	renderPassBeginInfo.pClearValues = clearValues.data();							//list of clear values
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size()); // no clearing
 
-	// TODO: CLEAN UP THIS, VERY DIRTY...
-	vkutils::Texture2D tex;
-	tex.image = vr.m_swapchain.swapChainImages[swapchainIdx].image;
-	tex.view = vr.m_swapchain.swapChainImages[swapchainIdx].imageView;
-	tex.format = vr.m_swapchain.swapChainImageFormat;
-	tex.width = vr.m_swapchain.swapChainExtent.width;
-	tex.height = vr.m_swapchain.swapChainExtent.height;
-
 	auto& depthAtt = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments[GBufferAttachmentIndex::DEPTH];
 
 	VkFramebuffer fb;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(tex)
-		.BindImage(depthAtt)
+		.BindImage(&vr.m_swapchain.swapChainImages[swapchainIdx])
+		.BindImage(&depthAtt)
 		.Build(fb,debugRenderpass);
 
 	renderPassBeginInfo.framebuffer = fb;
 	
 	const VkCommandBuffer cmdlist = vr.commandBuffers[swapchainIdx];
-    PROFILE_GPU_CONTEXT(cmdlist);
-    PROFILE_GPU_EVENT("DebugRender");
+	PROFILE_GPU_CONTEXT(cmdlist);
+	PROFILE_GPU_EVENT("DebugDraw");
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	SetDefaultViewportAndScissor(cmdlist);
-
-	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, debugDrawLinesPSO);
-
-	uint32_t dynamicOffset = 0;
-	std::array<VkDescriptorSet, 3> descriptorSetGroup =
-	{ 
-		vr.descriptorSet_gpuscene,  
-		vr.descriptorSets_uniform[swapchainIdx],
-		vr.descriptorSet_bindless 
-	};
-	vkCmdBindDescriptorSets(cmdlist,VK_PIPELINE_BIND_POINT_GRAPHICS,  vr.indirectPSOLayout,
-		0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
-
-	glm::mat4 xform{ 1.0f };
-	vkCmdPushConstants(cmdlist,
-		vr.indirectPSOLayout,
-		VK_SHADER_STAGE_ALL,    	// stage to push constants to
-		0,							// offset of push constants to update
-		sizeof(glm::mat4),			// size of data being pushed
-		glm::value_ptr(xform));		// actualy data being pushed (could be an array));
-
-	VkDeviceSize offsets[] = { 0 };	
-
-	// just draw the whole set of debug stuff
-	vkCmdBindIndexBuffer(cmdlist,  vr.g_debugDrawIndxBuffer.getBuffer(),0, VK_INDEX_TYPE_UINT32);
-	vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1,vr.g_debugDrawVertBuffer.getBufferPtr(), offsets);
-	vkCmdDrawIndexed(cmdlist, static_cast<uint32_t>(vr.g_debugDrawIndxBuffer.size()) , 1, 0, 0, 0);
-
-	for (size_t i = 0; i < vr.debugDrawBufferCnt; i++)
 	{
-		if (vr.g_b_drawDebug[i])
+		SetDefaultViewportAndScissor(cmdlist);
+
+		const uint32_t dynamicOffset = 0;
+		const VkDeviceSize offsets[] = { 0 };
+		std::array<VkDescriptorSet, 3> descriptorSetGroup =
 		{
-			auto& debug = vr.g_DebugDraws[i];
-			vkCmdBindIndexBuffer(cmdlist,  debug.ibo.getBuffer(),0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, debug.vbo.getBufferPtr(), offsets);
-			vkCmdDrawIndexed(cmdlist, static_cast<uint32_t>(debug.indices.size()) , 1, 0, 0, 0);
-		}
+			vr.descriptorSet_gpuscene,
+			vr.descriptorSets_uniform[swapchainIdx],
+			vr.descriptorSet_bindless
+		};
+		vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, PSOLayoutDB::indirectPSOLayout,
+			0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
+
+		vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU.getBufferPtr(), offsets);
+		vkCmdBindIndexBuffer(cmdlist, vr.g_DebugDrawIndexBufferGPU.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		VkPipeline pso = m_DebugDrawPSOSelector.GetPSO(vr.m_DebugDrawDepthTest, false, false);
+		vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, pso);
+
+		vkCmdDrawIndexed(cmdlist, static_cast<uint32_t>(vr.g_DebugDrawIndexBufferGPU.size()), 1, 0, 0, 0);
 	}
 
 	vkCmdEndRenderPass(cmdlist);
 }
 
-void DebugRenderpass::Shutdown()
+void DebugDrawRenderpass::Shutdown()
 {
 	VulkanRenderer* vr = VulkanRenderer::get();
 	auto& device = vr->m_device.logicalDevice;
 
 	vkDestroyRenderPass(device, debugRenderpass, nullptr);
-	vkDestroyPipeline(device, debugDrawLinesPSO, nullptr);
-	vr->g_debugDrawVertBuffer.destroy();
-	vr->g_debugDrawIndxBuffer.destroy();
+
+	for (auto& pso : m_DebugDrawPSOSelector.psos)
+	{
+		if (pso)
+		{
+			vkDestroyPipeline(device, pso, nullptr);
+		}
+	}
+
+	vr->g_DebugDrawVertexBufferGPU.destroy();
+	vr->g_DebugDrawIndexBufferGPU.destroy();
 }
 
-void DebugRenderpass::CreateDebugRenderpass()
+void DebugDrawRenderpass::CreateDebugRenderpass()
 {
 	auto& vr = *VulkanRenderer::get();
 	VkAttachmentDescription colourAttachment = {};
@@ -141,10 +126,7 @@ void DebugRenderpass::CreateDebugRenderpass()
 
 																	   // Depth attachment of render pass
 	VkAttachmentDescription depthAttachment{};
-	depthAttachment.format = oGFX::ChooseSupportedFormat(vr.m_device,
-		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depthAttachment.format = vr.G_DEPTH_FORMAT;
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -215,69 +197,54 @@ void DebugRenderpass::CreateDebugRenderpass()
 
 }
 
-void DebugRenderpass::CreatePipeline()
+void DebugDrawRenderpass::CreatePipeline()
 {
 	auto& vr = *VulkanRenderer::get();
-	using namespace oGFX;
-
-	auto& bindingDescription = GetGFXVertexInputBindings();
-	auto& attributeDescriptions= GetGFXVertexInputAttributes();
 	auto& m_device = vr.m_device;
-	
-	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo(bindingDescription,attributeDescriptions);
-	VkPipelineInputAssemblyStateCreateInfo inputAssembly = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0 ,VK_FALSE);
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1,1,0);
-	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL,VK_CULL_MODE_BACK_BIT,VK_FRONT_FACE_COUNTER_CLOCKWISE,0);
-	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT,0);
 
-	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
-	
+	const char* shaderVS = "Shaders/bin/debugdraw.vert.spv";
+	const char* shaderPS = "Shaders/bin/debugdraw.frag.spv";
+
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
+	{
+		vr.LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
+		vr.LoadShader(m_device, shaderPS, VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
+
+	const std::vector<VkVertexInputBindingDescription> bindingDescription =
+	{
+		oGFX::vkutils::inits::vertexInputBindingDescription(VERTEX_BUFFER_ID,sizeof(oGFX::DebugVertex),VK_VERTEX_INPUT_RATE_VERTEX),
+	};
+
+	const std::vector<VkVertexInputAttributeDescription> attributeDescriptions =
+	{
+		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(oGFX::DebugVertex, pos)),
+		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(oGFX::DebugVertex, col)),
+	};
+
+	using oGFX::vkutils::inits::Creator;
+	auto vertexInputCreateInfo   = Creator<VkPipelineVertexInputStateCreateInfo>(bindingDescription, attributeDescriptions);
+	auto inputAssembly           = Creator<VkPipelineInputAssemblyStateCreateInfo>(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+	auto viewportStateCreateInfo = Creator<VkPipelineViewportStateCreateInfo>();
+	auto multisamplingCreateInfo = Creator<VkPipelineMultisampleStateCreateInfo>();
+	auto rasterizerCreateInfo    = Creator<VkPipelineRasterizationStateCreateInfo>(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+	const std::vector dynamicState{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+	auto dynamicStateCreateInfo  = Creator<VkPipelineDynamicStateCreateInfo>(dynamicState);
+	auto depthStencilCreateInfo  = Creator<VkPipelineDepthStencilStateCreateInfo>(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS);
+
 	VkPipelineColorBlendAttachmentState colourState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0x0000000F,VK_TRUE);
 	colourState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 	colourState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colourState.colorBlendOp = VK_BLEND_OP_ADD;
-
 	colourState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 	colourState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	colourState.alphaBlendOp = VK_BLEND_OP_ADD;
 	VkPipelineColorBlendStateCreateInfo colourBlendingCreateInfo = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1,&colourState);
 
-	// -- PIPELINE LAYOUT 
-	std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = 
-	{
-		LayoutDB::gpuscene, // (set = 0)
-		LayoutDB::uniform, // (set = 1)
-		LayoutDB::bindless // (set = 2)
-	};
-
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = 
-		oGFX::vkutils::inits::pipelineLayoutCreateInfo(descriptorSetLayouts.data(),static_cast<uint32_t>(descriptorSetLayouts.size()));
-	VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
-
-	// indirect pipeline
-	//VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &vr.indirectPipeLayout));
-	//VK_NAME(vr.m_device.logicalDevice, "indirectPipeLayout", indirectPipeLayout);
-	// go back to normal pipelines
-
-	// Create Pipeline Layout
-	//result = vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-	//if (result != VK_SUCCESS)
-	//{
-	//	throw std::runtime_error("Failed to create Pipeline Layout!");
-	//}
-	std::array<VkPipelineShaderStageCreateInfo,2>shaderStages = {};
-	
-	// -- DEPTH STENCIL TESTING --	
-	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE,VK_TRUE, VK_COMPARE_OP_LESS);
-
-																	// -- GRAPHICS PIPELINE CREATION --
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vkutils::inits::pipelineCreateInfo(vr.indirectPSOLayout,vr.renderPass_default);
-	pipelineCreateInfo.stageCount = 2;								//number of shader stages
-	pipelineCreateInfo.pStages = shaderStages.data();				//list of sader stages
-	pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;	//all the fixed funciton pipeline states
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::indirectPSOLayout,vr.renderPass_default);
+	pipelineCreateInfo.stageCount = 2;
+	pipelineCreateInfo.pStages = shaderStages.data();
+	pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
 	pipelineCreateInfo.pInputAssemblyState = &inputAssembly;
 	pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
 	pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
@@ -285,29 +252,77 @@ void DebugRenderpass::CreatePipeline()
 	pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
 	pipelineCreateInfo.pColorBlendState = &colourBlendingCreateInfo;
 	pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-
-	// we use less for normal pipeline
-	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 5;
-
-	shaderStages[0] = vr.LoadShader(m_device,"Shaders/bin/shader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = vr.LoadShader(m_device,"Shaders/bin/shader.frag.spv",VK_SHADER_STAGE_FRAGMENT_BIT);
-	
-	rasterizerCreateInfo.polygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
-	inputAssembly.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-	rasterizerCreateInfo.lineWidth = 1.0f;
-	//rasterizerCreateInfo.cullMode = VK_CULL_MODE_NONE;
 	pipelineCreateInfo.renderPass = debugRenderpass;
-	depthStencilCreateInfo.depthWriteEnable = VK_FALSE;
-	//depthStencilCreateInfo.depthTestEnable = VK_FALSE;
-	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &debugDrawLinesPSO));
-	VK_NAME(m_device.logicalDevice, "DebugDrawLinesPSO", debugDrawLinesPSO);
 
-	//destroy shader modules after pipeline is created
+	// TESTING
+	if constexpr(false)
+	{
+		oGFX::vkutils::inits::PSOCreatorWrapper psoCreator;
+		psoCreator.Set<VkPipelineVertexInputStateCreateInfo>(bindingDescription, attributeDescriptions);
+		psoCreator.Set<VkPipelineInputAssemblyStateCreateInfo>(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+		psoCreator.Set<VkPipelineViewportStateCreateInfo>();
+		psoCreator.Set<VkPipelineMultisampleStateCreateInfo>();
+		psoCreator.Set<VkPipelineRasterizationStateCreateInfo>(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+		const std::vector dynamicState{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		psoCreator.Set<VkPipelineDynamicStateCreateInfo>(dynamicState);
+		psoCreator.Set<VkPipelineDepthStencilStateCreateInfo>(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS);
+		auto cbas = psoCreator.Get<VkPipelineColorBlendAttachmentState>() = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0x0000000F, VK_TRUE);
+		cbas.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		cbas.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		cbas.colorBlendOp = VK_BLEND_OP_ADD;
+		cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		cbas.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		cbas.alphaBlendOp = VK_BLEND_OP_ADD;
+		psoCreator.Get<VkPipelineColorBlendStateCreateInfo>() = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &colourState);
+		psoCreator.SetRenderPass(debugRenderpass);
+		psoCreator.SetAndCompile();
+	}
+
+	// Pre-build all permutations. Sadly, this is usually more safer than runtime compilation.
+	{
+		const std::array<VkPolygonMode, 2> fillmodes =
+		{
+			VkPolygonMode::VK_POLYGON_MODE_LINE, // Line/Wireframe
+			VkPolygonMode::VK_POLYGON_MODE_FILL, // Solids
+			//VkPolygonMode::VK_POLYGON_MODE_POINT // Points
+		};
+
+		const std::array<bool, 2> depthTests = 
+		{
+			false, true 
+		};
+
+		for (unsigned i = 0; i < fillmodes.size(); ++i)
+		{
+			const auto fillmode = fillmodes[i];
+			rasterizerCreateInfo.polygonMode = fillmode;
+
+			// Special case - not done.
+			// Need to handle the shader.
+			// Pipeline topology is set to POINT_LIST, but PointSize is not written to in the shader corresponding to VK_SHADER_STAGE_VERTEX_BIT.
+			if (fillmode == VkPolygonMode::VK_POLYGON_MODE_POINT)
+				inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+
+			for (unsigned j = 0; j < depthTests.size(); ++j)
+			{
+				const auto depthtest = depthTests[j];
+				depthStencilCreateInfo.depthTestEnable = depthtest;
+
+				// Create all permutations of PSO needed
+				{
+					VkPipeline& pso = m_DebugDrawPSOSelector.psos[i + 2 * j];
+					VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pso));
+					VK_NAME(m_device.logicalDevice, "DebugDrawLinesPSO", pso);
+				}
+			}
+		}
+
+	}
+
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
 }
 
-void DebugRenderpass::InitDebugBuffers()
+void DebugDrawRenderpass::InitDebugBuffers()
 {
 }

@@ -57,6 +57,7 @@ void DeferredCompositionRenderpass::Draw()
 		vr.descriptorSet_bindless,
 	};
 
+	CreateDescriptors();
 	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, layout_DeferredLightingComposition, 0, 1, &vr.descriptorSet_DeferredComposition, 0, nullptr);
 
 	DrawFullScreenQuad(cmdlist);
@@ -115,7 +116,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         //.BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindBuffer(6, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .Build(vr.descriptorSet_DeferredComposition, LayoutDB::DeferredComposition);
+        .Build(vr.descriptorSet_DeferredComposition, SetLayoutDB::DeferredComposition);
 }
 
 void DeferredCompositionRenderpass::CreatePipeline()
@@ -123,7 +124,7 @@ void DeferredCompositionRenderpass::CreatePipeline()
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
 
-	std::vector<VkDescriptorSetLayout> setLayouts{ LayoutDB::DeferredComposition };
+	std::vector<VkDescriptorSetLayout> setLayouts{ SetLayoutDB::DeferredComposition };
 
 	VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(setLayouts.data(),static_cast<uint32_t>(setLayouts.size()));	
 	VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
@@ -144,7 +145,7 @@ void DeferredCompositionRenderpass::CreatePipeline()
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(vr.indirectPSOLayout, vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::indirectPSOLayout, vr.renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;

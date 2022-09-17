@@ -55,6 +55,7 @@ namespace oo
         mat4 GetGlobalRotationMatrix()  const;
         vec3 GetGlobalRotationRad()     const;  // return vec3 for rotation of each component (euler angles)
         vec3 GetGlobalRotationDeg()     const;  // return vec3 for rotation of each component (euler angles)
+        quat GetGlobalRotationQuat()    const;
         vec3 GetGlobalScale()           const;
 
         /*-----------------------------------------------------------------------------*/
@@ -64,26 +65,38 @@ namespace oo
         vec3& Scale();
         // note : rotation must be set using setEulerAngle (internally uses quaternions)
 
-
         // Local Setters
         void SetPosition(vec3 pos);
-        void SetEulerAngles(vec3 eulerAngle);
+        void SetRotation(vec3 euler_angles_degrees);
+        void SetOrientation(quat quaternion);
         void SetScale(vec3 scale);
+        void SetLocalTransform(mat4 target_local_matrix);
 
         // Global Setters
         void SetGlobalPosition(vec3 position);
         void SetGlobalScale(vec3 scale);
-        void SetGlobalAngle(vec3 euler_angles);
-        void SetGlobalTransform(vec3 position, vec3 euler_angles, vec3 scale);
-        //void SetGlobalTransform(glm::mat4 const& targetGlobalTransform);
+        void SetGlobalRotation(vec3 euler_angles_degrees);
+        void SetGlobalOrientation(quat quaternion);
+        void SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale);
+        void SetGlobalTransform(mat4 target_global_matrix);
 
+        // Extra Functions
+        void LookAt(vec3 target);
+        
         // scenegraph related setters
         void ParentChanged();
 
         RTTR_ENABLE();
     private:
+        void CalculateLocalTransform();
+
         Transform m_transform;
 
+        bool m_dirty = false;
+        bool m_hasChanged = false;
+
+        glm::vec3 m_eulerAngles;
+        
         friend class TransformSystem;
     };
 }
