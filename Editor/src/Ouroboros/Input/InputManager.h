@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <vector>
 #include <exception>
 
 #include <Ouroboros/Core/KeyCode.h>
@@ -15,28 +15,25 @@ namespace oo
     public:
         static void LoadDefault();
 
-        static inline void Load(std::unordered_map<std::string, InputAxis> loadedAxes)
+        static inline void Load(std::vector<InputAxis> loadedAxes)
         {
             axes = loadedAxes;
         }
 
         static inline void InitializeTrackers(std::unordered_map<std::string, InputAxis::Tracker>& trackers)
         {
-            for (auto const& [key, axis] : axes)
+            for (InputAxis const& axis : axes)
             {
-                trackers.emplace(key, InputAxis::Tracker{ axis });
+                trackers.emplace(axis.GetName(), InputAxis::Tracker{ axis });
             }
         }
 
-        static inline InputAxis const& GetAxis(std::string const& axisName)
+        static inline std::vector<InputAxis>& GetAxes()
         {
-            auto search = axes.find(axisName);
-            if (search == axes.end())
-                throw std::exception{ (std::string{ "Input Axis not found: " } + axisName).c_str() };
-            return search->second;
+            return axes;
         }
 
     private:
-        static inline std::unordered_map<std::string, InputAxis> axes;
+        static inline std::vector<InputAxis> axes;
     };
 }

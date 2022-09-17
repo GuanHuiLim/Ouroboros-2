@@ -6,7 +6,7 @@ namespace oo
     void InputManager::LoadDefault()
     {
         axes.clear();
-        axes.emplace("Mouse X",
+        axes.emplace_back(
             InputAxis
             {
                 "Mouse X",
@@ -18,7 +18,7 @@ namespace oo
                 0U, 0.0f, 0.0f
             }
         );
-        axes.emplace("Mouse Y",
+        axes.emplace_back(
             InputAxis
             {
                 "Mouse Y",
@@ -30,7 +30,7 @@ namespace oo
                 0U, 0.0f, 0.0f
             }
         );
-        axes.emplace("Horizontal",
+        axes.emplace_back(
             InputAxis
             {
                 "Horizontal",
@@ -42,7 +42,7 @@ namespace oo
                 0U, 0.0f, 0.0f
             }
         );
-        axes.emplace("Vertical",
+        axes.emplace_back(
             InputAxis
             {
                 "Vertical",
