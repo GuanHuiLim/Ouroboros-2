@@ -30,7 +30,7 @@ namespace oo
 {
     PhysicsSystem::PhysicsSystem()
         : m_accumulator{0}
-        , Gravity { 0, -9.81f, 0 }
+        , Gravity { 0, -0.0981f, 0 }
         , m_physicsWorld{ PxVec3{Gravity.x, Gravity.y, Gravity.z} }
     {
         
@@ -126,6 +126,14 @@ namespace oo
             query.with<TransformComponent, PhysicsComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
             return query;
         }();
+
+        m_world->for_each(query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
+        {
+            auto pos = tf.GetPosition();
+            phy.object.setposition({pos.x, pos.y, pos.z});
+        });
+
+        m_physicsWorld.updateScene();
 
         m_world->for_each(query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
