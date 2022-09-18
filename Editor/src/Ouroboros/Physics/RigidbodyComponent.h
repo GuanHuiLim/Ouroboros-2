@@ -128,6 +128,4 @@ namespace oo
         RTTR_ENABLE();
     };
 
-    
-
 }

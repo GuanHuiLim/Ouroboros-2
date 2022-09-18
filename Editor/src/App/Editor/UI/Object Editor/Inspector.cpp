@@ -22,11 +22,13 @@
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
+#include <Ouroboros/Physics/PhysicsComponent.h>
+#include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/Colliders.h>
+
 #include <Ouroboros/Scripting/ScriptComponent.h>
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
-#include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/RendererComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
@@ -107,11 +109,13 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 
+
+	DisplayComponent<oo::PhysicsComponent>(gameobject);
+	DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereCollider>(gameobject);
 	DisplayComponent<oo::BoxCollider>(gameobject);
 
-	DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 

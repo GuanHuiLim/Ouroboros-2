@@ -22,7 +22,6 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/Event.h"
 
 #include <bitset>
-
 namespace oo
 {
     static constexpr std::size_t s_MaxLayerCount = 8;
@@ -41,8 +40,9 @@ namespace oo
     public:
         using Timestep = double;
 
-        PhysicsSystem() = default;
+        PhysicsSystem();
         virtual ~PhysicsSystem() = default;
+        virtual void Run(Ecs::ECSWorld*) override {};
 
         void Init();
         void RuntimeUpdate(Timestep deltaTime);
@@ -82,6 +82,15 @@ namespace oo
 
         //time accumulator
         double m_accumulator;
+
+        void OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
+        void OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);
+
+        /*void OnColliderAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
+        void OnColliderRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);
+
+        void OnColliderAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
+        void OnColliderRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);*/
     };
 
 

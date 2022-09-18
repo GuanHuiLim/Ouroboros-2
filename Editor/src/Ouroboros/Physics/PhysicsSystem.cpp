@@ -19,10 +19,26 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
+#include "Ouroboros/Physics/PhysicsComponent.h"
+#include "Ouroboros/Physics/RigidbodyComponent.h"
+
+#include "Ouroboros/ECS/DeferredComponent.h"
 namespace oo
 {
+    PhysicsSystem::PhysicsSystem()
+        : m_accumulator{0}
+        , Gravity { 0, -9.81f, 0 }
+    {
+        
+    }
+
     void PhysicsSystem::Init()
     {
+        m_world->SubscribeOnAddComponent<PhysicsSystem, RigidbodyComponent>(
+            this, &PhysicsSystem::OnRigidbodyAdd);
+
+        m_world->SubscribeOnRemoveComponent<PhysicsSystem, RigidbodyComponent>(
+            this, &PhysicsSystem::OnRigidbodyRemove);
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -192,4 +208,33 @@ namespace oo
     void PhysicsSystem::PostUpdate()
     {
     }
+
+    void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
+    {
+        if (m_world->has_component<PhysicsComponent>(rb->entityID) == false)
+            m_world->add_component<PhysicsComponent>(rb->entityID);
+
+    }
+
+    void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
+    {
+        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false)
+            m_world->remove_component<PhysicsComponent>(rb->entityID);
+    }
+
+    /*void PhysicsSystem::InformPhysicsBackend(Ecs::ComponentEvent<RigidbodyComponent>* rb)
+    {
+        static Ecs::Query query = []()
+        {
+            Ecs::Query query;
+            query.with<GameObjectComponent, RigidbodyComponent>().exclude<PhysicsComponent, DeferredComponent>().build();
+            return query;
+        }();
+
+        m_world->for_each(query, [&](GameObjectComponent* goc, RigidbodyComponent*) 
+        { 
+            m_scene->FindWithInstanceID(goc->Id)->AddComponent<PhysicsComponent>();
+        });
+
+    }*/
 }
