@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+//#include <glm/glm.hpp>
 
 #define PVD_DEBUGGER true
 
@@ -131,23 +132,12 @@ public:
 };
 */
 
-class RigidStatic {
+struct RigidStatic {
 
-private:
+    PxRigidStatic* rigidStatic = nullptr;
 
-    int rigidID;
-
-    PxRigidStatic* rigidStatic;
-
-public:
-
-    //createRigidStatic
-
-    //All the getter
-    PxRigidStatic* getRigidStatic() const;
-    //All the setter
+    /// other variables
 };
-
 
 // unprotected class
 struct Material {
@@ -192,6 +182,7 @@ public:
     // SCENE
     PhysxWorld(PxVec3 gravity);
     ~PhysxWorld();
+    void updateScene();
 
     /*
     // SCENE
@@ -305,7 +296,7 @@ struct PhysicsObject { // you store
 
     PxVec3 getposition() const;
 
-    void setposition(PxVec3 pos);
+    void setposition(glm::vec3 pos);
 
 
 };

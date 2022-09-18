@@ -3,8 +3,6 @@
 
 using namespace physx;
 
-//static Physx myPhysx;
-//static PhysxWorld myWorld;
 static PVD myPVD;
 
 static constexpr bool use_debugger = true;
@@ -78,10 +76,6 @@ namespace physx_system {
         getPhysics()->release();
     }
 
-
-
-
-
 }
 
 /*-----------------------------------------------------------------------------*/
@@ -117,6 +111,13 @@ PhysxWorld::~PhysxWorld()
     scene->release();
 }
 
+void PhysxWorld::updateScene() {
+
+    scene->simulate(1.f / 60.f);
+    //scene->collide(1.f / 60.f);
+    scene->fetchResults(true);
+}
+
 int PhysxWorld::createMat(Material material) {
 
     PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
@@ -129,16 +130,6 @@ int PhysxWorld::createMat(Material material) {
     mat.emplace(UUID, newMat);
 
     return UUID;
-
-    /*
-    PxMaterial* mat = myMaster.getPhysics()->createMaterial(material.getStaticFriction(),
-        material.getDynamicFriction(),
-        material.getRestitution());
-
-    materialList.emplace_back(mat);
-
-    return materialList.size() - 1; // return created material id
-    */
 }
 
 void PhysxWorld::updateMat(int materialID, Material material) {
@@ -154,12 +145,6 @@ void PhysxWorld::updateMat(int materialID, Material material) {
             x.second->setRestitution(material.restitution);
         }
     }
-
-    /*
-    materialList[materialID]->setStaticFriction(material.getStaticFriction());
-    materialList[materialID]->setDynamicFriction(material.getDynamicFriction());
-    materialList[materialID]->setRestitution(material.getRestitution());
-    */
 }
 
 void PhysxWorld::destroyMat(int materialID) {
@@ -191,28 +176,14 @@ PhysicsObject PhysxWorld::createRigidbody()
 
 void PhysxWorld::removeRigidbody(PhysicsObject obj)
 {
+    // check what need to release 
+    
     // check/find the id from the obj vector then if match 
     // remove from that vector then release
 
     auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; });
     //begin->destroy();
     m_objects.erase(begin);
-    
-    //m_objects.erase(begin, m_objects.end());
-
-
-    //for(PhysxObject const& x : m_objects) {
-    //    
-    //    if (x.id == obj.id) {
-    //        m_objects.erase(std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; }))
-    //    }
-    //
-    //}
-
-    //PxRigidDynamic* body;
-    //body->release();
-
-    //obj.
 }
 
 /*
@@ -228,31 +199,6 @@ void PhysxObject::destroy() {
 }
 */
 
-//PhysxObject::~PhysxObject() {
-//
-//    if (rs != nullptr) {
-//        rs->getRigidStatic()->release();
-//    }
-//
-//    if (rd != nullptr) {
-//        rd->getRigidDynamic()->release();
-//    }
-//
-//    //switch (rigidID) {
-//    //
-//    //case rigid::rstatic:
-//    //    rs->getRigidStatic()->release();
-//    //    break;
-//    //
-//    //case rigid::rdynamic:
-//    //    rd->getRigidDynamic()->release();
-//    //    break;
-//    //
-//    //default:
-//    //    break;
-//    //}
-//}
-
 //PhysxWorld world;
 //
 //PhysicsObject obj = world.createPhysicsObject();
@@ -261,47 +207,16 @@ void PhysxObject::destroy() {
 //world.removeObject(obj);
 
 
-
-
 /*-----------------------------------------------------------------------------*/
 /*                               PhysxObject                                   */
 /*-----------------------------------------------------------------------------*/
-//PhysxObject::rigid PhysxObject::getRigidType() {
-//
-//    return rigidID;
-//
-//    //rigidID == rigid::rstatic || 
-//    //return 0; // static
-//    //return 1; // dynamic
-//}
-
-//PhysxObject::PhysxObject(int id, 
-//                         int matID,
-//                         RigidDynamic rd, 
-//                         RigidStatic rs, 
-//                         rigid rigidID,
-//                         bool gravity, 
-//                         bool kinematic) : id{ id }, 
-//                                           matID{ matID },
-//                                           rd{ rd }, 
-//                                           rs{ rs }, 
-//                                           rigidID { rigidID }, 
-//                                           gravity { gravity }, 
- //                                          kinematic { kinematic } {}
-
 void PhysxObject::enableKinematic(bool kine) {
 
-    //PxRigidDynamic* body; // need to change
-
-    if (rigidID == rigid::rdynamic) {
+    if (rigidID == rigid::rdynamic)
         rd.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
-    }
-
 }
 
 void PhysxObject::enableGravity(bool gravity) {
-
-    //PxRigidDynamic* body; // need to change
 
     rd.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, gravity);
 }
@@ -338,7 +253,6 @@ void PhysicsObject::setposition(PxVec3 pos) {
     world->m_objects[id].rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
 }
 
-
 /*-----------------------------------------------------------------------------*/
 /*                               RigidDynamic                                  */
 /*-----------------------------------------------------------------------------*/
@@ -348,10 +262,7 @@ void PhysicsObject::setposition(PxVec3 pos) {
 /*-----------------------------------------------------------------------------*/
 /*                               RigidStatic                                   */
 /*-----------------------------------------------------------------------------*/
-PxRigidStatic* RigidStatic::getRigidStatic() const {
 
-    return rigidStatic;
-}
 
 
 /*-----------------------------------------------------------------------------*/
@@ -389,52 +300,3 @@ PxPvd* const& PVD::pvd__() const {
 
     return mPVD;
 }
-
-
-
-
-/*-----------------------------------------------------------------------------*/
-/*                               MATERIAL                                      */
-/*-----------------------------------------------------------------------------*/
-
-/*
-Material::Material(PxReal sf, PxReal df, PxReal r) : staticFriction{ sf },
-                                                     dynamicFriction{ df },
-                                                     restitution{ r } {}
-
-
-PxReal const& Material::getStaticFriction() const {
-
-    return staticFriction;
-}
-
-PxReal const& Material::getDynamicFriction() const {
-
-    return dynamicFriction;
-}
-
-PxReal const& Material::getRestitution() const {
-
-    return restitution;
-}
-
-void Material::setStaticFriction(PxMaterial* mat, PxReal sf) {
-
-    mat->setStaticFriction(sf);
-}
-
-void Material::setDynamicFriction(PxMaterial* mat, PxReal df) {
-
-    mat->setDynamicFriction(df);
-}
-
-void Material::setRestitution(PxMaterial* mat, PxReal r) {
-
-    mat->setRestitution(r);
-}
-*/
-
-
-
-
-
