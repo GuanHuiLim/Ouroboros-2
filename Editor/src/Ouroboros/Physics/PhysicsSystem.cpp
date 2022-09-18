@@ -31,7 +31,7 @@ namespace oo
     PhysicsSystem::PhysicsSystem()
         : m_accumulator{0}
         , Gravity { 0, -9.81f, 0 }
-        , world{ PxVec3{Gravity.x, Gravity.y, Gravity.z} }
+        , m_physicsWorld{ PxVec3{Gravity.x, Gravity.y, Gravity.z} }
     {
         
     }
@@ -127,11 +127,12 @@ namespace oo
             return query;
         }();
 
-        m_world->for_each(query, [&](TransformComponent* tc, PhysicsComponent* obj, RigidbodyComponent* rb)
-            {
-                
-                tc->SetGlobalPosition(glm::vec3{ obj->object.getposition().x, obj->object.getposition().y, obj->object.getposition().z });
-            });
+        m_world->for_each(query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
+        {
+            auto pos = phy.object.getposition();
+            glm::vec3 new_pos{ pos.x, pos.y, pos.z };
+            tf.SetGlobalPosition(new_pos);
+        });
 
         // Update dynamics
         IntegrateForces(deltaTime);
@@ -232,7 +233,7 @@ namespace oo
 
             m_world->add_component<PhysicsComponent>(rb->entityID);
 
-            m_world->get_component<PhysicsComponent>(rb->entityID).object = world.createRigidbody();
+            m_world->get_component<PhysicsComponent>(rb->entityID).object = m_physicsWorld.createRigidbody();
         }
 
     }
@@ -241,7 +242,7 @@ namespace oo
     {
         if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false) {
 
-            world.removeRigidbody(m_world->get_component<PhysicsComponent>(rb->entityID).object);
+            m_physicsWorld.removeRigidbody(m_world->get_component<PhysicsComponent>(rb->entityID).object);
 
             m_world->remove_component<PhysicsComponent>(rb->entityID);
         }
