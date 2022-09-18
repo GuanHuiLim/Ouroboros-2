@@ -22,8 +22,6 @@ namespace oo
 {
     struct DeferredComponent
     {
-        DeferredComponent();
-
         Ecs::EntityID entityID;
 
         RTTR_ENABLE();

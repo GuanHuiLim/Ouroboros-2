@@ -16,7 +16,8 @@ Technology is prohibited.
 #include <filesystem>
 
 //#include "Editor.h"
-//#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Ouroboros/Physics/PhysicsSystem.h"
 
 namespace oo
 {
@@ -31,13 +32,14 @@ namespace oo
     {
         Scene::Init();
 
-        //constexpr const char* const editor_scene_init = "Editor scene init";
+        constexpr const char* const editor_scene_init = "Editor scene init";
         //constexpr const char* const registration = "registration";
         //constexpr const char* const loading_world = "loading world";
         {
-            //TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
+            TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
             //Register All Systems
             {
+                GetWorld().Add_System<oo::PhysicsSystem>()->Init();
                 //bool wantDebug = true;
 
                 //TRACY_PROFILE_SCOPE_N(registration);
@@ -72,7 +74,7 @@ namespace oo
                 }
             }
 
-            //TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();
         }
 
     }

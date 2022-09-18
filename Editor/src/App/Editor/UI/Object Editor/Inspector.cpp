@@ -146,7 +146,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 
-		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 
 		selected |= AddScriptsSelectable(gameobject);
 

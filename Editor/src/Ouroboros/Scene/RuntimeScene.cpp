@@ -36,7 +36,6 @@ namespace oo
     {
         Scene::Init();
 
-
         constexpr const char* const registration = "registration";
         {
             TRACY_PROFILE_SCOPE(registration);
@@ -69,11 +68,11 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
-        //constexpr const char* const loading_world = "loading world";
+        constexpr const char* const loading_world = "loading world";
         {
-            /*TRACY_PROFILE_SCOPE(loading_world);
+            TRACY_PROFILE_SCOPE(loading_world);
             LoadFromFile();
-            TRACY_PROFILE_SCOPE_END();*/
+            TRACY_PROFILE_SCOPE_END();
         }
 
         StartSimulation();
