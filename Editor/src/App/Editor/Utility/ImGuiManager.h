@@ -25,12 +25,10 @@ public:
 	static ImGuiObject& GetItem(const std::string& item);
 public:
 	inline static std::unordered_map<std::string, ImGuiObject> s_GUIContainer;
-	inline static std::unordered_map<std::string, ImTextureID> s_EditorIcons;
 	inline static SceneManager const* s_scenemanager = nullptr;
 	inline static oo::PrefabSceneController * s_prefab_controller = nullptr;
 	inline static oo::RuntimeController* s_runtime_controller = nullptr;
 	inline static oo::AssetManager s_editorAssetManager = oo::AssetManager("./icons");
 
 private:
-	static void LoadHelper(const std::filesystem::path& fp, void* vr);
 };

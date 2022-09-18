@@ -1,9 +1,9 @@
 #pragma once
 #include "VulkanUtils.h"
-#include "VulkanFramebufferAttachment.h"
+#include "VulkanTexture.h"
 
 struct VulkanDevice;
-struct oGFX::SwapChainImage;
+
 struct VulkanSwapchain
 {
 	~VulkanSwapchain();
@@ -11,10 +11,12 @@ struct VulkanSwapchain
 	void CreateDepthBuffer();
 
 	VkSwapchainKHR swapchain;
-	std::vector<oGFX::SwapChainImage> swapChainImages;
+	
+	// These textures are just used as containers
+	std::vector<vkutils::Texture2D> swapChainImages;
 	uint32_t minImageCount;
 
-	VulkanFramebufferAttachment depthAttachment;
+	vkutils::Texture2D depthAttachment;
 
 	//utility
 	VkFormat swapChainImageFormat;

@@ -192,6 +192,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
+	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
@@ -268,10 +269,10 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 	ImGui::PopStyleColor();
 	return false;
 }
-void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
+void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
 
-	ImGui::Text(name.c_str());
+	ImGui::Text(main_property.get_name().data());
 	ImGui::Dummy({ 5.0f,0 });
 	ImGui::SameLine();
 	ImGui::BeginGroup();
@@ -294,7 +295,7 @@ void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type,
 				rttr::variant v = prop.get_value(value);
 				bool set_edited = false;
 				bool end_edit = false;
-				DisplayArrayView(prop.get_name().data(), prop_type, v, set_edited, end_edit);
+				DisplayArrayView(prop , prop_type, v, set_edited, end_edit);
 				if (end_edit)
 					endEdit = true;
 				if (set_edited == true)
@@ -319,13 +320,13 @@ void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type,
 		{
 			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, ImGui_StylePresets::disabled_color);
-			iter->second(name, v, set_value, end_edit);
+			iter->second(prop, name, v, set_value, end_edit);
 			ImGui::PopStyleColor();
 			ImGui::PopItemFlag();
 		}
 		else
 		{
-			iter->second(name, v, set_value, end_edit);
+			iter->second(prop, name, v, set_value, end_edit);
 			if (end_edit)
 				endEdit = true;
 			if (set_value == true)
@@ -341,7 +342,7 @@ void Inspector::DisplayNestedComponent(std::string name , rttr::type class_type,
 	ImGui::EndGroup();
 
 }
-void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rttr::variant& value, bool& edited, bool& endEdit)
+void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variable_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
 	rttr::variant_sequential_view sqv =	value.create_sequential_view();
 	rttr::type::type_id id = sqv.get_value_type().get_id();
@@ -352,10 +353,10 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 	auto iter = m_inspectorProperties.m_InspectorUI.find(ut->second);
 	if (iter == m_inspectorProperties.m_InspectorUI.end())
 		return;
-	ImGui::Text(name.c_str());
+	ImGui::Text(main_property.get_name().data());
 	ImGui::Separator();
 	
-	ImGui::PushID(name.c_str());
+	ImGui::PushID(main_property.get_name().data());
 
 	ImGui::Dummy({ 5.0f,0 });
 	ImGui::SameLine();
@@ -380,13 +381,13 @@ void Inspector::DisplayArrayView(std::string name, rttr::type variable_type, rtt
 
 	bool itemEdited = false;
 	bool itemEndEdit = false;
-	std::string tempstring = "##empty";
+	std::string tempstring = "##e";
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
 		ImGui::PushID(i);
 		rttr::variant v = sqv.get_value(i).extract_wrapped_value();
-		iter->second(tempstring, v, itemEdited, itemEndEdit);
+		iter->second(main_property,tempstring, v, itemEdited, itemEndEdit);
 		if (itemEdited)
 		{
 			edited = true;

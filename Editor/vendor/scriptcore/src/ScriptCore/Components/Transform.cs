@@ -50,14 +50,20 @@ namespace Ouroboros
             }
             set { Transform3D_SetLocalEulerAngles(gameObject.scene, gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
         }
-        //[DllImport("__Internal")] private static extern float Transform3D_GetGlobalAngle(int instanceID);
-        //[DllImport("__Internal")] private static extern void Transform_SetGlobalAngle(int instanceID, float angle);
 
-        //public float rotationAngle
-        //{
-        //    get { return Transform3D_GetGlobalAngle(gameObject.GetInstanceID()); }
-        //    //set { Transform_SetGlobalAngle(gameObject.GetInstanceID(), value); }
-        //}
+        [DllImport("__Internal")] private static extern void Transform3D_GetGlobalEulerAngles(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void Transform3D_SetGlobalEulerAngles(UInt32 sceneID, UInt64 instanceID, float x, float y, float z);
+
+        public Vector3 eulerAngles
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetGlobalEulerAngles(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+            set { Transform3D_SetGlobalEulerAngles(gameObject.scene, gameObject.GetInstanceID(), value.X, value.Y, value.Z); }
+        }
 
         [DllImport("__Internal")] private static extern void Transform3D_GetLocalScale(UInt32 sceneID, UInt64 uuid, out float x, out float y, out float z);
         [DllImport("__Internal")] private static extern void Transform3D_SetLocalScale(UInt32 sceneID, UInt64 uuid, float x, float y, float z);
@@ -76,7 +82,7 @@ namespace Ouroboros
         [DllImport("__Internal")] private static extern void Transform3D_GetGlobalScale(UInt32 sceneID, UInt64 uuid, out float x, out float y, out float z);
         [DllImport("__Internal")] private static extern void Transform3D_SetGlobalScale(UInt32 sceneID, UInt64 uuid, float x, float y, float z);
 
-        public Vector3 globalScale
+        public Vector3 scale
         {
             get
             {

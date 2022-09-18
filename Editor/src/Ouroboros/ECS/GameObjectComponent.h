@@ -21,7 +21,7 @@ Technology is prohibited.
 #include <rttr/type>
 #include <Ouroboros/EventSystem/Event.h>
 #include <Archetypes_Ecs/src/A_Ecs.h>
-
+#include "Ouroboros/Asset/Asset.h"
 namespace oo
 {
     class GameObjectComponent

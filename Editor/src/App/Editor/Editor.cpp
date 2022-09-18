@@ -162,6 +162,9 @@ void PopupHelperWindow::CloseProjectPopup()
 			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
 			if (eventAfterPrompt.nextAction)
 				eventAfterPrompt.nextAction();
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();

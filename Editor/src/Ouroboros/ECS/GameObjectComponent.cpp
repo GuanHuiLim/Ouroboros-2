@@ -22,11 +22,11 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<oo::GameObjectComponent>("GameObject")
-            .property("Active", &GameObjectComponent::Active)
-            .property("Name", &GameObjectComponent::Name)
-            .property("UUID", &GameObjectComponent::Id)
-            //.property("Layer", &GameObjectComponent::GetLayer, &GameObjectComponent::SetLayer)
-            .property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy);
+	registration::class_<oo::GameObjectComponent>("GameObject")
+		.property("Active", &GameObjectComponent::Active)
+		.property("Name", &GameObjectComponent::Name)
+		.property("UUID", &GameObjectComponent::Id)
+		//.property("Layer", &GameObjectComponent::GetLayer, &GameObjectComponent::SetLayer)
+		.property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy);
     }
 }

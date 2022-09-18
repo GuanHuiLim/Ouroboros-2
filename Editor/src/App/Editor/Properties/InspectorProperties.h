@@ -6,5 +6,5 @@
 struct InspectorProperties
 {
 	InspectorProperties();
-	std::unordered_map<UI_RTTRType::UItypes, std::function<void(std::string& name, rttr::variant& v, bool& edited, bool& endEdit)>> m_InspectorUI;
+	std::unordered_map<UI_RTTRType::UItypes, std::function<void(rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)>> m_InspectorUI;
 };

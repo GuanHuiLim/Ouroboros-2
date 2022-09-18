@@ -26,11 +26,16 @@ namespace oo
     {
     public:
         
-        TransformSystem(Scene* scene) : m_scene{ scene } {};
-        //TransformSystem() = default;
+        TransformSystem(Scene* scene) 
+            : m_scene{ scene } 
+        {
+        }
+
         virtual ~TransformSystem() = default;
-        
-        //void Link(Scene* scene) { m_scene = scene; }
+
+        virtual void Run(Ecs::ECSWorld* world) override;
+
+        void UpdateSubTree(GameObject go);
 
         void UpdateAllTransforms()
         {
@@ -90,11 +95,10 @@ namespace oo
             
         }
 
-        virtual void Run(Ecs::ECSWorld* world) override;
-
     private:
         void UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf);
 
+        void UpdateTree(scenenode::shared_pointer node);
     private:
         Scene* m_scene = nullptr;
 
