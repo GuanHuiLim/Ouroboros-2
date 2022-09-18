@@ -88,6 +88,7 @@ PhysxWorld::PhysxWorld(PxVec3 grav)
     // Setup scene description
     PxSceneDesc sceneDesc(physx_system::getPhysics()->getTolerancesScale());
     sceneDesc.gravity = grav; // PxVec3(0.0f, -9.81f, 0.0f);
+    gravity = sceneDesc.gravity;
 
     mDispatcher = PxDefaultCpuDispatcherCreate(2);
 
@@ -103,6 +104,7 @@ PhysxWorld::PhysxWorld(PxVec3 grav)
     //sceneDesc.filterShader = contactReportFilterShader;
 
     scene = physx_system::getPhysics()->createScene(sceneDesc);
+
 }
 
 PhysxWorld::~PhysxWorld()
@@ -117,6 +119,18 @@ void PhysxWorld::updateScene() {
     //scene->collide(1.f / 60.f);
     scene->fetchResults(true);
 }
+
+PxVec3 PhysxWorld::getGravity() const {
+
+    return gravity;
+}
+
+void PhysxWorld::setGravity(PxVec3 gra) {
+
+    scene->setGravity(gra);
+    gravity = gra;
+}
+
 
 int PhysxWorld::createMat(Material material) {
 

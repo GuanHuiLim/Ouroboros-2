@@ -184,6 +184,10 @@ public:
     ~PhysxWorld();
     void updateScene();
 
+    // GRAVITY
+    PxVec3 getGravity() const;
+    void setGravity(PxVec3 gra);
+
     /*
     // SCENE
     int createScene(PxVec3 gravity);
@@ -296,7 +300,7 @@ struct PhysicsObject { // you store
 
     PxVec3 getposition() const;
 
-    void setposition(glm::vec3 pos);
+    void setposition(PxVec3 pos);
 
 
 };
