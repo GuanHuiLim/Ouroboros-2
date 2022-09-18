@@ -23,11 +23,15 @@ Technology is prohibited.
 #include "Ouroboros/Physics/RigidbodyComponent.h"
 
 #include "Ouroboros/ECS/DeferredComponent.h"
+
+#include "Ouroboros/Transform/TransformComponent.h"
+
 namespace oo
 {
     PhysicsSystem::PhysicsSystem()
         : m_accumulator{0}
         , Gravity { 0, -9.81f, 0 }
+        , world{ PxVec3{Gravity.x, Gravity.y, Gravity.z} }
     {
         
     }
@@ -116,6 +120,19 @@ namespace oo
 
     void PhysicsSystem::UpdateDynamics(Timestep deltaTime)
     {
+        static Ecs::Query query = []()
+        {
+            Ecs::Query query;
+            query.with<TransformComponent, PhysicsComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
+            return query;
+        }();
+
+        m_world->for_each(query, [&](TransformComponent* tc, PhysicsComponent* obj, RigidbodyComponent* rb)
+            {
+                
+                tc->SetGlobalPosition(glm::vec3{ obj->object.getposition().x, obj->object.getposition().y, obj->object.getposition().z });
+            });
+
         // Update dynamics
         IntegrateForces(deltaTime);
         IntegratePositions(deltaTime);
@@ -211,15 +228,23 @@ namespace oo
 
     void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
-        if (m_world->has_component<PhysicsComponent>(rb->entityID) == false)
+        if (m_world->has_component<PhysicsComponent>(rb->entityID) == false) {
+
             m_world->add_component<PhysicsComponent>(rb->entityID);
+
+            m_world->get_component<PhysicsComponent>(rb->entityID).object = world.createRigidbody();
+        }
 
     }
 
     void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
-        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false)
+        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false) {
+
+            world.removeRigidbody(m_world->get_component<PhysicsComponent>(rb->entityID).object);
+
             m_world->remove_component<PhysicsComponent>(rb->entityID);
+        }
     }
 
     /*void PhysicsSystem::InformPhysicsBackend(Ecs::ComponentEvent<RigidbodyComponent>* rb)

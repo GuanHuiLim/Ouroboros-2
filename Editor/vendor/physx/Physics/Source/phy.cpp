@@ -3,159 +3,438 @@
 
 using namespace physx;
 
-//PxPhysics* gPhysics = NULL;
-//PxScene* gScene = NULL;
-//PxMaterial* gMaterial = NULL;
+//static Physx myPhysx;
+//static PhysxWorld myWorld;
+static PVD myPVD;
+
+static constexpr bool use_debugger = true;
+
+PxDefaultAllocator      mDefaultAllocatorCallback;
+PxDefaultErrorCallback  mDefaultErrorCallback;
+PxDefaultCpuDispatcher* mDispatcher;
+
+PxTolerancesScale       mToleranceScale;
+
+PxFoundation* mFoundation;
+PxPhysics* mPhysics;
+
+/*-----------------------------------------------------------------------------*/
+/*                               Physx                                         */
+/*-----------------------------------------------------------------------------*/
+namespace physx_system {
+
+    PxFoundation* getFoundation() {
+
+        return mFoundation;
+    }
 
 
-//PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, const PxVec3& velocity = PxVec3(0))
-//{
-//    PxRigidDynamic* dynamic = PxCreateDynamic(*mPhysics, t, geometry, *mMaterial, 10.0f);
-//    dynamic->setAngularDamping(0.5f);
-//    dynamic->setLinearVelocity(velocity);
-//    mScene->addActor(*dynamic);
-//    return dynamic;
-//}
+    PxPhysics* getPhysics() {
 
-//void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
-//{
-//    PxShape* shape = mPhysics->createShape(PxBoxGeometry(halfExtent, halfExtent, halfExtent), *mMaterial);
-//    for (PxU32 i = 0; i < size; i++)
-//    {
-//        for (PxU32 j = 0; j < size - i; j++)
-//        {
-//            PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-//            PxRigidDynamic* body = mPhysics->createRigidDynamic(t.transform(localTm));
-//            body->attachShape(*shape);
-//            PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-//            mScene->addActor(*body);
-//        }
-//    }
-//    shape->release();
-//}
+        return mPhysics;
+    }
 
-void Phy::phyTest() 
+    PxFoundation* createFoundation() {
+
+        mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
+        if (!mFoundation) throw("PxCreateFoundation failed!");
+
+        return mFoundation;
+    }
+
+    PxPhysics* createPhysics() {
+
+        mToleranceScale.length = 100;        // typical length of an object
+        mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
+
+        //if (PVD_DEBUGGER)
+        if constexpr (use_debugger)
+            mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, myPVD.pvd__());
+        else
+            mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale);
+
+        return mPhysics;
+    }
+
+    void init() {
+
+        createFoundation();
+
+        if constexpr (use_debugger) {
+            printf("DEBUGGER ON\n");
+            myPVD.createPvd(getFoundation(), "192.168.157.213");
+        }
+        else {
+            printf("DEBUGGER OFF\n");
+        }
+
+        createPhysics();
+    }
+
+    void shutdown() {
+
+        getFoundation()->release();
+
+        getPhysics()->release();
+    }
+
+
+
+
+
+}
+
+/*-----------------------------------------------------------------------------*/
+/*                               PhysxWorld                                    */
+/*-----------------------------------------------------------------------------*/
+PhysxWorld::PhysxWorld(PxVec3 grav)
 {
-    std::cout << "Hello World!\n";
-
-    // Declare variables
-    PxDefaultAllocator      mDefaultAllocatorCallback;
-    PxDefaultErrorCallback  mDefaultErrorCallback;
-    PxDefaultCpuDispatcher* mDispatcher = NULL;
-    PxTolerancesScale       mToleranceScale;
-
-    PxFoundation* mFoundation = NULL;
-    PxPhysics* mPhysics = NULL;
-
-    PxScene* mScene = NULL;
-    PxMaterial* mMaterial = NULL;
-
-    PxPvd* mPvd = NULL;
-
-    PxReal stackZ = 10.0f;
-
-    // Init physx
-    mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
-    if (!mFoundation) throw("PxCreateFoundation failed!");
-
-    mPvd = PxCreatePvd(*mFoundation);
-    PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("192.168.1.162", 5425, 10);
-    mPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
-
-    mToleranceScale.length = 100;        // typical length of an object
-    mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
-    mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, mPvd);
-    //mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale);
-
+    // check where leaking
+    
     // Setup scene description
-    PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
-    sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+    PxSceneDesc sceneDesc(physx_system::getPhysics()->getTolerancesScale());
+    sceneDesc.gravity = grav; // PxVec3(0.0f, -9.81f, 0.0f);
+
     mDispatcher = PxDefaultCpuDispatcherCreate(2);
+
     sceneDesc.cpuDispatcher = mDispatcher;
     sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-    mScene = mPhysics->createScene(sceneDesc);
 
-    // Setup PVP 
-    PxPvdSceneClient* pvdClient = mScene->getScenePvdClient();
+    // report all the kin-kin contacts
+    sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
+    // report all the static-kin contacts
+    sceneDesc.staticKineFilteringMode = PxPairFilteringMode::eKEEP;
+
+    //sceneDesc.simulationEventCallback = &event_callback;
+    //sceneDesc.filterShader = contactReportFilterShader;
+
+    scene = physx_system::getPhysics()->createScene(sceneDesc);
+}
+
+PhysxWorld::~PhysxWorld()
+{
+    // maybe here never shutdown prop
+    scene->release();
+}
+
+int PhysxWorld::createMat(Material material) {
+
+    PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
+        material.dynamicFriction,
+        material.restitution);
+
+
+    int UUID = 0; // later change to UUID
+
+    mat.emplace(UUID, newMat);
+
+    return UUID;
+
+    /*
+    PxMaterial* mat = myMaster.getPhysics()->createMaterial(material.getStaticFriction(),
+        material.getDynamicFriction(),
+        material.getRestitution());
+
+    materialList.emplace_back(mat);
+
+    return materialList.size() - 1; // return created material id
+    */
+}
+
+void PhysxWorld::updateMat(int materialID, Material material) {
+
+    // SEARCH FOR THAT KEY UUID IN THE MAP (if have then set the new material in)
+
+    for (auto const& x : mat) {
+
+        if (x.first == materialID) {
+
+            x.second->setStaticFriction(material.staticFriction);
+            x.second->setDynamicFriction(material.dynamicFriction);
+            x.second->setRestitution(material.restitution);
+        }
+    }
+
+    /*
+    materialList[materialID]->setStaticFriction(material.getStaticFriction());
+    materialList[materialID]->setDynamicFriction(material.getDynamicFriction());
+    materialList[materialID]->setRestitution(material.getRestitution());
+    */
+}
+
+void PhysxWorld::destroyMat(int materialID) {
+
+    for (auto const& x : mat) {
+
+        if (x.first == materialID) {
+            x.second->release();
+        }
+    }
+}
+
+PhysicsObject PhysxWorld::createRigidbody()
+{
+    // create instance of the object (on the stack)
+    int UUID = 0;
+
+    // here should create 1 of them 
+    PhysxObject obj;   // assume assign UUID
+    obj.id = UUID;
+    obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(PxTransform(PxVec3(0)));
+
+    // assign UUID 
+    m_objects.emplace_back(obj); // store the object
+
+    // return the object i created
+    return PhysicsObject{ UUID, this }; // a copy
+}
+
+void PhysxWorld::removeRigidbody(PhysicsObject obj)
+{
+    // check/find the id from the obj vector then if match 
+    // remove from that vector then release
+
+    auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; });
+    //begin->destroy();
+    m_objects.erase(begin);
+    
+    //m_objects.erase(begin, m_objects.end());
+
+
+    //for(PhysxObject const& x : m_objects) {
+    //    
+    //    if (x.id == obj.id) {
+    //        m_objects.erase(std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; }))
+    //    }
+    //
+    //}
+
+    //PxRigidDynamic* body;
+    //body->release();
+
+    //obj.
+}
+
+/*
+void PhysxObject::destroy() {
+
+    if (rs != nullptr) {
+        rs->getRigidStatic()->release();
+    }
+
+    if (rd != nullptr) {
+        rd->getRigidDynamic()->release();
+    }
+}
+*/
+
+//PhysxObject::~PhysxObject() {
+//
+//    if (rs != nullptr) {
+//        rs->getRigidStatic()->release();
+//    }
+//
+//    if (rd != nullptr) {
+//        rd->getRigidDynamic()->release();
+//    }
+//
+//    //switch (rigidID) {
+//    //
+//    //case rigid::rstatic:
+//    //    rs->getRigidStatic()->release();
+//    //    break;
+//    //
+//    //case rigid::rdynamic:
+//    //    rd->getRigidDynamic()->release();
+//    //    break;
+//    //
+//    //default:
+//    //    break;
+//    //}
+//}
+
+//PhysxWorld world;
+//
+//PhysicsObject obj = world.createPhysicsObject();
+//obj.getMaterial()
+//
+//world.removeObject(obj);
+
+
+
+
+/*-----------------------------------------------------------------------------*/
+/*                               PhysxObject                                   */
+/*-----------------------------------------------------------------------------*/
+//PhysxObject::rigid PhysxObject::getRigidType() {
+//
+//    return rigidID;
+//
+//    //rigidID == rigid::rstatic || 
+//    //return 0; // static
+//    //return 1; // dynamic
+//}
+
+//PhysxObject::PhysxObject(int id, 
+//                         int matID,
+//                         RigidDynamic rd, 
+//                         RigidStatic rs, 
+//                         rigid rigidID,
+//                         bool gravity, 
+//                         bool kinematic) : id{ id }, 
+//                                           matID{ matID },
+//                                           rd{ rd }, 
+//                                           rs{ rs }, 
+//                                           rigidID { rigidID }, 
+//                                           gravity { gravity }, 
+ //                                          kinematic { kinematic } {}
+
+void PhysxObject::enableKinematic(bool kine) {
+
+    //PxRigidDynamic* body; // need to change
+
+    if (rigidID == rigid::rdynamic) {
+        rd.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
+    }
+
+}
+
+void PhysxObject::enableGravity(bool gravity) {
+
+    //PxRigidDynamic* body; // need to change
+
+    rd.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, gravity);
+}
+
+/*-----------------------------------------------------------------------------*/
+/*                               PhysicsObject                                 */
+/*-----------------------------------------------------------------------------*/
+
+Material PhysicsObject::getMaterial() const {
+
+    Material mat{};
+
+    for (auto const& x : world->mat) {
+        if (x.first == world->m_objects[id].matID) {
+
+            mat.staticFriction = x.second->getStaticFriction();
+            mat.dynamicFriction = x.second->getDynamicFriction();
+            mat.restitution = x.second->getRestitution();
+        }
+    }
+
+    return mat; // world->m_objects[id].matID;
+}
+
+PxVec3 PhysicsObject::getposition() const {
+
+    return PxVec3{ world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.x,
+                   world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.y,
+                   world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.z };
+}
+
+void PhysicsObject::setposition(PxVec3 pos) {
+
+    world->m_objects[id].rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
+}
+
+
+/*-----------------------------------------------------------------------------*/
+/*                               RigidDynamic                                  */
+/*-----------------------------------------------------------------------------*/
+
+
+
+/*-----------------------------------------------------------------------------*/
+/*                               RigidStatic                                   */
+/*-----------------------------------------------------------------------------*/
+PxRigidStatic* RigidStatic::getRigidStatic() const {
+
+    return rigidStatic;
+}
+
+
+/*-----------------------------------------------------------------------------*/
+/*                               PVD                                           */
+/*-----------------------------------------------------------------------------*/
+PxPvd* PVD::createPvd(PxFoundation* foundation, const char* ip) {
+
+    mPVD = PxCreatePvd(*foundation);
+    PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(ip, 5425, 10);
+    mPVD->connect(*transport, PxPvdInstrumentationFlag::eALL);
+
+    return mPVD;
+}
+
+void PVD::setupPvd(PxScene* scene) {
+
+    // Setup PVD
+    PxPvdSceneClient* pvdClient = scene->getScenePvdClient();
+    //PxPvdSceneClient* pvdClient = mScene->getScenePvdClient();
+
     if (pvdClient)
     {
         pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
         pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
         pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
     }
-
-    // Create simulation
-    mMaterial = mPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-    PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, PxPlane(0, 1, 0, 50), *mMaterial); // collider shape
-    mScene->addActor(*groundPlane);
-
-    //PxShape* circleshape = mPhysics->createShape(PxSphereGeometry(10), *mMaterial);
-
-    // Create box shape
-    float halfExtent = .5f;
-    PxShape* shape = mPhysics->createShape(PxBoxGeometry(halfExtent, halfExtent, halfExtent), *mMaterial);
-    PxU32 size = 5;
-    PxTransform t(PxVec3(0));
-
-    PxTransform t2(PxVec3(0, 20, 100));
-
-    // Create wall
-    for (PxU32 i = 0; i < size; i++) {
-        for (PxU32 j = 0; j < size - i; j++) {
-
-            PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-            PxRigidDynamic* body = mPhysics->createRigidDynamic(t.transform(localTm));
-            body->attachShape(*shape);
-
-            PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-            mScene->addActor(*body);
-        }
-    }
-    shape->release();
-
-    PxVec3 position(0, 30, 0);
-    PxRigidDynamic* aSphereActor = PxCreateDynamic(*mPhysics, PxTransform(position), PxSphereGeometry(3), *mMaterial, 1.f);
-    aSphereActor->setMass(1);
-    mScene->addActor(*aSphereActor);
-
-    PxReal mymass = aSphereActor->getMass();
-    PxVec3 linearvel = aSphereActor->getLinearVelocity();
-
-    printf("%f: mass", mymass);
-    printf("\n%f: velo", linearvel.x);
-
-    //PxRigidDynamic* dynamic = PxCreateDynamic(*mPhysics, t2, PxSphereGeometry(5), *mMaterial, 10.0f);
-    //dynamic->setAngularDamping(0.5f);
-    //dynamic->setLinearVelocity(PxVec3(0, -25, -100));
-    //mScene->addActor(*dynamic);
-
-    ////PxRigidDynamic* ball = createDynamic(PxTransform(PxVec3(0, 20, 100)), PxSphereGeometry(5), PxVec3(0, -25, -100));
-    //PxRigidBodyExt::updateMassAndInertia(*dynamic, 1000.f);
-
-
-    // test 2
-    //PxRigidDynamic* aCapsuleActor = mPhysics->createRigidDynamic(PxTransform(PxVec3(0, 20, 100)));
-    //PxTransform relativePose(PxQuat(PxHalfPi, PxVec3(0, 0, 1)));
-    //PxShape* aCapsuleShape = PxRigidActorExt::createExclusiveShape(*aCapsuleActor, PxCapsuleGeometry(PxReal(5.f), PxReal(10.f)), mMaterial);
-    //aCapsuleShape->setLocalPose(relativePose);
-    //PxRigidBodyExt::updateMassAndInertia(*aCapsuleActor, 10.f);
-    //mScene->addActor(*aCapsuleActor);
-
-    // test
-    //for (PxU32 i = 0; i < 40; i++)
-    //    createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 20, 1.0f);
-
-    //PxRigidDynamic* ball = createDynamic(PxTransform(PxVec3(0, 20, 100)), PxSphereGeometry(5), PxVec3(0, -25, -100));
-    //PxRigidBodyExt::updateMassAndInertia(*ball, 1000.f);
-
-    // Run simulation
-    //while (1) {
-    //    mScene->simulate(1.0f / 60.0f); // 60 frame per seconds
-    //    mScene->fetchResults(true);
-    //
-    //    //std::string hello;
-    //    //std::cin >> hello;
-    //}
-
-
 }
+
+PxPvd*& PVD::pvd__() {
+
+    return mPVD;
+}
+
+PxPvd* const& PVD::pvd__() const {
+
+    return mPVD;
+}
+
+
+
+
+/*-----------------------------------------------------------------------------*/
+/*                               MATERIAL                                      */
+/*-----------------------------------------------------------------------------*/
+
+/*
+Material::Material(PxReal sf, PxReal df, PxReal r) : staticFriction{ sf },
+                                                     dynamicFriction{ df },
+                                                     restitution{ r } {}
+
+
+PxReal const& Material::getStaticFriction() const {
+
+    return staticFriction;
+}
+
+PxReal const& Material::getDynamicFriction() const {
+
+    return dynamicFriction;
+}
+
+PxReal const& Material::getRestitution() const {
+
+    return restitution;
+}
+
+void Material::setStaticFriction(PxMaterial* mat, PxReal sf) {
+
+    mat->setStaticFriction(sf);
+}
+
+void Material::setDynamicFriction(PxMaterial* mat, PxReal df) {
+
+    mat->setDynamicFriction(df);
+}
+
+void Material::setRestitution(PxMaterial* mat, PxReal r) {
+
+    mat->setRestitution(r);
+}
+*/
+
+
+
+
+

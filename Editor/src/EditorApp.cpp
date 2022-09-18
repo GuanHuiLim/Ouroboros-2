@@ -54,8 +54,6 @@ Technology is prohibited.
 //Tracy
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
-#include <Ouroboros/Physics/Physics.h>
-
 // Scripting
 #include <Scripting/Scripting.h>
 
@@ -65,8 +63,6 @@ class EditorApp final : public oo::Application
 private:
     // main scene manager
     SceneManager m_sceneManager;
-
-    oo::Physics m_phy;
 
     //oo::AssetManager m_assetManager{ "./" };
 #ifndef OO_END_PRODUCT

@@ -14,12 +14,15 @@ Technology is prohibited.
 #pragma once
 
 #include <rttr/type>
+#include <Physics/Source/phy.h>
 
 namespace oo
 {
     // invisible class
     struct PhysicsComponent
     {
+        PhysicsObject object;
+
         RTTR_ENABLE();
     };
 }

@@ -23,6 +23,8 @@ Technology is prohibited.
 #include "Ouroboros/Input/InputSystem.h"
 //#include "Ouroboros/Vulkan/RendererSystem.h"
 
+#include "Ouroboros/Physics/PhysicsSystem.h"
+
 namespace oo
 {
     RuntimeScene::RuntimeScene(std::string const& filepath)
@@ -41,6 +43,8 @@ namespace oo
             TRACY_PROFILE_SCOPE(registration);
 
             GetWorld().Add_System<InputSystem>()->Initialize();
+
+            GetWorld().Add_System<PhysicsSystem>();
 
             //Register All Systems
             //GetWorld().Add_System<ScriptSystem>(*this);
@@ -97,6 +101,8 @@ namespace oo
                  GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
                  TRACY_PROFILE_SCOPE_END();
             }
+
+            GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
 
             //Update All Systems
             //constexpr const char* const scripts_update = "Scripts Update";

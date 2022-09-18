@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Timer.h"
 
 #include "Ouroboros/EventSystem/Event.h"
+#include <Physics/Source/phy.h>
 
 #include <bitset>
 namespace oo
@@ -79,6 +80,8 @@ namespace oo
 #if PHYSICS_DEBUG_MSG && OO_DEBUG || PHYSICS_DEBUG_MSG && OO_RELEASE
         std::uint64_t m_collisionChecks = 0, m_actualCollisions = 0;
 #endif  
+
+        PhysxWorld world;
 
         //time accumulator
         double m_accumulator;
