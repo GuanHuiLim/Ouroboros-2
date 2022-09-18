@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #include "Ouroboros/Scripting/ScriptSystem.h"
+#include "Ouroboros/Input/InputSystem.h"
 //#include "Ouroboros/Vulkan/RendererSystem.h"
 
 namespace oo
@@ -39,6 +40,8 @@ namespace oo
         constexpr const char* const registration = "registration";
         {
             TRACY_PROFILE_SCOPE(registration);
+
+            GetWorld().Add_System<InputSystem>()->Initialize();
 
             //Register All Systems
             //GetWorld().Add_System<ScriptSystem>(*this);
@@ -88,6 +91,13 @@ namespace oo
         constexpr const char* const runtime_scene_update = "Runtime Scene Update";
         {
             TRACY_PROFILE_SCOPE(runtime_scene_update);
+
+            constexpr const char* const input_update = "Input Update";
+            {
+                 TRACY_PROFILE_SCOPE(input_update);
+                 GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
+                 TRACY_PROFILE_SCOPE_END();
+            }
 
             //Update All Systems
             //constexpr const char* const scripts_update = "Scripts Update";

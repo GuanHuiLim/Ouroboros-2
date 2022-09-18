@@ -277,11 +277,11 @@ namespace oo
         return m_name; 
     }
 
-    Scene::go_ptr Scene::CreateGameObjectDeferred()
+    Scene::go_ptr Scene::CreateGameObjectDeferred(UUID uuid)
     {
         LOG_INFO("Creating Deferred Game Object");
 
-        Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(*this);
+        Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(uuid , *this);
         //m_createList.emplace_back(std::make_pair(newObjectPtr, onCreationCallback));
         newObjectPtr = CreateGameObjectImmediate(newObjectPtr);
         // add deferred component and set the entity ID to be itself
@@ -289,9 +289,9 @@ namespace oo
         return newObjectPtr;
     }
 
-    Scene::go_ptr Scene::CreateGameObjectImmediate()
+    Scene::go_ptr Scene::CreateGameObjectImmediate(UUID uuid)
     {
-        Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(*this);
+        Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(uuid, *this);
         return CreateGameObjectImmediate(newObjectPtr);
     }
 

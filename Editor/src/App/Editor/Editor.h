@@ -9,6 +9,7 @@
 #include "UI/Tools/LoggingView.h"
 #include "UI/Tools/Toolbar.h"
 #include "UI/Tools/PenTool.h"
+#include "UI/Tools/InputManagerUI.h"
 
 #include "UI/Optional Windows/SceneOrderingWindow.h"
 
@@ -52,6 +53,7 @@ public:
 	Toolbar m_toolbar;
 	LoggingView m_loggingView;
 	PenTool m_pentool;
+	InputManagerUI m_inputManager;
 
 	SceneOrderingWindow m_sceneOderingWindow;
 public:

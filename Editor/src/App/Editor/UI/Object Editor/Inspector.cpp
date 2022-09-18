@@ -140,14 +140,14 @@ void Inspector::Show()
 			return;
 		bool active = gameobject->ActiveInHierarchy();
 		
-		bool disable_prefabEdit = gameobject->GetIsPrefab() && gameobject->HasComponent<oo::PrefabComponent>() == false;
-		if (disable_prefabEdit)
-		{
-			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled,true);
-			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, ImGui_StylePresets::disabled_color);
-			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, ImGui_StylePresets::disabled_color);
-			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, ImGui_StylePresets::disabled_color);
-		}
+		//bool disable_prefabEdit = gameobject->GetIsPrefab() && gameobject->HasComponent<oo::PrefabComponent>() == false;
+		//if (disable_prefabEdit)
+		//{
+		//	ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled,true);
+		//	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, ImGui_StylePresets::disabled_color);
+		//	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, ImGui_StylePresets::disabled_color);
+		//	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, ImGui_StylePresets::disabled_color);
+		//}
 
 		ImGui::InputText("Name:",&gameobject->Name(),ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::SameLine();
@@ -173,11 +173,11 @@ void Inspector::Show()
 		DisplayAllComponents(*gameobject);
 		DisplayAddComponents(*gameobject, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 
-		if (disable_prefabEdit)
-		{
-			ImGui::PopItemFlag();
-			ImGui::PopStyleColor(3);
-		}
+		//if (disable_prefabEdit)
+		//{
+		//	ImGui::PopItemFlag();
+		//	ImGui::PopStyleColor(3);
+		//}
 	}
 }
 void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
