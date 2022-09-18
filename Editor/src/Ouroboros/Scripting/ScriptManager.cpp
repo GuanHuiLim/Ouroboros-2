@@ -22,8 +22,12 @@ namespace oo
     {
         s_BuildPath = buildPath;
         s_ProjectPath = projectPath;
-        if (Compile())
-            Load();
+#ifdef OO_EDITOR
+        Compile(); // compile first, always
+        Load(); // regardless if compile succeeds or fails, try to load any pre-existing/new scripting.dll
+#else
+        Load();
+#endif
     }
     bool ScriptManager::Compile()
     {

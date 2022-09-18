@@ -505,6 +505,8 @@ void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptCompone
 		for (auto classInfoIter = iter->value.MemberBegin(); classInfoIter != iter->value.MemberEnd(); ++classInfoIter)
 		{
 			auto scriptfieldIter = scriptInfo.fieldMap.find(classInfoIter->name.GetString());
+            if (scriptfieldIter == scriptInfo.fieldMap.end())
+                continue;
 			auto type = scriptfieldIter->second.value.GetValueType();
 			auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
 			if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
