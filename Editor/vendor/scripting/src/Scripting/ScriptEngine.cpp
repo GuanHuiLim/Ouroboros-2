@@ -42,6 +42,8 @@ namespace oo
         if (mono_domain_get() == nullptr)
         {
             mono_set_dirs(".", "");
+            mono_config_parse(nullptr);
+            mono_debug_init(MONO_DEBUG_FORMAT_MONO);
             mono_jit_init("root");
             mono_thread_set_main(mono_thread_current());
             mono_assemblies_init();

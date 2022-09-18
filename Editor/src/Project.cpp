@@ -183,7 +183,7 @@ void Project::UpdateScriptingFiles()
     vsProj << "    <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Debug OpenGL|x64' \">" << std::endl;
     vsProj << "    <PlatformTarget>x64</PlatformTarget>" << std::endl;
     vsProj << "    <DebugSymbols>true</DebugSymbols>" << std::endl;
-    vsProj << "    <DebugType>pdbonly</DebugType>" << std::endl;
+    vsProj << "    <DebugType>portable</DebugType>" << std::endl;
     vsProj << "    <Optimize>false</Optimize>" << std::endl;
     vsProj << "    <OutputPath>bin\\Debug\\</OutputPath>" << std::endl;
     vsProj << "    <DefineConstants></DefineConstants>" << std::endl;
@@ -191,7 +191,7 @@ void Project::UpdateScriptingFiles()
     vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
     vsProj << "  </PropertyGroup>" << std::endl;
     vsProj << "  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Production OpenGL|x64' \">" << std::endl;
-    vsProj << "    <DebugType>pdbonly</DebugType>" << std::endl;
+    vsProj << "    <DebugType>portable</DebugType>" << std::endl;
     vsProj << "    <Optimize>true</Optimize>" << std::endl;
     vsProj << "    <OutputPath>bin\\Production\\</OutputPath>" << std::endl;
     vsProj << "    <DefineConstants>TRACE</DefineConstants>" << std::endl;
@@ -199,7 +199,7 @@ void Project::UpdateScriptingFiles()
     vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
     vsProj << "  </PropertyGroup>" << std::endl;
     vsProj << "  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Release OpenGL|x64' \">" << std::endl;
-    vsProj << "    <DebugType>pdbonly</DebugType>" << std::endl;
+    vsProj << "    <DebugType>portable</DebugType>" << std::endl;
     vsProj << "    <Optimize>true</Optimize>" << std::endl;
     vsProj << "    <OutputPath>bin\\Release\\</OutputPath>" << std::endl;
     vsProj << "    <DefineConstants>TRACE</DefineConstants>" << std::endl;

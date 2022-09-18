@@ -9,6 +9,8 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/mono-config.h>
+#include <mono/metadata/mono-debug.h>
 
 namespace oo
 {
