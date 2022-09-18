@@ -180,6 +180,7 @@ PhysicsObject PhysxWorld::createRigidbody()
     PhysxObject obj;   // assume assign UUID
     obj.id = UUID;
     obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(PxTransform(PxVec3(0)));
+    scene->addActor(*obj.rd.rigidDynamic);
 
     // assign UUID 
     m_objects.emplace_back(obj); // store the object
