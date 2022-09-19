@@ -5,16 +5,24 @@ using namespace physx;
 
 static PVD myPVD;
 
-static constexpr bool use_debugger = true;
+static constexpr bool use_debugger = false;
+
+// actor might / not release
+// scene (might release all the actor)
+// mDispatcher
+// mPhysics
+
+// check if got pvd then release the pvd then transport
+// mFoundation
 
 PxDefaultAllocator      mDefaultAllocatorCallback;
 PxDefaultErrorCallback  mDefaultErrorCallback;
-PxDefaultCpuDispatcher* mDispatcher;
+PxDefaultCpuDispatcher* mDispatcher; // release
 
 PxTolerancesScale       mToleranceScale;
 
-PxFoundation* mFoundation;
-PxPhysics* mPhysics;
+PxFoundation* mFoundation; 
+PxPhysics* mPhysics; // release
 
 /*-----------------------------------------------------------------------------*/
 /*                               Physx                                         */
@@ -71,9 +79,14 @@ namespace physx_system {
 
     void shutdown() {
 
-        getFoundation()->release();
+        mDispatcher->release();
 
         getPhysics()->release();
+
+        // pvd release here
+
+        getFoundation()->release();
+
     }
 
 }
@@ -84,7 +97,8 @@ namespace physx_system {
 PhysxWorld::PhysxWorld(PxVec3 grav)
 {
     // check where leaking
-    
+    //m_objects.reserve(1000);
+
     // Setup scene description
     PxSceneDesc sceneDesc(physx_system::getPhysics()->getTolerancesScale());
     sceneDesc.gravity = grav; // PxVec3(0.0f, -9.81f, 0.0f);
@@ -113,10 +127,10 @@ PhysxWorld::~PhysxWorld()
     scene->release();
 }
 
-void PhysxWorld::updateScene() {
+void PhysxWorld::updateScene(float dt) {
 
-    scene->simulate(1.f / 60.f);
-    //scene->collide(1.f / 60.f);
+    scene->simulate(dt); // 1.f / 60.f
+    //scene->collide(dt);
     scene->fetchResults(true);
 }
 
@@ -132,21 +146,21 @@ void PhysxWorld::setGravity(PxVec3 gra) {
 }
 
 
-int PhysxWorld::createMat(Material material) {
+phy_uuid::UUID PhysxWorld::createMat(Material material) {
 
     PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
         material.dynamicFriction,
         material.restitution);
 
 
-    int UUID = 0; // later change to UUID
+    phy_uuid::UUID UUID = phy_uuid::UUID{}; // later change to UUID
 
     mat.emplace(UUID, newMat);
 
     return UUID;
 }
 
-void PhysxWorld::updateMat(int materialID, Material material) {
+void PhysxWorld::updateMat(phy_uuid::UUID materialID, Material material) {
 
     // SEARCH FOR THAT KEY UUID IN THE MAP (if have then set the new material in)
 
@@ -161,7 +175,7 @@ void PhysxWorld::updateMat(int materialID, Material material) {
     }
 }
 
-void PhysxWorld::destroyMat(int materialID) {
+void PhysxWorld::destroyMat(phy_uuid::UUID materialID) {
 
     for (auto const& x : mat) {
 
@@ -174,19 +188,21 @@ void PhysxWorld::destroyMat(int materialID) {
 PhysicsObject PhysxWorld::createRigidbody()
 {
     // create instance of the object (on the stack)
-    int UUID = 0;
+    //phy_uuid::UUID UUID = phy_uuid::UUID{};
 
     // here should create 1 of them 
     PhysxObject obj;   // assume assign UUID
-    obj.id = UUID;
+    obj.id = 0;// UUID;
     obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(PxTransform(PxVec3(0)));
     scene->addActor(*obj.rd.rigidDynamic);
 
     // assign UUID 
-    m_objects.emplace_back(obj); // store the object
+    // store the object
+    m_objects.emplace_back(obj); 
+    //all_objects.insert({ obj.id, &obj });
 
     // return the object i created
-    return PhysicsObject{ UUID, this }; // a copy
+    return PhysicsObject{ /*UUID*/ obj.id, this }; // a copy
 }
 
 void PhysxWorld::removeRigidbody(PhysicsObject obj)
@@ -225,6 +241,12 @@ void PhysxObject::destroy() {
 /*-----------------------------------------------------------------------------*/
 /*                               PhysxObject                                   */
 /*-----------------------------------------------------------------------------*/
+void PhysxObject::setMass(PxReal mass) {
+
+    if (rigidID == rigid::rdynamic)
+        rd.rigidDynamic->setMass(mass);
+}
+
 void PhysxObject::enableKinematic(bool kine) {
 
     if (rigidID == rigid::rdynamic)
@@ -242,6 +264,8 @@ void PhysxObject::enableGravity(bool gravity) {
 
 Material PhysicsObject::getMaterial() const {
 
+    // prob need change
+
     Material mat{};
 
     for (auto const& x : world->mat) {
@@ -258,12 +282,29 @@ Material PhysicsObject::getMaterial() const {
 
 PxVec3 PhysicsObject::getposition() const {
 
+    //for (auto const& x : world->all_objects) {
+    //    if (x.first == id) {
+    //
+    //        return PxVec3{ x.second->rd.rigidDynamic->getGlobalPose().p.x,
+    //                       x.second->rd.rigidDynamic->getGlobalPose().p.y,
+    //                       x.second->rd.rigidDynamic->getGlobalPose().p.z };
+    //    }
+    //}
+
+    // no have then return a default?
+
     return PxVec3{ world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.x,
                    world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.y,
                    world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.z };
 }
 
 void PhysicsObject::setposition(PxVec3 pos) {
+
+    //for (auto const& x : world->all_objects) {
+    //    if (x.first == id) {
+    //        x.second->rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
+    //    }
+    //}
 
     world->m_objects[id].rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
 }
@@ -290,6 +331,8 @@ PxPvd* PVD::createPvd(PxFoundation* foundation, const char* ip) {
     mPVD->connect(*transport, PxPvdInstrumentationFlag::eALL);
 
     return mPVD;
+
+    //mPVD->getTransport()->release();
 }
 
 void PVD::setupPvd(PxScene* scene) {

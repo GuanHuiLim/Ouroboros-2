@@ -6,19 +6,23 @@
 #include <map>
 //#include <glm/glm.hpp>
 
-#define PVD_DEBUGGER true
+#include "uuid.h"
+
+#define PVD_DEBUGGER false
 
 using namespace physx;
 
 class Collision;
 
-class RigidDynamic;
-class RigidStatic;
+//class RigidDynamic;
+//class RigidStatic;
+class PhysxWorld;
 class PVD;
-class PhysxObject;
-class PhysicsObject;
+struct PhysxObject;
+struct PhysicsObject;
 
 
+/*
 enum class shape_type { shape_box, shape_sphere, shape_capsule, shape_plane };
 
 class Shape {
@@ -40,7 +44,6 @@ public:
 
 
 };
-
 
 
 class EventCallBack : public PxSimulationEventCallback {
@@ -67,6 +70,7 @@ public:
         printf("CALLBACK: onAdvance\n");
     }
 };
+*/
 
 struct RigidDynamic {
 
@@ -172,17 +176,19 @@ private:
     friend class PhysicsObject;
 
     PxScene* scene;
-    std::map<int, PxMaterial*> mat; // later int change to UUID
+    std::map<phy_uuid::UUID, PxMaterial*> mat; // later int change to UUID
     PxVec3 gravity;
 
-    std::vector<PhysxObject> m_objects;
+    std::map</*phy_uuid::UUID*/int, PhysxObject*> all_objects; // store all the objects (lookups for keys / check if empty)
+
+    std::vector<PhysxObject> m_objects; // to iterate through for getting setting the data
 
 public:
 
     // SCENE
     PhysxWorld(PxVec3 gravity);
     ~PhysxWorld();
-    void updateScene();
+    void updateScene(float dt);
 
     // GRAVITY
     PxVec3 getGravity() const;
@@ -195,13 +201,14 @@ public:
     */
 
     // MATERIAL
-    int createMat(Material material);
-    void updateMat(int materialID, Material material);
-    void destroyMat(int materialID);
+    phy_uuid::UUID createMat(Material material);
+    void updateMat(phy_uuid::UUID materialID, Material material);
+    void destroyMat(phy_uuid::UUID materialID);
 
     // RIGIDBODY
     PhysicsObject createRigidbody();
     void removeRigidbody(PhysicsObject obj);
+    void destroyRigidbody(PhysicsObject obj);
 
 
     /*
@@ -223,9 +230,9 @@ public:
 // associated to each object in the physics world
 struct PhysxObject {
 
-    int id = -1;
+    int id = 0; //phy_uuid::UUID id = 0; // UUID
 
-    int matID = -1;
+    phy_uuid::UUID matID = 0;
     //Material mat;
 
     // ensure at least static or dynamic is init
@@ -248,9 +255,13 @@ struct PhysxObject {
     //            bool gravity, 
     //            bool kinematic);
 
-    void enableGravity(bool gravity);
 
+    // SETTERS
+    void enableGravity(bool gravity);
     void enableKinematic(bool kine);
+
+    void setMass(PxReal mass);
+
 };
 
 //class PhysxObject { // me store
@@ -292,7 +303,7 @@ struct PhysxObject {
 
 struct PhysicsObject { // you store
 
-    int id;
+    /*phy_uuid::UUID*/ int id;
     PhysxWorld* world;
 
     // functions...
@@ -301,8 +312,6 @@ struct PhysicsObject { // you store
     PxVec3 getposition() const;
 
     void setposition(PxVec3 pos);
-
-
 };
 
 

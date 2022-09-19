@@ -132,8 +132,8 @@ namespace oo
             auto pos = tf.GetPosition();
             phy.object.setposition({pos.x, pos.y, pos.z});
         });
-
-        m_physicsWorld.updateScene();
+        
+        m_physicsWorld.updateScene(timer::dt());
 
         m_world->for_each(query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
