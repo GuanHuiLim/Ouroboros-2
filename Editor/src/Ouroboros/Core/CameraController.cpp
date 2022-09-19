@@ -11,15 +11,15 @@ void CameraController::Update(float dt)
         return;
 
     // Poll input states
-    const bool left  = oo::input::IsKeyHeld(KEY_A);
-    const bool right = oo::input::IsKeyHeld(KEY_D);
-    const bool down  = oo::input::IsKeyHeld(KEY_S);
-    const bool up    = oo::input::IsKeyHeld(KEY_W);
-    const auto [deltax,deltay] = oo::input::GetMouseDelta();
-    const glm::vec2 mousedelta{ deltax,deltay };
+    const bool left  = oo::input::IsKeyHeld(KEY_D);
+    const bool right = oo::input::IsKeyHeld(KEY_A);
+    const bool down  = oo::input::IsKeyHeld(KEY_W);
+    const bool up    = oo::input::IsKeyHeld(KEY_S);
+    const auto [deltax, deltay] = oo::input::GetMouseDelta();
+    const glm::vec2 mousedelta{ deltax, deltay };
     const float wheelDelta = oo::input::GetMouseY();
 
-    const glm::vec3 amountToRotate = glm::vec3{ -mousedelta.y * m_Camera->rotationSpeed, mousedelta.x * m_Camera->rotationSpeed, 0.0f };
+    const glm::vec3 amountToRotate = glm::vec3{ mousedelta.y * m_Camera->rotationSpeed, -mousedelta.x * m_Camera->rotationSpeed, 0.0f };
     glm::vec3 amountToTranslate{ 0.0f, 0.0f, 0.0f };
 
     // Camera Movement

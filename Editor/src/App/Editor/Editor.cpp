@@ -33,6 +33,7 @@ Editor::Editor()
 	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
 
 	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
+	ImGuiManager::Create("Input Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_inputManager.Show(); });
 
 
 	//ImGuiManager::Create("##helper", true, ImGuiWindowFlags_None, [this] {this->helper.Popups(); });
@@ -97,10 +98,13 @@ void Editor::MenuBar()
 		}
 		if (ImGui::BeginMenu("Windows"))
 		{
-			if (ImGui::MenuItem("Scene Manager"))
+			if (ImGui::MenuItem("Scene Manager",0, ImGuiManager::GetItem("Scene Manager").m_enabled))
 			{
-
 				ImGuiManager::GetItem("Scene Manager").m_enabled = !ImGuiManager::GetItem("Scene Manager").m_enabled;
+			}
+			if (ImGui::MenuItem("Input Manager",0, ImGuiManager::GetItem("Input Manager").m_enabled))
+			{
+				ImGuiManager::GetItem("Input Manager").m_enabled = !ImGuiManager::GetItem("Input Manager").m_enabled;
 			}
 			ImGui::EndMenu();
 		}
@@ -162,6 +166,9 @@ void PopupHelperWindow::CloseProjectPopup()
 			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
 			if (eventAfterPrompt.nextAction)
 				eventAfterPrompt.nextAction();
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();

@@ -62,7 +62,7 @@ namespace oo
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
-        component.SetEulerAngles({ x, y, z });
+        component.SetRotation({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
@@ -82,7 +82,7 @@ namespace oo
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
-        component.SetGlobalAngle({ x, y, z });
+        component.SetGlobalRotation({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
