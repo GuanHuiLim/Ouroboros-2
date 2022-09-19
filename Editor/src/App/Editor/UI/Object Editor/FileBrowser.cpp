@@ -469,7 +469,7 @@ void FileBrowser::FileBehaviour(DirectoryInfo info)
 	if(ext.empty())
 		BuildDirectoryList(info.name.string());
 
-	OpenFileEvent e = info.name;
+	OpenFileEvent e(info.name);
 	OpenPromptEvent<OpenFileEvent> ope(e, 0);
 	oo::EventManager::Broadcast(&ope);
 }
