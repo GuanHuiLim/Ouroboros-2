@@ -52,6 +52,12 @@ namespace oo
 			  value("Down Arrow", input::KeyCode::DOWN),
 			  value("Up Arrow", input::KeyCode::UP)
 		);		 
+	registration::enumeration<input::MouseCode>("MouseCode")
+		(
+			value("Left Click", input::MouseCode::Button0),
+			value("Right Click", input::MouseCode::Button1),
+			value("Middle Click", input::MouseCode::Button2)
+		);
 	}
     void InputManager::LoadDefault()
     {
