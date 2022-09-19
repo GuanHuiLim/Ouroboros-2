@@ -81,7 +81,7 @@ namespace oo
 
             SDL_GetRelativeMouseState(&m_mouseXDelta, &m_mouseYDelta);
 
-            //int state = SDL_GameControllerEventState(SDL_QUERY);
+            int state = SDL_GameControllerEventState(SDL_QUERY);
 
             //Controller
             // If there is no controllers attached exit
@@ -91,7 +91,7 @@ namespace oo
                 memcpy(&m_uButtonStatesPrev, &m_uButtonStates, sizeof(Uint8) * (size_t)ControllerButtonCode::MAX);
 
                 // Update the controller SDL info
-                //SDL_GameControllerUpdate();
+                SDL_GameControllerUpdate();
 
                 // Obtain the current button values
                 for (size_t b = 0; b < static_cast<size_t>(ControllerButtonCode::MAX); ++b)
