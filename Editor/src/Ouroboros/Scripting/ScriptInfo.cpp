@@ -87,6 +87,8 @@ namespace oo
 
     ScriptInfo::ScriptInfo(ScriptClassInfo const& _classInfo) : classInfo(_classInfo)
     {
+        if (!classInfo.IsValid())
+            throw std::exception{ (std::string{ "(ScriptInfo) invalid class info: " } + _classInfo.ToString()).c_str() };
         std::vector<ScriptFieldInfo> fieldList = classInfo.GetScriptFieldInfoAll();
         for (int i = 0; i < fieldList.size(); ++i)
         {
@@ -196,6 +198,11 @@ namespace oo
             name_space = fullName.substr(0, separator);
             name = fullName.substr(separator);
         }
+    }
+
+    bool ScriptClassInfo::IsValid() const
+    {
+        return ScriptEngine::CheckClassExists("Scripting", name_space.c_str(), name.c_str());
     }
 
     std::vector<ScriptFieldInfo> const ScriptClassInfo::GetScriptFieldInfoAll() const

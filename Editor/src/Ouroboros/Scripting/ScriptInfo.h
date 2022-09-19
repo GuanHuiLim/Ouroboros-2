@@ -46,6 +46,8 @@ namespace oo
 
         ScriptClassInfo(std::string const& fullName);
 
+        bool IsValid() const;
+
         /*********************************************************************************//*!
         \brief      gets a list of the info of all public fields of the C# class
          
