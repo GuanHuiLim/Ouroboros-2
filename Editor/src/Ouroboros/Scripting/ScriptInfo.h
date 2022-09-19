@@ -30,8 +30,25 @@ namespace oo
 {
     struct ScriptFieldInfo
     {
+    public:
+        ScriptFieldInfo() = default;
+        ~ScriptFieldInfo() = default;
+
+        ScriptFieldInfo(std::string const& name, ScriptValue const& value)
+            : name{ name }, value{ value }, script{ nullptr }, scriptField{ nullptr } {}
+
+        ScriptValue TryGetRuntimeValue();
+        void TrySetRuntimeValue(ScriptValue const& newValue);
+
+        void SetScriptReference(MonoClassField* field, MonoObject* obj);
+
+    public:
         std::string name;
         ScriptValue value;
+
+    private:
+        MonoObject* script;
+        MonoClassField* scriptField;
     };
 
     struct ScriptClassInfo

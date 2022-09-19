@@ -82,6 +82,35 @@ namespace oo
     }
 
     /*-----------------------------------------------------------------------------*/
+    /* ScriptFieldInfo                                                             */
+    /*-----------------------------------------------------------------------------*/
+
+    ScriptValue ScriptFieldInfo::TryGetRuntimeValue()
+    {
+        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+            return value;
+        return ScriptValue::GetFieldValue(script, scriptField, value);
+    }
+
+    void ScriptFieldInfo::TrySetRuntimeValue(ScriptValue const& newValue)
+    {
+        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+        {
+            value = newValue;
+        }
+        else
+        {
+            ScriptValue::SetFieldValue(script, scriptField, newValue);
+        }
+    }
+
+    void ScriptFieldInfo::SetScriptReference(MonoClassField* field, MonoObject* obj)
+    {
+        script = obj;
+        scriptField = field;
+    }
+
+    /*-----------------------------------------------------------------------------*/
     /* ScriptInfo                                                                  */
     /*-----------------------------------------------------------------------------*/
 
