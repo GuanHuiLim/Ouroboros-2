@@ -209,6 +209,6 @@ namespace oo
     class AssetNotFoundException : public std::exception
     {
     public:
-        AssetNotFoundException(const std::string& what = "") : std::exception(what.c_str()) {}
+        AssetNotFoundException(const std::string& what = "Asset Not Found") : std::exception(what.c_str()) {}
     };
 }
