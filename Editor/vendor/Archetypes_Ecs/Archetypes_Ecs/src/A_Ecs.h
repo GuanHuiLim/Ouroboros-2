@@ -806,6 +806,7 @@ namespace Ecs::internal
 	void entity_chunk_iterate(DataChunk* chnk, Func&& function) {
 		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
 #ifndef NDEBUG
+		//function arguements are incorrect, check if you are using ComponentType&
 		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
 #endif
 
@@ -827,6 +828,7 @@ namespace Ecs::internal
 	{
 		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
 #ifndef NDEBUG
+		//function arguements are incorrect, check if you are using ComponentType&
 		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
 #endif
 
