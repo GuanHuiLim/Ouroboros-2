@@ -187,6 +187,21 @@ namespace oo
         return classList;
     }
 
+    std::string const ScriptEngine::GetClassInfoNameSpace(MonoClass* klass)
+    {
+        return mono_class_get_namespace(klass);
+    }
+    std::string const ScriptEngine::GetClassInfoName(MonoClass* klass)
+    {
+        std::string name = mono_class_get_name(klass);
+        MonoClass* nestingKlass = mono_class_get_nesting_type(klass);
+        while (nestingKlass != nullptr)
+        {
+            name = std::string{ mono_class_get_name(nestingKlass) } + "/" + name;
+            nestingKlass = mono_class_get_nesting_type(nestingKlass);
+        }
+        return name;
+    }
 
     MonoMethod* ScriptEngine::GetFunction(MonoClass* klass, const char* functionName, int paramCount)
     {

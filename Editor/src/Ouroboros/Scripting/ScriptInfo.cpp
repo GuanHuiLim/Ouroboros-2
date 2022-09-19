@@ -200,6 +200,11 @@ namespace oo
         }
     }
 
+    ScriptClassInfo::ScriptClassInfo(MonoClass* klass)
+        : name_space{ ScriptEngine::GetClassInfoNameSpace(klass) }, name{ ScriptEngine::GetClassInfoName(klass) }
+    {
+    }
+
     bool ScriptClassInfo::IsValid() const
     {
         return ScriptEngine::CheckClassExists("Scripting", name_space.c_str(), name.c_str());
@@ -275,7 +280,7 @@ namespace oo
             std::vector<ScriptFieldInfo> paramInfoList;
             if (GetFunctionParamInfo(paramInfoList, method, maxParamCount))
             {
-                functionList.emplace_back(ScriptValue::function_info{ mono_class_get_namespace(klass), mono_class_get_name(klass), functionName, paramInfoList });
+                functionList.emplace_back(ScriptValue::function_info{ ScriptEngine::GetClassInfoNameSpace(klass), ScriptEngine::GetClassInfoName(klass), functionName, paramInfoList });
             }
         }
         return functionList;
@@ -293,8 +298,8 @@ namespace oo
         for (unsigned int i = 0; i < genericsList.size(); ++i)
         {
             MonoClass* genericClass = mono_type_get_class(genericsList[i]);
-            genericNameSpace = mono_class_get_namespace(genericClass);
-            genericName = mono_class_get_name(genericClass);
+            genericNameSpace = ScriptEngine::GetClassInfoNameSpace(genericClass);
+            genericName = ScriptEngine::GetClassInfoName(genericClass);
             resultList.push_back({ genericNameSpace, genericName });
         }
         return resultList;

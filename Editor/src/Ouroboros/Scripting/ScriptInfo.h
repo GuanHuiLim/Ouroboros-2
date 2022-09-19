@@ -46,6 +46,8 @@ namespace oo
 
         ScriptClassInfo(std::string const& fullName);
 
+        ScriptClassInfo(MonoClass* klass);
+
         bool IsValid() const;
 
         /*********************************************************************************//*!

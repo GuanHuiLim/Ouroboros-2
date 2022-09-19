@@ -89,7 +89,7 @@ namespace oo
             std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour);
             for (MonoClass* klass : classList)
             {
-                s_ScriptList.emplace_back(ScriptClassInfo{ mono_class_get_namespace(klass), mono_class_get_name(klass) });
+                s_ScriptList.emplace_back(ScriptClassInfo{ klass });
             }
         }
 
