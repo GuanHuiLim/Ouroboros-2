@@ -44,18 +44,21 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
     // For GPU Scene
     inline static VkDescriptorSetLayout gpuscene;
     // For UBO with the corresponding swap chain image
-    inline static VkDescriptorSetLayout uniform;
+    inline static VkDescriptorSetLayout FrameUniform;
     // For unbounded array of texture descriptors, used in bindless approach
     inline static VkDescriptorSetLayout bindless;
 	// For lighting
-	inline static VkDescriptorSetLayout DeferredComposition;
+	inline static VkDescriptorSetLayout DeferredLightingComposition;
 	// 
 	inline static VkDescriptorSetLayout ForwardDecal;
 };
 
+// Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
 struct PSOLayoutDB
 {
-	inline static VkPipelineLayout indirectPSOLayout;
+	inline static VkPipelineLayout defaultPSOLayout;
+	inline static VkPipelineLayout deferredLightingCompositionPSOLayout;
+	inline static VkPipelineLayout forwardDecalPSOLayout;
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -67,8 +70,23 @@ namespace CB
 		glm::mat4 projection{ 1.0f };
 		glm::mat4 view{ 1.0f };
 		glm::mat4 viewProjection{ 1.0f };
+		glm::mat4 inverseViewProjection{ 1.0f };
 		glm::vec4 cameraPosition{ 1.0f };
 		glm::vec4 renderTimer{ 0.0f, 0.0f, 0.0f, 0.0f };
+
+		// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
+		// Bind this to every single shader possible.
+		// Remove this upon shipping the final product.
+		glm::vec4 vector4_values0;
+		glm::vec4 vector4_values1;
+		glm::vec4 vector4_values2;
+		glm::vec4 vector4_values3;
+		glm::vec4 vector4_values4;
+		glm::vec4 vector4_values5;
+		glm::vec4 vector4_values6;
+		glm::vec4 vector4_values7;
+		glm::vec4 vector4_values8;
+		glm::vec4 vector4_values9;
 	};
 
     struct LightUBO
@@ -100,12 +118,14 @@ public:
 	void Init(const oGFX::SetupInfo& setupSpecs, Window& window);
 
 	void CreateInstance(const oGFX::SetupInfo& setupSpecs);
+	void CreateDebugCallback();
+	void DestroyDebugMessenger();
 	void CreateSurface(const oGFX::SetupInfo& setupSpecs, Window& window);
 	void AcquirePhysicalDevice(const oGFX::SetupInfo& setupSpecs);
 	void CreateLogicalDevice(const oGFX::SetupInfo& setupSpecs);
 	void SetupSwapchain();
 	void CreateDefaultRenderpass();
-	void CreateDescriptorSetLayout();
+	void CreateDefaultDescriptorSetLayout();
 
 	void CreateDefaultPSOLayouts();
 	//void CreateDepthBufferImage();
@@ -124,6 +144,7 @@ public:
 	VulkanSwapchain m_swapchain{};
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	uint32_t swapchainIdx{ 0 };
+	VkDebugUtilsMessengerEXT m_debugMessenger{};
 
 	//---------- DescriptorSet ----------
 
@@ -165,6 +186,8 @@ public:
 	void DebugGUIcalls();
 	void DrawGUI();
 	void DestroyImGUI();
+	void RestartImgui();
+	void ImguiSoftDestroy();
 
 	//---------- Debug Draw Interface ----------
 
@@ -206,7 +229,7 @@ public:
     TextureInfo GetTextureInfo(uint32_t handle);
 
     void InitDebugBuffers();
-    void UploadDebugDrawBuffers();
+    bool UploadDebugDrawBuffers();
 
 	// This naming is rather confusing... VertexBufferObject but it contains an index buffer inside?
     struct VertexBufferObject
@@ -224,9 +247,8 @@ public:
     std::vector<oGFX::DebugVertex> g_DebugDrawVertexBufferCPU;
     std::vector<uint32_t> g_DebugDrawIndexBufferCPU;
 
-	Model* LoadModelFromFile(const std::string& file);
-	Model* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex,std::vector<uint32_t>& indices, gfxModel* model);
-	void SetMeshTextures(uint32_t modelID,uint32_t alb, uint32_t norm, uint32_t occlu, uint32_t rough);
+	ModelData* LoadModelFromFile(const std::string& file);
+	ModelData* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex,std::vector<uint32_t>& indices, gfxModel* model);
 
 	bool ResizeSwapchain();
 
@@ -271,7 +293,7 @@ public:
 	 std::vector<VkBuffer> vpUniformBuffer{};
 	 std::vector<VkDeviceMemory> vpUniformBufferMemory{};
 
-	 DescriptorAllocator DescAlloc;
+	 std::vector<DescriptorAllocator> descAllocs;
 	 DescriptorLayoutCache DescLayoutCache;
 
 	 FramebufferCache fbCache;
@@ -290,12 +312,27 @@ public:
 	uint64_t uboDynamicAlignment;
 	uint32_t numCameras;
 
-    
-
 	bool resizeSwapchain = false;
 	bool m_prepared = false;
 
 	Camera camera;
+
+	// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
+	// Bind this to every single shader possible.
+	// Remove this upon shipping the final product.
+	struct ShaderDebugValues
+	{
+		glm::vec4 vector4_values0{};
+		glm::vec4 vector4_values1{};
+		glm::vec4 vector4_values2{};
+		glm::vec4 vector4_values3{};
+		glm::vec4 vector4_values4{};
+		glm::vec4 vector4_values5{};
+		glm::vec4 vector4_values6{};
+		glm::vec4 vector4_values7{};
+		glm::vec4 vector4_values8{};
+		glm::vec4 vector4_values9{};
+	}m_ShaderDebugValues;
 
 public:
 	

@@ -21,5 +21,6 @@
 #include "glm/gtx/normal.hpp"
 #include "glm/gtx/color_encoding.hpp"
 #include "glm/gtx/color_space_YCoCg.hpp"
+#include "glm/gtx/matrix_decompose.hpp" // for testing..
 #include "glm/gtc/noise.hpp"
 #include "glm/gtc/random.hpp"

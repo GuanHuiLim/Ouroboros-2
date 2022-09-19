@@ -79,7 +79,6 @@ std::vector<std::string> MeshContainer::LoadMaterials(const aiScene *scene)
 			aiString path;
 			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path)== AI_SUCCESS)
 			{
-				// C:\users\jtk\documents\thing.obj
 				// Cut off any directory information already present
 				std::string str = std::string(path.data);
 				size_t idx = str.rfind("\\");
@@ -88,51 +87,6 @@ std::vector<std::string> MeshContainer::LoadMaterials(const aiScene *scene)
 				textureList[i] = filename;
 			}
 		}
-		//if (material->GetTextureCount(aiTextureType_NORMALS))
-		//{
-		//	//get path of the texture file
-		//	aiString path;
-		//	if (material->GetTexture(aiTextureType_NORMALS, 0, &path)== AI_SUCCESS)
-		//	{
-		//		// C:\users\jtk\documents\thing.obj
-		//		// Cut off any directory information already present
-		//		std::string str = std::string(path.data);
-		//		size_t idx = str.rfind("\\");
-		//		std::string filename = str.substr(idx + 1);
-		//
-		//		textureList[i] = filename;
-		//	}
-		//}
-		//if (material->GetTextureCount(aiTextureType_SPECULAR))
-		//{
-		//	//get path of the texture file
-		//	aiString path;
-		//	if (material->GetTexture(aiTextureType_SPECULAR, 0, &path)== AI_SUCCESS)
-		//	{
-		//		// C:\users\jtk\documents\thing.obj
-		//		// Cut off any directory information already present
-		//		std::string str = std::string(path.data);
-		//		size_t idx = str.rfind("\\");
-		//		std::string filename = str.substr(idx + 1);
-		//
-		//		textureList[i] = filename;
-		//	}
-		//}
-		//if (material->GetTextureCount(aiTextureType_UNKNOWN))
-		//{
-		//	//get path of the texture file
-		//	aiString path;
-		//	if (material->GetTexture(aiTextureType_UNKNOWN, 0, &path)== AI_SUCCESS)
-		//	{
-		//		// C:\users\jtk\documents\thing.obj
-		//		// Cut off any directory information already present
-		//		std::string str = std::string(path.data);
-		//		size_t idx = str.rfind("\\");
-		//		std::string filename = str.substr(idx + 1);
-		//
-		//		textureList[i] = filename;
-		//	}
-		//}
 	}
 	return textureList;
 }
@@ -212,6 +166,9 @@ void gfxModel::destroy(VkDevice device)
 	vkFreeMemory(device, vertices.memory, nullptr);
 	vkDestroyBuffer(device, indices.buffer, nullptr);
 	vkFreeMemory(device, indices.memory, nullptr);
+
+	delete mesh;
+
 	for (auto& node : nodes)
 	{
 		delete node;
@@ -220,11 +177,10 @@ void gfxModel::destroy(VkDevice device)
 }
 
 void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, uint32_t nodeIndex,
-	Model& cpuModel)
+	ModelData& cpuModel)
 {
 	Node* newNode = new Node();
 	newNode->parent = parent;
-	newNode->index = nodeIndex;
 	newNode->name = node.mName.C_Str();
 
 	if (node.mNumChildren > 0)
@@ -240,7 +196,7 @@ void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, u
 		for (size_t i = 0; i < node.mNumMeshes; i++)
 		{
 			aiMesh* aimesh = scene->mMeshes[node.mMeshes[i]];
-			newNode->meshes.push_back( processMesh(aimesh, scene, cpuModel.vertices, cpuModel.indices));
+			//newNode->meshes.push_back( processMesh(aimesh, scene, cpuModel.vertices, cpuModel.indices));
 
 			if (scene->HasAnimations() &&aimesh->HasBones())
 			{
@@ -281,25 +237,27 @@ void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, u
 
 void offsetUpdateHelper(Node* parent, uint32_t& meshcount, uint32_t idxOffset, uint32_t vertOffset)
 {
-	for (auto& node : parent->children)
-	{
-		offsetUpdateHelper(node, meshcount, idxOffset, vertOffset);
-	}
-	for (auto& mesh :parent->meshes)
-	{
-		mesh->indicesOffset += idxOffset;
-		mesh->vertexOffset += vertOffset;
-
-		++meshcount;
-	}		
+	//for (auto& node : parent->children)
+	//{
+	//	offsetUpdateHelper(node, meshcount, idxOffset, vertOffset);
+	//}
+	//for (auto& mesh :parent->meshes)
+	//{
+	//	mesh->indicesOffset += idxOffset;
+	//	mesh->vertexOffset += vertOffset;
+	//
+	//	++meshcount;
+	//}		
 }
 
 void gfxModel::updateOffsets(uint32_t idxOffset, uint32_t vertOffset)
 {
-	for (auto& node : nodes)
-	{
-		offsetUpdateHelper(node,this->meshCount, idxOffset, vertOffset);
-	}
+	mesh->indicesOffset += idxOffset;
+	mesh->vertexOffset += vertOffset;
+	//for (auto& node : nodes)
+	//{
+	//	offsetUpdateHelper(node,this->meshCount, idxOffset, vertOffset);
+	//}
 }
 
 oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices)
@@ -309,7 +267,7 @@ oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, std::vec
 	mesh->indicesOffset = static_cast<uint32_t>(indices.size());
 	mesh->vertexCount += aimesh->mNumVertices;
 	vertices.reserve(vertices.size() + aimesh->mNumVertices);
-
+	
 	for (size_t i = 0; i < aimesh->mNumVertices; i++)
 	{
 		oGFX::Vertex vertex;
@@ -357,3 +315,72 @@ oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, std::vec
 
 	return mesh;
 }
+
+void gfxModel::loadNode(const aiScene* scene, const aiNode& node, Node* targetparent, ModelData& cpuModel, glm::mat4 accMat)
+{
+	//glm::mat4 transform;
+	//// if node has meshes, create a new scene object for it
+	//if( node.mNumMeshes > 0)
+	//{
+	//	SceneObjekt newObject = new SceneObject;
+	//	targetParent.addChild( newObject);
+	//	// copy the meshes
+	//	CopyMeshes( node, newObject);
+	//	// the new object is the parent for all child nodes
+	//	parent = newObject;
+	//	transform.SetUnity();
+	//} else
+	//{
+	//	// if no meshes, skip the node, but keep its transformation
+	//	parent = targetparent;
+	//	transform = aiMat4_to_glm(node.mTransformation) * accMat;
+	//}
+	//// continue for all child nodes
+	//for( all node.mChildren)
+	//	CopyNodesWithMeshes( node.mChildren[a], parent, transform);
+}
+
+void ModelData::ModelSceneLoad(const aiScene* scene, 
+	const aiNode& node,
+	Node* parent,
+	const glm::mat4 accMat)
+{
+	std::vector<Node*> curNodes;
+	auto xform = aiMat4_to_glm(node.mTransformation) * accMat;
+	Node* targetParent = parent;
+
+	if (parent == nullptr)
+	{
+		sceneInfo = new Node();
+		targetParent = sceneInfo;
+		targetParent->name = "MdlSceneRoot";
+	}
+	if (node.mNumMeshes > 0)
+	{
+		this->sceneMeshCount += node.mNumMeshes;
+		curNodes.resize(node.mNumMeshes);
+		for (size_t i = 0; i < node.mNumMeshes; i++)
+		{
+			curNodes[i] = new Node();
+			curNodes[i]->parent = parent;
+			curNodes[i]->meshRef = node.mMeshes[i];
+			curNodes[i]->name = node.mName.C_Str();
+			curNodes[i]->transform = xform;
+		}
+		// setup nodes
+		parent->children.insert(std::end(parent->children),std::begin(curNodes), std::end(curNodes));	
+	}		
+	for (size_t i = 0; i < node.mNumChildren; i++)
+	{
+		ModelSceneLoad(scene, *node.mChildren[i], targetParent, xform);
+	}
+}
+
+ModelData::~ModelData()
+{
+	delete sceneInfo;
+}	
+	
+
+	
+

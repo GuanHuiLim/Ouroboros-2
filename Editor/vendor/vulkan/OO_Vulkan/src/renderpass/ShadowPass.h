@@ -16,6 +16,7 @@ struct ShadowPass : public GfxRenderpass
 	void Draw() override;
 	void Shutdown() override;
 
+	bool SetupDependencies() override;
 	void CreatePSO() override;
 	
 	vkutils::Texture2D shadow_depth{};
