@@ -9,6 +9,8 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/mono-config.h>
+#include <mono/metadata/mono-debug.h>
 
 namespace oo
 {
@@ -31,6 +33,8 @@ namespace oo
         static MonoClass* GetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static MonoClass* TryGetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static std::vector<MonoClass*> const GetClassesByBaseClass(const char* aLibrary, MonoClass* baseClass);
+        static std::string const GetClassInfoNameSpace(MonoClass* klass);
+        static std::string const GetClassInfoName(MonoClass* klass);
         static MonoMethod* GetFunction(MonoClass* klass, const char* functionName, int paramCount = 0);
         static MonoMethod* GetFunction(MonoObject* obj, const char* functionName, int paramCount = 0);
 

@@ -8,5 +8,5 @@ public:
 	void Show();
 private:
 	bool DrawInputTypeUI(int& curr);
-	bool DrawKeyInputUI(const std::string& name,int& curr);
+	bool DrawKeyInputUI(const std::string& name,int& curr,bool mouse);
 };

@@ -19,7 +19,7 @@ namespace oo
         poolList.clear();
         for (MonoClass* klass : classList)
         {
-            std::string key = std::string{ mono_class_get_namespace(klass) } + "." + mono_class_get_name(klass);
+            std::string key = std::string{ ScriptEngine::GetClassInfoNameSpace(klass) } + "." + ScriptEngine::GetClassInfoName(klass);
             poolList.emplace_back();
             indexMap.emplace(key, poolList.size() - 1UL);
         }
@@ -43,7 +43,7 @@ namespace oo
     ScriptDatabase::IntPtr ScriptDatabase::Store(UUID id, MonoObject* object)
     {
         MonoClass* klass = mono_object_get_class(object);
-        InstancePool& scriptPool = GetInstancePool(mono_class_get_namespace(klass), mono_class_get_name(klass));
+        InstancePool& scriptPool = GetInstancePool(ScriptEngine::GetClassInfoNameSpace(klass).c_str(), ScriptEngine::GetClassInfoName(klass).c_str());
         auto search = scriptPool.find(id);
         if (search != scriptPool.end())
             return search->second.handle;

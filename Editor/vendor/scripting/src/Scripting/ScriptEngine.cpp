@@ -42,6 +42,8 @@ namespace oo
         if (mono_domain_get() == nullptr)
         {
             mono_set_dirs(".", "");
+            mono_config_parse(nullptr);
+            mono_debug_init(MONO_DEBUG_FORMAT_MONO);
             mono_jit_init("root");
             mono_thread_set_main(mono_thread_current());
             mono_assemblies_init();
@@ -185,6 +187,21 @@ namespace oo
         return classList;
     }
 
+    std::string const ScriptEngine::GetClassInfoNameSpace(MonoClass* klass)
+    {
+        return mono_class_get_namespace(klass);
+    }
+    std::string const ScriptEngine::GetClassInfoName(MonoClass* klass)
+    {
+        std::string name = mono_class_get_name(klass);
+        MonoClass* nestingKlass = mono_class_get_nesting_type(klass);
+        while (nestingKlass != nullptr)
+        {
+            name = std::string{ mono_class_get_name(nestingKlass) } + "/" + name;
+            nestingKlass = mono_class_get_nesting_type(nestingKlass);
+        }
+        return name;
+    }
 
     MonoMethod* ScriptEngine::GetFunction(MonoClass* klass, const char* functionName, int paramCount)
     {
