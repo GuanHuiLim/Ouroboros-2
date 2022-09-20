@@ -545,22 +545,27 @@ void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptCompone
 	
 	for (auto iter = val.MemberBegin(); iter != val.MemberEnd(); ++iter)
 	{
-		std::string script_name = iter->name.GetString();
-		size_t idx = script_name.find_last_of('.');
-		oo::ScriptClassInfo sci();
-		auto& scriptInfo = (idx == std::string::npos)?
-			scriptcomponent.AddScriptInfo(oo::ScriptClassInfo("", script_name))
-			:scriptcomponent.AddScriptInfo(oo::ScriptClassInfo(script_name.substr(0, idx), script_name.substr(idx)));
-		
-		for (auto classInfoIter = iter->value.MemberBegin(); classInfoIter != iter->value.MemberEnd(); ++classInfoIter)
-		{
-			auto scriptfieldIter = scriptInfo.fieldMap.find(classInfoIter->name.GetString());
-			auto type = scriptfieldIter->second.value.GetValueType();
-			auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
-			if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
-				continue;
-			sfiLoadIter->second(std::move(classInfoIter->value), scriptfieldIter->second);
-		}
+        try
+        {
+            std::string script_name = iter->name.GetString();
+            auto& scriptInfo = scriptcomponent.AddScriptInfo(oo::ScriptClassInfo{ script_name });
+
+            for (auto classInfoIter = iter->value.MemberBegin(); classInfoIter != iter->value.MemberEnd(); ++classInfoIter)
+            {
+                auto scriptfieldIter = scriptInfo.fieldMap.find(classInfoIter->name.GetString());
+                if (scriptfieldIter == scriptInfo.fieldMap.end())
+                    continue;
+                auto type = scriptfieldIter->second.value.GetValueType();
+                auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
+                if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
+                    continue;
+                sfiLoadIter->second(std::move(classInfoIter->value), scriptfieldIter->second);
+            }
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR("{0} (DON'T SAVE OR SCRIPTS WILL BE DELETED FROM GAMEOBJECTS)", e.what());
+        }
 	}
 }
 

@@ -155,102 +155,104 @@ void Project::UpdateScriptingFiles()
         LOG_TRACE("ScriptCore.dll added");
     }
 
-    // csproj already exists, do nothing
-    if (std::filesystem::exists(GetScriptModulePath()))
-        return;
-
-    // csproj doesn't exist, create csproj and sln
-
-    // generate VS C# project
-    std::ofstream vsProj(GetScriptModulePath());
-    if (!vsProj)
-        return;
-    vsProj << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
-    vsProj << "<Project ToolsVersion=\"15.0\" DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">" << std::endl;
-    vsProj << "  <Import Project=\"$(MSBuildExtensionsPath)\\$(MSBuildToolsVersion)\\Microsoft.Common.props\" Condition=\"Exists('$(MSBuildExtensionsPath)\\$(MSBuildToolsVersion)\\Microsoft.Common.props')\" />" << std::endl;
-    vsProj << "  <PropertyGroup>" << std::endl;
-    vsProj << "    <Configuration Condition=\" '$(Configuration)' == '' \">Debug OpenGL</Configuration>" << std::endl;
-    vsProj << "    <Platform Condition=\" '$(Platform)' == '' \">x64</Platform>" << std::endl;
-    vsProj << "    <ProjectGuid>{}</ProjectGuid>" << std::endl;
-    vsProj << "    <OutputType>Library</OutputType>" << std::endl;
-    vsProj << "    <AppDesignerFolder>Properties</AppDesignerFolder>" << std::endl;
-    vsProj << "    <RootNamespace>Scripting</RootNamespace>" << std::endl;
-    vsProj << "    <AssemblyName>Scripting</AssemblyName>" << std::endl;
-    vsProj << "    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>" << std::endl;
-    vsProj << "    <FileAlignment>512</FileAlignment>" << std::endl;
-    vsProj << "    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>" << std::endl;
-    vsProj << "  </PropertyGroup>" << std::endl;
-    vsProj << "    <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Debug OpenGL|x64' \">" << std::endl;
-    vsProj << "    <PlatformTarget>x64</PlatformTarget>" << std::endl;
-    vsProj << "    <DebugSymbols>true</DebugSymbols>" << std::endl;
-    vsProj << "    <DebugType>pdbonly</DebugType>" << std::endl;
-    vsProj << "    <Optimize>false</Optimize>" << std::endl;
-    vsProj << "    <OutputPath>bin\\Debug\\</OutputPath>" << std::endl;
-    vsProj << "    <DefineConstants></DefineConstants>" << std::endl;
-    vsProj << "    <ErrorReport>prompt</ErrorReport>" << std::endl;
-    vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
-    vsProj << "  </PropertyGroup>" << std::endl;
-    vsProj << "  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Production OpenGL|x64' \">" << std::endl;
-    vsProj << "    <DebugType>pdbonly</DebugType>" << std::endl;
-    vsProj << "    <Optimize>true</Optimize>" << std::endl;
-    vsProj << "    <OutputPath>bin\\Production\\</OutputPath>" << std::endl;
-    vsProj << "    <DefineConstants>TRACE</DefineConstants>" << std::endl;
-    vsProj << "    <ErrorReport>prompt</ErrorReport>" << std::endl;
-    vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
-    vsProj << "  </PropertyGroup>" << std::endl;
-    vsProj << "  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Release OpenGL|x64' \">" << std::endl;
-    vsProj << "    <DebugType>pdbonly</DebugType>" << std::endl;
-    vsProj << "    <Optimize>true</Optimize>" << std::endl;
-    vsProj << "    <OutputPath>bin\\Release\\</OutputPath>" << std::endl;
-    vsProj << "    <DefineConstants>TRACE</DefineConstants>" << std::endl;
-    vsProj << "    <ErrorReport>prompt</ErrorReport>" << std::endl;
-    vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
-    vsProj << "  </PropertyGroup>" << std::endl;
-    vsProj << "  <ItemGroup>" << std::endl;
-    vsProj << "    <Reference Include=\"System\" />" << std::endl;
-    vsProj << "    <Reference Include=\"System.Numerics\" />" << std::endl;
-    vsProj << "    <Reference Include=\"Library\\ScriptCore.dll\" />" << std::endl;
-    vsProj << "  </ItemGroup>" << std::endl;
-    vsProj << "  <ItemGroup>" << std::endl;
-    vsProj << "    <Folder Include=\"Scripts\" />" << std::endl;
-    vsProj << "    <Compile Include=\"Scripts\\**\\*.cs\" />" << std::endl;
-    vsProj << "  </ItemGroup>" << std::endl;
-    vsProj << "  <Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />" << std::endl;
-    vsProj << "</Project>" << std::endl;
-    vsProj.close();
-
-    // generate VS solution
+    // csproj doesn't exist, create csproj
+    if (!std::filesystem::exists(GetScriptModulePath()))
+    {
+        // generate VS C# project
+        std::ofstream vsProj(GetScriptModulePath());
+        if (!vsProj)
+            return;
+        vsProj << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
+        vsProj << "<Project ToolsVersion=\"15.0\" DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">" << std::endl;
+        vsProj << "  <Import Project=\"$(MSBuildExtensionsPath)\\$(MSBuildToolsVersion)\\Microsoft.Common.props\" Condition=\"Exists('$(MSBuildExtensionsPath)\\$(MSBuildToolsVersion)\\Microsoft.Common.props')\" />" << std::endl;
+        vsProj << "  <PropertyGroup>" << std::endl;
+        vsProj << "    <Configuration Condition=\" '$(Configuration)' == '' \">Debug OpenGL</Configuration>" << std::endl;
+        vsProj << "    <Platform Condition=\" '$(Platform)' == '' \">x64</Platform>" << std::endl;
+        vsProj << "    <ProjectGuid>{}</ProjectGuid>" << std::endl;
+        vsProj << "    <OutputType>Library</OutputType>" << std::endl;
+        vsProj << "    <AppDesignerFolder>Properties</AppDesignerFolder>" << std::endl;
+        vsProj << "    <RootNamespace>Scripting</RootNamespace>" << std::endl;
+        vsProj << "    <AssemblyName>Scripting</AssemblyName>" << std::endl;
+        vsProj << "    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>" << std::endl;
+        vsProj << "    <FileAlignment>512</FileAlignment>" << std::endl;
+        vsProj << "    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>" << std::endl;
+        vsProj << "  </PropertyGroup>" << std::endl;
+        vsProj << "    <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Debug OpenGL|x64' \">" << std::endl;
+        vsProj << "    <PlatformTarget>x64</PlatformTarget>" << std::endl;
+        vsProj << "    <DebugSymbols>true</DebugSymbols>" << std::endl;
+        vsProj << "    <DebugType>portable</DebugType>" << std::endl;
+        vsProj << "    <Optimize>false</Optimize>" << std::endl;
+        vsProj << "    <OutputPath>bin\\Debug\\</OutputPath>" << std::endl;
+        vsProj << "    <DefineConstants></DefineConstants>" << std::endl;
+        vsProj << "    <ErrorReport>prompt</ErrorReport>" << std::endl;
+        vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
+        vsProj << "  </PropertyGroup>" << std::endl;
+        vsProj << "  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Production OpenGL|x64' \">" << std::endl;
+        vsProj << "    <DebugType>portable</DebugType>" << std::endl;
+        vsProj << "    <Optimize>true</Optimize>" << std::endl;
+        vsProj << "    <OutputPath>bin\\Production\\</OutputPath>" << std::endl;
+        vsProj << "    <DefineConstants>TRACE</DefineConstants>" << std::endl;
+        vsProj << "    <ErrorReport>prompt</ErrorReport>" << std::endl;
+        vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
+        vsProj << "  </PropertyGroup>" << std::endl;
+        vsProj << "  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == 'Release OpenGL|x64' \">" << std::endl;
+        vsProj << "    <DebugType>portable</DebugType>" << std::endl;
+        vsProj << "    <Optimize>true</Optimize>" << std::endl;
+        vsProj << "    <OutputPath>bin\\Release\\</OutputPath>" << std::endl;
+        vsProj << "    <DefineConstants>TRACE</DefineConstants>" << std::endl;
+        vsProj << "    <ErrorReport>prompt</ErrorReport>" << std::endl;
+        vsProj << "    <WarningLevel>4</WarningLevel>" << std::endl;
+        vsProj << "  </PropertyGroup>" << std::endl;
+        vsProj << "  <ItemGroup>" << std::endl;
+        vsProj << "    <Reference Include=\"System\" />" << std::endl;
+        vsProj << "    <Reference Include=\"System.Numerics\" />" << std::endl;
+        vsProj << "    <Reference Include=\"Library\\ScriptCore.dll\" />" << std::endl;
+        vsProj << "  </ItemGroup>" << std::endl;
+        vsProj << "  <ItemGroup>" << std::endl;
+        vsProj << "    <Folder Include=\"Scripts\" />" << std::endl;
+        vsProj << "    <Compile Include=\"Scripts\\**\\*.cs\" />" << std::endl;
+        vsProj << "  </ItemGroup>" << std::endl;
+        vsProj << "  <Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />" << std::endl;
+        vsProj << "</Project>" << std::endl;
+        vsProj.close();
+    }
+    
     static std::string projectTypeID = "FAE04EC0-301F-11D3-BF4B-00C04F79EFBC"; // DO NOT CHANGE, fixed type id that indicates the project is C#
-
-    std::ofstream vsSln(GetProjectFolder().string() + "/" + GetProjectFolder().filename().string() + ".sln");
-    if (!vsSln)
-        return;
-    vsSln << "Microsoft Visual Studio Solution File, Format Version 12.00" << std::endl;
-    vsSln << "# Visual Studio Version 16" << std::endl;
-    vsSln << "VisualStudioVersion = 16.0.30907.101" << std::endl;
-    vsSln << "MinimumVisualStudioVersion = 10.0.40219.1" << std::endl;
-    vsSln << "Project(\"{" << projectTypeID << "}\") = \"Scripting\", \"Scripting.csproj\", \"{}\"" << std::endl;
-    vsSln << "EndProject" << std::endl;
-    vsSln << "Global" << std::endl;
-    vsSln << "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution" << std::endl;
-    vsSln << "\t\tDebug|OpenGL = Debug|OpenGL" << std::endl;
-    vsSln << "\t\tProduction|OpenGL = Production|OpenGL" << std::endl;
-    vsSln << "\t\tRelease|OpenGL = Release|OpenGL" << std::endl;
-    vsSln << "\tEndGlobalSection" << std::endl;
-    vsSln << "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution" << std::endl;
-    vsSln << "\t{}.Debug|OpenGL.ActiveCfg = Debug OpenGL|x64" << std::endl;
-    vsSln << "\t{}.Debug|OpenGL.Build.0 = Debug OpenGL|x64" << std::endl;
-    vsSln << "\t{}.Production|OpenGL.ActiveCfg = Production OpenGL|x64" << std::endl;
-    vsSln << "\t{}.Production|OpenGL.Build.0 = Production OpenGL|x64" << std::endl;
-    vsSln << "\t{}.Release|OpenGL.ActiveCfg = Release OpenGL|x64" << std::endl;
-    vsSln << "\t{}.Release|OpenGL.Build.0 = Release OpenGL|x64" << std::endl;
-    vsSln << "\tEndGlobalSection" << std::endl;
-    vsSln << "\tGlobalSection(SolutionProperties) = preSolution" << std::endl;
-    vsSln << "\tHideSolutionNode = FALSE" << std::endl;
-    vsSln << "\tEndGlobalSection" << std::endl;
-    vsSln << "\tGlobalSection(ExtensibilityGlobals) = postSolution" << std::endl;
-    vsSln << "\tSolutionGuid = {}" << std::endl;
-    vsSln << "\tEndGlobalSection" << std::endl;
-    vsSln << "EndGlobal" << std::endl;
-    vsSln.close();
+    std::string slnPath = GetProjectFolder().string() + "/" + GetProjectFolder().filename().string() + ".sln";
+    // sln doesn't exist, create sln
+    if (!std::filesystem::exists(slnPath))
+    {
+        // generate VS solution
+        std::ofstream vsSln(GetProjectFolder().string() + "/" + GetProjectFolder().filename().string() + ".sln");
+        if (!vsSln)
+            return;
+        vsSln << "Microsoft Visual Studio Solution File, Format Version 12.00" << std::endl;
+        vsSln << "# Visual Studio Version 16" << std::endl;
+        vsSln << "VisualStudioVersion = 16.0.30907.101" << std::endl;
+        vsSln << "MinimumVisualStudioVersion = 10.0.40219.1" << std::endl;
+        vsSln << "Project(\"{" << projectTypeID << "}\") = \"Scripting\", \"Scripting.csproj\", \"{}\"" << std::endl;
+        vsSln << "EndProject" << std::endl;
+        vsSln << "Global" << std::endl;
+        vsSln << "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution" << std::endl;
+        vsSln << "\t\tDebug|OpenGL = Debug|OpenGL" << std::endl;
+        vsSln << "\t\tProduction|OpenGL = Production|OpenGL" << std::endl;
+        vsSln << "\t\tRelease|OpenGL = Release|OpenGL" << std::endl;
+        vsSln << "\tEndGlobalSection" << std::endl;
+        vsSln << "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution" << std::endl;
+        vsSln << "\t{}.Debug|OpenGL.ActiveCfg = Debug OpenGL|x64" << std::endl;
+        vsSln << "\t{}.Debug|OpenGL.Build.0 = Debug OpenGL|x64" << std::endl;
+        vsSln << "\t{}.Production|OpenGL.ActiveCfg = Production OpenGL|x64" << std::endl;
+        vsSln << "\t{}.Production|OpenGL.Build.0 = Production OpenGL|x64" << std::endl;
+        vsSln << "\t{}.Release|OpenGL.ActiveCfg = Release OpenGL|x64" << std::endl;
+        vsSln << "\t{}.Release|OpenGL.Build.0 = Release OpenGL|x64" << std::endl;
+        vsSln << "\tEndGlobalSection" << std::endl;
+        vsSln << "\tGlobalSection(SolutionProperties) = preSolution" << std::endl;
+        vsSln << "\tHideSolutionNode = FALSE" << std::endl;
+        vsSln << "\tEndGlobalSection" << std::endl;
+        vsSln << "\tGlobalSection(ExtensibilityGlobals) = postSolution" << std::endl;
+        vsSln << "\tSolutionGuid = {}" << std::endl;
+        vsSln << "\tEndGlobalSection" << std::endl;
+        vsSln << "EndGlobal" << std::endl;
+        vsSln.close();
+    }
 }

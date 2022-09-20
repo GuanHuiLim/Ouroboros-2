@@ -18,49 +18,49 @@ ScriptingProperties::ScriptingProperties()
 {
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::BOOL, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			bool data = v.value.GetValue<bool>();
+			bool data = v.TryGetRuntimeValue().GetValue<bool>();
 			bool edit = ImGui::Checkbox(v.name.c_str(), &data);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (edit) { v.value = oo::ScriptValue{ data }; editing = edit; };
+			if (edit) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); editing = edit; };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::INT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			int data = v.value.GetValue<int>();
+			int data = v.TryGetRuntimeValue().GetValue<int>();
 			bool edit = ImGui::DragInt(v.name.c_str(), &data);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (edit) { v.value = oo::ScriptValue{ data }; editing = edit;  };
+			if (edit) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); editing = edit;  };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::FLOAT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			float data = v.value.GetValue<float>();
+			float data = v.TryGetRuntimeValue().GetValue<float>();
 			bool edit = ImGui::DragFloat(v.name.c_str(), &data);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (edit) { v.value = oo::ScriptValue{ data }; editing = edit;  };
+			if (edit) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); editing = edit;  };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::STRING, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			std::string data = v.value.GetValue<std::string>();
+			std::string data = v.TryGetRuntimeValue().GetValue<std::string>();
 			bool edit = ImGui::InputText(v.name.c_str(), &data);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (edit) { v.value = oo::ScriptValue{ data }; editing = edit; };
+			if (edit) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); editing = edit; };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::VECTOR2, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			glm::vec2 data = v.value.GetValue<glm::vec2>();
+			glm::vec2 data = v.TryGetRuntimeValue().GetValue<glm::vec2>();
 			editing = ImGui::DragFloat2(v.name.c_str(), glm::value_ptr(data),0.1f);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (editing) { v.value = oo::ScriptValue{ data }; };
+			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::VECTOR3, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			glm::vec3 data = v.value.GetValue<glm::vec3>();
+			glm::vec3 data = v.TryGetRuntimeValue().GetValue<glm::vec3>();
 			editing = ImGui::DragFloat3(v.name.c_str(), glm::value_ptr(data), 0.1f);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (editing) { v.value = oo::ScriptValue{ data }; };
+			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::ENUM, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			auto data = v.value.GetValue<oo::ScriptValue::enum_type>();
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::enum_type>();
 			auto list = data.GetOptions();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::InputText(data.name.c_str(), &list[data.index]);
@@ -81,7 +81,7 @@ ScriptingProperties::ScriptingProperties()
 					if (ImGui::Selectable(list[i].c_str()))
 					{
 						data.index = i;
-						v.value = oo::ScriptValue{ data };
+						v.TrySetRuntimeValue(oo::ScriptValue{ data });
 						editing = true;
 						edited = true;
 						showList = 0;
@@ -93,7 +93,7 @@ ScriptingProperties::ScriptingProperties()
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			auto data = v.value.GetValue<UUID>();
+			auto data = v.TryGetRuntimeValue().GetValue<UUID>();
 			auto uuid = data.GetUUID();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::DragScalarN(v.name.c_str(), ImGuiDataType_U64, &uuid, 1);
@@ -106,14 +106,14 @@ ScriptingProperties::ScriptingProperties()
 					data = *static_cast<UUID*>(payload->Data);
 					editing = true;
 					edited = true;
-					if (editing) { v.value = oo::ScriptValue{ data }; };
+					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 				}
 				ImGui::EndDragDropTarget();
 			}
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			auto data = v.value.GetValue<oo::ScriptValue::function_type>();
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::function_type>();
 			//assign UUID
 			auto uuid = data.m_objID;
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -133,7 +133,7 @@ ScriptingProperties::ScriptingProperties()
 			}
 			if (editing) 
 			{ 
-				v.value = oo::ScriptValue{ data }; 
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
 				return;
 			};
 			//function part
@@ -172,7 +172,7 @@ ScriptingProperties::ScriptingProperties()
 			}
 			if (editing)
 			{
-				v.value = oo::ScriptValue{ data };
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
 				return;
 			};
 			for (auto& param : data.m_info.paramList)
@@ -189,7 +189,7 @@ ScriptingProperties::ScriptingProperties()
 			ImGui::Separator();
 			if (editing)
 			{
-				v.value = oo::ScriptValue{ data };
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
 				return;
 			};
 		});
