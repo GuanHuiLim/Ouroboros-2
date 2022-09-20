@@ -21,6 +21,8 @@ class PVD;
 struct PhysxObject;
 struct PhysicsObject;
 
+enum class rigid { rstatic, rdynamic };
+enum class shape { box, sphere, capsule, plane };
 
 /*
 enum class shape_type { shape_box, shape_sphere, shape_capsule, shape_plane };
@@ -179,9 +181,9 @@ private:
     std::map<phy_uuid::UUID, PxMaterial*> mat; // later int change to UUID
     PxVec3 gravity;
 
-    std::map</*phy_uuid::UUID*/int, PhysxObject*> all_objects; // store all the objects (lookups for keys / check if empty)
+    std::map<phy_uuid::UUID, PhysxObject*> all_objects; // store all the objects (lookups for keys / check if empty)
 
-    std::vector<PhysxObject> m_objects; // to iterate through for getting setting the data
+    std::vector<PhysxObject> m_objects; // to iterate through for setting the data
 
 public:
 
@@ -201,15 +203,16 @@ public:
     */
 
     // MATERIAL
-    phy_uuid::UUID createMat(Material material);
+    phy_uuid::UUID createMat(PhysicsObject obj, Material material);
     void updateMat(phy_uuid::UUID materialID, Material material);
     void destroyMat(phy_uuid::UUID materialID);
 
     // RIGIDBODY
-    PhysicsObject createRigidbody();
+    PhysicsObject createRigidbody(rigid type);
     void removeRigidbody(PhysicsObject obj);
-    void destroyRigidbody(PhysicsObject obj);
 
+    // SHAPE
+    void createShape(PhysicsObject obj, shape shape);
 
     /*
     shape_type createShape(shape_type type, Material material);
@@ -230,17 +233,20 @@ public:
 // associated to each object in the physics world
 struct PhysxObject {
 
-    int id = 0; //phy_uuid::UUID id = 0; // UUID
+    phy_uuid::UUID id = 0;
 
     phy_uuid::UUID matID = 0;
     //Material mat;
+
+    // shape
+    PxShape* m_shape;
+    shape shape;
 
     // ensure at least static or dynamic is init
     RigidStatic rs{};
     RigidDynamic rd{};
 
-    enum class rigid { rstatic, rdynamic };
-    rigid rigidID = rigid::rstatic;
+    rigid rigidID = rigid::rstatic; // do i need to set a default? (change it depends how it is created)
 
     bool gravity = true;
     bool kinematic = false;
@@ -260,6 +266,7 @@ struct PhysxObject {
     void enableGravity(bool gravity);
     void enableKinematic(bool kine);
 
+    // prob put under physics object claas
     void setMass(PxReal mass);
 
 };
@@ -303,7 +310,7 @@ struct PhysxObject {
 
 struct PhysicsObject { // you store
 
-    /*phy_uuid::UUID*/ int id;
+    phy_uuid::UUID id;
     PhysxWorld* world;
 
     // functions...

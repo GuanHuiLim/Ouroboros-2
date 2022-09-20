@@ -241,7 +241,9 @@ namespace oo
 
             m_world->add_component<PhysicsComponent>(rb->entityID);
 
-            m_world->get_component<PhysicsComponent>(rb->entityID).object = m_physicsWorld.createRigidbody();
+            m_world->get_component<PhysicsComponent>(rb->entityID).object = m_physicsWorld.createRigidbody(rigid::rdynamic);
+            
+            //m_physicsWorld.createShape(m_world->get_component<PhysicsComponent>(rb->entityID).object, shape::box);
         }
 
     }

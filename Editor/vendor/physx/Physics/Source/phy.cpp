@@ -118,7 +118,6 @@ PhysxWorld::PhysxWorld(PxVec3 grav)
     //sceneDesc.filterShader = contactReportFilterShader;
 
     scene = physx_system::getPhysics()->createScene(sceneDesc);
-
 }
 
 PhysxWorld::~PhysxWorld()
@@ -146,16 +145,17 @@ void PhysxWorld::setGravity(PxVec3 gra) {
 }
 
 
-phy_uuid::UUID PhysxWorld::createMat(Material material) {
+phy_uuid::UUID PhysxWorld::createMat(PhysicsObject obj, Material material) {
 
     PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
-        material.dynamicFriction,
-        material.restitution);
+                                                                    material.dynamicFriction,
+                                                                    material.restitution);
 
-
-    phy_uuid::UUID UUID = phy_uuid::UUID{}; // later change to UUID
+    phy_uuid::UUID UUID = phy_uuid::UUID{};
 
     mat.emplace(UUID, newMat);
+
+    all_objects.at(obj.id)->matID = UUID; // set material for that object
 
     return UUID;
 }
@@ -164,6 +164,13 @@ void PhysxWorld::updateMat(phy_uuid::UUID materialID, Material material) {
 
     // SEARCH FOR THAT KEY UUID IN THE MAP (if have then set the new material in)
 
+    if (mat.contains(materialID)) {
+        mat.at(materialID)->setStaticFriction(material.staticFriction);
+        mat.at(materialID)->setDynamicFriction(material.dynamicFriction);
+        mat.at(materialID)->setRestitution(material.restitution);
+    }
+
+    /*
     for (auto const& x : mat) {
 
         if (x.first == materialID) {
@@ -173,36 +180,51 @@ void PhysxWorld::updateMat(phy_uuid::UUID materialID, Material material) {
             x.second->setRestitution(material.restitution);
         }
     }
+    */
 }
 
 void PhysxWorld::destroyMat(phy_uuid::UUID materialID) {
 
+    if (mat.contains(materialID)) {
+        mat.at(materialID)->release();
+    }
+
+    /*
     for (auto const& x : mat) {
 
         if (x.first == materialID) {
             x.second->release();
         }
     }
+    */
 }
 
-PhysicsObject PhysxWorld::createRigidbody()
+PhysicsObject PhysxWorld::createRigidbody(rigid type)
 {
     // create instance of the object (on the stack)
     //phy_uuid::UUID UUID = phy_uuid::UUID{};
 
     // here should create 1 of them 
-    PhysxObject obj;   // assume assign UUID
-    obj.id = 0;// UUID;
-    obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(PxTransform(PxVec3(0)));
-    scene->addActor(*obj.rd.rigidDynamic);
+    PhysxObject obj;   
+    obj.id = phy_uuid::UUID{};
 
-    // assign UUID 
+    if (type == rigid::rstatic) {
+        obj.rs.rigidStatic = physx_system::getPhysics()->createRigidStatic(PxTransform(PxVec3(0)));
+        scene->addActor(*obj.rs.rigidStatic);
+    }
+    else if (type == rigid::rdynamic) {
+        obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(PxTransform(PxVec3(0)));
+        scene->addActor(*obj.rd.rigidDynamic);
+    }
+
+    obj.rigidID = type;
+
     // store the object
     m_objects.emplace_back(obj); 
-    //all_objects.insert({ obj.id, &obj });
-
+    all_objects.insert({ obj.id, &m_objects.at(m_objects.size() - 1) }); // add back the m_objects last element
+    
     // return the object i created
-    return PhysicsObject{ /*UUID*/ obj.id, this }; // a copy
+    return PhysicsObject{ obj.id, this }; // a copy
 }
 
 void PhysxWorld::removeRigidbody(PhysicsObject obj)
@@ -215,6 +237,41 @@ void PhysxWorld::removeRigidbody(PhysicsObject obj)
     auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; });
     //begin->destroy();
     m_objects.erase(begin);
+}
+
+void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
+
+    //PxRigidActorExt::createExclusiveShape (another method)
+    
+    // search for that object
+    if (all_objects.contains(obj.id)) {
+
+        if (shape == shape::box) {
+            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxBoxGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+        }
+        else if (shape == shape::sphere) {
+            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxSphereGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+        }
+        else if (shape == shape::plane) {
+            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+        }
+        else if (shape == shape::capsule) {
+            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxCapsuleGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+        }
+
+        //m_objects.at(obj.id).m_shape->getGeometry().sphere().radius = 5.f;
+
+        m_objects.at(obj.id).shape = shape;
+
+        if (m_objects.at(obj.id).rigidID == rigid::rstatic)
+            m_objects.at(obj.id).rs.rigidStatic->attachShape(*m_objects.at(obj.id).m_shape);
+
+        else if (m_objects.at(obj.id).rigidID == rigid::rdynamic)
+            m_objects.at(obj.id).rd.rigidDynamic->attachShape(*m_objects.at(obj.id).m_shape);
+
+        // later check where need to release shape
+    }
+
 }
 
 /*
@@ -264,24 +321,40 @@ void PhysxObject::enableGravity(bool gravity) {
 
 Material PhysicsObject::getMaterial() const {
 
-    // prob need change
+    // need change the way to retrieve
 
-    Material mat{};
+    //Material mat{};
+    //
+    //for (auto const& x : world->mat) {
+    //    if (x.first == world->m_objects[id].matID) {
+    //
+    //        mat.staticFriction = x.second->getStaticFriction();
+    //        mat.dynamicFriction = x.second->getDynamicFriction();
+    //        mat.restitution = x.second->getRestitution();
+    //    }
+    //}
+    //
+    //return mat; // world->m_objects[id].matID;
 
-    for (auto const& x : world->mat) {
-        if (x.first == world->m_objects[id].matID) {
+    Material m_material{};
 
-            mat.staticFriction = x.second->getStaticFriction();
-            mat.dynamicFriction = x.second->getDynamicFriction();
-            mat.restitution = x.second->getRestitution();
-        }
+    if (world->all_objects.contains(id)) {
+
+        if (world->mat.contains(world->all_objects.at(id)->matID)) {
+            m_material.staticFriction = world->mat[world->all_objects.at(id)->matID]->getStaticFriction();
+            m_material.dynamicFriction = world->mat[world->all_objects.at(id)->matID]->getDynamicFriction();
+            m_material.restitution = world->mat[world->all_objects.at(id)->matID]->getRestitution();
+        }   
     }
 
-    return mat; // world->m_objects[id].matID;
+    return m_material;
 }
 
 PxVec3 PhysicsObject::getposition() const {
 
+    // contains the key the return the value of that key
+    //all_objects[key]
+    
     //for (auto const& x : world->all_objects) {
     //    if (x.first == id) {
     //
@@ -293,9 +366,26 @@ PxVec3 PhysicsObject::getposition() const {
 
     // no have then return a default?
 
-    return PxVec3{ world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.x,
-                   world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.y,
-                   world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.z };
+    if (world->all_objects.contains(id)) {
+
+        if (world->all_objects.at(id)->rigidID == rigid::rstatic) {
+
+            return PxVec3{ world->all_objects.at(id)->rs.rigidStatic->getGlobalPose().p.x,
+                           world->all_objects.at(id)->rs.rigidStatic->getGlobalPose().p.y,
+                           world->all_objects.at(id)->rs.rigidStatic->getGlobalPose().p.z };
+        }
+        else if (world->all_objects.at(id)->rigidID == rigid::rdynamic) {
+
+            return PxVec3{ world->all_objects.at(id)->rd.rigidDynamic->getGlobalPose().p.x,
+                           world->all_objects.at(id)->rd.rigidDynamic->getGlobalPose().p.y,
+                           world->all_objects.at(id)->rd.rigidDynamic->getGlobalPose().p.z };
+        }
+
+    }
+
+    //return PxVec3{ world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.x,
+    //               world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.y,
+    //               world->m_objects[id].rd.rigidDynamic->getGlobalPose().p.z };
 }
 
 void PhysicsObject::setposition(PxVec3 pos) {
@@ -306,7 +396,16 @@ void PhysicsObject::setposition(PxVec3 pos) {
     //    }
     //}
 
-    world->m_objects[id].rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
+    if (world->all_objects.contains(id)) {
+
+        if (world->all_objects.at(id)->rigidID == rigid::rstatic)
+            world->all_objects.at(id)->rs.rigidStatic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
+       
+        else if (world->all_objects.at(id)->rigidID == rigid::rdynamic)
+            world->all_objects.at(id)->rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
+    }
+
+    //world->m_objects[id].rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
 }
 
 /*-----------------------------------------------------------------------------*/
