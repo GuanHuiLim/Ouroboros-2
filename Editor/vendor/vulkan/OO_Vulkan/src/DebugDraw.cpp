@@ -1,5 +1,5 @@
+#pragma once
 #include "DebugDraw.h"
-
 #include "VulkanRenderer.h"
 #include "IcoSphereCreator.h"
 #include <cmath>

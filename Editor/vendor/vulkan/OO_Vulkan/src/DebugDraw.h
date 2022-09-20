@@ -1,5 +1,7 @@
 #pragma once
-
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif 
 #include "MathCommon.h"
 #include "Geometry.h"
 #include "GfxTypes.h"
