@@ -15,6 +15,8 @@
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
 #include "Ouroboros/Transform/TransformComponent.h"
+
+#include "Ouroboros/Core/Input.h"
 EditorViewport::EditorViewport()
 {
 }
@@ -104,7 +106,7 @@ void EditorViewport::Show()
 
 	ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
 
-	if (ImGuizmo::Manipulate(view, projection, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, glm::value_ptr(m_matrix)))
+	if (ImGuizmo::Manipulate(view, projection, (ImGuizmo::OPERATION)m_gizmoOperation, ImGuizmo::MODE::WORLD, glm::value_ptr(m_matrix)))
 	{
 		if (ImGuizmo::IsUsing())
 		{
@@ -115,5 +117,16 @@ void EditorViewport::Show()
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
 		}
 	}
-
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)))
+	{
+		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
+	}
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)))
+	{
+		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
+	}
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)))
+	{
+		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
+	}
 }
