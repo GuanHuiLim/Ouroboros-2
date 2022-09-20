@@ -120,17 +120,7 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 
 UUID Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::GameObject> parent , oo::Scene& scene)
 {
-	std::ifstream ifs(path);
-	if (ifs.peek() == std::ifstream::traits_type::eof())
-	{
-		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
-		return 0;
-	}
-	rapidjson::IStreamWrapper isw(ifs);
-	rapidjson::Document doc;
-	doc.ParseStream(isw);
-	auto prefabID = Loading(parent, scene,doc);
-	ifs.close();
+	auto prefabID = CreatePrefab(parent, scene, path);
 	return prefabID;
 }
 
@@ -466,6 +456,66 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 		command->second(v, std::move(iter->value));
 		prop.set_value(variant, v);
 	}
+}
+
+UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p)
+{
+	UUID firstobj;
+	
+	auto go = scene.CreateGameObjectImmediate();
+	go->AddComponent<oo::PrefabComponent>();
+	firstobj = go->GetInstanceID();
+
+	starting->AddChild(*go);
+	
+	if (go->HasComponent<oo::PrefabComponent>() == false)
+	{
+		std::string msg = "GameObject does not contain this component: ";
+		msg += rttr::type::get<oo::PrefabComponent>().get_name().data();
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, msg);
+	}
+	oo::PrefabComponent& component = go->GetComponent<oo::PrefabComponent>();
+	component.prefab_filePath = p;
+
+	std::string& data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder() / component.prefab_filePath).string());
+	rapidjson::StringStream stream(data.c_str());
+
+	rapidjson::Document document;
+	document.ParseStream(stream);
+
+	std::stack<std::shared_ptr<oo::GameObject>> parents;
+	auto gameobj = (go);
+	parents.push(gameobj);
+	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
+	{
+		//gameobj->SetName(iter->name.GetString());
+		gameobj->SetIsPrefab(true);
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
+		{//when the order dont match the size it will keep poping until it matches
+		//then parent to it and adds itself
+			while (order != parents.size())
+				parents.pop();
+
+			parents.top()->AddChild(*gameobj);
+			parents.push(gameobj);
+		}
+
+		++members;
+		{//another element that will store all the component hashes and create the apporiate archtype
+			// go->SetArchtype(vector<hashes>);
+		}
+		//processes the components		
+		LoadObject(*gameobj, members, membersEnd);
+		++iter;
+		if (iter != document.MemberEnd())
+		{
+			gameobj = scene.CreateGameObjectImmediate();
+		}
+	}
+	return firstobj;
 }
 
 void Serializer::SaveScript(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc)

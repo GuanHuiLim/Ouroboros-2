@@ -1,7 +1,7 @@
 #include <pch.h>
 #include <stack>
 #include "Hierarchy.h"
-
+#include "App/Editor/Serializer.h"
 //utility
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Utility/ImGuiStylePresets.h"
@@ -179,6 +179,14 @@ void Hierarchy::NormalView()
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
 				scene->GetRoot()->AddChild(*source, true);//s_selected
+			}
+			payload = ImGui::AcceptDragDropPayload(".prefab"); //for creating prefab files
+			if (payload)
+			{
+				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+				auto go = scene->GetRoot();
+				std::filesystem::path prefabpath = *static_cast<std::filesystem::path*>(payload->Data);
+				Serializer::LoadPrefab(prefabpath,go,*scene);
 			}
 			ImGui::EndDragDropTarget();
 		}
