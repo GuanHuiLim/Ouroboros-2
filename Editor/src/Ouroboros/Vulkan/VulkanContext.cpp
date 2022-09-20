@@ -26,6 +26,9 @@ Technology is prohibited.
 
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
 
+#include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
+
 namespace oo
 {
 
@@ -51,6 +54,10 @@ namespace oo
 
     void VulkanContext::Init()
     {
+        EventManager::Subscribe<VulkanContext, WindowResizeEvent>(this, &VulkanContext::OnWindowResize);
+        EventManager::Subscribe<VulkanContext, WindowLoseFocusEvent>(this, &VulkanContext::OnWindowLoseFocus);
+
+        
         // Setup Vulkan
         uint32_t extensions_count = 0;
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, NULL);
@@ -58,8 +65,8 @@ namespace oo
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
 
-        int w, h;
-        SDL_GetWindowSize(m_windowHandle, &w, &h);
+        //int w, h;
+        //SDL_GetWindowSize(m_windowHandle, &w, &h);
 
         vr = VulkanRenderer::get();
 
@@ -83,8 +90,8 @@ namespace oo
             return SDL_Vulkan_CreateSurface(m_windowHandle, vr->m_instance.instance, &vr->m_instance.surface);
             });
         si.extensions = extensions;
-        m_window.m_width = w;
-        m_window.m_height = h;
+        //m_window.m_width = w;
+        //m_window.m_height = h;
         m_window.m_type = Window::WindowType::SDL2;
         m_window.rawHandle = m_windowHandle;
         try
@@ -165,10 +172,10 @@ namespace oo
 
     void VulkanContext::OnUpdateBegin()
     {
-        int w, h;
-        SDL_Vulkan_GetDrawableSize(m_windowHandle, &w, &h);
-        m_window.m_width = w;
-        m_window.m_height = h;
+        //int w, h;
+        //SDL_Vulkan_GetDrawableSize(m_windowHandle, &w, &h);
+        //m_window.m_width = w;
+        //m_window.m_height = h;
 
         m_cc.Update(oo::timer::dt());
         if (vr->PrepareFrame() == true)
@@ -292,6 +299,18 @@ namespace oo
     VulkanRenderer* VulkanContext::getRenderer()
     {
         return VulkanRenderer::get();
+    }
+
+    void VulkanContext::OnWindowResize(WindowResizeEvent* e)
+    {
+        m_window.m_height = e->GetHeight();
+        m_window.m_width = e->GetWidth();
+    }
+
+    void VulkanContext::OnWindowLoseFocus(WindowLoseFocusEvent* e)
+    {
+        m_window.m_height = 0;
+        m_window.m_width = 0;
     }
 
     void VulkanContext::SetWindowResized()

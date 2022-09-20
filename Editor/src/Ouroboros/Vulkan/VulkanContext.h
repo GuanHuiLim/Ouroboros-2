@@ -25,8 +25,13 @@ Technology is prohibited.
 //#include "vk_engine.h"
 struct SDL_Window;
 
+
 namespace oo
 {
+    // forward declaration
+    class WindowResizeEvent;
+    class WindowLoseFocusEvent;
+
     class VulkanContext //: public GraphicsContext
     {
     public:
@@ -60,6 +65,9 @@ namespace oo
         std::unique_ptr<ModelData> cubeMesh;
         std::unique_ptr<ModelData> planeMesh;
 
+    private:
+        void OnWindowResize(WindowResizeEvent* e);
+        void OnWindowLoseFocus(WindowLoseFocusEvent* e);
         //static VulkanEngine vkEngine;
     };
 }

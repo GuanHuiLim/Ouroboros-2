@@ -86,4 +86,6 @@ namespace oo
         EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 
+
+
 }
