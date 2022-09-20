@@ -368,7 +368,8 @@ void ModelData::ModelSceneLoad(const aiScene* scene,
 			curNodes[i]->transform = xform;
 		}
 		// setup nodes
-		parent->children.insert(std::end(parent->children),std::begin(curNodes), std::end(curNodes));	
+		auto child = parent->children.insert(std::end(parent->children),std::begin(curNodes), std::end(curNodes));
+		targetParent = *child;
 	}		
 	for (size_t i = 0; i < node.mNumChildren; i++)
 	{
