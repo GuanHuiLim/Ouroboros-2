@@ -66,11 +66,10 @@ namespace oo
         std::unique_ptr<ModelData> cubeMesh;
         std::unique_ptr<ModelData> planeMesh;
 
+        bool m_minimized = false;
     private:
         void OnWindowResize(WindowResizeEvent* e);
         void OnWindowMinimize(WindowMinimizeEvent* e);
         void OnWindowMaximize(WindowMaximizeEvent* e);
-        //void OnWindowLoseFocus(WindowLoseFocusEvent* e);
-        //static VulkanEngine vkEngine;
     };
 }

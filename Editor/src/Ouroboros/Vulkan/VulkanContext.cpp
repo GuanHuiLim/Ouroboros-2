@@ -58,7 +58,6 @@ namespace oo
         EventManager::Subscribe<VulkanContext, WindowResizeEvent>(this, &VulkanContext::OnWindowResize);
         EventManager::Subscribe<VulkanContext, WindowMinimizeEvent>(this, &VulkanContext::OnWindowMinimize);
         EventManager::Subscribe<VulkanContext, WindowMaximizeEvent>(this, &VulkanContext::OnWindowMaximize);
-        //EventManager::Subscribe<VulkanContext, WindowLoseFocusEvent>(this, &VulkanContext::OnWindowLoseFocus);
 
         
         // Setup Vulkan
@@ -67,9 +66,6 @@ namespace oo
         std::vector<const char*> extensions;
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
-
-        //int w, h;
-        //SDL_GetWindowSize(m_windowHandle, &w, &h);
 
         vr = VulkanRenderer::get();
 
@@ -246,7 +242,8 @@ namespace oo
 
     void VulkanContext::SwapBuffers()
     {
-        vr->Present();
+        if(!m_minimized)
+            vr->Present();
     }
 
     void VulkanContext::InitImGui()
@@ -270,7 +267,8 @@ namespace oo
     void VulkanContext::OnImGuiEnd()
     {
         // Vulkan will call internally
-        vr->DrawGUI();
+        if(!m_minimized)
+            vr->DrawGUI();
 
         ImGui::EndFrame();
         ImGuiIO& io = ImGui::GetIO();
@@ -312,21 +310,19 @@ namespace oo
 
     void VulkanContext::OnWindowMinimize(WindowMinimizeEvent* e)
     {
+        m_minimized = true;
         m_window.m_height = 0;
         m_window.m_width = 0;
     }
 
     void VulkanContext::OnWindowMaximize(WindowMaximizeEvent* e)
     {
-        //m_window.m_width = 
+        m_minimized = false;
+        int w, h;
+        SDL_Vulkan_GetDrawableSize(m_windowHandle, &w, &h);
+        m_window.m_width = w;
+        m_window.m_height = h;
     }
-
-    /*void VulkanContext::OnWindowLoseFocus(WindowLoseFocusEvent* e)
-    {
-        m_window.m_height = 0;
-        m_window.m_width = 0;
-    }*/
-
 
     void VulkanContext::SetWindowResized()
     {
