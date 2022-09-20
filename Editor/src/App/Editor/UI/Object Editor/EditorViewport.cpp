@@ -41,8 +41,16 @@ void EditorViewport::Show()
 	vMax.y += ImGui::GetWindowPos().y;
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
-	auto contentWidth = vMax.x - vMin.x;
-	auto contentHeight = vMax.y - vMin.y;
+
+	//auto contentWidth = vMax.x - vMin.x;
+	//auto contentHeight = vMax.y - vMin.y;
+
+	auto contentWidth = float(windowWidth);
+	auto contentHeight = float(windowHeight);
+	vMin.x = 0;
+	vMin.y = 0;
+	vMax.x = contentWidth;
+	vMax.y = contentHeight;
 
 	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
 
