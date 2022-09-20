@@ -2,6 +2,7 @@ project "Physics"
     kind "StaticLib"
     language "C++"
     staticruntime "off"
+    warnings "Extra" -- Set warnings level to 4 for this project
 
     -- output directory
     targetdir("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
@@ -27,6 +28,12 @@ project "Physics"
         "PhysXFoundation_64",
         "PhysXExtensions_static_64",
         "PhysXPvdSDK_static_64",
+    }
+
+    -- Physics Level Disable Linker Warning 
+    linkoptions 
+    { 
+        "-IGNORE:4006" -- redefinition <- appropriate warning
     }
 
     filter "system:windows"

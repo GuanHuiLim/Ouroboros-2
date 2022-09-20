@@ -41,8 +41,8 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap"
 -- IncludeDir["vma"]           = EngineVendor .. "/vma"
 
-IncludeDir["physx"]     = AppVendor .. "/physx"
-IncludeDir["physx_foundation"]     = AppVendor .. "/physx/Physics/Physx/pxshared/include"
+IncludeDir["physx"]                 = AppVendor .. "/physx"
+IncludeDir["physx_foundation"]      = AppVendor .. "/physx/Physics/Physx/pxshared/include"
 
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"

@@ -173,7 +173,7 @@ class PhysxWorld {
 
 private:
 
-    friend class PhysicsObject;
+    friend struct PhysicsObject;
 
     PxScene* scene;
     std::map<phy_uuid::UUID, PxMaterial*> mat; // later int change to UUID
