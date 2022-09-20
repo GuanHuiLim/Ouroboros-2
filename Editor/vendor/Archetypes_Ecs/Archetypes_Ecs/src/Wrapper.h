@@ -29,7 +29,7 @@ namespace Ecs
 
 
 
-	class ECSWorld
+	class ECSWorld : private IECSWorld
 	{
 		IECSWorld world;
 	public:
@@ -43,6 +43,7 @@ namespace Ecs
 		template<typename T>
 		using MemberFnPtr = typename IECSWorld::MemberFnPtr<T>;
 
+		operator IECSWorld& () { return world; }
 
 		//supports functions of the format: exampleFunction(ComponentA&, ComponentB&,...)
 		template<typename Func>
@@ -97,6 +98,22 @@ namespace Ecs
 		{
 			return world.get_component<C>(id);
 		}
+
+		template<typename C>
+		size_t get_component_hash()
+		{
+			return world.get_component_hash<C>();
+		}
+
+		template<typename C>
+		ComponentInfo const* get_component_info() const
+		{
+			return world.get_component_info<C>();
+		}
+
+		void* get_component(EntityID const id, size_t const hash);
+
+		GetCompFn* get_component_Fn(size_t const hash);
 
 		size_t get_num_components(EntityID id)
 		{

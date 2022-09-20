@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "EcsUtils.h"
+//#include "World.h"
 
 #include <typeinfo>
 #include <vector>
@@ -38,6 +39,7 @@ namespace Ecs
 		using CopyConstructorFn = void(void* self, void* copy);
 		using MoveConstructorFn = void(void* self, void* other);
 		using MoveAssignmentFn = void(void* self, void* other);
+		using GetComponentFn = GetCompFn;
 
 		TypeHash hash{};
 
@@ -47,6 +49,7 @@ namespace Ecs
 		CopyConstructorFn* copy_constructor{ nullptr };
 		MoveConstructorFn* move_constructor{ nullptr };
 		MoveAssignmentFn*  move_assignment{ nullptr };
+		GetComponentFn* get_component{ nullptr };
 		uint16_t size{ 0 };
 		uint16_t align{ 0 };
 
@@ -102,6 +105,12 @@ namespace Ecs
 			{
 				T* ptr = static_cast<T*>(self);
 				*ptr = std::move(*(static_cast<T*>(other)));
+			};
+
+			info.get_component = [](IECSWorld& world, EntityID id)
+			{
+				T& comp = world.get_component<T>(id);
+				return static_cast<void*>(&comp);
 			};
 
 			return info;

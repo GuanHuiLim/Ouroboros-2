@@ -27,6 +27,8 @@ namespace Ecs
 	class ECSWorld;
 	class System;
 
+	using GetCompFn = void*(IECSWorld& world, EntityID id);
+
 	inline constexpr uint64_t hash_64_fnv1a(const char* key, const uint64_t len) {
 
 		uint64_t hash = 14695981039346656037ull;
