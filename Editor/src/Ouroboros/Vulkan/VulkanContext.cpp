@@ -109,6 +109,32 @@ namespace oo
         DefaultMesh pm = CreateDefaultPlaneXZMesh();
         planeMesh.reset(vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
 
+        /// This is an example of how to load in a full scene from FBX.. should work..
+        //std::unique_ptr<ModelData> loadedModel{vr->LoadModelFromFile("Model/Filename.fbx")};
+        //std::function<void(ModelData*,Node*)> EntityHelper = [&](ModelData* model,Node* node) {
+        //    if (node->meshRef != static_cast<uint32_t>(-1))
+        //    {
+        //        auto& ed = entities.emplace_back(EntityInfo{});
+        //        ed.modelID = model->gfxMeshIndices[node->meshRef];
+        //        ed.name = node->name;
+        //        ed.entityID = FastRandomMagic();
+        //        // this is trash just take the xform
+        //        ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(node->transform), glm::value_ptr(ed.position), glm::value_ptr(ed.rotVec), glm::value_ptr(ed.scale));
+        //        
+        //        ed.bindlessGlobalTextureIndex_Albedo = diffuseTexture3;
+        //        ed.instanceData = 0;
+        //    }
+        //    for (auto& child : node->children)
+        //    {
+        //        EntityHelper(model,child);
+        //    }            
+        //
+        //};
+        //if (loadedModel)
+        //{
+        //    EntityHelper(loadedModel.get(),loadedModel->sceneInfo);
+        //}
+
         {
             auto& myObj = gw.GetObjectInstance(obj); 
             myObj.modelID = cubeMesh->gfxMeshIndices.front();
