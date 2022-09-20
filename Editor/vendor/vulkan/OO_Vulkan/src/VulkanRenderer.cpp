@@ -1081,111 +1081,6 @@ void VulkanRenderer::RestartImgui()
 
 }
 
-void VulkanRenderer::AddDebugLine(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Color& col, size_t loc)
-{
-	auto sz = g_DebugDrawVertexBufferCPU.size();
-	g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ p0, col });
-	g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ p1, col });
-	g_DebugDrawIndexBufferCPU.emplace_back(0 + static_cast<uint32_t>(sz));
-	g_DebugDrawIndexBufferCPU.emplace_back(1 + static_cast<uint32_t>(sz));
-}
-
-void VulkanRenderer::AddDebugBox(const AABB& aabb, const oGFX::Color& col, size_t loc)
-{
-	static std::vector<uint32_t> boxindices{
-		0,1,
-		0,2,
-		0,3,
-		1,4,
-		1,5,
-		3,5,
-		3,6,
-		2,6,
-		2,4,
-		6,7,
-		5,7,
-		4,7
-	};
-		
-	if (loc == size_t(-1))
-	{
-		auto sz = g_DebugDrawVertexBufferCPU.size();
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },col }); //0
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },col }); // 1
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },col }); // 2
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1], -aabb.halfExt[2] },col }); // 3
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{ -aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },col }); // 4
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1], -aabb.halfExt[2] },col }); // 5
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0], -aabb.halfExt[1],  aabb.halfExt[2] },col }); // 6
-		g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ aabb.center + Point3D{  aabb.halfExt[0],  aabb.halfExt[1],  aabb.halfExt[2] },col }); // 7
-		for (auto x : boxindices)
-		{
-			g_DebugDrawIndexBufferCPU.emplace_back(x + static_cast<uint32_t>(sz));
-		}
-	}
-}
-
-void VulkanRenderer::AddDebugSphere(const Sphere& sphere, const oGFX::Color& col, size_t loc)
-{
-	static std::vector<oGFX::Vertex> vertices;
-	static std::vector<uint32_t> indices;
-	static bool once = [&]() {
-		auto [sphVertices, spfIndices] = icosahedron::make_icosphere(2,false);
-		vertices.reserve(sphVertices.size());
-		for (auto&& v : sphVertices)
-		{
-			vertices.emplace_back(oGFX::Vertex{ v });
-		}
-		indices.reserve(spfIndices.size() * 3);
-		for (auto&& ind : spfIndices) 
-		{
-			indices.emplace_back(ind.vertex[0]);
-			indices.emplace_back(ind.vertex[1]);
-			indices.emplace_back(ind.vertex[0]); 
-			indices.emplace_back(ind.vertex[2]);
-			indices.emplace_back(ind.vertex[2]);
-			indices.emplace_back(ind.vertex[1]);
-		}
-		return true;
-	}();
-	
-	if (loc == size_t(-1))
-	{
-		auto currsz = g_DebugDrawVertexBufferCPU.size();
-		g_DebugDrawVertexBufferCPU.reserve(g_DebugDrawVertexBufferCPU.size() + vertices.size());
-		oGFX::DebugVertex vert;
-		for (const auto& v : vertices)
-		{
-			vert.pos = vert.pos*sphere.radius + sphere.center;
-			vert.col = col;
-			g_DebugDrawVertexBufferCPU.push_back(vert);
-		}
-
-		g_DebugDrawIndexBufferCPU.reserve( g_DebugDrawIndexBufferCPU.size() + indices.size());
-		for (const auto ind : indices) 
-		{
-			g_DebugDrawIndexBufferCPU.emplace_back(ind+static_cast<uint32_t>(currsz));
-		}
-	}	
-}
-
-void VulkanRenderer::AddDebugTriangle(const Triangle& tri, const oGFX::Color& col, size_t loc)
-{
-	if (loc == size_t(-1))
-	{
-		auto sz = g_DebugDrawVertexBufferCPU.size();
-		g_DebugDrawVertexBufferCPU.push_back(oGFX::DebugVertex{ tri.v0, col }); //0
-		g_DebugDrawVertexBufferCPU.push_back(oGFX::DebugVertex{ tri.v1, col }); //1
-		g_DebugDrawVertexBufferCPU.push_back(oGFX::DebugVertex{ tri.v2, col }); //2
-		
-		g_DebugDrawIndexBufferCPU.push_back(0 + static_cast<uint32_t>(sz)); // E0
-		g_DebugDrawIndexBufferCPU.push_back(1 + static_cast<uint32_t>(sz)); // E0
-		g_DebugDrawIndexBufferCPU.push_back(1 + static_cast<uint32_t>(sz)); // E1
-		g_DebugDrawIndexBufferCPU.push_back(2 + static_cast<uint32_t>(sz)); // E1
-		g_DebugDrawIndexBufferCPU.push_back(2 + static_cast<uint32_t>(sz)); // E2
-		g_DebugDrawIndexBufferCPU.push_back(0 + static_cast<uint32_t>(sz)); // E2
-	}
-}
 
 void VulkanRenderer::InitializeRenderBuffers()
 {
@@ -1588,7 +1483,14 @@ bool VulkanRenderer::ResizeSwapchain()
 {
 	while (windowPtr->m_height == 0 || windowPtr->m_width == 0)
 	{
-		Window::PollEvents();
+		if (windowPtr->m_type == Window::WINDOWS32)
+		{
+			Window::PollEvents();
+		}
+		else
+		{
+			return false;
+		}
 		if (windowPtr->windowShouldClose) return false;
 	}
 	m_swapchain.Init(m_instance, m_device);
