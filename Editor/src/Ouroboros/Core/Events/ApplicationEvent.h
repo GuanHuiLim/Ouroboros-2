@@ -74,6 +74,7 @@ namespace oo
     {
     public:
         WindowLoseFocusEvent() = default;
+
         EVENT_CLASS_TYPE(WINDOWLOSEFOCUS)
         EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
@@ -86,6 +87,27 @@ namespace oo
         EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 
+    /********************************************************************************//*!
+     @brief     Implements a Window Focus AppEvent
+    *//*********************************************************************************/
+    class WindowMinimizeEvent final : public AppEvent
+    {
+    public:
+        WindowMinimizeEvent() = default;
+        EVENT_CLASS_TYPE(WINDOWMINIMIZE)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
+    };
 
+    /********************************************************************************//*!
+     @brief     Implements a Window Lose Focus AppEvent
+    *//*********************************************************************************/
+    class WindowMaximizeEvent final : public AppEvent
+    {
+    public:
+        WindowMaximizeEvent() = default;
+
+        EVENT_CLASS_TYPE(WINDOWMAXIMIZE)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
+    };
 
 }

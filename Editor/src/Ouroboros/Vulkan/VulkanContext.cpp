@@ -28,6 +28,7 @@ Technology is prohibited.
 
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
+#include "Ouroboros/Core/WindowsWindow.h"
 
 namespace oo
 {
@@ -55,7 +56,9 @@ namespace oo
     void VulkanContext::Init()
     {
         EventManager::Subscribe<VulkanContext, WindowResizeEvent>(this, &VulkanContext::OnWindowResize);
-        EventManager::Subscribe<VulkanContext, WindowLoseFocusEvent>(this, &VulkanContext::OnWindowLoseFocus);
+        EventManager::Subscribe<VulkanContext, WindowMinimizeEvent>(this, &VulkanContext::OnWindowMinimize);
+        EventManager::Subscribe<VulkanContext, WindowMaximizeEvent>(this, &VulkanContext::OnWindowMaximize);
+        //EventManager::Subscribe<VulkanContext, WindowLoseFocusEvent>(this, &VulkanContext::OnWindowLoseFocus);
 
         
         // Setup Vulkan
@@ -307,11 +310,23 @@ namespace oo
         m_window.m_width = e->GetWidth();
     }
 
-    void VulkanContext::OnWindowLoseFocus(WindowLoseFocusEvent* e)
+    void VulkanContext::OnWindowMinimize(WindowMinimizeEvent* e)
     {
         m_window.m_height = 0;
         m_window.m_width = 0;
     }
+
+    void VulkanContext::OnWindowMaximize(WindowMaximizeEvent* e)
+    {
+        //m_window.m_width = 
+    }
+
+    /*void VulkanContext::OnWindowLoseFocus(WindowLoseFocusEvent* e)
+    {
+        m_window.m_height = 0;
+        m_window.m_width = 0;
+    }*/
+
 
     void VulkanContext::SetWindowResized()
     {

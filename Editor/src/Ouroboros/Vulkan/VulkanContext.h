@@ -30,7 +30,8 @@ namespace oo
 {
     // forward declaration
     class WindowResizeEvent;
-    class WindowLoseFocusEvent;
+    class WindowMinimizeEvent;
+    class WindowMaximizeEvent;
 
     class VulkanContext //: public GraphicsContext
     {
@@ -67,7 +68,9 @@ namespace oo
 
     private:
         void OnWindowResize(WindowResizeEvent* e);
-        void OnWindowLoseFocus(WindowLoseFocusEvent* e);
+        void OnWindowMinimize(WindowMinimizeEvent* e);
+        void OnWindowMaximize(WindowMaximizeEvent* e);
+        //void OnWindowLoseFocus(WindowLoseFocusEvent* e);
         //static VulkanEngine vkEngine;
     };
 }

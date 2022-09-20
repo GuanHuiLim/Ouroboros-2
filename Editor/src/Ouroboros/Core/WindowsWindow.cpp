@@ -178,7 +178,7 @@ namespace oo
             {
                 switch (event.window.event)
                 {
-                    //Windows resize event
+                    // Windows resize event
                     // both events are resize events
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                 case SDL_WINDOWEVENT_RESIZED:
@@ -201,6 +201,28 @@ namespace oo
                     break;
                 }
                 case SDL_WINDOWEVENT_MAXIMIZED:
+                {
+                    WindowMaximizeEvent windowMaximizeEvent;
+                    EventManager::Broadcast(&windowMaximizeEvent);
+                    
+                    break;
+                }
+                case SDL_WINDOWEVENT_MINIMIZED:
+                {
+                    WindowMinimizeEvent windowMinimizeEvent;
+                    EventManager::Broadcast(&windowMinimizeEvent);
+
+                    //if (event.window.windowID == SDL_GetWindowID(m_window)) // only care main window
+                    //{
+                    //    m_data.Width = event.window.data1;
+                    //    m_data.Height = event.window.data2;
+
+                    //    WindowResizeEvent resizeEvent(m_data.Width, m_data.Height);
+                    //    EventManager::Broadcast(&resizeEvent);
+                    //}
+
+                    break;
+                }
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
                 {
                     WindowFocusEvent windowFocusEvent;
@@ -210,7 +232,6 @@ namespace oo
 
                     break;
                 }
-                case SDL_WINDOWEVENT_MINIMIZED:
                 case SDL_WINDOWEVENT_FOCUS_LOST:
                 {
                     WindowLoseFocusEvent windowLoseFocusEvent;
