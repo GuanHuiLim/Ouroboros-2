@@ -1,4 +1,6 @@
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include "VulkanRenderer.h"
 
 #include "MathCommon.h"
