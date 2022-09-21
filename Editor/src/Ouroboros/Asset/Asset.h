@@ -134,7 +134,7 @@ namespace oo
         /// Retrieves the types explicitly stored by the asset.
         /// </summary>
         /// <returns>The type indices.</returns>
-        [[nodiscard]] inline std::vector<std::type_index> GetBespokeTypes() const;
+        std::vector<std::type_index> GetBespokeTypes() const;
 
     private:
         /* --------------------------------------------------------------------------- */

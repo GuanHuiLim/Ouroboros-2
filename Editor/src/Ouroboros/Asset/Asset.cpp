@@ -82,7 +82,7 @@ namespace oo
         info = nullptr;
     }
 
-    inline std::vector<std::type_index> Asset::GetBespokeTypes() const
+    std::vector<std::type_index> Asset::GetBespokeTypes() const
     {
         auto v = std::vector<std::type_index>();
         for (auto it = info->dataTypeOffsets.begin(); it != info->dataTypeOffsets.end(); ++it)
