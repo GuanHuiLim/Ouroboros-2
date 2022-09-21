@@ -16,12 +16,14 @@ namespace oo
 		Asset mesh_handle;
 
 		//no need to serialize
+		uint32_t submodel_id = 0;
 		uint32_t model_handle{0};
 		uint32_t graphicsWorld_ID;
 
 		void GetModelHandle()
 		{
-			model_handle = mesh_handle.GetData<ModelData>().gfxMeshIndices.front();
+			model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			//model_handle /*= mesh_handle.GetData<ModelData>().gfxMeshIndices.front()*/;
 		}
 
 		//std::vector<Material> materials;

@@ -29,6 +29,7 @@ public:
 		ANIMATION_CONTROLLER,
 		CODE,
 		FOLDER,
+		FBX,
 		OTHERS,
 	};
 	OpenFileEvent() :m_filepath{ "" }, m_type{0} {};
@@ -54,6 +55,7 @@ private:
 	}
 	inline static std::unordered_map<std::string,FileType> s_typelist = 
 	{
+		{".fbx", FileType::FBX},
 		{".png",FileType::IMAGE},
 		{".prefab",FileType::PREFAB},
 		{".scn",FileType::SCENE},

@@ -23,13 +23,13 @@ namespace oo
 		auto& comp = evnt->component;
 		comp.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
 		//HARDCODED AS CUBE, TO BE REMOVED LATER
-		comp.model_handle = 0;
+		//comp.model_handle = 0;
 		
 		//update graphics world side
 		auto& transform_component = ecs_world->get_component<TransformComponent>(evnt->entityID);
 		auto& graphics_object = graphicsWorld->GetObjectInstance(comp.graphicsWorld_ID);
 		graphics_object.localToWorld = transform_component.GetGlobalMatrix();
-		
+		graphics_object.modelID = comp.model_handle;
 	}
 
 	void oo::MeshRendererSystem::ReleaseObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
@@ -65,7 +65,7 @@ namespace oo
 
 			//do nothing if transform did not change
 			auto& actualObject = graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
-
+			actualObject.modelID = m_comp.model_handle;
 			if (transformComp.HasChanged())
 				actualObject.localToWorld = transformComp.GetGlobalMatrix();
 			});
