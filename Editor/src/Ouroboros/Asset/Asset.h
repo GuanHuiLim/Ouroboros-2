@@ -20,6 +20,8 @@ Technology is prohibited.
 #include <typeindex>
 #include <unordered_map>
 
+struct gfxModel;
+
 namespace oo
 {
     class Asset;
@@ -136,6 +138,29 @@ namespace oo
         /// <returns>The type indices.</returns>
         std::vector<std::type_index> GetBespokeTypes() const;
 
+        /* --------------------------------------------------------------------------- */
+        /* Bespoke Functions                                                           */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Retrieves the submodel from the asset.
+        /// Throws an exception if the asset is not a model.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <returns>The submodel.</returns>
+        gfxModel& GetSubmodel(size_t index = 0);
+
+        /// <summary>
+        /// Retrieves number of submodel in the asset.
+        /// Throws an exception if the asset is not a model.
+        /// </summary>
+        /// <returns>The number.</returns>
+        size_t GetSubmodelCount() const;
+
+
+        // TODO: write more wrappers for accessing data eg submeshes, imguiID
+
+
     private:
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
@@ -184,5 +209,11 @@ namespace oo
     {
     public:
         AssetDataNotFoundException(const std::string& what = "Asset Data Not Found") : std::exception(what.c_str()) {}
+    };
+
+    class AssetInvalidTypeException : public std::exception
+    {
+    public:
+        AssetInvalidTypeException(const std::string& what = "Asset Invalid Type") : std::exception(what.c_str()) {}
     };
 }

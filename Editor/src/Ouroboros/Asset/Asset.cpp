@@ -16,6 +16,10 @@ Technology is prohibited.
 
 #include "Asset.h"
 
+#include "OO_Vulkan/src/MeshModel.h"
+#include "Ouroboros/Core/Application.h"
+#include "Ouroboros/Vulkan/VulkanContext.h"
+
 namespace oo
 {
     Asset::Asset(std::filesystem::path contentPath, AssetID id)
@@ -90,6 +94,26 @@ namespace oo
             v.emplace_back(it->first);
         }
         return v;
+    }
+
+    gfxModel& Asset::GetSubmodel(size_t index)
+    {
+        if (info->type != AssetInfo::Type::Model)
+            throw AssetInvalidTypeException();
+
+        auto data = GetData<ModelData*>();
+        auto vc = Application::Get().GetWindow().GetVulkanContext();
+        auto vr = vc->getRenderer();
+        return vr->models[data->gfxMeshIndices[index]];
+    }
+
+    size_t Asset::GetSubmodelCount() const
+    {
+        if (info->type != AssetInfo::Type::Model)
+            throw AssetInvalidTypeException();
+
+        auto data = GetData<ModelData*>();
+        return data->gfxMeshIndices.size();
     }
 
     void Asset::createData()
