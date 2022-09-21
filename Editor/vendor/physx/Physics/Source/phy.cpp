@@ -246,8 +246,13 @@ void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
     // search for that object
     if (all_objects.contains(obj.id)) {
 
+        PhysxObject* underlying_obj = all_objects.at(obj.id);
+        PxMaterial* material = mat.at(underlying_obj->matID);
+
         if (shape == shape::box) {
-            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxBoxGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+            PxBoxGeometry temp_box{};
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material);
+            //m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxBoxGeometry{}, *mat.at(all_objects.at(obj.id)->matID));
         }
         else if (shape == shape::sphere) {
             m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxSphereGeometry(),*mat.at(all_objects.at(obj.id)->matID));
