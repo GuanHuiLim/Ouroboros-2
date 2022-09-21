@@ -58,5 +58,6 @@ namespace oo
 		int GetDistance(Node* nodeA, Node* nodeB);
 
 		Scene* m_scene;
+		std::vector<NavGraphComponent*> graphs;
 	};
 }

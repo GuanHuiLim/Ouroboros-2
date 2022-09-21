@@ -24,6 +24,7 @@ namespace oo
 		m_world->SubscribeOnAddComponent<NavSystem, NavGraphComponent>(
 			this, &NavSystem::InitNavGraph);
 
+
 		m_world->SubscribeOnAddComponent<NavSystem, NavAgentComponent>(
 			this, &NavSystem::InitNavAgent);
 	}
@@ -34,11 +35,14 @@ namespace oo
 
 		static Ecs::Query NavAgentQuery = []()
 		{
-		    Ecs::Query NavAgentQuery;
+			Ecs::Query NavAgentQuery;
 			NavAgentQuery.with<NavAgentComponent, TransformComponent>().exclude<DeferredComponent>().build();
-		    return NavAgentQuery;
+			return NavAgentQuery;
 		}();
-		world->for_each(NavAgentQuery, [&](NavAgentComponent& agent, TransformComponent& tf){ Pathfind(agent, tf, agent.target); });
+		world->for_each(NavAgentQuery, [&](NavAgentComponent& agent, TransformComponent& tf)
+		{
+			Pathfind(agent, tf, agent.target); 
+		});
 
 		static Ecs::Query NavGraphQuery = []()
 		{
@@ -46,7 +50,10 @@ namespace oo
 			NavGraphQuery.with<NavGraphComponent, TransformComponent>().exclude<DeferredComponent>().build();
 			return NavGraphQuery;
 		}();
-		world->for_each(NavGraphQuery, [&](NavGraphComponent& graph, TransformComponent& tf) {  });
+		world->for_each(NavGraphQuery, [&](NavGraphComponent& graph, TransformComponent& tf) 
+		{
+			
+		});
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,16 +61,19 @@ namespace oo
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	void NavSystem::InitNavGraph(Ecs::ComponentEvent<NavGraphComponent>* evnt)
 	{
+		//Initialize the Graph Data
 		evnt->component.nodeDiameter = evnt->component.nodeRadius * 2;
 		evnt->component.gridSizeX = evnt->component.gridWorldSize.x / evnt->component.nodeDiameter;
 		evnt->component.gridSizeY = evnt->component.gridWorldSize.y / evnt->component.nodeDiameter;
-		CreateGrid();
+		
+		graphs.push_back(&evnt->component);
+		
+		//CreateGrid();
 	}
 
 	void NavSystem::CreateGrid()
 	{
-
-
+		//To Be Called on Play
 	}
 
 	std::list<Node*> NavSystem::GetNeighbours(NavGraphComponent& navGraph, Node* node)
@@ -121,76 +131,76 @@ namespace oo
 
 	void NavSystem::FindPath(NavAgentComponent& agent, Vector3* start, Vector3* end)
 	{
-		//if (!start || !end)
-		//	return;
+		if (!start || !end)
+			return;
 
-		//bool pathSuccess = false;
+		bool pathSuccess = false;
 
-		//Node* startNode = NodeFromWorldPoint(agent.grid, start);
-		//Node* endNode = NodeFromWorldPoint(agent.grid, end);
+		Node* startNode = NodeFromWorldPoint(*graphs[agent.graphID], start);
+		Node* endNode = NodeFromWorldPoint(*graphs[agent.graphID], end);
 
-		//if (!startNode->walkable)
-		//{
-		//	std::list<Node*> neighbours = GetNeighbours(agent.grid, startNode);
-		//	for (Node* n : neighbours)
-		//	{
-		//		if (!n->walkable)
-		//		{
-		//			startNode = n;
-		//			break;
-		//		}
-		//	}
-		//}
+		if (!startNode->walkable)
+		{
+			std::list<Node*> neighbours = GetNeighbours(*graphs[agent.graphID], startNode);
+			for (Node* n : neighbours)
+			{
+				if (!n->walkable)
+				{
+					startNode = n;
+					break;
+				}
+			}
+		}
 
-		//if (startNode->walkable && endNode->walkable)
-		//{
-		//	std::list<Node*> openSet = {};
-		//	std::unordered_set<Node*> closedSet = {};
+		if (startNode->walkable && endNode->walkable)
+		{
+			std::list<Node*> openSet = {};
+			std::unordered_set<Node*> closedSet = {};
 
-		//	openSet.push_front(startNode);
+			openSet.push_front(startNode);
 
-		//	while (openSet.size() > 0)
-		//	{
-		//		Node* node = openSet.front();
-		//		openSet.pop_front();
+			while (openSet.size() > 0)
+			{
+				Node* node = openSet.front();
+				openSet.pop_front();
 
-		//		closedSet.insert(node);
+				closedSet.insert(node);
 
-		//		if (node == endNode)
-		//		{
-		//			pathSuccess = true;
-		//			break;
-		//		}
+				if (node == endNode)
+				{
+					pathSuccess = true;
+					break;
+				}
 
-		//		for (Node* neighbour : GetNeighbours(agent.grid, node))
-		//		{
-		//			if (!neighbour->walkable || closedSet.contains(neighbour))
-		//			{
-		//				continue;
-		//			}
+				for (Node* neighbour : GetNeighbours(*graphs[agent.graphID], node))
+				{
+					if (!neighbour->walkable || closedSet.contains(neighbour))
+					{
+						continue;
+					}
 
-		//			int newCostToNeighbour = node->gCost + GetDistance(node, neighbour);
-		//			bool openSetContainsNeighbour = (std::find(openSet.begin(), openSet.end(), neighbour) != openSet.end());
-		//			if (newCostToNeighbour < neighbour->gCost || !openSetContainsNeighbour)
-		//			{
-		//				neighbour->gCost = newCostToNeighbour;
-		//				neighbour->hCost = GetDistance(neighbour, endNode);
-		//				neighbour->parent = node;
+					int newCostToNeighbour = node->gCost + GetDistance(node, neighbour);
+					bool openSetContainsNeighbour = (std::find(openSet.begin(), openSet.end(), neighbour) != openSet.end());
+					if (newCostToNeighbour < neighbour->gCost || !openSetContainsNeighbour)
+					{
+						neighbour->gCost = newCostToNeighbour;
+						neighbour->hCost = GetDistance(neighbour, endNode);
+						neighbour->parent = node;
 
-		//				if (!openSetContainsNeighbour)
-		//				{
-		//					openSet.push_front(neighbour);
-		//				}
+						if (!openSetContainsNeighbour)
+						{
+							openSet.push_front(neighbour);
+						}
 
-		//			}
-		//		}
-		//	}
-		//}
+					}
+				}
+			}
+		}
 
-		//if (pathSuccess)
-		//{
-		//	agent.currPath = RetracePath(startNode, endNode);
-		//}
+		if (pathSuccess)
+		{
+			agent.currPath = RetracePath(startNode, endNode);
+		}
 	}
 
 	std::vector<NavSystem::Vector3*> NavSystem::RetracePath(Node* start, Node* end)

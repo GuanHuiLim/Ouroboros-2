@@ -23,7 +23,7 @@ namespace oo
 	{
 		using namespace rttr;
 	registration::class_<NavAgentComponent>("NavAgent")
-		.property("Speed", &NavAgentComponent::speed);
-			//.property("Grid", &NavAgentComponent::grid);
+		.property("Speed", &NavAgentComponent::speed)
+		.property("Graph ID", &NavAgentComponent::graphID);
 	}
 }

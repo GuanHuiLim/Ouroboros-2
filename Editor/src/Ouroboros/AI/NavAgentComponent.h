@@ -26,12 +26,12 @@ namespace oo
 		using Vector3 = Transform::vec3;
 	public:
 		float speed = 20.0f;
-		//NavGraphComponent grid;		//requires graph
 		bool drawGizmos = false;
 		bool reached = false;
 		Vector3* target;
 		Vector3 direction;
 		int targetIndex = 0;
+		int graphID = 0;
 		std::vector<Vector3*> currPath;
 
 		RTTR_ENABLE();
