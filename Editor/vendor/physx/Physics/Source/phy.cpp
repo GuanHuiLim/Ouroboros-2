@@ -79,7 +79,8 @@ namespace physx_system {
 
     void shutdown() {
 
-        mDispatcher->release();
+        if(mDispatcher)
+            mDispatcher->release();
 
         getPhysics()->release();
 
@@ -250,29 +251,29 @@ void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
         PxMaterial* material = mat.at(underlying_obj->matID);
 
         if (shape == shape::box) {
-            PxBoxGeometry temp_box{};
+            PxBoxGeometry temp_box{ 0.5f,0.5f,0.5f };
             underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material);
             //m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxBoxGeometry{}, *mat.at(all_objects.at(obj.id)->matID));
         }
         else if (shape == shape::sphere) {
-            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxSphereGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxSphereGeometry(),*material);
         }
         else if (shape == shape::plane) {
-            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(),*material);
         }
         else if (shape == shape::capsule) {
-            m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxCapsuleGeometry(),*mat.at(all_objects.at(obj.id)->matID));
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxCapsuleGeometry(),*material);
         }
 
         //m_objects.at(obj.id).m_shape->getGeometry().sphere().radius = 5.f;
+        
+        underlying_obj->shape = shape;
 
-        m_objects.at(obj.id).shape = shape;
+        if (underlying_obj->rigidID == rigid::rstatic)
+            underlying_obj->rs.rigidStatic->attachShape(*underlying_obj->m_shape);
 
-        if (m_objects.at(obj.id).rigidID == rigid::rstatic)
-            m_objects.at(obj.id).rs.rigidStatic->attachShape(*m_objects.at(obj.id).m_shape);
-
-        else if (m_objects.at(obj.id).rigidID == rigid::rdynamic)
-            m_objects.at(obj.id).rd.rigidDynamic->attachShape(*m_objects.at(obj.id).m_shape);
+        else if (underlying_obj->rigidID == rigid::rdynamic)
+            underlying_obj->rd.rigidDynamic->attachShape(*underlying_obj->m_shape);
 
         // later check where need to release shape
     }

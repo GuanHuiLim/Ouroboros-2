@@ -21,11 +21,11 @@ Technology is prohibited.
 
 #include "Ouroboros/Physics/PhysicsComponent.h"
 #include "Ouroboros/Physics/RigidbodyComponent.h"
+#include "Ouroboros/Physics/Colliders.h"
 
 #include "Ouroboros/ECS/DeferredComponent.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
-
 namespace oo
 {
     PhysicsSystem::PhysicsSystem()
@@ -43,6 +43,10 @@ namespace oo
 
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, RigidbodyComponent>(
             this, &PhysicsSystem::OnRigidbodyRemove);
+        
+        m_world->SubscribeOnAddComponent<PhysicsSystem, BoxCollider>(
+            this, &PhysicsSystem::OnBoxColliderAdd);
+
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -243,20 +247,52 @@ namespace oo
             
             auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
             phy_comp.object = m_physicsWorld.createRigidbody(rigid::rdynamic);
-            
-            m_physicsWorld.createShape(phy_comp.object, shape::box);
+            //m_physicsWorld.createShape(phy_comp.object, shape::box);
         }
 
     }
 
     void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
-        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false) {
+        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == true) {
 
             m_physicsWorld.removeRigidbody(m_world->get_component<PhysicsComponent>(rb->entityID).object);
 
             m_world->remove_component<PhysicsComponent>(rb->entityID);
         }
+    }
+
+    void PhysicsSystem::OnBoxColliderAdd(Ecs::ComponentEvent<BoxCollider>* rb)
+    {
+        if (m_world->has_component<PhysicsComponent>(rb->entityID) == false) {
+
+            m_world->add_component<PhysicsComponent>(rb->entityID);
+
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            phy_comp.object = m_physicsWorld.createRigidbody(rigid::rstatic);
+
+            m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+            // create box temporarily
+            m_physicsWorld.createShape(phy_comp.object, shape::box);
+        }
+        // if you have a rigidbody already
+        else if (m_world->has_component<RigidbodyComponent>(rb->entityID) == true) {
+            
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+            // create box temporarily
+            m_physicsWorld.createShape(phy_comp.object, shape::box);
+        }
+    }
+
+    void PhysicsSystem::OnBoxColliderRemove(Ecs::ComponentEvent<BoxCollider>* rb)
+    {
+        /*if (m_world->has_component<RigidbodyComponent>(rb->entityID) == true) {
+
+            m_physicsWorld.removeRigidbody(m_world->get_component<PhysicsComponent>(rb->entityID).object);
+
+            m_world->remove_component<PhysicsComponent>(rb->entityID);
+        }*/
     }
 
     /*void PhysicsSystem::InformPhysicsBackend(Ecs::ComponentEvent<RigidbodyComponent>* rb)

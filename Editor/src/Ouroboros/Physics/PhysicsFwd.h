@@ -38,9 +38,9 @@ namespace oo
 
     // Colliders
     //struct BoundingVolume;    // broadphase AABB-Collider
-    //struct ColliderBase;
-    //struct BoxCollider;
-    //struct SphereCollider;
+    struct ColliderBase;
+    struct BoxCollider;
+    struct SphereCollider;
     //struct ConvexCollider;
 
     // Data Structures

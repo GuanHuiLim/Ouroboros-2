@@ -89,10 +89,10 @@ namespace oo
         void OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
         void OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);
 
-        /*void OnColliderAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
-        void OnColliderRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);
+        void OnBoxColliderAdd(Ecs::ComponentEvent<BoxCollider>* rb);
+        void OnBoxColliderRemove(Ecs::ComponentEvent<BoxCollider>* rb);
 
-        void OnColliderAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
+        /*void OnColliderAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
         void OnColliderRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);*/
     };
 
