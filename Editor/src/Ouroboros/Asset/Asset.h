@@ -116,23 +116,39 @@ namespace oo
         [[nodiscard]] inline size_t GetUseCount() const { return info->copies.size(); };
         [[nodiscard]] inline void* GetRawData() const { return info->data; };
         [[nodiscard]] inline bool HasData() const { return info->data; };
+        [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
+
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Retrieves the data stored by the asset of a given type.
+        /// </summary>
+        /// <typeparam name="T">The type of data.</typeparam>
+        /// <returns>The data.</returns>
         template<typename T>
         [[nodiscard]] inline T GetData() const;
-        [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
+
+        /// <summary>
+        /// Retrieves the types explicitly stored by the asset.
+        /// </summary>
+        /// <returns>The type infos.</returns>
+        [[nodiscard]] inline std::vector<std::type_info> GetBespokeTypes() const;
 
     private:
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
-        /****************************************************************************//*!
-        @brief  Shorthand for calling the create callback of the asset's info.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Shorthand for calling the create callback of the asset's info.
+        /// </summary>
         void createData();
 
-        /****************************************************************************//*!
-        @brief  Shorthand for calling the destroy callback of the asset's info.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Shorthand for calling the destroy callback of the asset's info.
+        /// </summary>
         void destroyData();
 
         /* --------------------------------------------------------------------------- */

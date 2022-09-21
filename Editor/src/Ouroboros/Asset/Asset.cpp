@@ -82,6 +82,16 @@ namespace oo
         info = nullptr;
     }
 
+    inline std::vector<std::type_info> Asset::GetBespokeTypes() const
+    {
+        auto v = std::vector<std::type_info>();
+        for (auto it = info->dataTypeOffsets.begin(); it != info->dataTypeOffsets.end(); ++it)
+        {
+            v.emplace_back(it->first);
+        }
+        return v;
+    }
+
     void Asset::createData()
     {
         info->onAssetCreate(*info);
