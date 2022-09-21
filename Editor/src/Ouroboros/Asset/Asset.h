@@ -46,6 +46,7 @@ namespace oo
             Texture,
             Font,
             Audio,
+            Model,
         };
 
         /* --------------------------------------------------------------------------- */
@@ -83,6 +84,7 @@ namespace oo
         static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".ogg" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
+        static constexpr ExtensionList<1> EXTS_MODEL = { ".fbx" };
 
         /* --------------------------------------------------------------------------- */
         /* Static Functions                                                            */
