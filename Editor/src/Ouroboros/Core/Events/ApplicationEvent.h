@@ -88,7 +88,9 @@ namespace oo
     };
 
     /********************************************************************************//*!
-     @brief     Implements a Window Focus AppEvent
+     @brief     Implements a Window Minimize Event
+     @note      Window Maximize Event is not the inverse of Window Minimize event.
+                The inverse of Minimize is Restored.
     *//*********************************************************************************/
     class WindowMinimizeEvent final : public AppEvent
     {
@@ -99,7 +101,9 @@ namespace oo
     };
 
     /********************************************************************************//*!
-     @brief     Implements a Window Lose Focus AppEvent
+     @brief     Implements a Window Maximize Event
+     @note      Window Maximize Event is not the inverse of Window Minimize event.
+                The inverse of Minimize is Window Restored event.
     *//*********************************************************************************/
     class WindowMaximizeEvent final : public AppEvent
     {
@@ -107,6 +111,21 @@ namespace oo
         WindowMaximizeEvent() = default;
 
         EVENT_CLASS_TYPE(WINDOWMAXIMIZE)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
+    };
+
+
+    /********************************************************************************//*!
+     @brief     Implements a Window Maximize Event
+     @note      Window Maximize Event is not the inverse of Window Minimize event.
+                The inverse of Minimize is Restored.
+    *//*********************************************************************************/
+    class WindowRestoredEvent final : public AppEvent
+    {
+    public:
+        WindowRestoredEvent() = default;
+
+        EVENT_CLASS_TYPE(WINDOWRESTORED)
         EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 

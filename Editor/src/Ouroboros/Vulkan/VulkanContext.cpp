@@ -57,7 +57,7 @@ namespace oo
     {
         EventManager::Subscribe<VulkanContext, WindowResizeEvent>(this, &VulkanContext::OnWindowResize);
         EventManager::Subscribe<VulkanContext, WindowMinimizeEvent>(this, &VulkanContext::OnWindowMinimize);
-        EventManager::Subscribe<VulkanContext, WindowMaximizeEvent>(this, &VulkanContext::OnWindowMaximize);
+        EventManager::Subscribe<VulkanContext, WindowRestoredEvent>(this, &VulkanContext::OnWindowRestored);
 
         
         // Setup Vulkan
@@ -315,7 +315,7 @@ namespace oo
         m_window.m_width = 0;
     }
 
-    void VulkanContext::OnWindowMaximize(WindowMaximizeEvent* e)
+    void VulkanContext::OnWindowRestored(WindowRestoredEvent* e)
     {
         m_minimized = false;
         int w, h;

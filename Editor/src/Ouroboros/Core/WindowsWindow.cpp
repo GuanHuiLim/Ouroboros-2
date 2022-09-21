@@ -212,14 +212,12 @@ namespace oo
                     WindowMinimizeEvent windowMinimizeEvent;
                     EventManager::Broadcast(&windowMinimizeEvent);
 
-                    //if (event.window.windowID == SDL_GetWindowID(m_window)) // only care main window
-                    //{
-                    //    m_data.Width = event.window.data1;
-                    //    m_data.Height = event.window.data2;
-
-                    //    WindowResizeEvent resizeEvent(m_data.Width, m_data.Height);
-                    //    EventManager::Broadcast(&resizeEvent);
-                    //}
+                    break;
+                }
+                case SDL_WINDOWEVENT_RESTORED:
+                {
+                    WindowRestoredEvent windowRestoredEvent;
+                    EventManager::Broadcast(&windowRestoredEvent);
 
                     break;
                 }
