@@ -80,9 +80,9 @@ struct RigidDynamic {
 
     PxReal angularDamping;
     PxVec3 angularVelocity;
-    PxReal invMass;
+    //PxReal invMass;
     PxReal linearDamping;
-    PxVec3 linearVelocit;
+    PxVec3 linearVelocity;
     PxReal mass;
     PxTransform centerOfMass;
     PxTransform globalPos;
@@ -239,7 +239,7 @@ struct PhysxObject {
     //Material mat;
 
     // shape
-    PxShape* m_shape;
+    PxShape* m_shape; // prob no need this
     shape shape;
 
     // ensure at least static or dynamic is init
@@ -251,24 +251,9 @@ struct PhysxObject {
     bool gravity = true;
     bool kinematic = false;
 
-    //~PhysxObject();
-
-    //PhysxObject(int id, 
-    //            int matID, 
-    //            RigidDynamic rd, 
-    //            RigidStatic rs, 
-    //            rigid rigidID, 
-    //            bool gravity, 
-    //            bool kinematic);
-
-
     // SETTERS
     void enableGravity(bool gravity);
     void enableKinematic(bool kine);
-
-    // prob put under physics object claas
-    void setMass(PxReal mass);
-
 };
 
 //class PhysxObject { // me store
@@ -319,6 +304,11 @@ struct PhysicsObject { // you store
     PxVec3 getposition() const;
 
     void setposition(PxVec3 pos);
+    void setAngularDamping(PxReal angularDamping);
+    void setAngularVelocity(PxVec3 angularVelocity);
+    void setLinearDamping(PxReal linearDamping);
+    void setLinearVelocity(PxVec3 linearVelocity);
+    void setMass(PxReal mass);
 };
 
 
