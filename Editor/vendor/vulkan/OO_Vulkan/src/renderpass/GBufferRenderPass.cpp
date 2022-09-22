@@ -30,6 +30,22 @@ void GBufferRenderPass::CreatePSO()
 	CreatePipeline();
 }
 
+bool GBufferRenderPass::SetupDependencies()
+{
+	// TODO: If gbuffer rendering sis disabled, return false.
+
+	// READ: Scene data SSBO
+	// READ: Instancing Data
+	// READ: Bindless stuff
+	// WRITE: GBuffer Albedo
+	// WRITE: GBuffer Normal
+	// WRITE: GBuffer Material
+	// WRITE: GBuffer Depth
+	// etc
+	
+	return true;
+}
+
 void GBufferRenderPass::Draw()
 {
 	auto& vr = *VulkanRenderer::get();
@@ -77,30 +93,22 @@ void GBufferRenderPass::Draw()
 	// TODO: handle all framebuffer resizes gracefully
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	
-	SetDefaultViewportAndScissor(cmdlist);
+	rhi::CommandList cmd{ cmdlist };
+	cmd.SetDefaultViewportAndScissor();
 
-	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, pso_GBufferDefault);
-	std::array<VkDescriptorSet, 3> descriptorSetGroup = 
-	{
-		vr.descriptorSet_gpuscene,
-		vr.descriptorSets_uniform[swapchainIdx],
-		vr.descriptorSet_bindless
-	};
-	
-	uint32_t dynamicOffset = 0;
-	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, PSOLayoutDB::indirectPSOLayout,
-		0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
-	
+	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
+		std::array<VkDescriptorSet, 3>{
+			vr.descriptorSet_gpuscene,
+			vr.descriptorSets_uniform[swapchainIdx],
+			vr.descriptorSet_bindless}
+	);
+
+	cmd.BindPSO(pso_GBufferDefault);
 	// Bind merged mesh vertex & index buffers, instancing buffers.
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-    vkCmdBindIndexBuffer(cmdlist, vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
-
-    const VkBuffer idcb = vr.indirectCommandsBuffer.buffer;
-    const uint32_t count = (uint32_t)vr.objectCount;
-
-	DrawIndexedIndirect(cmdlist, idcb, 0, count, sizeof(oGFX::IndirectCommand));
+	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
+	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
+	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.buffer, 0, vr.objectCount);
 
 	vkCmdEndRenderPass(cmdlist);
 }
@@ -260,6 +268,11 @@ void GBufferRenderPass::CreatePipeline()
 
 	const char* shaderVS = "Shaders/bin/gbuffer.vert.spv";
 	const char* shaderPS = "Shaders/bin/gbuffer.frag.spv";
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
+	{
+		vr.LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
+		vr.LoadShader(m_device, shaderPS, VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
@@ -270,13 +283,8 @@ void GBufferRenderPass::CreatePipeline()
 	VkPipelineMultisampleStateCreateInfo multisampleState = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
-	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages	= 
-	{
-		vr.LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
-		vr.LoadShader(m_device, shaderPS, VK_SHADER_STAGE_FRAGMENT_BIT)
-	};
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::indirectPSOLayout, vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -287,22 +295,12 @@ void GBufferRenderPass::CreatePipeline()
 	pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
 	pipelineCI.pStages = shaderStages.data();
 
-
-	// Vertex input state from glTF model for pipeline rendering models
-	//how the data for a single vertex (including infos such as pos, colour, texture, coords, normals etc) is as a whole
-	auto& bindingDescription = oGFX::GetGFXVertexInputBindings();
-
-	//how the data for an attirbute is define in the vertex
-	auto& attributeDescriptions = oGFX::GetGFXVertexInputAttributes();
+	const auto& bindingDescription = oGFX::GetGFXVertexInputBindings();
+	const auto& attributeDescriptions = oGFX::GetGFXVertexInputAttributes();
+	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo(bindingDescription, attributeDescriptions);
+	pipelineCI.pVertexInputState = &vertexInputCreateInfo;
 
 	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-	
-	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo(bindingDescription,attributeDescriptions);
-
-	vertexInputCreateInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescription.size());
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-
-	pipelineCI.pVertexInputState = &vertexInputCreateInfo;
 
 	// Separate render pass
 	pipelineCI.renderPass = renderpass_GBuffer;

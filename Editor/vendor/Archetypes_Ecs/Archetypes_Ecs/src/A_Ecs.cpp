@@ -1,4 +1,16 @@
 ﻿#include "A_Ecs.h"
+namespace Ecs::internal
+{
+	static const ComponentInfo* get_ComponentInfo_WithNameHash(size_t const hash) {
+		if (componentInfo_map.contains(hash) == false)
+		{
+			return nullptr;
+		}
+
+		return &(componentInfo_map[hash]);
+	}
+}
+
 
 namespace Ecs
 {
@@ -42,6 +54,24 @@ namespace Ecs
 
 		singleton_map.clear();
 	};
+
+	void* IECSWorld::get_component(EntityID const id, size_t const hash)
+	{
+		auto componentinfo = internal::get_ComponentInfo_WithNameHash(hash);
+		//verify if component info exists
+		assert(componentinfo != nullptr);
+
+		return componentinfo->get_component(*this, id);
+	}
+
+	GetCompFn* IECSWorld::get_component_Fn(size_t const hash)
+	{
+		auto componentinfo = internal::get_ComponentInfo_WithNameHash(hash);
+		//verify if component info exists
+		assert(componentinfo != nullptr);
+
+		return componentinfo->get_component;
+	}
 
 	size_t IECSWorld::get_num_components(EntityID id)
 	{
@@ -140,6 +170,16 @@ namespace Ecs
 	void ECSWorld::SubscribeOnDestroyEntity(FnPtr function)
 	{
 		world.SubscribeOnDestroyEntity(function);
+	}
+
+	void* ECSWorld::get_component(EntityID const id, size_t const hash)
+	{
+		return world.get_component(id, hash);
+	}
+
+	GetCompFn* ECSWorld::get_component_Fn(size_t const hash)
+	{
+		return world.get_component_Fn(hash);
 	}
 }
 

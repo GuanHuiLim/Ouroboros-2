@@ -16,8 +16,9 @@ struct GBufferRenderPass : public GfxRenderpass
 	void Draw() override;
 	void Shutdown() override;
 
-	void CreatePSO() override;
+	bool SetupDependencies() override;
 
+	void CreatePSO() override;
 
 	std::array<vkutils::Texture2D, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachments{};
 

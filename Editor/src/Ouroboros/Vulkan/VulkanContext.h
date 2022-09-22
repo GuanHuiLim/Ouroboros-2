@@ -25,8 +25,14 @@ Technology is prohibited.
 //#include "vk_engine.h"
 struct SDL_Window;
 
+
 namespace oo
 {
+    // forward declaration
+    class WindowResizeEvent;
+    class WindowMinimizeEvent;
+    class WindowRestoredEvent;
+
     class VulkanContext //: public GraphicsContext
     {
     public:
@@ -38,8 +44,10 @@ namespace oo
         void SwapBuffers();
 
         void InitImGui();
+        void ResetImguiInit();
         void OnImGuiBegin();
         void OnImGuiEnd();
+        void ResetImguiShutdown();
         void OnImGuiShutdown();
 
         void SetWindowResized();
@@ -55,9 +63,13 @@ namespace oo
         CameraController m_cc;
 
         //TEMP ptrs
-        std::unique_ptr<Model> cubeMesh;
-        std::unique_ptr<Model> planeMesh;
+        std::unique_ptr<ModelData> cubeMesh;
+        std::unique_ptr<ModelData> planeMesh;
 
-        //static VulkanEngine vkEngine;
+        bool m_minimized = false;
+    private:
+        void OnWindowResize(WindowResizeEvent* e);
+        void OnWindowMinimize(WindowMinimizeEvent* e);
+        void OnWindowRestored(WindowRestoredEvent* e);
     };
 }

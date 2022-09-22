@@ -120,17 +120,7 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 
 UUID Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::GameObject> parent , oo::Scene& scene)
 {
-	std::ifstream ifs(path);
-	if (ifs.peek() == std::ifstream::traits_type::eof())
-	{
-		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
-		return 0;
-	}
-	rapidjson::IStreamWrapper isw(ifs);
-	rapidjson::Document doc;
-	doc.ParseStream(isw);
-	auto prefabID = Loading(parent, scene,doc);
-	ifs.close();
+	auto prefabID = CreatePrefab(parent, scene, path);
 	return prefabID;
 }
 
@@ -468,6 +458,66 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 	}
 }
 
+UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p)
+{
+	UUID firstobj;
+	
+	auto go = scene.CreateGameObjectImmediate();
+	go->AddComponent<oo::PrefabComponent>();
+	firstobj = go->GetInstanceID();
+
+	starting->AddChild(*go);
+	
+	if (go->HasComponent<oo::PrefabComponent>() == false)
+	{
+		std::string msg = "GameObject does not contain this component: ";
+		msg += rttr::type::get<oo::PrefabComponent>().get_name().data();
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, msg);
+	}
+	oo::PrefabComponent& component = go->GetComponent<oo::PrefabComponent>();
+	component.prefab_filePath = p;
+
+	std::string& data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder() / component.prefab_filePath).string());
+	rapidjson::StringStream stream(data.c_str());
+
+	rapidjson::Document document;
+	document.ParseStream(stream);
+
+	std::stack<std::shared_ptr<oo::GameObject>> parents;
+	auto gameobj = (go);
+	parents.push(gameobj);
+	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
+	{
+		//gameobj->SetName(iter->name.GetString());
+		gameobj->SetIsPrefab(true);
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
+		{//when the order dont match the size it will keep poping until it matches
+		//then parent to it and adds itself
+			while (order != parents.size())
+				parents.pop();
+
+			parents.top()->AddChild(*gameobj);
+			parents.push(gameobj);
+		}
+
+		++members;
+		{//another element that will store all the component hashes and create the apporiate archtype
+			// go->SetArchtype(vector<hashes>);
+		}
+		//processes the components		
+		LoadObject(*gameobj, members, membersEnd);
+		++iter;
+		if (iter != document.MemberEnd())
+		{
+			gameobj = scene.CreateGameObjectImmediate();
+		}
+	}
+	return firstobj;
+}
+
 void Serializer::SaveScript(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc)
 {
 	auto & scriptcomponent = go.GetComponent<oo::ScriptComponent>();
@@ -495,22 +545,27 @@ void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptCompone
 	
 	for (auto iter = val.MemberBegin(); iter != val.MemberEnd(); ++iter)
 	{
-		std::string script_name = iter->name.GetString();
-		size_t idx = script_name.find_last_of('.');
-		oo::ScriptClassInfo sci();
-		auto& scriptInfo = (idx == std::string::npos)?
-			scriptcomponent.AddScriptInfo(oo::ScriptClassInfo("", script_name))
-			:scriptcomponent.AddScriptInfo(oo::ScriptClassInfo(script_name.substr(0, idx), script_name.substr(idx)));
-		
-		for (auto classInfoIter = iter->value.MemberBegin(); classInfoIter != iter->value.MemberEnd(); ++classInfoIter)
-		{
-			auto scriptfieldIter = scriptInfo.fieldMap.find(classInfoIter->name.GetString());
-			auto type = scriptfieldIter->second.value.GetValueType();
-			auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
-			if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
-				continue;
-			sfiLoadIter->second(std::move(classInfoIter->value), scriptfieldIter->second);
-		}
+        try
+        {
+            std::string script_name = iter->name.GetString();
+            auto& scriptInfo = scriptcomponent.AddScriptInfo(oo::ScriptClassInfo{ script_name });
+
+            for (auto classInfoIter = iter->value.MemberBegin(); classInfoIter != iter->value.MemberEnd(); ++classInfoIter)
+            {
+                auto scriptfieldIter = scriptInfo.fieldMap.find(classInfoIter->name.GetString());
+                if (scriptfieldIter == scriptInfo.fieldMap.end())
+                    continue;
+                auto type = scriptfieldIter->second.value.GetValueType();
+                auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
+                if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
+                    continue;
+                sfiLoadIter->second(std::move(classInfoIter->value), scriptfieldIter->second);
+            }
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR("{0} (DON'T SAVE OR SCRIPTS WILL BE DELETED FROM GAMEOBJECTS)", e.what());
+        }
 	}
 }
 

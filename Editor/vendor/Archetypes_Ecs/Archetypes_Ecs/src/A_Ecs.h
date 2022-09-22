@@ -99,7 +99,6 @@ namespace Ecs::internal
 		return mt;
 	}
 
-
 	//reorder archetype with the fullness
 	inline void set_chunk_full(DataChunk* chunk) {
 
@@ -675,6 +674,13 @@ namespace Ecs::internal
 		return acrray[storage.chunkIndex];
 	}
 
+	template<typename C>
+	size_t get_component_name_hash()
+	{
+		auto comp_info = get_ComponentInfo<C>();
+		return comp_info->hash.name_hash;
+	}
+
 
 	template<typename C>
 	bool has_component(IECSWorld* world, EntityID id)
@@ -806,6 +812,7 @@ namespace Ecs::internal
 	void entity_chunk_iterate(DataChunk* chnk, Func&& function) {
 		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
 #ifndef NDEBUG
+		//function arguements are incorrect, check if you are using ComponentType&
 		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
 #endif
 
@@ -827,6 +834,7 @@ namespace Ecs::internal
 	{
 		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
 #ifndef NDEBUG
+		//function arguements are incorrect, check if you are using ComponentType&
 		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
 #endif
 
@@ -1178,6 +1186,18 @@ namespace Ecs
 	C& IECSWorld::get_component(EntityID id)
 	{
 		return internal::get_entity_component<C>(this, id);
+	}
+
+	template<typename C>
+	size_t IECSWorld::get_component_hash()
+	{
+		return internal::get_component_name_hash<C>();
+	}
+
+	template<typename C>
+	ComponentInfo const* IECSWorld::get_component_info() const
+	{
+		return internal::get_ComponentInfo<C>();
 	}
 
 	template<typename C>

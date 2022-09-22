@@ -148,7 +148,7 @@ inline void BitContainer<T, MAX_OBJECTS>::Clear()
 {
 	for (size_t i = 0; i < m_bits.size(); i++)
 	{
-		m_bits[i] == false;
+		m_bits[i] = false;
 	}
 }
 

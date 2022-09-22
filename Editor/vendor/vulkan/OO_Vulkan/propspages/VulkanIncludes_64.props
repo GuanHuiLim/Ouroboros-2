@@ -8,6 +8,7 @@
       <AdditionalIncludeDirectories>%VULKAN_SDK%\include;$(SolutionDir)\vendor\glm\;$(SolutionDir)\vendor\assimp\include;$(SolutionDir)\vendor\assimp\BINARIES\Win32\include;$(SolutionDir)\vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%VULKAN_SDK%\Lib\vulkan-1.lib;$(SolutionDir)vendor\assimp\BINARIES\Win32\lib\Release\assimp-vc142-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>

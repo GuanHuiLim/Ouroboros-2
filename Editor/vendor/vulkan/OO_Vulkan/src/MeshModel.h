@@ -51,17 +51,26 @@ struct Bone
     glm::vec3 scale;
 };
 
-struct Model
+
+struct ModelData
 {
-    uint32_t gfxIndex{};
+    ~ModelData();
+
     std::string fileName;
+    std::vector<uint32_t> gfxMeshIndices;
+
     std::vector<oGFX::Vertex> vertices;
     std::vector<uint32_t> indices;
+
+    Node* sceneInfo{ nullptr };
+    uint32_t sceneMeshCount{};
+
+
     std::unordered_map<std::string, BoneInfo> strToBone;
     std::vector<Bone> bones;
     uint32_t boneCnt{};
-    Sphere s{};
-    AABB aabb{};
+
+    void ModelSceneLoad(const aiScene* scene, const aiNode& node, Node* parent,const glm::mat4 accMat);
 };
 
 struct gfxModel
@@ -82,28 +91,20 @@ struct gfxModel
         VkDeviceMemory memory{};
     } indices{};
 
-    struct Textures
-    {
-        uint32_t albedo{};
-        uint32_t normal{};
-        uint32_t occlusion{};
-        uint32_t roughness{};
-    }textures{};
-
-    Model* cpuModel{ nullptr };
+    ModelData* cpuModel{ nullptr };
+    std::vector<Node*> nodes;
+    std::string name;   
+    oGFX::Mesh* mesh{ nullptr };
 
     void destroy(VkDevice device);
 
     void loadNode(Node* parent, const aiScene* scene, const aiNode& node, uint32_t nodeIndex,
-                 Model& cpumodel);
+        ModelData& cpumodel);
+    void loadNode(const aiScene* scene,const aiNode& node, Node* parent, ModelData& cpuModel, glm::mat4 accMat);
 
     void updateOffsets(uint32_t idxOffset, uint32_t vertOffset);
-
-    std::vector<Node*> nodes;
-    uint32_t meshCount{};
-
-private:
     oGFX::Mesh* processMesh(aiMesh* mesh, const aiScene* scene, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices);
+private:
 
 };
 

@@ -17,6 +17,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Layer.h"
 #include <Scripting/Scripting.h>
 #include "Ouroboros/Scripting/ScriptManager.h"
+#include "Ouroboros/Scripting/ScriptSystem.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
 
@@ -38,8 +39,11 @@ namespace oo
                 {
                     if (e->m_buttonType != ToolbarButtonEvent::ToolbarButton::COMPILE)
                         return;
-                    if(ScriptManager::Compile())
+                    if (ScriptManager::Compile())
+                    {
                         ScriptManager::Load();
+                        ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<ScriptSystem>()->RefreshScriptInfoAll();
+                    }
                 });
         }
 
