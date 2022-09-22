@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "InputManager.h"
+
+#include <Ouroboros/Core/Input.h>
+
 #include <rttr/registration>
 namespace oo
 {
@@ -12,6 +15,11 @@ namespace oo
 			value("Mouse Button", InputAxis::InputType::MouseButton),
 			value("Keyboard Button", InputAxis::InputType::KeyboardButton)
 		);
+      registration::enumeration<InputAxis::ControllerInputType>("Controller Input Type")
+          (
+              value("Trigger/Joystick", InputAxis::ControllerInputType::Trigger_Joystick),
+              value("Button", InputAxis::ControllerInputType::Button)
+              );
 	  registration::enumeration<input::KeyCode>("KeyCode")
 		  (
 			  value("Key A", input::KeyCode::A),
@@ -58,6 +66,33 @@ namespace oo
 			value("Right Click", input::MouseCode::Button1),
 			value("Middle Click", input::MouseCode::Button2)
 		);
+    registration::enumeration<input::ControllerButtonCode>("ControllerButtonCode")
+        (
+            value("A", input::ControllerButtonCode::A),
+            value("B", input::ControllerButtonCode::B),
+            value("X", input::ControllerButtonCode::X),
+            value("Y", input::ControllerButtonCode::Y),
+            value("Back", input::ControllerButtonCode::BACK),
+            value("Guide", input::ControllerButtonCode::GUIDE),
+            value("Start", input::ControllerButtonCode::START),
+            value("Left Stick", input::ControllerButtonCode::LEFTSTICK),
+            value("Right Stick", input::ControllerButtonCode::RIGHTSTICK),
+            value("Left Shoulder", input::ControllerButtonCode::LEFTSHOULDER),
+            value("Right Shoulder", input::ControllerButtonCode::RIGHTSHOULDER),
+            value("D-Pad Up", input::ControllerButtonCode::DPAD_UP),
+            value("D-Pad Down", input::ControllerButtonCode::DPAD_DOWN),
+            value("D-Pad Left", input::ControllerButtonCode::DPAD_LEFT),
+            value("D-Pad Right", input::ControllerButtonCode::DPAD_RIGHT)
+        );
+    registration::enumeration<input::ControllerAxisCode>("ControllerAxisCode")
+        (
+            value("Left Joystick X", input::ControllerAxisCode::LEFTX),
+            value("Left Joystick Y", input::ControllerAxisCode::LEFTY),
+            value("Right Joystick X", input::ControllerAxisCode::RIGHTX),
+            value("Right Joystick Y", input::ControllerAxisCode::RIGHTY),
+            value("Left Trigger", input::ControllerAxisCode::TRIGGERLEFT),
+            value("Right Trigger", input::ControllerAxisCode::TRIGGERRIGHT)
+        );
 	}
     void InputManager::LoadDefault()
     {
@@ -67,11 +102,13 @@ namespace oo
             {
                 "Mouse X",
                 InputAxis::InputType::MouseMovement,
-                InputAxis::INPUTCODE_INVALID,
-                InputAxis::INPUTCODE_INVALID,
-                InputAxis::INPUTCODE_INVALID,
-                InputAxis::INPUTCODE_INVALID,
-                0U, 0.0f, 0.0f
+                InputAxis::Settings
+                {
+                },
+                InputAxis::ControllerInputType::Trigger_Joystick,
+                InputAxis::Settings
+                {
+                }
             }
         );
         axes.emplace_back(
@@ -79,11 +116,13 @@ namespace oo
             {
                 "Mouse Y",
                 InputAxis::InputType::MouseMovement,
-                InputAxis::INPUTCODE_INVALID,
-                InputAxis::INPUTCODE_INVALID,
-                InputAxis::INPUTCODE_INVALID,
-                InputAxis::INPUTCODE_INVALID,
-                0U, 0.0f, 0.0f
+                InputAxis::Settings
+                {
+                },
+                InputAxis::ControllerInputType::Trigger_Joystick,
+                InputAxis::Settings
+                {
+                }
             }
         );
         axes.emplace_back(
@@ -91,11 +130,23 @@ namespace oo
             {
                 "Horizontal",
                 InputAxis::InputType::KeyboardButton,
-                static_cast<InputAxis::InputCode>(input::KeyCode::LEFT),
-                static_cast<InputAxis::InputCode>(input::KeyCode::RIGHT),
-                static_cast<InputAxis::InputCode>(input::KeyCode::A),
-                static_cast<InputAxis::InputCode>(input::KeyCode::D),
-                0U, 0.0f, 0.0f
+                InputAxis::Settings
+                {
+                    static_cast<InputAxis::InputCode>(input::KeyCode::LEFT),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::RIGHT),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::A),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::D),
+                    0U, 0.0f, 0.0f
+                },
+                InputAxis::ControllerInputType::Trigger_Joystick,
+                InputAxis::Settings
+                {
+                    InputAxis::INPUTCODE_INVALID,
+                    static_cast<InputAxis::InputCode>(input::ControllerAxisCode::LEFTX),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                }
             }
         );
         axes.emplace_back(
@@ -103,11 +154,47 @@ namespace oo
             {
                 "Vertical",
                 InputAxis::InputType::KeyboardButton,
-                static_cast<InputAxis::InputCode>(input::KeyCode::DOWN),
-                static_cast<InputAxis::InputCode>(input::KeyCode::UP),
-                static_cast<InputAxis::InputCode>(input::KeyCode::S),
-                static_cast<InputAxis::InputCode>(input::KeyCode::W),
-                0U, 0.0f, 0.0f
+                InputAxis::Settings
+                {
+                    static_cast<InputAxis::InputCode>(input::KeyCode::DOWN),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::UP),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::S),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::W),
+                    0U, 0.0f, 0.0f
+                },
+                InputAxis::ControllerInputType::Trigger_Joystick,
+                InputAxis::Settings
+                {
+                    InputAxis::INPUTCODE_INVALID,
+                    static_cast<InputAxis::InputCode>(input::ControllerAxisCode::LEFTY),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                }
+            }
+        );
+        axes.emplace_back(
+            InputAxis
+            {
+                "Test",
+                InputAxis::InputType::KeyboardButton,
+                InputAxis::Settings
+                {
+                    static_cast<InputAxis::InputCode>(input::KeyCode::K),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::L),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                },
+                InputAxis::ControllerInputType::Button,
+                InputAxis::Settings
+                {
+                    static_cast<InputAxis::InputCode>(input::ControllerButtonCode::A),
+                    static_cast<InputAxis::InputCode>(input::ControllerButtonCode::B),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                }
             }
         );
     }
