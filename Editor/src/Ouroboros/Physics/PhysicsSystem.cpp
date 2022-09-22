@@ -277,11 +277,12 @@ namespace oo
             m_world->add_component<PhysicsComponent>(rb->entityID);
 
             auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
-            phy_comp.object = m_physicsWorld.();
+            phy_comp.object = m_physicsWorld.createInstance();
         }
 
+        auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
         // if box collider exist on item already.
-        //phy_comp.object.setRigidType(rigid::rdynamic);
+        phy_comp.object.setRigidType(rigid::rdynamic);
 
     }
 
@@ -304,6 +305,8 @@ namespace oo
             m_world->add_component<PhysicsComponent>(rb->entityID);
 
             auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            phy_comp.object = m_physicsWorld.createInstance();
+
             phy_comp.object.setRigidType(rigid::rstatic);   // static if this is first added.
 
             m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
