@@ -6,18 +6,13 @@
 namespace oo
 {
     InputAxis::InputAxis()
-        : name{ "Axis Name" }, type{InputType::KeyboardButton}, negativeButton{InputAxis::INPUTCODE_INVALID}, positiveButton{InputAxis::INPUTCODE_INVALID}, negativeAltButton{InputAxis::INPUTCODE_INVALID}, positiveAltButton{InputAxis::INPUTCODE_INVALID},
-        pressesRequired{ 0 }, maxGapTime{ 0 }, holdDurationRequired{ 0 }
+        : name{ "Axis Name" }, type{ InputType::KeyboardButton }, settings{ }, controllerType{ ControllerInputType::Button }, controllerSettings{ }
     {
-
     }
 
-    InputAxis::InputAxis(std::string name, InputType type, InputCode negativeButton, InputCode positiveButton, InputCode negativeAltButton, InputCode positiveAltButton,
-        unsigned pressesRequired, float maxGapTime, float holdDurationRequired)
-        : name{ name }, type{ type }, negativeButton{ negativeButton }, positiveButton{ positiveButton }, negativeAltButton{ negativeAltButton }, positiveAltButton{ positiveAltButton },
-        pressesRequired{ pressesRequired }, maxGapTime{ maxGapTime }, holdDurationRequired{ holdDurationRequired }
+    InputAxis::InputAxis(std::string name, InputType type, Settings const& settings, ControllerInputType controllerType, Settings const& controllerSettings)
+        : name{ name }, type{ type }, settings{ settings }, controllerType{ controllerType }, controllerSettings{ controllerSettings }
     {
-
     }
 
     void InputAxis::SetType(InputType newType)
@@ -26,19 +21,19 @@ namespace oo
         switch (type)
         {
         default:
-            negativeButton = InputAxis::INPUTCODE_INVALID;
-            negativeAltButton = InputAxis::INPUTCODE_INVALID;
-            positiveButton = InputAxis::INPUTCODE_INVALID;
-            positiveAltButton = InputAxis::INPUTCODE_INVALID;
-            pressesRequired = 0;
-            maxGapTime = 0.0f;
-            holdDurationRequired = 0.0f;
+            settings.negativeButton = InputAxis::INPUTCODE_INVALID;
+            settings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
+            settings.positiveButton = InputAxis::INPUTCODE_INVALID;
+            settings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
+            settings.pressesRequired = 0;
+            settings.maxGapTime = 0.0f;
+            settings.holdDurationRequired = 0.0f;
             break;
         }
     }
 
     InputAxis::Tracker::Tracker(InputAxis const& axis)
-        : axis{ axis }, durationHeld{ 0.0f }, pressCount{ 0 }, pressGapTimeLeft{ axis.maxGapTime }, lastPressed{ InputAxis::INPUTCODE_INVALID }
+        : axis{ axis }, durationHeld{ 0.0f }, pressCount{ 0 }, pressGapTimeLeft{ 0.0f }, lastPressed{ InputAxis::INPUTCODE_INVALID }
     {
 
     }
@@ -48,29 +43,17 @@ namespace oo
         if (axis.type == InputType::MouseMovement)
             return;
         // update last pressed
-        if (lastPressed != axis.positiveButton && IsInputCodePressed(axis.type, axis.positiveButton))
+        UpdateLastPressed(axis.settings.positiveButton);
+        UpdateLastPressed(axis.settings.positiveAltButton);
+        UpdateLastPressed(axis.settings.negativeButton);
+        UpdateLastPressed(axis.settings.negativeAltButton);
+
+        if (axis.controllerType == ControllerInputType::Button)
         {
-            lastPressed = axis.positiveButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
-        }
-        else if (lastPressed != axis.positiveAltButton && IsInputCodePressed(axis.type, axis.positiveAltButton))
-        {
-            lastPressed = axis.positiveAltButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
-        }
-        else if (lastPressed != axis.negativeButton && IsInputCodePressed(axis.type, axis.negativeButton))
-        {
-            lastPressed = axis.negativeButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
-        }
-        else if (lastPressed != axis.negativeAltButton && IsInputCodePressed(axis.type, axis.negativeAltButton))
-        {
-            lastPressed = axis.negativeAltButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
+            UpdateLastPressedController(axis.controllerSettings.positiveButton);
+            UpdateLastPressedController(axis.controllerSettings.positiveAltButton);
+            UpdateLastPressedController(axis.controllerSettings.negativeButton);
+            UpdateLastPressedController(axis.controllerSettings.negativeAltButton);
         }
 
         if (pressGapTimeLeft > 0.0f)
@@ -84,7 +67,7 @@ namespace oo
         if (IsInputCodePressed(axis.type, lastPressed))
         {
             ++pressCount;
-            pressGapTimeLeft = axis.maxGapTime;
+            pressGapTimeLeft = axis.settings.maxGapTime;
         }
         if (IsInputCodeHeld(axis.type, lastPressed))
         {
@@ -94,38 +77,98 @@ namespace oo
         {
             durationHeld = 0.0f;
         }
-    }
-
-    bool InputAxis::Tracker::Satisfied()
-    {
-        return (axis.pressesRequired <= 0 || pressCount >= axis.pressesRequired)
-            && (axis.holdDurationRequired <= 0.0f || durationHeld >= axis.holdDurationRequired);
+        if (axis.controllerType == ControllerInputType::Button)
+        {
+            if (IsControllerInputCodePressed(lastPressed))
+            {
+                ++pressCount;
+                pressGapTimeLeft = axis.settings.maxGapTime;
+            }
+            if (IsControllerInputCodeHeld(lastPressed))
+            {
+                durationHeld += deltaTime;
+            }
+            if (IsControllerInputCodeReleased(lastPressed))
+            {
+                durationHeld = 0.0f;
+            }
+        }
     }
 
     float InputAxis::Tracker::GetValue()
     {
-        if (!Satisfied())
-            return 0.0f;
         float value = 0.0f;
-        switch (axis.type)
+        if (axis.settings.ConditionsMet(pressCount, durationHeld))
         {
-        case InputType::MouseMovement:
-        {
-            if (axis.GetName() == "Mouse X")
-                value = input::GetMouseDelta().first;
-            else if (axis.GetName() == "Mouse Y")
-                value = input::GetMouseDelta().second;
+            switch (axis.type)
+            {
+            case InputType::MouseMovement:
+                {
+                    if (axis.GetName() == "Mouse X")
+                        value = input::GetMouseDelta().first;
+                    else if (axis.GetName() == "Mouse Y")
+                        value = input::GetMouseDelta().second;
+                }
+                break;
+            default:
+                {
+                    if (IsInputCodeHeld(axis.type, axis.settings.positiveButton) || IsInputCodeHeld(axis.type, axis.settings.positiveAltButton))
+                        value += 1.0f;
+                    if (IsInputCodeHeld(axis.type, axis.settings.negativeButton) || IsInputCodeHeld(axis.type, axis.settings.negativeAltButton))
+                        value += -1.0f;
+                }
+            }
         }
-        break;
-        default:
+        if (axis.controllerSettings.ConditionsMet(pressCount, durationHeld))
         {
-            if (IsInputCodeHeld(axis.type, axis.GetPositiveButton()) || IsInputCodeHeld(axis.type, axis.GetPositiveAltButton()))
-                value += 1.0f;
-            if (IsInputCodeHeld(axis.type, axis.GetNegativeButton()) || IsInputCodeHeld(axis.type, axis.GetNegativeAltButton()))
-                value += -1.0f;
-        }
+            float controllerValue = 0.0f;
+            switch (axis.controllerType)
+            {
+            case ControllerInputType::Trigger_Joystick:
+                {
+                    float posValue = GetControllerAxisValue(axis.controllerSettings.positiveButton);
+                    float temp = GetControllerAxisValue(axis.controllerSettings.positiveAltButton);
+                    if (std::fabsf(temp) > std::fabsf(posValue))
+                        posValue = temp;
+                    float negValue = GetControllerAxisValue(axis.controllerSettings.negativeButton);
+                    temp = GetControllerAxisValue(axis.controllerSettings.negativeAltButton);
+                    if (std::fabsf(temp) > std::fabsf(negValue))
+                        negValue = temp;
+                    controllerValue = posValue - negValue;
+                }
+                break;
+            case ControllerInputType::Button:
+                {
+                    if (IsControllerInputCodeHeld(axis.controllerSettings.positiveButton) || IsControllerInputCodeHeld(axis.controllerSettings.positiveAltButton))
+                        controllerValue += 1.0f;
+                    if (IsControllerInputCodeHeld(axis.controllerSettings.negativeButton) || IsControllerInputCodeHeld(axis.controllerSettings.negativeAltButton))
+                        controllerValue += -1.0f;
+                }
+                break;
+            }
+            if (std::fabsf(controllerValue) > std::fabsf(value))
+                value = controllerValue;
         }
         return value;
+    }
+
+    void InputAxis::Tracker::UpdateLastPressed(InputCode potentialButton)
+    {
+        if (lastPressed != potentialButton && IsInputCodePressed(axis.type, potentialButton))
+        {
+            lastPressed = potentialButton;
+            pressCount = 0;
+            durationHeld = 0.0f;
+        }
+    }
+    void InputAxis::Tracker::UpdateLastPressedController(InputCode potentialButton)
+    {
+        if (lastPressed != potentialButton && IsControllerInputCodePressed(potentialButton))
+        {
+            lastPressed = potentialButton;
+            pressCount = 0;
+            durationHeld = 0.0f;
+        }
     }
 
     bool InputAxis::IsInputCodePressed(InputType type, InputCode inputCode)
@@ -160,5 +203,36 @@ namespace oo
         case InputType::MouseButton: return input::IsMouseButtonReleased(static_cast<input::MouseCode>(inputCode));
         }
         return false;
+    }
+
+    bool InputAxis::IsControllerInputCodePressed(InputCode inputCode)
+    {
+        if (inputCode == InputAxis::INPUTCODE_INVALID)
+            return false;
+        return input::IsControllerButtonPressed(static_cast<input::ControllerButtonCode>(inputCode));
+    }
+    bool InputAxis::IsControllerInputCodeHeld(InputCode inputCode)
+    {
+        if (inputCode == InputAxis::INPUTCODE_INVALID)
+            return false;
+        return input::IsControllerButtonHeld(static_cast<input::ControllerButtonCode>(inputCode));
+    }
+    bool InputAxis::IsControllerInputCodeReleased(InputCode inputCode)
+    {
+        if (inputCode == InputAxis::INPUTCODE_INVALID)
+            return false;
+        return input::IsControllerButtonReleased(static_cast<input::ControllerButtonCode>(inputCode));
+    }
+
+
+    float InputAxis::GetControllerAxisValue(InputCode inputCode)
+    {
+        if (inputCode == InputAxis::INPUTCODE_INVALID)
+            return 0.0f;
+        float value = input::GetControllerAxisValue(static_cast<input::ControllerAxisCode>(inputCode));
+        if (value >= 0)
+            return value / std::numeric_limits<short>().max();
+        else
+            return -value / std::numeric_limits<short>().min();
     }
 }

@@ -18,31 +18,60 @@ namespace oo
             KeyboardButton,
         };
 
+        enum class ControllerInputType
+        {
+            Trigger_Joystick,
+            Button,
+        };
+
+        struct Settings
+        {
+        public:
+            Settings() : negativeButton{ InputAxis::INPUTCODE_INVALID }, positiveButton{ InputAxis::INPUTCODE_INVALID },
+                negativeAltButton{ InputAxis::INPUTCODE_INVALID }, positiveAltButton{ InputAxis::INPUTCODE_INVALID },
+                pressesRequired{ 0 }, maxGapTime{ 0 }, holdDurationRequired{ 0 }
+            {
+            }
+
+            Settings(InputCode negativeButton, InputCode positiveButton, InputCode negativeAltButton, InputCode positiveAltButton,
+                unsigned pressesRequired, float maxGapTime, float holdDurationRequired)
+                : negativeButton{ negativeButton }, positiveButton{ positiveButton },
+                negativeAltButton{ negativeAltButton }, positiveAltButton{ positiveAltButton },
+                pressesRequired{ pressesRequired }, maxGapTime{ maxGapTime }, holdDurationRequired{ holdDurationRequired }
+            {
+            }
+
+        public:
+            InputCode negativeButton;
+            InputCode positiveButton;
+            InputCode negativeAltButton;
+            InputCode positiveAltButton;
+            unsigned pressesRequired;
+            float maxGapTime;
+            float holdDurationRequired;
+
+        public:
+            inline bool ConditionsMet(unsigned pressCount, float durationHeld) const
+            {
+                return (pressesRequired <= 0 || pressCount >= pressesRequired) && (holdDurationRequired <= 0.0f || durationHeld >= holdDurationRequired);
+            }
+        };
+
     private:
         std::string name;
-
-        //float sensitivity;
-        //float gravity;
-        //float deadZone;
-        //bool snap;
-        //bool invert;
-
         // Keyboard & Mouse
         InputType type;
-        InputCode negativeButton;
-        InputCode positiveButton;
-        InputCode negativeAltButton;
-        InputCode positiveAltButton;
-        unsigned pressesRequired;
-        float maxGapTime;
-        float holdDurationRequired;
+        Settings settings;
+
+        // Controller
+        ControllerInputType controllerType;
+        Settings controllerSettings;
 
     public:
         InputAxis();
         ~InputAxis() = default;
 
-        InputAxis(std::string name, InputType type, InputCode negativeButton, InputCode positiveButton, InputCode negativeAltButton, InputCode positiveAltButton,
-            unsigned pressesRequired, float maxGapTime, float holdDurationRequired);
+        InputAxis(std::string name, InputType type, Settings const& settings, ControllerInputType controllerType, Settings const& controllerSettings);
 
         inline std::string const& GetName() const { return name; }
         inline void SetName(std::string const& newName) { name = newName; }
@@ -50,26 +79,11 @@ namespace oo
         inline InputType const GetType() const { return type; }
         void SetType(InputType newType);
 
-        inline InputCode const GetNegativeButton() const { return negativeButton; }
-        inline void SetNegativeButton(InputCode newCode) { negativeButton = newCode; }
+        inline Settings& GetSettings() { return settings; }
+        inline Settings const& GetSettings() const { return settings; }
 
-        inline InputCode const GetPositiveButton() const { return positiveButton; }
-        inline void SetPositiveButton(InputCode newCode) { positiveButton = newCode; }
-
-        inline InputCode const GetNegativeAltButton() const { return negativeAltButton; }
-        inline void SetNegativeAltButton(InputCode newCode) { negativeAltButton = newCode; }
-
-        inline InputCode const GetPositiveAltButton() const { return positiveAltButton; }
-        inline void SetPositiveAltButton(InputCode newCode) { positiveAltButton = newCode; }
-
-        inline unsigned const GetPressesRequired() const { return pressesRequired; }
-        inline void SetPressesRequired(unsigned requiredCount) { pressesRequired = requiredCount; }
-
-        inline float const GetMaxGapTime() const { return maxGapTime; }
-        inline void SetMaxGapTime(float gapTime) { maxGapTime = gapTime; }
-
-        inline float const GetHoldDurationRequired() const { return holdDurationRequired; }
-        inline void SetHoldDurationRequired(float holdDuration) { holdDurationRequired = holdDuration; }
+        inline Settings& GetControllerSettings() { return controllerSettings; }
+        inline Settings const& GetControllerSettings() const { return controllerSettings; }
 
     public:
         class Tracker
@@ -79,7 +93,6 @@ namespace oo
             ~Tracker() = default;
 
             void Update(float deltaTime);
-            bool Satisfied();
             float GetValue();
 
         private:
@@ -88,11 +101,20 @@ namespace oo
             unsigned pressCount;
             float pressGapTimeLeft;
             InputAxis::InputCode lastPressed;
+
+        private:
+            void UpdateLastPressed(InputCode potentialButton);
+            void UpdateLastPressedController(InputCode potentialButton);
         };
 
     private:
         static bool IsInputCodePressed(InputType type, InputCode inputCode);
         static bool IsInputCodeHeld(InputType type, InputCode inputCode);
         static bool IsInputCodeReleased(InputType type, InputCode inputCode);
+
+        static bool IsControllerInputCodePressed(InputCode inputCode);
+        static bool IsControllerInputCodeHeld(InputCode inputCode);
+        static bool IsControllerInputCodeReleased(InputCode inputCode);
+        static float GetControllerAxisValue(InputCode inputCode);
     };
 }

@@ -49,33 +49,33 @@ void InputManagerUI::Show()
 			
 
 		//buttons
-		int key = static_cast<int>(input.GetNegativeButton());
-		if (DrawKeyInputUI("Negative Button", key, oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetNegativeButton(static_cast<oo::InputAxis::InputCode>(key));
+		int key = static_cast<int>(input.GetSettings().negativeButton);
+        if (DrawKeyInputUI("Negative Button", key, oo::InputAxis::InputType::MouseButton == actualInputType))
+            input.GetSettings().negativeButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		key = static_cast<int>(input.GetPositiveButton());
+		key = static_cast<int>(input.GetSettings().positiveButton);
 		if (DrawKeyInputUI("Positive Button", key,oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetPositiveButton(static_cast<oo::InputAxis::InputCode>(key));
+			input.GetSettings().positiveButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		key = static_cast<int>(input.GetNegativeAltButton());
+		key = static_cast<int>(input.GetSettings().negativeAltButton);
 		if (DrawKeyInputUI("Negative Alt Button", key,oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetNegativeAltButton(static_cast<oo::InputAxis::InputCode>(key));
+            input.GetSettings().negativeAltButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		key = static_cast<int>(input.GetPositiveAltButton());
+		key = static_cast<int>(input.GetSettings().positiveAltButton);
 		if (DrawKeyInputUI("Positive Alt Button", key, oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetPositiveAltButton(static_cast<oo::InputAxis::InputCode>(key));
+            input.GetSettings().positiveAltButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		unsigned pressesRequired = input.GetPressesRequired();
-		if (ImGui::DragScalarN("Presses Required", ImGuiDataType_::ImGuiDataType_U32, &pressesRequired, 1, 0.1f))
-			input.SetPressesRequired(pressesRequired);
+        unsigned pressesRequired = input.GetSettings().pressesRequired;
+        if (ImGui::DragScalarN("Presses Required", ImGuiDataType_::ImGuiDataType_U32, &pressesRequired, 1, 0.1f))
+            input.GetSettings().pressesRequired = pressesRequired;
 
-		float maxGapTime = input.GetMaxGapTime();
-		if (ImGui::DragFloat("Max Gap Time", &maxGapTime, 0.1f))
-			input.SetMaxGapTime(maxGapTime);
+        float maxGapTime = input.GetSettings().maxGapTime;
+        if (ImGui::DragFloat("Max Gap Time", &maxGapTime, 0.1f))
+            input.GetSettings().maxGapTime = maxGapTime;
 
-		float holdDurationRequired = input.GetHoldDurationRequired();
-		if (ImGui::DragFloat("Hold Duration Required", &holdDurationRequired, 0.1f))
-			input.SetHoldDurationRequired(holdDurationRequired);
+        float holdDurationRequired = input.GetSettings().holdDurationRequired;
+        if (ImGui::DragFloat("Hold Duration Required", &holdDurationRequired, 0.1f))
+            input.GetSettings().holdDurationRequired = holdDurationRequired;
 		
 		ImGui::PopID();
 		ImGui::Separator();
