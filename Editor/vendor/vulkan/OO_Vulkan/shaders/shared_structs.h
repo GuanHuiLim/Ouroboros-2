@@ -40,10 +40,14 @@ struct SpotLightInstance
 {
     vec4 position;
     vec3 color;
-    float innerRadius;
-    float outerRadius;
+    vec4 radius; // x inner, y outer
     mat4 projection;
     mat4 view;
+};
+
+struct LightPC
+{
+    uvec4 numLights;
 };
 
 

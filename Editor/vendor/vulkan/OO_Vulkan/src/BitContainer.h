@@ -53,6 +53,7 @@ public:
 	void Remove(int32_t id);
 	T& Get(int32_t id);
 	void Clear();
+	size_t size();
 
 	auto Raw();
 
@@ -63,6 +64,8 @@ public:
 private:
 	std::bitset<MAX_OBJECTS> m_bits{};
 	std::vector<T> m_data{};
+
+	size_t m_size{};
 };
 
 template <typename T, int32_t MAX_OBJECTS>
@@ -113,6 +116,7 @@ inline int32_t BitContainer<T, MAX_OBJECTS>::Add(const T& obj)
 			id = int32_t(i);
 
 			m_data[id] = obj;
+			++m_size;
 			return id;
 		}
 	}
@@ -127,6 +131,7 @@ inline void BitContainer<T, MAX_OBJECTS>::Remove(int32_t id)
 	if (m_bits[id] == true)
 	{
 		m_bits[id] = false;
+		--m_size;
 		return;
 	}
 	assert(false); // removed invalid object
@@ -150,6 +155,13 @@ inline void BitContainer<T, MAX_OBJECTS>::Clear()
 	{
 		m_bits[i] = false;
 	}
+	m_size = 0;
+}
+
+template<typename T, int32_t MAX_OBJECTS>
+inline size_t BitContainer<T, MAX_OBJECTS>::size()
+{
+	return m_size;
 }
 
 template<typename T, int32_t MAX_OBJECTS>

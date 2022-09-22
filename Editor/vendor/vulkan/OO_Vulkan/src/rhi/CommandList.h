@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace rhi
@@ -28,9 +29,15 @@ public:
 	void BindIndexBuffer(
 		VkBuffer buffer,
 		VkDeviceSize offset,
-		VkIndexType indexType);
+		VkIndexType indexType
+	);
 
 	void BindPSO(const VkPipeline& pso);
+
+	void SetPushConstant(VkPipelineLayout layout,
+		const VkPushConstantRange& pcr,
+		const void* data
+	);
 
 	void BindDescriptorSet(
 		VkPipelineLayout layout,
@@ -113,6 +120,12 @@ public:
 
 private:
 	VkCommandBuffer m_VkCommandBuffer;
+
+	VkPipelineLayout m_pipeLayout;
+
+	std::vector<VkRect2D> m_scissor;
+	std::vector<VkViewport> m_viewport;
+	float m_push_constant[128 / sizeof(float)];
 	// TODO: Handle VK_PIPELINE_BIND_POINT_GRAPHICS etc nicely next time.
 	// TODO: Maybe we can cache the stuff that is bound, for easier debugging, else taking GPU captures is really unproductive.
 };

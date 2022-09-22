@@ -28,6 +28,7 @@
 #include "GfxSampler.h"
 
 #include "GraphicsWorld.h"
+#include "GraphicsBatch.h"
 
 #include <vector>
 #include <array>
@@ -49,6 +50,8 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
     inline static VkDescriptorSetLayout bindless;
 	// For lighting
 	inline static VkDescriptorSetLayout DeferredLightingComposition;
+
+	inline static VkDescriptorSetLayout lights;
 	// 
 	inline static VkDescriptorSetLayout ForwardDecal;
 };
@@ -89,11 +92,6 @@ namespace CB
 		glm::vec4 vector4_values9;
 	};
 
-    struct LightUBO
-    {
-        OmniLightInstance lights[6];
-        glm::vec4 viewPos;
-    };
 }
 
 class VulkanRenderer
@@ -154,6 +152,8 @@ public:
 	VkDescriptorSet descriptorSet_bindless;
 	// For GPU Scene
 	VkDescriptorSet descriptorSet_gpuscene;
+
+	VkDescriptorSet descriptorSet_lights;
 	// For UBO with the corresponding swap chain image
     std::vector<VkDescriptorSet> descriptorSets_uniform;
 
@@ -163,9 +163,10 @@ public:
 	GraphicsWorld* currWorld{ nullptr };
 	float renderClock{ 0.0f };
 
+	GraphicsBatch batches;
+
 	bool deferredRendering = true;
 
-    vkutils::Buffer lightsBuffer;
 	void CreateLightingBuffers(); 
 	void UploadLights();
 
@@ -173,6 +174,7 @@ public:
 	void CreateUniformBuffers();
 	void CreateDescriptorPool();
 	void CreateDescriptorSets_GPUScene();
+	void CreateDescriptorSets_Lights();
 
 	struct ImGUIStructures
 	{
@@ -265,7 +267,7 @@ public:
 
 	 vkutils::Buffer boneMatrixBuffer{};
 	 vkutils::Buffer skinningVertexBuffer{};
-	 vkutils::Buffer globalLightBuffer{};
+	 GpuVector<SpotLightInstance> globalLightBuffer{};
 
 	// - Descriptors
 	
@@ -388,7 +390,7 @@ public:
 
 
 // Helper function to set Viewport & Scissor to the default window full extents.
-void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer);
+void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer, VkViewport* vp = nullptr, VkRect2D* sc = nullptr);
 // Helper function to draw a Full Screen Quad, without binding vertex and index buffers.
 void DrawFullScreenQuad(VkCommandBuffer commandBuffer);
 

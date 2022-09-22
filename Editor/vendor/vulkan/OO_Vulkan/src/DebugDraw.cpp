@@ -4,6 +4,40 @@
 #include "IcoSphereCreator.h"
 #include <cmath>
 
+template<typename T>
+void CalculateTangentSpace(const T& normal, T& out0, T& out1)
+{
+	if (fabsf(normal[2]) > 0.7071067811865475244008443621048490f)
+	{
+		// out0 in y-z plane
+		const float a = normal[1] * normal[1] + normal[2] * normal[2];
+        const float k = 1.0f / sqrtf(a);
+		out0 = { 0.0f, -normal[2] * k, normal[1] * k };
+		// out1 = n x out1
+		out1 = { a * k, -normal[0] * out0[2], normal[0] * out0[1] };
+	}
+	else
+	{
+		// out0 in x-y plane
+		const float a = normal[0] * normal[0] + normal[1] * normal[1];
+		const float k = 1.0f / sqrtf(a);
+		out0 = { -normal[1] * k, normal[0] * k, 0.0f };
+		// out1 = n x out1
+		out1 = { -normal[2] * out0[1], normal[2] * out0[0], a * k };
+	}
+}
+
+static void CalculateHorizonDisc(const glm::vec3& cameraPosition, const glm::vec3& sphereCenter, float sphereRadius, glm::vec3& outPosition, glm::vec3& outNormal)
+{
+	const float radius = sphereRadius * 0.5f;
+	const float d = glm::distance(sphereCenter, cameraPosition);
+	const float l = glm::sqrt(d * d - radius * radius);
+	outNormal = glm::normalize(cameraPosition - sphereCenter);
+	const float h = (radius * l) / d;
+	const float s = glm::sqrt(radius * radius - h * h);
+	outPosition = sphereCenter + outNormal * s;
+}
+
 void DebugDraw::AddLine(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Color& col)
 {
     VulkanRenderer* vr = VulkanRenderer::get();
@@ -12,7 +46,6 @@ void DebugDraw::AddLine(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Co
     vr->g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ p1, col });
     vr->g_DebugDrawIndexBufferCPU.emplace_back(0 + static_cast<uint32_t>(sz));
     vr->g_DebugDrawIndexBufferCPU.emplace_back(1 + static_cast<uint32_t>(sz));
-
 }
 
 void DebugDraw::AddAABB(const AABB& aabb, const oGFX::Color& col)
@@ -164,34 +197,21 @@ void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& 
 		               color);
 }
 
-//----------------------------------------------------------------------------------------------------
-template<typename T>
-void CalculateTangentSpace(const T& normal, T& out0, T& out1)
-{
-	if (fabsf(normal[2]) > 0.7071067811865475244008443621048490f)
-	{
-		// out0 in y-z plane
-		float a = normal[1] * normal[1] + normal[2] * normal[2];
-		float k = 1.0f / sqrtf(a);
-		out0 = { 0.0f, -normal[2] * k, normal[1] * k };
-		// out1 = n x out1
-		out1 = { a * k, -normal[0] * out0[2], normal[0] * out0[1] };
-	}
-	else
-    {
-		// out0 in x-y plane
-		float a = normal[0] * normal[0] + normal[1] * normal[1];
-		float k = 1.0f / sqrtf(a);
-		out0 = { -normal[1] * k, normal[0] * k, 0.0f };
-		// out1 = n x out1
-		out1 = { -normal[2] * out0[1], normal[2] * out0[0], a * k };
-	}
-}
-
 void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& normal, const oGFX::Color& color)
 {
     glm::vec3 basis0;
 	glm::vec3 basis1;
     CalculateTangentSpace(normal, basis0, basis1);
     DebugDraw::AddDisc(center, radius, basis0, basis1, color);
+}
+
+void DebugDraw::AddSphereAs3Disc1HorizonDisc(const glm::vec3& center, float radius, const glm::vec3& cameraPosition, const oGFX::Color& color)
+{
+    DebugDraw::AddDisc(center, radius, { 1.0f, 0.0f, 0.0f }, color);
+    DebugDraw::AddDisc(center, radius, { 0.0f, 1.0f, 0.0f }, color);
+    DebugDraw::AddDisc(center, radius, { 0.0f, 0.0f, 1.0f }, color);
+    glm::vec3 position;
+    glm::vec3 normal;
+    CalculateHorizonDisc(cameraPosition, center, radius, position, normal);
+    DebugDraw::AddDisc(position, radius, normal, color);
 }

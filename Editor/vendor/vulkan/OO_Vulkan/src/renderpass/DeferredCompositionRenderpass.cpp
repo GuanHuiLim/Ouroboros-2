@@ -66,12 +66,26 @@ void DeferredCompositionRenderpass::Draw()
 	rhi::CommandList cmd{ cmdlist };
 	cmd.SetDefaultViewportAndScissor();
 	
+	auto info = vr.globalLightBuffer.GetDescriptorBufferInfo();
+	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[swapchainIdx])
+		.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.Build(vr.descriptorSet_lights,SetLayoutDB::lights);
+
 	CreateDescriptors();
+
+	LightPC pc{};
+	
+	pc.numLights[0] = vr.currWorld->GetAllOmniLightInstances().size();
+	VkPushConstantRange range;
+	range.offset = 0;
+	range.size = sizeof(LightPC);
+	cmd.SetPushConstant(PSOLayoutDB::deferredLightingCompositionPSOLayout,range,&pc);
 	cmd.BindDescriptorSet(PSOLayoutDB::deferredLightingCompositionPSOLayout, 0,
-		std::array<VkDescriptorSet, 2>
+		std::array<VkDescriptorSet, 3>
 		{
 			vr.descriptorSet_DeferredComposition,
 			vr.descriptorSets_uniform[swapchainIdx],
+			vr.descriptorSet_lights,
 		}
 	);
 	cmd.BindPSO(pso_DeferredLightingComposition);
@@ -129,13 +143,15 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
+	auto dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
     DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.swapchainIdx])
         .BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         //.BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindBuffer(6, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        //.BindBuffer(6, &vr.lightsBuffer.descriptor, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT) // REMOVED
+        .BindBuffer(7, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .Build(vr.descriptorSet_DeferredComposition, SetLayoutDB::DeferredLightingComposition);
 }
 
@@ -147,7 +163,8 @@ void DeferredCompositionRenderpass::CreatePipelineLayout()
 	std::vector<VkDescriptorSetLayout> setLayouts
 	{
 		SetLayoutDB::DeferredLightingComposition, // (set = 0)
-		SetLayoutDB::FrameUniform // (set = 1)
+		SetLayoutDB::FrameUniform, // (set = 1)
+		SetLayoutDB::lights // (set = 4)
 	};
 
 	VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
