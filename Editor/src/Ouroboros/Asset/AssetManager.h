@@ -215,8 +215,9 @@ namespace oo
         /// Creates an asset object from a given file.
         /// </summary>
         /// <param name="fp">The file path.</param>
+        /// <param name="id">The asset ID.</param>
         /// <returns>The asset.</returns>
-        Asset createAsset(std::filesystem::path fp);
+        Asset createAsset(std::filesystem::path fp, AssetID id = Asset::GenerateSnowflake());
 
         template<typename T, typename It>
         bool findIn(const T& obj, const It& itBegin, const It& itEnd);
