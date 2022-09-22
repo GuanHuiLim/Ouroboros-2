@@ -16,11 +16,15 @@ Technology is prohibited.
 
 #include "Asset.h"
 
+#include "OO_Vulkan/src/MeshModel.h"
+#include "Ouroboros/Core/Application.h"
+#include "Ouroboros/Vulkan/VulkanContext.h"
+
 namespace oo
 {
     Asset::Asset(std::filesystem::path contentPath, AssetID id)
         : id{ id }
-        , info{ id == ID_NULL ? new AssetInfo() : nullptr }
+        , info{ id != ID_NULL ? new AssetInfo() : nullptr }
     {
         if (info)
         {
@@ -32,7 +36,8 @@ namespace oo
     }
 
     Asset::Asset(const Asset& other)
-        : info{ other.info }
+        : id{ other.id }
+        , info{ other.info }
     {
         if (info)
         {
@@ -41,7 +46,8 @@ namespace oo
     }
 
     Asset::Asset(Asset&& other)
-        : info{ other.info }
+        : id{ other.id }
+        , info{ other.info }
     {
         if (info)
         {
@@ -80,6 +86,36 @@ namespace oo
             }
         }
         info = nullptr;
+    }
+
+    std::vector<std::type_index> Asset::GetBespokeTypes() const
+    {
+        auto v = std::vector<std::type_index>();
+        for (auto it = info->dataTypeOffsets.begin(); it != info->dataTypeOffsets.end(); ++it)
+        {
+            v.emplace_back(it->first);
+        }
+        return v;
+    }
+
+    gfxModel& Asset::GetSubmodel(size_t index)
+    {
+        if (info->type != AssetInfo::Type::Model)
+            throw AssetInvalidTypeException();
+
+        auto data = GetData<ModelData*>();
+        auto vc = Application::Get().GetWindow().GetVulkanContext();
+        auto vr = vc->getRenderer();
+        return vr->models[data->gfxMeshIndices[index]];
+    }
+
+    size_t Asset::GetSubmodelCount() const
+    {
+        if (info->type != AssetInfo::Type::Model)
+            throw AssetInvalidTypeException();
+
+        auto data = GetData<ModelData*>();
+        return data->gfxMeshIndices.size();
     }
 
     void Asset::createData()

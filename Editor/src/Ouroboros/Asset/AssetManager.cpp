@@ -22,19 +22,6 @@ Technology is prohibited.
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
-namespace
-{
-    bool iequal(const std::string& a, const std::string& b)
-    {
-        return std::equal(a.begin(), a.end(),
-                          b.begin(), b.end(),
-                          [](char a, char b)
-        {
-            return tolower(a) == tolower(b);
-        });
-    }
-}
-
 namespace oo
 {
     Asset& AssetManager::AssetStore::At(AssetID id)
@@ -353,20 +340,17 @@ namespace oo
         else
         {
             // Load asset
-            Asset asset = createAsset(fpContent);
-            assets.Insert(meta.id, asset);
+            Asset asset = createAsset(fpContent, meta.id);
+            assets.Insert(asset.id, asset);
             return asset;
         }
     }
 
-    Asset AssetManager::createAsset(std::filesystem::path fp)
+    Asset AssetManager::createAsset(std::filesystem::path fp, AssetID id)
     {
         const auto FP_EXT = fp.extension();
-        Asset asset = Asset(std::filesystem::canonical(fp));
-        if (std::find_if(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), [FP_EXT](const auto& e)
-        {
-            return iequal(e, FP_EXT.string());
-        }) != Asset::EXTS_TEXTURE.end())
+        Asset asset = Asset(std::filesystem::canonical(fp), id);
+        if (findIn(FP_EXT.string(), Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end()))
         {
             // Load texture
             asset.info->type = AssetInfo::Type::Texture;
@@ -394,6 +378,36 @@ namespace oo
             asset.info->onAssetDestroy = [fp](AssetInfo& self)
             {
                 // TODO: Unload texture
+                if (self.data)
+                    delete self.data;
+                self.data = nullptr;
+                self.dataTypeOffsets.clear();
+            };
+        }
+        else if (findIn(FP_EXT.string(), Asset::EXTS_MODEL.begin(), Asset::EXTS_MODEL.end()))
+        {
+            // Load model
+            asset.info->type = AssetInfo::Type::Model;
+            asset.info->onAssetCreate = [fp](AssetInfo& self)
+            {
+                auto vc = Application::Get().GetWindow().GetVulkanContext();
+                auto vr = vc->getRenderer();
+                auto data1 = vr->LoadModelFromFile(fp.string());
+
+                struct DataStruct
+                {
+                    decltype(data1) data1;
+                };
+                self.data = new DataStruct;
+                *reinterpret_cast<DataStruct*>(self.data) = {
+                    .data1 = data1,
+                };
+                self.dataTypeOffsets = {};
+                self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
+            };
+            asset.info->onAssetDestroy = [fp](AssetInfo& self)
+            {
+                // TODO: Unload mesh
                 if (self.data)
                     delete self.data;
                 self.data = nullptr;
