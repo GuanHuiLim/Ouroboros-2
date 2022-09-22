@@ -145,7 +145,7 @@ void PhysxWorld::setGravity(PxVec3 gra) {
     gravity = gra;
 }
 
-// CHECK AGAIN
+/*
 phy_uuid::UUID PhysxWorld::createMat(PhysicsObject obj, Material material) {
 
     PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
@@ -161,7 +161,6 @@ phy_uuid::UUID PhysxWorld::createMat(PhysicsObject obj, Material material) {
     return UUID;
 }
 
-/*
 void PhysxWorld::updateMat(phy_uuid::UUID materialID, Material material) {
 
     // SEARCH FOR THAT KEY UUID IN THE MAP (if have then set the new material in)
@@ -242,77 +241,6 @@ void PhysxWorld::removeRigidbody(PhysicsObject obj)
     m_objects.erase(begin);
 }
 
-void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
-
-    //PxRigidActorExt::createExclusiveShape (another method)
-    
-    // search for that object
-    if (all_objects.contains(obj.id)) {
-
-        PhysxObject* underlying_obj = all_objects.at(obj.id);
-        PxMaterial* material = mat.at(underlying_obj->matID);
-
-        //switch (shape) {
-        //}
-
-        if (shape == shape::box) {
-            PxBoxGeometry temp_box{ 0.5f,0.5f,0.5f };
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material);
-            //m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxBoxGeometry{}, *mat.at(all_objects.at(obj.id)->matID));
-        }
-        else if (shape == shape::sphere) {
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxSphereGeometry(),*material); // default radius 0.5
-        }
-        else if (shape == shape::plane) {
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(),*material);
-        }
-        else if (shape == shape::capsule) {
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxCapsuleGeometry(),*material);
-        }
-
-        //m_objects.at(obj.id).m_shape->getGeometry().sphere().radius = 5.f;
-        
-        underlying_obj->shape = shape;
-
-        if (underlying_obj->rigidID == rigid::rstatic)
-            underlying_obj->rs.rigidStatic->attachShape(*underlying_obj->m_shape);
-
-        else if (underlying_obj->rigidID == rigid::rdynamic)
-            underlying_obj->rd.rigidDynamic->attachShape(*underlying_obj->m_shape);
-
-        // later check where need to release shape
-        underlying_obj->m_shape->release();
-    }
-}
-
-/*
-void PhysicsObject::setShape(shape shape) {
-
-    // CHECK IF HAVE SHAPE CREATED OR NOT
-    if (world->all_objects.contains(id)) {
-
-        // CHECK AGAINST THE TYPE OF SHAPE
-
-        // 
-    }
-    else {
-
-        // CREATE NEW SHAPE
-
-        // SET DEFAULT VALUES
-
-        // ATTACH SHAPE BASED ON ITS RIGIDTYPE
-    }
-}
-*/
-
-//PhysxWorld world;
-//
-//PhysicsObject obj = world.createPhysicsObject();
-//obj.getMaterial()
-//
-//world.removeObject(obj);
-
 /*-----------------------------------------------------------------------------*/
 /*                               PhysxObject                                   */
 /*-----------------------------------------------------------------------------*/
@@ -356,12 +284,104 @@ void PhysicsObject::setRigidType(rigid type) {
         }
         // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
         if (type == rigid::rstatic) {
-            rstat = physx_system::getPhysics()->createRigidStatic(temp_trans);
-            world->scene->addActor(*rstat);
+            underlying_obj->rs.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
+            world->scene->addActor(*underlying_obj->rs.rigidStatic);
         }
         else if (type == rigid::rdynamic) {
-            rdyna = physx_system::getPhysics()->createRigidDynamic(temp_trans);
-            world->scene->addActor(*rdyna);
+            underlying_obj->rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
+            world->scene->addActor(*underlying_obj->rd.rigidDynamic);
+        }
+    }
+}
+
+void PhysicsObject::setShape(shape shape) {
+
+    //PxRigidActorExt::createExclusiveShape (another method)
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+        PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
+
+        // CHECK IF HAVE SHAPE CREATED OR NOT
+        if (underlying_obj->shape != shape::none) {
+
+            // DETACH OLD SHAPE
+            if (underlying_obj->rigidID == rigid::rstatic)
+                underlying_obj->rs.rigidStatic->detachShape(*underlying_obj->m_shape);
+
+            else if (underlying_obj->rigidID == rigid::rdynamic)
+                underlying_obj->rd.rigidDynamic->detachShape(*underlying_obj->m_shape);
+        }
+
+        underlying_obj->shape = shape; // set new shape enum
+
+        // SWITCH
+        // CHECK AGAINST THE TYPE OF SHAPE
+        if (shape == shape::box) {
+            PxBoxGeometry temp_box{ 0.5f,0.5f,0.5f };
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material);
+        }
+        else if (shape == shape::sphere) {
+            PxSphereGeometry temp_sphere{ 0.5f };
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_sphere, *material);
+        }
+        else if (shape == shape::plane) {
+            //PxCreatePlane()
+            //PxPlaneGeometry temp_sphere{ PxPlane{0.f,1.f,0.f,50.f} };
+            //PxTransformFromPlaneEquation(PxPlane{ 0.f,1.f,0.f,50.f });
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(), *material);
+        }
+        else if (shape == shape::capsule) {
+            PxCapsuleGeometry temp_cap{ 0.5f, 1.f };
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_cap, *material);
+        }
+
+        //m_objects.at(obj.id).m_shape->getGeometry().sphere().radius = 5.f;
+
+        // ATTACH THE SHAPE TO THE OBJECT
+        if (underlying_obj->rigidID == rigid::rstatic)
+            underlying_obj->rs.rigidStatic->attachShape(*underlying_obj->m_shape);
+        
+        else if (underlying_obj->rigidID == rigid::rdynamic)
+            underlying_obj->rd.rigidDynamic->attachShape(*underlying_obj->m_shape);
+
+        // later check where need to release shape
+        underlying_obj->m_shape->release();
+    }
+}
+
+void PhysicsObject::setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth) {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+
+        if (underlying_obj->shape == shape::box)
+            underlying_obj->m_shape->getGeometry().box().halfExtents = PxVec3{ halfextent_width , halfextent_height, halfextent_depth };
+    }
+
+}
+
+void PhysicsObject::setSphereProperty(float radius) {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+
+        if (underlying_obj->shape == shape::sphere)
+            underlying_obj->m_shape->getGeometry().sphere().radius = radius;
+    }
+}
+
+void PhysicsObject::setCapsuleProperty(float radius, float halfHeight) {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+        if (underlying_obj->shape == shape::capsule) {
+            underlying_obj->m_shape->getGeometry().capsule().radius = radius;
+            underlying_obj->m_shape->getGeometry().capsule().halfHeight = halfHeight;
         }
     }
 }
@@ -384,18 +404,33 @@ Material PhysicsObject::getMaterial() const {
     return m_material;
 }
 
-// CHECK AGAIN
 void PhysicsObject::setMaterial(Material material) {
 
     if (world->all_objects.contains(id)) {
 
         PhysxObject* underlying_obj = world->all_objects.at(id);
-        PxMaterial* temp_mat = world->mat.at(underlying_obj->matID);
 
+        // CHECK WHETHER THE OBJ HAVE MATERIAL 
         if (world->mat.contains(underlying_obj->matID)) {
+            
+            PxMaterial* temp_mat = world->mat.at(underlying_obj->matID);
+
             temp_mat->setStaticFriction(material.staticFriction);
             temp_mat->setDynamicFriction(material.dynamicFriction);
             temp_mat->setRestitution(material.restitution);
+        }
+        else {
+
+            // CREATE NEW MATERIAL
+            PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
+                                                                            material.dynamicFriction,
+                                                                            material.restitution);
+
+            phy_uuid::UUID UUID = phy_uuid::UUID{};
+
+            world->mat.emplace(UUID, newMat);
+
+            world->all_objects.at(id)->matID = UUID; // set material id for that object
         }
     }
 }
@@ -446,15 +481,33 @@ void PhysicsObject::setposition(PxVec3 pos) {
 
 PxQuat PhysicsObject::getOrientation() const {
 
+    PxQuat quat{};
+
     if (world->all_objects.contains(id)) {
 
         PhysxObject* underlying_obj = world->all_objects.at(id);
 
         if (underlying_obj->rigidID == rigid::rstatic)
-            return underlying_obj->rs.rigidStatic->getGlobalPose().q;
+            quat = underlying_obj->rs.rigidStatic->getGlobalPose().q;
 
         else if (underlying_obj->rigidID == rigid::rdynamic)
-            return underlying_obj->rd.rigidDynamic->getGlobalPose().q;
+            quat = underlying_obj->rd.rigidDynamic->getGlobalPose().q;
+    }
+
+    return quat;
+}
+
+void PhysicsObject::setOrientation(PxQuat quat) {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+
+        if (underlying_obj->rigidID == rigid::rstatic)
+            underlying_obj->rs.rigidStatic->setGlobalPose(PxTransform{ this->getposition(), quat });
+
+        else if (underlying_obj->rigidID == rigid::rdynamic)
+            underlying_obj->rd.rigidDynamic->setGlobalPose(PxTransform{ this->getposition(), quat });
     }
 }
 

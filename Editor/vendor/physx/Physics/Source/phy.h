@@ -21,7 +21,7 @@ class PVD;
 struct PhysxObject;
 struct PhysicsObject;
 
-enum class rigid { rstatic, rdynamic };
+enum class rigid { none, rstatic, rdynamic };
 enum class shape { none, box, sphere, capsule, plane };
 
 /*
@@ -203,17 +203,17 @@ public:
     */
 
     // MATERIAL
-    phy_uuid::UUID createMat(PhysicsObject obj, Material material);
+    //phy_uuid::UUID createMat(PhysicsObject obj, Material material);
     //void updateMat(phy_uuid::UUID materialID, Material material);
     void destroyMat(phy_uuid::UUID materialID);
 
     // RIGIDBODY
     //PhysicsObject createRigidbody(rigid type);
     PhysicsObject createInstance();
-    void removeRigidbody(PhysicsObject obj);
+    void removeRigidbody(PhysicsObject obj); // remove instance
 
     // SHAPE
-    void createShape(PhysicsObject obj, shape shape);
+    //void createShape(PhysicsObject obj, shape shape);
 
     /*
     shape_type createShape(shape_type type, Material material);
@@ -245,7 +245,7 @@ struct PhysxObject {
     RigidStatic rs{};
     RigidDynamic rd{};
 
-    rigid rigidID = rigid::rstatic; // do i need to set a default? (change it depends how it is created)
+    rigid rigidID = rigid::none;
 
     bool gravity = true;
     bool kinematic = false;
@@ -302,18 +302,22 @@ struct PhysicsObject { // you store
     Material getMaterial() const;
     PxVec3 getposition() const;
     PxQuat getOrientation() const;
-    // set orientation
 
     //getRotation() const;
 
     void setRigidType(rigid type);
     void setMaterial(Material material);
     void setposition(PxVec3 pos);
+    void setOrientation(PxQuat quat);
 
     // set default value for each type of shape & can change shape too
-    //void setShape(shape shape);
+    void setShape(shape shape);
 
     // change each individual property based on its shape
+    void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
+    void setSphereProperty(float radius);
+    //void setPlaneProperty(float radius);
+    void setCapsuleProperty(float radius, float halfHeight);
 
     // prob functions that dont really need
     void setMass(PxReal mass);

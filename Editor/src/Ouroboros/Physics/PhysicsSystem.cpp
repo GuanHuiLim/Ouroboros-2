@@ -169,7 +169,7 @@ namespace oo
             return query;
         }();
 
-        m_world->for_each(query, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
+        m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
             {
                 auto pos = tf.GetGlobalPosition();
                 bc.GlobalBounds = {pos + bc.Bounds.min + bc.Offset, pos + bc.Bounds.max + bc.Offset };
@@ -309,17 +309,24 @@ namespace oo
 
             phy_comp.object.setRigidType(rigid::rstatic);   // static if this is first added.
 
-            m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+            ///m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+            phy_comp.object.setMaterial(Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+            
             // create box temporarily
-            m_physicsWorld.createShape(phy_comp.object, shape::box);
+            //m_physicsWorld.createShape(phy_comp.object, shape::box);
+            phy_comp.object.setShape(shape::box);
+            //phy_comp.object.setBoxProperty();
         }
         // if you have a rigidbody already
         else if (m_world->has_component<RigidbodyComponent>(rb->entityID) == true) 
         {
             auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
-            m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+            //m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+            phy_comp.object.setMaterial(Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
+
             // create box temporarily
-            m_physicsWorld.createShape(phy_comp.object, shape::box);
+            //m_physicsWorld.createShape(phy_comp.object, shape::box);
+            phy_comp.object.setShape(shape::box);
         }
     }
 
