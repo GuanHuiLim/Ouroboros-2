@@ -145,7 +145,7 @@ void PhysxWorld::setGravity(PxVec3 gra) {
     gravity = gra;
 }
 
-
+// CHECK AGAIN
 phy_uuid::UUID PhysxWorld::createMat(PhysicsObject obj, Material material) {
 
     PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
@@ -214,6 +214,22 @@ PhysicsObject PhysxWorld::createRigidbody(rigid type)
 }
 */
 
+PhysicsObject PhysxWorld::createInstance() {
+
+    // create instance of the object (on the stack)
+    //phy_uuid::UUID UUID = phy_uuid::UUID{};
+
+    PhysxObject obj;
+    obj.id = phy_uuid::UUID{};
+
+    // store the object
+    m_objects.emplace_back(obj);
+    all_objects.insert({ obj.id, &m_objects.at(m_objects.size() - 1) }); // add back the m_objects last element
+
+    // return the object i created
+    return PhysicsObject{ obj.id, this }; // a copy
+}
+
 void PhysxWorld::removeRigidbody(PhysicsObject obj)
 {
     // check what need to release 
@@ -245,7 +261,7 @@ void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
             //m_objects.at(obj.id).m_shape = physx_system::getPhysics()->createShape(PxBoxGeometry{}, *mat.at(all_objects.at(obj.id)->matID));
         }
         else if (shape == shape::sphere) {
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxSphereGeometry(),*material);
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxSphereGeometry(),*material); // default radius 0.5
         }
         else if (shape == shape::plane) {
             underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(),*material);
@@ -264,10 +280,29 @@ void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
         else if (underlying_obj->rigidID == rigid::rdynamic)
             underlying_obj->rd.rigidDynamic->attachShape(*underlying_obj->m_shape);
 
-
         // later check where need to release shape
         underlying_obj->m_shape->release();
     }
+}
+
+void PhysicsObject::setShape(shape shape) {
+
+    // CHECK IF HAVE SHAPE CREATED OR NOT
+    if (world->all_objects.contains(id)) {
+
+        // CHECK AGAINST THE TYPE OF SHAPE
+
+        // 
+    }
+    else {
+
+        // CREATE NEW SHAPE
+
+        // SET DEFAULT VALUES
+
+        // ATTACH SHAPE BASED ON ITS RIGIDTYPE
+    }
+
 
 }
 
@@ -300,7 +335,7 @@ void PhysicsObject::setRigidType(rigid type) {
 
     PxTransform temp_trans{ PxVec3(0) }; // set default to 0
 
-    // CHECK IF HAVE RIGIDBODY CREATED OR NOT
+    // CHECK GOT THE INSTANCE CREATED OR NOT
     if (world->all_objects.contains(id)) {
 
         PhysxObject* underlying_obj = world->all_objects.at(id);
@@ -309,6 +344,7 @@ void PhysicsObject::setRigidType(rigid type) {
 
         underlying_obj->rigidID = type;
 
+        // CHECK IF HAVE RIGIDBODY CREATED OR NOT
         // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
         if (rstat) {
             temp_trans = rstat->getGlobalPose();
@@ -327,27 +363,6 @@ void PhysicsObject::setRigidType(rigid type) {
             rdyna = physx_system::getPhysics()->createRigidDynamic(temp_trans);
             world->scene->addActor(*rdyna);
         }
-    }
-    else {
-
-        // CREATE NEW RIGIDBODY 
-        PhysxObject obj;
-        obj.id = phy_uuid::UUID{};
-        obj.rigidID = type;
-
-        // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
-        if (type == rigid::rstatic) {
-            obj.rs.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
-            world->scene->addActor(*obj.rs.rigidStatic);
-        }
-        else if (type == rigid::rdynamic) {
-            obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans); // PxCreateDynamic()
-            world->scene->addActor(*obj.rd.rigidDynamic);
-        }
-
-        // ADD INTO MAP & VECTOR
-        world->m_objects.emplace_back(obj);
-        world->all_objects.insert({ obj.id, &world->m_objects.at(world->m_objects.size() - 1) }); // add back the m_objects last element
     }
 }
 
@@ -369,6 +384,7 @@ Material PhysicsObject::getMaterial() const {
     return m_material;
 }
 
+// CHECK AGAIN
 void PhysicsObject::setMaterial(Material material) {
 
     if (world->all_objects.contains(id)) {

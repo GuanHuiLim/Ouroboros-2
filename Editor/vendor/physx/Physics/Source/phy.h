@@ -22,7 +22,7 @@ struct PhysxObject;
 struct PhysicsObject;
 
 enum class rigid { rstatic, rdynamic };
-enum class shape { box, sphere, capsule, plane };
+enum class shape { none, box, sphere, capsule, plane };
 
 /*
 enum class shape_type { shape_box, shape_sphere, shape_capsule, shape_plane };
@@ -78,14 +78,14 @@ struct RigidDynamic {
 
     PxRigidDynamic* rigidDynamic = nullptr;
 
-    PxReal angularDamping;
-    PxVec3 angularVelocity;
-    //PxReal invMass;
-    PxReal linearDamping;
-    PxVec3 linearVelocity;
-    PxReal mass;
-    PxTransform centerOfMass;
-    PxTransform globalPos;
+    //PxReal angularDamping;
+    //PxVec3 angularVelocity;
+    ////PxReal invMass;
+    //PxReal linearDamping;
+    //PxVec3 linearVelocity;
+    //PxReal mass;
+    //PxTransform centerOfMass;
+    //PxTransform globalPos;
 };
 
 /*
@@ -142,7 +142,7 @@ struct RigidStatic {
 
     PxRigidStatic* rigidStatic = nullptr;
 
-    /// other variables
+    /// other variables if needed
 };
 
 // unprotected class
@@ -209,6 +209,7 @@ public:
 
     // RIGIDBODY
     //PhysicsObject createRigidbody(rigid type);
+    PhysicsObject createInstance();
     void removeRigidbody(PhysicsObject obj);
 
     // SHAPE
@@ -238,7 +239,7 @@ struct PhysxObject {
 
     // shape
     PxShape* m_shape; // prob no need this
-    shape shape = shape::box; // maybe next time can init to none
+    shape shape = shape::none;
 
     // ensure at least static or dynamic is init
     RigidStatic rs{};
@@ -248,6 +249,7 @@ struct PhysxObject {
 
     bool gravity = true;
     bool kinematic = false;
+
 
     // SETTERS
     void enableGravity(bool gravity);
@@ -300,13 +302,18 @@ struct PhysicsObject { // you store
     Material getMaterial() const;
     PxVec3 getposition() const;
     PxQuat getOrientation() const;
+    // set orientation
 
     //getRotation() const;
 
     void setRigidType(rigid type);
     void setMaterial(Material material);
     void setposition(PxVec3 pos);
+
+    // set default value for each type of shape & can change shape too
     void setShape(shape shape);
+
+    // change each individual property based on its shape
 
     // prob functions that dont really need
     void setMass(PxReal mass);
