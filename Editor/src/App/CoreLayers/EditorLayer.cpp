@@ -28,12 +28,12 @@ Technology is prohibited.
 #include "Ouroboros/Audio/AudioSystem.h"
 
 //ASSET MANAGER EXAMPLE
-static oo::AssetManager manager = oo::AssetManager("./assets");
-static oo::Asset myImageAsset;
+//static oo::AssetManager manager = oo::AssetManager("./assets");
+//static oo::Asset myImageAsset;
 //static oo::Asset myModelAsset;
 
 //AUDIO EXAMPLE
-static oo::AudioSystem audio = oo::AudioSystem(256);
+//static oo::AudioSystem audio = oo::AudioSystem(256);
 
 //ASSET MANAGER EXAMPLE
 //void recurPrintModel(Node* curr, int level = 0)
@@ -53,9 +53,9 @@ void EditorLayer::OnAttach()
 #endif
 
 	//ASSET MANAGER EXAMPLE
-	try
+	/*try
 	{
-		/*manager.LoadDirectory("./");
+		manager.LoadDirectory("./");
 		auto v = manager.LoadName("Arcadia.png", false);
 		if (v.size() > 0)
 			myImageAsset = v[0];*/
@@ -75,12 +75,12 @@ void EditorLayer::OnAttach()
 			std::cout << "scene info: " << md->sceneInfo->name << "\n";
 			std::cout << "mesh count: " << md->sceneMeshCount << "\n";
 			recurPrintModel(md->sceneInfo);
-		}*/
+		}
 	}
 	catch (oo::AssetNotFoundException)
 	{
 		std::cout << "not found\n";
-	}
+	}*/
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -98,18 +98,18 @@ void EditorLayer::OnUpdate()
 #endif
 
 	//ASSET MANAGER EXAMPLE
-	if (myImageAsset.HasData())
+	/*if (myImageAsset.HasData())
 	{
 		ImGui::Image(reinterpret_cast<void*>(myImageAsset.GetData<ImTextureID>()), ImVec2(100, 100));
-	}
+	}*/
 
 	//AUDIO EXAMPLE
-	static int i = 0;
+	/*static int i = 0;
 	if (++i > 1000)
 	{
 		i = 0;
 		audio.PlayOneShot("./assets/Faith_Speak_01.ogg");
-	}
+	}*/
 
 	//top menu bar
 	//Editor::MenuBar();
