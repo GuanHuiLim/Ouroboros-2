@@ -275,12 +275,13 @@ namespace oo
         if (m_world->has_component<PhysicsComponent>(rb->entityID) == false) 
         {
             m_world->add_component<PhysicsComponent>(rb->entityID);
+
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            phy_comp.object = m_physicsWorld.();
         }
 
         // if box collider exist on item already.
-        auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
-        //phy_comp.object = m_physicsWorld.createInstance();
-        phy_comp.object.setRigidType(rigid::rdynamic);
+        //phy_comp.object.setRigidType(rigid::rdynamic);
 
     }
 
