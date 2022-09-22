@@ -16,6 +16,7 @@ namespace oo
 
 	PrefabComponent::~PrefabComponent()
 	{
+		prefab_filePath.clear();
 	}
 
 	void PrefabComponent::Init(std::filesystem::path& p)

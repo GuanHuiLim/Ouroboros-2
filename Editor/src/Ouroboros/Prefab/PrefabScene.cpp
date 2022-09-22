@@ -23,6 +23,11 @@ namespace oo
     {
     }
 
+	PrefabScene::~PrefabScene()
+	{
+		m_loadedPrefabMap.clear();
+	}
+
 	std::string& PrefabScene::GetPrefab(std::string const& filepath)
 	{
 		return LookUpPrefab(filepath);
@@ -35,10 +40,10 @@ namespace oo
 		{
 			std::stringstream buffer;
 			buffer << ifs.rdbuf();
-			m_loadedPrefabMap.emplace(filepath, buffer.str());
+			m_loadedPrefabMap[filepath] =  PrefabFileData{ buffer.str(),std::filesystem::last_write_time(filepath) };
 		}
 		ifs.close();
-		return m_loadedPrefabMap[filepath];
+		return m_loadedPrefabMap[filepath].data;
 	}
 
 	std::string& PrefabScene::LookUpPrefab(std::string const& filepath)
@@ -46,7 +51,12 @@ namespace oo
 		auto iter = m_loadedPrefabMap.find(filepath);
 		if (iter == m_loadedPrefabMap.end())
 			return LoadPrefab(filepath);
-		return iter->second;
+
+		auto time = std::filesystem::last_write_time(filepath);
+		if(iter->second.time != time)
+			LoadPrefab(filepath);
+
+		return iter->second.data;
 	}
 
     /*Scene::go_ptr PrefabScene::GetPrefab(std::string const& filepath)

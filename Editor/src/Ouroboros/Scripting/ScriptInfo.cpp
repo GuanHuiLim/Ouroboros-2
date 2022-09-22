@@ -82,11 +82,42 @@ namespace oo
     }
 
     /*-----------------------------------------------------------------------------*/
+    /* ScriptFieldInfo                                                             */
+    /*-----------------------------------------------------------------------------*/
+
+    ScriptValue ScriptFieldInfo::TryGetRuntimeValue()
+    {
+        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+            return value;
+        return ScriptValue::GetFieldValue(script, scriptField, value);
+    }
+
+    void ScriptFieldInfo::TrySetRuntimeValue(ScriptValue const& newValue)
+    {
+        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+        {
+            value = newValue;
+        }
+        else
+        {
+            ScriptValue::SetFieldValue(script, scriptField, newValue);
+        }
+    }
+
+    void ScriptFieldInfo::SetScriptReference(MonoClassField* field, MonoObject* obj)
+    {
+        script = obj;
+        scriptField = field;
+    }
+
+    /*-----------------------------------------------------------------------------*/
     /* ScriptInfo                                                                  */
     /*-----------------------------------------------------------------------------*/
 
     ScriptInfo::ScriptInfo(ScriptClassInfo const& _classInfo) : classInfo(_classInfo)
     {
+        if (!classInfo.IsValid())
+            throw std::exception{ (std::string{ "(ScriptInfo) invalid class info: " } + _classInfo.ToString()).c_str() };
         std::vector<ScriptFieldInfo> fieldList = classInfo.GetScriptFieldInfoAll();
         for (int i = 0; i < fieldList.size(); ++i)
         {
@@ -198,6 +229,16 @@ namespace oo
         }
     }
 
+    ScriptClassInfo::ScriptClassInfo(MonoClass* klass)
+        : name_space{ ScriptEngine::GetClassInfoNameSpace(klass) }, name{ ScriptEngine::GetClassInfoName(klass) }
+    {
+    }
+
+    bool ScriptClassInfo::IsValid() const
+    {
+        return ScriptEngine::CheckClassExists("Scripting", name_space.c_str(), name.c_str());
+    }
+
     std::vector<ScriptFieldInfo> const ScriptClassInfo::GetScriptFieldInfoAll() const
     {
         MonoClass* _class = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
@@ -268,7 +309,7 @@ namespace oo
             std::vector<ScriptFieldInfo> paramInfoList;
             if (GetFunctionParamInfo(paramInfoList, method, maxParamCount))
             {
-                functionList.emplace_back(ScriptValue::function_info{ mono_class_get_namespace(klass), mono_class_get_name(klass), functionName, paramInfoList });
+                functionList.emplace_back(ScriptValue::function_info{ ScriptEngine::GetClassInfoNameSpace(klass), ScriptEngine::GetClassInfoName(klass), functionName, paramInfoList });
             }
         }
         return functionList;
@@ -286,8 +327,8 @@ namespace oo
         for (unsigned int i = 0; i < genericsList.size(); ++i)
         {
             MonoClass* genericClass = mono_type_get_class(genericsList[i]);
-            genericNameSpace = mono_class_get_namespace(genericClass);
-            genericName = mono_class_get_name(genericClass);
+            genericNameSpace = ScriptEngine::GetClassInfoNameSpace(genericClass);
+            genericName = ScriptEngine::GetClassInfoName(genericClass);
             resultList.push_back({ genericNameSpace, genericName });
         }
         return resultList;

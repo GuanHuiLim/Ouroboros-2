@@ -74,7 +74,8 @@ private:
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
 	static void LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val);
 	static void LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val);
-
+	//creation
+	static UUID CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p);
 	//scripts
 	static void SaveScript(oo::GameObject& go,rapidjson::Value& val,rapidjson::Document& doc);
 	static void LoadScript(oo::GameObject& go,rapidjson::Value&& val);
@@ -203,7 +204,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 	document.ParseStream(stream);
 
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
-	auto gameobj = std::make_shared<oo::GameObject>(go);
+	std::shared_ptr<oo::GameObject> gameobj = scene->FindWithInstanceID(go.GetInstanceID());
 	parents.push(gameobj);
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
@@ -295,7 +296,7 @@ inline void Serializer::AddLoadComponent() noexcept
 	load_components.emplace(rttr::type::get<Component>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v) 
 		{
-			go.AddComponent<Component>();
+			go.EnsureComponent<Component>();
 			LoadComponent<Component>(go, std::move(v));
 		});
 }
@@ -306,7 +307,7 @@ inline void Serializer::AddLoadComponent<oo::PrefabComponent>() noexcept
 	load_components.emplace(rttr::type::get<oo::PrefabComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
 		{
-			go.AddComponent<oo::PrefabComponent>();
+			go.EnsureComponent<oo::PrefabComponent>();
 			LoadComponent<oo::PrefabComponent>(go, std::move(v));
 		});
 }

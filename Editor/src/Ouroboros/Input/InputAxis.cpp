@@ -5,6 +5,38 @@
 
 namespace oo
 {
+    InputAxis::InputAxis()
+        : name{ "Axis Name" }, type{InputType::KeyboardButton}, negativeButton{InputAxis::INPUTCODE_INVALID}, positiveButton{InputAxis::INPUTCODE_INVALID}, negativeAltButton{InputAxis::INPUTCODE_INVALID}, positiveAltButton{InputAxis::INPUTCODE_INVALID},
+        pressesRequired{ 0 }, maxGapTime{ 0 }, holdDurationRequired{ 0 }
+    {
+
+    }
+
+    InputAxis::InputAxis(std::string name, InputType type, InputCode negativeButton, InputCode positiveButton, InputCode negativeAltButton, InputCode positiveAltButton,
+        unsigned pressesRequired, float maxGapTime, float holdDurationRequired)
+        : name{ name }, type{ type }, negativeButton{ negativeButton }, positiveButton{ positiveButton }, negativeAltButton{ negativeAltButton }, positiveAltButton{ positiveAltButton },
+        pressesRequired{ pressesRequired }, maxGapTime{ maxGapTime }, holdDurationRequired{ holdDurationRequired }
+    {
+
+    }
+
+    void InputAxis::SetType(InputType newType)
+    {
+        type = newType;
+        switch (type)
+        {
+        default:
+            negativeButton = InputAxis::INPUTCODE_INVALID;
+            negativeAltButton = InputAxis::INPUTCODE_INVALID;
+            positiveButton = InputAxis::INPUTCODE_INVALID;
+            positiveAltButton = InputAxis::INPUTCODE_INVALID;
+            pressesRequired = 0;
+            maxGapTime = 0.0f;
+            holdDurationRequired = 0.0f;
+            break;
+        }
+    }
+
     InputAxis::Tracker::Tracker(InputAxis const& axis)
         : axis{ axis }, durationHeld{ 0.0f }, pressCount{ 0 }, pressGapTimeLeft{ axis.maxGapTime }, lastPressed{ InputAxis::INPUTCODE_INVALID }
     {

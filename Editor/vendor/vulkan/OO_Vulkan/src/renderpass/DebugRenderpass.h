@@ -19,6 +19,8 @@ public:
 	void Draw() override;
 	void Shutdown() override;
 
+	bool SetupDependencies() override;
+
 	VkRenderPass debugRenderpass{};
 
 private:

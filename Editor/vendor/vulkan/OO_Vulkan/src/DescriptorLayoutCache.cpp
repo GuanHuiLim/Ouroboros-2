@@ -11,7 +11,8 @@ void DescriptorLayoutCache::Init(VkDevice newDevice)
 void DescriptorLayoutCache::Cleanup()
 {
 	//delete every descriptor layout held
-	for (auto pair : layoutCache){
+	for (auto pair : layoutCache)
+	{
 		vkDestroyDescriptorSetLayout(device, pair.second, nullptr);
 	}
 }
@@ -24,19 +25,22 @@ VkDescriptorSetLayout DescriptorLayoutCache::CreateDescriptorLayout(VkDescriptor
 	int lastBinding = -1;
 
 	//copy from the direct info struct into our own one
-	for (uint32_t i = 0; i < info->bindingCount; i++) {
+	for (uint32_t i = 0; i < info->bindingCount; i++)
+	{
 		layoutinfo.bindings.push_back(info->pBindings[i]);
 
 		//check that the bindings are in strict increasing order
 		if (int32_t(info->pBindings[i].binding) > lastBinding){
 			lastBinding = info->pBindings[i].binding;
 		}
-		else{
+		else
+		{
 			isSorted = false;
 		}
 	}
 	//sort the bindings if they aren't in order
-	if (!isSorted){
+	if (!isSorted)
+	{
 		std::sort(layoutinfo.bindings.begin(), layoutinfo.bindings.end(), [](VkDescriptorSetLayoutBinding& a, VkDescriptorSetLayoutBinding& b ){
 			return a.binding < b.binding;
 			});
@@ -47,7 +51,8 @@ VkDescriptorSetLayout DescriptorLayoutCache::CreateDescriptorLayout(VkDescriptor
 	if (it != layoutCache.end()){
 		return (*it).second;
 	}
-	else {
+	else
+	{
 		//create a new one (not found)
 		VkDescriptorSetLayout layout;
 		VK_CHK(vkCreateDescriptorSetLayout(device, info, nullptr, &layout));
@@ -60,10 +65,12 @@ VkDescriptorSetLayout DescriptorLayoutCache::CreateDescriptorLayout(VkDescriptor
 
 bool DescriptorLayoutCache::DescriptorLayoutInfo::operator==(const DescriptorLayoutInfo& other) const
 {
-	if (other.bindings.size() != bindings.size()){
+	if (other.bindings.size() != bindings.size())
+	{
 		return false;
 	}
-	else {
+	else 
+	{
 		//compare each of the bindings is the same. Bindings are assumed to be sorted so they will match
 		for (int i = 0; i < bindings.size(); i++) {
 			if (other.bindings[i].binding != bindings[i].binding){

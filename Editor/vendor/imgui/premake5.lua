@@ -53,6 +53,10 @@ project "ImGui"
         "imgui/imgui_tables.cpp",
         "imgui/misc/cpp/**.cpp",
         "imgui/misc/cpp/**.h",
+        
+        -- ImGuizmo
+        "imgui/ImGuizmo.h",
+        "imgui/ImGuizmo.cpp",
     }
 
     includedirs

@@ -26,6 +26,7 @@ Editor::Editor()
 	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
 	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
 	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
+	ImGuiManager::Create("Editor Viewport", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoBackground |ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar), [this] {this->m_EditorViewport.Show(); });
 
 	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
 	ImGuiManager::Create("PenTool", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoDecoration), [this] {this->m_pentool.Show(); });
@@ -58,6 +59,7 @@ void Editor::Update()
 
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
+
 	helper.Popups();
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_S))
 	{
@@ -212,9 +214,9 @@ void PopupHelperWindow::OpenFilePopup()
 		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
 		if (ImGui::Button("Yes", { buttonsizeX,0 }))
 		{
-			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
-			if (eventAfterPrompt.nextAction)
-				eventAfterPrompt.nextAction();
+			oo::EventManager::Broadcast(&eventAfterPrompt_ofe.nextEvent);
+			if (eventAfterPrompt_ofe.nextAction)
+				eventAfterPrompt_ofe.nextAction();
 			ImGui::CloseCurrentPopup();
 			//save the scene
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -226,8 +228,8 @@ void PopupHelperWindow::OpenFilePopup()
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0, 0, 1.0f));
 		if (ImGui::Button("No", { buttonsizeX,0 }))
 		{
-			if (eventAfterPrompt.nextAction)
-				eventAfterPrompt.nextAction();
+			if (eventAfterPrompt_ofe.nextAction)
+				eventAfterPrompt_ofe.nextAction();
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::PopStyleColor(1);

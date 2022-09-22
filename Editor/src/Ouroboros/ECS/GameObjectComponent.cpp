@@ -25,7 +25,7 @@ namespace oo
 	registration::class_<oo::GameObjectComponent>("GameObject")
 		.property("Active", &GameObjectComponent::Active)
 		.property("Name", &GameObjectComponent::Name)
-		.property("UUID", &GameObjectComponent::Id)
+		.property_readonly("UUID", &GameObjectComponent::Id)
 		//.property("Layer", &GameObjectComponent::GetLayer, &GameObjectComponent::SetLayer)
 		.property_readonly("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy);
     }

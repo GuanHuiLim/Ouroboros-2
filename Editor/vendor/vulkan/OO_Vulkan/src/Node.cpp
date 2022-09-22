@@ -8,9 +8,9 @@ Node::~Node()
 		delete child;
 		child = nullptr;
 	}
-	for (auto& mesh : meshes)
-	{
-		delete mesh;
-		mesh = nullptr;
-	}
+	//for (auto& mesh : meshes)
+	//{
+	//	delete mesh;
+	//	mesh = nullptr;
+	//}
 }

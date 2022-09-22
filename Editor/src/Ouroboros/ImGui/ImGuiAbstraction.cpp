@@ -83,7 +83,7 @@ namespace oo
         // Setup Platform/Renderer bindings
         if (m_restart)
         {
-
+            m_renderer->ResetImguiInit();
         }
         else
         {
@@ -96,7 +96,7 @@ namespace oo
     {
         if (m_restart)
         {
-
+            m_renderer->ResetImguiShutdown();
         }
         else
         {

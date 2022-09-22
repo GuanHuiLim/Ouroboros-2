@@ -38,30 +38,17 @@ namespace oo
         float holdDurationRequired;
 
     public:
-        InputAxis() = default;
+        InputAxis();
         ~InputAxis() = default;
 
         InputAxis(std::string name, InputType type, InputCode negativeButton, InputCode positiveButton, InputCode negativeAltButton, InputCode positiveAltButton,
-            unsigned pressesRequired, float maxGapTime, float holdDurationRequired)
-            : name{ name }, type{ type }, negativeButton{ negativeButton }, positiveButton{ positiveButton }, negativeAltButton{ negativeAltButton }, positiveAltButton{ positiveAltButton },
-            pressesRequired{ pressesRequired }, maxGapTime{ maxGapTime }, holdDurationRequired{ holdDurationRequired }
-        {
-
-        }
+            unsigned pressesRequired, float maxGapTime, float holdDurationRequired);
 
         inline std::string const& GetName() const { return name; }
         inline void SetName(std::string const& newName) { name = newName; }
 
         inline InputType const GetType() const { return type; }
-        inline void SetType(InputType newType)
-        {
-            type = newType;
-            switch (type)
-            {
-            case InputType::KeyboardButton: break;
-            case InputType::MouseButton: break;
-            }
-        }
+        void SetType(InputType newType);
 
         inline InputCode const GetNegativeButton() const { return negativeButton; }
         inline void SetNegativeButton(InputCode newCode) { negativeButton = newCode; }

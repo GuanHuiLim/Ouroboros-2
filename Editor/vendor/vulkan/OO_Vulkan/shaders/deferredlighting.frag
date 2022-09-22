@@ -1,11 +1,17 @@
 layout (location = 0) in vec2 inUV;
 layout (location = 0) out vec4 outFragcolor;
 
-layout (binding = 1) uniform sampler2D samplerposition;
-layout (binding = 2) uniform sampler2D samplerNormal;
-layout (binding = 3) uniform sampler2D samplerAlbedo;
-layout (binding = 4) uniform sampler2D samplerMaterial;
-layout (binding = 5) uniform sampler2D samplerDepth;
+#include "frame.shader"
+layout(set = 1, binding = 0) uniform UboFrameContext
+{
+    FrameContext uboFrameContext;
+};
+
+layout (set = 0, binding = 1) uniform sampler2D samplerposition;
+layout (set = 0, binding = 2) uniform sampler2D samplerNormal;
+layout (set = 0, binding = 3) uniform sampler2D samplerAlbedo;
+layout (set = 0, binding = 4) uniform sampler2D samplerMaterial;
+layout (set = 0, binding = 5) uniform sampler2D samplerDepth;
 
 #include "shared_structs.h"
 

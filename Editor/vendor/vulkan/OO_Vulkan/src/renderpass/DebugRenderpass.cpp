@@ -23,6 +23,17 @@ void DebugDrawRenderpass::Init()
 	InitDebugBuffers();
 }
 
+bool DebugDrawRenderpass::SetupDependencies()
+{
+	// TODO: If debug drawing is disabled, return false.
+	
+	// READ: Scene Depth
+	// WRITE: Color Output
+	// etc
+
+	return true;
+}
+
 void DebugDrawRenderpass::Draw()
 {
 	auto& vr = *VulkanRenderer::get();
@@ -59,28 +70,27 @@ void DebugDrawRenderpass::Draw()
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+	rhi::CommandList cmd{ cmdlist };
 	{
-		SetDefaultViewportAndScissor(cmdlist);
+		cmd.SetDefaultViewportAndScissor();
 
-		const uint32_t dynamicOffset = 0;
-		const VkDeviceSize offsets[] = { 0 };
-		std::array<VkDescriptorSet, 3> descriptorSetGroup =
-		{
-			vr.descriptorSet_gpuscene,
-			vr.descriptorSets_uniform[swapchainIdx],
-			vr.descriptorSet_bindless
-		};
-		vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, PSOLayoutDB::indirectPSOLayout,
-			0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
+		cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
+			std::array<VkDescriptorSet, 3>
+			{
+				vr.descriptorSet_gpuscene,
+				vr.descriptorSets_uniform[swapchainIdx],
+				vr.descriptorSet_bindless
+			}
+		);
 
-		vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU.getBufferPtr(), offsets);
-		vkCmdBindIndexBuffer(cmdlist, vr.g_DebugDrawIndexBufferGPU.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU.getBufferPtr());
+		cmd.BindIndexBuffer(vr.g_DebugDrawIndexBufferGPU.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		VkPipeline pso = m_DebugDrawPSOSelector.GetPSO(vr.m_DebugDrawDepthTest, false, false);
-		vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, pso);
-
-		vkCmdDrawIndexed(cmdlist, static_cast<uint32_t>(vr.g_DebugDrawIndexBufferGPU.size()), 1, 0, 0, 0);
+		cmd.BindPSO(pso);
+		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU.size()), 1);
 	}
+
 
 	vkCmdEndRenderPass(cmdlist);
 }
@@ -213,13 +223,13 @@ void DebugDrawRenderpass::CreatePipeline()
 
 	const std::vector<VkVertexInputBindingDescription> bindingDescription =
 	{
-		oGFX::vkutils::inits::vertexInputBindingDescription(VERTEX_BUFFER_ID,sizeof(oGFX::DebugVertex),VK_VERTEX_INPUT_RATE_VERTEX),
+		oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_VERTEX_BUFFER_ID,sizeof(oGFX::DebugVertex),VK_VERTEX_INPUT_RATE_VERTEX),
 	};
 
 	const std::vector<VkVertexInputAttributeDescription> attributeDescriptions =
 	{
-		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(oGFX::DebugVertex, pos)),
-		oGFX::vkutils::inits::vertexInputAttributeDescription(VERTEX_BUFFER_ID,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(oGFX::DebugVertex, col)),
+		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(oGFX::DebugVertex, pos)),
+		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(oGFX::DebugVertex, col)),
 	};
 
 	using oGFX::vkutils::inits::Creator;
@@ -241,7 +251,7 @@ void DebugDrawRenderpass::CreatePipeline()
 	colourState.alphaBlendOp = VK_BLEND_OP_ADD;
 	VkPipelineColorBlendStateCreateInfo colourBlendingCreateInfo = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1,&colourState);
 
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::indirectPSOLayout,vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout,vr.renderPass_default);
 	pipelineCreateInfo.stageCount = 2;
 	pipelineCreateInfo.pStages = shaderStages.data();
 	pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
