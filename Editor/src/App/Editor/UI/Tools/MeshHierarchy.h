@@ -13,7 +13,7 @@ public:
 	void OpenFileCallBack(OpenFileEvent* e);
 	void Show();
 private:
-	void CreateObject(Node* starting_node);
+	void CreateObject(Node* starting_node,oo::AssetID asset_id );
 	oo::AssetID m_current_id = 0;
 	std::filesystem::path temp;
 };

@@ -35,9 +35,9 @@ void MeshHierarchy::OpenFileCallBack(OpenFileEvent* e)
 		auto relativepath = std::filesystem::relative(e->m_filepath, Project::GetAssetFolder());
 		auto asset = Project::GetAssetManager()->LoadPath(relativepath);
 		m_current_id = asset.GetID();
-		asset = Project::GetAssetManager()->Get(m_current_id);
-		auto path = asset.GetFilePath();
-		temp = relativepath;
+		//asset = Project::GetAssetManager()->Get(m_current_id);
+		//auto path = asset.GetFilePath();
+		//temp = relativepath;
 	}
 }
 
@@ -47,34 +47,38 @@ void MeshHierarchy::Show()
 		return;
 
 	auto assetmanager = Project::GetAssetManager();
-	auto asset = assetmanager->LoadName(temp)[0];
+	auto asset = assetmanager->Get(m_current_id);
 	auto modeldata = asset.GetData<ModelData*>();
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 
 	std::stack<Node*> node_list;
-	std::vector<std::pair<Node*, std::shared_ptr<oo::GameObject>>> node_parent;
+	std::vector<Node*> node_parent;
 	auto* node = modeldata->sceneInfo;
 	node_list.push(node);
+	ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+	ImGui::BeginChild("MeshChild", { contentRegion.x,contentRegion.y * 0.6f }, true);
 
-	std::shared_ptr<oo::GameObject> gameobject = scene->CreateGameObjectImmediate();
-	gameobject->SetName(node->name);
 	ImGuiTreeNodeFlags flags = (ImGuiTreeNodeFlags)node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen: ImGuiTreeNodeFlags_Bullet;
-	ImGui::TreeNodeEx(node->name.c_str());
+	bool opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+	if (opened == false)
+		return;
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();
 		node_list.pop();
 		if (node->meshRef != static_cast<uint32_t>(-1))
 		{
-			while (node->parent != node_parent.back().first)
+			while ((node_parent.empty() == false) && (node->parent != node_parent.back()))
 			{
 				node_parent.pop_back();
 				ImGui::TreePop();
 			}
 			ImGuiTreeNodeFlags flags = node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Bullet;
-			ImGui::TreeNodeEx(node->name.c_str(), flags);
+			opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+			if (opened == false)
+				continue;
 		}
-		node_parent.push_back({ node, gameobject });
+		node_parent.push_back({ node });
 		for (auto data : node->children)
 		{
 			node_list.push(data);
@@ -86,13 +90,20 @@ void MeshHierarchy::Show()
 		node_parent.pop_back();
 		ImGui::TreePop();
 	}
+	ImGui::EndChild();
+	if(ImGui::Button("Add Whole Mesh"))
+	{
+		CreateObject(modeldata->sceneInfo,m_current_id);
+	}
 }
 
-void MeshHierarchy::CreateObject(Node* node)
+void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 {
 	auto assetmanager = Project::GetAssetManager();
-	auto asset = assetmanager->LoadName(temp)[0];
+	auto asset = assetmanager->Get(asset_id);
 	auto modeldata = asset.GetData<ModelData*>();
+
+
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	std::stack<Node*> node_list;
 	std::vector<std::pair<Node*, std::shared_ptr<oo::GameObject>>> node_parent;
