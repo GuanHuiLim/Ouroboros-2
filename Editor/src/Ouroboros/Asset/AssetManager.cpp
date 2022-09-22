@@ -340,16 +340,16 @@ namespace oo
         else
         {
             // Load asset
-            Asset asset = createAsset(fpContent);
-            assets.Insert(meta.id, asset);
+            Asset asset = createAsset(fpContent, meta.id);
+            assets.Insert(asset.id, asset);
             return asset;
         }
     }
 
-    Asset AssetManager::createAsset(std::filesystem::path fp)
+    Asset AssetManager::createAsset(std::filesystem::path fp, AssetID id)
     {
         const auto FP_EXT = fp.extension();
-        Asset asset = Asset(std::filesystem::canonical(fp));
+        Asset asset = Asset(std::filesystem::canonical(fp), id);
         if (findIn(FP_EXT.string(), Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end()))
         {
             // Load texture
