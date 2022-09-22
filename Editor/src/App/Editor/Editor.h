@@ -12,6 +12,7 @@
 #include "UI/Tools/PenTool.h"
 #include "UI/Tools/InputManagerUI.h"
 #include "UI/Tools/MeshHierarchy.h"
+#include "UI/Tools/RendererDebugger.h"
 
 #include "UI/Optional Windows/SceneOrderingWindow.h"
 
@@ -56,6 +57,8 @@ public:
 	PenTool m_pentool;
 	InputManagerUI m_inputManager;
 	MeshHierarchy m_meshHierarchy;
+	RendererDebugger m_rendererDebugger;
+
 
 	SceneOrderingWindow m_sceneOderingWindow;
 public:
