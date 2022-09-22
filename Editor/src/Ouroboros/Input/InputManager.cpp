@@ -173,29 +173,5 @@ namespace oo
                 }
             }
         );
-        axes.emplace_back(
-            InputAxis
-            {
-                "Test",
-                InputAxis::InputType::KeyboardButton,
-                InputAxis::Settings
-                {
-                    static_cast<InputAxis::InputCode>(input::KeyCode::K),
-                    static_cast<InputAxis::InputCode>(input::KeyCode::L),
-                    InputAxis::INPUTCODE_INVALID,
-                    InputAxis::INPUTCODE_INVALID,
-                    0U, 0.0f, 0.0f
-                },
-                InputAxis::ControllerInputType::Button,
-                InputAxis::Settings
-                {
-                    static_cast<InputAxis::InputCode>(input::ControllerButtonCode::A),
-                    static_cast<InputAxis::InputCode>(input::ControllerButtonCode::B),
-                    InputAxis::INPUTCODE_INVALID,
-                    InputAxis::INPUTCODE_INVALID,
-                    0U, 0.0f, 0.0f
-                }
-            }
-        );
     }
 }
