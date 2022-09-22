@@ -204,7 +204,7 @@ public:
 
     // MATERIAL
     phy_uuid::UUID createMat(PhysicsObject obj, Material material);
-    void updateMat(phy_uuid::UUID materialID, Material material);
+    //void updateMat(phy_uuid::UUID materialID, Material material);
     void destroyMat(phy_uuid::UUID materialID);
 
     // RIGIDBODY
@@ -300,15 +300,21 @@ struct PhysicsObject { // you store
 
     // functions...
     Material getMaterial() const;
-
     PxVec3 getposition() const;
+    PxQuat getOrientation() const;
 
+    //getRotation() const;
+
+    void setMaterial(Material material);
     void setposition(PxVec3 pos);
+    void setShape(shape shape);
+    void setRigidType(rigid rig);
+
+    void setMass(PxReal mass);
     void setAngularDamping(PxReal angularDamping);
     void setAngularVelocity(PxVec3 angularVelocity);
     void setLinearDamping(PxReal linearDamping);
     void setLinearVelocity(PxVec3 linearVelocity);
-    void setMass(PxReal mass);
 };
 
 

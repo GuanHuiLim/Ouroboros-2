@@ -161,6 +161,7 @@ phy_uuid::UUID PhysxWorld::createMat(PhysicsObject obj, Material material) {
     return UUID;
 }
 
+/*
 void PhysxWorld::updateMat(phy_uuid::UUID materialID, Material material) {
 
     // SEARCH FOR THAT KEY UUID IN THE MAP (if have then set the new material in)
@@ -171,7 +172,9 @@ void PhysxWorld::updateMat(phy_uuid::UUID materialID, Material material) {
         mat.at(materialID)->setRestitution(material.restitution);
     }
 }
+*/
 
+// check again need call this at where
 void PhysxWorld::destroyMat(phy_uuid::UUID materialID) {
 
     if (mat.contains(materialID)) {
@@ -196,6 +199,8 @@ PhysicsObject PhysxWorld::createRigidbody(rigid type)
         obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(PxTransform(PxVec3(0))); // PxCreateDynamic()
         scene->addActor(*obj.rd.rigidDynamic);
     }
+
+    //scene->removeActor()
 
     obj.rigidID = type;
 
@@ -230,7 +235,6 @@ void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
         PxMaterial* material = mat.at(underlying_obj->matID);
 
         //switch (shape) {
-        //    
         //}
 
         if (shape == shape::box) {
@@ -309,6 +313,21 @@ Material PhysicsObject::getMaterial() const {
     return m_material;
 }
 
+void PhysicsObject::setMaterial(Material material) {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+        PxMaterial* temp_mat = world->mat.at(underlying_obj->matID);
+
+        if (world->mat.contains(underlying_obj->matID)) {
+            temp_mat->setStaticFriction(material.staticFriction);
+            temp_mat->setDynamicFriction(material.dynamicFriction);
+            temp_mat->setRestitution(material.restitution);
+        }
+    }
+}
+
 PxVec3 PhysicsObject::getposition() const {
 
     // contains the key the return the value of that key
@@ -351,6 +370,69 @@ void PhysicsObject::setposition(PxVec3 pos) {
             underlying_obj->rd.rigidDynamic->setGlobalPose(PxTransform(PxVec3(pos.x, pos.y, pos.z)));
     }
 
+}
+
+PxQuat PhysicsObject::getOrientation() const {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+
+        if (underlying_obj->rigidID == rigid::rstatic)
+            return underlying_obj->rs.rigidStatic->getGlobalPose().q;
+
+        else if (underlying_obj->rigidID == rigid::rdynamic)
+            return underlying_obj->rd.rigidDynamic->getGlobalPose().q;
+    }
+}
+
+void PhysicsObject::setShape(shape shape) {
+
+    //here
+}
+
+void PhysicsObject::setRigidType(rigid rig) {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+        PxRigidStatic* rstat = underlying_obj->rs.rigidStatic;
+        PxRigidDynamic* rdyna = underlying_obj->rd.rigidDynamic;
+
+        underlying_obj->rigidID = rig;
+
+        PxTransform temp_trans{ PxVec3(0) }; // set default to 0
+
+        // CHECKING IF OBJECT HAVE STAT OR DYNA INIT ALR
+        if (rstat) {
+            temp_trans = rstat->getGlobalPose();
+            world->scene->removeActor(*rstat);
+        }
+        else if (rdyna) {
+            temp_trans = rdyna->getGlobalPose();
+            world->scene->removeActor(*rdyna);
+        }
+
+        if (rig == rigid::rstatic) {
+            rstat = physx_system::getPhysics()->createRigidStatic(temp_trans);
+            world->scene->addActor(*rstat);
+        }
+        else if (rig == rigid::rdynamic) {
+            rdyna = physx_system::getPhysics()->createRigidDynamic(temp_trans);
+            world->scene->addActor(*rdyna);
+        }
+    }
+}
+
+void PhysicsObject::setMass(PxReal mass) {
+
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+
+        if (underlying_obj->rigidID == rigid::rdynamic)
+            underlying_obj->rd.rigidDynamic->setMass(mass);
+    }
 }
 
 void PhysicsObject::setAngularDamping(PxReal angularDamping) {
@@ -397,16 +479,7 @@ void PhysicsObject::setLinearVelocity(PxVec3 linearVelocity) {
     }
 }
 
-void PhysicsObject::setMass(PxReal mass) {
 
-    if (world->all_objects.contains(id)) {
-
-        PhysxObject* underlying_obj = world->all_objects.at(id);
-
-        if (underlying_obj->rigidID == rigid::rdynamic)
-            underlying_obj->rd.rigidDynamic->setMass(mass);
-    }
-}
 
 
 /*-----------------------------------------------------------------------------*/
