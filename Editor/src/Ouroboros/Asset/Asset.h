@@ -109,7 +109,7 @@ namespace oo
         /* Getters                                                                     */
         /* --------------------------------------------------------------------------- */
 
-        [[nodiscard]] inline bool IsValid() const { return id == ID_NULL; };
+        [[nodiscard]] inline bool IsValid() const { return id != ID_NULL; };
         [[nodiscard]] inline const AssetID& GetID() const { return id; };
         [[nodiscard]] inline const auto& GetFilePath() const { return info->contentPath; };
         [[nodiscard]] inline const auto& GetMetaFilePath() const { return info->metaPath; };

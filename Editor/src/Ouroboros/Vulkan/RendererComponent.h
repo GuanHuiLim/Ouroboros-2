@@ -22,7 +22,11 @@ namespace oo
 
 		void GetModelHandle()
 		{
-			model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			if (mesh_handle.HasData())
+				model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			else
+				model_handle = 0;
+			
 			//model_handle /*= mesh_handle.GetData<ModelData>().gfxMeshIndices.front()*/;
 		}
 		void SetModelHandle(Asset _asset, uint32_t _submodel_id)
@@ -38,8 +42,11 @@ namespace oo
 		}
 		void SetSubModelID(int id)
 		{
-			submodel_id = id;
-			model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			if (mesh_handle.IsValid())
+			{
+				submodel_id = id;
+				model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			}
 		}
 		//std::vector<Material> materials;
 
