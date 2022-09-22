@@ -76,7 +76,36 @@ void InputManagerUI::Show()
         float holdDurationRequired = input.GetSettings().holdDurationRequired;
         if (ImGui::DragFloat("Hold Duration Required", &holdDurationRequired, 0.1f))
             input.GetSettings().holdDurationRequired = holdDurationRequired;
+		//__________________________CONTROLLER______________________//
 		
+		key = static_cast<int>(input.GetControllerSettings().negativeButton);
+		if (DrawKeyInputUI("Negative Controller", key, oo::InputAxis::InputType::MouseButton == actualInputType))
+			input.GetControllerSettings().negativeButton = static_cast<oo::InputAxis::InputCode>(key);
+
+		key = static_cast<int>(input.GetControllerSettings().positiveButton);
+		if (DrawKeyInputUI("Positive Controller", key, oo::InputAxis::InputType::MouseButton == actualInputType))
+			input.GetControllerSettings().positiveButton = static_cast<oo::InputAxis::InputCode>(key);
+
+		key = static_cast<int>(input.GetControllerSettings().negativeAltButton);
+		if (DrawKeyInputUI("Negative Alt Controller", key, oo::InputAxis::InputType::MouseButton == actualInputType))
+			input.GetControllerSettings().negativeAltButton = static_cast<oo::InputAxis::InputCode>(key);
+
+		key = static_cast<int>(input.GetControllerSettings().positiveAltButton);
+		if (DrawKeyInputUI("Positive Alt Controller", key, oo::InputAxis::InputType::MouseButton == actualInputType))
+			input.GetControllerSettings().positiveAltButton = static_cast<oo::InputAxis::InputCode>(key);
+
+		unsigned controllerpressesRequired = input.GetControllerSettings().pressesRequired;
+		if (ImGui::DragScalarN("Presses Required Controller", ImGuiDataType_::ImGuiDataType_U32, &controllerpressesRequired, 1, 0.1f))
+			input.GetControllerSettings().pressesRequired = controllerpressesRequired;
+
+		float controllermaxGapTime = input.GetControllerSettings().maxGapTime;
+		if (ImGui::DragFloat("Max Gap Time Controller", &controllermaxGapTime, 0.1f))
+			input.GetControllerSettings().maxGapTime = controllermaxGapTime;
+
+		float controllerholdDurationRequired = input.GetControllerSettings().holdDurationRequired;
+		if (ImGui::DragFloat("Hold Duration Required Controller", &controllerholdDurationRequired, 0.1f))
+			input.GetControllerSettings().holdDurationRequired = controllerholdDurationRequired;
+
 		ImGui::PopID();
 		ImGui::Separator();
 	}
