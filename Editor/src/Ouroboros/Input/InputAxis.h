@@ -101,6 +101,10 @@ namespace oo
             unsigned pressCount;
             float pressGapTimeLeft;
             InputAxis::InputCode lastPressed;
+
+        private:
+            void UpdateLastPressed(InputCode potentialButton);
+            void UpdateLastPressedController(InputCode potentialButton);
         };
 
     private:

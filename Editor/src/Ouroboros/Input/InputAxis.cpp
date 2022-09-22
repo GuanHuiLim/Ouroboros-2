@@ -43,29 +43,17 @@ namespace oo
         if (axis.type == InputType::MouseMovement)
             return;
         // update last pressed
-        if (lastPressed != axis.settings.positiveButton && IsInputCodePressed(axis.type, axis.settings.positiveButton))
+        UpdateLastPressed(axis.settings.positiveButton);
+        UpdateLastPressed(axis.settings.positiveAltButton);
+        UpdateLastPressed(axis.settings.negativeButton);
+        UpdateLastPressed(axis.settings.negativeAltButton);
+
+        if (axis.controllerType == ControllerInputType::Button)
         {
-            lastPressed = axis.settings.positiveButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
-        }
-        else if (lastPressed != axis.settings.positiveAltButton && IsInputCodePressed(axis.type, axis.settings.positiveAltButton))
-        {
-            lastPressed = axis.settings.positiveAltButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
-        }
-        else if (lastPressed != axis.settings.negativeButton && IsInputCodePressed(axis.type, axis.settings.negativeButton))
-        {
-            lastPressed = axis.settings.negativeButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
-        }
-        else if (lastPressed != axis.settings.negativeAltButton && IsInputCodePressed(axis.type, axis.settings.negativeAltButton))
-        {
-            lastPressed = axis.settings.negativeAltButton;
-            pressCount = 0;
-            durationHeld = 0.0f;
+            UpdateLastPressedController(axis.controllerSettings.positiveButton);
+            UpdateLastPressedController(axis.controllerSettings.positiveAltButton);
+            UpdateLastPressedController(axis.controllerSettings.negativeButton);
+            UpdateLastPressedController(axis.controllerSettings.negativeAltButton);
         }
 
         if (pressGapTimeLeft > 0.0f)
@@ -88,6 +76,22 @@ namespace oo
         if (IsInputCodeReleased(axis.type, lastPressed))
         {
             durationHeld = 0.0f;
+        }
+        if (axis.controllerType == ControllerInputType::Button)
+        {
+            if (IsControllerInputCodePressed(lastPressed))
+            {
+                ++pressCount;
+                pressGapTimeLeft = axis.settings.maxGapTime;
+            }
+            if (IsControllerInputCodeHeld(lastPressed))
+            {
+                durationHeld += deltaTime;
+            }
+            if (IsControllerInputCodeReleased(lastPressed))
+            {
+                durationHeld = 0.0f;
+            }
         }
     }
 
@@ -146,6 +150,25 @@ namespace oo
                 value = controllerValue;
         }
         return value;
+    }
+
+    void InputAxis::Tracker::UpdateLastPressed(InputCode potentialButton)
+    {
+        if (lastPressed != potentialButton && IsInputCodePressed(axis.type, potentialButton))
+        {
+            lastPressed = potentialButton;
+            pressCount = 0;
+            durationHeld = 0.0f;
+        }
+    }
+    void InputAxis::Tracker::UpdateLastPressedController(InputCode potentialButton)
+    {
+        if (lastPressed != potentialButton && IsControllerInputCodePressed(potentialButton))
+        {
+            lastPressed = potentialButton;
+            pressCount = 0;
+            durationHeld = 0.0f;
+        }
     }
 
     bool InputAxis::IsInputCodePressed(InputType type, InputCode inputCode)
