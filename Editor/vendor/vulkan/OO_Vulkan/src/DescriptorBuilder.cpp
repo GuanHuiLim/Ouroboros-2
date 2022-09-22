@@ -48,10 +48,14 @@ bool DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layou
 
 	//allocate descriptor
 	bool success = alloc->Allocate(&set, layout);
-	if (!success) { return false; };
+	if (!success)
+	{
+		return false;
+	};
 
 	//write descriptor
-	for (VkWriteDescriptorSet& w : writes) {
+	for (VkWriteDescriptorSet& w : writes)
+	{
 		w.dstSet = set;
 	}
 

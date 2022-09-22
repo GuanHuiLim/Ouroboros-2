@@ -82,6 +82,18 @@ namespace Ecs
 		template<typename C>
 		C& get_component(EntityID id);
 
+		template<typename C>
+		size_t get_component_hash();
+
+		template<typename C>
+		ComponentInfo const* get_component_info() const;
+
+		void* get_component(EntityID const id, size_t const hash);
+
+		GetCompFn* get_component_Fn(size_t const hash);
+
+
+
 		size_t get_num_components(EntityID id);
 
 		template<typename C>

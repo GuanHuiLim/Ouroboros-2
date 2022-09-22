@@ -3,6 +3,7 @@
 #include "UI/Object Editor/Inspector.h"
 #include "UI/Object Editor/FileBrowser.h"
 #include "UI/Object Editor/ScriptSequencer.h"
+#include "UI/Object Editor/EditorViewport.h"
 
 #include "UI/Tools/StyleEditor.h"
 #include "UI/Tools/WarningMessage.h"
@@ -16,7 +17,6 @@
 #include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Events/OpenFileEvent.h"
-
 
 class PopupHelperWindow
 {
@@ -47,6 +47,7 @@ public:
 	Inspector m_inspector;
 	FileBrowser m_fileBrowser;
 	ScriptSequencer m_scriptSequencer;
+	EditorViewport m_EditorViewport;
 
 	StyleEditor m_styleEditor;
 	WarningMessage m_warningMessage;

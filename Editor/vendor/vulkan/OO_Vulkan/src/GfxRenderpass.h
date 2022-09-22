@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Profiling.h"
+#include "rhi/CommandList.h"
 
 #include <vector>
 #include <memory>
@@ -25,9 +26,12 @@ class GfxRenderpass
 public:
     virtual ~GfxRenderpass() = default;
     virtual void Init() = 0;
-    virtual void CreatePSO(){};
     virtual void Draw() = 0;
     virtual void Shutdown() = 0;
+    // Called once upon init    
+    virtual void CreatePSO() {};
+    // Called once per context, for render graph. "false" means this render pass is unused/skipped.
+    virtual bool SetupDependencies() = 0;
     uint8_t m_Index{ 0xFF };
 };
 

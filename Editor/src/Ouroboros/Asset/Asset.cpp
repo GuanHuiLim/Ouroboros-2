@@ -20,25 +20,34 @@ namespace oo
 {
     Asset::Asset(std::filesystem::path contentPath, AssetID id)
         : id{ id }
-        , info{ new AssetInfo() }
+        , info{ id == ID_NULL ? new AssetInfo() : nullptr }
     {
-        info->copies.emplace_back(this);
-        info->contentPath = contentPath;
-        info->metaPath = contentPath;
-        info->metaPath += EXT_META;
+        if (info)
+        {
+            info->copies.emplace_back(this);
+            info->contentPath = contentPath;
+            info->metaPath = contentPath;
+            info->metaPath += EXT_META;
+        }
     }
 
     Asset::Asset(const Asset& other)
         : info{ other.info }
     {
-        info->copies.emplace_back(this);
+        if (info)
+        {
+            info->copies.emplace_back(this);
+        }
     }
 
     Asset::Asset(Asset&& other)
         : info{ other.info }
     {
-        info->copies.remove(&other);
-        info->copies.emplace_back(this);
+        if (info)
+        {
+            info->copies.remove(&other);
+            info->copies.emplace_back(this);
+        }
         other.info = nullptr;
     }
 

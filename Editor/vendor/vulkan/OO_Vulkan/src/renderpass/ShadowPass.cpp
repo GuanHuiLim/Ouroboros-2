@@ -31,6 +31,18 @@ void ShadowPass::CreatePSO()
 	CreatePipeline();
 }
 
+bool ShadowPass::SetupDependencies()
+{
+	// TODO: If shadows are disabled, return false.
+
+	// READ: Scene data SSBO
+	// READ: Instancing Data
+	// WRITE: Shadow Depth Map
+	// etc
+
+	return true;
+}
+
 void ShadowPass::Draw()
 {
 	auto& vr = *VulkanRenderer::get();
@@ -71,31 +83,39 @@ void ShadowPass::Draw()
 	
 	const float vpHeight = (float)shadowmapSize.height;
 	const float vpWidth = (float)shadowmapSize.width;
-	VkViewport viewport = { 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f };
-	VkRect2D scissor = { {0, 0}, {shadowmapSize.width , shadowmapSize.height } };
-	vkCmdSetViewport(cmdlist, 0, 1, &viewport);
-	vkCmdSetScissor(cmdlist, 0, 1, &scissor);
+	rhi::CommandList cmd{ cmdlist };
+	cmd.BindPSO(pso_ShadowDefault);
 
-	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, pso_ShadowDefault);
-	std::array<VkDescriptorSet, 3> descriptorSetGroup = 
-	{
-		vr.descriptorSet_gpuscene,
-		vr.descriptorSets_uniform[swapchainIdx],
-		vr.descriptorSet_bindless
-	};
-	
-	uint32_t dynamicOffset = 0;
-	vkCmdBindDescriptorSets(cmdlist, VK_PIPELINE_BIND_POINT_GRAPHICS, PSOLayoutDB::indirectPSOLayout,
-		0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 1, &dynamicOffset);
+	cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
+	cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
+
+	auto dbi = vr.gpuTransformBuffer.GetDescriptorBufferInfo();
+	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+		.BindBuffer(3, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.Build(VulkanRenderer::get()->descriptorSet_gpuscene, SetLayoutDB::gpuscene);
+	vr.gpuTransformBuffer.Updated();
+
+	VkDescriptorBufferInfo vpBufferInfo{};
+	vpBufferInfo.buffer = vr.vpUniformBuffer[vr.swapchainIdx];	// buffer to get data from
+	vpBufferInfo.offset = 0;					// position of start of data
+	vpBufferInfo.range = sizeof(CB::FrameContextUBO);			// size of data
+	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+		.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+		.Build(vr.descriptorSets_uniform[vr.swapchainIdx], SetLayoutDB::FrameUniform);
+
+	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
+		std::array<VkDescriptorSet, 3>
+		{
+			vr.descriptorSet_gpuscene,
+			vr.descriptorSets_uniform[swapchainIdx],
+			vr.descriptorSet_bindless
+		}
+	);
 	
 	// Bind merged mesh vertex & index buffers, instancing buffers.
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmdlist, VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr(), offsets);
-    vkCmdBindIndexBuffer(cmdlist, vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindVertexBuffers(cmdlist, INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer, offsets);
-
-    const VkBuffer idcb = vr.indirectCommandsBuffer.buffer;
-    const uint32_t count = (uint32_t)vr.objectCount;
+	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
+	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
+	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	auto& light = vr.currWorld->m_HardcodedOmniLights[0];
 	light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3{ 0.0f,0.0f,0.0f }, glm::vec3{ 0.0f,1.0f,0.0f });
@@ -103,13 +123,13 @@ void ShadowPass::Draw()
 	glm::mat4 viewproj = light.projection * light.view[0] ;
 
 	vkCmdPushConstants(cmdlist,
-		PSOLayoutDB::indirectPSOLayout,
+		PSOLayoutDB::defaultPSOLayout,
 		VK_SHADER_STAGE_ALL,	    // stage to push constants to
 		0,							// offset of push constants to update
 		sizeof(glm::mat4),			// size of data being pushed
 		glm::value_ptr(viewproj));	// actualy data being pushed (could be an array));
 
-	DrawIndexedIndirect(cmdlist, idcb, 0, count, sizeof(oGFX::IndirectCommand));
+	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.buffer, 0, vr.objectCount);
 
 	vkCmdEndRenderPass(cmdlist);
 }
@@ -227,7 +247,7 @@ void ShadowPass::CreatePipeline()
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::indirectPSOLayout, vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;

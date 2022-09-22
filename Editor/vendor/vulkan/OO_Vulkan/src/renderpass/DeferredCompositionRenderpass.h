@@ -15,10 +15,11 @@ struct DeferredCompositionRenderpass : public GfxRenderpass
 	void Draw() override;
 	void Shutdown() override;
 
+	bool SetupDependencies() override;
 	void CreatePSO() override;
 
 	VkRenderPass renderpass_DeferredLightingComposition{};
-	VkPipelineLayout layout_DeferredLightingComposition{};
+	
 	VkPipeline pso_DeferredLightingComposition{};
 
 	uint64_t uboDynamicAlignment{};
@@ -26,5 +27,7 @@ struct DeferredCompositionRenderpass : public GfxRenderpass
 	void CreatePipeline();
 private:
 	void CreateDescriptors();
+	void CreatePipelineLayout();
+	bool m_log{ false };
 };
 

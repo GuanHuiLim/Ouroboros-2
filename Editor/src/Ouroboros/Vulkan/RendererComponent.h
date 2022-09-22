@@ -21,7 +21,7 @@ namespace oo
 
 		void GetModelHandle()
 		{
-			model_handle = mesh_handle.GetData<Model>().gfxIndex;
+			model_handle = mesh_handle.GetData<ModelData>().gfxMeshIndices.front();
 		}
 
 		//std::vector<Material> materials;

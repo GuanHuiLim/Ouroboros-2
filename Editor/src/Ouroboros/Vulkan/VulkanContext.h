@@ -38,8 +38,10 @@ namespace oo
         void SwapBuffers();
 
         void InitImGui();
+        void ResetImguiInit();
         void OnImGuiBegin();
         void OnImGuiEnd();
+        void ResetImguiShutdown();
         void OnImGuiShutdown();
 
         void SetWindowResized();
@@ -55,8 +57,8 @@ namespace oo
         CameraController m_cc;
 
         //TEMP ptrs
-        std::unique_ptr<Model> cubeMesh;
-        std::unique_ptr<Model> planeMesh;
+        std::unique_ptr<ModelData> cubeMesh;
+        std::unique_ptr<ModelData> planeMesh;
 
         //static VulkanEngine vkEngine;
     };

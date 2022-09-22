@@ -133,7 +133,7 @@ namespace oo
 
             assets.Erase(snowflake);
         }
-        throw AssetNotFoundException();
+        return Asset();
     }
 
     std::future<Asset> AssetManager::GetAsync(const AssetID& snowflake)
@@ -151,7 +151,7 @@ namespace oo
         const auto FP = root / fp;
 
         if (!std::filesystem::exists(FP))
-            throw AssetNotFoundException();
+            return Asset();
 
         return getOrLoadAbsolute(FP);
     }

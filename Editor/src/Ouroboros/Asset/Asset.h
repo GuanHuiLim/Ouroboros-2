@@ -78,6 +78,7 @@ namespace oo
         /* Constants                                                                   */
         /* --------------------------------------------------------------------------- */
 
+        static constexpr AssetID ID_NULL = 0;
         static constexpr Extension EXT_META = ".meta";
         static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".ogg" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
@@ -93,7 +94,7 @@ namespace oo
         /* Constructors and Destructors                                                */
         /* --------------------------------------------------------------------------- */
 
-        Asset(std::filesystem::path contentPath = {}, AssetID id = GenerateSnowflake());
+        Asset(std::filesystem::path contentPath = {}, AssetID id = ID_NULL);
         Asset(const Asset& other);
         Asset(Asset&& other);
         Asset& operator=(const Asset& other);
@@ -104,6 +105,7 @@ namespace oo
         /* Getters                                                                     */
         /* --------------------------------------------------------------------------- */
 
+        [[nodiscard]] inline bool IsValid() const { return id == ID_NULL; };
         [[nodiscard]] inline const AssetID& GetID() const { return id; };
         [[nodiscard]] inline const auto& GetFilePath() const { return info->contentPath; };
         [[nodiscard]] inline const auto& GetMetaFilePath() const { return info->metaPath; };
@@ -163,6 +165,6 @@ namespace oo
     class AssetDataNotFoundException : public std::exception
     {
     public:
-        AssetDataNotFoundException(const std::string& what = "") : std::exception(what.c_str()) {}
+        AssetDataNotFoundException(const std::string& what = "Asset Data Not Found") : std::exception(what.c_str()) {}
     };
 }

@@ -22,8 +22,12 @@ namespace oo
     {
         s_BuildPath = buildPath;
         s_ProjectPath = projectPath;
-        if (Compile())
-            Load();
+#ifdef OO_EDITOR
+        Compile(); // compile first, always
+        Load(); // regardless if compile succeeds or fails, try to load any pre-existing/new scripting.dll
+#else
+        Load();
+#endif
     }
     bool ScriptManager::Compile()
     {
@@ -85,7 +89,7 @@ namespace oo
             std::vector<MonoClass*> classList = ScriptEngine::GetClassesByBaseClass("Scripting", monoBehaviour);
             for (MonoClass* klass : classList)
             {
-                s_ScriptList.emplace_back(ScriptClassInfo{ mono_class_get_namespace(klass), mono_class_get_name(klass) });
+                s_ScriptList.emplace_back(ScriptClassInfo{ klass });
             }
         }
 

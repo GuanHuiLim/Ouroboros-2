@@ -50,11 +50,24 @@ void GraphicsBatch::GenerateBatches()
 		{
 			// clear the buffer to prepare for this model
 			s_scratchBuffer.clear();
-			for (auto& node :model.nodes)
-			{
-				uint32_t counter = 0;
-				oGFX::IndirectCommandsHelper(node, s_scratchBuffer,counter);
-			}
+
+			oGFX::IndirectCommand indirectCmd{};
+			indirectCmd.instanceCount = 1;
+
+			// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
+			// the number is flattened in GraphicsBatches
+			indirectCmd.firstInstance = 0;
+
+			indirectCmd.firstIndex = model.mesh->indicesOffset;
+			indirectCmd.indexCount = model.mesh->indicesCount;
+			indirectCmd.vertexOffset = model.mesh->vertexOffset;
+
+			s_scratchBuffer.emplace_back(indirectCmd);
+			//for (auto& node :model.nodes)
+			//{
+			//	uint32_t counter = 0;
+			//	oGFX::IndirectCommandsHelper(node, s_scratchBuffer,counter);
+			//}
 		}
 		
 		if (ent.flags & Flags::SHADOW_CASTER)
