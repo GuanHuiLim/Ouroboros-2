@@ -24,7 +24,7 @@ namespace oo
 {
     Asset::Asset(std::filesystem::path contentPath, AssetID id)
         : id{ id }
-        , info{ id == ID_NULL ? new AssetInfo() : nullptr }
+        , info{ id != ID_NULL ? new AssetInfo() : nullptr }
     {
         if (info)
         {
@@ -36,7 +36,8 @@ namespace oo
     }
 
     Asset::Asset(const Asset& other)
-        : info{ other.info }
+        : id{ other.id }
+        , info{ other.info }
     {
         if (info)
         {
@@ -45,7 +46,8 @@ namespace oo
     }
 
     Asset::Asset(Asset&& other)
-        : info{ other.info }
+        : id{ other.id }
+        , info{ other.info }
     {
         if (info)
         {
