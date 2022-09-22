@@ -28,9 +28,9 @@ namespace oo
         double Mass = 10.0;
         double InverseMass = 0.1;
 
-        // for rotations
-        double Inertia = 0.0;
-        double InverseInertia = 0.0;
+        //// for rotations
+        //double Inertia = 0.0;
+        //double InverseInertia = 0.0;
 
         RTTR_ENABLE();
     };
@@ -42,7 +42,7 @@ namespace oo
     struct PhysicsMaterial final
     {
         //Density currently purely used as mass
-        double Density          = 1.0;
+        //double Density          = 1.0;
         double Restitution      = 0.0;
         // Dynamic Friction is typically lesser then static friction
         double DynamicFriction  = 0.2;
@@ -62,19 +62,19 @@ namespace oo
         PhysicsMaterial m_material;
         MassData m_data;
 
-        vec2 m_linearVelocity;
-        vec2 m_force;
+        //vec2 m_linearVelocity;
+        //vec2 m_force;
 
-        // Angular components : most components are float in 2D, vec3 in 3D
-        //double m_orientation;
-        double m_angularVelocity;
-        double m_torque;
+        //// Angular components : most components are float in 2D, vec3 in 3D
+        ////double m_orientation;
+        //double m_angularVelocity;
+        //double m_torque;
 
-        // Used for interpolation
-        vec3 m_prevPos;
+        //// Used for interpolation
+        //vec3 m_prevPos;
 
-        //Accumulated impulse
-        vec2 m_accumulatedImpulse;
+        ////Accumulated impulse
+        //vec2 m_accumulatedImpulse;
 
         // Center of Mass
         vec2 m_centerOfMass;
@@ -101,29 +101,29 @@ namespace oo
         /*-----------------------------------------------------------------------------*/
         double GetMass()                const { return m_data.Mass; }
         double GetInverseMass()         const { return m_data.InverseMass; }
-        double GetInertia()             const { return m_data.Inertia; }
-        double GetInverseInertia()      const { return m_data.InverseInertia; }
-        double GetAngularVelocity()     const { return m_angularVelocity; }
+        /*double GetInertia()             const { return m_data.Inertia; }
+        double GetInverseInertia()      const { return m_data.InverseInertia; }*/
+        /*double GetAngularVelocity()     const { return m_angularVelocity; }
         vec2 GetForce()                 const { return m_force; }
-        vec2 GetVelocity()              const { return m_linearVelocity; }
+        vec2 GetVelocity()              const { return m_linearVelocity; }*/
         PhysicsMaterial GetMaterial()   const { return m_material; }
 
         /*-----------------------------------------------------------------------------*/
         /* Setter Functions                                                            */
         /*-----------------------------------------------------------------------------*/
-        void SetVelocity(vec2 newVel) { m_linearVelocity = newVel; }
+        /*void SetVelocity(vec2 newVel) { m_linearVelocity = newVel; }
         void SetForce(vec2 newForce) { m_force = newForce; }
-        void SetTorque(double newTorque) { m_torque = newTorque; }
+        void SetTorque(double newTorque) { m_torque = newTorque; }*/
         void SetMaterial(PhysicsMaterial material) { m_material = material; }
 
         /*-----------------------------------------------------------------------------*/
         /* Query Functions                                                             */
         /*-----------------------------------------------------------------------------*/
-        bool IsKinematic()  const { return Kinematic; }
-        bool IsDynamic()    const { return !Kinematic; }
+        //bool IsKinematic()  const { return Kinematic; }
+        //bool IsDynamic()    const { return !Kinematic; }
 
         //void SetInertia();
-        void ResetInertia() { m_data.Inertia = m_data.InverseInertia = 0.f; }
+        //void ResetInertia() { m_data.Inertia = m_data.InverseInertia = 0.f; }
 
         RTTR_ENABLE();
     };

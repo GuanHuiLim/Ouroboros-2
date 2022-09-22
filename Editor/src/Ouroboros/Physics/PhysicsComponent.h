@@ -21,7 +21,7 @@ namespace oo
     // invisible class
     struct PhysicsComponent
     {
-        PhysicsObject object;
+        PhysicsObject object{};
 
         RTTR_ENABLE();
     };

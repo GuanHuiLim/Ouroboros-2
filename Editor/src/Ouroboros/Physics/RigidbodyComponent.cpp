@@ -37,7 +37,7 @@ namespace oo
             ;
 
         registration::class_<PhysicsMaterial>("Physics Material")
-            .property("Density", &PhysicsMaterial::Density)
+            //.property("Density", &PhysicsMaterial::Density)
             .property("Restitution", &PhysicsMaterial::Restitution)
             .property("DynamicFriction", &PhysicsMaterial::DynamicFriction)
             .property("StaticFriction", &PhysicsMaterial::StaticFriction);

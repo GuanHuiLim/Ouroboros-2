@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           Colliders.cpp
+\file           ColliderComponents.cpp
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
@@ -14,7 +14,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
-#include "Colliders.h"
+#include "ColliderComponents.h"
 
 #include <rttr/registration>
 
@@ -28,16 +28,16 @@ namespace oo
             .property("Is Trigger ", &BoxCollider::IsTrigger)
             .property("Offset", &BoxCollider::Offset);*/
 
-        registration::class_<BoxCollider>("Box Collider")
-            .property("Is Trigger ", &BoxCollider::IsTrigger)
-            .property("Offset", &BoxCollider::Offset)
-            .property("Bounds", &BoxCollider::Bounds)
-            .property("Size", &BoxCollider::Size);
+        registration::class_<BoxColliderComponent>("Box Collider")
+            .property("Is Trigger ", &BoxColliderComponent::IsTrigger)
+            .property("Offset", &BoxColliderComponent::Offset)
+            .property("Bounds", &BoxColliderComponent::Bounds)
+            .property("Size", &BoxColliderComponent::Size);
 
-        registration::class_<SphereCollider>("Sphere Collider")
-            .property("Is Trigger", &SphereCollider::IsTrigger)
-            .property("Offset", &SphereCollider::Offset)
-            .property("Bounds", &SphereCollider::Bounds)
-            .property("Radius", &SphereCollider::Radius);
+        registration::class_<SphereColliderComponent>("Sphere Collider")
+            .property("Is Trigger", &SphereColliderComponent::IsTrigger)
+            .property("Offset", &SphereColliderComponent::Offset)
+            .property("Bounds", &SphereColliderComponent::Bounds)
+            .property("Radius", &SphereColliderComponent::Radius);
     }
 }

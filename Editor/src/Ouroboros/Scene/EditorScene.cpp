@@ -83,7 +83,7 @@ namespace oo
     {
         Scene::Update();
 
-        GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
+        GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
 
         //constexpr const char* const editor_scene_update = "Editor Scene Update";
         //constexpr const char* const physics_editor_update = "physics editor mode update";

@@ -44,7 +44,7 @@ namespace oo
 
             GetWorld().Add_System<InputSystem>()->Initialize();
 
-            GetWorld().Add_System<PhysicsSystem>();
+            GetWorld().Add_System<PhysicsSystem>()->Init();
 
             //Register All Systems
             //GetWorld().Add_System<ScriptSystem>(*this);

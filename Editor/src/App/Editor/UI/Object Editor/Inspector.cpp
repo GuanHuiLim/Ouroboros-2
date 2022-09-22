@@ -24,7 +24,7 @@
 
 #include <Ouroboros/Physics/PhysicsComponent.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
-#include <Ouroboros/Physics/Colliders.h>
+#include <Ouroboros/Physics/ColliderComponents.h>
 
 #include <Ouroboros/Scripting/ScriptComponent.h>
 #include <Ouroboros/Scripting/ScriptSystem.h>
@@ -113,8 +113,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::PhysicsComponent>(gameobject);
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	//DisplayComponent<oo::ColliderComponent>(gameobject);
-	DisplayComponent<oo::SphereCollider>(gameobject);
-	DisplayComponent<oo::BoxCollider>(gameobject);
+	DisplayComponent<oo::SphereColliderComponent>(gameobject);
+	DisplayComponent<oo::BoxColliderComponent>(gameobject);
 
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
@@ -140,8 +140,8 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 
 		selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::BoxCollider>(gameobject);
-		selected |= AddComponentSelectable<oo::SphereCollider>(gameobject);
+		selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
 
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);

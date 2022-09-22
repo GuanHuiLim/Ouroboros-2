@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           Colliders.h
+\file           ColliderComponents.h
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
@@ -38,24 +38,24 @@ namespace oo
         CONVEX
     };
 
-    /*-----------------------------------------------------------------------------*/
-    /* Broadphase collider : Replica of Box Collider stripped to bare minimum      */
-    /*-----------------------------------------------------------------------------*/
-    struct BoundingVolume final
-    {
-        AABB Bounds;
-        vec3 Size;
+    ///*-----------------------------------------------------------------------------*/
+    ///* Broadphase collider : Replica of Box Collider stripped to bare minimum      */
+    ///*-----------------------------------------------------------------------------*/
+    //struct BoundingVolume final
+    //{
+    //    AABB Bounds;
+    //    vec3 Size;
 
-        AABB GlobalBounds;
+    //    AABB GlobalBounds;
 
-        //Make the bounds Twice as big! Original Size { 1, 1 }
-        explicit BoundingVolume()
-            : Bounds{ {-0.5f, -0.5f, -0.5f}, { 0.5f, 0.5f, 0.5f } }
-            , Size{ 2.f, 2.f, 2.f }
-            , GlobalBounds{ Bounds }
-        {
-        }
-    };
+    //    //Make the bounds Twice as big! Original Size { 1, 1 }
+    //    explicit BoundingVolume()
+    //        : Bounds{ {-0.5f, -0.5f, -0.5f}, { 0.5f, 0.5f, 0.5f } }
+    //        , Size{ 2.f, 2.f, 2.f }
+    //        , GlobalBounds{ Bounds }
+    //    {
+    //    }
+    //};
 
     /*-----------------------------------------------------------------------------*/
     /* Base collider component that all colliders inherit from                     */
@@ -73,7 +73,7 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* Describes a Sphere Collider Component                                       */
     /*-----------------------------------------------------------------------------*/
-    struct SphereCollider final : public ColliderBase
+    struct SphereColliderComponent final : public ColliderBase
     {
         Sphere Bounds;
         float Radius = 0.f;
@@ -86,7 +86,7 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* Describes a Box Collider Component                                          */
     /*-----------------------------------------------------------------------------*/
-    struct BoxCollider final : public ColliderBase
+    struct BoxColliderComponent final : public ColliderBase
     {
         AABB Bounds;
         vec3 Size;
