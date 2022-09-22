@@ -208,7 +208,7 @@ public:
     void destroyMat(phy_uuid::UUID materialID);
 
     // RIGIDBODY
-    PhysicsObject createRigidbody(rigid type);
+    //PhysicsObject createRigidbody(rigid type);
     void removeRigidbody(PhysicsObject obj);
 
     // SHAPE
@@ -234,13 +234,11 @@ public:
 struct PhysxObject {
 
     phy_uuid::UUID id = 0;
-
     phy_uuid::UUID matID = 0;
-    //Material mat;
 
     // shape
     PxShape* m_shape; // prob no need this
-    shape shape;
+    shape shape = shape::box; // maybe next time can init to none
 
     // ensure at least static or dynamic is init
     RigidStatic rs{};
@@ -305,11 +303,12 @@ struct PhysicsObject { // you store
 
     //getRotation() const;
 
+    void setRigidType(rigid type);
     void setMaterial(Material material);
     void setposition(PxVec3 pos);
     void setShape(shape shape);
-    void setRigidType(rigid rig);
 
+    // prob functions that dont really need
     void setMass(PxReal mass);
     void setAngularDamping(PxReal angularDamping);
     void setAngularVelocity(PxVec3 angularVelocity);

@@ -182,6 +182,7 @@ void PhysxWorld::destroyMat(phy_uuid::UUID materialID) {
     }
 }
 
+/*
 PhysicsObject PhysxWorld::createRigidbody(rigid type)
 {
     // create instance of the object (on the stack)
@@ -211,6 +212,7 @@ PhysicsObject PhysxWorld::createRigidbody(rigid type)
     // return the object i created
     return PhysicsObject{ obj.id, this }; // a copy
 }
+*/
 
 void PhysxWorld::removeRigidbody(PhysicsObject obj)
 {
@@ -294,6 +296,60 @@ void PhysxObject::enableGravity(bool grav) {
 /*-----------------------------------------------------------------------------*/
 /*                               PhysicsObject                                 */
 /*-----------------------------------------------------------------------------*/
+void PhysicsObject::setRigidType(rigid type) {
+
+    PxTransform temp_trans{ PxVec3(0) }; // set default to 0
+
+    // CHECK IF HAVE RIGIDBODY CREATED OR NOT
+    if (world->all_objects.contains(id)) {
+
+        PhysxObject* underlying_obj = world->all_objects.at(id);
+        PxRigidStatic* rstat = underlying_obj->rs.rigidStatic;
+        PxRigidDynamic* rdyna = underlying_obj->rd.rigidDynamic;
+
+        underlying_obj->rigidID = type;
+
+        // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
+        if (rstat) {
+            temp_trans = rstat->getGlobalPose();
+            world->scene->removeActor(*rstat);
+        }
+        else if (rdyna) {
+            temp_trans = rdyna->getGlobalPose();
+            world->scene->removeActor(*rdyna);
+        }
+        // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
+        if (type == rigid::rstatic) {
+            rstat = physx_system::getPhysics()->createRigidStatic(temp_trans);
+            world->scene->addActor(*rstat);
+        }
+        else if (type == rigid::rdynamic) {
+            rdyna = physx_system::getPhysics()->createRigidDynamic(temp_trans);
+            world->scene->addActor(*rdyna);
+        }
+    }
+    else {
+
+        // CREATE NEW RIGIDBODY 
+        PhysxObject obj;
+        obj.id = phy_uuid::UUID{};
+        obj.rigidID = type;
+
+        // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
+        if (type == rigid::rstatic) {
+            obj.rs.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
+            world->scene->addActor(*obj.rs.rigidStatic);
+        }
+        else if (type == rigid::rdynamic) {
+            obj.rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans); // PxCreateDynamic()
+            world->scene->addActor(*obj.rd.rigidDynamic);
+        }
+
+        // ADD INTO MAP & VECTOR
+        world->m_objects.emplace_back(obj);
+        world->all_objects.insert({ obj.id, &world->m_objects.at(world->m_objects.size() - 1) }); // add back the m_objects last element
+    }
+}
 
 Material PhysicsObject::getMaterial() const {
 
@@ -391,38 +447,7 @@ void PhysicsObject::setShape(shape shape) {
     //here
 }
 
-void PhysicsObject::setRigidType(rigid rig) {
 
-    if (world->all_objects.contains(id)) {
-
-        PhysxObject* underlying_obj = world->all_objects.at(id);
-        PxRigidStatic* rstat = underlying_obj->rs.rigidStatic;
-        PxRigidDynamic* rdyna = underlying_obj->rd.rigidDynamic;
-
-        underlying_obj->rigidID = rig;
-
-        PxTransform temp_trans{ PxVec3(0) }; // set default to 0
-
-        // CHECKING IF OBJECT HAVE STAT OR DYNA INIT ALR
-        if (rstat) {
-            temp_trans = rstat->getGlobalPose();
-            world->scene->removeActor(*rstat);
-        }
-        else if (rdyna) {
-            temp_trans = rdyna->getGlobalPose();
-            world->scene->removeActor(*rdyna);
-        }
-
-        if (rig == rigid::rstatic) {
-            rstat = physx_system::getPhysics()->createRigidStatic(temp_trans);
-            world->scene->addActor(*rstat);
-        }
-        else if (rig == rigid::rdynamic) {
-            rdyna = physx_system::getPhysics()->createRigidDynamic(temp_trans);
-            world->scene->addActor(*rdyna);
-        }
-    }
-}
 
 void PhysicsObject::setMass(PxReal mass) {
 
