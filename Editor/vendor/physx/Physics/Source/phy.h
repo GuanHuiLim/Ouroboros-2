@@ -311,7 +311,7 @@ struct PhysicsObject { // you store
     void setposition(PxVec3 pos);
 
     // set default value for each type of shape & can change shape too
-    void setShape(shape shape);
+    //void setShape(shape shape);
 
     // change each individual property based on its shape
 

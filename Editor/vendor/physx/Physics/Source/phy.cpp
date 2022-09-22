@@ -285,6 +285,7 @@ void PhysxWorld::createShape(PhysicsObject obj, shape shape) {
     }
 }
 
+/*
 void PhysicsObject::setShape(shape shape) {
 
     // CHECK IF HAVE SHAPE CREATED OR NOT
@@ -302,9 +303,8 @@ void PhysicsObject::setShape(shape shape) {
 
         // ATTACH SHAPE BASED ON ITS RIGIDTYPE
     }
-
-
 }
+*/
 
 //PhysxWorld world;
 //
@@ -457,13 +457,6 @@ PxQuat PhysicsObject::getOrientation() const {
             return underlying_obj->rd.rigidDynamic->getGlobalPose().q;
     }
 }
-
-void PhysicsObject::setShape(shape shape) {
-
-    //here
-}
-
-
 
 void PhysicsObject::setMass(PxReal mass) {
 
