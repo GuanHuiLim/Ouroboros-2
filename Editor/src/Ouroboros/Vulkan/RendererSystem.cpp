@@ -39,12 +39,12 @@ namespace oo
 		graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
 	}
 
-	void oo::MeshRendererSystem::Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld)
+	void oo::MeshRendererSystem::Init(Ecs::ECSWorld* world, GraphicsWorld* _graphicsWorld)
 	{
-		assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
+		assert(_graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
 		assert(world != nullptr);			// it should never be nullptr, who's calling this?
 
-		this->graphicsWorld = graphicsWorld;
+		this->graphicsWorld = _graphicsWorld;
 		this->ecs_world = world;
 
 		world->SubscribeOnAddComponent<MeshRendererSystem, MeshRendererComponent>(
@@ -57,8 +57,8 @@ namespace oo
 	void oo::MeshRendererSystem::Run()
 	{
 		static Ecs::Query query = []() {
-			Ecs::Query query;
-			return query.with<MeshRendererComponent, TransformComponent>().build();
+			Ecs::Query _query;
+			return _query.with<MeshRendererComponent, TransformComponent>().build();
 		}();
 
 

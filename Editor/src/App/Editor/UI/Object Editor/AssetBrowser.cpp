@@ -25,7 +25,7 @@ void AssetBrowser::TextureUI(rttr::variant& data, bool& edited)
 {
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
-	ImGui::BeginTable("##Assets", (windowSize.x / (ImGui_StylePresets::image_medium.x + spacing.x)));
+	ImGui::BeginTable("##Assets", static_cast<int>(windowSize.x / (ImGui_StylePresets::image_medium.x + spacing.x)));
 
 	for (const auto& assets : Project::GetAssetManager()->GetLoadedAssetsByType(oo::AssetInfo::Type::Texture))
 	{

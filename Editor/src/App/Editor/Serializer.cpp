@@ -56,6 +56,7 @@ void Serializer::SaveScene(oo::Scene& scene)
 	std::stack<scenenode::raw_pointer> s;
 	std::stack<scenenode::handle_type> parents;
 	scenenode::raw_pointer curr = sg.get_root().get();
+
 	parents.push(curr->get_handle());
 	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
 	{
@@ -167,7 +168,7 @@ void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenen
 		//bulk of code here
 		rapidjson::Value name;
 		std::string id = std::to_string(curr->get_handle());
-		name.SetString(id.c_str(),id.size(),doc.GetAllocator());
+		name.SetString(id.c_str(),static_cast<rapidjson::SizeType>(id.size()),doc.GetAllocator());
 
 		rapidjson::Value gameobject_start;
 		gameobject_start.SetObject();

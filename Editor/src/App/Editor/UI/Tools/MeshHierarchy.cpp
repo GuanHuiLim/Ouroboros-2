@@ -78,7 +78,7 @@ void MeshHierarchy::Show()
 				node_parent.pop_back();
 				ImGui::TreePop();
 			}
-			ImGuiTreeNodeFlags flags = node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Bullet;
+			flags = node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Bullet;
 			opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload))
 			{
@@ -114,7 +114,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 {
 	auto assetmanager = Project::GetAssetManager();
 	auto asset = assetmanager->Get(asset_id);
-	auto modeldata = asset.GetData<ModelData*>();
+	//auto modeldata = asset.GetData<ModelData*>();
 
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();

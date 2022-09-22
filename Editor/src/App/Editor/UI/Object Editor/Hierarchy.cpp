@@ -119,7 +119,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 {
-	ImGui::PushID(node.get_handle());
+	ImGui::PushID(static_cast<int>(node.get_handle()));
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,1.0f });
 	ImVec2 pos = ImGui::GetCursorPos();
 	ImGui::Selectable("--------", false, ImGuiSelectableFlags_::ImGuiSelectableFlags_None, {0,8.0f});
@@ -209,7 +209,7 @@ void Hierarchy::NormalView()
 			m_previewPrefab = false;
 			OpenFileEvent ofe(m_curr_sceneFilepath);
 			oo::EventManager::Broadcast(&ofe);
-		}
+		}	
 		ImGui::SameLine();
 		ImGui::Text("Prefab Editing");
 		ImGui::Separator();
@@ -369,7 +369,7 @@ void Hierarchy::FilteredView()
 				break;
 			}
 		}
-		ImGui::PushID(handle);
+		ImGui::PushID(static_cast<int>(handle));
 		ImGui::Selectable(go->Name().c_str(),selected);
 		ImGui::PopID();
 

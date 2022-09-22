@@ -88,7 +88,7 @@ void Project::SaveProject()
 
 	auto scenes  = doc.FindMember("Scenes");
 	scenes->value.RemoveAllMembers();
-	auto size = scenes->value.MemberCount();
+	//auto size = scenes->value.MemberCount();
 	auto* runtimecontroller = ImGuiManager::s_runtime_controller;
 	auto loadpaths = runtimecontroller->GetLoadPaths();
 	for(auto scene_info : loadpaths)
