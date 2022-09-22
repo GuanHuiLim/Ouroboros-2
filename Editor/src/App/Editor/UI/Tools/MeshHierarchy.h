@@ -8,12 +8,17 @@
 class MeshHierarchy
 {
 public:
+	struct MeshHierarchyDragDropData
+	{
+		Node* data;
+		oo::AssetID id;
+	};
 	MeshHierarchy();
 	~MeshHierarchy();
 	void OpenFileCallBack(OpenFileEvent* e);
 	void Show();
+	static void CreateObject(Node* starting_node,oo::AssetID asset_id );
 private:
-	void CreateObject(Node* starting_node,oo::AssetID asset_id );
 	oo::AssetID m_current_id = 0;
 	std::filesystem::path temp;
 };

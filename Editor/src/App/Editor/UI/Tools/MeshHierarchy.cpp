@@ -60,6 +60,11 @@ void MeshHierarchy::Show()
 
 	ImGuiTreeNodeFlags flags = (ImGuiTreeNodeFlags)node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen: ImGuiTreeNodeFlags_Bullet;
 	bool opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload))
+	{
+		ImGui::SetDragDropPayload("MESH_HIERARCHY", &node, sizeof(Node**));
+		ImGui::EndDragDropSource();
+	}
 	if (opened == false)
 		return;
 	while (node_list.empty() == false)
@@ -75,6 +80,14 @@ void MeshHierarchy::Show()
 			}
 			ImGuiTreeNodeFlags flags = node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Bullet;
 			opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload))
+			{
+				MeshHierarchyDragDropData data;
+				data.data = node;
+				data.id = m_current_id;
+				ImGui::SetDragDropPayload("MESH_HIERARCHY", &data, sizeof(MeshHierarchyDragDropData));
+				ImGui::EndDragDropSource();
+			}
 			if (opened == false)
 				continue;
 		}
@@ -108,10 +121,11 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	std::stack<Node*> node_list;
 	std::vector<std::pair<Node*, std::shared_ptr<oo::GameObject>>> node_parent;
 	node_list.push(node);
-	
 	//creation
 	std::shared_ptr<oo::GameObject> gameobject = scene->CreateGameObjectImmediate();
 	gameobject->SetName(node->name);
+	node_parent.push_back({ node->parent ,gameobject });
+	scene->GetRoot()->AddChild(*gameobject);
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();
@@ -123,9 +137,8 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 			auto& transform = gameobject->EnsureComponent<oo::TransformComponent>();
 			transform.SetLocalTransform(node->transform);
 			auto& renderer = gameobject->EnsureComponent<oo::MeshRendererComponent>();
-			renderer.model_handle = modeldata->gfxMeshIndices[node->meshRef];
-
-			while (node->parent != node_parent.back().first)
+			renderer.SetModelHandle(asset,node->meshRef);
+			while ((node_parent.empty() == false) && (node->parent != node_parent.back().first))
 			{
 				node_parent.pop_back();
 			}

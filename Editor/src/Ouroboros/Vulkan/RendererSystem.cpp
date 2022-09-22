@@ -12,7 +12,8 @@ namespace oo
 		.property("Mesh", &MeshRendererComponent::mesh_handle)
 			(
 				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-			);
+			)
+		.property("Model Idx",&MeshRendererComponent::GetSubModelID, &MeshRendererComponent::SetSubModelID);
 	}
 
 

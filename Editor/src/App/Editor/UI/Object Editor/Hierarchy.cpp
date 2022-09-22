@@ -6,6 +6,10 @@
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Utility/ImGuiStylePresets.h"
 
+//other UI functions
+#include "App/Editor/UI/Tools/MeshHierarchy.h"
+
+
 //imgui
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -187,6 +191,12 @@ void Hierarchy::NormalView()
 				auto go = scene->GetRoot();
 				std::filesystem::path prefabpath = *static_cast<std::filesystem::path*>(payload->Data);
 				Serializer::LoadPrefab(prefabpath,go,*scene);
+			}
+			payload = ImGui::AcceptDragDropPayload("MESH_HIERARCHY"); //for creating prefab files
+			if (payload)
+			{
+				auto data = *static_cast<MeshHierarchy::MeshHierarchyDragDropData*>(payload->Data);
+				MeshHierarchy::CreateObject(data.data,data.id);
 			}
 			ImGui::EndDragDropTarget();
 		}
