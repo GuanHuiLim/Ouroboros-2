@@ -26,6 +26,10 @@ Technology is prohibited.
 
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
 
+#include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
+#include "Ouroboros/Core/WindowsWindow.h"
+
 namespace oo
 {
 
@@ -51,15 +55,17 @@ namespace oo
 
     void VulkanContext::Init()
     {
+        EventManager::Subscribe<VulkanContext, WindowResizeEvent>(this, &VulkanContext::OnWindowResize);
+        EventManager::Subscribe<VulkanContext, WindowMinimizeEvent>(this, &VulkanContext::OnWindowMinimize);
+        EventManager::Subscribe<VulkanContext, WindowRestoredEvent>(this, &VulkanContext::OnWindowRestored);
+
+        
         // Setup Vulkan
         uint32_t extensions_count = 0;
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, NULL);
         std::vector<const char*> extensions;
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
-
-        int w, h;
-        SDL_GetWindowSize(m_windowHandle, &w, &h);
 
         vr = VulkanRenderer::get();
 
@@ -83,8 +89,8 @@ namespace oo
             return SDL_Vulkan_CreateSurface(m_windowHandle, vr->m_instance.instance, &vr->m_instance.surface);
             });
         si.extensions = extensions;
-        m_window.m_width = w;
-        m_window.m_height = h;
+        //m_window.m_width = w;
+        //m_window.m_height = h;
         m_window.m_type = Window::WindowType::SDL2;
         m_window.rawHandle = m_windowHandle;
         try
@@ -165,10 +171,10 @@ namespace oo
 
     void VulkanContext::OnUpdateBegin()
     {
-        int w, h;
-        SDL_Vulkan_GetDrawableSize(m_windowHandle, &w, &h);
-        m_window.m_width = w;
-        m_window.m_height = h;
+        //int w, h;
+        //SDL_Vulkan_GetDrawableSize(m_windowHandle, &w, &h);
+        //m_window.m_width = w;
+        //m_window.m_height = h;
 
         m_cc.Update(oo::timer::dt());
         if (vr->PrepareFrame() == true)
@@ -236,7 +242,8 @@ namespace oo
 
     void VulkanContext::SwapBuffers()
     {
-        vr->Present();
+        if(!m_minimized)
+            vr->Present();
     }
 
     void VulkanContext::InitImGui()
@@ -260,7 +267,8 @@ namespace oo
     void VulkanContext::OnImGuiEnd()
     {
         // Vulkan will call internally
-        vr->DrawGUI();
+        if(!m_minimized)
+            vr->DrawGUI();
 
         ImGui::EndFrame();
         ImGuiIO& io = ImGui::GetIO();
@@ -292,6 +300,28 @@ namespace oo
     VulkanRenderer* VulkanContext::getRenderer()
     {
         return VulkanRenderer::get();
+    }
+
+    void VulkanContext::OnWindowResize(WindowResizeEvent* e)
+    {
+        m_window.m_height = e->GetHeight();
+        m_window.m_width = e->GetWidth();
+    }
+
+    void VulkanContext::OnWindowMinimize(WindowMinimizeEvent* e)
+    {
+        m_minimized = true;
+        m_window.m_height = 0;
+        m_window.m_width = 0;
+    }
+
+    void VulkanContext::OnWindowRestored(WindowRestoredEvent* e)
+    {
+        m_minimized = false;
+        int w, h;
+        SDL_Vulkan_GetDrawableSize(m_windowHandle, &w, &h);
+        m_window.m_width = w;
+        m_window.m_height = h;
     }
 
     void VulkanContext::SetWindowResized()

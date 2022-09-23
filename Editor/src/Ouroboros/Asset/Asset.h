@@ -20,6 +20,8 @@ Technology is prohibited.
 #include <typeindex>
 #include <unordered_map>
 
+struct gfxModel;
+
 namespace oo
 {
     class Asset;
@@ -46,6 +48,7 @@ namespace oo
             Texture,
             Font,
             Audio,
+            Model,
         };
 
         /* --------------------------------------------------------------------------- */
@@ -83,6 +86,7 @@ namespace oo
         static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".ogg" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
+        static constexpr ExtensionList<1> EXTS_MODEL = { ".fbx" };
 
         /* --------------------------------------------------------------------------- */
         /* Static Functions                                                            */
@@ -114,23 +118,62 @@ namespace oo
         [[nodiscard]] inline size_t GetUseCount() const { return info->copies.size(); };
         [[nodiscard]] inline void* GetRawData() const { return info->data; };
         [[nodiscard]] inline bool HasData() const { return info->data; };
+        [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
+
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Retrieves the data stored by the asset of a given type.
+        /// </summary>
+        /// <typeparam name="T">The type of data.</typeparam>
+        /// <returns>The data.</returns>
         template<typename T>
         [[nodiscard]] inline T GetData() const;
-        [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
+
+        /// <summary>
+        /// Retrieves the types explicitly stored by the asset.
+        /// </summary>
+        /// <returns>The type indices.</returns>
+        std::vector<std::type_index> GetBespokeTypes() const;
+
+        /* --------------------------------------------------------------------------- */
+        /* Bespoke Functions                                                           */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Retrieves the submodel from the asset.
+        /// Throws an exception if the asset is not a model.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <returns>The submodel.</returns>
+        gfxModel& GetSubmodel(size_t index = 0);
+
+        /// <summary>
+        /// Retrieves number of submodel in the asset.
+        /// Throws an exception if the asset is not a model.
+        /// </summary>
+        /// <returns>The number.</returns>
+        size_t GetSubmodelCount() const;
+
+
+        // TODO: write more wrappers for accessing data eg submeshes, imguiID
+
 
     private:
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
-        /****************************************************************************//*!
-        @brief  Shorthand for calling the create callback of the asset's info.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Shorthand for calling the create callback of the asset's info.
+        /// </summary>
         void createData();
 
-        /****************************************************************************//*!
-        @brief  Shorthand for calling the destroy callback of the asset's info.
-        *//*****************************************************************************/
+        /// <summary>
+        /// Shorthand for calling the destroy callback of the asset's info.
+        /// </summary>
         void destroyData();
 
         /* --------------------------------------------------------------------------- */
@@ -166,5 +209,11 @@ namespace oo
     {
     public:
         AssetDataNotFoundException(const std::string& what = "Asset Data Not Found") : std::exception(what.c_str()) {}
+    };
+
+    class AssetInvalidTypeException : public std::exception
+    {
+    public:
+        AssetInvalidTypeException(const std::string& what = "Asset Invalid Type") : std::exception(what.c_str()) {}
     };
 }
