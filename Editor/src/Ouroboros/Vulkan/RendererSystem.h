@@ -1,22 +1,28 @@
 #pragma once
 #include "RendererComponent.h"
+#include "LightComponent.h"
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
+
 namespace oo
 {
-	class MeshRendererSystem
+	class MeshRendererSystem : public Ecs::System
 	{
 	private:
-		GraphicsWorld* graphicsWorld{nullptr};
-		Ecs::ECSWorld* ecs_world{nullptr};
+		GraphicsWorld* m_graphicsWorld{nullptr};
+		//Ecs::ECSWorld* m_world{nullptr};
 	public:
-		void AssignObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
+		MeshRendererSystem(GraphicsWorld* graphicsWorld);
 
-		void ReleaseObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
+		void OnLightAssign(Ecs::ComponentEvent<LightingComponent>* evnt);
+		void OnLightRemove(Ecs::ComponentEvent<LightingComponent>* evnt);
 
-		void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
+		void OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
+		void OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
 
-		void Run();
+		//void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
+
+		virtual void Run(Ecs::ECSWorld* world) override;
 	};
 }

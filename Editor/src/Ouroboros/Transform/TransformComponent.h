@@ -7,8 +7,6 @@
 \brief          Defines the data and functions required to allow for operations
                 to move objects around in a define 3D space 
 
-\note           Name of component TransformComponent
-
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
