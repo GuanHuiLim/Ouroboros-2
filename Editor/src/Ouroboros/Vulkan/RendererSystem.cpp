@@ -1,73 +1,104 @@
 #include "pch.h"
 #include "RendererSystem.h"
-#include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
-#include "Ouroboros/ECS/ECS.h"
 
 namespace oo
 {
-	RTTR_REGISTRATION
-	{
-		using namespace rttr;
-	registration::class_<MeshRendererComponent>("MeshRendererComponent")
-		.property_readonly("Model Handle", &MeshRendererComponent::model_handle)
-		.property("Mesh", &MeshRendererComponent::GetMesh,&MeshRendererComponent::SetMesh)
-			(
-				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
-			)
-		.property("Model Idx",&MeshRendererComponent::GetSubModelID, &MeshRendererComponent::SetSubModelID);
-	}
+    void oo::MeshRendererSystem::OnLightAssign(Ecs::ComponentEvent<LightingComponent>* evnt)
+    {
+        assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
 
+        auto& comp = evnt->component;
+        comp.Light_ID = m_graphicsWorld->CreateLightInstance();
 
-	void oo::MeshRendererSystem::AssignObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
-	{
-		assert(ecs_world != nullptr); // it should never be nullptr, was the Init funciton called?
+        //update graphics world side to prevent wrong initial placement
+        auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
+        auto& graphics_object = m_graphicsWorld->GetLightInstance(comp.Light_ID);
+        graphics_object.position = glm::vec4{ transform_component.GetGlobalPosition(), 0.f };
+    }
 
-		auto& comp = evnt->component;
-		comp.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
-		//HARDCODED AS CUBE, TO BE REMOVED LATER
-		//comp.model_handle = 0;
-		
-		//update graphics world side
-		auto& transform_component = ecs_world->get_component<TransformComponent>(evnt->entityID);
-		auto& graphics_object = graphicsWorld->GetObjectInstance(comp.graphicsWorld_ID);
-		graphics_object.localToWorld = transform_component.GetGlobalMatrix();
-		graphics_object.modelID = comp.model_handle;
-	}
+    void oo::MeshRendererSystem::OnLightRemove(Ecs::ComponentEvent<LightingComponent>* evnt)
+    {
+        auto& comp = evnt->component;
+        m_graphicsWorld->DestroyLightInstance(comp.Light_ID);
+    }
 
-	void oo::MeshRendererSystem::ReleaseObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
-	{
-		auto& comp = evnt->component;
-		graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
-	}
+    void oo::MeshRendererSystem::OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
+    {
+        assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
 
-	void oo::MeshRendererSystem::Init(Ecs::ECSWorld* world, GraphicsWorld* _graphicsWorld)
-	{
-		assert(_graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
-		assert(world != nullptr);			// it should never be nullptr, who's calling this?
+        auto& comp = evnt->component;
+        comp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+        //HARDCODED AS CUBE, TO BE REMOVED LATER
+        comp.model_handle = 0;
+        
+        //update graphics world side
+        auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
+        auto& graphics_object = m_graphicsWorld->GetObjectInstance(comp.graphicsWorld_ID);
+        graphics_object.localToWorld = transform_component.GetGlobalMatrix();
+        
+    }
 
-		this->graphicsWorld = _graphicsWorld;
-		this->ecs_world = world;
+    void oo::MeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
+    {
+        auto& comp = evnt->component;
+        m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
+    }
 
-		world->SubscribeOnAddComponent<MeshRendererSystem, MeshRendererComponent>(
-			this, &MeshRendererSystem::AssignObjectInstance);
+    oo::MeshRendererSystem::MeshRendererSystem(GraphicsWorld* graphicsWorld)
+    {
+        assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
 
-		world->SubscribeOnRemoveComponent<MeshRendererSystem, MeshRendererComponent>(
-			this, &MeshRendererSystem::ReleaseObjectInstance);
-	}
+        this->m_graphicsWorld = graphicsWorld;
 
-	void oo::MeshRendererSystem::Run()
-	{
-		static Ecs::Query query = Ecs::make_query_including_differed<MeshRendererComponent,TransformComponent>();
+        // Mesh Renderer
+        m_world->SubscribeOnAddComponent<MeshRendererSystem, MeshRendererComponent>(
+            this, &MeshRendererSystem::OnMeshAssign);
 
-		ecs_world->for_each(query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) {
+        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, MeshRendererComponent>(
+            this, &MeshRendererSystem::OnMeshRemove);
 
-			//do nothing if transform did not change
-			auto& actualObject = graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
-			actualObject.modelID = m_comp.model_handle;
-			if (transformComp.HasChanged())
-				actualObject.localToWorld = transformComp.GetGlobalMatrix();
-			});
-	}
+        //Lights
+        m_world->SubscribeOnAddComponent<MeshRendererSystem, LightingComponent>(
+            this, &MeshRendererSystem::OnLightAssign);
+
+        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, LightingComponent>(
+            this, &MeshRendererSystem::OnLightRemove);
+    }
+
+    void oo::MeshRendererSystem::Run(Ecs::ECSWorld* world)
+    {
+        static Ecs::Query mesh_query = []() 
+        {
+            Ecs::Query query;
+            return query.with<MeshRendererComponent, TransformComponent>().build();
+        }();
+
+        world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
+        {
+            //do nothing if transform did not change
+            auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
+
+            if (transformComp.HasChanged())
+                actualObject.localToWorld = transformComp.GetGlobalMatrix();
+            });
+
+        // Update Lights
+        static Ecs::Query light_query = []() 
+        {
+            Ecs::Query query;
+            return query.with<LightingComponent, TransformComponent>().build();
+        }();
+
+        world->for_each(light_query, [&](LightingComponent& lightComp, TransformComponent& transformComp)
+        {
+            auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+
+            //if (transformComp.HasChanged())
+            graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+            graphics_light.color = lightComp.Color;
+            graphics_light.radius = lightComp.Radius;
+        });
+    }
 }
 
