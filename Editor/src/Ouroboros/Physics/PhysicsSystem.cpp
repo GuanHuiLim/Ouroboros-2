@@ -120,14 +120,14 @@ namespace oo
         constexpr const char* const physics_update = "physics_update";
         TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
-        static Ecs::Query query = []()
+        static Ecs::Query rb_query = []()
         {
             Ecs::Query query;
             query.with<TransformComponent, PhysicsComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
             return query;
         }();
 
-        m_world->for_each(query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
+        m_world->for_each(rb_query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
             auto pos = tf.GetPosition();
             phy.object.setposition({ pos.x, pos.y, pos.z });
@@ -140,7 +140,7 @@ namespace oo
 
     void PhysicsSystem::UpdateDynamics(Timestep deltaTime)
     {
-        static Ecs::Query query = []()
+        static Ecs::Query rb_query = []()
         {
             Ecs::Query query;
             query.with<TransformComponent, PhysicsComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
@@ -151,11 +151,11 @@ namespace oo
         
         m_physicsWorld.updateScene(timer::dt());
 
-        m_world->for_each(query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
+        m_world->for_each(rb_query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
             auto pos = phy.object.getposition();
             glm::vec3 new_pos{ pos.x, pos.y, pos.z };
-            tf.SetGlobalPosition(new_pos);
+            tf.SetPosition(new_pos);
 
             auto orientation = phy.object.getOrientation();
             tf.SetOrientation({ orientation.x, orientation.y, orientation.z, orientation.w });
@@ -171,8 +171,11 @@ namespace oo
 
         m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
             {
+                // calculate global bounds and half extents
                 auto pos = tf.GetGlobalPosition();
                 bc.GlobalBounds = {pos + bc.Bounds.min + bc.Offset, pos + bc.Bounds.max + bc.Offset };
+                auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
+                phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
             });
 
 
@@ -291,7 +294,8 @@ namespace oo
         m_physicsWorld.removeRigidbody(m_world->get_component<PhysicsComponent>(rb->entityID).object);
         
         // if this is the last component, we remove the physics component as well.
-        if (m_world->has_component<BoxColliderComponent>(rb->entityID) == false) 
+        if (m_world->has_component<BoxColliderComponent>(rb->entityID) == false
+            && m_world->has_component<SphereColliderComponent>(rb->entityID) == false)
         {
             m_world->remove_component<PhysicsComponent>(rb->entityID);
         }
@@ -308,35 +312,85 @@ namespace oo
             phy_comp.object = m_physicsWorld.createInstance();
 
             phy_comp.object.setRigidType(rigid::rstatic);   // static if this is first added.
+        }
+        // if we do have box collider Component
+        else if (m_world->has_component<SphereColliderComponent>(rb->entityID) == true)
+        {
+            // just need to switch shape.
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            phy_comp.object.setShape(shape::box);
+        }
+        else
+        {
+            // if you have a rigidbody already or finished adding physics comp
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            Material mat{}; //default initialize
+            phy_comp.object.setMaterial(mat);
 
-            ///m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
-            phy_comp.object.setMaterial(Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
-            
             // create box temporarily
-            //m_physicsWorld.createShape(phy_comp.object, shape::box);
             phy_comp.object.setShape(shape::box);
             //phy_comp.object.setBoxProperty();
-        }
-        // if you have a rigidbody already
-        else if (m_world->has_component<RigidbodyComponent>(rb->entityID) == true) 
-        {
-            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
-            //m_physicsWorld.createMat(phy_comp.object, Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
-            phy_comp.object.setMaterial(Material{ .staticFriction = 0.5f,.dynamicFriction = 0.5f,.restitution = 0.5f });
-
-            // create box temporarily
-            //m_physicsWorld.createShape(phy_comp.object, shape::box);
-            phy_comp.object.setShape(shape::box);
         }
     }
 
     void PhysicsSystem::OnBoxColliderRemove(Ecs::ComponentEvent<BoxColliderComponent>* rb)
     {
-        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false) 
+        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false
+            && m_world->has_component<SphereColliderComponent>(rb->entityID) == false)
         {
             m_world->remove_component<PhysicsComponent>(rb->entityID);
         }
     }
+
+    void PhysicsSystem::OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb)
+    {
+        // if this is the first component to be added
+
+        if (m_world->has_component<PhysicsComponent>(rb->entityID) == false)
+        {
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            m_world->add_component<PhysicsComponent>(rb->entityID);
+
+            phy_comp.object = m_physicsWorld.createInstance();
+
+            //default initialize material
+            Material mat{}; 
+            phy_comp.object.setMaterial(mat);
+
+            phy_comp.object.setRigidType(rigid::rstatic);   // static if this is first added.
+        }
+        // if we do have box collider Component
+        else if (m_world->has_component<BoxColliderComponent>(rb->entityID) == true)
+        {
+            // just need to switch shape.
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            phy_comp.object.setShape(shape::sphere);
+        }
+        // we have a rigid body component only
+        else
+        {
+            auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            
+            // we need to set a default material for 
+            Material mat{}; 
+            phy_comp.object.setMaterial(mat);
+
+            // create box temporarily
+            phy_comp.object.setShape(shape::sphere);
+            //phy_comp.object.setBoxProperty();
+        }
+    }
+
+    void PhysicsSystem::OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb)
+    {
+        // no rigid nor box
+        if (m_world->has_component<RigidbodyComponent>(rb->entityID) == false
+            && m_world->has_component<BoxColliderComponent>(rb->entityID) == false)
+        {
+            m_world->remove_component<PhysicsComponent>(rb->entityID);
+        }
+    }
+
 
     /*void PhysicsSystem::InformPhysicsBackend(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
