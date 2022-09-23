@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObjectComponent.h"
 #include "Ouroboros/ECS/GameObject.h"
+#include "Ouroboros/ECS/ECS.h"
 
 namespace oo
 {
@@ -41,14 +42,17 @@ namespace oo
 
                 std::vector<UUID> uuids;
 
-                Ecs::Query query;
-                query.with<GameObjectComponent, DeferredComponent>().build();
+                // we collect all uuids first
+                // we manually build query as we want deferred component 
+                static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, DeferredComponent>();
                 world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& deferredComp)
                     {
                         LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);
                         uuids.emplace_back(gocomp.Id);
                     });
 
+                // than we start removing 
+                // NOTE : because doing so while iterating will cause issues.
                 for (auto& uuid : uuids)
                 {
                     auto go = m_scene->FindWithInstanceID(uuid);
