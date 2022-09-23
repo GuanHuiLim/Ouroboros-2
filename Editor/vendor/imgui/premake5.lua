@@ -57,6 +57,16 @@ project "ImGui"
         -- ImGuizmo
         "imgui/ImGuizmo.h",
         "imgui/ImGuizmo.cpp",
+
+        -- ImGui-Node-Editor
+        "imgui/imgui_node_editor.h",
+        "imgui/imgui_node_editor.cpp",
+        "imgui/imgui_node_editor_api.cpp",
+        "imgui/imgui_node_editor_internal.h",
+        "imgui/imgui_canvas.h",
+        "imgui/imgui_canvas.cpp",
+        "imgui/imgui_bezier_math.h",
+        "imgui/imgui_extra_math.h"
     }
 
     includedirs
