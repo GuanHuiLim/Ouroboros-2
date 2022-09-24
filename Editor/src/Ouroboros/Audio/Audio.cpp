@@ -16,14 +16,46 @@ Technology is prohibited.
 
 #include "Audio.h"
 
+#include <array>
+#include <list>
+#include <limits>
+
 #include <fmod_errors.h>
 
 namespace oo
 {
     namespace audio
     {
+        constexpr SoundID MAX_SOUNDS = std::numeric_limits<SoundID>::max();
+        constexpr SoundID INVALID_SOUND_ID = (SoundID)-1;
+
         FMOD::System* system;
         FMOD::ChannelGroup* channelGroupGlobal;
+        std::array<FMOD::Sound*, MAX_SOUNDS> sounds;
+        SoundID soundIDNext;
+
+        [[nodiscard]] static SoundID GetSoundID()
+        {
+            // Get the next sound ID available
+            SoundID next = soundIDNext;
+
+            // Check if next sound ID exceeds size
+            if (next >= MAX_SOUNDS)
+                return INVALID_SOUND_ID;
+
+            // Proceed sequentially to next nullptr
+            do
+                ++soundIDNext;
+            while (soundIDNext < MAX_SOUNDS && sounds[soundIDNext] != nullptr);
+
+            return next;
+        }
+
+        static void ReleaseSoundID(const SoundID& id)
+        {
+            if (id < soundIDNext)
+                soundIDNext = id;
+        }
 
         void Init(size_t channelCount)
         {
@@ -34,7 +66,11 @@ namespace oo
             FMOD_ERR_HAND(system->init(channelCount, FMOD_INIT_NORMAL, 0));
 
             // Create channel groups
-            FMOD_ERR_HAND(system->createChannelGroup("One-Shots", &channelGroupGlobal));
+            FMOD_ERR_HAND(system->createChannelGroup("Global", &channelGroupGlobal));
+
+            // Initialise sounds
+            std::fill(sounds.begin(), sounds.end(), nullptr);
+            soundIDNext = 0;
         }
 
         void Update()
@@ -45,6 +81,14 @@ namespace oo
 
         void ShutDown()
         {
+            // Release sounds
+            /*std::for_each(sounds.begin(), sounds.end(), [](FMOD::Sound* sound)
+            {
+                if (sound)
+                    FMOD_ERR_HAND(sound->release());
+            });*/
+            // Actually don't do this because the sounds should be managed by the Asset
+
             // Release channel groups
             FMOD_ERR_HAND(channelGroupGlobal->release());
 
@@ -55,6 +99,57 @@ namespace oo
         FMOD::System* GetSystem()
         {
             return system;
+        }
+
+        SoundID CreateSound(const std::filesystem::path& path)
+        {
+            SoundID id = GetSoundID();
+            if (id != INVALID_SOUND_ID)
+            {
+                FMOD::Sound* sound;
+                FMOD_ERR_HAND(audio::GetSystem()->createSound(path.string().c_str(), FMOD_DEFAULT, nullptr, &sound));
+                sounds[id] = sound;
+            }
+            return id;
+        }
+
+        void FreeSound(const SoundID& id)
+        {
+            if (id >= 0 && id < MAX_SOUNDS)
+            {
+                FMOD_ERR_HAND(sounds[id]->release());
+                sounds[id] = nullptr;
+                ReleaseSoundID(id);
+            }
+        }
+
+        FMOD::Channel* PlayGlobalOneShot(const SoundID& id)
+        {
+            if (!sounds.at(id))
+                return nullptr;
+
+            FMOD::Sound* sound = sounds.at(id);
+            FMOD::Channel* channel;
+            FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
+            channel->setLoopCount(0);
+            return channel;
+        }
+
+        FMOD::Channel* PlayGlobalLooping(const SoundID& id, int loopCount)
+        {
+            if (!sounds.at(id))
+                return nullptr;
+
+            FMOD::Sound* sound = sounds.at(id);
+            FMOD::Channel* channel;
+            FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
+            channel->setLoopCount(loopCount);
+            return channel;
+        }
+
+        void StopGlobal()
+        {
+            FMOD_ERR_HAND(channelGroupGlobal->stop());
         }
 
         // TEMPORARY IMPLEMENTATION TO SHOWCASE FUNCTIONAL AUDIO PLAYBACK
@@ -75,12 +170,6 @@ namespace oo
             FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
         }
 
-        // TEMPORARY IMPLEMENTATION TO SHOWCASE FUNCTIONAL AUDIO PLAYBACK
-        void StopGlobal()
-        {
-            FMOD_ERR_HAND(channelGroupGlobal->stop());
-        }
-
         bool ErrorHandler(FMOD_RESULT result, const char* file, int line)
         {
             if (result != FMOD_OK)
@@ -93,5 +182,4 @@ namespace oo
             return false;
         }
     }
-
 }

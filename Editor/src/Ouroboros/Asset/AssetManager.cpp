@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <imgui/imgui.h>
 
 #include "BinaryIO.h"
+#include "Ouroboros/Audio/Audio.h"
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
@@ -380,6 +381,36 @@ namespace oo
                 // TODO: Unload texture
                 if (self.data)
                     delete self.data;
+                self.data = nullptr;
+                self.dataTypeOffsets.clear();
+            };
+        }
+        else if (findIn(FP_EXT.string(), Asset::EXTS_AUDIO.begin(), Asset::EXTS_AUDIO.end()))
+        {
+            // Load audio
+            asset.info->type = AssetInfo::Type::Audio;
+            asset.info->onAssetCreate = [fp](AssetInfo& self)
+            {
+                auto data1 = audio::CreateSound(fp.string());
+
+                struct DataStruct
+                {
+                    decltype(data1) data1;
+                };
+                self.data = new DataStruct;
+                *reinterpret_cast<DataStruct*>(self.data) = {
+                    .data1 = data1,
+                };
+                self.dataTypeOffsets = {};
+                self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
+            };
+            asset.info->onAssetDestroy = [fp](AssetInfo& self)
+            {
+                if (self.data)
+                {
+                    audio::FreeSound(self.GetData<oo::SoundID>());
+                    delete self.data;
+                }
                 self.data = nullptr;
                 self.dataTypeOffsets.clear();
             };
