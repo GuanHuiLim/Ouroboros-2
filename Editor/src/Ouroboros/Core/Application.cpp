@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
+#include "Ouroboros/Audio/Audio.h"
+
 #include "Timer.h"
 
 namespace oo
@@ -41,12 +43,18 @@ namespace oo
 
         /*Initialize Input Management*/
         input::Init();
+
+        // Initialise audio
+        audio::Init();
     }
 
     Application::~Application()
     {
         /*Shutdown Input Management*/
         input::ShutDown();
+
+        // Shutdown audio
+        audio::ShutDown();
 
         //m_window->~Window();
     }
@@ -70,6 +78,9 @@ namespace oo
 
             /*Process Inputs here*/
             input::Update();
+
+            // Update audio
+            audio::Update();
 
             /* Process window input events */
             m_window->ProcessEvents();

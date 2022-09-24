@@ -25,15 +25,12 @@ Technology is prohibited.
 #include <Ouroboros/Core/Application.h>
 #include <Ouroboros/Vulkan/VulkanContext.h>
 
-#include "Ouroboros/Audio/AudioSystem.h"
+#include "Ouroboros/Audio/Audio.h"
 
 //ASSET MANAGER EXAMPLE
 //static oo::AssetManager manager = oo::AssetManager("./assets");
 //static oo::Asset myImageAsset;
 //static oo::Asset myModelAsset;
-
-//AUDIO EXAMPLE
-//static oo::AudioSystem audio = oo::AudioSystem(256);
 
 //ASSET MANAGER EXAMPLE
 //void recurPrintModel(Node* curr, int level = 0)
@@ -81,6 +78,9 @@ void EditorLayer::OnAttach()
 	{
 		std::cout << "not found\n";
 	}*/
+
+	// Looping music
+	oo::audio::PlayGlobalLooping("./assets/01 - Into the Light.ogg");
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
