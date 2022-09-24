@@ -133,7 +133,7 @@ namespace oo
             phy.object.setposition({ pos.x, pos.y, pos.z });
         });
 
-        //Updating BoxCollider's Bounds
+        //Updating Box Collider's Bounds no matter what
         static Ecs::Query boxColliderQuery = []()
         {
             Ecs::Query query;
@@ -143,14 +143,19 @@ namespace oo
 
         m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
             {
-                bc.Bounds.min = bc.Size * -0.5f;
-                bc.Bounds.max = bc.Size * 0.5f;
+                auto pos = tf.GetGlobalPosition();
+                auto scale = tf.GetGlobalScale();
 
-                //// calculate global bounds and half extents
-                //auto pos = tf.GetGlobalPosition();
-                //bc.GlobalBounds = { pos + bc.Offset + bc.Bounds.min , pos + bc.Offset + bc.Bounds.max };
-                //auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
-                //phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
+                // calculate local scale
+                bc.Bounds.min = (bc.Size * -0.5f) * scale;
+                bc.Bounds.max = (bc.Size * 0.5f) * scale;
+
+                // calculate global bounds and half extents
+                bc.GlobalBounds = { bc.Bounds.min , bc.Bounds.max };
+                auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
+                auto globalPos = pos + bc.Offset;
+                // set box size
+                phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
             });
 
         // Update global bounds of all objects
@@ -160,17 +165,19 @@ namespace oo
 
     void PhysicsSystem::UpdateDynamics(Timestep deltaTime)
     {
+        EditorUpdate(deltaTime);
+        
+        // update the physics world
+        m_physicsWorld.updateScene(timer::dt());
+
         static Ecs::Query rb_query = []()
         {
             Ecs::Query query;
             query.with<TransformComponent, PhysicsComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
             return query;
         }();
-
-        EditorUpdate(deltaTime);
         
-        m_physicsWorld.updateScene(timer::dt());
-
+        // set position and orientation
         m_world->for_each(rb_query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
             auto pos = phy.object.getposition();
@@ -181,24 +188,30 @@ namespace oo
             tf.SetOrientation({ orientation.x, orientation.y, orientation.z, orientation.w });
         });
 
-        //Updating BoxColliderBounds
-        static Ecs::Query boxColliderQuery = []()
+        static Ecs::Query dynamicBoxColliderQuery = []()
         {
             Ecs::Query query;
-            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<DeferredComponent>().build();
+            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
             return query;
         }();
 
-        m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
+        //Updating Dynamic Box Collider Bounds
+        m_world->for_each(dynamicBoxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc, RigidbodyComponent& rb)
             {
-                bc.Bounds.min = bc.Size * -0.5f;
-                bc.Bounds.max = bc.Size * 0.5f;
+                auto pos = tf.GetGlobalPosition();
+                auto scale = tf.GetGlobalScale();
+
+                // calculate local scale
+                bc.Bounds.min = (bc.Size * -0.5f) * scale;
+                bc.Bounds.max = (bc.Size * 0.5f) * scale;
 
                 // calculate global bounds and half extents
-                auto pos = tf.GetGlobalPosition();
-                bc.GlobalBounds = {pos + bc.Offset + bc.Bounds.min , pos + bc.Offset + bc.Bounds.max };
+                bc.GlobalBounds = { bc.Bounds.min , bc.Bounds.max };
                 auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
+                auto globalPos = pos + bc.Offset;
+                // set box size
                 phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
+                phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
             });
 
 
@@ -206,11 +219,6 @@ namespace oo
         IntegrateForces(deltaTime);
         IntegratePositions(deltaTime);
         ResetForces();
-
-        //TODO : If required launch an event instead
-        // Recognise all transforms has been updated. [this does make physics system
-        // reliant on transform system existing!]
-        //m_ECS_Manager.GetSystem<oo::TransformSystem>()->UpdateTransform();
 
         // Update global bounds of all DYNAMIC objects
         UpdateDynamicGlobalBounds();
@@ -429,20 +437,4 @@ namespace oo
         }
     }
 
-
-    /*void PhysicsSystem::InformPhysicsBackend(Ecs::ComponentEvent<RigidbodyComponent>* rb)
-    {
-        static Ecs::Query query = []()
-        {
-            Ecs::Query query;
-            query.with<GameObjectComponent, RigidbodyComponent>().exclude<PhysicsComponent, DeferredComponent>().build();
-            return query;
-        }();
-
-        m_world->for_each(query, [&](GameObjectComponent* goc, RigidbodyComponent*) 
-        { 
-            m_scene->FindWithInstanceID(goc->Id)->AddComponent<PhysicsComponent>();
-        });
-
-    }*/
 }

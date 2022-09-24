@@ -81,6 +81,7 @@ namespace oo
         std::uint64_t m_collisionChecks = 0, m_actualCollisions = 0;
 #endif  
 
+        //underlying physics world
         PhysxWorld m_physicsWorld;
 
         //time accumulator
