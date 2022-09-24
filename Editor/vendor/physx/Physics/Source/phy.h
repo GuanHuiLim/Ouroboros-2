@@ -14,8 +14,6 @@ using namespace physx;
 
 class Collision;
 
-//class RigidDynamic;
-//class RigidStatic;
 class PhysxWorld;
 class PVD;
 struct PhysxObject;
@@ -25,19 +23,6 @@ enum class rigid { none, rstatic, rdynamic };
 enum class shape { none, box, sphere, capsule, plane };
 
 /*
-enum class shape_type { shape_box, shape_sphere, shape_capsule, shape_plane };
-
-class Shape {
-
-private:
-
-    int shapeID;
-
-public:
-
-
-};
-
 class Collision {
 
 private:
@@ -88,56 +73,6 @@ struct RigidDynamic {
     //PxTransform globalPos;
 };
 
-/*
-class RigidDynamic {
-
-private:
-
-    //int dynamicID;
-
-    PxRigidDynamic* rigidDynamic = nullptr;
-
-    PxReal angularDamping;
-    PxVec3 angularVelocity;
-    PxReal invMass;
-    PxReal linearDamping;
-    PxVec3 linearVelocit;
-    PxReal mass;
-    PxTransform centerOfMass;
-    PxTransform globalPos;
-
-public:
-
-    int createRigidDynamic();
-
-    //int createRigidDynamic(PxTransform transform);
-
-    // GETTER FUNCTIONS
-    PxRigidDynamic* getRigidDynamic() const;
-
-    PxReal getAngularDamping() const;
-    
-    //PxVec3 getAngularVelocity(PxRigidDynamic* body);
-    //PxReal getInvMass(PxRigidDynamic* body);
-    //PxReal getLinearDamping(PxRigidDynamic* body);
-    //PxVec3 getLinearVelocity(PxRigidDynamic* body);
-    //PxReal getMass(PxRigidDynamic* body);
-    //PxTransform getCenterOfMass(PxRigidDynamic* body);
-
-    PxTransform getGlobalPos() const;
-
-    // SETTER FUNCTIONS
-    void setAngularDamping(PxReal angularDamping);
-    //void setAngularVelocity(PxRigidDynamic* body, PxVec3 angularVelocity);
-    //void setInvMass(PxRigidDynamic* body, PxReal invMass);
-    //void setLinearDamping(PxRigidDynamic* body, PxReal linearDamping);
-    //void setLinearVelocity(PxRigidDynamic* body, PxVec3 linearVelocity);
-    //void setMass(PxRigidDynamic* body, PxReal setMass);
-    //void setCenterOfMass(PxRigidDynamic* body, PxTransform centerOfMass);
-    void setGlobalPos(PxRigidDynamic* body, PxTransform globalPos);
-};
-*/
-
 struct RigidStatic {
 
     PxRigidStatic* rigidStatic = nullptr;
@@ -152,7 +87,6 @@ struct Material {
     PxReal dynamicFriction;
     PxReal restitution;
 };
-
 
 // backend holds the overall info of the entire physics engine
 namespace physx_system {
@@ -177,13 +111,12 @@ private:
 
     friend struct PhysicsObject;
 
-    PxScene* scene;
+    PxScene* scene = nullptr;
     std::map<phy_uuid::UUID, PxMaterial*> mat; // later int change to UUID
     PxVec3 gravity;
 
-    std::map<phy_uuid::UUID, PhysxObject*> all_objects; // store all the objects (lookups for keys / check if empty)
-    //std::map<phy_uuid::UUID, int> all_objects; // store all the objects (lookups for keys / check if empty)
-    // ^ int is the index of that object in the vector
+    //std::map<phy_uuid::UUID, PhysxObject*> all_objects; // store all the objects (lookups for keys / check if empty)
+    std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
     std::vector<PhysxObject> m_objects; // to iterate through for setting the data
 
@@ -198,42 +131,17 @@ public:
     PxVec3 getGravity() const;
     void setGravity(PxVec3 gra);
 
-    /*
-    // SCENE
-    int createScene(PxVec3 gravity);
-    void releaseScene(int sceneID);
-    */
-
     // MATERIAL
-    //phy_uuid::UUID createMat(PhysicsObject obj, Material material);
-    //void updateMat(phy_uuid::UUID materialID, Material material);
-    void destroyMat(phy_uuid::UUID materialID);
+    //void destroyMat(phy_uuid::UUID materialID);
 
     // RIGIDBODY
-    //PhysicsObject createRigidbody(rigid type);
     PhysicsObject createInstance();
-    void removeRigidbody(PhysicsObject obj); // remove instance
+    void removeInstance(PhysicsObject obj);
 
-    // SHAPE
-    //void createShape(PhysicsObject obj, shape shape);
-
-    /*
-    shape_type createShape(shape_type type, Material material);
-
-     GEOMETRY
-    int createPlane(rigid type, PxPlane plane);
-    int createPlane(rigid type, PxPlane plane, Material material);
-
-    int createBox
-    int createSphere
-
-     CHECKING QUERY
-    check
-    */
-
+    //CHECKING QUERY
 };
 
-// associated to each object in the physics world
+// associated to each object in the physics world (me store)
 struct PhysxObject {
 
     phy_uuid::UUID id = 0;
@@ -251,66 +159,27 @@ struct PhysxObject {
 
     bool gravity = true;
     bool kinematic = false;
-
-
-    // SETTERS
-    void enableGravity(bool gravity);
-    void enableKinematic(bool kine);
 };
-
-//class PhysxObject { // me store
-//
-//private:
-//    // state full
-    // only be static or dynamic
-    // do quite a few things
-    // all sort of properties
-//
-//    int id;
-//
-//    Material mat;
-//
-//    RigidDynamic rd;
-//    RigidStatic rs;
-//
-//    enum class rigid { rstatic, rdynamic };
-//    rigid rigidID;
-//
-//    bool gravity;
-//    bool kinematic;
-//
-//    //Collider collider;
-//
-//public:
-//    /*
-//    PhysxObject(int id);
-//
-//    Material getMaterial();
-//
-//    rigid getRigidType();
-//
-//    void enableGravity(bool gravity);
-//
-//    void enableKinematic(bool kine);
-//    */
-//};
 
 struct PhysicsObject { // you store
 
     phy_uuid::UUID id;
     PhysxWorld* world;
 
-    // functions...
+    // GETTERS
     Material getMaterial() const;
     PxVec3 getposition() const;
     PxQuat getOrientation() const;
 
-    //getRotation() const;
-
+    // SETTERS
     void setRigidType(rigid type);
     void setMaterial(Material material);
-    void setposition(PxVec3 pos);
-    void setOrientation(PxQuat quat);
+    //void setposition(PxVec3 pos);
+    //void setOrientation(PxQuat quat);
+    void setPosOrientation(PxVec3 pos, PxQuat quat);
+
+    void setGravity(bool gravity);
+    void setKinematic(bool kine);
 
     // set default value for each type of shape & can change shape too
     void setShape(shape shape);
@@ -354,26 +223,3 @@ public:
 //MAT = PHYSICSWORLD.GETMATERIAL(OBJID);
 //MAT.SET
 //PHYSICSWORLD.SETMAT(OBJID, MAT);
-
-/*
-class Material {
-
-public:
-
-    PxReal staticFriction;
-    PxReal dynamicFriction;
-    PxReal restitution;
-
-private:
-
-    Material(PxReal sf = 0, PxReal df = 0, PxReal r = 0);
-
-    PxReal const& getStaticFriction() const;
-    PxReal const& getDynamicFriction() const;
-    PxReal const& getRestitution() const;
-
-    void setStaticFriction(PxMaterial* mat, PxReal sf);
-    void setDynamicFriction(PxMaterial* mat, PxReal df);
-    void setRestitution(PxMaterial* mat, PxReal r);
-};
-*/

@@ -130,10 +130,12 @@ namespace oo
         m_world->for_each(rb_query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
             auto pos = tf.GetPosition();
-            phy.object.setposition({ pos.x, pos.y, pos.z });
+            //phy.object.setposition({ pos.x, pos.y, pos.z });
             
             auto quat = tf.GetRotationQuat();
-            phy.object.setOrientation({quat.value.x, quat.value.y, quat.value.z, quat.value.w});
+            //phy.object.setOrientation({quat.value.x, quat.value.y, quat.value.z, quat.value.w});
+            
+            phy.object.setPosOrientation( { pos.x, pos.y, pos.z }, { quat.value.x, quat.value.y, quat.value.z, quat.value.w } );
         });
 
         //Updating Box Collider's Bounds no matter what
@@ -148,6 +150,7 @@ namespace oo
             {
                 auto pos = tf.GetGlobalPosition();
                 auto scale = tf.GetGlobalScale();
+                auto quat = tf.GetGlobalRotationQuat();
 
                 // calculate local scale
                 bc.Bounds.min = (bc.Size * -0.5f) * scale;
@@ -159,7 +162,8 @@ namespace oo
                 auto globalPos = pos + bc.Offset;
                 
                 // set box size
-                phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
+                //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
+                phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.x, quat.value.y, quat.value.z, quat.value.w });
                 
                 //TODO: Debug draw the bounds
                 
@@ -209,6 +213,7 @@ namespace oo
             {
                 auto pos = tf.GetGlobalPosition();
                 auto scale = tf.GetGlobalScale();
+                auto quat = tf.GetGlobalRotationQuat();
 
                 // calculate local scale
                 bc.Bounds.min = (bc.Size * -0.5f) * scale;
@@ -220,7 +225,10 @@ namespace oo
                 auto globalPos = pos + bc.Offset;
                 // set box size
                 phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
-                phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
+
+                //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
+                phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.x, quat.value.y, quat.value.z, quat.value.w });
+
 
                 //TODO : Toggle to enable/disable debug drawing of bounds.
                 //TODO : Debug draw the bounds
@@ -335,7 +343,7 @@ namespace oo
 
     void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
-        m_physicsWorld.removeRigidbody(m_world->get_component<PhysicsComponent>(rb->entityID).object);
+        m_physicsWorld.removeInstance(m_world->get_component<PhysicsComponent>(rb->entityID).object);
         
         // if this is the last component, we remove the physics component as well.
         if (m_world->has_component<BoxColliderComponent>(rb->entityID) == false
