@@ -259,7 +259,7 @@ void LoggingView::LogSelectable(MessageData& item,
 	//End Draw Selectable Function
 }
 
-void LoggingView::DrawExpanded(MessageData& msgitem,
+void LoggingView::DrawExpanded(MessageData& ,
 							   std::string msg_processor, 
 							   bool interacted, 
 							   size_t textCount, 
@@ -292,7 +292,7 @@ void LoggingView::DrawExpanded(MessageData& msgitem,
 	}
 }
 
-void LoggingView::DrawCollapsed(MessageData& msgitem,
+void LoggingView::DrawCollapsed(MessageData& ,
 								std::string msg_processor,
 								bool interacted,
 								size_t textCount,

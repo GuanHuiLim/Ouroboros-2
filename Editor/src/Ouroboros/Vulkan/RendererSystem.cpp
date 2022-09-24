@@ -11,10 +11,11 @@ namespace oo
 		using namespace rttr;
 	registration::class_<MeshRendererComponent>("MeshRendererComponent")
 		.property_readonly("Model Handle", &MeshRendererComponent::model_handle)
-		.property("Mesh", &MeshRendererComponent::mesh_handle)
+		.property("Mesh", &MeshRendererComponent::GetMesh,&MeshRendererComponent::SetMesh)
 			(
-				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-			);
+				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
+			)
+		.property("Model Idx",&MeshRendererComponent::GetSubModelID, &MeshRendererComponent::SetSubModelID);
 	}
 
 
@@ -25,13 +26,13 @@ namespace oo
 		auto& comp = evnt->component;
 		comp.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
 		//HARDCODED AS CUBE, TO BE REMOVED LATER
-		comp.model_handle = 0;
+		//comp.model_handle = 0;
 		
 		//update graphics world side
 		auto& transform_component = ecs_world->get_component<TransformComponent>(evnt->entityID);
 		auto& graphics_object = graphicsWorld->GetObjectInstance(comp.graphicsWorld_ID);
 		graphics_object.localToWorld = transform_component.GetGlobalMatrix();
-		
+		graphics_object.modelID = comp.model_handle;
 	}
 
 	void oo::MeshRendererSystem::ReleaseObjectInstance(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
@@ -40,12 +41,12 @@ namespace oo
 		graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
 	}
 
-	void oo::MeshRendererSystem::Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld)
+	void oo::MeshRendererSystem::Init(Ecs::ECSWorld* world, GraphicsWorld* _graphicsWorld)
 	{
-		assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
+		assert(_graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
 		assert(world != nullptr);			// it should never be nullptr, who's calling this?
 
-		this->graphicsWorld = graphicsWorld;
+		this->graphicsWorld = _graphicsWorld;
 		this->ecs_world = world;
 
 		world->SubscribeOnAddComponent<MeshRendererSystem, MeshRendererComponent>(
@@ -63,7 +64,7 @@ namespace oo
 
 			//do nothing if transform did not change
 			auto& actualObject = graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
-
+			actualObject.modelID = m_comp.model_handle;
 			if (transformComp.HasChanged())
 				actualObject.localToWorld = transformComp.GetGlobalMatrix();
 			});

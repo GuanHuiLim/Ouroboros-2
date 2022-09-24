@@ -11,13 +11,14 @@
 #include "UI/Tools/Toolbar.h"
 #include "UI/Tools/PenTool.h"
 #include "UI/Tools/InputManagerUI.h"
+#include "UI/Tools/MeshHierarchy.h"
+#include "UI/Tools/RendererDebugger.h"
 
 #include "UI/Optional Windows/SceneOrderingWindow.h"
 
 #include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Events/OpenFileEvent.h"
-
 class PopupHelperWindow
 {
 public:
@@ -55,6 +56,9 @@ public:
 	LoggingView m_loggingView;
 	PenTool m_pentool;
 	InputManagerUI m_inputManager;
+	MeshHierarchy m_meshHierarchy;
+	RendererDebugger m_rendererDebugger;
+
 
 	SceneOrderingWindow m_sceneOderingWindow;
 public:

@@ -2,7 +2,7 @@
 #include "AssetBrowser.h"
 #include "Project.h"
 #include <imgui/imgui.h>
-
+#include "OO_Vulkan/src/MeshModel.h"
 #include "App/Editor/Utility/ImGuiStylePresets.h"
 void AssetBrowser::AssetPickerUI(rttr::variant& data, bool& edited,int asset_type)
 {
@@ -17,6 +17,8 @@ void AssetBrowser::AssetPickerUI(rttr::variant& data, bool& edited,int asset_typ
 		FontUI(data, edited); break;
 	case oo::AssetInfo::Type::Audio:
 		AudioUI(data, edited); break;
+	case oo::AssetInfo::Type::Model:
+		MeshUI(data, edited); break;
 	}
 	ImGui::EndChild();
 }
@@ -25,7 +27,7 @@ void AssetBrowser::TextureUI(rttr::variant& data, bool& edited)
 {
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
-	ImGui::BeginTable("##Assets", (windowSize.x / (ImGui_StylePresets::image_medium.x + spacing.x)));
+	ImGui::BeginTable("##Assets", static_cast<int>(windowSize.x / (ImGui_StylePresets::image_medium.x + spacing.x)));
 
 	for (const auto& assets : Project::GetAssetManager()->GetLoadedAssetsByType(oo::AssetInfo::Type::Texture))
 	{
@@ -49,4 +51,75 @@ void AssetBrowser::FontUI(rttr::variant& data, bool& edited)
 
 void AssetBrowser::AudioUI(rttr::variant& data, bool& edited)
 {
+}
+
+void AssetBrowser::MeshUI(rttr::variant& data, bool& edited)
+{
+	ImVec2 windowSize = ImGui::GetContentRegionAvail();
+	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
+
+
+	for (const auto& assets : Project::GetAssetManager()->GetLoadedAssetsByType(oo::AssetInfo::Type::Model))
+	{
+		if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+		}
+		/*auto* modeldata = assets.GetData<ModelData*>();
+		auto* node = modeldata->sceneInfo;
+		size_t childSize = node->children.size();
+		ImGuiTreeNodeFlags_ flag = childSize ? ImGuiTreeNodeFlags_OpenOnArrow : ImGuiTreeNodeFlags_Bullet;
+		bool opened = ImGui::TreeNodeEx(node->name.c_str(), flag);
+		if (opened == false)
+			continue;
+		if(ImGui::IsItemClicked() && childSize == 0)
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+		}
+		std::stack<Node*> node_list;
+		std::vector<Node*> node_parent;
+		node_list.push(node);
+
+		while (node_list.empty() == false)
+		{
+			node = node_list.top();
+			node_list.pop();
+			if (node->meshRef != static_cast<uint32_t>(-1))
+			{
+				while ((node_parent.empty() == false) && (node->parent != node_parent.back()))
+				{
+					node_parent.pop_back();
+					ImGui::TreePop();
+				}
+				childSize = node->children.size();
+				flag = childSize ? ImGuiTreeNodeFlags_OpenOnArrow : ImGuiTreeNodeFlags_Bullet;
+				opened = ImGui::TreeNodeEx(node->name.c_str(), flag);
+				
+				if (opened == false)
+					continue;
+				if (ImGui::IsItemClicked() && childSize == 0)
+				{
+					
+					data.clear();
+					data = assets;
+					edited = true;
+				}
+			}
+			node_parent.push_back({ node });
+			for (auto data : node->children)
+			{
+				node_list.push(data);
+			}
+		}
+		while (node_parent.empty() == false)
+		{
+			node_parent.pop_back();
+			ImGui::TreePop();
+		}*/
+	}
+
 }

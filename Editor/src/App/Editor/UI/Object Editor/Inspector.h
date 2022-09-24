@@ -104,11 +104,21 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 	rttr::type type = component.get_type();
 	
 	bool open = ImGui::TreeNodeEx(type.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+	ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+	ImGui::PushID(type.get_name().data());
+	if (ImGui::SmallButton("x"))
+	{
+		gameobject.RemoveComponent<Component>();
+		ImGui::PopID();
+		return;
+	}
+	ImGui::PopID();
+
 	ImGui::Separator();
 	if (open == false)
 		return;
 
-	ImGui::PushID(type.get_id());
+	ImGui::PushID(static_cast<int>(type.get_id()));
 	for (rttr::property prop : type.get_properties())
 	{
 		bool propReadonly = prop.is_readonly();
