@@ -1,5 +1,9 @@
 #pragma once
 #include "pch.h"
+#ifndef  GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define  GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#endif // ! GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+
 #include "glm/common.hpp"
 #include "Ouroboros/Asset/AssetManager.h"
 #include "OO_Vulkan/src/MeshModel.h"
