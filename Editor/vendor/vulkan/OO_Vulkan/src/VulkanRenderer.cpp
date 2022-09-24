@@ -1185,8 +1185,10 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		return;
 	}
 
+	auto gb = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
+	gb.GenerateBatches();
 	
-	auto& allObjectsCommands = batches.GetBatch(GraphicsBatch::ALL_OBJECTS);
+	auto& allObjectsCommands = gb.GetBatch(GraphicsBatch::ALL_OBJECTS);
 
 	objectCount = 0;
 	for (auto& indirectCmd : allObjectsCommands)
@@ -1367,8 +1369,8 @@ void VulkanRenderer::BeginDraw()
 
 	PROFILE_SCOPED();
 
-	batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
-	batches.GenerateBatches();
+
+	
 
 	UpdateUniformBuffers();
 	UploadInstanceData();	
