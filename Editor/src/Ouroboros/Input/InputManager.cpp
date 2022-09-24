@@ -19,7 +19,7 @@ namespace oo
           (
               value("Trigger/Joystick", InputAxis::ControllerInputType::Trigger_Joystick),
               value("Button", InputAxis::ControllerInputType::Button)
-              );
+          );
 	  registration::enumeration<input::KeyCode>("KeyCode")
 		  (
 			  value("Key A", input::KeyCode::A),

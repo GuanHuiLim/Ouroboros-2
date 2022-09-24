@@ -20,7 +20,7 @@ namespace oo
 
         enum class ControllerInputType
         {
-            Trigger_Joystick,
+            Trigger_Joystick = 0,
             Button,
         };
 
@@ -78,6 +78,9 @@ namespace oo
 
         inline InputType const GetType() const { return type; }
         void SetType(InputType newType);
+
+		inline ControllerInputType const GetControllerType() const { return controllerType; }
+		void SetControllerType(ControllerInputType newType);
 
         inline Settings& GetSettings() { return settings; }
         inline Settings const& GetSettings() const { return settings; }

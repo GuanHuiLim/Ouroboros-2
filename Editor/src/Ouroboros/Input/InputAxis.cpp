@@ -32,6 +32,23 @@ namespace oo
         }
     }
 
+    void InputAxis::SetControllerType(ControllerInputType newType)
+    {
+		controllerType = newType;
+		switch (type)
+		{
+		default:
+			controllerSettings.negativeButton = InputAxis::INPUTCODE_INVALID;
+			controllerSettings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
+			controllerSettings.positiveButton = InputAxis::INPUTCODE_INVALID;
+			controllerSettings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
+			controllerSettings.pressesRequired = 0;
+			controllerSettings.maxGapTime = 0.0f;
+			controllerSettings.holdDurationRequired = 0.0f;
+			break;
+		}
+    }
+
     InputAxis::Tracker::Tracker(InputAxis const& axis)
         : axis{ axis }, durationHeld{ 0.0f }, pressCount{ 0 }, pressGapTimeLeft{ 0.0f }, lastPressed{ InputAxis::INPUTCODE_INVALID }
     {
