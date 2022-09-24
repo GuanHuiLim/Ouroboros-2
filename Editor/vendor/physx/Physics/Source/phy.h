@@ -182,6 +182,8 @@ private:
     PxVec3 gravity;
 
     std::map<phy_uuid::UUID, PhysxObject*> all_objects; // store all the objects (lookups for keys / check if empty)
+    //std::map<phy_uuid::UUID, int> all_objects; // store all the objects (lookups for keys / check if empty)
+    // ^ int is the index of that object in the vector
 
     std::vector<PhysxObject> m_objects; // to iterate through for setting the data
 
@@ -238,7 +240,7 @@ struct PhysxObject {
     phy_uuid::UUID matID = 0;
 
     // shape
-    PxShape* m_shape; // prob no need this
+    PxShape* m_shape = nullptr; // prob no need this
     shape shape = shape::none;
 
     // ensure at least static or dynamic is init
