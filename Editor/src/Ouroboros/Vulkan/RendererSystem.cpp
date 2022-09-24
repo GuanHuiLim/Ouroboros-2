@@ -2,6 +2,8 @@
 #include "RendererSystem.h"
 #include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
+#include "Ouroboros/ECS/ECS.h"
+
 namespace oo
 {
 	RTTR_REGISTRATION
@@ -56,11 +58,7 @@ namespace oo
 
 	void oo::MeshRendererSystem::Run()
 	{
-		static Ecs::Query query = []() {
-			Ecs::Query _query;
-			return _query.with<MeshRendererComponent, TransformComponent>().build();
-		}();
-
+		static Ecs::Query query = Ecs::make_query_including_differed<MeshRendererComponent,TransformComponent>();
 
 		ecs_world->for_each(query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) {
 
