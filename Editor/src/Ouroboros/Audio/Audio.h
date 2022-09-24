@@ -104,10 +104,6 @@ namespace oo
         /// </summary>
         void StopGlobal();
 
-        // TEMPORARY IMPLEMENTATION TO SHOWCASE FUNCTIONAL AUDIO PLAYBACK
-        void PlayGlobalOneShot(const std::filesystem::path& path);
-        void PlayGlobalLooping(const std::filesystem::path& path);
-
         /* --------------------------------------------------------------------------- */
         /* Utility                                                                     */
         /* --------------------------------------------------------------------------- */

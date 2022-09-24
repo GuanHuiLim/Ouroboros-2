@@ -152,24 +152,6 @@ namespace oo
             FMOD_ERR_HAND(channelGroupGlobal->stop());
         }
 
-        // TEMPORARY IMPLEMENTATION TO SHOWCASE FUNCTIONAL AUDIO PLAYBACK
-        void PlayGlobalOneShot(const std::filesystem::path& path)
-        {
-            FMOD::Sound* sound;
-            FMOD_ERR_HAND(system->createSound(path.string().c_str(), FMOD_DEFAULT, nullptr, &sound));
-            FMOD::Channel* channel;
-            FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
-        }
-
-        // TEMPORARY IMPLEMENTATION TO SHOWCASE FUNCTIONAL AUDIO PLAYBACK
-        void PlayGlobalLooping(const std::filesystem::path& path)
-        {
-            FMOD::Sound* sound;
-            FMOD_ERR_HAND(system->createSound(path.string().c_str(), FMOD_LOOP_NORMAL, nullptr, &sound));
-            FMOD::Channel* channel;
-            FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
-        }
-
         bool ErrorHandler(FMOD_RESULT result, const char* file, int line)
         {
             if (result != FMOD_OK)
