@@ -51,10 +51,7 @@ void MeshHierarchy::Show()
 	auto modeldata = asset.GetData<ModelData*>();
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 
-	std::stack<Node*> node_list;
-	std::vector<Node*> node_parent;
 	auto* node = modeldata->sceneInfo;
-	node_list.push(node);
 	ImVec2 contentRegion = ImGui::GetContentRegionAvail();
 	ImGui::BeginChild("MeshChild", { contentRegion.x,contentRegion.y * 0.6f }, true);
 
@@ -66,7 +63,13 @@ void MeshHierarchy::Show()
 		ImGui::EndDragDropSource();
 	}
 	if (opened == false)
+	{
 		return;
+	}
+	std::stack<Node*> node_list;
+	std::vector<Node*> node_parent;
+	node_list.push(node);
+
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();

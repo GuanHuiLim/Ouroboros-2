@@ -9,9 +9,9 @@ namespace oo
 		using namespace rttr;
 	registration::class_<MeshRendererComponent>("MeshRendererComponent")
 		.property_readonly("Model Handle", &MeshRendererComponent::model_handle)
-		.property("Mesh", &MeshRendererComponent::mesh_handle)
+		.property("Mesh", &MeshRendererComponent::GetMesh,&MeshRendererComponent::SetMesh)
 			(
-				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
+				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
 			)
 		.property("Model Idx",&MeshRendererComponent::GetSubModelID, &MeshRendererComponent::SetSubModelID);
 	}

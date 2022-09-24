@@ -9,4 +9,5 @@ private:
 	static void TextureUI(rttr::variant& data, bool& edited);
 	static void FontUI(rttr::variant& data, bool& edited);
 	static void AudioUI(rttr::variant& data, bool& edited);
+	static void MeshUI(rttr::variant& data, bool& edited);
 };

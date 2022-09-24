@@ -36,6 +36,18 @@ namespace oo
 
 			model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
 		}
+		Asset GetMesh()
+		{
+			return mesh_handle;
+		}
+		void SetMesh(Asset _asset)
+		{
+			if (_asset.IsValid())
+			{
+				mesh_handle = _asset;
+				model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			}
+		}
 		int GetSubModelID()
 		{
 			return submodel_id;
