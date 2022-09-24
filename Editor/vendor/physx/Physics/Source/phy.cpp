@@ -503,11 +503,15 @@ void PhysicsObject::setOrientation(PxQuat quat) {
 
         PhysxObject* underlying_obj = world->all_objects.at(id);
 
-        if (underlying_obj->rigidID == rigid::rstatic)
-            underlying_obj->rs.rigidStatic->setGlobalPose(PxTransform{ this->getposition(), quat });
+        if (underlying_obj->rigidID == rigid::rstatic) {
+            PxRigidStatic* temp_rs = underlying_obj->rs.rigidStatic;
+            temp_rs->setGlobalPose(PxTransform{ temp_rs->getGlobalPose().p, quat });
 
-        else if (underlying_obj->rigidID == rigid::rdynamic)
-            underlying_obj->rd.rigidDynamic->setGlobalPose(PxTransform{ this->getposition(), quat });
+        }
+        else if (underlying_obj->rigidID == rigid::rdynamic) {
+            PxRigidDynamic* temp_rd = underlying_obj->rd.rigidDynamic;
+            temp_rd->setGlobalPose(PxTransform{ temp_rd->getGlobalPose().p, quat });
+        }
     }
 }
 
