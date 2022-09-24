@@ -163,7 +163,6 @@ public:
 	GraphicsWorld* currWorld{ nullptr };
 	float renderClock{ 0.0f };
 
-	GraphicsBatch batches;
 
 	bool deferredRendering = true;
 
