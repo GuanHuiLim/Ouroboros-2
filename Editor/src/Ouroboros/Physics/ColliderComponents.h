@@ -75,8 +75,8 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     struct SphereColliderComponent final : public ColliderBase
     {
-        Sphere Bounds;
-        float Radius = 0.f;
+        Sphere Bounds = { { 0.f, 0.f, 0.f }, { 0.5f } };
+        float Radius = 0.5f;
 
         Sphere GlobalBounds;
 
@@ -88,8 +88,8 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     struct BoxColliderComponent final : public ColliderBase
     {
-        AABB Bounds;
-        vec3 Size;
+        AABB Bounds = { { -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f } };
+        vec3 Size = { 1.f, 1.f, 1.f };
         
         AABB GlobalBounds;
 

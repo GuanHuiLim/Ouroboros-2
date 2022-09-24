@@ -25,12 +25,12 @@ namespace oo
         using namespace rttr;
 
         registration::class_<AABB>("AABB")
-            .property("Min", &AABB::min)
-            .property("Max", &AABB::max);
+            .property_readonly("Min", &AABB::min)
+            .property_readonly("Max", &AABB::max);
 
         registration::class_<Sphere>("Sphere")
-            .property("Center", &Sphere::center)
-            .property("Radius", &Sphere::radius);
+            .property_readonly("Center", &Sphere::center)
+            .property_readonly("Radius", &Sphere::radius);
     }
     
     AABB::AABB(vec3 min, vec3 max)

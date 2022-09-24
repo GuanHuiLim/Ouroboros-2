@@ -31,13 +31,13 @@ namespace oo
         registration::class_<BoxColliderComponent>("Box Collider")
             .property("Is Trigger ", &BoxColliderComponent::IsTrigger)
             .property("Offset", &BoxColliderComponent::Offset)
-            .property("Bounds", &BoxColliderComponent::Bounds)
+            .property("Local Bounds", &BoxColliderComponent::Bounds)
             .property("Size", &BoxColliderComponent::Size);
 
         registration::class_<SphereColliderComponent>("Sphere Collider")
             .property("Is Trigger", &SphereColliderComponent::IsTrigger)
             .property("Offset", &SphereColliderComponent::Offset)
-            .property("Bounds", &SphereColliderComponent::Bounds)
+            .property("Local Bounds", &SphereColliderComponent::Bounds)
             .property("Radius", &SphereColliderComponent::Radius);
     }
 }

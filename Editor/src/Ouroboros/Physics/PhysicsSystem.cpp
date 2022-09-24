@@ -133,6 +133,26 @@ namespace oo
             phy.object.setposition({ pos.x, pos.y, pos.z });
         });
 
+        //Updating BoxCollider's Bounds
+        static Ecs::Query boxColliderQuery = []()
+        {
+            Ecs::Query query;
+            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<DeferredComponent>().build();
+            return query;
+        }();
+
+        m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
+            {
+                bc.Bounds.min = bc.Size * -0.5f;
+                bc.Bounds.max = bc.Size * 0.5f;
+
+                //// calculate global bounds and half extents
+                //auto pos = tf.GetGlobalPosition();
+                //bc.GlobalBounds = { pos + bc.Offset + bc.Bounds.min , pos + bc.Offset + bc.Bounds.max };
+                //auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
+                //phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
+            });
+
         // Update global bounds of all objects
         //UpdateGlobalBounds();
         TRACY_PROFILE_SCOPE_END();
@@ -171,9 +191,12 @@ namespace oo
 
         m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
             {
+                bc.Bounds.min = bc.Size * -0.5f;
+                bc.Bounds.max = bc.Size * 0.5f;
+
                 // calculate global bounds and half extents
                 auto pos = tf.GetGlobalPosition();
-                bc.GlobalBounds = {pos + bc.Bounds.min + bc.Offset, pos + bc.Bounds.max + bc.Offset };
+                bc.GlobalBounds = {pos + bc.Offset + bc.Bounds.min , pos + bc.Offset + bc.Bounds.max };
                 auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
                 phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
             });
@@ -312,6 +335,15 @@ namespace oo
             phy_comp.object = m_physicsWorld.createInstance();
 
             phy_comp.object.setRigidType(rigid::rstatic);   // static if this is first added.
+
+            Material mat{}; //default initialize
+            mat.restitution = 1.f;
+            mat.staticFriction = 0.f;
+            mat.dynamicFriction = 0.f;
+            phy_comp.object.setMaterial(mat);
+
+            // create box temporarily
+            phy_comp.object.setShape(shape::box);
         }
         // if we do have box collider Component
         else if (m_world->has_component<SphereColliderComponent>(rb->entityID) == true)
@@ -324,7 +356,13 @@ namespace oo
         {
             // if you have a rigidbody already or finished adding physics comp
             auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
+            
             Material mat{}; //default initialize
+
+            mat.restitution = 1.f;
+            mat.staticFriction = 0.f;
+            mat.dynamicFriction = 0.f;
+
             phy_comp.object.setMaterial(mat);
 
             // create box temporarily
