@@ -2,7 +2,7 @@
 SETLOCAL EnableDelayedExpansion
 
 rem This sets this batch file's dir to itself
-cd /d %~dp0
+pushd %~dp0
 
 set OUTPUT=bin\
 
@@ -111,6 +111,9 @@ for %%i in (*.vert *.frag *.comp *.geom) do (
 	
 	rem echo.
  )
+ 
+ 
+popd
  echo.
  rem call touch done.txt
  echo Finished
