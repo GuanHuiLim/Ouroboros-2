@@ -107,12 +107,10 @@ namespace oo
             // lighting debug draw
             Sphere sphere;
             sphere.center = vec3{ graphics_light.position }; 
-            sphere.radius = 0.5f;
-            DebugDraw::AddSphere(sphere);
+            sphere.radius = 0.1f;
+            DebugDraw::AddSphere(sphere, graphics_light.color);
         });
 
-
-        
     }
 }
 
