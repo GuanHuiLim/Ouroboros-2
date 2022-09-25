@@ -114,7 +114,7 @@ void DebugDraw::AddSphere(const Sphere& sphere, const oGFX::Color& col)
     oGFX::DebugVertex vert;
     for (const auto& v : vertices)
     {
-        vert.pos = vert.pos * sphere.radius + sphere.center;
+        vert.pos = v.pos * sphere.radius + sphere.center;
         vert.col = col;
         vr->g_DebugDrawVertexBufferCPU.push_back(vert);
     }
