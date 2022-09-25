@@ -63,7 +63,7 @@ namespace oo
             FMOD_ERR_HAND(FMOD::System_Create(&system));
 
             // Initialise system
-            FMOD_ERR_HAND(system->init(channelCount, FMOD_INIT_NORMAL, 0));
+            FMOD_ERR_HAND(system->init(static_cast<int>(channelCount), FMOD_INIT_NORMAL, 0));
 
             // Create channel groups
             FMOD_ERR_HAND(system->createChannelGroup("Global", &channelGroupGlobal));
