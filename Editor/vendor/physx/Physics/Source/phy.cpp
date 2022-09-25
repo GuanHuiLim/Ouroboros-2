@@ -288,21 +288,21 @@ void PhysicsObject::setShape(shape shape) {
         // CHECK AGAINST THE TYPE OF SHAPE
         if (shape == shape::box) {
             PxBoxGeometry temp_box{ 0.5f,0.5f,0.5f };
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material);
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material, true);
         }
         else if (shape == shape::sphere) {
             PxSphereGeometry temp_sphere{ 0.5f };
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_sphere, *material);
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_sphere, *material, true);
         }
         else if (shape == shape::plane) {
             //PxCreatePlane()
             //PxPlaneGeometry temp_sphere{ PxPlane{0.f,1.f,0.f,50.f} };
             //PxTransformFromPlaneEquation(PxPlane{ 0.f,1.f,0.f,50.f });
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(), *material);
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(), *material, true);
         }
         else if (shape == shape::capsule) {
             PxCapsuleGeometry temp_cap{ 0.5f, 1.f };
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_cap, *material);
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_cap, *material, true);
         }
 
         // ATTACH THE SHAPE TO THE OBJECT

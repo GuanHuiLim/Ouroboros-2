@@ -161,7 +161,7 @@ namespace oo
                 auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
                 auto globalPos = pos + bc.Offset;
                 // set box size
-                //phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
+                phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
                 
                 // set box size
                 //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
@@ -224,7 +224,7 @@ namespace oo
                 auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
                 auto globalPos = pos + bc.Offset;
                 // set box size
-                //phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
+                phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
 
                 //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
                 phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z });
