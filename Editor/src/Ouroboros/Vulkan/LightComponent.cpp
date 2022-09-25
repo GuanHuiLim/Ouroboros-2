@@ -16,14 +16,16 @@ Technology is prohibited.
 #include "LightComponent.h"
 
 #include <rttr/registration>
+
+#include "App/Editor/Properties/UI_metadata.h"
 namespace oo
 {
     RTTR_REGISTRATION
     {
         using namespace rttr;
         registration::class_<oo::LightingComponent>("Light")
-        .property("Color", &LightingComponent::Color)
-        .property("Radius", &LightingComponent::Radius)
+        .property("Color", &LightingComponent::Color)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        .property("Radius", &LightingComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         .property_readonly("Lighting ID", &LightingComponent::Light_ID);
     }
 }
