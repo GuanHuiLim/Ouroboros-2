@@ -89,20 +89,6 @@ void ShadowPass::Draw()
 	cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
 	cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
 
-	auto dbi = vr.gpuTransformBuffer.GetDescriptorBufferInfo();
-	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
-		.BindBuffer(3, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.Build(VulkanRenderer::get()->descriptorSet_gpuscene, SetLayoutDB::gpuscene);
-	vr.gpuTransformBuffer.Updated();
-
-	VkDescriptorBufferInfo vpBufferInfo{};
-	vpBufferInfo.buffer = vr.vpUniformBuffer[vr.swapchainIdx];	// buffer to get data from
-	vpBufferInfo.offset = 0;					// position of start of data
-	vpBufferInfo.range = sizeof(CB::FrameContextUBO);			// size of data
-	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
-		.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-		.Build(vr.descriptorSets_uniform[vr.swapchainIdx], SetLayoutDB::FrameUniform);
-
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 		std::array<VkDescriptorSet, 3>
 		{
@@ -117,19 +103,26 @@ void ShadowPass::Draw()
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
-	light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3{ 0.0f,0.0f,0.0f }, glm::vec3{ 0.0f,1.0f,0.0f });
-	light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 100.0f);
-	glm::mat4 viewproj = light.projection * light.view[0] ;
+	//if (vr.currWorld->GetAllOmniLightInstances().size())
+	{
+		//auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
+		OmniLightInstance light;
+		light.color = { 1.0f };
+		light.radius.x = 100.0f;
+		light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3{ 0.0f,0.0f,0.0f }, glm::vec3{ 0.0f,1.0f,0.0f });
+		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 100.0f);
+		glm::mat4 viewproj = light.projection * light.view[0] ;
 
-	vkCmdPushConstants(cmdlist,
-		PSOLayoutDB::defaultPSOLayout,
-		VK_SHADER_STAGE_ALL,	    // stage to push constants to
-		0,							// offset of push constants to update
-		sizeof(glm::mat4),			// size of data being pushed
-		glm::value_ptr(viewproj));	// actualy data being pushed (could be an array));
 
-	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.buffer, 0, vr.objectCount);
+		vkCmdPushConstants(cmdlist,
+			PSOLayoutDB::defaultPSOLayout,
+			VK_SHADER_STAGE_ALL,	    // stage to push constants to
+			0,							// offset of push constants to update
+			sizeof(glm::mat4),			// size of data being pushed
+			glm::value_ptr(viewproj));	// actualy data being pushed (could be an array));
+
+		cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.buffer, 0, vr.objectCount);
+	}
 
 	vkCmdEndRenderPass(cmdlist);
 }
