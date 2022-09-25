@@ -59,6 +59,8 @@ project "ImGui"
         "imgui/ImGuizmo.cpp",
 
         -- ImGui-Node-Editor
+        "imgui/crude_json.h",
+        "imgui/crude_json.cpp",
         "imgui/imgui_node_editor.h",
         "imgui/imgui_node_editor.cpp",
         "imgui/imgui_node_editor_api.cpp",
