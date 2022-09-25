@@ -199,9 +199,9 @@ namespace oo
                 m_rootGo = std::make_shared<GameObject>(root_handle, *this);
                 InsertGameObject(m_rootGo);
                 m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
+                
+                ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
             }
-
-            ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
 
             // TODO: Solution To tie graphics world to rendering context for now!
             static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
