@@ -82,12 +82,13 @@ namespace oo
         void ShutDown()
         {
             // Release sounds
-            /*std::for_each(sounds.begin(), sounds.end(), [](FMOD::Sound* sound)
+            for (int i = 0; i < sounds.size(); ++i)
             {
-                if (sound)
-                    FMOD_ERR_HAND(sound->release());
-            });*/
-            // Actually don't do this because the sounds should be managed by the Asset
+                if (!sounds[i])
+                    continue;
+                FMOD_ERR_HAND(sounds[i]->release());
+                sounds[i] = nullptr;
+            }
 
             // Release channel groups
             FMOD_ERR_HAND(channelGroupGlobal->release());
@@ -117,6 +118,8 @@ namespace oo
         {
             if (id >= 0 && id < MAX_SOUNDS)
             {
+                if (!sounds[id])
+                    return;
                 FMOD_ERR_HAND(sounds[id]->release());
                 sounds[id] = nullptr;
                 ReleaseSoundID(id);
