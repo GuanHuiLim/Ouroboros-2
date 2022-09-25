@@ -103,12 +103,9 @@ void ShadowPass::Draw()
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	//if (vr.currWorld->GetAllOmniLightInstances().size())
+	if (vr.currWorld->GetAllOmniLightInstances().size())
 	{
-		//auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
-		OmniLightInstance light;
-		light.color = { 1.0f };
-		light.radius.x = 100.0f;
+		auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
 		light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3{ 0.0f,0.0f,0.0f }, glm::vec3{ 0.0f,1.0f,0.0f });
 		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 100.0f);
 		glm::mat4 viewproj = light.projection * light.view[0] ;
