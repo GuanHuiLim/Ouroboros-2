@@ -2,6 +2,8 @@
 #include "RendererSystem.h"
 #include <rttr/registration>
 
+#include <OO_Vulkan/src/DebugDraw.h>
+
 namespace oo
 {
     void oo::MeshRendererSystem::OnLightAssign(Ecs::ComponentEvent<LightingComponent>* evnt)
@@ -50,7 +52,10 @@ namespace oo
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
 
         this->m_graphicsWorld = graphicsWorld;
+    }
 
+    void MeshRendererSystem::Init()
+    {
         // Mesh Renderer
         m_world->SubscribeOnAddComponent<MeshRendererSystem, MeshRendererComponent>(
             this, &MeshRendererSystem::OnMeshAssign);
@@ -98,7 +103,16 @@ namespace oo
             graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
             graphics_light.color = lightComp.Color;
             graphics_light.radius = lightComp.Radius;
+            
+            // lighting debug draw
+            Sphere sphere;
+            sphere.center = vec3{ graphics_light.position }; 
+            sphere.radius = 0.5f;
+            DebugDraw::AddSphere(sphere);
         });
+
+
+        
     }
 }
 

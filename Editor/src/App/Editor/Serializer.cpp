@@ -19,6 +19,7 @@
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include <Ouroboros/Vulkan/RendererComponent.h>
+#include "Ouroboros/Vulkan/LightComponent.h"
 Serializer::Serializer()
 {
 }
@@ -41,6 +42,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
+	AddLoadComponent<oo::LightingComponent>();
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
 		{
@@ -214,7 +216,8 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::GameObjectComponent>(go, val,doc);
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
-	SaveComponent<oo::MeshRendererComponent>(go, val,doc);
+	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
+	SaveComponent<oo::LightingComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 }
 

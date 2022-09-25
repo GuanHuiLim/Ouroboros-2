@@ -82,7 +82,7 @@ namespace oo
                 m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
                 //rendering system initialization
-                m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get());
+                m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
             }
 
             // Broadcast event to load scene

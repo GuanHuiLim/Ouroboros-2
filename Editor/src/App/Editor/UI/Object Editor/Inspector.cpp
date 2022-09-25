@@ -26,6 +26,7 @@
 #include <Ouroboros/Scripting/ScriptManager.h>
 //#include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/RendererComponent.h>
+#include <Ouroboros/Vulkan/LightComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -108,6 +109,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
+	DisplayComponent<oo::LightingComponent>(gameobject);
+	
 	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
@@ -127,6 +130,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::LightingComponent>(gameobject);
 
 		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 

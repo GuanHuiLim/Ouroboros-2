@@ -30,7 +30,7 @@ namespace oo
         // shouldn't be changed by other systems.
         std::int32_t Light_ID = -1;
 
-        glm::vec4 Color = glm::vec4{1.f};
+        glm::vec4 Color = glm::vec4{ 1.f };
         glm::vec4 Radius = glm::vec4{ 1.f };
         
         LightType LightType = LightType::POINT;

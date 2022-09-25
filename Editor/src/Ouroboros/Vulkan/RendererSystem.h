@@ -15,6 +15,8 @@ namespace oo
 	public:
 		MeshRendererSystem(GraphicsWorld* graphicsWorld);
 
+		void Init();
+
 		void OnLightAssign(Ecs::ComponentEvent<LightingComponent>* evnt);
 		void OnLightRemove(Ecs::ComponentEvent<LightingComponent>* evnt);
 
