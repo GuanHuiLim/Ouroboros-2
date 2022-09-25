@@ -18,11 +18,6 @@ Technology is prohibited.
 
 #include <fmod.hpp>
 
-//#include "RendererComponent.h"
-//#include "Archetypes_Ecs/src/A_Ecs.h"
-//#include "Ouroboros/Scene/Scene.h"
-//#include "Ouroboros/Transform/TransformComponent.h"
-
 #define FMOD_ERR_HAND(result) oo::audio::ErrorHandler(result, __FILE__, __LINE__);
 
 namespace oo
@@ -61,6 +56,13 @@ namespace oo
         /* --------------------------------------------------------------------------- */
         /* Sound Lifecycle                                                             */
         /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Retrieves a sound.
+        /// </summary>
+        /// <param name="id">The ID of the sound.</param>
+        /// <returns>The sound.</returns>
+        FMOD::Sound* GetSound(const SoundID& id);
 
         /// <summary>
         /// Creates a sound given a file path.

@@ -102,6 +102,15 @@ namespace oo
             return system;
         }
 
+        FMOD::Sound* GetSound(const SoundID& id)
+        {
+            if (id >= 0 && id < MAX_SOUNDS)
+            {
+                return sounds[id];
+            }
+            return nullptr;
+        }
+
         SoundID CreateSound(const std::filesystem::path& path)
         {
             SoundID id = GetSoundID();
