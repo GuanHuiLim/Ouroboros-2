@@ -145,8 +145,6 @@ namespace oGFX
 
 	const std::vector<VkVertexInputBindingDescription>& GetGFXVertexInputBindings();	
 	const std::vector<VkVertexInputAttributeDescription>& GetGFXVertexInputAttributes();
-	const std::vector<VkDescriptorSet>& GetGFXDescriptoSetGroup();
-	
 
 	oGFX::SwapChainDetails GetSwapchainDetails(VulkanInstance& instance, VkPhysicalDevice device);
 	oGFX::QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);

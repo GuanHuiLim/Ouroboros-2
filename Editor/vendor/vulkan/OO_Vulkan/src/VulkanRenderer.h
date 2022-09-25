@@ -80,16 +80,16 @@ namespace CB
 		// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
 		// Bind this to every single shader possible.
 		// Remove this upon shipping the final product.
-		glm::vec4 vector4_values0;
-		glm::vec4 vector4_values1;
-		glm::vec4 vector4_values2;
-		glm::vec4 vector4_values3;
-		glm::vec4 vector4_values4;
-		glm::vec4 vector4_values5;
-		glm::vec4 vector4_values6;
-		glm::vec4 vector4_values7;
-		glm::vec4 vector4_values8;
-		glm::vec4 vector4_values9;
+		glm::vec4 vector4_values0{};
+		glm::vec4 vector4_values1{};
+		glm::vec4 vector4_values2{};
+		glm::vec4 vector4_values3{};
+		glm::vec4 vector4_values4{};
+		glm::vec4 vector4_values5{};
+		glm::vec4 vector4_values6{};
+		glm::vec4 vector4_values7{};
+		glm::vec4 vector4_values8{};
+		glm::vec4 vector4_values9{};
 	};
 
 }
@@ -163,6 +163,7 @@ public:
 	GraphicsWorld* currWorld{ nullptr };
 	float renderClock{ 0.0f };
 
+	GraphicsBatch batches;
 
 	bool deferredRendering = true;
 

@@ -75,7 +75,7 @@ void DeferredCompositionRenderpass::Draw()
 
 	LightPC pc{};
 	
-	pc.numLights[0] = vr.currWorld->GetAllOmniLightInstances().size();
+	pc.numLights[0] = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
 	VkPushConstantRange range;
 	range.offset = 0;
 	range.size = sizeof(LightPC);

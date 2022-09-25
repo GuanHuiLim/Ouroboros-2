@@ -119,13 +119,13 @@ public:
 	// TODO: Function not here? Add it on demand...
 
 private:
-	VkCommandBuffer m_VkCommandBuffer;
+	VkCommandBuffer m_VkCommandBuffer{};
 
-	VkPipelineLayout m_pipeLayout;
+	VkPipelineLayout m_pipeLayout{};
 
 	std::array<VkRect2D, 8> m_scissor;
 	std::array<VkViewport, 8> m_viewport;
-	float m_push_constant[128 / sizeof(float)];
+	float m_push_constant[128 / sizeof(float)]{0.0f};
 	// TODO: Handle VK_PIPELINE_BIND_POINT_GRAPHICS etc nicely next time.
 	// TODO: Maybe we can cache the stuff that is bound, for easier debugging, else taking GPU captures is really unproductive.
 };

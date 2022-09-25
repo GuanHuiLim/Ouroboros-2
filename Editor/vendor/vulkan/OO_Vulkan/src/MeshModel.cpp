@@ -294,7 +294,7 @@ oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, ModelDat
 				BoneOffset bo;
 				bo.transform = aiMat4_to_glm(bone->mOffsetMatrix);
 				mData.boneOffsets.emplace_back(bo);
-				mData.strToBone[name] = sz;
+				mData.strToBone[name] = static_cast<uint32_t>(sz);
 			}
 			//cpuModel.boneWeights.resize()
 
@@ -376,13 +376,13 @@ void ModelData::ModelSceneLoad(const aiScene* scene,
 		for (size_t i = 0; i < node.mNumMeshes; i++)
 		{
 			curNodes[i] = new Node();
-			curNodes[i]->parent = parent;
+			curNodes[i]->parent = targetParent;
 			curNodes[i]->meshRef = node.mMeshes[i];
 			curNodes[i]->name = node.mName.C_Str();
 			curNodes[i]->transform = xform;
 		}
 		// setup nodes
-		auto child = parent->children.insert(std::end(parent->children),std::begin(curNodes), std::end(curNodes));
+		auto child = targetParent->children.insert(std::end(targetParent->children),std::begin(curNodes), std::end(curNodes));
 		targetParent = *child;
 	}		
 	for (size_t i = 0; i < node.mNumChildren; i++)
@@ -412,13 +412,13 @@ void ModelData::ModelBoneLoad(const aiScene* scene, const aiNode& node, uint32_t
 					if (iter != strToBone.end())
 					{
 						// Duplicate bone name!
-						idx = iter->second;
+						idx = static_cast<size_t>(iter->second);
 						//assert(false);
 					}
 					else
 					{
 						idx = bones.size();
-						strToBone[name] = idx;
+						strToBone[name] = static_cast<uint32_t>(idx);
 						BoneOffset bo;
 						bo.transform = aiMat4_to_glm(bone->mOffsetMatrix);
 						boneOffsets.emplace_back(bo);
@@ -431,14 +431,14 @@ void ModelData::ModelBoneLoad(const aiScene* scene, const aiNode& node, uint32_t
 					{
 						auto& weight = bone->mWeights[y];
 						auto& vertWeight = boneWeights[weight.mVertexId];
-						auto& vertex = vertices[weight.mVertexId + vertOffset + sumVerts];
+						auto& vertex = vertices[static_cast<size_t>(weight.mVertexId) + vertOffset + sumVerts];
 
 						auto bNum = vertex.boneWeights++;
 						//assert(bNum < 4); // CANNOT SUPPORT MORE THAN 4 BONES
 						if (bNum < 4)
 						{
 							vertWeight.boneWeights[bNum] = weight.mWeight;
-							vertWeight.boneIdx[bNum] = idx;
+							vertWeight.boneIdx[bNum] = static_cast<uint32_t>(idx);
 						}
 						else
 						{
