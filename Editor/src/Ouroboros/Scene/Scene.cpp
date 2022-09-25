@@ -82,7 +82,7 @@ namespace oo
                 m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
                 //rendering system initialization
-                m_ecsWorld->Add_System<oo::MeshRendererSystem>()->Init(&GetWorld(), GetGraphicsWorld());
+                m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
             }
 
             // Broadcast event to load scene
@@ -124,7 +124,7 @@ namespace oo
     {
         PRINT(m_name);
 
-        GetWorld().Get_System<oo::MeshRendererSystem>()->Run();
+        GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
         
         //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
         //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
