@@ -1,6 +1,7 @@
 #include "CommandList.h"
 
 #include "VulkanRenderer.h"
+#include <cassert>
 
 namespace rhi
 {
@@ -61,7 +62,7 @@ void CommandList::SetDefaultViewportAndScissor()
 
 void CommandList::SetViewport(uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
-	m_viewport.resize(viewportCount);
+	assert(viewportCount < 8);
 	for (size_t i = 0; i < viewportCount; i++)
 	{
 		m_viewport[i] = pViewports[i];
@@ -77,7 +78,7 @@ void CommandList::SetViewport(const VkViewport& viewport)
 
 void CommandList::SetScissor(uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
 {
-	m_scissor.resize(scissorCount);
+	assert(scissorCount < 8);
 	for (size_t i = 0; i < scissorCount; i++)
 	{
 		m_scissor[i] = pScissors[i];

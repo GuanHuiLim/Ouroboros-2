@@ -1369,7 +1369,6 @@ void VulkanRenderer::BeginDraw()
 
 	PROFILE_SCOPED();
 
-
 	
 
 	UpdateUniformBuffers();
@@ -1382,7 +1381,7 @@ void VulkanRenderer::BeginDraw()
 	//mainually reset fences
 	VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[currentFrame]));
 
-	descAllocs[swapchainIdx].ResetPools();
+
 
 	{
 		PROFILE_SCOPED("vkAcquireNextImageKHR");
@@ -1392,7 +1391,25 @@ void VulkanRenderer::BeginDraw()
 		//get  index of next image to be drawn to , and signal semaphore when ready to be drawn to
         VkResult res = vkAcquireNextImageKHR(m_device.logicalDevice, m_swapchain.swapchain, std::numeric_limits<uint64_t>::max(),
             imageAvailable[currentFrame], VK_NULL_HANDLE, &swapchainIdx);
-        if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
+
+		descAllocs[swapchainIdx].ResetPools();
+
+
+		auto dbi = gpuTransformBuffer.GetDescriptorBufferInfo();
+		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
+			.BindBuffer(3, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.Build(VulkanRenderer::get()->descriptorSet_gpuscene, SetLayoutDB::gpuscene);
+		gpuTransformBuffer.Updated();
+
+		VkDescriptorBufferInfo vpBufferInfo{};
+		vpBufferInfo.buffer = vpUniformBuffer[swapchainIdx];	// buffer to get data from
+		vpBufferInfo.offset = 0;									// position of start of data
+		vpBufferInfo.range = sizeof(CB::FrameContextUBO);			// size of data
+		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
+			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(descriptorSets_uniform[swapchainIdx], SetLayoutDB::FrameUniform);
+        
+		if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
         {
             resizeSwapchain = true;
 			m_prepared = false;
