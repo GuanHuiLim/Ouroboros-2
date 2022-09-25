@@ -57,6 +57,8 @@ project "Editor"
 		
 		"%{IncludeDir.mono}",
 		"%{IncludeDir.scripting}",
+		
+        "%{IncludeDir.fmod}",
 
         --for tracy
         "%{IncludeDir.tracy}",
@@ -71,6 +73,7 @@ project "Editor"
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
         "%{LibraryDir.assimp}/Release",
+        "%{LibraryDir.fmod}",
     }
 
     -- linking External libraries 
@@ -190,6 +193,7 @@ project "Editor"
         links
         {
             "rttr_core_d",
+            "fmodL_vc",
         }
     
     filter "configurations:Release"
@@ -208,6 +212,7 @@ project "Editor"
         links
         {
             "rttr_core",
+            "fmod_vc",
         }
         
     filter "configurations:Production"
@@ -226,4 +231,5 @@ project "Editor"
         links
         {
             "rttr_core",
+            "fmod_vc",
         }
