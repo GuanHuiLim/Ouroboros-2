@@ -24,8 +24,8 @@ public:
 				m_end{end},
 				m_b{bits}
 		{}
-		reference operator*() const { assert("Dereferenced Bitcontainer end ptr!",m_ptr<m_end); return *m_ptr; }
-		pointer operator->() { return m_ptr; }
+		reference operator*() const { assert("Dereferenced Bitcontainer end ptr!" && m_ptr < m_end);  return *m_ptr; }
+		pointer operator->() { assert("Dereferenced Bitcontainer end ptr!" && m_ptr < m_end); return m_ptr; }
 
 		// Prefix increment
 		Iterator& operator++();
