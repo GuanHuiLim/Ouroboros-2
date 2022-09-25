@@ -16,6 +16,7 @@ void ScriptSequencer::Show()
 {
 	ImVec2 region = ImGui::GetContentRegionAvail();
 	ImVec2 childWindowSize = { region.x * 0.6f, region.y * 0.45f };
+	static bool dragging = false;
 	ImGui::BeginGroup();
 	{
 		ImGui::Text("Before Internal Update :");
@@ -56,7 +57,9 @@ void ScriptSequencer::Show()
                     WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
                 }
 			}
+			ImGui::EndDragDropTarget();
 		}
+
 		ImGui::SetCursorPos(pos);
 		int counter = 0;
 		for (auto& item : oo::ScriptManager::GetBeforeDefaultOrder())
@@ -85,6 +88,32 @@ void ScriptSequencer::Show()
 					ImGui::Text(item.ToString().c_str());
 				ImGui::EndDragDropSource();
 			}
+			if (dragging)
+			{
+				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
+				ImGui::Separator();
+				ImGui::SetCursorPos(curr_cursor_pos);
+				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, {0,5.0f});
+				if (ImGui::BeginDragDropTarget())
+				{
+					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BEFORE");
+					if (payload)
+					{
+						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
+						try
+						{
+							oo::ScriptManager::RemoveBeforeDefaultOrder(sci);
+							oo::ScriptManager::InsertBeforeDefaultOrder(sci,counter);
+						}
+						catch (std::exception const& e)
+						{
+							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+						}
+					}
+					ImGui::EndDragDropTarget();
+				}
+			}
+
 			ImGui::PopID();
 		}
 		ImGui::EndGroup();
@@ -130,6 +159,7 @@ void ScriptSequencer::Show()
                     WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
                 }
 			}
+			ImGui::EndDragDropTarget();
 		}
 		ImGui::SetCursorPos(pos);
 		int counter = 0;
@@ -159,6 +189,31 @@ void ScriptSequencer::Show()
 				ImGui::Text(item.ToString().c_str());
 				ImGui::EndDragDropSource();
 			}
+			if (dragging)
+			{
+				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
+				ImGui::Separator();
+				ImGui::SetCursorPos(curr_cursor_pos);
+				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, {0,5.0f});
+				if (ImGui::BeginDragDropTarget())
+				{
+					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("AFTER");
+					if (payload)
+					{
+						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
+						try
+						{
+							oo::ScriptManager::RemoveAfterDefaultOrder(sci);
+							oo::ScriptManager::InsertAfterDefaultOrder(sci, counter);
+						}
+						catch (std::exception const& e)
+						{
+							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+						}
+					}
+					ImGui::EndDragDropTarget();
+				}
+			}
 			ImGui::PopID();
 		}
 		ImGui::EndGroup();
@@ -182,4 +237,9 @@ void ScriptSequencer::Show()
 	}
 	ImGui::EndChild();
 	ImGui::EndGroup();
+
+	{
+		ImRect r = ImGui::GetCurrentWindowRead()->Rect();
+		dragging = ImGui::IsMouseDragging(ImGuiMouseButton_Left) && ImGui::IsMouseHoveringRect(r.Min, r.Max);
+	}
 }
