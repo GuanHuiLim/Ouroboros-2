@@ -129,20 +129,20 @@ namespace oo
 
         m_world->for_each(rb_query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
-            auto pos = tf.GetPosition();
+            auto pos = tf.GetGlobalPosition();
             //phy.object.setposition({ pos.x, pos.y, pos.z });
             
-            auto quat = tf.GetRotationQuat();
+            auto quat = tf.GetGlobalRotationQuat();
             //phy.object.setOrientation({quat.value.x, quat.value.y, quat.value.z, quat.value.w});
             
-            phy.object.setPosOrientation( { pos.x, pos.y, pos.z }, { quat.value.x, quat.value.y, quat.value.z, quat.value.w } );
+            phy.object.setPosOrientation( { pos.x, pos.y, pos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z  } );
         });
 
-        //Updating Box Collider's Bounds no matter what
+        //Updating Static Box Collider's Bounds
         static Ecs::Query boxColliderQuery = []()
         {
             Ecs::Query query;
-            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<DeferredComponent>().build();
+            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<DeferredComponent, RigidbodyComponent>().build();
             return query;
         }();
 
@@ -160,14 +160,14 @@ namespace oo
                 bc.GlobalBounds = { bc.Bounds.min , bc.Bounds.max };
                 auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
                 auto globalPos = pos + bc.Offset;
+                // set box size
+                //phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
                 
                 // set box size
                 //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
-                phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.x, quat.value.y, quat.value.z, quat.value.w });
+                phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z });
                 
                 //TODO: Debug draw the bounds
-                
-
             });
 
         // Update global bounds of all objects
@@ -195,10 +195,10 @@ namespace oo
         {
             auto pos = phy.object.getposition();
             glm::vec3 new_pos{ pos.x, pos.y, pos.z };
-            tf.SetPosition(new_pos);
+            tf.SetGlobalPosition(new_pos);
 
             auto orientation = phy.object.getOrientation();
-            tf.SetOrientation({ orientation.x, orientation.y, orientation.z, orientation.w });
+            tf.SetGlobalOrientation({ orientation.x, orientation.y, orientation.z, orientation.w });
         });
 
         static Ecs::Query dynamicBoxColliderQuery = []()
@@ -224,10 +224,10 @@ namespace oo
                 auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
                 auto globalPos = pos + bc.Offset;
                 // set box size
-                phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
+                //phy.object.setBoxProperty(halfExtents.x, halfExtents.y, halfExtents.z);
 
                 //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
-                phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.x, quat.value.y, quat.value.z, quat.value.w });
+                phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z });
 
 
                 //TODO : Toggle to enable/disable debug drawing of bounds.
@@ -366,9 +366,9 @@ namespace oo
             phy_comp.object.setRigidType(rigid::rstatic);   // static if this is first added.
 
             Material mat{}; //default initialize
-            mat.restitution = 1.f;
-            mat.staticFriction = 0.f;
-            mat.dynamicFriction = 0.f;
+            mat.restitution = 0.f;
+            mat.staticFriction = 1.f;
+            mat.dynamicFriction = 1.f;
             phy_comp.object.setMaterial(mat);
 
             // create box temporarily
@@ -388,9 +388,9 @@ namespace oo
             
             Material mat{}; //default initialize
 
-            mat.restitution = 1.f;
-            mat.staticFriction = 0.f;
-            mat.dynamicFriction = 0.f;
+            mat.restitution = 0.f;
+            mat.staticFriction = 1.f;
+            mat.dynamicFriction = 1.f;
 
             phy_comp.object.setMaterial(mat);
 
@@ -421,7 +421,10 @@ namespace oo
             phy_comp.object = m_physicsWorld.createInstance();
 
             //default initialize material
-            Material mat{}; 
+            Material mat{};
+            mat.restitution = 0.f;
+            mat.staticFriction = 1.f;
+            mat.dynamicFriction = 1.f;
             phy_comp.object.setMaterial(mat);
 
             phy_comp.object.setRigidType(rigid::rstatic);   // static if this is first added.
@@ -439,7 +442,10 @@ namespace oo
             auto& phy_comp = m_world->get_component<PhysicsComponent>(rb->entityID);
             
             // we need to set a default material for 
-            Material mat{}; 
+            Material mat{};
+            mat.restitution = 0.f;
+            mat.staticFriction = 1.f;
+            mat.dynamicFriction = 1.f;
             phy_comp.object.setMaterial(mat);
 
             // create box temporarily
