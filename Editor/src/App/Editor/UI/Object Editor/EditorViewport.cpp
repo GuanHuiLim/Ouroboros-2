@@ -81,7 +81,7 @@ void EditorViewport::Show()
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
-	if (scene->IsValid(*gameobject) == false)
+	if (gameobject == nullptr || scene->IsValid(*gameobject) == false)
 	{
 		return;
 	}
