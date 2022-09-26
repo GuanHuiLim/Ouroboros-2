@@ -145,6 +145,7 @@ namespace oo
                 return nullptr;
 
             FMOD::Sound* sound = sounds.at(id);
+            sound->setMode(FMOD_LOOP_OFF);
             FMOD::Channel* channel;
             FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
             channel->setLoopCount(0);
@@ -157,6 +158,7 @@ namespace oo
                 return nullptr;
 
             FMOD::Sound* sound = sounds.at(id);
+            sound->setMode(FMOD_LOOP_NORMAL);
             FMOD::Channel* channel;
             FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
             channel->setLoopCount(loopCount);
