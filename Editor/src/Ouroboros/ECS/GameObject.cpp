@@ -138,7 +138,7 @@ namespace oo
     GameObject GameObject::GetParent() const
     {
         UUID parent_uuid = GetParentUUID();
-        ASSERT(parent_uuid == scenenode::NOTFOUND, "this should never happen except for the root node");
+        ASSERT_MSG(parent_uuid == scenenode::NOTFOUND, "this should never happen except for the root node");
         return *m_scene->FindWithInstanceID(parent_uuid);
     }
 

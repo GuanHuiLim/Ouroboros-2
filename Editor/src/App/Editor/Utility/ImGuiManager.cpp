@@ -5,6 +5,8 @@
 #include <Ouroboros/Core/Application.h>
 #include <Ouroboros/Vulkan/VulkanContext.h>
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
 void ImGuiManager::InitAssetsAll()
 {
 	//will change to using filesystem later.
@@ -26,16 +28,27 @@ void ImGuiManager::UpdateAllUI()
 		if (field.second.m_enabled == false)
 			continue;
 
+		static constexpr const char* const editor_ui_object = "editor_ui_object";
+		TRACY_TRACK_PERFORMANCE(editor_ui_object);
+		TRACY_PROFILE_SCOPE_NC(editor_ui_object, tracy::Color::BlueViolet);
+
 		if (field.second.m_prewindow)
 			field.second.m_prewindow();
 
 		if (ImGui::Begin(field.first.c_str(), &field.second.m_enabled, field.second.m_flags) == false)
 		{
 			ImGui::End();
+			
+			TRACY_PROFILE_SCOPE_END();
+			TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_object);
 			continue;
 		}
+
 		field.second.m_UIupdate();
 		ImGui::End();
+
+		TRACY_PROFILE_SCOPE_END();
+		TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_object);
 	}
 }
 ImGuiObject& ImGuiManager::GetItem(const std::string& item)

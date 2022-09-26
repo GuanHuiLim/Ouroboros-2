@@ -38,8 +38,13 @@ Technology is prohibited.
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 void Toolbar::Show()
 {
+	static constexpr const char* const toolbar_ui_update = "toolbar_ui_update";
+	TRACY_TRACK_PERFORMANCE(toolbar_ui_update);
+	TRACY_PROFILE_SCOPE_NC(toolbar_ui_update, tracy::Color::Blue2);
+
 	float w = ImGui::GetWindowWidth();
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0,0 });
 	{
@@ -159,15 +164,28 @@ void Toolbar::Show()
 	ImGui::PopStyleVar();
 
 
-	auto* window = ImGui::FindWindowByName("Toolbar");
-	if (window->DockNode)
 	{
-		if (docking)
-			window->DockNode->LocalFlags = 0;
-		else
-			window->DockNode->LocalFlags = ImGuiDockNodeFlags_NoTabBar|ImGuiDockNodeFlags_NoResizeY | ImGuiDockNodeFlags_NoDocking;
-	}
-	else
-		ImGui::SetWindowSize(window,{ 500,100 });
+		static constexpr const char* const find_windows_by_name = "find_windows_by_name";
+		TRACY_TRACK_PERFORMANCE(find_windows_by_name);
+		TRACY_PROFILE_SCOPE_NC(find_windows_by_name, tracy::Color::Blue2);
 
+		auto* window = ImGui::FindWindowByName("Toolbar");
+		if (window->DockNode)
+		{
+			if (docking)
+				window->DockNode->LocalFlags = 0;
+			else
+				window->DockNode->LocalFlags = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResizeY | ImGuiDockNodeFlags_NoDocking;
+		}
+		else
+			ImGui::SetWindowSize(window, { 500,100 });
+
+
+		TRACY_PROFILE_SCOPE_END();
+		TRACY_DISPLAY_PERFORMANCE_SELECTED(find_windows_by_name);
+	}
+
+
+	TRACY_PROFILE_SCOPE_END();
+	TRACY_DISPLAY_PERFORMANCE_SELECTED(toolbar_ui_update);
 }
