@@ -43,7 +43,7 @@ void EditorLayer::OnAttach()
     {
         manager.LoadDirectory("./");
 
-        auto results = manager.LoadName("01 - Into the Light.ogg");
+        auto results = manager.LoadName("05 - Faith.ogg");
         if (results.size() > 0)
         {
             mySoundAsset = results.at(0);
