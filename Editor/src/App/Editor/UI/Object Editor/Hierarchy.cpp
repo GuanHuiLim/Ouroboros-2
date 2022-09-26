@@ -1,3 +1,21 @@
+/************************************************************************************//*!
+\file          Hierarchy.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Allows the user to Edit the entity in scene.
+			   Add object
+			   Delete object
+			   Make Prefab
+			   Update Prefab
+			   Open Prefab Editor
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include <pch.h>
 #include <stack>
 #include "Hierarchy.h"
@@ -32,6 +50,7 @@
 #include <Ouroboros/Commands/CommandStackManager.h>
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
 		{ ImColor(0.75f,0.2f,0.3f),ImColor(0.3f,0.75f,0.2f),ImColor(0.2f,0.3f,0.75f) },
@@ -41,11 +60,19 @@ Hierarchy::Hierarchy()
 
 void Hierarchy::Show()
 {
+
+	static constexpr const char* const hierarchy_ui_update = "hierarchy_ui_update";
+	TRACY_TRACK_PERFORMANCE(hierarchy_ui_update);
+	TRACY_PROFILE_SCOPE_NC(hierarchy_ui_update, tracy::Color::BlueViolet);
+
 	ImGui::BeginChild("search bar", { 0,40 }, false);
 	SearchFilter();
 	ImGui::EndChild();
 
 	m_filter.empty() ? NormalView() : FilteredView();
+
+	TRACY_PROFILE_SCOPE_END();
+	TRACY_DISPLAY_PERFORMANCE_SELECTED(hierarchy_ui_update);
 }
 
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)

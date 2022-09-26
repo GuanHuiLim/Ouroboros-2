@@ -1,10 +1,23 @@
+/************************************************************************************//*!
+\file          Hierarchy.h
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Declarations for Hierarchy
+			   Contains static Function to get list of selected items.
+			   
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 #include <vector>
 #include <set>
 #include <scenegraph/include/Scenegraph.h>
 #include <string>
 #include "App/Editor/Utility/ImGui_ToggleButton.h"
-enum ImGuiTreeNodeFlags_;//pre-declare
 class Hierarchy
 {
 public:

@@ -19,33 +19,42 @@ namespace oo
 {
     namespace timer
     {
-        double s_timescale;
+        // some terminology
+        // raw delta - refers to the actual amount time that has passed between current and previous frame
+        // controlled delta - the amount of time that has passed after being clamped between the lower and upperlimit
+        // timescale - the factor that is multiplying the output delta, artifically speeds up/slows down the delta value.
+        // delta - the value that most people will refer to when talking about time passed, achieved by multiplying controlled delta and timescale
 
-        double s_debugTrackingDuration;
-        double s_lower_limit = 0.f, s_upper_limit = 1.0f;
+        double s_timescale = 1.0;
+
+        double s_debugTrackingDuration = 1.0;
+        double s_lower_limit = 0.0, s_upper_limit = 1.0;
 
         std::chrono::steady_clock::time_point s_timeStart;
-        double s_raw_dt, s_controlled_dt;
+        double s_raw_dt, s_controlled_dt, s_dt;
 
         std::vector<TimeDebugInfo> s_debugInfo;
         std::vector<double> s_deltas, s_controlled_deltas, s_raw_deltas;
         double s_frequency;
+        timer::TimeDebugInfo s_info;
 
         //private
         void set_dt(double value)
         {
             s_controlled_dt = s_raw_dt = value;
             s_controlled_dt = std::clamp(s_controlled_dt, s_lower_limit, s_upper_limit);
+            s_dt = s_controlled_dt * s_timescale;
 
             if (s_frequency > 0.0)
             {
                 s_raw_deltas.emplace_back(s_raw_dt);
                 s_controlled_deltas.emplace_back(s_controlled_dt);
+                s_deltas.emplace_back(s_dt);
                 s_frequency -= s_raw_dt;
             }
             else
             {
-                timer::TimeDebugInfo info;
+                //timer::TimeDebugInfo info;
 
                 double totalDelta = 0.0;
                 for (auto& timesteps : s_deltas)
@@ -65,17 +74,17 @@ namespace oo
                     totalRawDelta += timesteps;
                 }
 
-                info.AvgDeltaTime = totalDelta / s_deltas.size();
-                info.AvgFPS = 1.0 / info.AvgDeltaTime;
+                s_info.AvgDeltaTime = totalDelta / s_deltas.size();
+                s_info.AvgFPS = 1.0 / s_info.AvgDeltaTime;
 
-                info.AvgUnscaledDeltaTime = totalUnScaledDelta / s_controlled_deltas.size();
-                info.AvgUnscaledFPS = 1.0 / info.AvgUnscaledDeltaTime;
+                s_info.AvgUnscaledDeltaTime = totalUnScaledDelta / s_controlled_deltas.size();
+                s_info.AvgUnscaledFPS = 1.0 / s_info.AvgUnscaledDeltaTime;
 
-                info.AvgRawDeltaTime = totalRawDelta / s_raw_deltas.size();
-                info.AvgRawFPS = 1.0 / info.AvgDeltaTime;
+                s_info.AvgRawDeltaTime = totalRawDelta / s_raw_deltas.size();
+                s_info.AvgRawFPS = 1.0 / s_info.AvgRawDeltaTime;
 
-                info.CurrentTimeScale = s_timescale;
-                info.TimeElapsed = program_elapsed();
+                s_info.CurrentTimeScale = s_timescale;
+                s_info.TimeElapsed = program_elapsed();
 
                 s_deltas.clear();
                 s_raw_deltas.clear();
@@ -117,7 +126,7 @@ namespace oo
         void reset()
         {
             s_timeStart = std::chrono::high_resolution_clock::now();
-            s_raw_dt = 0.0;
+            s_raw_dt = s_controlled_dt = s_dt = 0.0;
             s_timescale = 1.0;
 
             s_debugInfo.clear();
@@ -135,11 +144,11 @@ namespace oo
         }
 
 
-        float dt() { return static_cast<float>(s_controlled_dt * s_timescale); }
+        float dt() { return static_cast<float>(s_dt); }
 
         float fps() { return static_cast<float>(1.0 / dt()); }
 
-        double dt_precise() { return s_controlled_dt * s_timescale; }
+        double dt_precise() { return s_dt; }
 
         double fps_precise() { return 1.0 / dt_precise(); }
 
@@ -171,7 +180,13 @@ namespace oo
         
         void set_timescale(double newTimeScale)
         {
+            // timescale can't be less than 0
             s_timescale = std::clamp(newTimeScale, 0.0, newTimeScale);
+        }
+
+        TimeDebugInfo get_cumulated_debug_info()
+        {
+            return s_info;
         }
     }
 }

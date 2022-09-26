@@ -27,6 +27,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Audio/Audio.h"
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
 // TEMP AUDIO MAYBE
 static oo::AssetManager manager = oo::AssetManager("./assets");
 static oo::Asset mySoundAsset;
@@ -63,6 +65,10 @@ void EditorLayer::OnAttach()
 
 void EditorLayer::OnUpdate()
 {
+	static constexpr const char* const editor_ui_update = "editor_ui_update";
+	TRACY_TRACK_PERFORMANCE(editor_ui_update);
+	TRACY_PROFILE_SCOPE_NC(editor_ui_update, tracy::Color::Blue);
+
 #ifndef OO_END_PRODUCT
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
@@ -91,6 +97,8 @@ void EditorLayer::OnUpdate()
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
+
+
 	}
     //m_editor.ShowAllWidgets();
 
@@ -98,4 +106,6 @@ void EditorLayer::OnUpdate()
     //    ImGui::ShowDemoWindow(&m_demo);
 
 
+	TRACY_PROFILE_SCOPE_END();
+	TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_update);
 }

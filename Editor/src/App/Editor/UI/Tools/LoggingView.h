@@ -16,6 +16,7 @@ Technology is prohibited.
 #include <unordered_map>
 #include <string>
 #include <imgui/imgui.h>
+#include "Ouroboros/Asset/Asset.h"
 class LoggingView
 {
 public:
@@ -25,10 +26,8 @@ public:
 	*//**********************************************************************************/
 	LoggingView();
 
-	/*********************************************************************************//*!
-	\brief Shows the LoggingView Editor Tool in the Editor.
-	
-	*//**********************************************************************************/
+	void InitAsset();
+
 	void Show();
 	
 protected:
@@ -46,6 +45,8 @@ protected:
 	*//**********************************************************************************/
 	static void AddItem(const std::string& str,char type,const std::string& filename);
 private:
+	std::unordered_map<std::string, oo::Asset> assets;
+
 	struct MessageData
 	{
 		int count = 0;

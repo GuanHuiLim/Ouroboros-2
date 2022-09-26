@@ -1,9 +1,24 @@
+/************************************************************************************//*!
+\file           ImGuiManager.cpp
+\project        Editor
+\author         Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par            email: junxiang.leong\@digipen.edu
+\date           September 26, 2022
+\brief          Holds most UI updates and AssetManager and access to Important Controllers 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 
 #include "ImGuiManager.h"
 
 #include <Ouroboros/Core/Application.h>
 #include <Ouroboros/Vulkan/VulkanContext.h>
+
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
 void ImGuiManager::InitAssetsAll()
 {
@@ -26,16 +41,27 @@ void ImGuiManager::UpdateAllUI()
 		if (field.second.m_enabled == false)
 			continue;
 
+		static constexpr const char* const editor_ui_object = "editor_ui_object";
+		TRACY_TRACK_PERFORMANCE(editor_ui_object);
+		TRACY_PROFILE_SCOPE_NC(editor_ui_object, tracy::Color::BlueViolet);
+
 		if (field.second.m_prewindow)
 			field.second.m_prewindow();
 
 		if (ImGui::Begin(field.first.c_str(), &field.second.m_enabled, field.second.m_flags) == false)
 		{
 			ImGui::End();
+			
+			TRACY_PROFILE_SCOPE_END();
+			TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_object);
 			continue;
 		}
+
 		field.second.m_UIupdate();
 		ImGui::End();
+
+		TRACY_PROFILE_SCOPE_END();
+		TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_object);
 	}
 }
 ImGuiObject& ImGuiManager::GetItem(const std::string& item)

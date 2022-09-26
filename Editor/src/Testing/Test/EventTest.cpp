@@ -8,6 +8,7 @@
 #include <Ouroboros/Scene/RuntimeScene.h>
 #include <Ouroboros/Scene/EditorScene.h>
 
+#include <Ouroboros/Core/Base.h>
 // Highly abusable way to get the scene
 // Use with care.
 void RetrieveScene()
@@ -18,11 +19,12 @@ void RetrieveScene()
 	if (e.IsEditor)
 	{
 		auto& editor_scn = e.CurrentEditorScene;
-
+		UNREFERENCED(editor_scn);
 	}
 	else
 	{
 		auto& runtime_scn = e.CurrentRuntimeScene; 
+		UNREFERENCED(runtime_scn);
 	}
 
 	// Retrieve General Scene [if its good enough]
@@ -30,4 +32,5 @@ void RetrieveScene()
 
 	// Get ecs_world
 	auto& ecs_world = scn->GetWorld();
+	UNREFERENCED(ecs_world);
 }

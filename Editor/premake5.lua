@@ -109,6 +109,12 @@ project "Editor"
 
     }
     
+    -- Editor Project Level Disable Warning 
+    disablewarnings
+    {
+        "4324" -- padding of glm with std::variant, intended. 
+    }
+
     filter "system:windows"
         cppdialect "C++20"
         staticruntime "off"
@@ -157,9 +163,9 @@ project "Editor"
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
 			-- vulkan shaders copy
-			{ "mkdir \"" .. binApp .. "/shaders/bin\"" },
+		    { "mkdir \"" .. binApp .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			
-			{ "mkdir \"" .. AppDir .. "/shaders/bin\"" },
+		    { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""}, 
         }
     

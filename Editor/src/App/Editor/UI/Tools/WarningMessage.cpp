@@ -1,6 +1,6 @@
 /************************************************************************************//*!
 \file          WarningView.cpp
-\project       Ouroboros
+\project       Editor
 \author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution (100%)
 \par           email: junxiang.leong\@digipen.edu
 \date          October 3, 2022
@@ -22,33 +22,38 @@ void WarningMessage::Show()
 {
 	if (s_ShowWarning == false)
 		return;
-	
-	if (ImGui::Begin("Warning Message", 0, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs) == false)
-	{
-		ImGui::End();
-		return;
-	}
+	//
+	//if (ImGui::Begin("Warning Message", 0, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs) == false)
+	//{
+	//	ImGui::End();
+	//	return;
+	//}
 	ImGui::BeginTooltip();
 
+	ImGui::PushTextWrapPos(300.0f);
 	switch (s_dtype)
 	{
 	case DisplayType::DISPLAY_LOG:
+		ImGui::PushStyleColor(ImGuiCol_Text, { 0.8f,1.f,0.8f,1.f });
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
-		ImGui::TextColored({ 0.8f,1.f,0.8f,1.f }, "****Log****");
+		ImGui::PopStyleColor();
 		break;
 	case DisplayType::DISPLAY_WARNING:
+		ImGui::PushStyleColor(ImGuiCol_Text, { 1.f,0.5f,0.5f,1.f });
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
-		ImGui::TextColored({ 1.f,0.5f,0.5f,1.f }, "****Warning****");
+		ImGui::PopStyleColor();
 		break;
 	case DisplayType::DISPLAY_ERROR:
+		ImGui::PushStyleColor(ImGuiCol_Text, { 1.f,0,0,1.f });
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
-		ImGui::TextColored({ 1.f,0,0,1.f }, "****Error****");
+		ImGui::PopStyleColor();
 		break;
 	default:
 		break;
 	}
+	ImGui::PopTextWrapPos();
 	ImGui::EndTooltip();
-	ImGui::End();
+	//ImGui::End();
 		
 	s_counter -= oo::timer::dt();
 	if (s_counter<0)
