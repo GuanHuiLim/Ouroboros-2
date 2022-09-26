@@ -1,20 +1,11 @@
 ﻿#include "A_Ecs.h"
-namespace Ecs::internal
-{
-	static const ComponentInfo* get_ComponentInfo_WithNameHash(size_t const hash) {
-		if (componentInfo_map.contains(hash) == false)
-		{
-			return nullptr;
-		}
-
-		return &(componentInfo_map[hash]);
-	}
-}
 
 
 namespace Ecs
 {
-	std::unordered_map<uint64_t, ComponentInfo> componentInfo_map{};
+	std::unordered_map<uint64_t, ComponentInfo> componentInfo_map = []() {
+		return std::unordered_map<uint64_t, ComponentInfo>{};
+	}();
 
 	IECSWorld::~IECSWorld()
 	{
@@ -70,7 +61,8 @@ namespace Ecs
 		//verify if component info exists
 		assert(componentinfo != nullptr);
 
-		return componentinfo->get_component;
+		//return nullptr if could not retrieve component info
+		return componentinfo != nullptr ? componentinfo->get_component : nullptr;
 	}
 
 	size_t IECSWorld::get_num_components(EntityID id)
@@ -86,13 +78,13 @@ namespace Ecs
 	{
 		Archetype* arch = nullptr;
 		//empty component list will use the hardcoded null archetype
+		std::vector<ComponentInfo const*> componentInfos;
 		if (component_hashes.empty() == false) {
-			std::vector<const ComponentInfo*> componentInfos;
 			componentInfos.reserve(component_hashes.size());
 			for (auto c : component_hashes)
 				componentInfos.emplace_back(&componentInfo_map[c]);
-
-			const ComponentInfo** types = &componentInfos[0];
+			decltype(&(componentInfos.front())) temp = &(componentInfos.front());
+			const ComponentInfo** types = temp;
 			size_t num = component_hashes.size();
 
 			internal::sort_ComponentInfos(types, num);
@@ -103,6 +95,11 @@ namespace Ecs
 		}
 
 		auto entity = internal::create_entity_with_archetype(arch);
+
+		//broadcast add component event
+		for (auto& type : componentInfos)
+			type->broadcast_AddComponentEvent(*this, entity);
+
 		internal::broadcast_add_entity_callback(this, entity);
 		return entity;
 	}
@@ -179,7 +176,7 @@ namespace Ecs
 
 	GetCompFn* ECSWorld::get_component_Fn(size_t const hash)
 	{
-		return world.get_component_Fn(hash);
+		return IECSWorld::get_component_Fn(hash);
 	}
 }
 
