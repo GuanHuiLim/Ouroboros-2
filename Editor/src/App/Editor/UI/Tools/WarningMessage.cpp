@@ -34,15 +34,15 @@ void WarningMessage::Show()
 	{
 	case DisplayType::DISPLAY_LOG:
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
-		ImGui::TextColored({ 0.8,1,0.8,1 }, "****Log****");
+		ImGui::TextColored({ 0.8f,1.f,0.8f,1.f }, "****Log****");
 		break;
 	case DisplayType::DISPLAY_WARNING:
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
-		ImGui::TextColored({ 1,0.5,0.5,1 }, "****Warning****");
+		ImGui::TextColored({ 1.f,0.5f,0.5f,1.f }, "****Warning****");
 		break;
 	case DisplayType::DISPLAY_ERROR:
 		ImGui::TextWrapped("%s", s_WarningMessage.c_str());
-		ImGui::TextColored({ 1,0,0,1 }, "****Error****");
+		ImGui::TextColored({ 1.f,0,0,1.f }, "****Error****");
 		break;
 	default:
 		break;

@@ -23,4 +23,9 @@ struct DebugDraw
 	static void AddDisc(const glm::vec3& center, float radius, const glm::vec3& normal, const oGFX::Color& color = oGFX::Colors::WHITE);
 	
 	// Add more as needed...
+
+	// These are experimental, use at your own risk...
+
+	// This requires the camera position!!
+	static void AddSphereAs3Disc1HorizonDisc(const glm::vec3& center, float radius, const glm::vec3& cameraPosition, const oGFX::Color& color = oGFX::Colors::WHITE);
 };

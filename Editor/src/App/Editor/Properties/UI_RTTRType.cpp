@@ -11,6 +11,8 @@
 void UI_RTTRType::Init()
 {
 	types.emplace(rttr::type::get<bool>().get_id(), UItypes::BOOL_TYPE);
+	types.emplace(rttr::type::get<int>().get_id(), UItypes::INT_TYPE);
+
 	types.emplace(rttr::type::get<float>().get_id(), UItypes::FLOAT_TYPE);
 	types.emplace(rttr::type::get<std::string>().get_id(), UItypes::STRING_TYPE);
 	types.emplace(rttr::type::get<UUID>().get_id(), UItypes::UUID_TYPE);

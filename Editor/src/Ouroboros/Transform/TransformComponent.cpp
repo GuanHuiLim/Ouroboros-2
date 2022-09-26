@@ -34,10 +34,10 @@ namespace oo
             .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property_readonly("Local Matrix", &TransformComponent::GetLocalMatrix)
             .property_readonly("Global Matrix", &TransformComponent::GetGlobalMatrix)
-            .property("Global Position", &TransformComponent::GetGlobalPosition, &TransformComponent::SetGlobalPosition)
-            .property("Global Rotation", &TransformComponent::GetGlobalRotationDeg, &TransformComponent::SetGlobalRotation)
+            .property_readonly("Global Position", &TransformComponent::GetGlobalPosition)
+            .property_readonly("Global Rotation", &TransformComponent::GetGlobalRotationDeg)
             .property_readonly("Global Quaternion", &TransformComponent::GetGlobalRotationQuat)
-            .property("Global Scale", &TransformComponent::GetGlobalScale, &TransformComponent::SetGlobalScale);
+            .property_readonly("Global Scale", &TransformComponent::GetGlobalScale);
         //added readonly for debugging purposes
     }
 

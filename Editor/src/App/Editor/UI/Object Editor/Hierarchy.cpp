@@ -6,6 +6,10 @@
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Utility/ImGuiStylePresets.h"
 
+//other UI functions
+#include "App/Editor/UI/Tools/MeshHierarchy.h"
+
+
 //imgui
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -115,7 +119,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 {
-	ImGui::PushID(node.get_handle());
+	ImGui::PushID(static_cast<int>(node.get_handle()));
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,1.0f });
 	ImVec2 pos = ImGui::GetCursorPos();
 	ImGui::Selectable("--------", false, ImGuiSelectableFlags_::ImGuiSelectableFlags_None, {0,8.0f});
@@ -188,6 +192,12 @@ void Hierarchy::NormalView()
 				std::filesystem::path prefabpath = *static_cast<std::filesystem::path*>(payload->Data);
 				Serializer::LoadPrefab(prefabpath,go,*scene);
 			}
+			payload = ImGui::AcceptDragDropPayload("MESH_HIERARCHY"); //for creating prefab files
+			if (payload)
+			{
+				auto data = *static_cast<MeshHierarchy::MeshHierarchyDragDropData*>(payload->Data);
+				MeshHierarchy::CreateObject(data.data,data.id);
+			}
 			ImGui::EndDragDropTarget();
 		}
 	}
@@ -199,7 +209,7 @@ void Hierarchy::NormalView()
 			m_previewPrefab = false;
 			OpenFileEvent ofe(m_curr_sceneFilepath);
 			oo::EventManager::Broadcast(&ofe);
-		}
+		}	
 		ImGui::SameLine();
 		ImGui::Text("Prefab Editing");
 		ImGui::Separator();
@@ -359,7 +369,7 @@ void Hierarchy::FilteredView()
 				break;
 			}
 		}
-		ImGui::PushID(handle);
+		ImGui::PushID(static_cast<int>(handle));
 		ImGui::Selectable(go->Name().c_str(),selected);
 		ImGui::PopID();
 

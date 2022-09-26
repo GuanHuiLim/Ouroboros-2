@@ -46,11 +46,19 @@ struct BoneInfo
 
 struct Bone
 {
-    glm::vec3 position;
-    glm::quat orientation;
-    glm::vec3 scale;
+    glm::mat4 transform;
 };
 
+struct BoneOffset
+{
+    glm::mat4 transform;
+};
+
+struct BoneWeight
+{
+    uint32_t boneIdx[4];
+    glm::vec4 boneWeights;
+};
 
 struct ModelData
 {
@@ -65,12 +73,13 @@ struct ModelData
     Node* sceneInfo{ nullptr };
     uint32_t sceneMeshCount{};
 
-
-    std::unordered_map<std::string, BoneInfo> strToBone;
+    std::unordered_map<std::string, uint32_t> strToBone;
     std::vector<Bone> bones;
-    uint32_t boneCnt{};
+    std::vector<BoneOffset> boneOffsets;
+    std::vector<BoneWeight>boneWeights;
 
     void ModelSceneLoad(const aiScene* scene, const aiNode& node, Node* parent,const glm::mat4 accMat);
+    void ModelBoneLoad(const aiScene* scene, const aiNode& node, uint32_t vertOffset);
 };
 
 struct gfxModel
@@ -103,7 +112,7 @@ struct gfxModel
     void loadNode(const aiScene* scene,const aiNode& node, Node* parent, ModelData& cpuModel, glm::mat4 accMat);
 
     void updateOffsets(uint32_t idxOffset, uint32_t vertOffset);
-    oGFX::Mesh* processMesh(aiMesh* mesh, const aiScene* scene, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices);
+    oGFX::Mesh* processMesh(aiMesh* mesh, const aiScene* scene, ModelData& mData);
 private:
 
 };

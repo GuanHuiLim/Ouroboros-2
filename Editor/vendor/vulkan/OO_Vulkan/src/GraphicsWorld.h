@@ -17,7 +17,8 @@ enum ObjectInstanceFlags : uint32_t // fuck enum class
     SHADOW_CASTER    = 0x8,  // Object casts shadows (put it into shadow render pass)
     SHADOW_RECEIVER  = 0x10, // Object receives shadows (a mask for lighting pass)
     ENABLE_ZPREPASS  = 0x20, // Object is added to Z-Prepass
-    TRANSPARENT      = 0x40 // Object is added to forward pass
+    TRANSPARENT      = 0x40, // Object is added to forward pass
+    EMITTER          = 0x80 // Object is added to forward pass
                              // etc
 };
 
@@ -76,17 +77,22 @@ public:
     int32_t CreateObjectInstance(ObjectInstance obj);
     ObjectInstance& GetObjectInstance(int32_t id);
     void DestroyObjectInstance(int32_t id);
-
     void ClearObjectInstances();
 
-    // TODO: Fix Me ! This is for testing
-    std::array<OmniLightInstance, 6> m_HardcodedOmniLights;
+    int32_t CreateLightInstance();
+    int32_t CreateLightInstance(OmniLightInstance obj);
+    OmniLightInstance& GetLightInstance(int32_t id);
+    void DestroyLightInstance(int32_t id);
+    void ClearLightInstances();
+
+
     // TODO: Fix Me ! This is for testing
     DecalInstance m_HardcodedDecalInstance;
 
 private:
-    int32_t entityCount{};
+    int32_t m_entityCount{};
     BitContainer<ObjectInstance> m_ObjectInstances;
+    int32_t m_lightCount{};
     BitContainer<OmniLightInstance> m_OmniLightInstances;
     //etc
 
