@@ -246,7 +246,8 @@ namespace oo::Anim
 		std::vector<Timeline> timelines{};
 
 		bool looping{ false };
-		//std::vector<ProgressTracker> trackers{};
+		
+		float animation_length{0.f};
 	};
 
 	struct Node

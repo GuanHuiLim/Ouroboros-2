@@ -166,24 +166,22 @@ namespace oo::Anim::internal
 			return;
 		}
 
-		//if looping, set the normalized time based on iterations
-		if (info.tracker_info.tracker.currentNode->animation.looping)
-		{
-			float num_iterations{ 0.f };
-			float currentTimer = info.tracker_info.tracker.global_timer;
-			while (currentTimer > timeline.keyframes.back().time)
-			{
-				currentTimer -= timeline.keyframes.back().time;
-				num_iterations += 1.f;
-			}
-			//set normalized timer
-			info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
-		}
-		else
-		{
-			//set normalized timer
-			info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		}
+		////if looping, set the normalized time based on iterations
+		//if (info.tracker_info.tracker.currentNode->animation.looping)
+		//{
+		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
+		//	{
+		//		currentTimer -= timeline.keyframes.back().time;
+		//		num_iterations += 1.f;
+		//	}
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
+		//}
+		//else
+		//{
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
+		//}
 
 		//if next keyframe within bounds increment index 
 		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
@@ -201,11 +199,10 @@ namespace oo::Anim::internal
 				//set the value
 				info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
 
-				//if animation is looping, reset keyframe index and timer
+				//if animation is looping, reset keyframe index
 				if (info.tracker_info.tracker.currentNode->animation.looping)
 				{
 					info.progressTracker.index = 0;
-					info.tracker_info.tracker.timer = updatedTimer - timeline.keyframes.back().time;
 				}
 				return;
 			}
@@ -323,11 +320,8 @@ namespace oo::Anim::internal
 		{
 			if (link->has_exit_time)
 			{
-				//if fixed duration is checked, use global timer instead
-				float selected_time = link->fixed_duration ? info.tracker.global_timer : info.tracker.normalized_timer;
-
 				//if exit time not reached continue
-				if (selected_time < link->exit_time)
+				if (info.tracker.normalized_timer < link->exit_time)
 					continue;
 				//if no conditions return link
 				if (link->conditions.empty())
@@ -390,9 +384,13 @@ namespace oo::Anim::internal
 		//update tracker timer and global timer
 		info.tracker.timer = updatedTimer;
 		info.tracker.global_timer += info.tracker.currentNode->speed * info.dt;
+		info.tracker.normalized_timer = updatedTimer / info.tracker.currentNode->animation.animation_length;
 		//check if we passed a keyframe and update
 		UpdateTrackerKeyframeProgress(info, updatedTimer);
 
+		if (info.tracker.currentNode->animation.looping &&
+			updatedTimer > info.tracker.currentNode->animation.animation_length)
+			info.tracker.timer = updatedTimer - info.tracker.currentNode->animation.animation_length;
 	}
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
@@ -751,6 +749,29 @@ namespace oo::Anim::internal
 		}
 	}
 
+	void CalculateAnimationLength(AnimationTree& tree)
+	{
+		//for all nodes
+		for (auto& group : tree.groups)
+		{
+			for (auto& node : group.nodes)
+			{
+				auto& animation = node.animation;
+				float longest_time{ 0.f };
+
+				for (auto& timeline : animation.timelines)
+				{
+					if (timeline.keyframes.empty()) continue;
+
+					if (longest_time < timeline.keyframes.back().time)
+						longest_time = timeline.keyframes.back().time;
+				}
+
+				animation.animation_length = longest_time;
+			}
+		}
+	}
+
 } //namespace oo::Anim::internal
 
 namespace oo::Anim
@@ -989,6 +1010,7 @@ namespace oo::Anim
 		for (auto& [key, tree] : AnimationTree::map)
 		{
 			internal::BindConditionsToParameters(tree);
+			internal::CalculateAnimationLength(tree);
 		}
 	}
 
