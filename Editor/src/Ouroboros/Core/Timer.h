@@ -71,5 +71,7 @@ namespace oo
         float  get_timescale();
         double get_timescale_precise();
         void   set_timescale(double newTimeScale);
+
+        TimeDebugInfo get_cumulated_debug_info();
     }
 }
