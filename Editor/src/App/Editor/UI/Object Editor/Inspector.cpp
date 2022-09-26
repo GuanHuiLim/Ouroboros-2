@@ -1,3 +1,20 @@
+/************************************************************************************//*!
+\file          Inspector.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Edit the Properties of each gameobject and ability to make prefab.
+			   Edit Components
+			   Add Components
+			   Remove Components
+			   Make Prefab
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "Inspector.h"
 #include "Hierarchy.h"
@@ -30,6 +47,7 @@
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/RendererComponent.h>
+#include <Ouroboros/Vulkan/LightComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -118,8 +136,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
-
 	DisplayComponent<oo::DeferredComponent>(gameobject);
+	DisplayComponent<oo::LightingComponent>(gameobject);
 	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
@@ -145,6 +163,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::LightingComponent>(gameobject);
 
 		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 

@@ -25,6 +25,17 @@ workspace "Ouroboros"
         "Executable",
     }
 
+    -- solution level defines regardless of platform or configuration
+    -- Note : this should be defined throughout as the consistency is required
+    -- for proper compilation and functionality.
+    defines
+    {
+        "GLM_FORCE_SILENT_WARNINGS",
+        "GLM_FORCE_PURE",
+        "GLM_FORCE_SSE42",
+        "GLM_FORCE_DEFAULT_ALIGNED_GENTYPES", 
+    }
+
     --platform defines
     filter{ "platforms:Executable"}
         defines "OO_EXECUTABLE"

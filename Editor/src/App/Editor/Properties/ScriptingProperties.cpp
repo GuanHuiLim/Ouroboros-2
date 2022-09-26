@@ -1,10 +1,24 @@
+/************************************************************************************//*!
+\file          ScriptingProperties.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Properties for displaying scripting variables on the editor. 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #include "pch.h"
 #include "ScriptingProperties.h"
 #include <string>
 #include <Utility/UUID.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-//#include <imgui/imgui/misc/cpp/imgui_stdlib.h>
+
 #include <glm/gtc/type_ptr.hpp>
 #include "Quaternion/include/Quaternion.h"
 #include "Ouroboros/ECS/GameObject.h"
@@ -46,17 +60,17 @@ ScriptingProperties::ScriptingProperties()
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::VECTOR2, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			glm::vec2 data = v.TryGetRuntimeValue().GetValue<glm::vec2>();
-			editing = ImGui::DragFloat2(v.name.c_str(), glm::value_ptr(data),0.1f);
+			oo::ScriptValue::vec2_type data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::vec2_type>();
+			editing = ImGui::DragFloat2(v.name.c_str(), reinterpret_cast<float*>(&data),0.1f);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+            if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::VECTOR3, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			glm::vec3 data = v.TryGetRuntimeValue().GetValue<glm::vec3>();
-			editing = ImGui::DragFloat3(v.name.c_str(), glm::value_ptr(data), 0.1f);
+            oo::ScriptValue::vec3_type data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::vec3_type>();
+			editing = ImGui::DragFloat3(v.name.c_str(), reinterpret_cast<float*>(&data), 0.1f);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+            if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::ENUM, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{

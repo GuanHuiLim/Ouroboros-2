@@ -191,7 +191,7 @@ namespace oo
                 // SetFieldValue
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
-                    glm::vec2 vec = value.GetValue<glm::vec2>();
+                    vec2_type vec = value.GetValue<vec2_type>();
                     float xValue = vec.x;
                     float yValue = vec.y;
                     MonoClass* vecClass = ScriptEngine::GetClass("System.Numerics", "System.Numerics", "Vector2");
@@ -219,7 +219,7 @@ namespace oo
                         MonoClassField* yField = mono_class_get_field_from_name(typeClass, "Y");
                         mono_field_get_value(fieldObj, yField, &y);
                     }
-                    return ScriptValue(glm::vec2{ x, y });
+                    return ScriptValue(vec2_type{ x, y });
                 },
                 // GetObjectValue
                 [](MonoObject* object, ScriptValue const& refInfo)
@@ -233,14 +233,14 @@ namespace oo
                         MonoClassField* yField = mono_class_get_field_from_name(objClass, "Y");
                         mono_field_get_value(object, yField, &y);
                     }
-                    return ScriptValue(glm::vec2{ x, y });
+                    return ScriptValue(vec2_type{ x, y });
                 },
                 // AddToList
                 [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
                 {
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
-                    glm::vec2 vec2 = value.GetValue<glm::vec2>();
+                    vec2_type vec2 = value.GetValue<vec2_type>();
                     MonoClass* klass = ScriptEngine::GetClass("System.Numerics", "System.Numerics", "Vector2");
                     MonoObject* entry = ScriptEngine::CreateObject(klass);
 
@@ -261,7 +261,7 @@ namespace oo
                 // SetFieldValue
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
-                    glm::vec3 vec = value.GetValue<glm::vec3>();
+                    vec3_type vec = value.GetValue<vec3_type>();
                     float xValue = vec.x;
                     float yValue = vec.y;
                     float zValue = vec.z;
@@ -294,7 +294,7 @@ namespace oo
                         MonoClassField* zField = mono_class_get_field_from_name(typeClass, "Z");
                         mono_field_get_value(fieldObj, zField, &z);
                     }
-                    return ScriptValue(glm::vec3{ x, y, z });
+                    return ScriptValue(vec3_type{ x, y, z });
                 },
                 // GetObjectValue
                 [](MonoObject* object, ScriptValue const& refInfo)
@@ -310,14 +310,14 @@ namespace oo
                         MonoClassField* zField = mono_class_get_field_from_name(objClass, "Z");
                         mono_field_get_value(object, zField, &z);
                     }
-                    return ScriptValue(glm::vec3{ x, y, z });
+                    return ScriptValue(vec3_type{ x, y, z });
                 },
                 // AddToList
                 [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
                 {
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
-                    glm::vec3 vec3 = value.GetValue<glm::vec3>();
+                    vec3_type vec3 = value.GetValue<vec3_type>();
                     MonoClass* klass = ScriptEngine::GetClass("System.Numerics", "System.Numerics", "Vector3");
                     MonoObject* entry = ScriptEngine::CreateObject(klass);
 
@@ -1223,10 +1223,10 @@ namespace oo
         }
         break;
         case ScriptValue::type_enum::VECTOR2:
-            valueList.emplace_back(glm::vec2{ 0 });
+            valueList.emplace_back(vec2_type{ 0, 0 });
             break;
         case ScriptValue::type_enum::VECTOR3:
-            valueList.emplace_back(glm::vec3{ 0 });
+            valueList.emplace_back(vec3_type{ 0, 0, 0 });
             break;
         //case ScriptValue::type_enum::COLOUR:
         //    valueList.emplace_back(oo::Colour{ 1, 1, 1, 1 });

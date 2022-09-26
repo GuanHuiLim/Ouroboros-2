@@ -1,3 +1,19 @@
+/************************************************************************************//*!
+\file           Serializer.cpp
+\project        Editor
+\author         Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par            email: junxiang.leong\@digipen.edu
+\date           September 26, 2022
+\brief          Saves scenes/prefabs
+				Loads scenes/prefabs
+				Saving individual object
+				Loading individual object
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "Serializer.h"
 
@@ -19,9 +35,9 @@
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include <Ouroboros/Vulkan/RendererComponent.h>
-
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
+#include <Ouroboros/Vulkan/LightComponent.h>
 
 Serializer::Serializer()
 {
@@ -45,11 +61,11 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
-	
+	AddLoadComponent<oo::LightingComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
-	
+
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
 		{
@@ -223,7 +239,8 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::GameObjectComponent>(go, val,doc);
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
-	SaveComponent<oo::MeshRendererComponent>(go, val,doc);
+	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
+	SaveComponent<oo::LightingComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 
 	SaveComponent<oo::RigidbodyComponent>(go, val, doc);

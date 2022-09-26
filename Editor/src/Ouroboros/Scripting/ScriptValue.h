@@ -161,6 +161,19 @@ namespace oo
             void Invoke();
         };
 
+        struct vec2_type
+        {
+            float x;
+            float y;
+        };
+
+        struct vec3_type
+        {
+            float x;
+            float y;
+            float z;
+        };
+
         using value_type = std::variant<
             std::monostate,
             bool,
@@ -168,8 +181,8 @@ namespace oo
             float,
             std::string,
             enum_type,
-            glm::vec2,
-            glm::vec3,
+            vec2_type,
+            vec3_type,
             //oo::Colour,
             UUID,
             component_type,
