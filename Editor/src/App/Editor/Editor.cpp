@@ -32,6 +32,7 @@ Editor::Editor()
 	ImGuiManager::Create("PenTool", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoDecoration), [this] {this->m_pentool.Show(); });
 	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
 	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
+	ImGuiManager::Create("Animator Controller", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animatorControllerView.Show(); });
 
 	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
 	ImGuiManager::Create("Input Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_inputManager.Show(); });

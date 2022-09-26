@@ -28,8 +28,12 @@ constexpr ImGuiID popUpOptionId = 600;
 class AnimatorControllerView
 {
 public:	//Default Functions
-	AnimatorControllerView()  = default;
-	~AnimatorControllerView() = default;
+	AnimatorControllerView() {
+		m_Context = ed::CreateEditor();
+	}
+	~AnimatorControllerView() {
+		ed::DestroyEditor(m_Context);
+	}
 
 	void Show();
 
@@ -103,6 +107,7 @@ private: //Member Variables
 	LinkInfo* m_selectedLink		  = nullptr;
 
 	bool m_displayAnimatorEditor	  = true;
+	bool m_firstFrame				  = true;
 	bool m_displayAnimatorInspector   = false;
 	bool m_displayNodeEditor		  = false;	//activates when Node link is clicked
 	bool m_displayLinkEditor		  = false;	//activates when Transition link is clicked
