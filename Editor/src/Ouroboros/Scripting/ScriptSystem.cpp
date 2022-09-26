@@ -6,6 +6,8 @@
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Scene/EditorController.h"
 
+#include "Ouroboros/ECS/ECS.h"
+
 namespace oo
 {
     // Scene specific script stuff
@@ -42,12 +44,7 @@ namespace oo
         }
         scriptDatabase.Initialize(executionOrder);
 
-        static Ecs::Query query = []()
-        {
-            Ecs::Query query;
-            query.with<GameObjectComponent, ScriptComponent>().build();
-            return query;
-        }();
+        static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, ScriptComponent>();
 
         isPlaying = true;
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
@@ -119,12 +116,7 @@ namespace oo
     }
     void ScriptSystem::RefreshScriptInfoAll()
     {
-        static Ecs::Query query = []()
-        {
-            Ecs::Query query;
-            query.with<GameObjectComponent, ScriptComponent>().build();
-            return query;
-        }();
+        static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, ScriptComponent>();
 
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
@@ -376,12 +368,7 @@ namespace oo
 
     void ScriptSystem::UpdateAllScriptFieldsWithInfo()
     {
-        static Ecs::Query query = []()
-        {
-            Ecs::Query query;
-            query.with<GameObjectComponent, ScriptComponent>().build();
-            return query;
-        }();
+        static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, ScriptComponent>();
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
                 if (gameObject.Id == GameObject::ROOTID)
@@ -391,11 +378,11 @@ namespace oo
     }
     void ScriptSystem::UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script)
     {
-        for (auto& [key, scriptInfo] : script.GetScriptInfoAll())
+        for (auto& [scriptKey, scriptInfo] : script.GetScriptInfoAll())
         {
             MonoObject* scriptObj = scriptDatabase.RetrieveObject(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
             MonoClass* scriptClass = ScriptEngine::GetClass("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
-            for (auto& [key, fieldInfo] : scriptInfo.fieldMap)
+            for (auto& [fieldKey, fieldInfo] : scriptInfo.fieldMap)
             {
                 MonoClassField* field = mono_class_get_field_from_name(scriptClass, fieldInfo.name.c_str());
                 ScriptValue::SetFieldValue(scriptObj, field, fieldInfo.value);

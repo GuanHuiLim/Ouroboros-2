@@ -30,6 +30,7 @@ Technology is prohibited.
 #include "Testing/TestLayers/InputDebugLayer.h"
 #include "Testing/TestLayers/MainDebugLayer.h"
 #include "Testing/TestLayers/AssetDebugLayer.h"
+#include "Testing/TestLayers/FPSDisplayLayer.h"
 
 // Core Essential Layers
 #include "App/CoreLayers/SceneLayer.h"
@@ -77,9 +78,10 @@ public:
         m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
 
         //Debug Layers
-        //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
 #ifdef OO_EDITOR
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
+        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());
 #endif
         // Main Layers
         m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());

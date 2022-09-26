@@ -25,8 +25,14 @@ Technology is prohibited.
 //#include "vk_engine.h"
 struct SDL_Window;
 
+
 namespace oo
 {
+    // forward declaration
+    class WindowResizeEvent;
+    class WindowMinimizeEvent;
+    class WindowRestoredEvent;
+
     class VulkanContext //: public GraphicsContext
     {
     public:
@@ -60,6 +66,10 @@ namespace oo
         std::unique_ptr<ModelData> cubeMesh;
         std::unique_ptr<ModelData> planeMesh;
 
-        //static VulkanEngine vkEngine;
+        bool m_minimized = false;
+    private:
+        void OnWindowResize(WindowResizeEvent* e);
+        void OnWindowMinimize(WindowMinimizeEvent* e);
+        void OnWindowRestored(WindowRestoredEvent* e);
     };
 }

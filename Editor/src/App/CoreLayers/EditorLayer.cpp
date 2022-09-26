@@ -25,9 +25,24 @@ Technology is prohibited.
 #include <Ouroboros/Core/Application.h>
 #include <Ouroboros/Vulkan/VulkanContext.h>
 
+#include "Ouroboros/Audio/Audio.h"
+
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
 //ASSET MANAGER EXAMPLE
 //static oo::AssetManager manager = oo::AssetManager("./assets");
 //static oo::Asset myImageAsset;
+//static oo::Asset myModelAsset;
+
+//ASSET MANAGER EXAMPLE
+//void recurPrintModel(Node* curr, int level = 0)
+//{
+//	for (int i = 0; i < level; ++i)
+//		std::cout << "\t";
+//	std::cout << curr->name << "\n";
+//	for (auto child : curr->children)
+//		recurPrintModel(child, level + 1);
+//}
 
 void EditorLayer::OnAttach()
 {
@@ -39,16 +54,35 @@ void EditorLayer::OnAttach()
 	//ASSET MANAGER EXAMPLE
 	/*try
 	{
-		//Asset myFile = manager.LoadFile("assets/infile.txt");
 		manager.LoadDirectory("./");
 		auto v = manager.LoadName("Arcadia.png", false);
 		if (v.size() > 0)
-			myImageAsset = v[0];
+			myImageAsset = v[0];*/
+
+		/*v = manager.LoadName("Map_Meshes_greybox.fbx", false);
+		if (v.size() > 0)
+			myModelAsset = v[0];
+		if (myModelAsset.GetType() == oo::AssetInfo::Type::Model)
+		{
+			auto& md = myModelAsset.GetSubmodel(0);
+			std::cout << "root: " << md.name << "\n";
+		}*/
+
+		/*if (myModelAsset.HasData())
+		{
+			auto md = myModelAsset.GetData<ModelData*>();
+			std::cout << "scene info: " << md->sceneInfo->name << "\n";
+			std::cout << "mesh count: " << md->sceneMeshCount << "\n";
+			recurPrintModel(md->sceneInfo);
+		}
 	}
-	catch (...)
+	catch (oo::AssetNotFoundException)
 	{
 		std::cout << "not found\n";
 	}*/
+
+	// Looping music
+	oo::audio::PlayGlobalLooping("./assets/01 - Into the Light.ogg");
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -56,6 +90,10 @@ void EditorLayer::OnAttach()
 
 void EditorLayer::OnUpdate()
 {
+	static constexpr const char* const editor_ui_update = "editor_ui_update";
+	TRACY_TRACK_PERFORMANCE(editor_ui_update);
+	TRACY_PROFILE_SCOPE_NC(editor_ui_update, tracy::Color::Blue);
+
 #ifndef OO_END_PRODUCT
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
@@ -69,6 +107,14 @@ void EditorLayer::OnUpdate()
 	/*if (myImageAsset.HasData())
 	{
 		ImGui::Image(reinterpret_cast<void*>(myImageAsset.GetData<ImTextureID>()), ImVec2(100, 100));
+	}*/
+
+	//AUDIO EXAMPLE
+	/*static int i = 0;
+	if (++i > 1000)
+	{
+		i = 0;
+		audio.PlayOneShot("./assets/Faith_Speak_01.ogg");
 	}*/
 
 	//top menu bar
@@ -90,6 +136,8 @@ void EditorLayer::OnUpdate()
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
+
+
 	}
     //m_editor.ShowAllWidgets();
 
@@ -97,4 +145,6 @@ void EditorLayer::OnUpdate()
     //    ImGui::ShowDemoWindow(&m_demo);
 
 
+	TRACY_PROFILE_SCOPE_END();
+	TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_update);
 }
