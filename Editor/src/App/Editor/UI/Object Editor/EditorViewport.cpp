@@ -60,7 +60,15 @@ void EditorViewport::Show()
 
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
-	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty())
+
+	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
+	{
+		return;
+	}
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
+	if (scene->IsValid(*gameobject) == false)
 	{
 		return;
 	}
@@ -92,8 +100,6 @@ void EditorViewport::Show()
 	ImGuizmo::SetGizmoSizeClipSpace(originalGuizmoSize * gizmoSize);
 
 	ImGuizmo::BeginFrame();
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
 	oo::TransformComponent& transform = gameobject->GetComponent<oo::TransformComponent>();
 
 	glm::vec3 mScale = transform.GetGlobalScale();

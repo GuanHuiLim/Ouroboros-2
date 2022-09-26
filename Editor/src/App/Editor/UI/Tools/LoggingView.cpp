@@ -126,8 +126,6 @@ void LoggingView::Show()
 /*********************************************************************************//*!
 \brief    A callback function to attach to the spdlog's callback sink
  
-\TODO     Modify it such that it adds items that come from the same file
-
 \param    str
 			the formatted message from spdlog
 \param    type

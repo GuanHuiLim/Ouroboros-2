@@ -35,7 +35,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			rapidjson::Value name;
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
 			rapidjson::Value data(rapidjson::kArrayType);
-			auto data_value = sfi.value.GetValue<glm::vec2>();
+			auto data_value = sfi.value.GetValue<oo::ScriptValue::vec2_type>();
 			data.PushBack(data_value.x, doc.GetAllocator());
 			data.PushBack(data_value.y, doc.GetAllocator());
 			val.AddMember(name, data, doc.GetAllocator());
@@ -45,7 +45,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			rapidjson::Value name;
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
 			rapidjson::Value data(rapidjson::kArrayType);
-			auto data_value = sfi.value.GetValue<glm::vec3>();
+			auto data_value = sfi.value.GetValue<oo::ScriptValue::vec3_type>();
 			data.PushBack(data_value.x, doc.GetAllocator());
 			data.PushBack(data_value.y, doc.GetAllocator());
 			data.PushBack(data_value.z, doc.GetAllocator());
@@ -75,13 +75,15 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::VECTOR2, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
 			auto arr = val.GetArray();
-			glm::vec2 vec(arr[0].GetFloat(), arr[1].GetFloat());
+            oo::ScriptValue::vec2_type vec(arr[0].GetFloat(), arr[1].GetFloat());
+			//glm::vec2 vec(arr[0].GetFloat(), arr[1].GetFloat());
 			sfi.value.SetValue(vec);
 		});
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::VECTOR3, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
 			auto arr = val.GetArray();
-			glm::vec3 vec(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat());
+            oo::ScriptValue::vec3_type vec(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat());
+			//glm::vec3 vec(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat());
 			sfi.value.SetValue(vec);
 		});
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ENUM, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
