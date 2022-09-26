@@ -26,6 +26,8 @@ Technology is prohibited.
 #include "Ouroboros/ECS/DeferredComponent.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
+
+#include "OO_Vulkan/src/DebugDraw.h"
 namespace oo
 {
     PhysicsSystem::PhysicsSystem()
@@ -138,6 +140,34 @@ namespace oo
             phy.object.setPosOrientation( { pos.x, pos.y, pos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z  } );
         });
 
+        // TODO: This should be temporary soln
+        //Updating Drawing of static Box Collider's Bounds
+        static Ecs::Query boxColliderDrawQuery = []()
+        {
+            Ecs::Query query;
+            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<DeferredComponent>().build();
+            return query;
+        }();
+
+        m_world->for_each(boxColliderDrawQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
+            {
+                auto pos = tf.GetGlobalPosition();
+                auto scale = tf.GetGlobalScale();
+                auto quat = tf.GetGlobalRotationQuat();
+
+                // calculate local scale
+                bc.Bounds.min = (bc.Size * -0.5f) * scale;
+                bc.Bounds.max = (bc.Size * 0.5f) * scale;
+
+                // calculate global bounds and half extents
+                bc.GlobalBounds = { bc.Bounds.min , bc.Bounds.max };
+                auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
+                auto globalPos = pos + bc.Offset;
+
+                //TODO: Debug draw the bounds
+                DebugDraw::AddAABB({ globalPos + bc.Bounds.min , globalPos + bc.Bounds.max }, oGFX::Colors::GREEN);
+            });
+
         //Updating Static Box Collider's Bounds
         static Ecs::Query boxColliderQuery = []()
         {
@@ -167,7 +197,6 @@ namespace oo
                 //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
                 phy.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z });
                 
-                //TODO: Debug draw the bounds
             });
 
         // Update global bounds of all objects
@@ -233,6 +262,7 @@ namespace oo
                 //TODO : Toggle to enable/disable debug drawing of bounds.
                 //TODO : Debug draw the bounds
 
+                DebugDraw::AddAABB({ globalPos + bc.Bounds.min , globalPos + bc.Bounds.max }, oGFX::Colors::GREEN);
             });
 
 
