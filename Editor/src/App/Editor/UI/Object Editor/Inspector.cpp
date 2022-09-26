@@ -34,6 +34,8 @@ Technology is prohibited.
 #include <Ouroboros/Prefab/PrefabManager.h>
 #include <Ouroboros/Commands/Script_ActionCommand.h>
 
+#include <Ouroboros/Audio/AudioListenerComponent.h>
+#include <Ouroboros/Audio/AudioSourceComponent.h>
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
@@ -138,6 +140,10 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightingComponent>(gameobject);
+
+	DisplayComponent<oo::AudioListenerComponent>(gameobject);
+	DisplayComponent<oo::AudioSourceComponent>(gameobject);
+	
 	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
@@ -164,6 +170,8 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::LightingComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 
 		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 

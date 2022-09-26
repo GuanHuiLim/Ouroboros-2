@@ -29,20 +29,9 @@ Technology is prohibited.
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
-//ASSET MANAGER EXAMPLE
-//static oo::AssetManager manager = oo::AssetManager("./assets");
-//static oo::Asset myImageAsset;
-//static oo::Asset myModelAsset;
-
-//ASSET MANAGER EXAMPLE
-//void recurPrintModel(Node* curr, int level = 0)
-//{
-//	for (int i = 0; i < level; ++i)
-//		std::cout << "\t";
-//	std::cout << curr->name << "\n";
-//	for (auto child : curr->children)
-//		recurPrintModel(child, level + 1);
-//}
+// TEMP AUDIO MAYBE
+static oo::AssetManager manager = oo::AssetManager("./assets");
+static oo::Asset mySoundAsset;
 
 void EditorLayer::OnAttach()
 {
@@ -51,38 +40,24 @@ void EditorLayer::OnAttach()
 	ImGuiManager::InitAssetsAll();
 #endif
 
-	//ASSET MANAGER EXAMPLE
-	/*try
-	{
-		manager.LoadDirectory("./");
-		auto v = manager.LoadName("Arcadia.png", false);
-		if (v.size() > 0)
-			myImageAsset = v[0];*/
+    // TEMP AUDIO MAYBE
+    try
+    {
+        manager.LoadDirectory("./");
 
-		/*v = manager.LoadName("Map_Meshes_greybox.fbx", false);
-		if (v.size() > 0)
-			myModelAsset = v[0];
-		if (myModelAsset.GetType() == oo::AssetInfo::Type::Model)
-		{
-			auto& md = myModelAsset.GetSubmodel(0);
-			std::cout << "root: " << md.name << "\n";
-		}*/
-
-		/*if (myModelAsset.HasData())
-		{
-			auto md = myModelAsset.GetData<ModelData*>();
-			std::cout << "scene info: " << md->sceneInfo->name << "\n";
-			std::cout << "mesh count: " << md->sceneMeshCount << "\n";
-			recurPrintModel(md->sceneInfo);
-		}
-	}
-	catch (oo::AssetNotFoundException)
-	{
-		std::cout << "not found\n";
-	}*/
-
-	// Looping music
-	oo::audio::PlayGlobalLooping("./assets/01 - Into the Light.ogg");
+        auto results = manager.LoadName("05 - Faith.ogg");
+        if (results.size() > 0)
+        {
+            mySoundAsset = results.at(0);
+            FMOD::Channel* channel = oo::audio::PlayGlobalLooping(mySoundAsset.GetData<oo::SoundID>());
+            if (channel)
+                FMOD_ERR_HAND(channel->setVolume(0.5f));
+        }
+    }
+    catch (oo::AssetNotFoundException)
+    {
+        std::cout << "not found\n";
+    }
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -102,20 +77,6 @@ void EditorLayer::OnUpdate()
     else
 	    m_editor.Update();
 #endif
-
-	//ASSET MANAGER EXAMPLE
-	/*if (myImageAsset.HasData())
-	{
-		ImGui::Image(reinterpret_cast<void*>(myImageAsset.GetData<ImTextureID>()), ImVec2(100, 100));
-	}*/
-
-	//AUDIO EXAMPLE
-	/*static int i = 0;
-	if (++i > 1000)
-	{
-		i = 0;
-		audio.PlayOneShot("./assets/Faith_Speak_01.ogg");
-	}*/
 
 	//top menu bar
 	//Editor::MenuBar();

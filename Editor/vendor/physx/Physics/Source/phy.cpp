@@ -130,9 +130,12 @@ PhysxWorld::~PhysxWorld()
     }
 
     // release rigidstatic or rigiddynamic
+    /*
     for(auto const& j : all_objects) {
         
         PhysxObject* underlying_obj = &m_objects[j.second];
+
+        underlying_obj->m_shape->release();
 
         if (underlying_obj->rigidID == rigid::rstatic)
             underlying_obj->rs.rigidStatic->release();
@@ -140,6 +143,7 @@ PhysxWorld::~PhysxWorld()
         else if (underlying_obj->rigidID == rigid::rdynamic)
             underlying_obj->rd.rigidDynamic->release();
     }
+    */
 
     scene->release();
 }
@@ -194,7 +198,6 @@ void PhysxWorld::removeInstance(PhysicsObject obj)
     // check what need to release 
     
     // release rigidstatic or rigiddynamic
-    /*
     if (all_objects.contains(obj.id)) {
 
         PhysxObject* underlying_obj = &m_objects[all_objects.at(obj.id)];
@@ -205,9 +208,8 @@ void PhysxWorld::removeInstance(PhysicsObject obj)
         else if (underlying_obj->rigidID == rigid::rdynamic)
             underlying_obj->rd.rigidDynamic->release();
     }
-    */
-
-    // release shpe
+    
+    // release shape
     m_objects[obj.id].m_shape->release();
 
     // check/find the id from the obj vector then if match 
