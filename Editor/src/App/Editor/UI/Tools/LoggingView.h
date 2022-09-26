@@ -19,11 +19,32 @@ Technology is prohibited.
 class LoggingView
 {
 public:
+	/*********************************************************************************//*!
+	\brief Default Constructor for LoggingView Editor Tool.
+	
+	*//**********************************************************************************/
 	LoggingView();
+
+	/*********************************************************************************//*!
+	\brief Shows the LoggingView Editor Tool in the Editor.
+	
+	*//**********************************************************************************/
 	void Show();
 	
 protected:
-	static void AddItem(const std::string&,char,const std::string&);
+
+	/*********************************************************************************//*!
+	\brief    A callback function to attach to the spdlog's callback sink
+
+	\param    str
+				the formatted message from spdlog
+	\param    type
+				the logging type
+	\param    filename
+				the file where the log came from
+
+	*//**********************************************************************************/
+	static void AddItem(const std::string& str,char type,const std::string& filename);
 private:
 	struct MessageData
 	{
@@ -46,18 +67,79 @@ private:
 	MessageData m_msgitem;
 	std::string m_msgtype;
 
+	/*********************************************************************************//*!
+	\brief Creates a Selectable Object for the Log Message based on the MessageData 
+		   received.
+	
+	\param item
+				Reference to the MessageData that Log possess
+
+	\param msg_processor
+				Processes the MessageData into a string to be output onto the Editor
+
+	\param interacted
+				Checks if the Log Message Item has been selected/interacted
+
+	\param textCount
+				Total number of characters the editor can display,
+				if message character is more than the textCount, message will be wrapped
+
+	\param imageSize
+				the Size of the Icon Image (Used for Collapsed Logs)
+
+	*//**********************************************************************************/
 	void LogSelectable(MessageData& item, 
 					   std::string msg_processor, 
 					   bool interacted, 
 					   size_t textCount,
 					   float imageSize = 0.0f);
 
+	/*********************************************************************************//*!
+	 \brief Displays the Expanded View of the LoggingView.
+	 
+	 \param msgitem
+				Reference to the MessageData that Log possess
+
+	 \param msg_processor
+				Processes the MessageData into a string to be output onto the Editor
+
+	 \param interacted
+				Checks if the Log Message Item has been selected/interacted
+
+	 \param textCount
+				Total number of characters the editor can display,
+				if message character is more than the textCount, message will be wrapped
+
+	 \param textSize
+				the Size of the Icon Image (Used for Collapsed Logs)
+
+	*//**********************************************************************************/
 	void DrawExpanded(MessageData& msgitem,
 					  std::string msg_processor, 
 					  bool interacted, 
 					  size_t textCount,
 					  ImVec2 textSize);
 
+	/*********************************************************************************//*!
+	 \brief Displays the Collapsed View of the LoggingView.
+
+	 \param msgitem
+				Reference to the MessageData that Log possess
+
+	 \param msg_processor
+				Processes the MessageData into a string to be output onto the Editor
+
+	 \param interacted
+				Checks if the Log Message Item has been selected/interacted
+
+	 \param textCount
+				Total number of characters the editor can display,
+				if message character is more than the textCount, message will be wrapped
+
+	 \param textSize
+				the Size of the Icon Image (Used for Collapsed View)
+
+	*//**********************************************************************************/
 	void DrawCollapsed(MessageData& msgitem,
 					   std::string msg_processor,
 					   bool interacted,
@@ -65,6 +147,17 @@ private:
 					   ImVec2 textSize,
 					   float imageSize);
 
+	/*********************************************************************************//*!
+	 \brief Function to determine the type of the particular log.
+	 
+	 \param type
+				Type of Message for the Particular Log
+
+	 \return 
+				New string that contains the Type of Log together with the log message
+				eg. Ouroboros LOG_TRACE(object)
+
+	 *//**********************************************************************************/
 	std::string LogMessageType(char type);
 };
 
