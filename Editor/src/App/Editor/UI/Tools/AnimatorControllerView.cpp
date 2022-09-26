@@ -33,7 +33,10 @@ void AnimatorControllerView::Show()
 
     // Submit Links
     for (auto& linkInfo : m_links)
+    {
         ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
+    }
+
 
     //
     // 2) Handle interactions
@@ -105,32 +108,7 @@ void AnimatorControllerView::Show()
     }
 
     // Handle deletion action
-    if (ed::BeginDelete())
-    {
-        // There may be many links marked for deletion, let's loop over them.
-        ed::LinkId deletedLinkId;
-        while (ed::QueryDeletedLink(&deletedLinkId))
-        {
-            // If you agree that link can be deleted, accept deletion.
-            if (ed::AcceptDeletedItem())
-            {
-                // Then remove link from your data.
-                for (auto& link : m_links)
-                {
-                    if (link.id == deletedLinkId)
-                    {
-                        m_links.erase(&link);
-                        m_nextLinkId--;
-                        break;
-                    }
-                }
-            }
-
-            // You may reject link deletion by calling:
-            // ed::RejectDeletedItem();
-        }
-    }
-    ed::EndDelete(); // Wrap up deletion action
+    OnDelete();
 
     // End of interaction with editor.
 
@@ -192,7 +170,11 @@ void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, Li
         {
             ed::LinkId temp = selectedLink->id;
             auto id = std::find_if(m_links.begin(), m_links.end(), [temp](auto& link) {return link.id == temp; });
-            std::string linkRelation = std::to_string(static_cast<size_t>(selectedLink->inputID)) + "->" + std::to_string(static_cast<size_t>(selectedLink->outputID));
+
+            Pin* input = FindPin(selectedLink->inputID);
+            Pin* output = FindPin(selectedLink->outputID);
+
+            std::string linkRelation = input->name + "->" + output->name;
             ImGui::Text(linkRelation.c_str());
             static bool hasExitTime = false;
             static float exitTime = 0.75f;
@@ -200,7 +182,7 @@ void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, Li
             static float transitionDuration = 0.1f;
             ImVec2 textsize = ImGui::CalcTextSize("a");
             ImGui::Text("Has Exit Time");
-            ImGui::SameLine(textsize.x * 20);
+            ImGui::SameLine(textsize.x * 25);
             ImGui::Checkbox("##hasexittime", &hasExitTime);
             if (ImGui::TreeNode("Settings"))
             {
@@ -229,34 +211,89 @@ void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, Li
             static float speed = 1;
             ImGui::Text("Name");
             ImVec2 textsize = ImGui::CalcTextSize("a");
-            ImGui::SameLine(textsize.x * 6);
+            ImGui::SameLine(textsize.x * 15);
             ImGui::InputText("##name", const_cast<char*>(id->name.c_str()), 256);
             ImGui::Separator();
             ImGui::Text("Animation");
-            ImGui::SameLine(textsize.x * 10);
+            ImGui::SameLine(textsize.x * 15);
             ImGui::InputText("##animation", animation, 256);
             ImGui::Text("Speed");
-            ImGui::SameLine(textsize.x * 10);
+            ImGui::SameLine(textsize.x * 15);
             ImGui::InputFloat("##speed", &speed);
         }
         ImGui::End();
     }
 }
 
-void AnimatorControllerView::DisplayAnimatorEditor(float panelWidth)
-{
-}
-
 AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& uniqueId, const char* _name, ImVec2 _pos)
 {
     m_nodes.emplace_back(uniqueId++, _name);
-    m_nodes.back().Input.emplace_back(uniqueId++, &m_nodes.back(), "", PinType::Flow);
-    m_nodes.back().Output.emplace_back(uniqueId++, &m_nodes.back(), "", PinType::Flow);
+    m_nodes.back().Input.emplace_back(uniqueId++, &m_nodes.back(), _name, PinType::Flow);
+    m_nodes.back().Output.emplace_back(uniqueId++, &m_nodes.back(), _name, PinType::Flow);
     m_nodes.back().pos = _pos;
 
     BuildNode(&m_nodes.back());
 
     return &m_nodes.back();
+}
+
+void AnimatorControllerView::OnDelete()
+{
+    if (ed::BeginDelete())
+    {
+        ed::LinkId linkId = 0;
+        while (ed::QueryDeletedLink(&linkId))
+        {
+            if (ed::AcceptDeletedItem())
+            {
+                auto id = std::find_if(m_links.begin(), m_links.end(), [linkId](auto& link) { return link.id == linkId; });
+                if (id != m_links.end())
+                    m_links.erase(id);
+            }
+        }
+
+        ed::NodeId nodeId = 0;
+        while (ed::QueryDeletedNode(&nodeId))
+        {
+            if (ed::AcceptDeletedItem())
+            {
+                auto id = std::find_if(m_nodes.begin(), m_nodes.end(), [nodeId](auto& node) { return node.id == nodeId; });
+                if (id->name == "Entry" || id->name == "Exit" || id->name == "Any State")
+                    break;
+                if (id != m_nodes.end())
+                {
+                    for (const auto& inputPin : id->Input)
+                    {
+                        for (size_t i = 0; i < m_links.size(); i++)
+                        {
+                            if (m_links[i].outputID == inputPin.id)
+                            {
+                                ed::DeleteLink(m_links[i].id);
+                                auto iter = std::find_if(m_links.begin(), m_links.end(), [&](const auto& link) { return link.id == m_links[i].id; });
+                                m_links.erase(iter);
+                                continue;
+                            }
+                        }
+                    }
+                    for (const auto& outputPin : id->Output)
+                    {
+                        for (size_t i = 0; i < m_links.size(); i++)
+                        {
+                            if (m_links[i].inputID == outputPin.id)
+                            {
+                                ed::DeleteLink(m_links[i].id);
+                                auto iter = std::find_if(m_links.begin(), m_links.end(), [&](const auto& link) { return link.id == m_links[i].id; });
+                                m_links.erase(iter);
+                                continue;
+                            }
+                        }
+                    }
+                    m_nodes.erase(id);
+                }
+            }
+        }
+    }
+    ed::EndDelete();
 }
 
 AnimatorControllerView::Pin* AnimatorControllerView::FindPin(ed::PinId id)

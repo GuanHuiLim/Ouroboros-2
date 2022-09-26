@@ -128,7 +128,6 @@ private: //Member Functions
 
 	void DisplayParameters();
 	void DisplayInspector(bool& displayAnimatorInspector, LinkInfo* selectedLink, ed::NodeId* selectedNode);
-	void DisplayAnimatorEditor(float panelWidth);	//Refer to ShowLeftPane
 	void OnCreate();
 	NodeInfo* CreateNode(int& uniqueId, const char* _name, ImVec2 _pos);
 	void CreateLink(int& uniqueId);
