@@ -4,7 +4,7 @@
 \author         Tay Yan Chong Clarence, t.yanchongclarence, 620008720 | code contribution (100%)
 \par            email: t.yanchongclarence\@digipen.edu
 \date           Sep 22, 2022
-\brief          Contains the declaration for the Audio System.
+\brief          Contains the declaration for the Audio framework.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

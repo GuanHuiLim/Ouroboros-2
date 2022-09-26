@@ -4,7 +4,7 @@
 \author         Tay Yan Chong Clarence, t.yanchongclarence, 620008720 | code contribution (100%)
 \par            email: t.yanchongclarence\@digipen.edu
 \date           Sep 22, 2022
-\brief          Contains the definition for the Audio System.
+\brief          Contains the definition for the Audio framework.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -21,6 +21,8 @@ Technology is prohibited.
 #include <limits>
 
 #include <fmod_errors.h>
+
+#include "Ouroboros/ECS/ECS.h"
 
 namespace oo
 {
@@ -77,6 +79,8 @@ namespace oo
         {
             // Update system
             FMOD_ERR_HAND(system->update());
+
+            // Handle components
         }
 
         void ShutDown()
