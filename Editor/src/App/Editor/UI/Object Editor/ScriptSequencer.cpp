@@ -64,7 +64,32 @@ void ScriptSequencer::Show()
 		int counter = 0;
 		for (auto& item : oo::ScriptManager::GetBeforeDefaultOrder())
 		{
-			ImGui::PushID(++counter);
+			ImGui::PushID(counter);
+			if (dragging)
+			{
+				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
+				ImGui::Separator();
+				ImGui::SetCursorPos(curr_cursor_pos);
+				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, { 0,5.0f });
+				if (ImGui::BeginDragDropTarget())
+				{
+					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BEFORE");
+					if (payload)
+					{
+						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
+						try
+						{
+							oo::ScriptManager::RemoveBeforeDefaultOrder(sci);
+							oo::ScriptManager::InsertBeforeDefaultOrder(sci, counter);
+						}
+						catch (std::exception const& e)
+						{
+							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+						}
+					}
+					ImGui::EndDragDropTarget();
+				}
+			}
 			if (ImGui::SmallButton("X"))
 			{
                 try
@@ -88,32 +113,8 @@ void ScriptSequencer::Show()
 					ImGui::Text(item.ToString().c_str());
 				ImGui::EndDragDropSource();
 			}
-			if (dragging)
-			{
-				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
-				ImGui::Separator();
-				ImGui::SetCursorPos(curr_cursor_pos);
-				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, {0,5.0f});
-				if (ImGui::BeginDragDropTarget())
-				{
-					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BEFORE");
-					if (payload)
-					{
-						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
-						try
-						{
-							oo::ScriptManager::RemoveBeforeDefaultOrder(sci);
-							oo::ScriptManager::InsertBeforeDefaultOrder(sci,counter);
-						}
-						catch (std::exception const& e)
-						{
-							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
-						}
-					}
-					ImGui::EndDragDropTarget();
-				}
-			}
-
+			
+			++counter;
 			ImGui::PopID();
 		}
 		ImGui::EndGroup();
@@ -165,7 +166,32 @@ void ScriptSequencer::Show()
 		int counter = 0;
 		for (auto& item : oo::ScriptManager::GetAfterDefaultOrder())
 		{
-			ImGui::PushID(++counter);
+			ImGui::PushID(counter);
+			if (dragging)
+			{
+				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
+				ImGui::Separator();
+				ImGui::SetCursorPos(curr_cursor_pos);
+				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, { 0,5.0f });
+				if (ImGui::BeginDragDropTarget())
+				{
+					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("AFTER");
+					if (payload)
+					{
+						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
+						try
+						{
+							oo::ScriptManager::RemoveAfterDefaultOrder(sci);
+							oo::ScriptManager::InsertAfterDefaultOrder(sci, counter);
+						}
+						catch (std::exception const& e)
+						{
+							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+						}
+					}
+					ImGui::EndDragDropTarget();
+				}
+			}
 			if (ImGui::SmallButton("X"))
 			{
                 try
@@ -189,32 +215,9 @@ void ScriptSequencer::Show()
 				ImGui::Text(item.ToString().c_str());
 				ImGui::EndDragDropSource();
 			}
-			if (dragging)
-			{
-				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
-				ImGui::Separator();
-				ImGui::SetCursorPos(curr_cursor_pos);
-				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, {0,5.0f});
-				if (ImGui::BeginDragDropTarget())
-				{
-					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("AFTER");
-					if (payload)
-					{
-						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
-						try
-						{
-							oo::ScriptManager::RemoveAfterDefaultOrder(sci);
-							oo::ScriptManager::InsertAfterDefaultOrder(sci, counter);
-						}
-						catch (std::exception const& e)
-						{
-							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
-						}
-					}
-					ImGui::EndDragDropTarget();
-				}
-			}
+			
 			ImGui::PopID();
+			++counter;
 		}
 		ImGui::EndGroup();
 		ImGui::EndChild();
