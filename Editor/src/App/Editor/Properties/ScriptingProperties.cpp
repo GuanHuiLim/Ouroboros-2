@@ -1,10 +1,24 @@
+/************************************************************************************//*!
+\file          ScriptingProperties.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Properties for displaying scripting variables on the editor. 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #include "pch.h"
 #include "ScriptingProperties.h"
 #include <string>
 #include <Utility/UUID.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-//#include <imgui/imgui/misc/cpp/imgui_stdlib.h>
+
 #include <glm/gtc/type_ptr.hpp>
 #include "Quaternion/include/Quaternion.h"
 #include "Ouroboros/ECS/GameObject.h"
