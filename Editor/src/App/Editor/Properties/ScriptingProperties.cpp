@@ -46,17 +46,19 @@ ScriptingProperties::ScriptingProperties()
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::VECTOR2, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			glm::vec2 data = v.TryGetRuntimeValue().GetValue<glm::vec2>();
+			oo::ScriptValue::vec2_type temp = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::vec2_type>();
+            glm::vec2 data(temp.x, temp.y);
 			editing = ImGui::DragFloat2(v.name.c_str(), glm::value_ptr(data),0.1f);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+            if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ oo::ScriptValue::vec2_type{ data.x, data.y } }); };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::VECTOR3, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			glm::vec3 data = v.TryGetRuntimeValue().GetValue<glm::vec3>();
+            oo::ScriptValue::vec3_type temp = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::vec3_type>();
+            glm::vec3 data(temp.x, temp.y, temp.z);
 			editing = ImGui::DragFloat3(v.name.c_str(), glm::value_ptr(data), 0.1f);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
-			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+            if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ oo::ScriptValue::vec3_type{ data.x, data.y, data.z } }); };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::ENUM, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
