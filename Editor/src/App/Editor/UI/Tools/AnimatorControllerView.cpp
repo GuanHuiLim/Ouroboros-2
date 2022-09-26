@@ -121,14 +121,20 @@ void AnimatorControllerView::Show()
     }
     ed::Resume();
 
+    ed::Suspend();
     if (ImGui::BeginPopup("Animator Editor Popup"))
     {
         if (ImGui::MenuItem("Create State"))
         {
-            //CreateNode(uniqueId);
+            CreateNode(uniqueId, "State", ImVec2(0,0));
         }
         ImGui::EndPopup();
     }
+    ed::Resume();
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
+        for (auto& link : m_links)
+            ed::Flow(link.id);
 
     ed::End();
 
