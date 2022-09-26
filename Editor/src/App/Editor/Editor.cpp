@@ -72,6 +72,7 @@ void Editor::Update()
 	{
 		m_styleEditor.InitStyle(); 
 		m_toolbar.InitAssets();
+		m_loggingView.InitAsset();
 		return true; 
 	}();
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);

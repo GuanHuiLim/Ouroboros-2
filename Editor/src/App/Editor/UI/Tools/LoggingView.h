@@ -16,15 +16,21 @@ Technology is prohibited.
 #include <unordered_map>
 #include <string>
 #include <imgui/imgui.h>
+#include "Ouroboros/Asset/Asset.h"
 class LoggingView
 {
 public:
 	LoggingView();
+
+	void InitAsset();
+
 	void Show();
 	
 protected:
 	static void AddItem(const std::string&,char,const std::string&);
 private:
+	std::unordered_map<std::string, oo::Asset> assets;
+
 	struct MessageData
 	{
 		int count = 0;
