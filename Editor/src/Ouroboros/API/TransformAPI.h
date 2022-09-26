@@ -131,7 +131,7 @@ namespace oo
     SCRIPT_API int Transform_GetChildCount(Scene::ID_type sceneID, UUID uuid)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
-        return obj->GetDirectChildCount();
+        return static_cast<int>(obj->GetDirectChildCount());
     }
 
     SCRIPT_API ComponentDatabase::IntPtr Transform_GetChild(Scene::ID_type sceneID, UUID uuid, size_t childIndex)
