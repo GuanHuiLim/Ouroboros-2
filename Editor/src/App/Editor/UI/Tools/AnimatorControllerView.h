@@ -28,10 +28,15 @@ constexpr ImGuiID popUpOptionId = 600;
 class AnimatorControllerView
 {
 public:	//Default Functions
-	AnimatorControllerView() {
+	AnimatorControllerView() 
+	{
+		CreateNode(uniqueId, "Entry", ImVec2(500, 100));
+		CreateNode(uniqueId, "Exit", ImVec2(800, 100));
+		CreateNode(uniqueId, "Any State", ImVec2(500, 0));
 		m_Context = ed::CreateEditor();
 	}
-	~AnimatorControllerView() {
+	~AnimatorControllerView() 
+	{
 		ed::DestroyEditor(m_Context);
 	}
 
@@ -61,12 +66,12 @@ private: //Member Variables
 		PinType		type;
 		PinKind		kind;
 
-		Pin(int _id, const char* _name, PinType _type):
-			id(_id), node(nullptr), name(_name), type(_type), kind(PinKind::Input)
+		Pin(int _id, NodeInfo* _node, const char* _name, PinType _type):
+			id(_id), node(_node), name(_name), type(_type), kind(PinKind::Input)
 		{
 		}
 	};
-	ImVector<Pin> m_pins;	//to be used to track which pins are used for links
+	std::vector<Pin> m_pins;	//to be used to track which pins are used for links
 
 	struct NodeInfo
 	{
@@ -76,6 +81,7 @@ private: //Member Variables
 		std::vector<Pin> Output;
 		ImColor color;
 		ImVec2 size;
+		ImVec2 pos;
 		bool selected;
 
 		std::string state;
@@ -88,7 +94,7 @@ private: //Member Variables
 		{
 		}
 	};
-	ImVector<NodeInfo> m_nodes;
+	std::vector<NodeInfo> m_nodes;
 	NodeInfo* m_selectedNode		  = nullptr;
 
 	struct LinkInfo
@@ -112,6 +118,7 @@ private: //Member Variables
 	bool m_displayNodeEditor		  = false;	//activates when Node link is clicked
 	bool m_displayLinkEditor		  = false;	//activates when Transition link is clicked
 
+	int uniqueId					  = 1;
 	int  m_nextLinkId				  = 100;	//for debugging purposes
 
 private: //Member Functions
@@ -119,13 +126,17 @@ private: //Member Functions
 	void BuildNode(NodeInfo* node);
 	void BuildNodes();
 
-	void DisplayInspector();
+	void DisplayParameters();
+	void DisplayInspector(bool& displayAnimatorInspector, LinkInfo* selectedLink, ed::NodeId* selectedNode);
 	void DisplayAnimatorEditor(float panelWidth);	//Refer to ShowLeftPane
 	void OnCreate();
-	void CreateNode(int& uniqueId);
+	NodeInfo* CreateNode(int& uniqueId, const char* _name, ImVec2 _pos);
 	void CreateLink(int& uniqueId);
 	void OnDelete();
 	void DeleteNode(int& uniqueId);
 	void DeleteLink(int& uniqueId);
 	void RightClickOptions(int& id);
+
+	//Helper Functions
+	Pin* FindPin(ed::PinId id);
 };
