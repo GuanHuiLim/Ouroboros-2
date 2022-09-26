@@ -154,6 +154,9 @@ namespace oo
         template<typename Component>
         void RemoveComponent() const;
 
+        template<>
+        void RemoveComponent<TransformComponent>() const;
+
         template<typename Component, typename...Args>
         Component& EnsureComponent(Args...args) const;
 
@@ -201,6 +204,12 @@ namespace oo
         ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
         ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
         m_scene->GetWorld().remove_component<Component>(m_entity);
+    }
+
+    template<>
+    inline void GameObject::RemoveComponent<TransformComponent>() const
+    {
+        throw "Cannot remove the transform component!";
     }
 
     template<typename Component, typename ...Args>

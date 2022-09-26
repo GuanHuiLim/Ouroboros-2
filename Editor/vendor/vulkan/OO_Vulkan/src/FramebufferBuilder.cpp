@@ -29,8 +29,8 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, VkRenderPass renderPa
 	bool swapchainTarget = textures.front()->targetSwapchain;
 	for (auto& tex : textures)
 	{
-		assert(swapchainTarget == tex->targetSwapchain, "Swapchain Target Unexpected!");
-		assert(w == tex->width && h == tex->height, "Incompatible attachment sizes!");
+		assert(swapchainTarget == tex->targetSwapchain && "Swapchain Target Unexpected!");
+		assert(w == tex->width && h == tex->height && "Incompatible attachment sizes!");
 	}
 
 	VkFramebufferCreateInfo fbInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };

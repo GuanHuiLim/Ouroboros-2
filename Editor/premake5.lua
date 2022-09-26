@@ -53,10 +53,14 @@ project "Editor"
         "%{IncludeDir.launcher}",
         "%{IncludeDir.ecs}",
         "%{IncludeDir.sharedlib}",
+        
         "%{IncludeDir.physx}",
         "%{IncludeDir.physx_foundation}",
+
         "%{IncludeDir.mono}",
         "%{IncludeDir.scripting}",
+		
+        "%{IncludeDir.fmod}",
 
         --for tracy
         "%{IncludeDir.tracy}",
@@ -73,6 +77,7 @@ project "Editor"
         -- "%{LibraryDir.physx}/Debug",
         -- "%{LibraryDir.physx}/Release",
         "%{LibraryDir.assimp}/Release",
+        "%{LibraryDir.fmod}",
     }
 
     -- linking External libraries 
@@ -202,6 +207,7 @@ project "Editor"
         links
         {
             "rttr_core_d",
+            "fmodL_vc",
         }
     
     filter "configurations:Release"
@@ -222,6 +228,7 @@ project "Editor"
         links
         {
             "rttr_core",
+            "fmod_vc",
         }
         
     filter "configurations:Production"
@@ -242,4 +249,5 @@ project "Editor"
         links
         {
             "rttr_core",
+            "fmod_vc",
         }

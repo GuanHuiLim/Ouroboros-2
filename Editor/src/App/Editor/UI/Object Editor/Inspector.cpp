@@ -203,7 +203,7 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 	ImGui::SameLine();
 	ImGui::BeginGroup();
 	ImGui::Separator();
-	ImGui::PushID(class_type.get_id());
+	ImGui::PushID(static_cast<int>(class_type.get_id()));
 
 	for (rttr::property prop : class_type.get_properties())
 	{
@@ -311,7 +311,7 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
-		ImGui::PushID(i);
+		ImGui::PushID(static_cast<int>(i));
 		rttr::variant v = sqv.get_value(i).extract_wrapped_value();
 		iter->second(main_property,tempstring, v, itemEdited, itemEndEdit);
 		if (itemEdited)

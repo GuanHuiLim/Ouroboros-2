@@ -14,7 +14,7 @@ namespace oo
 		void Redo()override;
 	private:
 		UUID parentID;
-		UUID revivedObject = -1;
+		UUID revivedObject = UUID(static_cast<uint64_t>(-1));
 		std::string data;
 	};
 

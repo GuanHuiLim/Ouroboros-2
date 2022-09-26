@@ -78,7 +78,7 @@ public:
         m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
 
         //Debug Layers
-        //m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
 #ifdef OO_EDITOR
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
 #endif

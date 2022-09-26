@@ -157,8 +157,10 @@ InspectorProperties::InspectorProperties()
 	{
 		auto value = v.get_value<oo::Asset>();
 		static ImGuiID open = 0;
-		std::string string_temp = value.GetFilePath().stem().string();
+		std::string string_temp = (value.IsValid())? value.GetFilePath().stem().string() : "Invalid Data";
 		ImGui::InputText(name.c_str(), &string_temp,ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+		//if (value.IsValid() == false)
+		//	return;
 		ImGui::SameLine();
 		ImGuiID temp = ImGui::GetItemID();
 		if (ImGui::Button("Edit"))

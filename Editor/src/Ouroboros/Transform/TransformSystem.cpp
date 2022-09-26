@@ -20,6 +20,7 @@ Technology is prohibited.
 //#include <JobSystem/src/JobSystem.h>
 
 #include "Ouroboros/ECS/GameObject.h"
+#include "Ouroboros/ECS/ECS.h"
 
 namespace oo
 {
@@ -92,23 +93,22 @@ namespace oo
         TRACY_TRACK_PERFORMANCE(transform_update);
         TRACY_PROFILE_SCOPE_NC(transform_update, tracy::Color::Gold2);
 
-        // Typical System updates
+        // Typical System updates using query//
+        /* 
+        Remember to #include "Ouroboros/ECS/ECS.h" for this wrapper functionality
 
-        // Option 1
-        //static Ecs::Query query = []()
-        //{
-        //    Ecs::Query query;
-        //    query.with<GameObjectComponent, Transform3D>().exclude<DeferredComponent>().build();
-        //    query.with<GameObjectComponent, Transform3D>().include<DeferredComponent>().build();
-        //    return query;
-        //}();
-        //world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { /*UpdateTransform(gocomp, tf); */ });
+        Option 1 : Makes with Deferred Component auto excluded
+            static Ecs::Query query = Ecs::make_query<GameObjectComponent>();
+            world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here});
+        
+        Option 2 : Makes with Deferred Component excluded
+            static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent>();
+            world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here });
 
-        // Option 2
-        //Ecs::Query query;
-        //query.with<GameObjectComponent, TransformComponent>().exclude<DeferredComponent>().build();
-        //world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { UpdateTransform(gocomp, tf); });
-            
+        NOTE: this might be extended in the future to include specific components or have 
+        various combinations. But as much as possible make_query should work for the most part.
+        */
+
         // Transform System updates via the scenegraph because the order matters
         auto const&  graph = m_scene->GetGraph();
         scenegraph::shared_pointer root_node = graph.get_root();

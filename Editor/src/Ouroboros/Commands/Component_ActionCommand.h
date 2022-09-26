@@ -52,7 +52,7 @@ inline void Component_ActionCommand<Component>::Undo()
 	if (go->HasComponent<Component>() == false)
 		return;
 	auto& comp = go->GetComponent<Component>();
-	bool valid = prop.set_value(comp, before);
+	prop.set_value(comp, before);
 }
 
 template<typename Component>
