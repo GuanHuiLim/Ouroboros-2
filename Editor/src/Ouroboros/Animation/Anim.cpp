@@ -323,8 +323,11 @@ namespace oo::Anim::internal
 		{
 			if (link->has_exit_time)
 			{
+				//if fixed duration is checked, use global timer instead
+				float selected_time = link->fixed_duration ? info.tracker.global_timer : info.tracker.normalized_timer;
+
 				//if exit time not reached continue
-				if (info.tracker.normalized_timer < link->exit_time)
+				if (selected_time < link->exit_time)
 					continue;
 				//if no conditions return link
 				if (link->conditions.empty())

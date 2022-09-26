@@ -149,6 +149,7 @@ namespace oo::Anim
 
 		bool has_exit_time{ false };
 		float exit_time{ 0.f };
+		bool fixed_duration{ false };
 		std::string name{"Unnamed Link"};
 
 		std::vector<Condition> conditions{};
