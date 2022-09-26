@@ -18,35 +18,27 @@ namespace oo
     void InputAxis::SetType(InputType newType)
     {
         type = newType;
-        switch (type)
-        {
-        default:
-            settings.negativeButton = InputAxis::INPUTCODE_INVALID;
-            settings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
-            settings.positiveButton = InputAxis::INPUTCODE_INVALID;
-            settings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
-            settings.pressesRequired = 0;
-            settings.maxGapTime = 0.0f;
-            settings.holdDurationRequired = 0.0f;
-            break;
-        }
+
+        settings.negativeButton = InputAxis::INPUTCODE_INVALID;
+        settings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
+        settings.positiveButton = InputAxis::INPUTCODE_INVALID;
+        settings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
+        settings.pressesRequired = 0;
+        settings.maxGapTime = 0.0f;
+        settings.holdDurationRequired = 0.0f;
     }
 
     void InputAxis::SetControllerType(ControllerInputType newType)
     {
 		controllerType = newType;
-		switch (type)
-		{
-		default:
-			controllerSettings.negativeButton = InputAxis::INPUTCODE_INVALID;
-			controllerSettings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
-			controllerSettings.positiveButton = InputAxis::INPUTCODE_INVALID;
-			controllerSettings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
-			controllerSettings.pressesRequired = 0;
-			controllerSettings.maxGapTime = 0.0f;
-			controllerSettings.holdDurationRequired = 0.0f;
-			break;
-		}
+
+        controllerSettings.negativeButton = InputAxis::INPUTCODE_INVALID;
+        controllerSettings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
+        controllerSettings.positiveButton = InputAxis::INPUTCODE_INVALID;
+        controllerSettings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
+        controllerSettings.pressesRequired = 0;
+        controllerSettings.maxGapTime = 0.0f;
+        controllerSettings.holdDurationRequired = 0.0f;
     }
 
     InputAxis::Tracker::Tracker(InputAxis const& axis)
@@ -77,7 +69,7 @@ namespace oo
         {
             pressGapTimeLeft -= deltaTime;
             if (pressGapTimeLeft <= 0.0f)
-                pressCount = 0.0f;
+                pressCount = 0;
         }
 
         // update the rest of the stats
@@ -122,9 +114,9 @@ namespace oo
             case InputType::MouseMovement:
                 {
                     if (axis.GetName() == "Mouse X")
-                        value = input::GetMouseDelta().first;
+                        value = static_cast<float>(input::GetMouseDelta().first);
                     else if (axis.GetName() == "Mouse Y")
-                        value = input::GetMouseDelta().second;
+                        value = static_cast<float>(input::GetMouseDelta().second);
                 }
                 break;
             default:

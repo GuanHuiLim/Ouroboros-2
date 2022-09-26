@@ -106,7 +106,7 @@ void InputManagerUI::Show()
 		else
 		{
 			key = static_cast<int>(input.GetControllerSettings().positiveButton);
-			if (DrawControllerInputUI<oo::input::ControllerButtonCode>("Direction", key))
+			if (DrawControllerInputUI<oo::input::ControllerAxisCode>("Direction", key))
 				input.GetControllerSettings().positiveButton = static_cast<oo::InputAxis::InputCode>(key);
 		}
 		unsigned controllerpressesRequired = input.GetControllerSettings().pressesRequired;
