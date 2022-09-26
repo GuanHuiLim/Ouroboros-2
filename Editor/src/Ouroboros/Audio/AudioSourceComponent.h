@@ -33,6 +33,7 @@ namespace oo
         /* Getters                                                                     */
         /* --------------------------------------------------------------------------- */
 
+        [[nodiscard]] inline Asset GetAudioClip() const { return audioClip; }
         [[nodiscard]] inline bool IsMuted() const { return muted; }
         [[nodiscard]] inline bool IsPlayOnAwake() const { return playOnAwake; }
         [[nodiscard]] inline bool IsLoop() const { return loop; }
@@ -46,6 +47,7 @@ namespace oo
         /* Setters                                                                     */
         /* --------------------------------------------------------------------------- */
 
+        void SetAudioClip(Asset a);
         void SetMuted(bool m);
         void SetPlayOnAwake(bool p);
         void SetLoop(bool l);

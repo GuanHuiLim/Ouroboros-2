@@ -18,6 +18,7 @@ Technology is prohibited.
 
 #include <rttr/registration>
 
+#include "App/Editor/Properties/UI_metadata.h"
 #include "Ouroboros/Audio/Audio.h"
 
 namespace oo
@@ -32,7 +33,16 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-    registration::class_<AudioSourceComponent>("Audio Source Component");
+    registration::class_<AudioSourceComponent>("Audio Source Component")
+        .property("Audio Clip", &AudioSourceComponent::GetAudioClip, &AudioSourceComponent::SetAudioClip)
+        (metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Audio)))
+        .property("Mute", &AudioSourceComponent::IsMuted, &AudioSourceComponent::SetMuted)
+        .property("Play On Awake", &AudioSourceComponent::IsPlayOnAwake, &AudioSourceComponent::SetPlayOnAwake)
+        .property("Loop", &AudioSourceComponent::IsLoop, &AudioSourceComponent::SetLoop)
+        .property("Volume", &AudioSourceComponent::GetVolume, &AudioSourceComponent::SetVolume)
+        (metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        .property("Pitch", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
+        (metadata(UI_metadata::DRAG_SPEED, 0.1f));
     };
 
     bool oo::AudioSourceComponent::IsPlaying() const
@@ -51,6 +61,11 @@ namespace oo
         unsigned int result;
         channel->getPosition(&result, FMOD_TIMEUNIT_MS);
         return static_cast<float>(result) / 1000;
+    }
+
+    void oo::AudioSourceComponent::SetAudioClip(Asset a)
+    {
+        audioClip = a;
     }
 
     void oo::AudioSourceComponent::SetMuted(bool m)
