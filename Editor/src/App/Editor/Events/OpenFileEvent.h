@@ -1,10 +1,10 @@
 /************************************************************************************//*!
 \file          OpenFileEvent.h
-\project       Sandbox
+\project       Editor
 \author        Leong Jun Xiang, junxiang.leong , 390007920
 \par           email: junxiang.leong\@digipen.edu
 \date          March 16, 2022
-\brief          
+\brief         Trigger this event when opening a file.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

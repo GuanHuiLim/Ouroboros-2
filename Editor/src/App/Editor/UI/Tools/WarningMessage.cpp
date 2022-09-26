@@ -1,6 +1,6 @@
 /************************************************************************************//*!
 \file          WarningView.cpp
-\project       Ouroboros
+\project       Editor
 \author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution (100%)
 \par           email: junxiang.leong\@digipen.edu
 \date          October 3, 2022
