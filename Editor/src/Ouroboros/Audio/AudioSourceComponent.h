@@ -38,6 +38,7 @@ namespace oo
         [[nodiscard]] inline bool IsLoop() const { return loop; }
         [[nodiscard]] inline float GetVolume() const { return volume; }
         [[nodiscard]] inline float GetPitch() const { return pitch; }
+        [[nodiscard]] FMOD::Channel* GetChannel() const { return channel; }
         [[nodiscard]] bool IsPlaying() const;
         [[nodiscard]] float GetPlaybackTime() const;
 

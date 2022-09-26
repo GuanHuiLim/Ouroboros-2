@@ -16,6 +16,9 @@ Technology is prohibited.
 
 #include "AudioSystem.h"
 
+#include "Ouroboros/Audio/Audio.h"
+#include "Ouroboros/Audio/AudioListenerComponent.h"
+#include "Ouroboros/Audio/AudioSourceComponent.h"
 #include "Ouroboros/ECS/ECS.h"
 
 namespace oo
@@ -26,12 +29,39 @@ namespace oo
         TRACY_TRACK_PERFORMANCE(AUDIO_UPDATE);
         TRACY_PROFILE_SCOPE_NC(AUDIO_UPDATE, tracy::Color::Aquamarine1);
 
-        // Iterate audio sources
-        static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
-        world->for_each(query, [&](AudioSourceComponent& comp, TransformComponent& tf)
+        // Iterate audio listeners
         {
-            // TODO: update
-        });
+            static Ecs::Query query = Ecs::make_query<AudioListenerComponent>();
+            bool has = false;
+            bool warned = false;
+            world->for_each(query, [&](AudioListenerComponent& al, TransformComponent& tf)
+            {
+                if (!has)
+                {
+                    auto tfPos = tf.GetGlobalPosition();
+                    FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
+                    // TODO: forward and up vectors
+                    audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, nullptr, nullptr);
+                    has = true;
+                }
+                else if (!warned)
+                {
+                    LOG_WARN("Should not have more than one Audio Listener in a scene!");
+                    warned = true;
+                }
+            });
+        }
+
+        // Iterate audio sources
+        {
+            static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
+            world->for_each(query, [&](AudioSourceComponent& as, TransformComponent& tf)
+            {
+                auto tfPos = tf.GetGlobalPosition();
+                FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
+                as.GetChannel()->set3DAttributes(&fmPos, nullptr);
+            });
+        }
 
         TRACY_PROFILE_SCOPE_END();
         TRACY_DISPLAY_PERFORMANCE_SELECTED(AUDIO_UPDATE);

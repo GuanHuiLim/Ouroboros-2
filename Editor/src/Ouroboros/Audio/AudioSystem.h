@@ -14,7 +14,6 @@ Technology is prohibited.
 
 #pragma once
 
-#include "AudioSourceComponent.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObject.h"
 

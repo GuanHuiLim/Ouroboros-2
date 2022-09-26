@@ -65,7 +65,7 @@ namespace oo
             FMOD_ERR_HAND(FMOD::System_Create(&system));
 
             // Initialise system
-            FMOD_ERR_HAND(system->init(static_cast<int>(channelCount), FMOD_INIT_NORMAL, 0));
+            FMOD_ERR_HAND(system->init(static_cast<int>(channelCount), FMOD_INIT_3D_RIGHTHANDED, 0));
 
             // Create channel groups
             FMOD_ERR_HAND(system->createChannelGroup("Global", &channelGroupGlobal));
@@ -122,7 +122,7 @@ namespace oo
             {
                 FMOD::Sound* sound;
                 FMOD_ERR_HAND(audio::GetSystem()->createSound(path.string().c_str(),
-                                                              FMOD_LOOP_NORMAL,
+                                                              FMOD_LOOP_NORMAL | FMOD_3D,
                                                               nullptr,
                                                               &sound));
                 sounds[id] = sound;
@@ -148,6 +148,7 @@ namespace oo
                 return nullptr;
 
             FMOD::Sound* sound = sounds.at(id);
+            FMOD_ERR_HAND(sound->setMode(FMOD_3D_HEADRELATIVE));
             FMOD::Channel* channel;
             FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
             channel->setLoopCount(0);
@@ -160,6 +161,7 @@ namespace oo
                 return nullptr;
 
             FMOD::Sound* sound = sounds.at(id);
+            FMOD_ERR_HAND(sound->setMode(FMOD_3D_HEADRELATIVE));
             FMOD::Channel* channel;
             FMOD_ERR_HAND(system->playSound(sound, channelGroupGlobal, false, &channel));
             channel->setLoopCount(loopCount);
