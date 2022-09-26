@@ -35,6 +35,9 @@ Editor::Editor()
 	Serializer::Init();//runs the init function
 	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
+
+	
+
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
 	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
 	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
@@ -68,6 +71,7 @@ void Editor::Update()
 	static bool b = [this]() 
 	{
 		m_styleEditor.InitStyle(); 
+		m_toolbar.InitAssets();
 		return true; 
 	}();
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
