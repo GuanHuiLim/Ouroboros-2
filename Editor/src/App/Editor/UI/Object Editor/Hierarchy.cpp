@@ -366,7 +366,8 @@ void Hierarchy::NormalView()
 	{
 		m_previewPrefab = true;
 		m_curr_sceneFilepath = scene->GetFilePath();
-		OpenFileEvent ofe(prefabobj->GetComponent<oo::PrefabComponent>().prefab_filePath);
+		auto complete_path = Project::GetPrefabFolder() / prefabobj->GetComponent<oo::PrefabComponent>().prefab_filePath;
+		OpenFileEvent ofe(complete_path);
 		oo::EventManager::Broadcast(&ofe);
 	}
 }

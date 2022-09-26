@@ -92,6 +92,11 @@ void GraphicsBatch::GenerateBatches()
 			AppendBatch(m_batches[Batch::ZPREPASS], s_scratchBuffer);
 		}
 
+		if (ent.flags & Flags::EMITTER)
+		{
+			AppendBatch(m_batches[Batch::LIGHT_SPOT], s_scratchBuffer);
+		}
+
 		// append to the batches
 		AppendBatch(m_batches[Batch::ALL_OBJECTS], s_scratchBuffer);
 	}

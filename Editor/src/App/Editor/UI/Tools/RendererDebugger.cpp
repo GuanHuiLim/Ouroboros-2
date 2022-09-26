@@ -31,7 +31,7 @@ void RendererDebugger::Show()
 {
 	auto* graphics_world = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraphicsWorld();
 	int counter = 0;
-	for (auto& lights : graphics_world->m_HardcodedOmniLights)
+	for (auto& lights : graphics_world->GetAllOmniLightInstances())
 	{
 		++counter;
 		
