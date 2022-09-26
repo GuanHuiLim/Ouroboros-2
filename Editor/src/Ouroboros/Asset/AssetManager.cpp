@@ -438,9 +438,11 @@ namespace oo
             };
             asset.info->onAssetDestroy = [fp](AssetInfo& self)
             {
-                // TODO: Unload mesh
                 if (self.data)
+                {
+                    delete self.GetData<ModelData*>();
                     delete self.data;
+                }
                 self.data = nullptr;
                 self.dataTypeOffsets.clear();
             };
