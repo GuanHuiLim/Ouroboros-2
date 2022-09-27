@@ -22,6 +22,9 @@ struct DebugDraw
 	// Debug draws a circular disc, using a direction/normal. The 2 basis vectors will be implicitly generated internally.
 	static void AddDisc(const glm::vec3& center, float radius, const glm::vec3& normal, const oGFX::Color& color = oGFX::Colors::WHITE);
 	
+	// Debug draws the grid for editor. It will always be at origin.. if needed can modify
+	static void DrawYGrid(float gridSize, float gapSize, const oGFX::Color& col = oGFX::Colors::LIGHT_GREY);
+	
 	// Add more as needed...
 
 	// These are experimental, use at your own risk...
