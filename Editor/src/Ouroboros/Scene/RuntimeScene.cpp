@@ -24,6 +24,8 @@ Technology is prohibited.
 #include "Ouroboros/Animation/AnimationSystem.h"
 //#include "Ouroboros/Vulkan/RendererSystem.h"
 
+#include "Ouroboros/Physics/PhysicsSystem.h"
+
 namespace oo
 {
     RuntimeScene::RuntimeScene(std::string const& filepath)
@@ -37,13 +39,14 @@ namespace oo
     {
         Scene::Init();
 
-
         constexpr const char* const registration = "registration";
         {
             TRACY_PROFILE_SCOPE(registration);
 
             GetWorld().Add_System<InputSystem>()->Initialize();
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
+
+            GetWorld().Add_System<PhysicsSystem>()->Init();
 
             //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
@@ -74,11 +77,11 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
-        //constexpr const char* const loading_world = "loading world";
+        constexpr const char* const loading_world = "loading world";
         {
-            /*TRACY_PROFILE_SCOPE(loading_world);
+            TRACY_PROFILE_SCOPE(loading_world);
             LoadFromFile();
-            TRACY_PROFILE_SCOPE_END();*/
+            TRACY_PROFILE_SCOPE_END();
         }
 
         StartSimulation();
@@ -103,6 +106,14 @@ namespace oo
                  GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
                  TRACY_PROFILE_SCOPE_END();
             }
+
+            constexpr const char* const physics_runtime_update = "Physics Runtime Update";
+            {
+                TRACY_PROFILE_SCOPE(physics_runtime_update);
+                GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
+                TRACY_PROFILE_SCOPE_END();
+            }
+
             constexpr const char* const animation_update = "Animation Update";
             {
                 TRACY_PROFILE_SCOPE(animation_update);
