@@ -40,10 +40,14 @@ Technology is prohibited.
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
+
+#include <Ouroboros/Physics/PhysicsComponent.h>
+#include <Ouroboros/Physics/RigidbodyComponent.h>
+#include <Ouroboros/Physics/ColliderComponents.h>
+
 #include <Ouroboros/Scripting/ScriptComponent.h>
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
-//#include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/RendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 
@@ -52,7 +56,6 @@ Technology is prohibited.
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
-	
 }
 
 void Inspector::Show()
@@ -125,10 +128,19 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
-	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
+
+
+	DisplayComponent<oo::PhysicsComponent>(gameobject);
+	DisplayComponent<oo::RigidbodyComponent>(gameobject);
+	//DisplayComponent<oo::ColliderComponent>(gameobject);
+	DisplayComponent<oo::SphereColliderComponent>(gameobject);
+	DisplayComponent<oo::BoxColliderComponent>(gameobject);
+
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
+	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
+
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	
@@ -149,17 +161,22 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::BeginListBox("##AddComponents", { x,y });
 		ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f },true);
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+
+		selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
+		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
+
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 
-		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
-
-		//selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 
 		selected |= AddScriptsSelectable(gameobject);
+
 		ImGui::EndChild();
 
 		ImGui::PushItemWidth(-75.0f);

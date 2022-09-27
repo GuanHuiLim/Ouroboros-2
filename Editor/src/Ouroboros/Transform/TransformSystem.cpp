@@ -38,11 +38,14 @@ namespace oo
             glm::mat4 parent_inverse = glm::inverse(parentGlobal) * tf.GetGlobalMatrix();
             tf.SetLocalTransform(parent_inverse);   // decompose to this values.
         }
-        // Check for valid parent
-        else if (m_scene->IsValid(go->GetParentUUID()))
+        else 
         {
+            ASSERT_MSG(m_scene->IsValid(go->GetParentUUID()) == false, "Assumes we always have proper parent");
+
+            // Check for valid parent
+            auto& parentTf = go->GetParent().Transform();
             // Check if transform has changed locally or if parent has changed [optimization step]
-            if (tf.HasChanged() || go->GetParent().Transform().HasChanged())
+            if (tf.HasChanged() || parentTf.HasChanged())
             {
                 tf.m_hasChanged = true;
                 tf.m_globalTransform.Transform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_localTransform.Transform;
@@ -51,7 +54,6 @@ namespace oo
                 //tf.SetGlobalTransform(parent_global * tf.m_localTransform.m_transform);
             }
         }
-
 
         TRACY_PROFILE_SCOPE_END();
         TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);

@@ -16,12 +16,14 @@ namespace oo
     {
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
+        EventManager::Subscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
     }
 
     ScriptSystem::~ScriptSystem()
     {
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
+        EventManager::Unsubscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
 
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
@@ -102,6 +104,14 @@ namespace oo
         if (scene.FindWithInstanceID(e->Id) == nullptr)
             return;
         InvokeForObject(e->Id, "OnDisable");
+    }
+    void ScriptSystem::OnObjectDestroyed(GameObject::OnDestroy* e)
+    {
+        UUID uuid = e->go->GetComponent<GameObjectComponent>().Id;
+        if (scene.FindWithInstanceID(uuid) == nullptr)
+            return;
+        scriptDatabase.Delete(uuid);
+        componentDatabase.Delete(uuid);
     }
 
     void ScriptSystem::ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
