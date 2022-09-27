@@ -52,6 +52,18 @@ namespace oo
         };
 
         /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Retrieves the data stored by the asset of a given type.
+        /// </summary>
+        /// <typeparam name="T">The type of data.</typeparam>
+        /// <returns>The data.</returns>
+        template<typename T>
+        [[nodiscard]] inline T GetData() const;
+
+        /* --------------------------------------------------------------------------- */
         /* Members                                                                     */
         /* --------------------------------------------------------------------------- */
 
@@ -83,7 +95,7 @@ namespace oo
 
         static constexpr AssetID ID_NULL = 0;
         static constexpr Extension EXT_META = ".meta";
-        static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".ogg" };
+        static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".dds" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
         static constexpr ExtensionList<1> EXTS_MODEL = { ".fbx" };
@@ -109,7 +121,7 @@ namespace oo
         /* Getters                                                                     */
         /* --------------------------------------------------------------------------- */
 
-        [[nodiscard]] inline bool IsValid() const { return id == ID_NULL; };
+        [[nodiscard]] inline bool IsValid() const { return id != ID_NULL; };
         [[nodiscard]] inline const AssetID& GetID() const { return id; };
         [[nodiscard]] inline const auto& GetFilePath() const { return info->contentPath; };
         [[nodiscard]] inline const auto& GetMetaFilePath() const { return info->metaPath; };
@@ -191,18 +203,24 @@ namespace oo
     };
 
     template<typename T>
-    inline T Asset::GetData() const
+    inline T AssetInfo::GetData() const
     {
         // Segmented structure reinterpretation
-        if (info->dataTypeOffsets.find(std::type_index(typeid(T))) != info->dataTypeOffsets.end())
+        if (dataTypeOffsets.find(std::type_index(typeid(T))) != dataTypeOffsets.end())
         {
-            size_t offset = info->dataTypeOffsets[std::type_index(typeid(T))];
-            char* ptr = reinterpret_cast<char*>(info->data);
+            size_t offset = dataTypeOffsets.at(std::type_index(typeid(T)));
+            char* ptr = reinterpret_cast<char*>(data);
             return *reinterpret_cast<T*>(ptr + offset);
         }
 
         // Direct reinterpretation
-        return *reinterpret_cast<T*>(info->data);
+        return *reinterpret_cast<T*>(data);
+    }
+
+    template<typename T>
+    inline T Asset::GetData() const
+    {
+        return info->GetData<T>();
     }
 
     class AssetDataNotFoundException : public std::exception

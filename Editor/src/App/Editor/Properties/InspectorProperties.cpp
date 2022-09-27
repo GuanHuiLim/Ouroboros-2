@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file          InspectorProperties.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Contains the properties of how each value type will be displayed on
+			   the editor.
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "InspectorProperties.h"
 #include "UI_metadata.h"
@@ -157,8 +171,10 @@ InspectorProperties::InspectorProperties()
 	{
 		auto value = v.get_value<oo::Asset>();
 		static ImGuiID open = 0;
-		std::string string_temp = value.GetFilePath().stem().string();
+		std::string string_temp = (value.IsValid())? value.GetFilePath().stem().string() : "Invalid Data";
 		ImGui::InputText(name.c_str(), &string_temp,ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+		//if (value.IsValid() == false)
+		//	return;
 		ImGui::SameLine();
 		ImGuiID temp = ImGui::GetItemID();
 		if (ImGui::Button("Edit"))

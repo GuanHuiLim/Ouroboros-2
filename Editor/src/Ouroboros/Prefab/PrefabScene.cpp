@@ -18,7 +18,7 @@ Technology is prohibited.
 #include <fstream>
 namespace oo
 {
-    PrefabScene::PrefabScene(std::string const& filepath)
+    PrefabScene::PrefabScene(std::string const& )
         : Scene{ "Prefab Scene (For Instancing)" }
     {
     }

@@ -1,3 +1,19 @@
+/************************************************************************************//*!
+\file           Serializer.cpp
+\project        Editor
+\author         Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par            email: junxiang.leong\@digipen.edu
+\date           September 26, 2022
+\brief          Saves scenes/prefabs
+				Loads scenes/prefabs
+				Saving individual object
+				Loading individual object
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "Serializer.h"
 
@@ -19,6 +35,7 @@
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include <Ouroboros/Vulkan/RendererComponent.h>
+#include "Ouroboros/Vulkan/LightComponent.h"
 Serializer::Serializer()
 {
 }
@@ -41,6 +58,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
+	AddLoadComponent<oo::LightingComponent>();
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
 		{
@@ -56,6 +74,7 @@ void Serializer::SaveScene(oo::Scene& scene)
 	std::stack<scenenode::raw_pointer> s;
 	std::stack<scenenode::handle_type> parents;
 	scenenode::raw_pointer curr = sg.get_root().get();
+
 	parents.push(curr->get_handle());
 	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
 	{
@@ -167,7 +186,7 @@ void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenen
 		//bulk of code here
 		rapidjson::Value name;
 		std::string id = std::to_string(curr->get_handle());
-		name.SetString(id.c_str(),id.size(),doc.GetAllocator());
+		name.SetString(id.c_str(),static_cast<rapidjson::SizeType>(id.size()),doc.GetAllocator());
 
 		rapidjson::Value gameobject_start;
 		gameobject_start.SetObject();
@@ -213,7 +232,8 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::GameObjectComponent>(go, val,doc);
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
-	SaveComponent<oo::MeshRendererComponent>(go, val,doc);
+	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
+	SaveComponent<oo::LightingComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 }
 

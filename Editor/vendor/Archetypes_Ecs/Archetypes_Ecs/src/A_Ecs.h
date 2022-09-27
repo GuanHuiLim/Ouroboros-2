@@ -56,6 +56,71 @@ namespace Ecs
 			return ComponentArray<ActualT>();
 		}
 	}
+
+	template<typename T>
+	constexpr ComponentInfo ComponentInfo::build() {
+
+		ComponentInfo info{};
+		info.hash = build_hash<T>();
+		info.name = typeid(T).name();
+
+		if constexpr (std::is_empty_v<T>)
+		{
+			info.align = 0;
+			info.size = 0;
+		}
+		else {
+			info.align = alignof(T);
+			info.size = sizeof(T);
+		}
+
+		info.constructor = [](void* p)
+		{
+			new(p) T{};
+		};
+		info.destructor = [](void* p)
+		{
+			((T*)p)->~T();
+		};
+
+		info.copy_constructor = [](void* self, void* copy)
+		{
+			new(self) T{ *(static_cast<T*>(copy)) };
+		};
+
+		info.move_constructor = [](void* self, void* other)
+		{
+			new(self) T{ std::move(*(static_cast<T*>(other))) };
+		};
+
+		info.move_assignment = [](void* self, void* other)
+		{
+			T* ptr = static_cast<T*>(self);
+			*ptr = std::move(*(static_cast<T*>(other)));
+		};
+
+		info.get_component = [](IECSWorld& world, EntityID id)
+		{
+			T& comp = world.get_component<T>(id);
+			return static_cast<void*>(&comp);
+		};
+		info.broadcast_AddComponentEvent = [](IECSWorld& world, EntityID id)
+		{
+			size_t hash = IECSWorld::get_component_hash<T>();
+			T& comp = world.get_component<T>(id);
+			ComponentEvent evnt{ id,comp };
+			world.onAddComponent_Callbacks[hash].Broadcast(&evnt);
+		};
+		info.broadcast_RemoveComponentEvent = [](IECSWorld& world, EntityID id)
+		{
+			size_t hash = IECSWorld::get_component_hash<T>();
+			T& comp = world.get_component<T>(id);
+			ComponentEvent evnt{ id,comp };
+			world.onRemoveComponent_Callbacks[hash].Broadcast(&evnt);
+		};
+
+		return info;
+	};
 }
 
 #include <algorithm>
@@ -77,12 +142,27 @@ namespace Ecs::internal
 	template<typename C>
 	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, C& component);
 
+	static inline const ComponentInfo* get_ComponentInfo_WithNameHash(size_t const hash)
+	{
+		if (componentInfo_map.contains(hash) == false)
+		{
+			return nullptr;
+		}
+
+		return &(componentInfo_map[hash]);
+	}
 
 	template<typename... Type>
 	struct type_list {};
 
+	/*template<typename T, typename... Type>
+	using type_list_2nd_onwards = type_list<Type...>;*/
+
 	template<typename Class, typename Ret, typename... Args>
 	type_list<Args...> args(Ret(Class::*)(Args...) const);
+
+	template<typename Class, typename Ret, typename... Args>
+	type_list<Args...> args_with_entity(Ret(Class::*)(EntityID, Args...) const);
 
 	template<typename T>
 	static const ComponentInfo* get_ComponentInfo() {
@@ -829,6 +909,7 @@ namespace Ecs::internal
 			function(eidptr[i]);
 		}
 	}
+
 	template<typename... Args, typename Func>
 	void entity_chunk_iterate_with_entity_and_component(DataChunk* chnk, Func&& function)
 	{
@@ -856,10 +937,12 @@ namespace Ecs::internal
 		entity_chunk_iterate_with_entity<Func>(chunk, function);
 	}
 
-	template<typename Func>
-	void unpack_chunk_with_entity_and_component(DataChunk* chunk, Func&& function)
+
+	template<typename ...Args, typename Func>
+	void unpack_chunk_with_entity_and_component(type_list<Args...> types, DataChunk* chunk, Func&& function)
 	{
-		entity_chunk_iterate_with_entity_and_component<Func>(chunk, function);
+		(void)types;
+		entity_chunk_iterate_with_entity_and_component<Args...>(chunk, function);
 	}
 
 	template<typename ...Args>
@@ -998,6 +1081,12 @@ namespace Ecs::internal
 
 	}
 
+	inline void broadcast_add_component_callback(IECSWorld* world, EntityID eid, size_t const hash)
+	{
+		const ComponentInfo* type = get_ComponentInfo_WithNameHash(hash);
+		type->broadcast_AddComponentEvent(*world, eid);
+	}
+
 	template<typename C>
 	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, C& component)
 	{
@@ -1006,6 +1095,12 @@ namespace Ecs::internal
 		ComponentEvent evnt{ eid,component };
 		world->onRemoveComponent_Callbacks[hash].Broadcast(&evnt);
 
+	}
+
+	inline void broadcast_remove_component_callback(IECSWorld* world, EntityID eid, size_t const hash)
+	{
+		const ComponentInfo* type = get_ComponentInfo_WithNameHash(hash);
+		type->broadcast_RemoveComponentEvent(*world, eid);
 	}
 
 	template<typename C>
@@ -1095,6 +1190,13 @@ namespace Ecs
 
 	inline void IECSWorld::destroy(EntityID eid)
 	{
+		Archetype* arch = entities[eid.index].chunk->header.archetype;
+		for (auto& compIdentifier : arch->componentList->components)
+		{
+			internal::broadcast_remove_component_callback(this, eid, compIdentifier.hash.name_hash);			
+		}
+
+
 		internal::broadcast_destroy_entity_callback(this, eid);
 		internal::destroy_entity(this, eid);
 	}
@@ -1128,7 +1230,7 @@ namespace Ecs
 	template<typename Func>
 	void IECSWorld::for_each_entity_and_component(IQuery& query, Func&& function)
 	{
-		using params = decltype(internal::args(&Func::operator()));
+		using params = decltype(internal::args_with_entity(&Func::operator()));
 
 		internal::iterate_matching_archetypes(this, query, [&](Archetype* arch) {
 
@@ -1156,7 +1258,7 @@ namespace Ecs
 	{
 		internal::add_component_to_entity<C>(this, id, comp);
 
-		internal::broadcast_add_component_callback(this, id, get_component<C>(id));
+		//internal::broadcast_add_component_callback(this, id, get_component<C>(id));
 	}
 
 	template<typename C>
@@ -1189,13 +1291,13 @@ namespace Ecs
 	}
 
 	template<typename C>
-	size_t IECSWorld::get_component_hash()
+	static inline size_t IECSWorld::get_component_hash()
 	{
 		return internal::get_component_name_hash<C>();
 	}
 
 	template<typename C>
-	ComponentInfo const* IECSWorld::get_component_info() const
+	ComponentInfo const* IECSWorld::get_component_info()
 	{
 		return internal::get_ComponentInfo<C>();
 	}
@@ -1247,18 +1349,25 @@ namespace Ecs
 	{
 		Archetype* arch = nullptr;
 		//empty component list will use the hardcoded null archetype
+		static std::vector< const ComponentInfo*> types = { internal::get_ComponentInfo<Comps>()... };
 		if constexpr (sizeof...(Comps) != 0) {
-			static const ComponentInfo* types[] = { internal::get_ComponentInfo<Comps>()... };
-			constexpr size_t num = (sizeof(types) / sizeof(*types));
+			constexpr size_t num = sizeof...(Comps);
 
-			internal::sort_ComponentInfos(types, num);
-			arch = internal::find_or_create_archetype(this, types, num);
+			internal::sort_ComponentInfos(&types.front(), num);
+			arch = internal::find_or_create_archetype(this, &types.front(), num);
 		}
 		else {
 			arch = get_empty_archetype();
 		}
 
 		auto entity = internal::create_entity_with_archetype(arch);
+
+		if constexpr (sizeof...(Comps) != 0)
+		{	//broadcast add component event
+			for (auto& type : types)
+				type->broadcast_AddComponentEvent(*this, entity);
+		}
+
 		internal::broadcast_add_entity_callback(this, entity);
 		return entity;
 	}

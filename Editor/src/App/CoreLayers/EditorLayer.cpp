@@ -25,9 +25,13 @@ Technology is prohibited.
 #include <Ouroboros/Core/Application.h>
 #include <Ouroboros/Vulkan/VulkanContext.h>
 
-//ASSET MANAGER EXAMPLE
-//static oo::AssetManager manager = oo::AssetManager("./assets");
-//static oo::Asset myImageAsset;
+#include "Ouroboros/Audio/Audio.h"
+
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
+// TEMP AUDIO MAYBE
+static oo::AssetManager manager = oo::AssetManager("./assets");
+static oo::Asset mySoundAsset;
 
 void EditorLayer::OnAttach()
 {
@@ -36,19 +40,24 @@ void EditorLayer::OnAttach()
 	ImGuiManager::InitAssetsAll();
 #endif
 
-	//ASSET MANAGER EXAMPLE
-	/*try
-	{
-		//Asset myFile = manager.LoadFile("assets/infile.txt");
-		manager.LoadDirectory("./");
-		auto v = manager.LoadName("Arcadia.png", false);
-		if (v.size() > 0)
-			myImageAsset = v[0];
-	}
-	catch (...)
-	{
-		std::cout << "not found\n";
-	}*/
+    // TEMP AUDIO MAYBE
+    try
+    {
+        manager.LoadDirectory("./");
+
+        auto results = manager.LoadName("05 - Faith.ogg");
+        if (results.size() > 0)
+        {
+            mySoundAsset = results.at(0);
+            FMOD::Channel* channel = oo::audio::PlayGlobalLooping(mySoundAsset.GetData<oo::SoundID>());
+            if (channel)
+                FMOD_ERR_HAND(channel->setVolume(0.5f));
+        }
+    }
+    catch (oo::AssetNotFoundException)
+    {
+        std::cout << "not found\n";
+    }
 }
 
 // TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
@@ -56,6 +65,10 @@ void EditorLayer::OnAttach()
 
 void EditorLayer::OnUpdate()
 {
+	static constexpr const char* const editor_ui_update = "editor_ui_update";
+	TRACY_TRACK_PERFORMANCE(editor_ui_update);
+	TRACY_PROFILE_SCOPE_NC(editor_ui_update, tracy::Color::Blue);
+
 #ifndef OO_END_PRODUCT
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
@@ -64,12 +77,6 @@ void EditorLayer::OnUpdate()
     else
 	    m_editor.Update();
 #endif
-
-	//ASSET MANAGER EXAMPLE
-	/*if (myImageAsset.HasData())
-	{
-		ImGui::Image(reinterpret_cast<void*>(myImageAsset.GetData<ImTextureID>()), ImVec2(100, 100));
-	}*/
 
 	//top menu bar
 	//Editor::MenuBar();
@@ -90,6 +97,8 @@ void EditorLayer::OnUpdate()
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
+
+
 	}
     //m_editor.ShowAllWidgets();
 
@@ -97,4 +106,6 @@ void EditorLayer::OnUpdate()
     //    ImGui::ShowDemoWindow(&m_demo);
 
 
+	TRACY_PROFILE_SCOPE_END();
+	TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_update);
 }

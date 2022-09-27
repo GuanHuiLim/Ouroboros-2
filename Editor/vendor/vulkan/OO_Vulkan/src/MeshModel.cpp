@@ -198,30 +198,7 @@ void gfxModel::loadNode(Node* parent,const aiScene* scene, const aiNode& node, u
 			aiMesh* aimesh = scene->mMeshes[node.mMeshes[i]];
 			//newNode->meshes.push_back( processMesh(aimesh, scene, cpuModel.vertices, cpuModel.indices));
 
-			if (scene->HasAnimations() &&aimesh->HasBones())
-			{
-				for (size_t x = 0; x < aimesh->mNumBones; x++)
-				{
-					auto& bone = aimesh->mBones[x];
-					std::string name(bone->mName.C_Str());
-
-					auto iter = cpuModel.strToBone.find(name);
-					if (iter != cpuModel.strToBone.end())
-					{
-						// Duplicate bone name!
-						assert(true);
-					}
-					cpuModel.strToBone[name].offset = aiMat4_to_glm(bone->mOffsetMatrix);
-
-					std::cout << "Bone :" << name << std::endl;
-					std::cout << "Bone weights:" << bone->mNumWeights << std::endl;
-					for (size_t y = 0; y < bone->mNumWeights; y++)
-					{
-						std::cout << "\t v" << bone->mWeights[y].mVertexId << ":" << bone->mWeights[y].mWeight << std::endl;
-					}
-				}
-				
-			}
+		
 		}
 	}
 
@@ -260,9 +237,13 @@ void gfxModel::updateOffsets(uint32_t idxOffset, uint32_t vertOffset)
 	//}
 }
 
-oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices)
+oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, ModelData& mData)
 {
 	oGFX::Mesh* mesh = new oGFX::Mesh;
+
+	auto& vertices = mData.vertices;
+	auto& indices = mData.indices;
+
 	mesh->vertexOffset  = static_cast<uint32_t>(vertices.size());
 	mesh->indicesOffset = static_cast<uint32_t>(indices.size());
 	mesh->vertexCount += aimesh->mNumVertices;
@@ -290,8 +271,41 @@ oGFX::Mesh* gfxModel::processMesh(aiMesh* aimesh, const aiScene* scene, std::vec
 			const auto& color = aimesh->mColors[0][i];
 			vertex.col = glm::vec4{ color.r, color.g, color.b, color.a };
 		}
+		vertices.emplace_back(vertex);	
+	}
 
-		vertices.emplace_back(vertex);
+	if (scene->HasAnimations() &&aimesh->HasBones())
+	{
+		for (size_t x = 0; x < aimesh->mNumBones; x++)
+		{
+			auto& bone = aimesh->mBones[x];
+			std::string name(bone->mName.C_Str());
+
+			auto iter = mData.strToBone.find(name);
+			if (iter != mData.strToBone.end())
+			{
+				// Duplicate bone name!
+				//assert(false);
+			}
+			else
+			{
+				auto sz = mData.bones.size();
+				mData.bones.push_back({});
+				BoneOffset bo;
+				bo.transform = aiMat4_to_glm(bone->mOffsetMatrix);
+				mData.boneOffsets.emplace_back(bo);
+				mData.strToBone[name] = static_cast<uint32_t>(sz);
+			}
+			//cpuModel.boneWeights.resize()
+
+			std::cout << "Bone :" << name << std::endl;
+			std::cout << "Bone weights:" << bone->mNumWeights << std::endl;
+			for (size_t y = 0; y < bone->mNumWeights; y++)
+			{
+				//std::cout << "\t v" << bone->mWeights[y].mVertexId << ":" << bone->mWeights[y].mWeight << std::endl;
+			}
+		}
+
 	}
 
 	uint32_t indicesCnt{ 0 };
@@ -362,18 +376,85 @@ void ModelData::ModelSceneLoad(const aiScene* scene,
 		for (size_t i = 0; i < node.mNumMeshes; i++)
 		{
 			curNodes[i] = new Node();
-			curNodes[i]->parent = parent;
+			curNodes[i]->parent = targetParent;
 			curNodes[i]->meshRef = node.mMeshes[i];
 			curNodes[i]->name = node.mName.C_Str();
 			curNodes[i]->transform = xform;
 		}
 		// setup nodes
-		auto child = parent->children.insert(std::end(parent->children),std::begin(curNodes), std::end(curNodes));
+		auto child = targetParent->children.insert(std::end(targetParent->children),std::begin(curNodes), std::end(curNodes));
 		targetParent = *child;
 	}		
 	for (size_t i = 0; i < node.mNumChildren; i++)
 	{
 		ModelSceneLoad(scene, *node.mChildren[i], targetParent, xform);
+	}
+}
+
+void ModelData::ModelBoneLoad(const aiScene* scene, const aiNode& node, uint32_t vertOffset)
+{	
+	uint32_t sumVerts{};
+	if (node.mNumMeshes > 0)
+	{
+		for (size_t i = 0; i < node.mNumMeshes; i++)
+		{
+			auto & aimesh = scene->mMeshes[node.mMeshes[i]];
+			
+			if (aimesh->HasBones())
+			{
+				for (size_t x = 0; x < aimesh->mNumBones; x++)
+				{
+					auto& bone = aimesh->mBones[x];
+					std::string name(bone->mName.C_Str());
+
+					size_t idx = 0;
+					auto iter = strToBone.find(name);
+					if (iter != strToBone.end())
+					{
+						// Duplicate bone name!
+						idx = static_cast<size_t>(iter->second);
+						//assert(false);
+					}
+					else
+					{
+						idx = bones.size();
+						strToBone[name] = static_cast<uint32_t>(idx);
+						BoneOffset bo;
+						bo.transform = aiMat4_to_glm(bone->mOffsetMatrix);
+						boneOffsets.emplace_back(bo);
+						bones.push_back({});
+					}
+
+					std::cout << "Mesh :" << aimesh->mName.C_Str() << std::endl;
+					std::cout << "Bone weights:" << bone->mNumWeights << std::endl;
+					for (size_t y = 0; y < bone->mNumWeights; y++)
+					{
+						auto& weight = bone->mWeights[y];
+						auto& vertWeight = boneWeights[weight.mVertexId];
+						auto& vertex = vertices[static_cast<size_t>(weight.mVertexId) + vertOffset + sumVerts];
+
+						auto bNum = vertex.boneWeights++;
+						//assert(bNum < 4); // CANNOT SUPPORT MORE THAN 4 BONES
+						if (bNum < 4)
+						{
+							vertWeight.boneWeights[bNum] = weight.mWeight;
+							vertWeight.boneIdx[bNum] = static_cast<uint32_t>(idx);
+						}
+						else
+						{
+							std::cout << "Tried to load bones: " << bNum << std::endl;
+						}
+						//std::cout << "\t v" << bone->mWeights[y].mVertexId << ":" << bone->mWeights[y].mWeight << std::endl;
+					}
+				}
+
+			}			
+			sumVerts += aimesh->mNumVertices;
+		}
+	}		
+	for (size_t i = 0; i < node.mNumChildren; i++)
+	{
+		ModelBoneLoad(scene, *node.mChildren[i], vertOffset);
 	}
 }
 

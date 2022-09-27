@@ -1,3 +1,21 @@
+/************************************************************************************//*!
+\file          Hierarchy.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Allows the user to Edit the entity in scene.
+			   Add object
+			   Delete object
+			   Make Prefab
+			   Update Prefab
+			   Open Prefab Editor
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include <pch.h>
 #include <stack>
 #include "Hierarchy.h"
@@ -5,6 +23,10 @@
 //utility
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Utility/ImGuiStylePresets.h"
+
+//other UI functions
+#include "App/Editor/UI/Tools/MeshHierarchy.h"
+
 
 //imgui
 #include <imgui/imgui.h>
@@ -28,6 +50,7 @@
 #include <Ouroboros/Commands/CommandStackManager.h>
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
 		{ ImColor(0.75f,0.2f,0.3f),ImColor(0.3f,0.75f,0.2f),ImColor(0.2f,0.3f,0.75f) },
@@ -37,11 +60,19 @@ Hierarchy::Hierarchy()
 
 void Hierarchy::Show()
 {
+
+	static constexpr const char* const hierarchy_ui_update = "hierarchy_ui_update";
+	TRACY_TRACK_PERFORMANCE(hierarchy_ui_update);
+	TRACY_PROFILE_SCOPE_NC(hierarchy_ui_update, tracy::Color::BlueViolet);
+
 	ImGui::BeginChild("search bar", { 0,40 }, false);
 	SearchFilter();
 	ImGui::EndChild();
 
 	m_filter.empty() ? NormalView() : FilteredView();
+
+	TRACY_PROFILE_SCOPE_END();
+	TRACY_DISPLAY_PERFORMANCE_SELECTED(hierarchy_ui_update);
 }
 
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
@@ -115,7 +146,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 {
-	ImGui::PushID(node.get_handle());
+	ImGui::PushID(static_cast<int>(node.get_handle()));
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,1.0f });
 	ImVec2 pos = ImGui::GetCursorPos();
 	ImGui::Selectable("--------", false, ImGuiSelectableFlags_::ImGuiSelectableFlags_None, {0,8.0f});
@@ -188,6 +219,12 @@ void Hierarchy::NormalView()
 				std::filesystem::path prefabpath = *static_cast<std::filesystem::path*>(payload->Data);
 				Serializer::LoadPrefab(prefabpath,go,*scene);
 			}
+			payload = ImGui::AcceptDragDropPayload("MESH_HIERARCHY"); //for creating prefab files
+			if (payload)
+			{
+				auto data = *static_cast<MeshHierarchy::MeshHierarchyDragDropData*>(payload->Data);
+				MeshHierarchy::CreateObject(data.data,data.id);
+			}
 			ImGui::EndDragDropTarget();
 		}
 	}
@@ -199,7 +236,7 @@ void Hierarchy::NormalView()
 			m_previewPrefab = false;
 			OpenFileEvent ofe(m_curr_sceneFilepath);
 			oo::EventManager::Broadcast(&ofe);
-		}
+		}	
 		ImGui::SameLine();
 		ImGui::Text("Prefab Editing");
 		ImGui::Separator();
@@ -338,7 +375,8 @@ void Hierarchy::NormalView()
 	{
 		m_previewPrefab = true;
 		m_curr_sceneFilepath = scene->GetFilePath();
-		OpenFileEvent ofe(prefabobj->GetComponent<oo::PrefabComponent>().prefab_filePath);
+		auto complete_path = Project::GetPrefabFolder() / prefabobj->GetComponent<oo::PrefabComponent>().prefab_filePath;
+		OpenFileEvent ofe(complete_path);
 		oo::EventManager::Broadcast(&ofe);
 	}
 }
@@ -359,7 +397,7 @@ void Hierarchy::FilteredView()
 				break;
 			}
 		}
-		ImGui::PushID(handle);
+		ImGui::PushID(static_cast<int>(handle));
 		ImGui::Selectable(go->Name().c_str(),selected);
 		ImGui::PopID();
 

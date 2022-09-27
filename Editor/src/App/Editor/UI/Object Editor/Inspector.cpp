@@ -1,3 +1,20 @@
+/************************************************************************************//*!
+\file          Inspector.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Edit the Properties of each gameobject and ability to make prefab.
+			   Edit Components
+			   Add Components
+			   Remove Components
+			   Make Prefab
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "Inspector.h"
 #include "Hierarchy.h"
@@ -17,6 +34,8 @@
 #include <Ouroboros/Prefab/PrefabManager.h>
 #include <Ouroboros/Commands/Script_ActionCommand.h>
 
+#include <Ouroboros/Audio/AudioListenerComponent.h>
+#include <Ouroboros/Audio/AudioSourceComponent.h>
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
@@ -26,6 +45,7 @@
 #include <Ouroboros/Scripting/ScriptManager.h>
 //#include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/RendererComponent.h>
+#include <Ouroboros/Vulkan/LightComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -108,6 +128,10 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
+	DisplayComponent<oo::LightingComponent>(gameobject);
+	DisplayComponent<oo::AudioListenerComponent>(gameobject);
+	DisplayComponent<oo::AudioSourceComponent>(gameobject);
+	
 	DisplayScript(gameobject);
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
@@ -127,6 +151,9 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::LightingComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 
 		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 
@@ -186,7 +213,7 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 	ImGui::SameLine();
 	ImGui::BeginGroup();
 	ImGui::Separator();
-	ImGui::PushID(class_type.get_id());
+	ImGui::PushID(static_cast<int>(class_type.get_id()));
 
 	for (rttr::property prop : class_type.get_properties())
 	{
@@ -294,7 +321,7 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
-		ImGui::PushID(i);
+		ImGui::PushID(static_cast<int>(i));
 		rttr::variant v = sqv.get_value(i).extract_wrapped_value();
 		iter->second(main_property,tempstring, v, itemEdited, itemEndEdit);
 		if (itemEdited)

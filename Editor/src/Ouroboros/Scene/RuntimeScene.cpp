@@ -21,6 +21,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Scripting/ScriptSystem.h"
 #include "Ouroboros/Input/InputSystem.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
 //#include "Ouroboros/Vulkan/RendererSystem.h"
 
 namespace oo
@@ -42,7 +43,11 @@ namespace oo
             TRACY_PROFILE_SCOPE(registration);
 
             GetWorld().Add_System<InputSystem>()->Initialize();
+            GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
 
+            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
+
+            GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
             //Register All Systems
             //GetWorld().Add_System<ScriptSystem>(*this);
             /*auto meshObj = oo::Mesh::CreateCubeMeshObject(this, GetGraphicsWorld());
@@ -98,7 +103,12 @@ namespace oo
                  GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
                  TRACY_PROFILE_SCOPE_END();
             }
-
+            constexpr const char* const animation_update = "Animation Update";
+            {
+                TRACY_PROFILE_SCOPE(animation_update);
+                GetWorld().Run_System<oo::Anim::AnimationSystem>();
+                TRACY_PROFILE_SCOPE_END();
+            }
             //Update All Systems
             //constexpr const char* const scripts_update = "Scripts Update";
             //{

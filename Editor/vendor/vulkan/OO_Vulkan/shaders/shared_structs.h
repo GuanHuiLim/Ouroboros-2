@@ -8,7 +8,7 @@
 
 
 #ifdef __cplusplus
-#include <glm/glm.hpp>
+#include "MathCommon.h"
 // GLSL Type
 using vec2 = glm::vec2;
 using vec3 = glm::vec3;
@@ -40,10 +40,14 @@ struct SpotLightInstance
 {
     vec4 position;
     vec3 color;
-    float innerRadius;
-    float outerRadius;
+    vec4 radius; // x inner, y outer
     mat4 projection;
     mat4 view;
+};
+
+struct LightPC
+{
+    uvec4 numLights;
 };
 
 

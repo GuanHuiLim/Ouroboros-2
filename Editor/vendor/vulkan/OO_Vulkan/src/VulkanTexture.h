@@ -28,9 +28,9 @@ namespace vkutils
 		uint32_t layerCount{};
 		VkDescriptorImageInfo descriptor{};
 		VkSampler sampler{};
-		VkImageUsageFlags usage;
-		VkImageAspectFlags aspectMask;
-		VkMemoryPropertyFlags MemProps;
+		VkImageUsageFlags usage{};
+		VkImageAspectFlags aspectMask{};
+		VkMemoryPropertyFlags MemProps{};
 		bool targetSwapchain = true;
 		
 		void updateDescriptor();

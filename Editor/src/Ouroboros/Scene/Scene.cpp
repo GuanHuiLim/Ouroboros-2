@@ -34,6 +34,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Vulkan/RendererSystem.h"
 
+#include "Ouroboros/Audio/AudioSystem.h"
+
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -82,7 +84,9 @@ namespace oo
                 m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
                 //rendering system initialization
-                m_ecsWorld->Add_System<oo::MeshRendererSystem>()->Init(&GetWorld(), GetGraphicsWorld());
+                m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
+
+                m_ecsWorld->Add_System<oo::AudioSystem>(this);
             }
 
             // Broadcast event to load scene
@@ -102,6 +106,7 @@ namespace oo
         // Update Systems
         {
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
+            m_ecsWorld->Get_System<oo::AudioSystem>()->Run(m_ecsWorld.get());
             constexpr const char* const scripts_update = "Scripts Update";
             {
                 TRACY_PROFILE_SCOPE(scripts_update);
@@ -124,7 +129,7 @@ namespace oo
     {
         PRINT(m_name);
 
-        GetWorld().Get_System<oo::MeshRendererSystem>()->Run();
+        GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
         
         //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
         //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());

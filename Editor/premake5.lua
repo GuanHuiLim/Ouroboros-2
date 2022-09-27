@@ -57,6 +57,8 @@ project "Editor"
 		
 		"%{IncludeDir.mono}",
 		"%{IncludeDir.scripting}",
+		
+        "%{IncludeDir.fmod}",
 
         --for tracy
         "%{IncludeDir.tracy}",
@@ -71,6 +73,7 @@ project "Editor"
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
         "%{LibraryDir.assimp}/Release",
+        "%{LibraryDir.fmod}",
     }
 
     -- linking External libraries 
@@ -106,6 +109,12 @@ project "Editor"
 
     }
     
+    -- Editor Project Level Disable Warning 
+    disablewarnings
+    {
+        "4324" -- padding of glm with std::variant, intended. 
+    }
+
     filter "system:windows"
         cppdialect "C++20"
         staticruntime "off"
@@ -154,9 +163,9 @@ project "Editor"
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
 			-- vulkan shaders copy
-			{ "mkdir \"" .. binApp .. "/shaders/bin\"" },
+		    { "mkdir \"" .. binApp .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			
-			{ "mkdir \"" .. AppDir .. "/shaders/bin\"" },
+		    { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""}, 
         }
     
@@ -190,6 +199,7 @@ project "Editor"
         links
         {
             "rttr_core_d",
+            "fmodL_vc",
         }
     
     filter "configurations:Release"
@@ -208,6 +218,7 @@ project "Editor"
         links
         {
             "rttr_core",
+            "fmod_vc",
         }
         
     filter "configurations:Production"
@@ -226,4 +237,5 @@ project "Editor"
         links
         {
             "rttr_core",
+            "fmod_vc",
         }
