@@ -14,6 +14,7 @@ Technology is prohibited.
 #include "pch.h"
 #include "EditorScene.h"
 #include <filesystem>
+#include "OO_Vulkan/src/DebugDraw.h"
 
 //#include "Editor.h"
 //#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
@@ -137,6 +138,11 @@ namespace oo
 
     void EditorScene::Render()
     {
+        constexpr float gridSize = 100.0f;
+        constexpr float gridIncrement = 1.0f / 5.0f;
+
+        DebugDraw::DrawYGrid(gridSize, gridIncrement);
+        DebugDraw::DrawYGrid(gridSize, 1.0f, oGFX::Colors::RED);
         Scene::Render();
 
         //constexpr const char* const rendering = "Overall Rendering";
