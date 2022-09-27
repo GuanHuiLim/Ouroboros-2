@@ -232,6 +232,11 @@ namespace oo
         createData();
     }
 
+    void Asset::Overwrite()
+    {
+        // TODO: impl
+    }
+
     std::vector<std::type_index> Asset::GetBespokeTypes() const
     {
         auto v = std::vector<std::type_index>();
