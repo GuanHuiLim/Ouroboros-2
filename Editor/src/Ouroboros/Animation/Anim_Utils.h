@@ -27,9 +27,13 @@ Technology is prohibited.
 
 namespace oo::Anim::internal
 {
+	constexpr uint expected_num_anims = 50;
+
 	extern std::unordered_map< size_t, rttr::instance(*)(void*)> hash_to_instance;
 
 	void Initialise_hash_to_instance();
+
+	size_t generateUID();
 }
 
 namespace oo::Anim
@@ -56,6 +60,7 @@ namespace oo::Anim
 	struct Timeline;
 	struct Animation;		//represents property or fbx file animations
 	struct Node;			//a node in the animation tree
+	struct NodeInfo;
 	struct Group;
 	struct AnimationTree; 
 	struct AnimationTracker; //tracks a user's progress in an animation tree
@@ -239,6 +244,12 @@ namespace oo::Anim
 
 	struct Animation
 	{
+		static constexpr const char* empty_animation_name ="empty animation";
+		static std::unordered_map< std::string, uint> name_to_index;
+		static std::unordered_map< size_t, uint> ID_to_index;
+		static std::vector<Animation> animation_storage;
+
+
 		std::string name{ "Unnamed Animation" };
 
 		std::vector<ScriptEvent> events{};
@@ -248,6 +259,8 @@ namespace oo::Anim
 		bool looping{ false };
 		
 		float animation_length{0.f};
+
+		size_t animation_ID{ std::numeric_limits<size_t>().max() };
 	};
 
 	struct Node
@@ -255,7 +268,13 @@ namespace oo::Anim
 		Group& group;
 		std::string name{};
 		//animation asset loaded from file
-		Animation animation{};
+		Asset anim_asset{};
+
+		//used to get the animation's index
+		size_t animation_ID{ std::numeric_limits<size_t>().max() };
+		//index of the animation in the animation vector
+		uint animation_index{std::numeric_limits<uint>().max()};
+		//Animation animation{};
 		float speed{1.f};
 		glm::vec3 position{};
 		
@@ -266,6 +285,21 @@ namespace oo::Anim
 		std::vector<Link*> outgoingLinks{};
 
 		Node(Group& _group, std::string const _name = "Unnamed Node");
+		Node(NodeInfo& info);
+		void SetAnimation(Asset asset);
+		//void SetAnimation(Asset asset);
+		Animation& GetAnimation();
+	};
+
+	struct NodeInfo
+	{
+		std::string name{ "Unnamed Node" };
+		std::string animation_name{};
+		float speed{ 1.f };
+		glm::vec3 position{0.f,0.f,0.f};
+
+		//dont fill this up
+		Group* group{nullptr};
 	};
 
 	struct NodeRef
