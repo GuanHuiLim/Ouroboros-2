@@ -18,10 +18,9 @@ Technology is prohibited.
 
 #include <imgui/imgui.h>
 
-#include "BinaryIO.h"
-#include "Ouroboros/Audio/Audio.h"
+#include "Ouroboros/Asset/BinaryIO.h"
 #include "Ouroboros/Core/Application.h"
-#include "Ouroboros/Vulkan/VulkanContext.h"
+#include "Utility/IEqual.h"
 
 namespace oo
 {
@@ -349,108 +348,8 @@ namespace oo
 
     Asset AssetManager::createAsset(std::filesystem::path fp, AssetID id)
     {
-        const auto FP_EXT = fp.extension();
         Asset asset = Asset(std::filesystem::canonical(fp), id);
-        if (findIn(FP_EXT.string(), Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end()))
-        {
-            // Load texture
-            asset.info->type = AssetInfo::Type::Texture;
-            asset.info->onAssetCreate = [fp](AssetInfo& self)
-            {
-                auto vc = Application::Get().GetWindow().GetVulkanContext();
-                auto vr = vc->getRenderer();
-                auto data1 = vr->CreateTexture(fp.string());
-                auto data2 = vr->GetImguiID(data1);
-
-                struct DataStruct
-                {
-                    decltype(data1) data1;
-                    decltype(data2) data2;
-                };
-                self.data = new DataStruct;
-                *reinterpret_cast<DataStruct*>(self.data) = {
-                    .data1 = data1,
-                    .data2 = data2
-                };
-                self.dataTypeOffsets = {};
-                self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
-                self.dataTypeOffsets[std::type_index(typeid(decltype(data2)))] = offsetof(DataStruct, data2);
-            };
-            asset.info->onAssetDestroy = [fp](AssetInfo& self)
-            {
-                // TODO: Unload texture
-                if (self.data)
-                    delete self.data;
-                self.data = nullptr;
-                self.dataTypeOffsets.clear();
-            };
-        }
-        else if (findIn(FP_EXT.string(), Asset::EXTS_AUDIO.begin(), Asset::EXTS_AUDIO.end()))
-        {
-            // Load audio
-            asset.info->type = AssetInfo::Type::Audio;
-            asset.info->onAssetCreate = [fp](AssetInfo& self)
-            {
-                auto data1 = audio::CreateSound(fp.string());
-
-                struct DataStruct
-                {
-                    decltype(data1) data1;
-                };
-                self.data = new DataStruct;
-                *reinterpret_cast<DataStruct*>(self.data) = {
-                    .data1 = data1,
-                };
-                self.dataTypeOffsets = {};
-                self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
-            };
-            asset.info->onAssetDestroy = [fp](AssetInfo& self)
-            {
-                if (self.data)
-                {
-                    audio::FreeSound(self.GetData<oo::SoundID>());
-                    delete self.data;
-                }
-                self.data = nullptr;
-                self.dataTypeOffsets.clear();
-            };
-        }
-        else if (findIn(FP_EXT.string(), Asset::EXTS_MODEL.begin(), Asset::EXTS_MODEL.end()))
-        {
-            // Load model
-            asset.info->type = AssetInfo::Type::Model;
-            asset.info->onAssetCreate = [fp](AssetInfo& self)
-            {
-                auto vc = Application::Get().GetWindow().GetVulkanContext();
-                auto vr = vc->getRenderer();
-                auto data1 = vr->LoadModelFromFile(fp.string());
-
-                struct DataStruct
-                {
-                    decltype(data1) data1;
-                };
-                self.data = new DataStruct;
-                *reinterpret_cast<DataStruct*>(self.data) = {
-                    .data1 = data1,
-                };
-                self.dataTypeOffsets = {};
-                self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
-            };
-            asset.info->onAssetDestroy = [fp](AssetInfo& self)
-            {
-                if (self.data)
-                {
-                    delete self.GetData<ModelData*>();
-                    delete self.data;
-                }
-                self.data = nullptr;
-                self.dataTypeOffsets.clear();
-            };
-        }
-
-        // Call asset creation callback
-        asset.createData();
-
+        asset.Reload();
         return asset;
     }
 }

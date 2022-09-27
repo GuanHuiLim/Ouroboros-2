@@ -17,8 +17,23 @@ Technology is prohibited.
 #include "Asset.h"
 
 #include "OO_Vulkan/src/MeshModel.h"
+#include "Ouroboros/Audio/Audio.h"
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
+#include "Utility/IEqual.h"
+
+namespace
+{
+
+    template<typename T, typename It>
+    inline bool findIn(const T& obj, const It& itBegin, const It& itEnd)
+    {
+        return std::find_if(itBegin, itEnd, [obj](const auto& e)
+        {
+            return iequal(e, obj);
+        }) != itEnd;
+    }
+}
 
 namespace oo
 {
@@ -88,6 +103,135 @@ namespace oo
         info = nullptr;
     }
 
+    void Asset::Reload()
+    {
+        const auto FP_EXT = info->contentPath.extension();
+        if (findIn(FP_EXT.string(), Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end()))
+        {
+            Reload(AssetInfo::Type::Texture);
+        }
+        else if (findIn(FP_EXT.string(), Asset::EXTS_AUDIO.begin(), Asset::EXTS_AUDIO.end()))
+        {
+            Reload(AssetInfo::Type::Audio);
+        }
+        else if (findIn(FP_EXT.string(), Asset::EXTS_MODEL.begin(), Asset::EXTS_MODEL.end()))
+        {
+            Reload(AssetInfo::Type::Model);
+        }
+    }
+
+    void Asset::Reload(AssetInfo::Type type)
+    {
+        // Call old asset destruction callback
+        destroyData();
+
+        switch (type)
+        {
+            case AssetInfo::Type::Texture:
+            {
+                // Load texture
+                info->type = AssetInfo::Type::Texture;
+                info->onAssetCreate = [](AssetInfo& self)
+                {
+                    auto vc = Application::Get().GetWindow().GetVulkanContext();
+                    auto vr = vc->getRenderer();
+                    auto data1 = vr->CreateTexture(self.contentPath.string());
+                    auto data2 = vr->GetImguiID(data1);
+
+                    struct DataStruct
+                    {
+                        decltype(data1) data1;
+                        decltype(data2) data2;
+                    };
+                    self.data = new DataStruct;
+                    *reinterpret_cast<DataStruct*>(self.data) = {
+                        .data1 = data1,
+                        .data2 = data2
+                    };
+                    self.dataTypeOffsets = {};
+                    self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
+                    self.dataTypeOffsets[std::type_index(typeid(decltype(data2)))] = offsetof(DataStruct, data2);
+                };
+                info->onAssetDestroy = [this](AssetInfo& self)
+                {
+                    // TODO: Unload texture
+                    if (self.data)
+                        delete self.data;
+                    self.data = nullptr;
+                    self.dataTypeOffsets.clear();
+                };
+                break;
+            }
+            case AssetInfo::Type::Audio:
+            {
+                // Load audio
+                info->type = AssetInfo::Type::Audio;
+                info->onAssetCreate = [](AssetInfo& self)
+                {
+                    auto data1 = audio::CreateSound(self.contentPath.string());
+
+                    struct DataStruct
+                    {
+                        decltype(data1) data1;
+                    };
+                    self.data = new DataStruct;
+                    *reinterpret_cast<DataStruct*>(self.data) = {
+                        .data1 = data1,
+                    };
+                    self.dataTypeOffsets = {};
+                    self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
+                };
+                info->onAssetDestroy = [](AssetInfo& self)
+                {
+                    if (self.data)
+                    {
+                        audio::FreeSound(self.GetData<oo::SoundID>());
+                        delete self.data;
+                    }
+                    self.data = nullptr;
+                    self.dataTypeOffsets.clear();
+                };
+                break;
+            }
+            case AssetInfo::Type::Model:
+            {
+                // Load model
+                info->type = AssetInfo::Type::Model;
+                info->onAssetCreate = [](AssetInfo& self)
+                {
+                    auto vc = Application::Get().GetWindow().GetVulkanContext();
+                    auto vr = vc->getRenderer();
+                    auto data1 = vr->LoadModelFromFile(self.contentPath.string());
+
+                    struct DataStruct
+                    {
+                        decltype(data1) data1;
+                    };
+                    self.data = new DataStruct;
+                    *reinterpret_cast<DataStruct*>(self.data) = {
+                        .data1 = data1,
+                    };
+                    self.dataTypeOffsets = {};
+                    self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
+                };
+                info->onAssetDestroy = [](AssetInfo& self)
+                {
+                    if (self.data)
+                    {
+                        delete self.GetData<ModelData*>();
+                        delete self.data;
+                    }
+                    self.data = nullptr;
+                    self.dataTypeOffsets.clear();
+                };
+                break;
+            }
+        }
+
+        // Call asset creation callback
+        createData();
+    }
+
     std::vector<std::type_index> Asset::GetBespokeTypes() const
     {
         auto v = std::vector<std::type_index>();
@@ -120,12 +264,14 @@ namespace oo
 
     void Asset::createData()
     {
-        info->onAssetCreate(*info);
+        if (info && info->onAssetCreate)
+            info->onAssetCreate(*info);
     }
 
     void Asset::destroyData()
     {
-        info->onAssetDestroy(*info);
+        if (info && info->onAssetDestroy)
+            info->onAssetDestroy(*info);
     }
 
     AssetID Asset::GenerateSnowflake()

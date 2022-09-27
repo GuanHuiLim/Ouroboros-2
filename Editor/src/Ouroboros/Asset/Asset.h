@@ -137,6 +137,17 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        void Reload();
+
+        /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        /// <param name="type">The explicit type of asset to load as.</param>
+        void Reload(AssetInfo::Type type);
+
+        /// <summary>
         /// Retrieves the data stored by the asset of a given type.
         /// </summary>
         /// <typeparam name="T">The type of data.</typeparam>
