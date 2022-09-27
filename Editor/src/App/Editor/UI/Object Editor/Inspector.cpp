@@ -128,7 +128,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	//DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
-	DisplayComponent<oo::LightingComponent>(gameobject);
+	DisplayComponent<oo::LightComponent>(gameobject);
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	
@@ -151,7 +151,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::LightingComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 

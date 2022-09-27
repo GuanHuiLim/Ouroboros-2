@@ -6,7 +6,7 @@
 
 namespace oo
 {
-    void oo::MeshRendererSystem::OnLightAssign(Ecs::ComponentEvent<LightingComponent>* evnt)
+    void oo::MeshRendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
         assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
 
@@ -19,7 +19,7 @@ namespace oo
         graphics_object.position = glm::vec4{ transform_component.GetGlobalPosition(), 0.f };
     }
 
-    void oo::MeshRendererSystem::OnLightRemove(Ecs::ComponentEvent<LightingComponent>* evnt)
+    void oo::MeshRendererSystem::OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt)
     {
         auto& comp = evnt->component;
         m_graphicsWorld->DestroyLightInstance(comp.Light_ID);
@@ -64,10 +64,10 @@ namespace oo
             this, &MeshRendererSystem::OnMeshRemove);
 
         //Lights
-        m_world->SubscribeOnAddComponent<MeshRendererSystem, LightingComponent>(
+        m_world->SubscribeOnAddComponent<MeshRendererSystem, LightComponent>(
             this, &MeshRendererSystem::OnLightAssign);
 
-        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, LightingComponent>(
+        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, LightComponent>(
             this, &MeshRendererSystem::OnLightRemove);
     }
 
@@ -92,10 +92,10 @@ namespace oo
         static Ecs::Query light_query = []() 
         {
             Ecs::Query query;
-            return query.with<LightingComponent, TransformComponent>().build();
+            return query.with<LightComponent, TransformComponent>().build();
         }();
 
-        world->for_each(light_query, [&](LightingComponent& lightComp, TransformComponent& transformComp)
+        world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
         {
             auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
 

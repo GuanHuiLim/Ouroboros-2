@@ -23,9 +23,9 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<oo::LightingComponent>("Light")
-        .property("Color", &LightingComponent::Color)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-        .property("Radius", &LightingComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-        .property_readonly("Lighting ID", &LightingComponent::Light_ID);
+        registration::class_<oo::LightComponent>("Light")
+        .property("Color", &LightComponent::Color)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        .property("Radius", &LightComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        .property_readonly("Lighting ID", &LightComponent::Light_ID);
     }
 }
