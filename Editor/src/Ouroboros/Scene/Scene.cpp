@@ -23,6 +23,7 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformSystem.h"
 
 #include "App/Editor/Events/LoadSceneEvent.h"
+#include "App/Editor/Events/UnloadSceneEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/ECS/DeferredSystem.h"
@@ -177,6 +178,10 @@ namespace oo
     
     void Scene::Exit()
     {
+        // Broadcast event to unload scene
+        UnloadSceneEvent use{ this };
+        EventManager::Broadcast<UnloadSceneEvent>(&use);
+
         PRINT(m_name);
     }
     
