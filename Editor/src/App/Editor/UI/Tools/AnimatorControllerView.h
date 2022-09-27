@@ -95,6 +95,7 @@ private: //Member Variables
 		}
 	};
 	std::vector<NodeInfo> m_nodes;
+	std::vector<ed::NodeId> m_nodesId;
 	NodeInfo* m_selectedNode		  = nullptr;
 
 	struct LinkInfo
@@ -110,6 +111,7 @@ private: //Member Variables
 		}
 	};
 	ImVector<LinkInfo> m_links;
+	std::vector<ed::LinkId> m_linksId;
 	LinkInfo* m_selectedLink		  = nullptr;
 
 	bool m_displayAnimatorEditor	  = true;

@@ -101,18 +101,9 @@ void AnimatorControllerView::Show()
         }
     }
 
-    if (ImGui::IsWindowFocused() && !ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-    {
-        selectedNode = nullptr;
-        selectedLink = nullptr;
-    }
-
     // Handle deletion action
     OnDelete();
-
-    // End of interaction with editor.
-
-    //if selectedNode or selectedLink is !null, display info of the selected item
+    // End of interaction with imgui node editor.
 
     ed::Suspend();
     if (ed::ShowBackgroundContextMenu())
@@ -125,9 +116,7 @@ void AnimatorControllerView::Show()
     if (ImGui::BeginPopup("Animator Editor Popup"))
     {
         if (ImGui::MenuItem("Create State"))
-        {
             CreateNode(uniqueId, "State", ImVec2(0,0));
-        }
         ImGui::EndPopup();
     }
     ed::Resume();
@@ -170,9 +159,80 @@ void AnimatorControllerView::DisplayParameters()
 
 void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, LinkInfo* selectedLink, ed::NodeId* selectedNode)
 {
+    m_nodesId.resize(ed::GetSelectedObjectCount());
+    m_linksId.resize(ed::GetSelectedObjectCount());
+
+    int nodeCount = ed::GetSelectedNodes(m_nodesId.data(), static_cast<int>(m_nodesId.size()));
+    int linkCount = ed::GetSelectedLinks(m_linksId.data(), static_cast<int>(m_linksId.size()));
+
+    m_nodesId.resize(nodeCount);
+    m_linksId.resize(linkCount);
+
     if (ImGui::Begin("Animator Inspector", &displayAnimatorInspector))
     {
-        if (selectedLink)
+        if (nodeCount != 0)
+        {
+            for (int i = 0; i < nodeCount; ++i)
+            {
+                ed::NodeId temp = m_nodesId[i];
+                auto id = std::find_if(m_nodes.begin(), m_nodes.end(), [temp](auto& node) { return node.id == temp; });
+                static char animation[256];
+                static float speed = 1;
+                ImGui::Text("Name");
+                ImVec2 textsize = ImGui::CalcTextSize("a");
+                ImGui::SameLine(textsize.x * 8);
+                ImGui::InputText("##name", const_cast<char*>(id->name.c_str()), 256);
+                ImGui::Separator();
+                ImGui::Text("Animation");
+                ImGui::SameLine(textsize.x * 12);
+                ImGui::InputText("##animation", animation, 256);
+                ImGui::Text("Speed");
+                ImGui::SameLine(textsize.x * 12);
+                ImGui::InputFloat("##speed", &speed);
+            }
+        }
+        else if (linkCount != 0)
+        {
+            for (int i = 0; i < linkCount; ++i)
+            {
+                ed::LinkId temp = m_linksId[i];
+                auto id = std::find_if(m_links.begin(), m_links.end(), [temp](auto& link) {return link.id == temp; });
+
+                Pin* output = FindPin(id->inputID);
+                Pin* input = FindPin(id->outputID);
+
+                std::string linkRelation = output->name + " -> " + input->name;
+                ImGui::Text(linkRelation.c_str());
+                static bool hasExitTime = false;
+                static float exitTime = 0.75f;
+                static bool fixedDuration = true;
+                static float transitionDuration = 0.1f;
+                ImVec2 textsize = ImGui::CalcTextSize("a");
+                ImGui::Text("Has Exit Time");
+                ImGui::SameLine(textsize.x * 25);
+                ImGui::Checkbox("##hasexittime", &hasExitTime);
+                if (ImGui::TreeNode("Settings"))
+                {
+                    {
+                        ImGui::Text("Exit Time");
+                        ImGui::SameLine(textsize.x * 25);
+                        if (hasExitTime)
+                            ImGui::InputFloat("##exitTime", &exitTime, 0.0f, 0.0f, "%.2f");
+                        else
+                            ImGui::InputFloat("##exitTime", &exitTime, 0.0f, 0.0f, "%.2f", ImGuiInputTextFlags_ReadOnly);
+                        ImGui::Text("Fixed Duration");
+                        ImGui::SameLine(textsize.x * 25);
+                        ImGui::Checkbox("##fixedduration", &fixedDuration);
+                        ImGui::Text("Transition Duration");
+                        ImGui::SameLine(textsize.x * 25);
+                        ImGui::InputFloat("##transitionDuration", &transitionDuration);
+                    }
+                    ImGui::TreePop();
+                }
+            }
+        }
+
+        /*if (selectedLink)
         {
             ed::LinkId temp = selectedLink->id;
             auto id = std::find_if(m_links.begin(), m_links.end(), [temp](auto& link) {return link.id == temp; });
@@ -208,25 +268,7 @@ void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, Li
                 }
                 ImGui::TreePop();
             }
-        }
-        else if (selectedNode)
-        {
-            ed::NodeId temp = *selectedNode;
-            auto id = std::find_if(m_nodes.begin(), m_nodes.end(), [temp](auto& node) {return node.id == temp; });
-            static char animation[256];
-            static float speed = 1;
-            ImGui::Text("Name");
-            ImVec2 textsize = ImGui::CalcTextSize("a");
-            ImGui::SameLine(textsize.x * 15);
-            ImGui::InputText("##name", const_cast<char*>(id->name.c_str()), 256);
-            ImGui::Separator();
-            ImGui::Text("Animation");
-            ImGui::SameLine(textsize.x * 15);
-            ImGui::InputText("##animation", animation, 256);
-            ImGui::Text("Speed");
-            ImGui::SameLine(textsize.x * 15);
-            ImGui::InputFloat("##speed", &speed);
-        }
+        }*/
         ImGui::End();
     }
 }
