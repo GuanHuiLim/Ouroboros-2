@@ -30,8 +30,6 @@ namespace oo
         TRACY_TRACK_PERFORMANCE(per_transform_update);
         TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
 
-        // Reset all has changed to false regardless of their previous state.
-        tf.m_hasChanged = false;
 
         // Update local and global transform immediately
         if (tf.IsDirty())
@@ -46,9 +44,6 @@ namespace oo
             if (tf.HasChanged() || go->GetParent().Transform().HasChanged())
             {
                 tf.SetGlobalTransform(go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform);
-                //tf.m_hasChanged = true;
-                //tf.m_transform.SetGlobalTransform(go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform);
-                //tf.m_transform.m_globalTransform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform;
             }
         }
 
@@ -112,6 +107,11 @@ namespace oo
         NOTE: this might be extended in the future to include specific components or have 
         various combinations. But as much as possible make_query should work for the most part.
         */
+
+        // Reset all has changed to false regardless of their previous state.
+        // Note: this should only occure once per frame. Otherwise wonky behaviour.
+        static Ecs::Query query = Ecs::make_query<TransformComponent>();
+        world->for_each(query, [&](TransformComponent& tf) { tf.SetHasChanged(false); });
 
         // Transform System updates via the scenegraph because the order matters
         auto const&  graph = m_scene->GetGraph();
