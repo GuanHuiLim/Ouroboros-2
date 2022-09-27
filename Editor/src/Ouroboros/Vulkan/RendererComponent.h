@@ -89,8 +89,8 @@ namespace oo
 	struct SkinMeshBoneComponent
 	{
 		std::string bone_name{};
-		int gfxbones_index{ -1 };
-		uint32_t bone_ID{ 0 };
+		uint32_t gfxbones_index{ 
+			std::numeric_limits<decltype(gfxbones_index)>().max() };
 		uint32_t graphicsWorld_ID;
 
 		RTTR_ENABLE();

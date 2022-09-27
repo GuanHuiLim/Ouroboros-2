@@ -24,13 +24,14 @@ namespace oo
 		}();
 
 		world->for_each(skin_bone_mesh_query,
-			[&](MeshRendererComponent& m_comp, TransformComponent& transformComp)
+			[&](SkinMeshBoneComponent& boneComp, TransformComponent& transformComp)
 			{
 				//do nothing if transform did not change
-				auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
+				if (transformComp.HasChanged() == false) return;
 
-				if (transformComp.HasChanged())
-					actualObject.localToWorld = transformComp.GetGlobalMatrix();
+
+				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(boneComp.graphicsWorld_ID);
+				gfx_Object.localToWorld = transformComp.GetGlobalMatrix();
 			});
 
 		world->for_each(skin_mesh_query, 
