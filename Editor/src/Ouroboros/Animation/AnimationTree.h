@@ -27,8 +27,8 @@ namespace oo::Anim
 		//contains a collection of parameters to be checked with conditions
 		std::vector<Parameter> parameters;
 		std::unordered_map<size_t, uint> paramIDtoIndexMap;
-		std::vector<Animation> animations;
-		std::vector<Node> nodes;
+		//std::vector<Animation> animations;
+		//std::vector<Node> nodes;
 
 		static AnimationTree* Create(std::string const name = "Unnamed Animation Tree");
 	};

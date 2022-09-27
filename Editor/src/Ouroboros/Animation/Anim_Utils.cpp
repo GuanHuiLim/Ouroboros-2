@@ -34,7 +34,7 @@ namespace oo::Anim::internal
 
 	size_t generateUID()
 	{
-		static std::mt19937 mt{ std::random_device{}() };
+		static std::mt19937_64 mt{ std::random_device{}() };
 		static std::uniform_int_distribution<size_t> distrib{ 0 };
 		return distrib(mt);
 	};
