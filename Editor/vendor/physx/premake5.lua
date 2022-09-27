@@ -33,7 +33,8 @@ project "Physics"
     -- Physics Level Disable Linker Warning 
     linkoptions 
     { 
-        "-IGNORE:4006" -- redefinition <- appropriate warning
+        "-IGNORE:4006", -- redefinition <- appropriate warning should look into it
+        "-IGNORE:4099", -- physXPVD .PDB not found <- normal as we are not using it in our editor.
     }
 
     filter "system:windows"

@@ -209,8 +209,8 @@ namespace oo
         //TODO: Should remove eventually
         EditorUpdate(deltaTime);
         
-        // update the physics world
-        m_physicsWorld.updateScene(timer::dt());
+        // update the physics world using fixed dt.
+        m_physicsWorld.updateScene(FixedDeltaTime);
 
         static Ecs::Query rb_query = []()
         {

@@ -3,7 +3,7 @@
 
 using namespace physx;
 
-static PVD myPVD;
+PVD myPVD;
 
 static constexpr bool use_debugger = false;
 
@@ -456,7 +456,8 @@ PxVec3 PhysicsObject::getposition() const {
 
     }
 
-    //return PxVec3{};
+    // default return.
+    return PxVec3{};
 }
 
 /*
@@ -504,7 +505,8 @@ PxQuat PhysicsObject::getOrientation() const {
             return underlying_obj->rd.rigidDynamic->getGlobalPose().q;
     }
 
-    //return PxQuat{};
+    // default return.
+    return PxQuat{};
 }
 
 /*

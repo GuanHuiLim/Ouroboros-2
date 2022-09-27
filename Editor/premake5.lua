@@ -127,6 +127,12 @@ project "Editor"
         "4324" -- padding of glm with std::variant, intended. 
     }
 
+    -- Editor Level Disable Linker Warning 
+    linkoptions 
+    { 
+        "-IGNORE:4099", -- .pdb not found, for physXPVD .PDB not found <- normal as we are not using it in our editor.
+    }
+
     filter "system:windows"
         cppdialect "C++20"
         staticruntime "off"
