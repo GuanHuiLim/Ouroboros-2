@@ -20,7 +20,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    class TransformComponent
+    class TransformComponent final
     {
     public:
         using vec3 = Transform3D::vec3;
@@ -43,11 +43,8 @@ namespace oo
         vec3 GlobalUp()        const;
         vec3 GlobalForward()   const;
 
-        mat4 GetLocalMatrix()  const;
-        mat4 GetGlobalMatrix() const;
-
-        bool HasChanged()      const;
-        bool IsDirty()         const;
+        //mat4 GetLocalMatrix()  const;
+        //mat4 GetGlobalMatrix() const;
 
         vec3 GetGlobalPosition()        const;
         mat4 GetGlobalRotationMatrix()  const;
@@ -81,32 +78,21 @@ namespace oo
 
         // Extra Functions
         void LookAt(vec3 target);
-        
-        // scenegraph related setters
-        void ParentChanged();
-
-        void SetHasChanged(bool value);
-
-        RTTR_ENABLE();
-    
-    //private:
 
         void CalculateLocalTransform();
         void CalculateGlobalTransform();
-    
+
+        RTTR_ENABLE();
     public:
 
-        Transform3D m_localTransform;
-        Transform3D m_globalTransform;
+        Transform3D LocalTransform;
+        Transform3D GlobalTransform;
 
-        bool m_dirty = false;
-        bool m_globalDirty = false;
-        bool m_hasChanged = false;
+        bool LocalMatrixDirty = false;
+        bool GlobalMatrixDirty = false;
+        bool HasChangedThisFrame = false;
 
-        glm::vec3 m_eulerAngles;    // fake data.
-
-
-        friend class TransformSystem;
+        glm::vec3 LocalEulerAngles;    // fake data.
     };
 
     static constexpr std::size_t transform_component_size = sizeof(TransformComponent);

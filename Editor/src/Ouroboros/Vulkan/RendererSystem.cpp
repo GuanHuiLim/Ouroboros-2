@@ -37,7 +37,7 @@ namespace oo
         //update graphics world side
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
         auto& graphics_object = m_graphicsWorld->GetObjectInstance(comp.graphicsWorld_ID);
-        graphics_object.localToWorld = transform_component.GetGlobalMatrix();
+        graphics_object.localToWorld = transform_component.GlobalTransform;
         
     }
 
@@ -84,8 +84,8 @@ namespace oo
             //do nothing if transform did not change
             auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
 
-            if (transformComp.HasChanged())
-                actualObject.localToWorld = transformComp.GetGlobalMatrix();
+            if (transformComp.HasChangedThisFrame)
+                actualObject.localToWorld = transformComp.GlobalTransform;
             });
 
         // Update Lights

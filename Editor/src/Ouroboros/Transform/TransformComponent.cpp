@@ -30,8 +30,8 @@ namespace oo
             .property("Euler Angles", &TransformComponent::GetEulerAngles, &TransformComponent::SetRotation)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property_readonly("Quaternion", &TransformComponent::GetRotationQuat)
             .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property_readonly("Local Matrix", &TransformComponent::GetLocalMatrix)
-            .property_readonly("Global Matrix", &TransformComponent::GetGlobalMatrix)
+            .property_readonly("Local Matrix", &TransformComponent::LocalTransform)
+            .property_readonly("Global Matrix", &TransformComponent::GlobalTransform)
             .property_readonly("Global Position", &TransformComponent::GetGlobalPosition)
             .property_readonly("Global Rotation", &TransformComponent::GetGlobalRotationDeg)
             .property_readonly("Global Quaternion", &TransformComponent::GetGlobalRotationQuat)
@@ -39,106 +39,101 @@ namespace oo
         //added readonly for debugging purposes
     }
 
-    TransformComponent::vec3 TransformComponent::GetPosition()                const { return m_localTransform.Position; }
-    TransformComponent::quat TransformComponent::GetRotationQuat()            const { return m_localTransform.Orientation; }
-    TransformComponent::vec3 TransformComponent::GetEulerAngles()             const { return m_eulerAngles; }
-    TransformComponent::vec3 TransformComponent::GetScale()                   const { return m_localTransform.Scale; }
+    TransformComponent::vec3 TransformComponent::GetPosition()                const { return LocalTransform.Position; }
+    TransformComponent::quat TransformComponent::GetRotationQuat()            const { return LocalTransform.Orientation; }
+    TransformComponent::vec3 TransformComponent::GetEulerAngles()             const { return LocalEulerAngles; }
+    TransformComponent::vec3 TransformComponent::GetScale()                   const { return LocalTransform.Scale; }
 
-    TransformComponent::vec3 TransformComponent::LocalRight()                 const { return m_localTransform.Right(); }
-    TransformComponent::vec3 TransformComponent::LocalUp()                    const { return m_localTransform.Up(); }
-    TransformComponent::vec3 TransformComponent::LocalForward()               const { return m_localTransform.Forward(); }
+    TransformComponent::vec3 TransformComponent::LocalRight()                 const { return LocalTransform.Right(); }
+    TransformComponent::vec3 TransformComponent::LocalUp()                    const { return LocalTransform.Up(); }
+    TransformComponent::vec3 TransformComponent::LocalForward()               const { return LocalTransform.Forward(); }
                                                 
-    TransformComponent::vec3 TransformComponent::GlobalRight()                const { return m_globalTransform.Right(); }
-    TransformComponent::vec3 TransformComponent::GlobalUp()                   const { return m_globalTransform.Up(); }
-    TransformComponent::vec3 TransformComponent::GlobalForward()              const { return m_globalTransform.Forward(); }
+    TransformComponent::vec3 TransformComponent::GlobalRight()                const { return GlobalTransform.Right(); }
+    TransformComponent::vec3 TransformComponent::GlobalUp()                   const { return GlobalTransform.Up(); }
+    TransformComponent::vec3 TransformComponent::GlobalForward()              const { return GlobalTransform.Forward(); }
                                                 
-    TransformComponent::mat4 TransformComponent::GetLocalMatrix()             const { return m_localTransform.GetMatrix(); }
-    TransformComponent::mat4 TransformComponent::GetGlobalMatrix()            const { return m_globalTransform.GetMatrix(); }
+    /*TransformComponent::mat4 TransformComponent::GetLocalMatrix()             const { return LocalTransform.GetMatrix(); }
+    TransformComponent::mat4 TransformComponent::GetGlobalMatrix()            const { return GlobalTransform.GetMatrix(); }*/
 
-    bool TransformComponent::HasChanged()                                     const { return m_hasChanged; }
-    bool TransformComponent::IsDirty()                                        const { return m_dirty; }
-
-    TransformComponent::vec3 TransformComponent::GetGlobalPosition()          const { return m_globalTransform.Position; }
-    TransformComponent::mat4 TransformComponent::GetGlobalRotationMatrix()    const { return m_globalTransform.GetRotationMatrix(); }
-    TransformComponent::vec3 TransformComponent::GetGlobalRotationRad()       const { return m_globalTransform.GetEulerAnglesRad(); }
-    TransformComponent::vec3 TransformComponent::GetGlobalRotationDeg()       const { return m_globalTransform.GetEulerAnglesDeg(); }
-    TransformComponent::quat oo::TransformComponent::GetGlobalRotationQuat()  const { return m_globalTransform.Orientation; }
-    TransformComponent::vec3 TransformComponent::GetGlobalScale()             const { return m_globalTransform.Scale; }
+    TransformComponent::vec3 TransformComponent::GetGlobalPosition()          const { return GlobalTransform.Position; }
+    TransformComponent::mat4 TransformComponent::GetGlobalRotationMatrix()    const { return GlobalTransform.GetRotationMatrix(); }
+    TransformComponent::vec3 TransformComponent::GetGlobalRotationRad()       const { return GlobalTransform.GetEulerAnglesRad(); }
+    TransformComponent::vec3 TransformComponent::GetGlobalRotationDeg()       const { return GlobalTransform.GetEulerAnglesDeg(); }
+    TransformComponent::quat oo::TransformComponent::GetGlobalRotationQuat()  const { return GlobalTransform.Orientation; }
+    TransformComponent::vec3 TransformComponent::GetGlobalScale()             const { return GlobalTransform.Scale; }
 
     TransformComponent::vec3& TransformComponent::Position()                  
     {
-        m_dirty = true; 
-        return m_localTransform.Position;
+        LocalMatrixDirty = true; 
+        return LocalTransform.Position;
     }
 
     TransformComponent::vec3& TransformComponent::Scale()                     
     {
-        m_dirty = true; 
-        return m_localTransform.Scale; 
+        LocalMatrixDirty = true; 
+        return LocalTransform.Scale; 
     }
     // note : scale must be set using setEulerAngle (internally uses quaternions)
 
     // Local Setters
     void TransformComponent::SetPosition(vec3 pos)                          
     {
-        m_dirty = true; 
-        m_localTransform.Position = pos;
+        LocalMatrixDirty = true; 
+        LocalTransform.Position = pos;
     }
     
     void TransformComponent::SetRotation(vec3 euler_angles_degrees)         
     { 
-        m_dirty = true; 
-        m_eulerAngles = euler_angles_degrees;
-        m_localTransform.SetRotation(quaternion::from_euler(glm::radians(m_eulerAngles)));
+        LocalMatrixDirty = true; 
+        LocalEulerAngles = euler_angles_degrees;
+        LocalTransform.SetRotation(quaternion::from_euler(glm::radians(LocalEulerAngles)));
     }
 
     void oo::TransformComponent::SetOrientation(quat quaternion)
     {
-        m_dirty = true;
-        m_localTransform.SetRotation(quaternion);
-        m_eulerAngles = m_localTransform.GetEulerAnglesDeg();
+        LocalMatrixDirty = true;
+        LocalTransform.SetRotation(quaternion);
+        LocalEulerAngles = LocalTransform.GetEulerAnglesDeg();
     }
 
     void TransformComponent::SetScale(vec3 scale)                           
     { 
-        m_dirty = true; 
-        m_localTransform.Scale = scale;
+        LocalMatrixDirty = true; 
+        LocalTransform.Scale = scale;
     }
 
     void TransformComponent::SetLocalTransform(mat4 target_local_matrix)
     {
-        m_dirty = false;
-        m_hasChanged = true;
-        m_localTransform.SetTransform(target_local_matrix);
+        LocalMatrixDirty = false;
+        HasChangedThisFrame = true;
+        LocalTransform.SetTransform(target_local_matrix);
     }
 
     // Global Setters
     void TransformComponent::SetGlobalPosition(vec3 position)               
     {
-        //m_dirty = true; 
-        m_globalDirty = true;
-        m_globalTransform.Position = position;
+        GlobalMatrixDirty = true;
+        GlobalTransform.Position = position;
     }
 
     void TransformComponent::SetGlobalScale(vec3 scale)                     
     {
-        //m_dirty = true; 
-        m_globalDirty = true;
-        m_globalTransform.Scale = scale;
+        GlobalMatrixDirty = true;
+        GlobalTransform.Scale = scale;
     }
 
     void TransformComponent::SetGlobalRotation(vec3 euler_angles_degrees)   
     { 
-        //m_dirty = true; 
-        m_globalDirty = true;
-        m_globalTransform.SetRotation(quaternion::from_euler(glm::radians(euler_angles_degrees))); 
+        //LocalMatrixDirty = true; 
+        GlobalMatrixDirty = true;
+        GlobalTransform.SetRotation(quaternion::from_euler(glm::radians(euler_angles_degrees))); 
     }
 
     void TransformComponent::SetGlobalOrientation(quat quaternion)
     {
-        //m_dirty = true;
-        m_globalDirty = true;
-        m_globalTransform.SetRotation(quaternion);
+        //LocalMatrixDirty = true;
+        GlobalMatrixDirty = true;
+        GlobalTransform.SetRotation(quaternion);
     }
 
     void TransformComponent::SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale) 
@@ -146,9 +141,6 @@ namespace oo
         SetGlobalPosition(position);
         SetGlobalRotation(euler_angles_degrees);
         SetGlobalScale(scale);
-
-        //m_dirty = true;
-        //m_globalTransform.SetLocalTransform(position, euler_angles_degrees, scale); 
     }
 
     void oo::TransformComponent::SetGlobalTransform(vec3 position, quat quaternion, vec3 scale)
@@ -157,40 +149,30 @@ namespace oo
         SetGlobalOrientation(quaternion);
         SetGlobalScale(scale);
     }
-    
-    void TransformComponent::ParentChanged() { /*m_dirty = true;*/ m_globalDirty = true; }
-
-    void oo::TransformComponent::SetHasChanged(bool value)
-    {
-        m_hasChanged = value;
-    }
 
     void TransformComponent::SetGlobalTransform(mat4 target_global_matrix)
     {
-        //m_dirty = true;
-        m_globalDirty = true;
-        m_globalTransform.SetTransform(target_global_matrix);
-        //m_hasChanged = true;
-        //m_localTransform.SetGlobalTransform(target_global_matrix);
+        GlobalMatrixDirty = true;
+        GlobalTransform.SetTransform(target_global_matrix);
     }
 
     void oo::TransformComponent::LookAt(vec3 target)
     {
-        m_dirty = true;
-        m_localTransform.LookAt(target);
+        LocalMatrixDirty = true;
+        LocalTransform.LookAt(target);
     }
 
     void TransformComponent::CalculateLocalTransform()
     {
-        m_dirty = false;
-        m_hasChanged = true;
-        m_localTransform.CalculateTransform();
+        LocalMatrixDirty = false;
+        HasChangedThisFrame = true;
+        LocalTransform.CalculateTransform();
     }
 
     void oo::TransformComponent::CalculateGlobalTransform()
     {
-        m_globalDirty = false;
-        m_hasChanged = true;
-        m_globalTransform.CalculateTransform();
+        GlobalMatrixDirty = false;
+        HasChangedThisFrame = true;
+        GlobalTransform.CalculateTransform();
     }
 }

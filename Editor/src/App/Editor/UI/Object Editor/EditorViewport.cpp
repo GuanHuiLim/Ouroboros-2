@@ -115,7 +115,7 @@ void EditorViewport::Show()
 	ImGuizmo::BeginFrame();
 	oo::TransformComponent& transform = gameobject->GetComponent<oo::TransformComponent>();
 
-	glm::mat4 m_matrix = transform.GetGlobalMatrix();
+	glm::mat4 m_matrix = transform.GlobalTransform;
 	ImGuizmo::SetOrthographic(false);
 
 	ImGuizmo::SetDrawlist();
@@ -130,13 +130,13 @@ void EditorViewport::Show()
 			glm::quat mRot = transform.GetRotationQuat();
 			glm::vec3 mTrans = transform.GetGlobalPosition();
 
-			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(m_matrix),
+			/*ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(m_matrix),
 				glm::value_ptr(mTrans),
 				glm::value_ptr(mRot),
-				glm::value_ptr(mScale));
+				glm::value_ptr(mScale));*/
 			
 			// If we can't trust imguizmo, we can still trust glm.
-			//Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
+			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
 
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
 			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.
