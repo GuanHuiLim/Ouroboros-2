@@ -17,8 +17,8 @@ namespace oo
 
 		void Init();
 
-		void OnLightAssign(Ecs::ComponentEvent<LightingComponent>* evnt);
-		void OnLightRemove(Ecs::ComponentEvent<LightingComponent>* evnt);
+		void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
+		void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
 
 		void OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
 		void OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
