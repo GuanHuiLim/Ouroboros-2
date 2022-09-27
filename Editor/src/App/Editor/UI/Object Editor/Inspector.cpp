@@ -139,7 +139,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
-	DisplayComponent<oo::LightingComponent>(gameobject);
+	DisplayComponent<oo::LightComponent>(gameobject);
 
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);

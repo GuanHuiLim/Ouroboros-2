@@ -61,7 +61,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
-	AddLoadComponent<oo::LightingComponent>();
+	AddLoadComponent<oo::LightComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
