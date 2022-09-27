@@ -58,9 +58,24 @@ namespace oo
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
+        /// <summary>
+        /// Plays the Audio Source.
+        /// </summary>
         void Play();
+
+        /// <summary>
+        /// Stops the Audio Source.
+        /// </summary>
         void Stop();
+
+        /// <summary>
+        /// Pauses the Audio Source.
+        /// </summary>
         void Pause();
+
+        /// <summary>
+        /// Resumes the Audio Source.
+        /// </summary>
         void UnPause();
 
         RTTR_ENABLE();

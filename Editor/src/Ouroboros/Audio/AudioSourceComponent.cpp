@@ -113,6 +113,7 @@ namespace oo
     {
         if (!audioClip.IsValid())
             return;
+        Stop(); // always stop whatever sound it was playing before
         FMOD::Sound* sound = audio::GetSound(audioClip.GetData<SoundID>());
         FMOD_ERR_HAND(audio::GetSystem()->playSound(sound, nullptr, false, &channel));
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
