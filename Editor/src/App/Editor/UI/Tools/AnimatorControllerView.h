@@ -118,6 +118,7 @@ private: //Member Functions
 	void BuildNode(NodeInfo* node);
 	void BuildNodes();
 
+	void DisplayAnimatorController();
 	void DisplayParameters();
 	void DisplayInspector();
 	void OnCreate();

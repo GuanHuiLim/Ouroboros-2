@@ -3,6 +3,28 @@
 
 void AnimatorControllerView::Show()
 {
+    //if(animator), DisplayAnimatorController();
+
+    DisplayAnimatorController();
+}
+
+void AnimatorControllerView::BuildNode(NodeInfo* node)
+{
+    for (auto& input : node->Input)
+    {
+        input.node = node;
+        input.kind = PinKind::Input;
+    }
+
+    for (auto& output : node->Output)
+    {
+        output.node = node;
+        output.kind = PinKind::Output;
+    }
+}
+
+void AnimatorControllerView::DisplayAnimatorController()
+{
     ed::SetCurrentEditor(m_Context);
     ed::Begin("Animator Controller Editor", ImVec2(0.0, 0.0));
 
@@ -107,21 +129,6 @@ void AnimatorControllerView::Show()
 
     DisplayInspector();
     DisplayParameters();
-}
-
-void AnimatorControllerView::BuildNode(NodeInfo* node)
-{
-    for (auto& input : node->Input)
-    {
-        input.node = node;
-        input.kind = PinKind::Input;
-    }
-
-    for (auto& output : node->Output)
-    {
-        output.node = node;
-        output.kind = PinKind::Output;
-    }
 }
 
 void AnimatorControllerView::DisplayParameters()
