@@ -147,40 +147,103 @@ namespace oo
 
         private:
             /*********************************************************************************//*!
-            \brief      Helper function to check if the conditions for input detection, if any, has been met
+            \brief      Helper function to check if any keyboard/mouse input that is different
+                        from the currently tracked last pressed input code is detected, and if so,
+                        update the tracked variables accordingly
 
             \param      potentialButton
-                    
+                    the potential input code to check for input detection
             *//**********************************************************************************/
             void UpdateLastPressed(InputCode potentialButton);
             /*********************************************************************************//*!
-            \brief      Helper function to check if the conditions for input detection, if any, has been met
+            \brief      Helper function to check if any controller input that is different
+                        from the currently tracked last pressed input code is detected, and if so,
+                        update the tracked variables accordingly
 
             \param      potentialButton
-                    
+                    the potential input code to check for input detection
             *//**********************************************************************************/
             void UpdateLastPressedController(InputCode potentialButton);
         };
 
     private:
         /*********************************************************************************//*!
-        \brief      Helper function used to 
+        \brief      Helper function used to detect if a specific keyboard/mouse input has been
+                    pressed in the current frame
 
         \param      type
-                
+                the type of keyboard/mouse input (e.g. mouse button, keyboard button)
 
         \param      inputCode
-                
+                the input code of the keyboard/mouse input to check
 
-        \return     
+        \return     true if the specific keyboard/mouse input has been pressed in the current frame, else false
         *//**********************************************************************************/
         static bool IsInputCodePressed(InputType type, InputCode inputCode);
+        /*********************************************************************************//*!
+        \brief      Helper function used to detect if a specific keyboard/mouse input is being held
+
+        \param      type
+                the type of keyboard/mouse input (e.g. mouse button, keyboard button)
+
+        \param      inputCode
+                the input code of the keyboard/mouse input to check
+
+        \return     true if the specific keyboard/mouse input is being held, else false
+        *//**********************************************************************************/
         static bool IsInputCodeHeld(InputType type, InputCode inputCode);
+        /*********************************************************************************//*!
+        \brief      Helper function used to detect if a specific keyboard/mouse input has been
+                    released in the current frame
+
+        \param      type
+                the type of keyboard/mouse input (e.g. mouse button, keyboard button)
+
+        \param      inputCode
+                the input code of the keyboard/mouse input to check
+
+        \return     true if the specific keyboard/mouse input has been released in the current frame, else false
+        *//**********************************************************************************/
         static bool IsInputCodeReleased(InputType type, InputCode inputCode);
 
+        /*********************************************************************************//*!
+        \brief      Helper function used to detect if a specific controller button has been
+                    pressed in the current frame
+
+        \param      inputCode
+                the input code of the controller button to check
+
+        \return     true if the specific controller button has been pressed in the current frame, else false
+        *//**********************************************************************************/
         static bool IsControllerInputCodePressed(InputCode inputCode);
+        /*********************************************************************************//*!
+        \brief      Helper function used to detect if a specific controller button is being held
+
+        \param      inputCode
+                the input code of the controller button to check
+
+        \return     true if the specific controller button is being held, else false
+        *//**********************************************************************************/
         static bool IsControllerInputCodeHeld(InputCode inputCode);
+        /*********************************************************************************//*!
+        \brief      Helper function used to detect if a specific controller button has been
+                    released in the current frame
+
+        \param      inputCode
+                the input code of the controller button to check
+
+        \return     true if the specific controller button has been released in the current frame, else false
+        *//**********************************************************************************/
         static bool IsControllerInputCodeReleased(InputCode inputCode);
+        /*********************************************************************************//*!
+        \brief      Helper function used to get a specific controller input value, from [-1, 1],
+                    mainly used for joystick and trigger input
+
+        \param      inputCode
+                the input code of the controller axis to check
+
+        \return     the specific controller input value, from [-1, 1]
+        *//**********************************************************************************/
         static float GetControllerAxisValue(InputCode inputCode);
     };
 }

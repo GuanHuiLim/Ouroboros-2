@@ -45,8 +45,16 @@ namespace oo
             axes = loadedAxes;
         }
 
+        /*********************************************************************************//*!
+        \brief      Initializes a container of trackers by creating and adding a tracker
+                    for every input axis
+
+        \param      trackers
+                a reference to the trackers container to initialize
+        *//**********************************************************************************/
         static inline void InitializeTrackers(std::unordered_map<std::string, InputAxis::Tracker>& trackers)
         {
+            trackers.clear();
             for (InputAxis const& axis : axes)
             {
                 trackers.emplace(axis.GetName(), InputAxis::Tracker{ axis });
