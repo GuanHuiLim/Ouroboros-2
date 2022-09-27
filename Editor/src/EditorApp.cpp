@@ -30,6 +30,7 @@ Technology is prohibited.
 #include "Testing/TestLayers/InputDebugLayer.h"
 #include "Testing/TestLayers/MainDebugLayer.h"
 #include "Testing/TestLayers/AssetDebugLayer.h"
+#include "Testing/TestLayers/FPSDisplayLayer.h"
 
 // Core Essential Layers
 #include "App/CoreLayers/SceneLayer.h"
@@ -63,6 +64,7 @@ class EditorApp final : public oo::Application
 private:
     // main scene manager
     SceneManager m_sceneManager;
+
     //oo::AssetManager m_assetManager{ "./" };
 #ifndef OO_END_PRODUCT
     std::shared_ptr<EditorLayer> m_editorLayer;
@@ -80,6 +82,7 @@ public:
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
 #ifdef OO_EDITOR
         m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
+        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());
 #endif
         // Main Layers
         m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
@@ -98,6 +101,8 @@ public:
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
+
+        //m_phy.test();
     }
 
     void OnUpdate() override

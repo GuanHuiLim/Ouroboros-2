@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           Editor.cpp
+\project        Editor
+\author         Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par            email: junxiang.leong\@digipen.edu
+\date           September 26, 2022
+\brief          start of most editor code 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "Editor.h"
 #include "Project.h"
@@ -22,6 +35,9 @@ Editor::Editor()
 	Serializer::Init();//runs the init function
 	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
+
+	
+
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
 	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
 	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
@@ -55,6 +71,8 @@ void Editor::Update()
 	static bool b = [this]() 
 	{
 		m_styleEditor.InitStyle(); 
+		m_toolbar.InitAssets();
+		m_loggingView.InitAsset();
 		return true; 
 	}();
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);

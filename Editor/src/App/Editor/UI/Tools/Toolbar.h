@@ -1,6 +1,6 @@
 /************************************************************************************//*!
 \file          ToolbarView.h
-\project       Ouroboros
+\project       Editor
 \author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution (100%)
 \par           email: junxiang.leong\@digipen.edu
 \date          October 3, 2021
@@ -13,6 +13,8 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include <string>
+#include <unordered_map>
+#include "Ouroboros/Asset/Asset.h"
 class Toolbar
 {
 public:
@@ -20,7 +22,9 @@ public:
 	\brief
 	 Ctor
 	*//**********************************************************************************/
-	Toolbar(float w = 30.0f, float h = 30.f) :btn_width(w),btn_height(h) {};
+
+	Toolbar(float w = 30.0f, float h = 30.f) :btn_width(w), btn_height(h) {};
+	void InitAssets();
 	/*********************************************************************************//*!
 	\brief    
 	 Displays the UI for toolbar
@@ -28,9 +32,9 @@ public:
 	*//**********************************************************************************/
 	void Show();
 private:
+	std::unordered_map<std::string,oo::Asset> m_iconsSaved;
 	float btn_width;
 	float btn_height;
-
 	bool docking = false;
 };
 

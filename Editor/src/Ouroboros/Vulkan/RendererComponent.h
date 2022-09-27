@@ -1,5 +1,9 @@
 #pragma once
 #include "pch.h"
+#ifndef  GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define  GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#endif // ! GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+
 #include "glm/common.hpp"
 #include "Ouroboros/Asset/AssetManager.h"
 #include "OO_Vulkan/src/MeshModel.h"
@@ -18,7 +22,7 @@ namespace oo
 
 		//no need to serialize
 		uint32_t model_handle{0};
-		uint32_t graphicsWorld_ID;
+		uint32_t graphicsWorld_ID{};
 
 		void GetModelHandle()
 		{
@@ -73,6 +77,8 @@ namespace oo
 	struct SkinMeshRendererComponent
 	{
 		Asset mesh_handle;
+
+
 	};
 
 }

@@ -121,6 +121,7 @@ namespace oGFX
 		glm::vec3 col{0.0f,1.0f,0.0f}; // Vertex colour (r, g, b)
 		glm::vec2 tex{}; // Texture Coords(u,v)
 		glm::vec3 tangent{}; // Vertex normal (x, y, z)
+		uint32_t boneWeights{};
 	};
 
 	struct DebugVertex
@@ -144,8 +145,6 @@ namespace oGFX
 
 	const std::vector<VkVertexInputBindingDescription>& GetGFXVertexInputBindings();	
 	const std::vector<VkVertexInputAttributeDescription>& GetGFXVertexInputAttributes();
-	const std::vector<VkDescriptorSet>& GetGFXDescriptoSetGroup();
-	
 
 	oGFX::SwapChainDetails GetSwapchainDetails(VulkanInstance& instance, VkPhysicalDevice device);
 	oGFX::QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);

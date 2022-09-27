@@ -125,8 +125,6 @@ VulkanRenderer::~VulkanRenderer()
 		descAllocs[i].Cleanup();
 	}
 
-	lightsBuffer.destroy();
-
 	for (size_t i = 0; i < models.size(); i++)
 	{
 		models[i].destroy(m_device.logicalDevice);
@@ -227,6 +225,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		debugTransformBuffer.reserve(MAX_OBJECTS);
 
 		CreateDescriptorSets_GPUScene();
+		CreateDescriptorSets_Lights();
 
 		CreateDefaultPSOLayouts();
 
@@ -524,11 +523,12 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 
 void VulkanRenderer::CreateDefaultPSOLayouts()
 {
-	std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = 
+	std::array<VkDescriptorSetLayout, 4> descriptorSetLayouts = 
 	{
 		SetLayoutDB::gpuscene, // (set = 0)
 		SetLayoutDB::FrameUniform,  // (set = 1)
-		SetLayoutDB::bindless  // (set = 2)
+		SetLayoutDB::bindless,  // (set = 2)
+		SetLayoutDB::lights
 	};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = oGFX::vkutils::inits::pipelineLayoutCreateInfo(descriptorSetLayouts);
@@ -640,16 +640,16 @@ void VulkanRenderer::SetWorld(GraphicsWorld* world)
 
 void VulkanRenderer::CreateLightingBuffers()
 {
-	oGFX::CreateBuffer(m_device.physicalDevice, m_device.logicalDevice, sizeof(CB::LightUBO), 
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&lightsBuffer.buffer, &lightsBuffer.memory);
-	lightsBuffer.size = sizeof(CB::LightUBO);
-	lightsBuffer.device = m_device.logicalDevice;
-	lightsBuffer.descriptor.buffer = lightsBuffer.buffer;
-	lightsBuffer.descriptor.offset = 0;
-	lightsBuffer.descriptor.range = sizeof(CB::LightUBO);
-
-	VK_CHK(lightsBuffer.map());
+	//oGFX::CreateBuffer(m_device.physicalDevice, m_device.logicalDevice, sizeof(CB::LightUBO), 
+	//	VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	//	&lightsBuffer.buffer, &lightsBuffer.memory);
+	//lightsBuffer.size = sizeof(CB::LightUBO);
+	//lightsBuffer.device = m_device.logicalDevice;
+	//lightsBuffer.descriptor.buffer = lightsBuffer.buffer;
+	//lightsBuffer.descriptor.offset = 0;
+	//lightsBuffer.descriptor.range = sizeof(CB::LightUBO);
+	//
+	//VK_CHK(lightsBuffer.map());
 }
 
 void VulkanRenderer::UploadLights()
@@ -659,24 +659,42 @@ void VulkanRenderer::UploadLights()
 
 	PROFILE_SCOPED();
 
-	CB::LightUBO lightUBO{};
+	//CB::LightUBO lightUBO{};
+	//
+	//// Current view position
+	//lightUBO.viewPos = glm::vec4(camera.m_position, 0.0f);
+	//
+	//// Temporary reroute
+	//auto& allLights = currWorld->GetAllOmniLightInstances();
+	//
+	//// Gather lights to be uploaded.
+	//// TODO: Frustum culling for light bounding volume...
+	//int numLights = glm::clamp((int)allLights.size(), 0, 6);
+	//for (int i = 0; i < numLights; ++i)
+	//{
+	//	lightUBO.lights[i] = allLights[i];
+	//}
+	//
+	//// Only lights that are inside/intersecting the camera frustum should be uploaded.
+	//memcpy(lightsBuffer.mapped, &lightUBO, sizeof(CB::LightUBO));
 
-	// Current view position
-	lightUBO.viewPos = glm::vec4(camera.m_position, 0.0f);
-
-	// Temporary reroute
-	auto& allLights = currWorld->m_HardcodedOmniLights;
-
-	// Gather lights to be uploaded.
-	// TODO: Frustum culling for light bounding volume...
-	int numLights = glm::clamp((int)allLights.size(), 0, 6);
-	for (int i = 0; i < numLights; ++i)
+	std::vector<SpotLightInstance> spotLights;
+	auto& lights = currWorld->GetAllOmniLightInstances();
+	spotLights.reserve(lights.size());
+	for (auto& e : lights)
 	{
-		lightUBO.lights[i] = allLights[i];
+		SpotLightInstance si;
+		si.position = e.position;
+		si.color = e.color;
+		si.radius = e.radius;
+		si.projection = e.projection;
+		si.view = e.view[0];
+
+		spotLights.emplace_back(si);
 	}
 
-	// Only lights that are inside/intersecting the camera frustum should be uploaded.
-	memcpy(lightsBuffer.mapped, &lightUBO, sizeof(CB::LightUBO));
+	globalLightBuffer.writeTo(spotLights.size(),spotLights.data());
+
 }
 
 void VulkanRenderer::CreateSynchronisation()
@@ -817,6 +835,22 @@ void VulkanRenderer::CreateDescriptorSets_GPUScene()
 	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
 		.BindBuffer(3, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.Build(descriptorSet_gpuscene,SetLayoutDB::gpuscene);
+}
+
+void VulkanRenderer::CreateDescriptorSets_Lights()
+{
+	VkDescriptorBufferInfo info{};
+	info.buffer = globalLightBuffer.getBuffer();
+	info.offset = 0;
+	info.range = VK_WHOLE_SIZE;
+
+	for (size_t i = 0; i < m_swapchain.swapChainImages.size(); i++)
+	{
+		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[i])
+			.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.Build(descriptorSet_lights,SetLayoutDB::lights);
+	}
+	
 }
 
 void VulkanRenderer::InitImGUI()
@@ -1108,12 +1142,9 @@ void VulkanRenderer::InitializeRenderBuffers()
 	// TODO: Currently this is only for OmniLightInstance.
 	// You should also support various light types such as spot lights, etc...
 
-	m_device.CreateBuffer(
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		&globalLightBuffer,
-		MAX_LIGHTS * sizeof(SpotLightInstance));
-    VK_NAME(m_device.logicalDevice, "Light Buffer", globalLightBuffer.buffer);
+	globalLightBuffer.Init(&m_device, VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	globalLightBuffer.reserve(MAX_LIGHTS);
+    VK_NAME(m_device.logicalDevice, "Light Buffer", globalLightBuffer.getBuffer());
 
 	constexpr uint32_t MAX_GLOBAL_BONES = 2048;
 	constexpr uint32_t MAX_SKINNING_VERTEX_BUFFER_SIZE = 4 * 1024 * 1024; // 4MB
@@ -1154,9 +1185,8 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		return;
 	}
 
-	auto gb = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
-	gb.GenerateBatches();
-	auto& allObjectsCommands = gb.GetBatch(GraphicsBatch::ALL_OBJECTS);
+	
+	auto& allObjectsCommands = batches.GetBatch(GraphicsBatch::ALL_OBJECTS);
 
 	objectCount = 0;
 	for (auto& indirectCmd : allObjectsCommands)
@@ -1336,17 +1366,13 @@ void VulkanRenderer::BeginDraw()
 {
 
 	PROFILE_SCOPED();
-
-	UpdateUniformBuffers();
-	UploadInstanceData();	
-	GenerateCPUIndirectDrawCommands();
-
+	
 	//wait for given fence to signal from last draw before continuing
 	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max()));
 	//mainually reset fences
 	VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[currentFrame]));
 
-	descAllocs[swapchainIdx].ResetPools();
+
 
 	{
 		PROFILE_SCOPED("vkAcquireNextImageKHR");
@@ -1356,7 +1382,31 @@ void VulkanRenderer::BeginDraw()
 		//get  index of next image to be drawn to , and signal semaphore when ready to be drawn to
         VkResult res = vkAcquireNextImageKHR(m_device.logicalDevice, m_swapchain.swapchain, std::numeric_limits<uint64_t>::max(),
             imageAvailable[currentFrame], VK_NULL_HANDLE, &swapchainIdx);
-        if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
+
+		descAllocs[swapchainIdx].ResetPools();
+		batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
+		batches.GenerateBatches();
+
+		UpdateUniformBuffers();
+		UploadInstanceData();	
+		UploadLights();
+		GenerateCPUIndirectDrawCommands();
+
+		auto dbi = gpuTransformBuffer.GetDescriptorBufferInfo();
+		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
+			.BindBuffer(3, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.Build(VulkanRenderer::get()->descriptorSet_gpuscene, SetLayoutDB::gpuscene);
+		gpuTransformBuffer.Updated();
+
+		VkDescriptorBufferInfo vpBufferInfo{};
+		vpBufferInfo.buffer = vpUniformBuffer[swapchainIdx];	// buffer to get data from
+		vpBufferInfo.offset = 0;									// position of start of data
+		vpBufferInfo.range = sizeof(CB::FrameContextUBO);			// size of data
+		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
+			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(descriptorSets_uniform[swapchainIdx], SetLayoutDB::FrameUniform);
+        
+		if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
         {
             resizeSwapchain = true;
 			m_prepared = false;
@@ -1518,6 +1568,7 @@ ModelData* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	flags |= aiProcess_ImproveCacheLocality;
 	flags |= aiProcess_CalcTangentSpace;
 	flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
+	flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 	const aiScene *scene = importer.ReadFile(file,flags
 		//  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
 		//| aiProcess_LimitBoneWeights           // 4 weights for skin model max
@@ -1550,47 +1601,49 @@ ModelData* VulkanRenderer::LoadModelFromFile(const std::string& file)
 
 	if (scene->HasAnimations())
 	{
-		std::cout << "Animated scene\n";
-		for (size_t i = 0; i < scene->mNumAnimations; i++)
-		{
-			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
-			std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
-			std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
-			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
-			{
-				auto& channel = scene->mAnimations[i]->mChannels[x];
-				std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
-				for (size_t y = 0; y < channel->mNumPositionKeys; y++)
-				{
-					std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
-					auto& pos = channel->mPositionKeys[y].mValue;
-					std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
-				}
-			}
-		}
-		std::cout << std::endl;
+		//std::cout << "Animated scene\n";
+		//for (size_t i = 0; i < scene->mNumAnimations; i++)
+		//{
+		//	std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+		//	std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
+		//	std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
+		//	std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
+		//	std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
+		//	std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
+		//	std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
+		//	for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
+		//	{
+		//		auto& channel = scene->mAnimations[i]->mChannels[x];
+		//		std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
+		//		for (size_t y = 0; y < channel->mNumPositionKeys; y++)
+		//		{
+		//			std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
+		//			auto& pos = channel->mPositionKeys[y].mValue;
+		//			std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
+		//		}
+		//	}
+		//}
+		//std::cout << std::endl;
 	}
 
 	std::vector<std::string> textureNames = MeshContainer::LoadMaterials(scene);
 	std::vector<int> matToTex(textureNames.size());
+	
+	// TODO: Maybe fix this after materials..
 	// Loop over textureNames and create textures for them
-	for (size_t i = 0; i < textureNames.size(); i++)
-	{
-		// if material had no texture, set '0' to indicate no texture, texture 0 will be reserved fora  default texture
-		if (textureNames[i].empty())
-		{
-			matToTex[i] = 0;
-		}
-		else
-		{
-			// otherwise create texture and set value to index of new texture
-			matToTex[i] = CreateTexture(textureNames[i]);
-		}
-	}
+	//for (size_t i = 0; i < textureNames.size(); i++)
+	//{
+	//	// if material had no texture, set '0' to indicate no texture, texture 0 will be reserved fora  default texture
+	//	if (textureNames[i].empty())
+	//	{
+	//		matToTex[i] = 0;
+	//	}
+	//	else
+	//	{
+	//		// otherwise create texture and set value to index of new texture
+	//		matToTex[i] = CreateTexture(textureNames[i]);
+	//	}
+	//}
 
 	ModelData* mData = new ModelData;
 
@@ -1603,22 +1656,28 @@ ModelData* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		auto& mdl = models[modelResourceIndex + i];
 		mdl.name = scene->mMeshes[i]->mName.C_Str();
 		mdl.cpuModel = mData;
-		mData->gfxMeshIndices[i] = modelResourceIndex + i;
+		mData->gfxMeshIndices[i] = static_cast<uint32_t>(modelResourceIndex + i);
 
 		auto cacheVoffset = mData->vertices.size();
 		auto cacheIoffset = mData->indices.size();
 		mdl.mesh = mdl.processMesh(scene->mMeshes[i], scene,
-			mData->vertices, mData->indices);
+			*mData);
 
 		mdl.vertices.count = mdl.mesh->vertexCount;
-		mdl.vertices.offset = cacheVoffset;
+		mdl.vertices.offset = static_cast<uint32_t>(cacheVoffset);
 		mdl.indices.count = mdl.mesh->indicesCount;
-		mdl.indices.offset = cacheIoffset;
+		mdl.indices.offset = static_cast<uint32_t>(cacheIoffset);
 	}
 
 	//mData->sceneInfo = new Node();
 	//always has one transform, root
 	mData->ModelSceneLoad(scene, *scene->mRootNode, nullptr, glm::mat4{ 1.0f });
+	
+	if (scene->HasAnimations())
+	{
+		mData->boneWeights.resize(mData->vertices.size());
+		mData->ModelBoneLoad(scene, *scene->mRootNode,0);
+	}
 		
 	//model.loadNode(nullptr, scene, *scene->mRootNode, 0, *mData);
 	auto cI_offset = g_GlobalMeshBuffers.IdxOffset;
@@ -1973,7 +2032,7 @@ int Win32SurfaceCreator(ImGuiViewport* vp, ImU64 device, const void* allocator, 
 }
 
 // Helper function to set Viewport & Scissor to the default window full extents.
-void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer)
+void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer, VkViewport* vp, VkRect2D* sc)
 {
 	auto& vr = *VulkanRenderer::get();
     auto* windowPtr = vr.windowPtr;
@@ -1983,6 +2042,8 @@ void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer)
     VkRect2D scissor = { {0, 0}, {uint32_t(windowPtr->m_width), uint32_t(windowPtr->m_height) } };
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	if (vp) *vp = viewport;
+	if (sc) *sc = scissor;
 }
 
 // Helper function to draw a Full Screen Quad, without binding vertex and index buffers.

@@ -34,6 +34,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Vulkan/RendererSystem.h"
 
+#include "Ouroboros/Audio/AudioSystem.h"
+
 //#define DEBUG_PRINT
 #ifdef DEBUG_PRINT
     #define PRINT(name) std::cout << "[" << (name) << "] : " << __FUNCTION__ << std::endl;
@@ -82,12 +84,10 @@ namespace oo
                 m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
                 //rendering system initialization
-                m_ecsWorld->Add_System<oo::MeshRendererSystem>()->Init(&GetWorld(), GetGraphicsWorld());
-            }
+                m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
 
-            // Broadcast event to load scene
-            LoadSceneEvent lse{ this };
-            EventManager::Broadcast<LoadSceneEvent>(&lse);
+                m_ecsWorld->Add_System<oo::AudioSystem>(this);
+            }
 
             PRINT(m_name);
             
@@ -102,6 +102,7 @@ namespace oo
         // Update Systems
         {
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
+            m_ecsWorld->Get_System<oo::AudioSystem>()->Run(m_ecsWorld.get());
             constexpr const char* const scripts_update = "Scripts Update";
             {
                 TRACY_PROFILE_SCOPE(scripts_update);
@@ -124,7 +125,7 @@ namespace oo
     {
         PRINT(m_name);
 
-        GetWorld().Get_System<oo::MeshRendererSystem>()->Run();
+        GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
         
         //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
         //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
@@ -203,9 +204,9 @@ namespace oo
                 m_rootGo = std::make_shared<GameObject>(root_handle, *this);
                 InsertGameObject(m_rootGo);
                 m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
+                
+                ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
             }
-
-            ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
 
             // TODO: Solution To tie graphics world to rendering context for now!
             static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
@@ -436,6 +437,9 @@ namespace oo
     
     void Scene::LoadFromFile()
     {
+        // Broadcast event to load scene
+        LoadSceneEvent lse{ this };
+        EventManager::Broadcast<LoadSceneEvent>(&lse);
     }
 
     void Scene::SaveToFile()

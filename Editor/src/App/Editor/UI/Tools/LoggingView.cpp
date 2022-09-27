@@ -24,6 +24,7 @@ Technology is prohibited.
 
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Utility/ImGuiStylePresets.h"
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
 std::deque<StringHash::size_type> LoggingView::s_messages;
 std::vector<LoggingView::MessageData> LoggingView::s_msgCollection;
@@ -37,6 +38,12 @@ bool LoggingView::s_paused = false;
 LoggingView::LoggingView()
 {
 	CallbackSink_mt::SubscribeToSink(AddItem);
+}
+void LoggingView::InitAsset()
+{
+	assets.emplace("LogsIcon", ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png")[0]);
+	assets.emplace("WarningIcon", ImGuiManager::s_editorAssetManager.LoadName("WarningIcon.png")[0]);
+	assets.emplace("ErrorIcon", ImGuiManager::s_editorAssetManager.LoadName("ErrorIcon.png")[0]);
 }
 /**
  * \brief 
@@ -60,6 +67,8 @@ LoggingView::LoggingView()
  */
 void LoggingView::Show()
 {
+	constexpr const char* const loggingview_update = "Logging View Update";
+	TRACY_PROFILE_SCOPE_N(loggingview_update);
 
 	static float imageSize = 50.0f;
 	static LoggingView::MessageData msgitem;
@@ -122,12 +131,11 @@ void LoggingView::Show()
 	ImGui::Text(m_msgitem.filename.c_str());
 	ImGui::EndChild();
 
+	TRACY_PROFILE_SCOPE_END();
 }
 /*********************************************************************************//*!
 \brief    A callback function to attach to the spdlog's callback sink
  
-\TODO     Modify it such that it adds items that come from the same file
-
 \param    str
 			the formatted message from spdlog
 \param    type
@@ -160,6 +168,10 @@ void LoggingView::LogSelectable(MessageData& item,
 								size_t textCount,
 								float imageSize)
 {
+
+	constexpr const char* const logselectable_update = "Log Selectable";
+	TRACY_PROFILE_SCOPE_N(logselectable_update);
+
 	//Begin Draw Selectable Function
 	if (ImGui::Selectable("##Item", &item.selected, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(0, imageSize)))
 	{
@@ -211,27 +223,27 @@ void LoggingView::LogSelectable(MessageData& item,
 	{
 	case 0://trace
 		ImGui::PushStyleColor(ImGuiCol_Text, { 0.2f,0.5f,0.2f,1 });
-		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png").begin()->GetData<ImTextureID>(), {imageSize,imageSize});
+		ImGui::Image(assets["LogsIcon"].GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 1://debug
 		ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f,0.5f,0.5f,1 });
-		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
+		ImGui::Image(assets["LogsIcon"].GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 2://info
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1,1,1,1 });
-		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
+		ImGui::Image(assets["LogsIcon"].GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 3://warn
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1,1,0,1 });
-		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("WarningIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
+		ImGui::Image(assets["WarningIcon"].GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 4://err
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f,0.3f,0.3f,1 });
-		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("ErrorIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
+		ImGui::Image(assets["ErrorIcon"].GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	case 5://critical
 		ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f,0.5f,1,1 });
-		ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("ErrorIcon.png").begin()->GetData<ImTextureID>(), { imageSize,imageSize });
+		ImGui::Image(assets["ErrorIcon"].GetData<ImTextureID>(), { imageSize,imageSize });
 		break;
 	}
 	ImGui::SameLine();
@@ -257,6 +269,7 @@ void LoggingView::LogSelectable(MessageData& item,
 	}
 	ImGui::PopStyleColor();
 	//End Draw Selectable Function
+	TRACY_PROFILE_SCOPE_END();
 }
 
 void LoggingView::DrawExpanded(MessageData& ,
@@ -265,6 +278,7 @@ void LoggingView::DrawExpanded(MessageData& ,
 							   size_t textCount, 
 							   ImVec2 textSize)
 {
+
 	ImGuiListClipper clipper;
 	clipper.Begin(static_cast<int>(s_messages.size()), textSize.y);
 	while (clipper.Step())

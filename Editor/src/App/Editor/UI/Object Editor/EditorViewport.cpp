@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file          EditorViewport.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         a viewport for the editor to allow the gizmo to interact with the object. 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -60,7 +73,15 @@ void EditorViewport::Show()
 
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
-	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty())
+
+	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
+	{
+		return;
+	}
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
+	if (gameobject == nullptr || scene->IsValid(*gameobject) == false)
 	{
 		return;
 	}
@@ -92,8 +113,6 @@ void EditorViewport::Show()
 	ImGuizmo::SetGizmoSizeClipSpace(originalGuizmoSize * gizmoSize);
 
 	ImGuizmo::BeginFrame();
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
 	oo::TransformComponent& transform = gameobject->GetComponent<oo::TransformComponent>();
 
 	glm::vec3 mScale = transform.GetGlobalScale();

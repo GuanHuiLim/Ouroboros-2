@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file          ScriptSequencer.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Allows user to determine the order of execution for the scripts. 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "ScriptSequencer.h"
 #include <Ouroboros/Scripting/ScriptManager.h>
@@ -16,6 +29,7 @@ void ScriptSequencer::Show()
 {
 	ImVec2 region = ImGui::GetContentRegionAvail();
 	ImVec2 childWindowSize = { region.x * 0.6f, region.y * 0.45f };
+	static bool dragging = false;
 	ImGui::BeginGroup();
 	{
 		ImGui::Text("Before Internal Update :");
@@ -56,12 +70,39 @@ void ScriptSequencer::Show()
                     WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
                 }
 			}
+			ImGui::EndDragDropTarget();
 		}
+
 		ImGui::SetCursorPos(pos);
 		int counter = 0;
 		for (auto& item : oo::ScriptManager::GetBeforeDefaultOrder())
 		{
-			ImGui::PushID(++counter);
+			ImGui::PushID(counter);
+			if (dragging)
+			{
+				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
+				ImGui::Separator();
+				ImGui::SetCursorPos(curr_cursor_pos);
+				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, { 0,5.0f });
+				if (ImGui::BeginDragDropTarget())
+				{
+					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BEFORE");
+					if (payload)
+					{
+						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
+						try
+						{
+							oo::ScriptManager::RemoveBeforeDefaultOrder(sci);
+							oo::ScriptManager::InsertBeforeDefaultOrder(sci, counter);
+						}
+						catch (std::exception const& e)
+						{
+							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+						}
+					}
+					ImGui::EndDragDropTarget();
+				}
+			}
 			if (ImGui::SmallButton("X"))
 			{
                 try
@@ -85,6 +126,8 @@ void ScriptSequencer::Show()
 					ImGui::Text(item.ToString().c_str());
 				ImGui::EndDragDropSource();
 			}
+			
+			++counter;
 			ImGui::PopID();
 		}
 		ImGui::EndGroup();
@@ -130,12 +173,38 @@ void ScriptSequencer::Show()
                     WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
                 }
 			}
+			ImGui::EndDragDropTarget();
 		}
 		ImGui::SetCursorPos(pos);
 		int counter = 0;
 		for (auto& item : oo::ScriptManager::GetAfterDefaultOrder())
 		{
-			ImGui::PushID(++counter);
+			ImGui::PushID(counter);
+			if (dragging)
+			{
+				ImVec2 curr_cursor_pos = ImGui::GetCursorPos();
+				ImGui::Separator();
+				ImGui::SetCursorPos(curr_cursor_pos);
+				ImGui::Selectable("##s_line", false, ImGuiSelectableFlags_Disabled, { 0,5.0f });
+				if (ImGui::BeginDragDropTarget())
+				{
+					const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("AFTER");
+					if (payload)
+					{
+						oo::ScriptClassInfo sci = *static_cast<oo::ScriptClassInfo*>(payload->Data);
+						try
+						{
+							oo::ScriptManager::RemoveAfterDefaultOrder(sci);
+							oo::ScriptManager::InsertAfterDefaultOrder(sci, counter);
+						}
+						catch (std::exception const& e)
+						{
+							WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, e.what());
+						}
+					}
+					ImGui::EndDragDropTarget();
+				}
+			}
 			if (ImGui::SmallButton("X"))
 			{
                 try
@@ -159,7 +228,9 @@ void ScriptSequencer::Show()
 				ImGui::Text(item.ToString().c_str());
 				ImGui::EndDragDropSource();
 			}
+			
 			ImGui::PopID();
+			++counter;
 		}
 		ImGui::EndGroup();
 		ImGui::EndChild();
@@ -182,4 +253,9 @@ void ScriptSequencer::Show()
 	}
 	ImGui::EndChild();
 	ImGui::EndGroup();
+
+	{
+		ImRect r = ImGui::GetCurrentWindowRead()->Rect();
+		dragging = ImGui::IsMouseDragging(ImGuiMouseButton_Left) && ImGui::IsMouseHoveringRect(r.Min, r.Max);
+	}
 }
