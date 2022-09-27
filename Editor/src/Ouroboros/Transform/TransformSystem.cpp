@@ -37,14 +37,13 @@ namespace oo
             tf.CalculateLocalTransform();
         }
 
-        // Check for valid parent
-        if (m_scene->IsValid(go->GetParentUUID()))
+        ASSERT_MSG(m_scene->IsValid(go->GetParentUUID()) == false,"Assumes we always have proper parent");
+
+        auto& parentTf = go->GetParent().Transform();
+        // Check if transform has changed locally or if parent has changed [optimization step]
+        if (tf.HasChanged() || parentTf.HasChanged())
         {
-            // Check if transform has changed locally or if parent has changed [optimization step]
-            if (tf.HasChanged() || go->GetParent().Transform().HasChanged())
-            {
-                tf.SetGlobalTransform(go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform);
-            }
+            tf.SetGlobalTransform(parentTf.GetGlobalMatrix() * tf.GetLocalMatrix());
         }
 
         TRACY_PROFILE_SCOPE_END();

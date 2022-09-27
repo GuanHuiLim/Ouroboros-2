@@ -14,12 +14,17 @@
 #include <random>
 namespace oo::Anim::internal
 {
-	auto generateUID() 
+	uint GetAnimationIndex(std::string const& name)
 	{
-		static std::mt19937 mt{ std::random_device{}() };
-		static std::uniform_int_distribution<size_t> distrib{ 0 };
-		return distrib(mt); 
-	};
+		assert(Animation::name_to_index.contains(name));
+		return Animation::name_to_index[name];
+	}
+	uint GetAnimationIndex(size_t id)
+	{
+		assert(Animation::ID_to_index.contains(id));
+		return Animation::ID_to_index[id];
+	}
+
 
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type)
 	{
@@ -127,7 +132,7 @@ namespace oo::Anim::internal
 		//it should be an event tracker
 		assert(info.progressTracker.type == Timeline::TYPE::SCRIPT_EVENT);
 
-		auto& timeline = info.tracker_info.tracker.currentNode->animation.events;
+		auto& timeline = info.tracker_info.tracker.currentNode->GetAnimation().events;
 		//no events in timeline
 		if (timeline.empty()) return;
 		//already hit last so we return
@@ -161,29 +166,27 @@ namespace oo::Anim::internal
 
 		//already hit last and animation not looping so we return
 		if (info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
-			info.tracker_info.tracker.currentNode->animation.looping == false)
+			info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
 		{
 			return;
 		}
 
-		//if looping, set the normalized time based on iterations
-		if (info.tracker_info.tracker.currentNode->animation.looping)
-		{
-			float num_iterations{ 0.f };
-			float currentTimer = info.tracker_info.tracker.global_timer;
-			while (currentTimer > timeline.keyframes.back().time)
-			{
-				currentTimer -= timeline.keyframes.back().time;
-				num_iterations += 1.f;
-			}
-			//set normalized timer
-			info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
-		}
-		else
-		{
-			//set normalized timer
-			info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		}
+		////if looping, set the normalized time based on iterations
+		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
+		//{
+		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
+		//	{
+		//		currentTimer -= timeline.keyframes.back().time;
+		//		num_iterations += 1.f;
+		//	}
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
+		//}
+		//else
+		//{
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
+		//}
 
 		//if next keyframe within bounds increment index 
 		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
@@ -201,11 +204,10 @@ namespace oo::Anim::internal
 				//set the value
 				info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
 
-				//if animation is looping, reset keyframe index and timer
-				if (info.tracker_info.tracker.currentNode->animation.looping)
+				//if animation is looping, reset keyframe index
+				if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
 				{
 					info.progressTracker.index = 0;
-					info.tracker_info.tracker.timer = updatedTimer - timeline.keyframes.back().time;
 				}
 				return;
 			}
@@ -307,7 +309,7 @@ namespace oo::Anim::internal
 		//TODO: script event tracker
 
 		//add timeline trackers
-		for (auto& timeline : node.animation.timelines)
+		for (auto& timeline : node.GetAnimation().timelines)
 		{
 			auto progressTracker = ProgressTracker::Create(timeline.type);
 			//assign it the timeline
@@ -387,9 +389,13 @@ namespace oo::Anim::internal
 		//update tracker timer and global timer
 		info.tracker.timer = updatedTimer;
 		info.tracker.global_timer += info.tracker.currentNode->speed * info.dt;
+		info.tracker.normalized_timer = updatedTimer / info.tracker.currentNode->GetAnimation().animation_length;
 		//check if we passed a keyframe and update
 		UpdateTrackerKeyframeProgress(info, updatedTimer);
 
+		if (info.tracker.currentNode->GetAnimation().looping &&
+			updatedTimer > info.tracker.currentNode->GetAnimation().animation_length)
+			info.tracker.timer = updatedTimer - info.tracker.currentNode->GetAnimation().animation_length;
 	}
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
@@ -518,18 +524,21 @@ namespace oo::Anim::internal
 		return nullptr;
 	}
 
-	Node* AddNodeToGroup(Group& group, std::string const& name, glm::vec3 const& position)
+	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
 		//if node already added to this group then just return it
 		for (auto& node : group.nodes)
 		{
-			if (node.name == name)
+			if (node.name == info.name)
+			{
+				LOG_CORE_WARN("{0} Animation Node already exists in group!!", info.name);
 				return &node;
+			}
 		}
+		//assign the group to the info struct
+		info.group = &group;
 		//create the node and add it to this group
-		Node node{ group, name };
-		node.position = position;
-		
+		Node node{ info };
 		UpdateNodeTrackers(node);
 
 		
@@ -537,18 +546,18 @@ namespace oo::Anim::internal
 		return &createdNode;
 	}
 
-	Node* AddNodeToGroup(AnimationTree& tree, std::string const& groupName, std::string const& name, glm::vec3 const& position)
-	{
-		Group* group = RetrieveGroupFromTree(tree, groupName);
-		if (group == nullptr)
-		{
-			LOG_WARN("could not find {0} group to add {1} node!!", groupName, name);
-			return nullptr;
-		}
-		//create the node and add it to this group
-		Node node{*group, name };
-		return AddNodeToGroup(*group, name, position);
-	}
+	//Node* AddNodeToGroup(AnimationTree& tree, std::string const& groupName, Anim::NodeInfo& info)
+	//{
+	//	Group* group = RetrieveGroupFromTree(tree, groupName);
+	//	if (group == nullptr)
+	//	{
+	//		LOG_WARN("could not find {0} group to add {1} node!!", groupName, info.name);
+	//		return nullptr;
+	//	}
+	//	//create the node and add it to this group
+	//	Node node{*group, name };
+	//	return AddNodeToGroup(*group, name, position);
+	//}
 
 	Timeline* AddTimelineToAnimation(Animation& animation, Anim::TimelineInfo const& info)
 	{
@@ -630,7 +639,7 @@ namespace oo::Anim::internal
 		return &( *(timeline.keyframes.emplace(iterator, keyframe)) );
 	}
 
-	//node->animation, timelineName, type, datatype, keyframe
+	//node->GetAnimation(), timelineName, type, datatype, keyframe
 	//adds a link from src to dst nodes and assumes src and dst nodes are valid
 	Link* AddLinkBetweenNodes(Group& group, std::string const& src_name, std::string const& dst_name)
 	{
@@ -748,6 +757,41 @@ namespace oo::Anim::internal
 		}
 	}
 
+	void BindNodesToAnimations(AnimationTree& tree)
+	{
+		for (auto& group : tree.groups)
+		{
+			for (auto& node : group.nodes)
+			{
+				node.animation_index = GetAnimationIndex(node.animation_ID);
+			}
+		}
+	}
+	
+
+	void CalculateAnimationLength(AnimationTree& tree)
+	{
+		//for all nodes
+		for (auto& group : tree.groups)
+		{
+			for (auto& node : group.nodes)
+			{
+				auto& animation = node.GetAnimation();
+				float longest_time{ 0.f };
+
+				for (auto& timeline : animation.timelines)
+				{
+					if (timeline.keyframes.empty()) continue;
+
+					if (longest_time < timeline.keyframes.back().time)
+						longest_time = timeline.keyframes.back().time;
+				}
+
+				animation.animation_length = longest_time;
+			}
+		}
+	}
+
 } //namespace oo::Anim::internal
 
 namespace oo::Anim
@@ -848,6 +892,18 @@ namespace oo::Anim
 
 	}
 
+	Node::Node(NodeInfo& info) 
+		: group{ (assert(info.group), *(info.group))}
+		, name{ info.name }
+	{
+
+	}
+
+	Animation& Node::GetAnimation()
+	{
+		return Animation::animation_storage[animation_index];
+	}
+
 	/*-------------------------------
 	Group
 	-------------------------------*/
@@ -855,7 +911,15 @@ namespace oo::Anim
 		: name{ _name }
 		, startNode{nodes, 0}
 	{
-		Anim::internal::AddNodeToGroup(*this, "Start Node", glm::vec3{});
+		NodeInfo info{
+			.name{ "Start Node" },
+			.animation_name{ Animation::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f},
+			.group{this}
+		};
+
+		Anim::internal::AddNodeToGroup(*this, info);
 	}
 
 	/*-------------------------------
@@ -986,6 +1050,9 @@ namespace oo::Anim
 		for (auto& [key, tree] : AnimationTree::map)
 		{
 			internal::BindConditionsToParameters(tree);
+			internal::BindNodesToAnimations(tree);
+			internal::CalculateAnimationLength(tree);
+
 		}
 	}
 
@@ -1028,9 +1095,16 @@ namespace oo::Anim
 
 		//add a node to the first group
 		auto& group = tree->groups.front();
-		auto node = comp.AddNode(group.name, "Test Node");
+		NodeInfo nodeinfo{
+			.name{ "Test Node" },
+			.animation_name{ Animation::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f}
+		};
+
+		auto node = comp.AddNode(group.name, nodeinfo);
 		assert(node);
-		node->animation.looping = true;
+		node->GetAnimation().looping = true;
 
 		//add a link from the start node to the test node
 		auto link = comp.AddLink(group.name, start_node->name, node->name);
@@ -1156,7 +1230,7 @@ namespace oo
 
 
 
-	Anim::Node* AnimationComponent::AddNode(std::string const& groupName, std::string const name, glm::vec3 position )
+	Anim::Node* AnimationComponent::AddNode(std::string const& groupName, Anim::NodeInfo& info)
 	{
 		auto tree = GetAnimationTree();
 		//tree should exist
@@ -1175,11 +1249,11 @@ namespace oo
 			return nullptr;
 		}
 
-		auto node = oo::Anim::internal::AddNodeToGroup(*group, name, position);
+		auto node = oo::Anim::internal::AddNodeToGroup(*group, info);
 		//node should exist after adding to group
 		if (node == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("Adding {0} node to {1} animation tree failed!!", name, GetAnimationTree()->name);
+			LOG_CORE_DEBUG_INFO("Adding {0} node to {1} animation tree failed!!", info.name, GetAnimationTree()->name);
 			assert(false);
 			return nullptr;
 		}
@@ -1323,8 +1397,8 @@ namespace oo
 			return nullptr;
 		}
 
-		//auto timeline = Anim::internal::AddTimelineToAnimation(node->animation, timelineName, type, datatype);
-		auto timeline = Anim::internal::AddTimelineToAnimation(node->animation, info);
+		//auto timeline = Anim::internal::AddTimelineToAnimation(node->GetAnimation(), timelineName, type, datatype);
+		auto timeline = Anim::internal::AddTimelineToAnimation(node->GetAnimation(), info);
 		
 		if (timeline == nullptr)
 		{
@@ -1364,7 +1438,7 @@ namespace oo
 	//		return nullptr;
 	//	}
 
-	//	auto timeline = Anim::internal::AddTimelineToAnimation(node->animation, timelineName, type, datatype);
+	//	auto timeline = Anim::internal::AddTimelineToAnimation(node->GetAnimation(), timelineName, type, datatype);
 	//	if (timeline == nullptr)
 	//	{
 	//		LOG_CORE_DEBUG_INFO("failed to add {0} timeline!!", timelineName);
@@ -1401,7 +1475,7 @@ namespace oo
 			assert(false);
 			return nullptr;
 		}
-		auto timeline = Anim::internal::RetrieveTimelineFromAnimation(node->animation, timelineName);
+		auto timeline = Anim::internal::RetrieveTimelineFromAnimation(node->GetAnimation(), timelineName);
 		//node should exist
 		if (timeline == nullptr)
 		{

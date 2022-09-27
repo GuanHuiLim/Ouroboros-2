@@ -26,7 +26,5 @@ namespace oo
         registration::class_<oo::DeferredComponent>("This is a Deferred Object")
             .property("Entity ID", &DeferredComponent::entityID);
     }
-    
-    DeferredComponent::DeferredComponent() {};
 
 }

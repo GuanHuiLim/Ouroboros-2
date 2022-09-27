@@ -215,3 +215,25 @@ void DebugDraw::AddSphereAs3Disc1HorizonDisc(const glm::vec3& center, float radi
     CalculateHorizonDisc(cameraPosition, center, radius, position, normal);
     DebugDraw::AddDisc(position, radius, normal, color);
 }
+
+void DebugDraw::DrawYGrid(float gridSize, float gapSize, const oGFX::Color & col)
+{
+    const float halfGrid = gridSize/2.0f;
+    const float numLines = gridSize / gapSize;
+
+    const Point3D bottomLeft{ -halfGrid,0.0f,-halfGrid };
+    const Point3D topRight{ halfGrid ,0.0f, halfGrid };
+
+    const auto iters = numLines;
+    for (size_t x = 0; x < iters; x++)
+    {
+        DebugDraw::AddLine(bottomLeft + Point3D{ gapSize * x,0.0f,0.0f }, topRight - Point3D{ gapSize * (iters - x),0.0f,0.0f }, oGFX::Colors::LIGHT_GREY);
+    }
+    for (size_t z = 0; z< iters; z++)
+    {
+        DebugDraw::AddLine(bottomLeft + Point3D{ 0.0f,0.0f, gapSize*z }, topRight - Point3D{ 0.0f,0.0f ,gapSize * (iters - z)}, oGFX::Colors::LIGHT_GREY);
+    }
+    DebugDraw::AddLine(bottomLeft + Point3D{ gridSize ,0.0f,0.0f }, topRight , oGFX::Colors::LIGHT_GREY);
+    DebugDraw::AddLine(bottomLeft + Point3D{ 0.0f,0.0f, gridSize }, topRight , oGFX::Colors::LIGHT_GREY);
+
+}
