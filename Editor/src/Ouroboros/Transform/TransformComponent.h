@@ -95,8 +95,12 @@ namespace oo
         bool m_dirty = false;
         bool m_hasChanged = false;
 
-        glm::vec3 m_eulerAngles;
-        
+        glm::vec3 m_eulerAngles;    // fake data.
+
+        Transform m_globalTransform;
+
         friend class TransformSystem;
     };
+
+    static constexpr std::size_t transform_component_size = sizeof(TransformComponent);
 }

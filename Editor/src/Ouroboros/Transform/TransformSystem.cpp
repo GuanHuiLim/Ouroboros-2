@@ -30,13 +30,6 @@ namespace oo
         TRACY_TRACK_PERFORMANCE(per_transform_update);
         TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
 
-
-        // Update local and global transform immediately
-        if (tf.IsDirty())
-        {
-            tf.CalculateLocalTransform();
-        }
-
         // Check for valid parent
         if (m_scene->IsValid(go->GetParentUUID()))
         {
@@ -49,6 +42,21 @@ namespace oo
 
         TRACY_PROFILE_SCOPE_END();
         TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);
+    }
+
+    void TransformSystem::UpdateLocalTransforms()
+    {
+        // Update their local transform
+        static Ecs::Query query = Ecs::make_query<TransformComponent>();
+        m_world->for_each(query, [&](TransformComponent& tf)
+            {
+                // TODO: this part of the code doesn't need to be serial.
+                // Update local and global transform immediately
+                if (tf.IsDirty())
+                {
+                    tf.CalculateLocalTransform();
+                }
+            });
     }
 
     void TransformSystem::UpdateTree(scenenode::shared_pointer node)
@@ -113,6 +121,10 @@ namespace oo
         static Ecs::Query query = Ecs::make_query<TransformComponent>();
         world->for_each(query, [&](TransformComponent& tf) { tf.SetHasChanged(false); });
 
+        // TODO
+        // update local transformations : can be parallelized.
+        UpdateLocalTransforms();
+
         // Transform System updates via the scenegraph because the order matters
         auto const&  graph = m_scene->GetGraph();
         scenegraph::shared_pointer root_node = graph.get_root();
@@ -124,6 +136,7 @@ namespace oo
 
     void TransformSystem::UpdateSubTree(GameObject go)
     {
+        UpdateLocalTransforms();
         UpdateTree(go.GetSceneNode().lock());
     }
 

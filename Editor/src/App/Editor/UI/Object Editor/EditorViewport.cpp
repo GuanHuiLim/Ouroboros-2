@@ -115,25 +115,26 @@ void EditorViewport::Show()
 	ImGuizmo::BeginFrame();
 	oo::TransformComponent& transform = gameobject->GetComponent<oo::TransformComponent>();
 
-	glm::vec3 mScale = transform.GetGlobalScale();
-	glm::vec3 mRot = transform.GetGlobalRotationDeg();
-	glm::vec3 mTrans = transform.GetGlobalPosition();
+	//glm::vec3 mScale = transform.GetGlobalScale();
+	//glm::vec3 mRot = transform.GetGlobalRotationDeg();
+	//glm::vec3 mTrans = transform.GetGlobalPosition();
 	glm::mat4 m_matrix = transform.GetGlobalMatrix();
 	ImGuizmo::SetOrthographic(false);
 
 	ImGuizmo::SetDrawlist();
 
-	ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
+	//ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
 
 	if (ImGuizmo::Manipulate(view, projection, (ImGuizmo::OPERATION)m_gizmoOperation, ImGuizmo::MODE::WORLD, glm::value_ptr(m_matrix)))
 	{
 		if (ImGuizmo::IsUsing())
 		{
-			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(m_matrix),
+			/*ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(m_matrix),
 				glm::value_ptr(mTrans),
 				glm::value_ptr(mRot),
 				glm::value_ptr(mScale));
-			transform.SetGlobalTransform(mTrans, mRot, mScale);
+			transform.SetGlobalTransform(mTrans, mRot, mScale);*/
+			transform.SetGlobalTransform(m_matrix);
 		}
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)))
