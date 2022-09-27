@@ -29,16 +29,29 @@ namespace oo
         static constexpr const char* const per_transform_update = "per_transform_update";
         TRACY_TRACK_PERFORMANCE(per_transform_update);
         TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
-
+        
+        /// all parents need to be sure to be updated first.
+        if (tf.m_globalDirty)
+        {
+            tf.CalculateGlobalTransform();
+            glm::mat4 parentGlobal = go->GetParent().Transform().GetGlobalMatrix();
+            glm::mat4 parent_inverse = glm::inverse(parentGlobal) * tf.GetGlobalMatrix();
+            tf.SetLocalTransform(parent_inverse);   // decompose to this values.
+        }
         // Check for valid parent
-        if (m_scene->IsValid(go->GetParentUUID()))
+        else if (m_scene->IsValid(go->GetParentUUID()))
         {
             // Check if transform has changed locally or if parent has changed [optimization step]
             if (tf.HasChanged() || go->GetParent().Transform().HasChanged())
             {
-                tf.SetGlobalTransform(go->GetParent().Transform().GetGlobalMatrix() * tf.m_transform.m_localTransform);
+                tf.m_hasChanged = true;
+                tf.m_globalTransform.Transform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_localTransform.Transform;
+                tf.m_globalTransform.DecomposeValues(tf.m_globalTransform.Transform, tf.m_globalTransform.Scale, tf.m_globalTransform.Orientation.value, tf.m_globalTransform.Position);
+                //auto parent_global = go->GetParent().Transform().GetGlobalMatrix();
+                //tf.SetGlobalTransform(parent_global * tf.m_localTransform.m_transform);
             }
         }
+
 
         TRACY_PROFILE_SCOPE_END();
         TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);
@@ -56,6 +69,7 @@ namespace oo
                 {
                     tf.CalculateLocalTransform();
                 }
+                
             });
     }
 

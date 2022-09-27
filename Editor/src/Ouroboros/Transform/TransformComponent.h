@@ -23,9 +23,9 @@ namespace oo
     class TransformComponent
     {
     public:
-        using vec3 = Transform::vec3;
-        using mat4 = Transform::mat4;
-        using quat = Transform::quat;
+        using vec3 = Transform3D::vec3;
+        using mat4 = Transform3D::mat4;
+        using quat = Transform3D::quat;
 
         /*-----------------------------------------------------------------------------*/
         /* Getter Functions                                                            */
@@ -87,17 +87,23 @@ namespace oo
         void SetHasChanged(bool value);
 
         RTTR_ENABLE();
-    private:
-        void CalculateLocalTransform();
+    
+    //private:
 
-        Transform m_transform;
+        void CalculateLocalTransform();
+        void CalculateGlobalTransform();
+    
+    public:
+
+        Transform3D m_localTransform;
+        Transform3D m_globalTransform;
 
         bool m_dirty = false;
+        bool m_globalDirty = false;
         bool m_hasChanged = false;
 
         glm::vec3 m_eulerAngles;    // fake data.
 
-        Transform m_globalTransform;
 
         friend class TransformSystem;
     };
