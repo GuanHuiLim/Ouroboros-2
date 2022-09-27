@@ -76,6 +76,7 @@ namespace oo
         void SetGlobalRotation(vec3 euler_angles_degrees);
         void SetGlobalOrientation(quat quaternion);
         void SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale);
+        void SetGlobalTransform(vec3 position, quat quaternion, vec3 scale);
         void SetGlobalTransform(mat4 target_global_matrix);
 
         // Extra Functions

@@ -99,7 +99,7 @@ namespace oo
         void UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf);
 
         void UpdateLocalTransforms();
-        void UpdateTree(scenenode::shared_pointer node);
+        void UpdateTree(scenenode::shared_pointer node, bool updateRoot);
     private:
         Scene* m_scene = nullptr;
 

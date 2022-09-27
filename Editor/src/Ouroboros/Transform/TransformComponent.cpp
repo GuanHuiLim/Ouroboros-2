@@ -107,6 +107,7 @@ namespace oo
 
     void TransformComponent::SetLocalTransform(mat4 target_local_matrix)
     {
+        m_dirty = false;
         m_hasChanged = true;
         m_localTransform.SetTransform(target_local_matrix);
     }
@@ -148,6 +149,13 @@ namespace oo
 
         //m_dirty = true;
         //m_globalTransform.SetLocalTransform(position, euler_angles_degrees, scale); 
+    }
+
+    void oo::TransformComponent::SetGlobalTransform(vec3 position, quat quaternion, vec3 scale)
+    {
+        SetGlobalPosition(position);
+        SetGlobalOrientation(quaternion);
+        SetGlobalScale(scale);
     }
     
     void TransformComponent::ParentChanged() { /*m_dirty = true;*/ m_globalDirty = true; }

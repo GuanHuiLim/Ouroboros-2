@@ -49,7 +49,7 @@ namespace oo
             {
                 tf.m_hasChanged = true;
                 tf.m_globalTransform.Transform = go->GetParent().Transform().GetGlobalMatrix() * tf.m_localTransform.Transform;
-                tf.m_globalTransform.DecomposeValues(tf.m_globalTransform.Transform, tf.m_globalTransform.Scale, tf.m_globalTransform.Orientation.value, tf.m_globalTransform.Position);
+                Transform3D::DecomposeValues(tf.m_globalTransform.Transform, tf.m_globalTransform.Position, tf.m_globalTransform.Orientation.value, tf.m_globalTransform.Scale);
                 //auto parent_global = go->GetParent().Transform().GetGlobalMatrix();
                 //tf.SetGlobalTransform(parent_global * tf.m_localTransform.m_transform);
             }
@@ -62,7 +62,7 @@ namespace oo
     void TransformSystem::UpdateLocalTransforms()
     {
         // Update their local transform
-        static Ecs::Query query = Ecs::make_query<TransformComponent>();
+        static Ecs::Query query = Ecs::make_query_including_differed<TransformComponent>();
         m_world->for_each(query, [&](TransformComponent& tf)
             {
                 // TODO: this part of the code doesn't need to be serial.
@@ -71,11 +71,10 @@ namespace oo
                 {
                     tf.CalculateLocalTransform();
                 }
-                
             });
     }
 
-    void TransformSystem::UpdateTree(scenenode::shared_pointer node)
+    void TransformSystem::UpdateTree(scenenode::shared_pointer node, bool updateRoot)
     {
         // Transform System updates via the scenegraph because the order matters
         static constexpr const char* const pre_transform_collect = "tree_update";
@@ -85,6 +84,20 @@ namespace oo
         scenegraph::shared_pointer root_node = node;
         std::stack<scenenode::shared_pointer> s;
         scenenode::shared_pointer curr = root_node;
+        
+        // update itself or not
+        if (updateRoot)
+        {
+            // Find root gameobject
+            auto const go = m_scene->FindWithInstanceID(node->get_handle());
+
+            UpdateTransform(go, go->Transform());
+            //// Skip gameobjects that has the deferred component
+            //if (go->HasComponent<DeferredComponent>() == false)
+            //{
+            //}
+        }
+
         s.push(curr);
         while (!s.empty())
         {
@@ -98,9 +111,9 @@ namespace oo
                 // Find current gameobject
                 auto const go = m_scene->FindWithInstanceID(child->get_handle());
 
-                // Skip gameobjects that has the deferred component
-                if (go->HasComponent<DeferredComponent>())
-                    continue;
+                //// Skip gameobjects that has the deferred component
+                //if (go->HasComponent<DeferredComponent>())
+                //    continue;
 
                 UpdateTransform(go, go->Transform());
             }
@@ -144,7 +157,7 @@ namespace oo
         // Transform System updates via the scenegraph because the order matters
         auto const&  graph = m_scene->GetGraph();
         scenegraph::shared_pointer root_node = graph.get_root();
-        UpdateTree(root_node);
+        UpdateTree(root_node, false);
 
         TRACY_PROFILE_SCOPE_END();
         TRACY_DISPLAY_PERFORMANCE_SELECTED(transform_update);
@@ -153,7 +166,7 @@ namespace oo
     void TransformSystem::UpdateSubTree(GameObject go)
     {
         UpdateLocalTransforms();
-        UpdateTree(go.GetSceneNode().lock());
+        UpdateTree(go.GetSceneNode().lock(), true);
     }
 
 }

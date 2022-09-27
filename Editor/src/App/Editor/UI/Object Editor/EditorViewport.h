@@ -20,4 +20,5 @@ public:
 	void Show();
 private:
 	int m_gizmoOperation = 7;
+	int m_gizmoMode = 1;	// IMGUIZMO::MODE::WORLD <- default
 };
