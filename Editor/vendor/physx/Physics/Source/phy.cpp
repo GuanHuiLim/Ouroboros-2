@@ -78,9 +78,6 @@ namespace physx_system {
 
     void shutdown() {
 
-        if(mDispatcher)
-            mDispatcher->release();
-
         getPhysics()->release();
 
         // pvd release here
@@ -146,6 +143,13 @@ PhysxWorld::~PhysxWorld()
     */
 
     scene->release();
+
+    if (mDispatcher)
+    {
+        mDispatcher->release();
+        mDispatcher = nullptr;
+    }
+
 }
 
 void PhysxWorld::updateScene(float dt) {
