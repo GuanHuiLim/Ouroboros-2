@@ -60,6 +60,7 @@ namespace oo::Anim
 	struct Timeline;
 	struct Animation;		//represents property or fbx file animations
 	struct Node;			//a node in the animation tree
+	struct NodeRef;			//a reference class to reference a node
 	struct NodeInfo;
 	struct Group;
 	struct AnimationTree; 
@@ -85,6 +86,52 @@ namespace oo::Anim
 			ProgressTracker& progressTracker;
 		};
 	}
+
+	struct Node
+	{
+		Group& group;
+		std::string name{};
+		//animation asset loaded from file
+		Asset anim_asset{};
+
+		//used to get the animation's index
+		size_t animation_ID{ std::numeric_limits<size_t>().max() };
+		//index of the animation in the animation vector
+		uint animation_index{ std::numeric_limits<uint>().max() };
+		//Animation animation{};
+		float speed{ 1.f };
+		glm::vec3 position{};
+
+		size_t node_ID{ std::numeric_limits<size_t>().max() };
+
+		//trackers to be given to the animation component 
+		//upon reaching this node
+		std::vector<ProgressTracker> trackers{};
+		//outgoing links to other nodes
+		std::vector<Link*> outgoingLinks{};
+
+		Node(Group& _group, std::string const _name = "Unnamed Node");
+		Node(NodeInfo& info);
+		void SetAnimation(Asset asset);
+		//void SetAnimation(Asset asset);
+		Animation& GetAnimation();
+	};
+
+	struct NodeRef
+	{
+		std::vector<Node>* nodes{ nullptr }; //reference to vector of nodes
+		int index{ -1 };	//node index
+		size_t id; //node's unique identifier
+
+		Node& operator*() const { return (*nodes)[index]; }
+		Node* operator->() const { return &((*nodes)[index]); }
+
+		operator bool() const { return nodes && index >= 0 && index < nodes->size() && 
+			this->operator->()->node_ID == id; }
+	
+		//recalculates the index by looking for the node in the nodes vector
+		void Reload(); 
+	};
 
 	//variables that are defined within an AnimationTree that can be accessed and assigned values from scripts or editor
 	struct Parameter
@@ -149,8 +196,8 @@ namespace oo::Anim
 
 	struct Link
 	{
-		Node& src;
-		Node& dst;
+		NodeRef src;
+		NodeRef dst;
 
 		bool has_exit_time{ false };
 		float exit_time{ 0.f };
@@ -159,7 +206,7 @@ namespace oo::Anim
 
 		std::vector<Condition> conditions{};
 
-		Link(Node& _src, Node& _dst);
+		Link(NodeRef _src, NodeRef _dst);
 	};
 
 	
@@ -244,7 +291,7 @@ namespace oo::Anim
 
 	struct Animation
 	{
-		static constexpr const char* empty_animation_name ="empty animation";
+		static constexpr const char* empty_animation_name = "empty animation";
 		static std::unordered_map< std::string, uint> name_to_index;
 		static std::unordered_map< size_t, uint> ID_to_index;
 		static std::vector<Animation> animation_storage;
@@ -263,33 +310,7 @@ namespace oo::Anim
 		size_t animation_ID{ std::numeric_limits<size_t>().max() };
 	};
 
-	struct Node
-	{
-		Group& group;
-		std::string name{};
-		//animation asset loaded from file
-		Asset anim_asset{};
-
-		//used to get the animation's index
-		size_t animation_ID{ std::numeric_limits<size_t>().max() };
-		//index of the animation in the animation vector
-		uint animation_index{std::numeric_limits<uint>().max()};
-		//Animation animation{};
-		float speed{1.f};
-		glm::vec3 position{};
-		
-		//trackers to be given to the animation component 
-		//upon reaching this node
-		std::vector<ProgressTracker> trackers{};	
-		//outgoing links to other nodes
-		std::vector<Link*> outgoingLinks{};
-
-		Node(Group& _group, std::string const _name = "Unnamed Node");
-		Node(NodeInfo& info);
-		void SetAnimation(Asset asset);
-		//void SetAnimation(Asset asset);
-		Animation& GetAnimation();
-	};
+	
 
 	struct NodeInfo
 	{
@@ -302,16 +323,7 @@ namespace oo::Anim
 		Group* group{nullptr};
 	};
 
-	struct NodeRef
-	{
-		std::vector<Node>& nodes;
-		int index{ -1 };
-
-		Node& operator*() const { return nodes[index]; }
-		Node* operator->() const { return &(nodes[index]); }
-
-		operator bool() const { return index >= 0 && index < nodes.size(); }
-	};
+	
 
 	struct Group
 	{
