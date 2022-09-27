@@ -194,6 +194,7 @@ project "Editor"
         {
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" \"" .. binApp .. "\""},
+            {"{COPY} \"%{LibraryDir.fmod}/fmodL.dll\" \"" .. binApp .. "\""},
         }
 
         links
@@ -213,6 +214,7 @@ project "Editor"
         {
 				-- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
+            {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
         }
 
         links
@@ -232,6 +234,7 @@ project "Editor"
         {
 				-- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
+            {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
         }
 
         links
