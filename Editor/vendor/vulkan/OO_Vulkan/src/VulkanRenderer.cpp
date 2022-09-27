@@ -1366,15 +1366,7 @@ void VulkanRenderer::BeginDraw()
 {
 
 	PROFILE_SCOPED();
-
-	batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
-	batches.GenerateBatches();
-
-	UpdateUniformBuffers();
-	UploadInstanceData();	
-	UploadLights();
-	GenerateCPUIndirectDrawCommands();
-
+	
 	//wait for given fence to signal from last draw before continuing
 	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max()));
 	//mainually reset fences
@@ -1392,7 +1384,13 @@ void VulkanRenderer::BeginDraw()
             imageAvailable[currentFrame], VK_NULL_HANDLE, &swapchainIdx);
 
 		descAllocs[swapchainIdx].ResetPools();
+		batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
+		batches.GenerateBatches();
 
+		UpdateUniformBuffers();
+		UploadInstanceData();	
+		UploadLights();
+		GenerateCPUIndirectDrawCommands();
 
 		auto dbi = gpuTransformBuffer.GetDescriptorBufferInfo();
 		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
