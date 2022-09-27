@@ -3,10 +3,6 @@
 
 void AnimatorControllerView::Show()
 {
-    static bool displayAnimatorInspector = true;
-    static LinkInfo* selectedLink = nullptr;
-    static ed::NodeId* selectedNode = nullptr;
-
     ed::SetCurrentEditor(m_Context);
     ed::Begin("Animator Controller Editor", ImVec2(0.0, 0.0));
 
@@ -80,27 +76,6 @@ void AnimatorControllerView::Show()
     }
     ed::EndCreate(); // Wraps up object creation action handling.
 
-    for (auto& linkInfo : m_links)
-    {
-        // if linkid is selected
-        if (ed::IsLinkSelected(linkInfo.id))
-        {
-            // store the LinkId of the LinkInfo into a temp LinkId
-            //      LinkId selectedLinkID = linkInfo.Id;
-            selectedNode = nullptr;
-            selectedLink = &linkInfo;
-        }
-    }
-
-    for (int i = 0; i < m_nodes.size(); ++i)
-    {
-        if (ed::IsNodeSelected(m_nodes[i].id))
-        {
-            selectedLink = nullptr;
-            selectedNode = &m_nodes[i].id;
-        }
-    }
-
     // Handle deletion action
     OnDelete();
     // End of interaction with imgui node editor.
@@ -116,7 +91,7 @@ void AnimatorControllerView::Show()
     if (ImGui::BeginPopup("Animator Editor Popup"))
     {
         if (ImGui::MenuItem("Create State"))
-            CreateNode(uniqueId, "State", ImVec2(0,0));
+            CreateNode(uniqueId, "State");
         ImGui::EndPopup();
     }
     ed::Resume();
@@ -130,7 +105,7 @@ void AnimatorControllerView::Show()
     //MUST DO THIS TO MOVE THE NODES
     m_firstFrame = false;
 
-    DisplayInspector(displayAnimatorInspector, selectedLink, selectedNode);
+    DisplayInspector();
     DisplayParameters();
 }
 
@@ -157,7 +132,7 @@ void AnimatorControllerView::DisplayParameters()
     }
 }
 
-void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, LinkInfo* selectedLink, ed::NodeId* selectedNode)
+void AnimatorControllerView::DisplayInspector()
 {
     m_nodesId.resize(ed::GetSelectedObjectCount());
     m_linksId.resize(ed::GetSelectedObjectCount());
@@ -168,7 +143,7 @@ void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, Li
     m_nodesId.resize(nodeCount);
     m_linksId.resize(linkCount);
 
-    if (ImGui::Begin("Animator Inspector", &displayAnimatorInspector))
+    if (ImGui::Begin("Animator Inspector"))
     {
         if (nodeCount != 0)
         {
@@ -231,44 +206,6 @@ void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, Li
                 }
             }
         }
-
-        /*if (selectedLink)
-        {
-            ed::LinkId temp = selectedLink->id;
-            auto id = std::find_if(m_links.begin(), m_links.end(), [temp](auto& link) {return link.id == temp; });
-
-            Pin* input = FindPin(selectedLink->inputID);
-            Pin* output = FindPin(selectedLink->outputID);
-
-            std::string linkRelation = input->name + "->" + output->name;
-            ImGui::Text(linkRelation.c_str());
-            static bool hasExitTime = false;
-            static float exitTime = 0.75f;
-            static bool fixedDuration = true;
-            static float transitionDuration = 0.1f;
-            ImVec2 textsize = ImGui::CalcTextSize("a");
-            ImGui::Text("Has Exit Time");
-            ImGui::SameLine(textsize.x * 25);
-            ImGui::Checkbox("##hasexittime", &hasExitTime);
-            if (ImGui::TreeNode("Settings"))
-            {
-                {
-                    ImGui::Text("Exit Time");
-                    ImGui::SameLine(textsize.x * 25);
-                    if (hasExitTime)
-                        ImGui::InputFloat("##exitTime", &exitTime, 0.0f, 0.0f, "%.2f");
-                    else
-                        ImGui::InputFloat("##exitTime", &exitTime, 0.0f, 0.0f, "%.2f", ImGuiInputTextFlags_ReadOnly);
-                    ImGui::Text("Fixed Duration");
-                    ImGui::SameLine(textsize.x * 25);
-                    ImGui::Checkbox("##fixedduration", &fixedDuration);
-                    ImGui::Text("Transition Duration");
-                    ImGui::SameLine(textsize.x * 25);
-                    ImGui::InputFloat("##transitionDuration", &transitionDuration);
-                }
-                ImGui::TreePop();
-            }
-        }*/
         ImGui::End();
     }
 }
@@ -276,8 +213,8 @@ void AnimatorControllerView::DisplayInspector(bool& displayAnimatorInspector, Li
 AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& uniqueId, const char* _name, ImVec2 _pos)
 {
     m_nodes.emplace_back(uniqueId++, _name);
-    m_nodes.back().Input.emplace_back(uniqueId++, &m_nodes.back(), _name, PinType::Flow);
-    m_nodes.back().Output.emplace_back(uniqueId++, &m_nodes.back(), _name, PinType::Flow);
+    m_nodes.back().Input.emplace_back(uniqueId++, &m_nodes.back(), _name);
+    m_nodes.back().Output.emplace_back(uniqueId++, &m_nodes.back(), _name);
     m_nodes.back().pos = _pos;
 
     BuildNode(&m_nodes.back());

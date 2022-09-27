@@ -45,11 +45,6 @@ public:	//Default Functions
 private: //Member Variables
 	ed::EditorContext* m_Context	  = nullptr;
 
-	enum class PinType
-	{
-		Flow
-	};
-
 	enum class PinKind
 	{
 		Output,
@@ -63,11 +58,10 @@ private: //Member Variables
 		ed::PinId	id;
 		NodeInfo*   node;
 		std::string name;
-		PinType		type;
 		PinKind		kind;
 
-		Pin(int _id, NodeInfo* _node, const char* _name, PinType _type):
-			id(_id), node(_node), name(_name), type(_type), kind(PinKind::Input)
+		Pin(int _id, NodeInfo* _node, const char* _name):
+			id(_id), node(_node), name(_name), kind(PinKind::Input)
 		{
 		}
 	};
@@ -114,11 +108,7 @@ private: //Member Variables
 	std::vector<ed::LinkId> m_linksId;
 	LinkInfo* m_selectedLink		  = nullptr;
 
-	bool m_displayAnimatorEditor	  = true;
 	bool m_firstFrame				  = true;
-	bool m_displayAnimatorInspector   = false;
-	bool m_displayNodeEditor		  = false;	//activates when Node link is clicked
-	bool m_displayLinkEditor		  = false;	//activates when Transition link is clicked
 
 	int uniqueId					  = 1;
 	int  m_nextLinkId				  = 100;	//for debugging purposes
@@ -129,9 +119,9 @@ private: //Member Functions
 	void BuildNodes();
 
 	void DisplayParameters();
-	void DisplayInspector(bool& displayAnimatorInspector, LinkInfo* selectedLink, ed::NodeId* selectedNode);
+	void DisplayInspector();
 	void OnCreate();
-	NodeInfo* CreateNode(int& uniqueId, const char* _name, ImVec2 _pos);
+	NodeInfo* CreateNode(int& uniqueId, const char* _name, ImVec2 _pos = ImVec2(0,0));
 	void CreateLink(int& uniqueId);
 	void OnDelete();
 	void DeleteNode(int& uniqueId);
