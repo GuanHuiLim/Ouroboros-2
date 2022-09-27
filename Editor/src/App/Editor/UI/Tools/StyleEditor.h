@@ -14,9 +14,12 @@ Technology is prohibited.
 #pragma once
 #include <imgui/imgui.h>
 #include <string>
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 class StyleEditor
 {
 public:
+	void SetPlayMode(ToolbarButtonEvent* e);
+	void SetEditMode(ToolbarButtonEvent* e);
 	void InitStyle();
 	StyleEditor();
 	~StyleEditor();
