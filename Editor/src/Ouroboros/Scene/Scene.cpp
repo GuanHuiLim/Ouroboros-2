@@ -93,6 +93,21 @@ namespace oo
             LoadSceneEvent lse{ this };
             EventManager::Broadcast<LoadSceneEvent>(&lse);
 
+            // Set Active Event for all objects
+            for (auto& go : m_gameObjects)
+            {
+                if (go->ActiveInHierarchy())
+                {
+                    GameObjectComponent::OnEnableEvent e{ go->GetInstanceID() };
+                    EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&e);
+                }
+                else
+                {
+                    GameObjectComponent::OnDisableEvent e{ go->GetInstanceID() };
+                    EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&e);
+                }
+            }
+            
             PRINT(m_name);
             
             TRACY_PROFILE_SCOPE_END();
@@ -471,6 +486,13 @@ namespace oo
 
     void Scene::RemoveGameObject(Scene::go_ptr go_ptr)
     {
+        ASSERT(go_ptr == nullptr);
+
+        // one final broadcast to cleanup anything you need to
+        GameObject::OnDestroy e;
+        e.go = go_ptr.get();
+        EventManager::Broadcast<GameObject::OnDestroy>(&e);
+
         // remove from scenegraph first. Timing is important here.
         if (auto scenegraph_go = go_ptr->GetSceneNode().lock())
         {
