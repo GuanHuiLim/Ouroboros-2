@@ -64,6 +64,7 @@ class EditorApp final : public oo::Application
 private:
     // main scene manager
     SceneManager m_sceneManager;
+
     //oo::AssetManager m_assetManager{ "./" };
 #ifndef OO_END_PRODUCT
     std::shared_ptr<EditorLayer> m_editorLayer;
@@ -100,6 +101,8 @@ public:
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
+
+        //m_phy.test();
     }
 
     void OnUpdate() override
