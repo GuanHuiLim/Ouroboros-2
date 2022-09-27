@@ -12,7 +12,7 @@ namespace oo::Anim::internal
 		map[Ecs::ECSWorld::get_component_hash<T>()] = [](void* ptr) {
 			T& ref = *(static_cast<T*>(ptr));
 			return rttr::instance{ ref };
-		};;
+		};
 	};
 	std::unordered_map< size_t, rttr::instance(*)(void*)> hash_to_instance{};
 
@@ -31,10 +31,35 @@ namespace oo::Anim::internal
 			return map;
 		}();*/
 	}
+
+	size_t generateUID()
+	{
+		static std::mt19937 mt{ std::random_device{}() };
+		static std::uniform_int_distribution<size_t> distrib{ 0 };
+		return distrib(mt);
+	};
 }
 
 namespace oo::Anim
 {
+	std::unordered_map< std::string, uint> Animation::name_to_index{};
+	std::unordered_map< size_t, uint> Animation::ID_to_index{};
+	std::vector<Animation> Animation::animation_storage = []() {
+		decltype(Animation::animation_storage) container{};
+		container.reserve(internal::expected_num_anims);
+
+		//create empty animation
+		Animation empty_anim{};
+		empty_anim.name = Animation::empty_animation_name;
+		empty_anim.animation_ID = internal::generateUID();
+
+		Animation::ID_to_index[empty_anim.animation_ID] = container.size();
+		Animation::name_to_index[empty_anim.name] = container.size();
+
+		container.emplace_back(std::move(empty_anim));
+		return container;
+	}();
+
 	Condition::CompareFnMap Condition::comparisonFn_map = []()
 	{
 		rttr::type::register_comparators<bool>();

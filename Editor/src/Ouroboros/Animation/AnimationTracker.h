@@ -20,11 +20,20 @@ namespace oo::Anim
 	//tracks the progress of a gameobject's animation in an animation tree
 	struct AnimationTracker
 	{
+		struct InTransitionInfo {
+			bool in_transition{ false };
+			//trackers for the destination node
+			std::vector<ProgressTracker> trackers{};
+			//duration of
+			float transition_timer{ 0.f };
+		};
+
 		Node* currentNode{ nullptr };
 		
 		float timer{ 0.f };
 		float normalized_timer{ 0.f };
 		float global_timer{ 0.f };
+		int num_iterations{ 0 };
 		//event tracker, then FBX animations, then properties
 		//these track the various timelines in a single animation
 		std::vector<ProgressTracker> trackers;
