@@ -335,7 +335,7 @@ namespace oo
         // Queue selected node for deletion
         m_removeList.emplace(GetInstanceID(go));
 
-        // Then continue to destroy all its children
+        // Then continue to queue destruction for all its children
         for (auto const& childuuid : go.GetChildrenUUID())
         {
             auto childobj = FindWithInstanceID(childuuid);
