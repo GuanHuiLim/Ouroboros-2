@@ -8,11 +8,12 @@ namespace oo
 	RTTR_REGISTRATION
 	{
 		using namespace rttr;
-		registration::class_<MeshRendererComponent>("Mesh Renderer")
+	registration::class_<MeshRendererComponent>("Mesh Renderer")
 		.property_readonly("Model Handle", &MeshRendererComponent::model_handle)
-		.property("Mesh", &MeshRendererComponent::mesh_handle)
-			(
-				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-			);
+		.property("Mesh", &MeshRendererComponent::GetMesh, &MeshRendererComponent::SetMesh)
+		(
+			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
+		)
+		.property("SubmodelID", &MeshRendererComponent::GetSubModelID, &MeshRendererComponent::SetSubModelID);
 	}
 }
