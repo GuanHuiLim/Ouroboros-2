@@ -188,5 +188,29 @@ namespace oo
                 }
             }
         );
+        axes.emplace_back(
+            InputAxis
+            {
+                "Fire",
+                InputAxis::InputType::MouseButton,
+                InputAxis::Settings
+                {
+                    InputAxis::INPUTCODE_INVALID,
+                    static_cast<InputAxis::InputCode>(input::MouseCode::Button0),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                },
+                InputAxis::ControllerInputType::Trigger_Joystick,
+                InputAxis::Settings
+                {
+                    InputAxis::INPUTCODE_INVALID,
+                    static_cast<InputAxis::InputCode>(input::ControllerAxisCode::TRIGGERRIGHT),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                }
+            }
+        );
     }
 }

@@ -253,7 +253,10 @@ namespace oo
     {
         if (inputCode == InputAxis::INPUTCODE_INVALID)
             return 0.0f;
-        float value = input::GetControllerAxisValue(static_cast<input::ControllerAxisCode>(inputCode));
+        input::ControllerAxisCode axisCode = static_cast<input::ControllerAxisCode>(inputCode);
+        float value = input::GetControllerAxisValue(axisCode);
+        if (axisCode == input::ControllerAxisCode::LEFTY || axisCode == input::ControllerAxisCode::RIGHTY)
+            value *= -1;
         if (value >= 0)
             return value / std::numeric_limits<short>().max();
         else
