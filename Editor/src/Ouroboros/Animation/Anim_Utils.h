@@ -28,7 +28,7 @@ Technology is prohibited.
 namespace oo::Anim::internal
 {
 	constexpr uint expected_num_anims = 50;
-
+	constexpr size_t invalid_ID{ std::numeric_limits<size_t>().max() };
 	extern std::unordered_map< size_t, rttr::instance(*)(void*)> hash_to_instance;
 
 	void Initialise_hash_to_instance();
@@ -54,6 +54,7 @@ namespace oo::Anim
 	struct Condition;		//checks against a parameter
 	struct ConditionInfo;	//information to create a condition
 	struct Link;			//connects two nodes with conditions
+	struct LinkRef;
 	struct KeyFrame;
 	struct ScriptEvent;
 	struct TimelineInfo;
@@ -63,6 +64,7 @@ namespace oo::Anim
 	struct NodeRef;			//a reference class to reference a node
 	struct NodeInfo;
 	struct Group;
+	struct GroupInfo;
 	struct GroupRef;
 	struct AnimationTree; 
 	struct AnimationTracker; //tracks a user's progress in an animation tree
@@ -88,9 +90,66 @@ namespace oo::Anim
 		};
 	}
 
+	struct NodeRef
+	{
+		std::vector<Node>* nodes{ nullptr }; //reference to vector of nodes
+		int index{ -1 };	//node index
+		size_t id{}; //node's unique identifier
+
+		Node& operator*() const { return (*nodes)[index]; }
+		Node* operator->() const { return &((*nodes)[index]); }
+
+		operator bool() const {
+			return valid();
+		}
+
+		//recalculates the index by looking for the node in the nodes vector
+		void Reload();
+	private:
+		bool valid() const;
+	};
+
+	struct GroupRef
+	{
+		std::vector<Group>* groups{ nullptr }; //reference to vector of groups
+		int index{ -1 };	//group index
+		size_t id{ std::numeric_limits<size_t>().max() }; //group's unique identifier
+
+		Group& operator*() const { return (*groups)[index]; }
+		Group* operator->() const { return &((*groups)[index]); }
+
+		operator bool() const {
+			return valid();
+		}
+
+		//recalculates the index by looking for the group in the groups vector
+		void Reload();
+	private:
+		bool valid() const;
+	};
+
+	struct LinkRef
+	{
+		std::vector<Link>* links{ nullptr }; //reference to vector of groups
+		int index{ -1 };	//group index
+		size_t id{ std::numeric_limits<size_t>().max() }; //group's unique identifier
+
+		Link& operator*() const { return (*links)[index]; }
+		Link* operator->() const { return &((*links)[index]); }
+
+		operator bool() const {
+			return valid();
+		}
+
+		//recalculates the index by looking for the group in the groups vector
+		void Reload();
+	private:
+		bool valid() const;
+	};
+
 	struct Node
 	{
-		Group& group;
+		GroupRef group;
 		std::string name{};
 		//animation asset loaded from file
 		Asset anim_asset{};
@@ -109,9 +168,9 @@ namespace oo::Anim
 		//upon reaching this node
 		std::vector<ProgressTracker> trackers{};
 		//outgoing links to other nodes
-		std::vector<Link*> outgoingLinks{};
+		std::vector<LinkRef> outgoingLinks{};
 
-		Node(Group& _group, std::string const _name = "Unnamed Node");
+		//Node(Group& _group, std::string const _name = "Unnamed Node");
 		Node(NodeInfo& info);
 		void SetAnimation(Asset asset);
 		//void SetAnimation(Asset asset);
@@ -126,24 +185,31 @@ namespace oo::Anim
 		glm::vec3 position{ 0.f,0.f,0.f };
 
 		//dont fill this up
-		Group* group{ nullptr };
+		GroupRef group{};
+		size_t nodeID{ std::numeric_limits<size_t>().max() };
 	};
 
-	struct NodeRef
-	{
-		std::vector<Node>* nodes{ nullptr }; //reference to vector of nodes
-		int index{ -1 };	//node index
-		size_t id; //node's unique identifier
-
-		Node& operator*() const { return (*nodes)[index]; }
-		Node* operator->() const { return &((*nodes)[index]); }
-
-		operator bool() const { return nodes && index >= 0 && index < nodes->size() && 
-			this->operator->()->node_ID == id; }
 	
-		//recalculates the index by looking for the node in the nodes vector
-		void Reload(); 
+
+	struct Group
+	{
+		std::string name{ "Unnamed Group" };
+		NodeRef startNode;
+		//contains the nodes and their positions to be displayed in the editor
+		std::vector<Node> nodes{};
+		std::vector<Link> links{};
+		AnimationTree* tree{ nullptr };
+		size_t groupID{ std::numeric_limits<size_t>().max() };	//unique identifier
+
+		//Group(std::string const _name = "Unnamed Group");
+		Group(GroupInfo const& info);
 	};
+	struct GroupInfo
+	{
+		std::string name{ "Unnamed Group" };
+		size_t groupID{ std::numeric_limits<size_t>().max() };
+	};
+	
 
 	//variables that are defined within an AnimationTree that can be accessed and assigned values from scripts or editor
 	struct Parameter
@@ -152,7 +218,7 @@ namespace oo::Anim
 
 		P_TYPE type{};
 		DataType value{};
-		size_t paramID{};
+		size_t paramID{ std::numeric_limits<size_t>().max() };
 		std::string name{"Unnamed Parameter"};
 
 		Parameter(ParameterInfo const& info);
@@ -184,7 +250,7 @@ namespace oo::Anim
 		P_TYPE type;
 		DataType value{};
 		//used to track the parameter's index in the animation tree's vector
-		size_t paramID{};
+		size_t paramID{ std::numeric_limits<size_t>().max() };
 		uint32_t parameterIndex{};
 		CompareFn* compareFn{ nullptr };
 		static CompareFnMap comparisonFn_map;
@@ -201,7 +267,7 @@ namespace oo::Anim
 		//initial value, leave empty for default
 		Condition::DataType value{};
 		//dont fill this
-		size_t _paramID{};
+		size_t _paramID{ std::numeric_limits<size_t>().max() };
 		//dont fill this
 		Parameter* _param{nullptr};
 	};
@@ -215,8 +281,8 @@ namespace oo::Anim
 		float exit_time{ 0.f };
 		bool fixed_duration{ false };
 		std::string name{"Unnamed Link"};
-
 		std::vector<Condition> conditions{};
+		size_t linkID{ std::numeric_limits<size_t>().max() };
 
 		Link(NodeRef _src, NodeRef _dst);
 	};
@@ -324,36 +390,7 @@ namespace oo::Anim
 
 	
 
-	struct Group
-	{
-		std::string name{ "Unnamed Group"};
-		NodeRef startNode;
-		//contains the nodes and their positions to be displayed in the editor
-		std::vector<Node> nodes{};
-		std::vector<Link> links{};
-		AnimationTree* tree{nullptr};
-		size_t groupID{};	//unique identifier
-
-		Group(std::string const _name = "Unnamed Group");
-	};
 	
-	struct GroupRef
-	{
-		std::vector<Group>* groups{ nullptr }; //reference to vector of groups
-		int index{ -1 };	//group index
-		size_t id; //group's unique identifier
-
-		Group& operator*() const { return (*groups)[index]; }
-		Group* operator->() const { return &((*groups)[index]); }
-
-		operator bool() const {
-			return groups && index >= 0 && index < groups->size() &&
-				this->operator->()->groupID == id;
-		}
-
-		//recalculates the index by looking for the group in the groups vector
-		void Reload();
-	};
 }
 
 
