@@ -39,7 +39,8 @@ namespace oo
         [[nodiscard]] inline bool IsLoop() const { return loop; }
         [[nodiscard]] inline float GetVolume() const { return volume; }
         [[nodiscard]] inline float GetPitch() const { return pitch; }
-        [[nodiscard]] FMOD::Channel* GetChannel() const { return channel; }
+        [[nodiscard]] inline FMOD::Channel* GetChannel() const { return channel; }
+        [[nodiscard]] inline bool IsDirty() const { return isDirty; }
         [[nodiscard]] bool IsPlaying() const;
         [[nodiscard]] float GetPlaybackTime() const;
 
@@ -78,6 +79,11 @@ namespace oo
         /// </summary>
         void UnPause();
 
+        /// <summary>
+        /// Clears the dirty flag.
+        /// </summary>
+        void ClearDirty();
+
         RTTR_ENABLE();
 
     private:
@@ -97,5 +103,6 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         FMOD::Channel* channel = nullptr;
+        bool isDirty = false;
     };
 }
