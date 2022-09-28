@@ -48,6 +48,16 @@ namespace oo
         TRACY_TRACK_PERFORMANCE(AUDIO_UPDATE);
         TRACY_PROFILE_SCOPE_NC(AUDIO_UPDATE, tracy::Color::Aquamarine1);
 
+        // fuck u
+        bool isEditor = false;
+        {
+            oo::GetCurrentSceneEvent ev;
+            oo::EventManager::Broadcast(&ev);
+            isEditor = ev.IsEditor;
+        }
+        if (isEditor)
+            return;
+
         // Iterate audio listeners
         {
             static Ecs::Query query = Ecs::make_query<AudioListenerComponent>();
@@ -96,7 +106,6 @@ namespace oo
                 if (as.IsDirty())
                 {
                     // Update all
-                    FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
                     FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
                     FMOD_ERR_HAND(as.GetChannel()->setLoopCount(as.IsLoop() ? -1 : 0));
                     FMOD_ERR_HAND(as.GetChannel()->setVolume(as.GetVolume()));
