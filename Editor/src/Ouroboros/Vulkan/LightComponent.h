@@ -24,7 +24,7 @@ namespace oo
         DIRECTIONAL,
     };
 
-    class LightingComponent
+    class LightComponent
     {
     public:
         // shouldn't be changed by other systems.

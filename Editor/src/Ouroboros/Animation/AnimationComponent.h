@@ -44,7 +44,7 @@ namespace oo
 
 		//adds a node to the group in the animation tree attached to this component
 		//returns nullptr if no animation tree
-		Anim::Node* AddNode(std::string const& groupName, std::string const name = {"Unnamed Node"}, glm::vec3 position = {0.f,0.f,0.f});
+		Anim::Node* AddNode(std::string const& groupName, Anim::NodeInfo& info);
 		
 		//adds a link between two nodes
 		//returns nullptr if link was not added due to error(src or dst not found)

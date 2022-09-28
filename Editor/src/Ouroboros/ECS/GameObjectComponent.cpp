@@ -17,6 +17,8 @@ Technology is prohibited.
 
 #include <rttr/registration>
 #include <Ouroboros/EventSystem/EventManager.h>
+
+#include <Ouroboros/ECS/GameObject.h>
 namespace oo
 {
     RTTR_REGISTRATION

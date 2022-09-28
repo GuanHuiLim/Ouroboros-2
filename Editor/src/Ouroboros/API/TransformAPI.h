@@ -25,7 +25,7 @@ namespace oo
         component.SetPosition({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetGlobalPosition(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -45,7 +45,7 @@ namespace oo
         component.SetGlobalPosition({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetLocalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -65,7 +65,7 @@ namespace oo
         component.SetRotation({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetGlobalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -85,7 +85,7 @@ namespace oo
         component.SetGlobalRotation({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetLocalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -105,7 +105,7 @@ namespace oo
         component.SetScale({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetGlobalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -125,7 +125,7 @@ namespace oo
         component.SetGlobalScale({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API int Transform_GetChildCount(Scene::ID_type sceneID, UUID uuid)
@@ -162,7 +162,7 @@ namespace oo
         parentObj->AddChild(*obj, preserveTransforms);
 
         //manually update all transforms if set parent is called
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API uint32_t Transform_GetParent(Scene::ID_type sceneID, UUID uuid)

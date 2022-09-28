@@ -131,7 +131,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	auto assetmanager = Project::GetAssetManager();
 	auto asset = assetmanager->Get(asset_id);
 	//auto modeldata = asset.GetData<ModelData*>();
-
+	
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	std::stack<Node*> node_list;
@@ -141,7 +141,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	std::shared_ptr<oo::GameObject> gameobject = scene->CreateGameObjectImmediate();
 	gameobject->SetName(node->name);
 	node_parent.push_back({ node->parent ,gameobject });
-	scene->GetRoot()->AddChild(*gameobject);
+	scene->GetRoot()->AddChild(*gameobject,true);
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();
