@@ -33,7 +33,7 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-    registration::class_<AudioSourceComponent>("Audio Source Component")
+    registration::class_<AudioSourceComponent>("Audio Source")
         .property("Audio Clip", &AudioSourceComponent::GetAudioClip, &AudioSourceComponent::SetAudioClip)
         (metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Audio)))
         .property("Mute", &AudioSourceComponent::IsMuted, &AudioSourceComponent::SetMuted)
