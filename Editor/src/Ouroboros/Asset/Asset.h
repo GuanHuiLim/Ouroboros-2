@@ -133,8 +133,30 @@ namespace oo
         [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
 
         /* --------------------------------------------------------------------------- */
+        /* Getters                                                                     */
+        /* --------------------------------------------------------------------------- */
+
+        [[nodiscard]] inline void*& Data() { return info->data; };
+
+        /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        void Reload();
+
+        /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        /// <param name="type">The explicit type of asset to load as.</param>
+        void Reload(AssetInfo::Type type);
+
+        /// <summary>
+        /// Writes the data from the asset into the file.
+        /// </summary>
+        void Overwrite();
 
         /// <summary>
         /// Retrieves the data stored by the asset of a given type.
