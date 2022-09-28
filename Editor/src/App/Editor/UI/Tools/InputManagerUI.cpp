@@ -185,7 +185,9 @@ bool InputManagerUI::DrawKeyInputUI(const std::string& UIname,int& curr, bool mo
 {
 	rttr::enumeration e = (mouse ? rttr::type::get<oo::input::MouseCode>() : rttr::type::get<oo::input::KeyCode>()).get_enumeration();
 	auto values = e.get_values();
-	std::string name = (curr < 0) ? "Invalid" : e.value_to_name(oo::input::KeyCode(curr)).data();
+    std::string name;
+    if(mouse) name = (curr < 0) ? "Invalid" : e.value_to_name(oo::input::MouseCode(curr)).data();
+    else name = (curr < 0) ? "Invalid" : e.value_to_name(oo::input::KeyCode(curr)).data();
 	ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 	ImGui::InputText(UIname.c_str(), &name);
 	ImGui::PopItemFlag();
