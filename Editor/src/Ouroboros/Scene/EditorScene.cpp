@@ -19,6 +19,7 @@ Technology is prohibited.
 //#include "Editor.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
 
 namespace oo
 {
@@ -41,6 +42,9 @@ namespace oo
             //Register All Systems
             {
                 GetWorld().Add_System<oo::PhysicsSystem>()->Init();
+
+                GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
+                GetWorld().Get_System<oo::Anim::AnimationSystem>()->CreateAnimationTestObject();
                 //bool wantDebug = true;
 
                 //TRACY_PROFILE_SCOPE_N(registration);

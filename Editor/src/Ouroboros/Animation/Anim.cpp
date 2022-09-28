@@ -539,7 +539,7 @@ namespace oo::Anim::internal
 		info.group = &group;
 		//create the node and add it to this group
 		Node node{ info };
-		UpdateNodeTrackers(node);
+		//UpdateNodeTrackers(node);
 
 		
 		auto& createdNode = group.nodes.emplace_back(std::move(node));
@@ -895,6 +895,7 @@ namespace oo::Anim
 	Node::Node(NodeInfo& info) 
 		: group{ (assert(info.group), *(info.group))}
 		, name{ info.name }
+		, animation_index{internal::GetAnimationIndex(info.animation_name)}
 	{
 
 	}

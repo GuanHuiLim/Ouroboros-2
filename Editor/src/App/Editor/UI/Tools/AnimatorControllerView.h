@@ -20,6 +20,8 @@ Technology is prohibited.
 #include <imgui/imgui_internal.h>
 #include <vector>
 #include <string>
+#include <Ouroboros/Animation/Anim.h>
+#include <Ouroboros/Animation/AnimationComponent.h>
 
 namespace ed = ax::NodeEditor;
 
@@ -30,9 +32,6 @@ class AnimatorControllerView
 public:	//Default Functions
 	AnimatorControllerView() 
 	{
-		CreateNode(uniqueId, "Entry", ImVec2(500, 100));
-		CreateNode(uniqueId, "Exit", ImVec2(800, 100));
-		CreateNode(uniqueId, "Any State", ImVec2(500, 0));
 		m_Context = ed::CreateEditor();
 	}
 	~AnimatorControllerView() 
@@ -43,6 +42,7 @@ public:	//Default Functions
 	void Show();
 
 private: //Member Variables
+	oo::AnimationComponent* animator = nullptr;
 	ed::EditorContext* m_Context	  = nullptr;
 
 	enum class PinKind
@@ -70,7 +70,7 @@ private: //Member Variables
 	struct NodeInfo
 	{
 		ed::NodeId id;
-		std::string name;
+		oo::Anim::Node* anim_node;
 		std::vector<Pin> Input;
 		std::vector<Pin> Output;
 		ImColor color;
@@ -81,11 +81,15 @@ private: //Member Variables
 		std::string state;
 		std::string savedState;
 
-		//AnimatorNode* anim_node;	//basically a way to get the animator information from
-
-		NodeInfo(int _id, const char* _name, ImColor _color = ImColor(255, 255, 255)) :
-			id(_id), name(_name), color(_color), size(0, 0), selected(false)
+		NodeInfo(int _id, oo::Anim::Node* _anim_node = nullptr, ImColor _color = ImColor(255, 255, 255)) :
+			id(_id), 
+			anim_node{ _anim_node },
+			color(_color), 
+			size(0, 0), 
+			pos(0, 0), 
+			selected(false)
 		{
+
 		}
 	};
 	std::vector<NodeInfo> m_nodes;
@@ -95,16 +99,18 @@ private: //Member Variables
 	struct LinkInfo
 	{
 		ed::LinkId id;
+		oo::Anim::Link* link;
 		ed::PinId inputID;
 		ed::PinId outputID;
 		bool selected;
 
-		LinkInfo(ed::LinkId _id, ed::PinId _inputID, ed::PinId _outputID) :
-			id(_id), inputID(_inputID), outputID(_outputID), selected(false)
+		LinkInfo(ed::LinkId _id, ed::PinId _inputID = {}, ed::PinId _outputID = {}, oo::Anim::Link* _link = nullptr) :
+			id(_id), inputID(_inputID), outputID(_outputID), selected(false), link{_link}
 		{
 		}
 	};
 	ImVector<LinkInfo> m_links;
+	std::vector<LinkInfo> m_links_;
 	std::vector<ed::LinkId> m_linksId;
 	LinkInfo* m_selectedLink		  = nullptr;
 
@@ -118,12 +124,12 @@ private: //Member Functions
 	void BuildNode(NodeInfo* node);
 	void BuildNodes();
 
-	void DisplayAnimatorController();
+	void DisplayAnimatorController(oo::AnimationComponent* _animator);
 	void DisplayParameters();
 	void DisplayInspector();
 	void OnCreate();
-	NodeInfo* CreateNode(int& uniqueId, const char* _name, ImVec2 _pos = ImVec2(0,0));
-	void CreateLink(int& uniqueId);
+	NodeInfo* CreateNode(int& uniqueId, oo::Anim::Node* _anim_node = nullptr);
+	LinkInfo* CreateLink(int& uniqueId, oo::Anim::Link* _anim_link);
 	void OnDelete();
 	void DeleteNode(int& uniqueId);
 	void DeleteLink(int& uniqueId);
@@ -131,4 +137,6 @@ private: //Member Functions
 
 	//Helper Functions
 	Pin* FindPin(ed::PinId id);
+	NodeInfo* FindNode(ed::NodeId id);
+	NodeInfo* FindNode(oo::Anim::Node* _node);
 };
