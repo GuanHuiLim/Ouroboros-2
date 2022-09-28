@@ -57,10 +57,14 @@ namespace oo
             {
                 if (!has)
                 {
-                    auto tfPos = tf.GetGlobalPosition();
+                    const auto tfPos = tf.GetGlobalPosition();
                     FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
-                    // TODO: forward and up vectors
-                    audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, nullptr, nullptr);
+                    const auto tfForward = tf.GlobalForward();
+                    FMOD_VECTOR fmForward = { .x = tfForward.x, .y = tfForward.y, .z = tfForward.z };
+                    const auto tfUp = tf.GlobalUp();
+                    FMOD_VECTOR fmUp = { .x = tfUp.x, .y = tfUp.y, .z = tfUp.z };
+
+                    audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, &fmForward, &fmUp);
                     has = true;
                 }
                 else if (!warned)
@@ -69,6 +73,10 @@ namespace oo
                     warned = true;
                 }
             });
+            if (!has)
+            {
+                LOG_WARN("No Audio Listener in the scene!");
+            }
         }
 
         // Iterate audio sources
