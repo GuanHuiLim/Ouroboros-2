@@ -151,7 +151,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 			gameobject = scene->CreateGameObjectImmediate();
 			gameobject->SetName(node->name);
 			auto& transform = gameobject->EnsureComponent<oo::TransformComponent>();
-			transform.SetLocalTransform(node->transform);
+			transform.SetGlobalTransform(node->transform);
 			auto& renderer = gameobject->EnsureComponent<oo::MeshRendererComponent>();
 			renderer.SetModelHandle(asset,node->meshRef);
 			while ((node_parent.empty() == false) && (node->parent != node_parent.back().first))

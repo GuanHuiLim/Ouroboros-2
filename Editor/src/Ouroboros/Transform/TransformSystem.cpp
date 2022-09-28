@@ -71,10 +71,10 @@ namespace oo
         TRACY_DISPLAY_PERFORMANCE_SELECTED(transform_update);
     }
 
-    void TransformSystem::UpdateSubTree(GameObject go)
+    void TransformSystem::UpdateSubTree(GameObject go, bool includeItself)
     {
         UpdateLocalTransforms();
-        UpdateTree(go.GetSceneNode().lock(), true);
+        UpdateTree(go.GetSceneNode().lock(), includeItself);
     }
 
 

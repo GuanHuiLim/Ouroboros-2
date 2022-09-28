@@ -31,7 +31,7 @@ namespace oo
         virtual ~TransformSystem() = default;
 
         virtual void Run(Ecs::ECSWorld* world) override;
-        void UpdateSubTree(GameObject go);
+        void UpdateSubTree(GameObject go, bool includeItself = true);
 
     private:
         void UpdateLocalTransforms();
