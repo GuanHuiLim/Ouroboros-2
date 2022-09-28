@@ -1,9 +1,9 @@
 /************************************************************************************//*!
-\file           InputAPI.cpp
+\file           InputAPI.h
 \project        Ouroboros
 \author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
 \par            email: t.tengshuesolomon\@digipen.edu
-\date           Aug 22, 2022
+\date           Sept 28, 2022
 \brief          Defines the exported helper functions that the C# scripts will use
                 to check for player input
 
