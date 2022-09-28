@@ -1,3 +1,18 @@
+/************************************************************************************//*!
+\file           InputManager.cpp
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 26, 2022
+\brief          Defines the manager responsible for handling all possible input axes
+                available to the player
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #include "pch.h"
 #include "InputManager.h"
 
@@ -167,6 +182,30 @@ namespace oo
                 {
                     InputAxis::INPUTCODE_INVALID,
                     static_cast<InputAxis::InputCode>(input::ControllerAxisCode::LEFTY),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                }
+            }
+        );
+        axes.emplace_back(
+            InputAxis
+            {
+                "Fire",
+                InputAxis::InputType::MouseButton,
+                InputAxis::Settings
+                {
+                    InputAxis::INPUTCODE_INVALID,
+                    static_cast<InputAxis::InputCode>(input::MouseCode::Button0),
+                    InputAxis::INPUTCODE_INVALID,
+                    InputAxis::INPUTCODE_INVALID,
+                    0U, 0.0f, 0.0f
+                },
+                InputAxis::ControllerInputType::Trigger_Joystick,
+                InputAxis::Settings
+                {
+                    InputAxis::INPUTCODE_INVALID,
+                    static_cast<InputAxis::InputCode>(input::ControllerAxisCode::TRIGGERRIGHT),
                     InputAxis::INPUTCODE_INVALID,
                     InputAxis::INPUTCODE_INVALID,
                     0U, 0.0f, 0.0f
