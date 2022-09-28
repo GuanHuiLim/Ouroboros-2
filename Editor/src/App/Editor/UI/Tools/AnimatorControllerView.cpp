@@ -192,16 +192,16 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     {
         if (ImGui::MenuItem("Create State"))
         {
-            oo::Anim::NodeInfo nodeinfo{
-            .name{ "Node" },
-            .animation_name{ oo::Anim::Animation::empty_animation_name },
-            .speed{ 1.f },
-            .position{0.f,0.f,0.f},
-            };
+            //oo::Anim::NodeInfo nodeinfo{
+            //.name{ "Node" },
+            //.animation_name{ oo::Anim::Animation::empty_animation_name },
+            //.speed{ 1.f },
+            //.position{0.f,0.f,0.f},
+            //};
 
-            oo::Anim::Node* temp = _animator->AddNode(_animator->GetActualComponent().animTree->groups[0].name, nodeinfo);
+            //oo::Anim::Node* temp = _animator->AddNode(_animator->GetActualComponent().animTree->groups[0].name, nodeinfo);
 
-            CreateNode(uniqueId, temp);
+            //CreateNode(uniqueId, temp);
         }
         ImGui::EndPopup();
     }
@@ -225,6 +225,36 @@ void AnimatorControllerView::DisplayParameters()
 {
     if (ImGui::Begin("Parameters"))
     {
+        ImVec2 textsize = ImGui::CalcTextSize("a");
+
+        for (int i = 0; i < animator->GetActualComponent().animTree->parameters.size(); ++i)
+        {
+            if (animator->GetActualComponent().animTree->parameters[i].value.is_type<bool>())
+            {
+                ImGui::Text(animator->GetActualComponent().animTree->parameters[i].name.c_str());
+                ImGui::SameLine(textsize.x * 15);
+                std::string tag = "##" + animator->GetActualComponent().animTree->parameters[i].name;
+                bool& temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
+                ImGui::Checkbox(tag.c_str(), &temp);
+            }
+            else if (animator->GetActualComponent().animTree->parameters[i].value.is_type<float>())
+            {
+                ImGui::Text(animator->GetActualComponent().animTree->parameters[i].name.c_str());
+                ImGui::SameLine(textsize.x * 15);
+                std::string tag = "##" + animator->GetActualComponent().animTree->parameters[i].name;
+                float& temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<float>();
+                ImGui::InputFloat(tag.c_str(), &temp);
+            }
+            else if (animator->GetActualComponent().animTree->parameters[i].value.is_type<int>())
+            {
+                ImGui::Text(animator->GetActualComponent().animTree->parameters[i].name.c_str());
+                ImGui::SameLine(textsize.x * 15);
+                std::string tag = "##" + animator->GetActualComponent().animTree->parameters[i].name;
+                int& temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<int>();
+                ImGui::InputInt(tag.c_str(), &temp);
+            }
+        }
+
         ImGui::End();
     }
 }
