@@ -40,9 +40,9 @@ namespace oo
         .property("Play On Awake", &AudioSourceComponent::IsPlayOnAwake, &AudioSourceComponent::SetPlayOnAwake)
         .property("Loop", &AudioSourceComponent::IsLoop, &AudioSourceComponent::SetLoop)
         .property("Volume", &AudioSourceComponent::GetVolume, &AudioSourceComponent::SetVolume)
-        (metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        (metadata(UI_metadata::DRAG_SPEED, 0.01f))
         .property("Pitch", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
-        (metadata(UI_metadata::DRAG_SPEED, 0.1f));
+        (metadata(UI_metadata::DRAG_SPEED, 0.01f));
     };
 
     bool oo::AudioSourceComponent::IsPlaying() const
