@@ -107,7 +107,6 @@ namespace oo
             if (as.IsPlayOnAwake())
                 as.Play();
         });
-        LOG_INFO("scene loaded");
     }
 
     void AudioSystem::stopAll()
@@ -118,7 +117,6 @@ namespace oo
             if (as.IsPlaying())
                 as.Stop();
         });
-        LOG_INFO("scene unloaded");
     }
 
     void AudioSystem::onLoadScene(LoadSceneEvent* e)
@@ -126,9 +124,9 @@ namespace oo
         // fuck u
         bool isEditor = false;
         {
-            oo::GetCurrentSceneEvent e;
-            oo::EventManager::Broadcast(&e);
-            isEditor = e.IsEditor;
+            oo::GetCurrentSceneEvent ev;
+            oo::EventManager::Broadcast(&ev);
+            isEditor = ev.IsEditor;
         }
         if (isEditor)
             return;
@@ -146,14 +144,22 @@ namespace oo
         // fuck u
         bool isEditor = false;
         {
-            oo::GetCurrentSceneEvent e;
-            oo::EventManager::Broadcast(&e);
-            isEditor = e.IsEditor;
+            oo::GetCurrentSceneEvent ev;
+            oo::EventManager::Broadcast(&ev);
+            isEditor = ev.IsEditor;
         }
         if (isEditor)
             return;
 
-        playAllOnAwake();
+        auto go = scene->FindWithInstanceID(e->Id);
+        if (go == nullptr)
+            return;
+
+        if (!go->HasComponent<AudioSourceComponent>())
+            return;
+
+        if (go->GetComponent<AudioSourceComponent>().IsPlayOnAwake())
+            go->GetComponent<AudioSourceComponent>().Play();
     }
 
     void AudioSystem::onObjectDisabled(GameObjectComponent::OnDisableEvent* e)
@@ -161,13 +167,20 @@ namespace oo
         // fuck u
         bool isEditor = false;
         {
-            oo::GetCurrentSceneEvent e;
-            oo::EventManager::Broadcast(&e);
-            isEditor = e.IsEditor;
+            oo::GetCurrentSceneEvent ev;
+            oo::EventManager::Broadcast(&ev);
+            isEditor = ev.IsEditor;
         }
         if (isEditor)
             return;
 
-        stopAll();
+        auto go = scene->FindWithInstanceID(e->Id);
+        if (go == nullptr)
+            return;
+
+        if (!go->HasComponent<AudioSourceComponent>())
+            return;
+
+        go->GetComponent<AudioSourceComponent>().Stop();
     }
 }
