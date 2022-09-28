@@ -101,6 +101,8 @@ namespace oo
 
     void AudioSystem::playAllOnAwake()
     {
+        if (!scene)
+            return;
         static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
         scene->GetWorld().for_each(query, [&](AudioSourceComponent& as, TransformComponent&)
         {
@@ -111,6 +113,8 @@ namespace oo
 
     void AudioSystem::stopAll()
     {
+        if (!scene)
+            return;
         static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
         scene->GetWorld().for_each(query, [&](AudioSourceComponent& as, TransformComponent&)
         {
@@ -141,6 +145,9 @@ namespace oo
 
     void AudioSystem::onObjectEnabled(GameObjectComponent::OnEnableEvent* e)
     {
+        if (!scene)
+            return;
+
         // fuck u
         bool isEditor = false;
         {
@@ -164,6 +171,9 @@ namespace oo
 
     void AudioSystem::onObjectDisabled(GameObjectComponent::OnDisableEvent* e)
     {
+        if (!scene)
+            return;
+
         // fuck u
         bool isEditor = false;
         {
