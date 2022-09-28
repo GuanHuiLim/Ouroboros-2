@@ -23,6 +23,7 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformSystem.h"
 
 #include "App/Editor/Events/LoadSceneEvent.h"
+#include "App/Editor/Events/UnloadSceneEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/ECS/DeferredSystem.h"
@@ -89,6 +90,25 @@ namespace oo
                 m_ecsWorld->Add_System<oo::AudioSystem>(this);
             }
 
+            // Broadcast event to load scene
+            LoadSceneEvent lse{ this };
+            EventManager::Broadcast<LoadSceneEvent>(&lse);
+
+            // Set Active Event for all objects
+            for (auto& go : m_gameObjects)
+            {
+                if (go->ActiveInHierarchy())
+                {
+                    GameObjectComponent::OnEnableEvent e{ go->GetInstanceID() };
+                    EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&e);
+                }
+                else
+                {
+                    GameObjectComponent::OnDisableEvent e{ go->GetInstanceID() };
+                    EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&e);
+                }
+            }
+            
             PRINT(m_name);
             
             TRACY_PROFILE_SCOPE_END();
@@ -173,6 +193,10 @@ namespace oo
     
     void Scene::Exit()
     {
+        // Broadcast event to unload scene
+        UnloadSceneEvent use{ this };
+        EventManager::Broadcast<UnloadSceneEvent>(&use);
+
         PRINT(m_name);
     }
     
@@ -331,7 +355,7 @@ namespace oo
         // Queue selected node for deletion
         m_removeList.emplace(GetInstanceID(go));
 
-        // Then continue to destroy all its children
+        // Then continue to queue destruction for all its children
         for (auto const& childuuid : go.GetChildrenUUID())
         {
             auto childobj = FindWithInstanceID(childuuid);
@@ -437,9 +461,6 @@ namespace oo
     
     void Scene::LoadFromFile()
     {
-        // Broadcast event to load scene
-        LoadSceneEvent lse{ this };
-        EventManager::Broadcast<LoadSceneEvent>(&lse);
     }
 
     void Scene::SaveToFile()
@@ -470,6 +491,13 @@ namespace oo
 
     void Scene::RemoveGameObject(Scene::go_ptr go_ptr)
     {
+        ASSERT(go_ptr == nullptr);
+
+        // one final broadcast to cleanup anything you need to
+        GameObject::OnDestroy e;
+        e.go = go_ptr.get();
+        EventManager::Broadcast<GameObject::OnDestroy>(&e);
+
         // remove from scenegraph first. Timing is important here.
         if (auto scenegraph_go = go_ptr->GetSceneNode().lock())
         {

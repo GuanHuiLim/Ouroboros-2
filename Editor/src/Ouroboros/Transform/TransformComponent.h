@@ -20,12 +20,12 @@ Technology is prohibited.
 
 namespace oo
 {
-    class TransformComponent
+    class TransformComponent final
     {
     public:
-        using vec3 = Transform::vec3;
-        using mat4 = Transform::mat4;
-        using quat = Transform::quat;
+        using vec3 = Transform3D::vec3;
+        using mat4 = Transform3D::mat4;
+        using quat = Transform3D::quat;
 
         /*-----------------------------------------------------------------------------*/
         /* Getter Functions                                                            */
@@ -45,9 +45,6 @@ namespace oo
 
         mat4 GetLocalMatrix()  const;
         mat4 GetGlobalMatrix() const;
-
-        bool HasChanged()      const;
-        bool IsDirty()         const;
 
         vec3 GetGlobalPosition()        const;
         mat4 GetGlobalRotationMatrix()  const;
@@ -76,25 +73,27 @@ namespace oo
         void SetGlobalRotation(vec3 euler_angles_degrees);
         void SetGlobalOrientation(quat quaternion);
         void SetGlobalTransform(vec3 position, vec3 euler_angles_degrees, vec3 scale);
+        void SetGlobalTransform(vec3 position, quat quaternion, vec3 scale);
         void SetGlobalTransform(mat4 target_global_matrix);
 
         // Extra Functions
         void LookAt(vec3 target);
-        
-        // scenegraph related setters
-        void ParentChanged();
+
+        void CalculateLocalTransform();
+        void CalculateGlobalTransform();
 
         RTTR_ENABLE();
-    private:
-        void CalculateLocalTransform();
+    public:
 
-        Transform m_transform;
+        Transform3D LocalTransform;
+        Transform3D GlobalTransform;
 
-        bool m_dirty = false;
-        bool m_hasChanged = false;
+        bool LocalMatrixDirty = false;
+        bool GlobalMatrixDirty = false;
+        bool HasChangedThisFrame = false;
 
-        glm::vec3 m_eulerAngles;
-        
-        friend class TransformSystem;
+        glm::vec3 LocalEulerAngles;    // fake data.
     };
+
+    static constexpr std::size_t transform_component_size = sizeof(TransformComponent);
 }

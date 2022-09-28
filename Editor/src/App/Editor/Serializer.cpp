@@ -38,6 +38,10 @@ Technology is prohibited.
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include "Ouroboros/Audio/AudioListenerComponent.h"
+#include "Ouroboros/Audio/AudioSourceComponent.h"
+
+#include <Ouroboros/Transform/TransformSystem.h>
 
 Serializer::Serializer()
 {
@@ -61,10 +65,12 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
-	AddLoadComponent<oo::LightingComponent>();
+	AddLoadComponent<oo::LightComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
+	AddLoadComponent<oo::AudioListenerComponent>();
+	AddLoadComponent<oo::AudioSourceComponent>();
 
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
@@ -240,7 +246,10 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
-	SaveComponent<oo::LightingComponent>(go, val, doc);
+	SaveComponent<oo::LightComponent>(go, val, doc);
+
+	SaveComponent<oo::AudioListenerComponent>(go, val, doc);
+	SaveComponent<oo::AudioSourceComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 
 	SaveComponent<oo::RigidbodyComponent>(go, val, doc);
@@ -386,8 +395,11 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 
 UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
 {
+	// TODO : This can be improved if required. Clean up please
+
 	UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
+	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
 	parents.push(starting);
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
@@ -397,24 +409,64 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 		auto membersEnd = iter->value.MemberEnd();
 		int order = members->value.GetInt();
 
+
 		{//when the order dont match the size it will keep poping until it matches
 		//then parent to it and adds itself
 			while (order != parents.size())
 				parents.pop();
 
-			parents.top()->AddChild(*go,true);
+			parents.top()->AddChild(*go, true);
 			parents.push(go);
 			if (iter == doc.MemberBegin())
 				firstobj = go->GetInstanceID();
 		}
 
+
+		//++members;
+		//{//another element that will store all the component hashes and create the apporiate archtype
+		//	// go->SetArchtype(vector<hashes>);
+		//}
+		////processes the components		
+		//LoadObject(*go, members, membersEnd);
+
+		second_iter.emplace_back(go);
+	}
+
+	scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*starting, false);
+
+	//std::stack<std::shared_ptr<oo::GameObject>> parents;
+	//parents.push(starting);
+	int iteration = 0;
+	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter, ++iteration)
+	{
+		uint64_t id = std::stoull(iter->name.GetString());
+		auto go = second_iter[iteration];
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
 		++members;
+		//processes the components		
+		LoadObject(*go, members, membersEnd);
+
+		//scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*scene.GetRoot());
+
+		//{//when the order dont match the size it will keep poping until it matches
+		////then parent to it and adds itself
+		//	while (order != parents.size())
+		//		parents.pop();
+
+		//	parents.top()->AddChild(*go, true);
+		//	parents.push(go);
+		//	if (iter == doc.MemberBegin())
+		//		firstobj = go->GetInstanceID();
+		//}
+
 		{//another element that will store all the component hashes and create the apporiate archtype
 			// go->SetArchtype(vector<hashes>);
 		}
-		//processes the components		
-		LoadObject(*go, members, membersEnd);
 	}
+
 	ResetDocument();//clear it after using
 	return firstobj;
 }
@@ -506,7 +558,7 @@ UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scen
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, msg);
 	}
 	oo::PrefabComponent& component = go->GetComponent<oo::PrefabComponent>();
-	component.prefab_filePath = p;
+	component.prefab_filePath = std::filesystem::relative(p,Project::GetPrefabFolder());
 
 	std::string& data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder() / component.prefab_filePath).string());
 	rapidjson::StringStream stream(data.c_str());

@@ -1,10 +1,10 @@
 /************************************************************************************//*!
-\file           AudioListenerComponent.cpp
+\file           IEqual.h
 \project        Ouroboros
 \author         Tay Yan Chong Clarence, t.yanchongclarence, 620008720 | code contribution (100%)
 \par            email: t.yanchongclarence\@digipen.edu
-\date           Sep 26, 2022
-\brief          Contains the definition for the Audio Listener component.
+\date           Sep 27, 2022
+\brief          Utility function for case insensitive string equality.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -12,22 +12,16 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 
-#include "pch.h"
+#pragma once
 
-#include "AudioListenerComponent.h"
+#include <string>
 
-#include <rttr/registration>
-
-namespace oo
+inline bool iequal(const std::string& a, const std::string& b)
 {
-    RTTR_REGISTRATION
+    return std::equal(a.begin(), a.end(),
+                      b.begin(), b.end(),
+                      [](char a, char b)
     {
-        using namespace rttr;
-    registration::class_<AudioListenerComponent>("Audio Listener");
-    };
-
-    void oo::AudioListenerComponent::SetVolume(float v)
-    {
-        volume = v;
-    }
+        return tolower(a) == tolower(b);
+    });
 }

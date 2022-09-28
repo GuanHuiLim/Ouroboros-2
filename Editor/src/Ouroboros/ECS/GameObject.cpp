@@ -72,19 +72,19 @@ namespace oo
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
         TransformComponent& child_tf = child.Transform();
-        mat4 og_parent_tf = child.GetParent().Transform().GetGlobalMatrix();
+        mat4 og_parent_tf = child.GetParent().Transform().GlobalTransform;
         scenenode::shared_pointer parentNode = GetSceneNode().lock();
         scenenode::shared_pointer childNode = child.GetSceneNode().lock();
         // if parent and child are valid and parent successfully added child
         if (parentNode && childNode && parentNode->add_child(childNode))
         {
             // notify child node that its parent has changed.
-            child_tf.ParentChanged();
+            child_tf.GlobalMatrixDirty = true;
 
             if (preserveTransforms)
             {
-                mat4 new_parent_inv = glm::inverse(Transform().GetGlobalMatrix());
-                child_tf.SetLocalTransform(new_parent_inv * og_parent_tf * child_tf.GetLocalMatrix());
+                mat4 new_parent_inv = glm::affineInverse(Transform().GlobalTransform.Matrix);
+                child_tf.SetLocalTransform(new_parent_inv * og_parent_tf * child_tf.LocalTransform.Matrix);
             }
 
             // Properly propagate parent gameobject's active downwards

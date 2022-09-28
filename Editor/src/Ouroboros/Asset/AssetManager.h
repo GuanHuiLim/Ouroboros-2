@@ -24,19 +24,6 @@ Technology is prohibited.
 
 #include "Asset.h"
 
-namespace
-{
-    bool iequal(const std::string& a, const std::string& b)
-    {
-        return std::equal(a.begin(), a.end(),
-                          b.begin(), b.end(),
-                          [](char a, char b)
-        {
-            return tolower(a) == tolower(b);
-        });
-    }
-}
-
 namespace oo
 {
     class AssetManager
@@ -56,6 +43,7 @@ namespace oo
             /* ----------------------------------------------------------------------- */
 
             [[nodiscard]] inline const AssetMap& GetAssets() const { return assets; };
+            [[nodiscard]] inline AssetMap& GetAssets() { return assets; };
 
             /* ----------------------------------------------------------------------- */
             /* Functions                                                               */
@@ -218,19 +206,7 @@ namespace oo
         /// <param name="id">The asset ID.</param>
         /// <returns>The asset.</returns>
         Asset createAsset(std::filesystem::path fp, AssetID id = Asset::GenerateSnowflake());
-
-        template<typename T, typename It>
-        bool findIn(const T& obj, const It& itBegin, const It& itEnd);
     };
-
-    template<typename T, typename It>
-    inline bool AssetManager::findIn(const T& obj, const It& itBegin, const It& itEnd)
-    {
-        return std::find_if(itBegin, itEnd, [obj](const auto& e)
-        {
-            return iequal(e, obj);
-        }) != itEnd;
-    }
 
     class AssetNotFoundException : public std::exception
     {

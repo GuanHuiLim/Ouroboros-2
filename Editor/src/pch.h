@@ -42,6 +42,8 @@ Technology is prohibited.
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <fmod.hpp>
+
 // Utility files
 //#include "Utility/Bitmask.h"
 //#include "Utility/EventCallback.h"
