@@ -24,6 +24,7 @@ namespace oo
 
         void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
         void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
+        void OnObjectDestroyed(GameObject::OnDestroy* e);
 
         void ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
         void RefreshScriptInfoAll();

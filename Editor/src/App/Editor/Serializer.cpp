@@ -61,7 +61,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
-	AddLoadComponent<oo::LightingComponent>();
+	AddLoadComponent<oo::LightComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
@@ -240,7 +240,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
-	SaveComponent<oo::LightingComponent>(go, val, doc);
+	SaveComponent<oo::LightComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 
 	SaveComponent<oo::RigidbodyComponent>(go, val, doc);

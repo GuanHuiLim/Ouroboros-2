@@ -117,6 +117,11 @@ namespace oo
     
     void TransformComponent::ParentChanged() { m_dirty = true; }
 
+    void oo::TransformComponent::SetHasChanged(bool value)
+    {
+        m_hasChanged = value;
+    }
+
     void TransformComponent::SetGlobalTransform(mat4 target_global_matrix)
     {
         m_hasChanged = true;

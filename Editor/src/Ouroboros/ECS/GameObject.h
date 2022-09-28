@@ -40,6 +40,15 @@ namespace oo
         static constexpr uint64_t   ROOTID = std::numeric_limits<uint64_t>::min();
         static constexpr Entity     ROOT = std::numeric_limits<Entity>::min();
 
+        //Events
+
+        // will be broadcasted right before the removal.
+        // potentially dangerous, make sure you know what you're doing.
+        struct OnDestroy : public Event
+        {
+            GameObject* go;
+        };
+
     private:
         Scene* m_scene = nullptr;
         Entity m_entity = NOTFOUND; //default to not found
