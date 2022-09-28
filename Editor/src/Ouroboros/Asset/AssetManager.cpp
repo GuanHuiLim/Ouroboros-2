@@ -213,6 +213,7 @@ namespace oo
                 if (tLast < ROOT_WRITE_TIME && ROOT_WRITE_TIME <= t)
                 {
                     updateAssetPaths(DIR);
+                    LOG_INFO("Root updated, updating all paths");
                 }
 
                 // Iterate root
@@ -240,7 +241,7 @@ namespace oo
                     {
                         // Created
                         LoadPath(FP);
-                        std::cout << "Created " << FP << "\n";
+                        LOG_INFO("File {0} created", FP);
                     }
                     else
                     {
@@ -250,17 +251,17 @@ namespace oo
                         assets.At(meta.id).info->timeLoaded = t;
                         assets.At(meta.id).destroyData();
                         assets.At(meta.id).createData();
-                        std::cout << "Modified " << FP << "\n";
+                        LOG_INFO("File {0} modified", FP);
                     }
                 }
             }
 
             // Check time elapsed
             std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - t).count() < WATCH_INTERVAL)
+            while (std::chrono::duration_cast<std::chrono::milliseconds>(now - t).count() < WATCH_INTERVAL)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                continue;
+                now = std::chrono::file_clock::now();
             }
             tLast = t;
             t = now;
@@ -292,7 +293,7 @@ namespace oo
                     // Moved
                     assets.At(meta.id).info->contentPath = FP;
                     assets.At(meta.id).info->metaPath = fpMeta;
-                    std::cout << "Moved " << FP << "\n";
+                    LOG_INFO("File {0} moved", FP);
                 }
             }
             else if (std::filesystem::is_directory(fp))
