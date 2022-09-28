@@ -63,6 +63,7 @@ namespace oo::Anim
 	struct NodeRef;			//a reference class to reference a node
 	struct NodeInfo;
 	struct Group;
+	struct GroupRef;
 	struct AnimationTree; 
 	struct AnimationTracker; //tracks a user's progress in an animation tree
 	struct ProgressTracker;
@@ -115,6 +116,17 @@ namespace oo::Anim
 		void SetAnimation(Asset asset);
 		//void SetAnimation(Asset asset);
 		Animation& GetAnimation();
+	};
+
+	struct NodeInfo
+	{
+		std::string name{ "Unnamed Node" };
+		std::string animation_name{};
+		float speed{ 1.f };
+		glm::vec3 position{ 0.f,0.f,0.f };
+
+		//dont fill this up
+		Group* group{ nullptr };
 	};
 
 	struct NodeRef
@@ -308,20 +320,7 @@ namespace oo::Anim
 		float animation_length{0.f};
 
 		size_t animation_ID{ std::numeric_limits<size_t>().max() };
-	};
-
-	
-
-	struct NodeInfo
-	{
-		std::string name{ "Unnamed Node" };
-		std::string animation_name{};
-		float speed{ 1.f };
-		glm::vec3 position{0.f,0.f,0.f};
-
-		//dont fill this up
-		Group* group{nullptr};
-	};
+	};	
 
 	
 
@@ -333,10 +332,28 @@ namespace oo::Anim
 		std::vector<Node> nodes{};
 		std::vector<Link> links{};
 		AnimationTree* tree{nullptr};
+		size_t groupID{};	//unique identifier
 
 		Group(std::string const _name = "Unnamed Group");
 	};
 	
+	struct GroupRef
+	{
+		std::vector<Group>* groups{ nullptr }; //reference to vector of groups
+		int index{ -1 };	//group index
+		size_t id; //group's unique identifier
+
+		Group& operator*() const { return (*groups)[index]; }
+		Group* operator->() const { return &((*groups)[index]); }
+
+		operator bool() const {
+			return groups && index >= 0 && index < groups->size() &&
+				this->operator->()->groupID == id;
+		}
+
+		//recalculates the index by looking for the group in the groups vector
+		void Reload();
+	};
 }
 
 

@@ -66,6 +66,27 @@ namespace oo::Anim::internal
 		assert(false);
 	}
 
+	GroupRef CreateGroupReference(AnimationTree& tree, size_t id)
+	{
+		int index = 0;
+		for (auto& group : tree.groups)
+		{
+			if (group.groupID == id)
+			{
+				GroupRef ref{
+					.groups{&tree.groups},
+					.index{index},
+					.id{id}
+				};
+
+				return ref;
+			}
+			++index;
+		}
+
+		assert(false);
+	}
+
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type)
 	{
 		switch (type)
