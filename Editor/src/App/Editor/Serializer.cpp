@@ -513,7 +513,7 @@ UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scen
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, msg);
 	}
 	oo::PrefabComponent& component = go->GetComponent<oo::PrefabComponent>();
-	component.prefab_filePath = p;
+	component.prefab_filePath = std::filesystem::relative(p,Project::GetPrefabFolder());
 
 	std::string& data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder() / component.prefab_filePath).string());
 	rapidjson::StringStream stream(data.c_str());
