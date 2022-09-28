@@ -23,7 +23,7 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-    registration::class_<AudioListenerComponent>("Audio Listener Component");
+    registration::class_<AudioListenerComponent>("Audio Listener");
     };
 
     void oo::AudioListenerComponent::SetVolume(float v)

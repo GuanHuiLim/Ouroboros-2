@@ -14,24 +14,24 @@ Technology is prohibited.
 
 #pragma once
 
-#include "Ouroboros/Scene/Scene.h"
+#include "App/Editor/Events/LoadSceneEvent.h"
+#include "App/Editor/Events/UnloadSceneEvent.h"
 #include "Ouroboros/ECS/GameObject.h"
-
+#include "Ouroboros/ECS/GameObjectComponent.h"
+#include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 namespace oo
 {
     class AudioSystem final : public Ecs::System
     {
-
     public:
-
         /* --------------------------------------------------------------------------- */
         /* Constructors and Destructors                                                */
         /* --------------------------------------------------------------------------- */
 
-        AudioSystem(Scene* scene) : scene{ scene } {}
-        virtual ~AudioSystem() = default;
+        AudioSystem(Scene* scene);
+        virtual ~AudioSystem();
 
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
@@ -45,5 +45,28 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         Scene* scene = nullptr;
+
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Plays all Audio Sources marked as play on awake.
+        /// </summary>
+        void playAllOnAwake();
+
+        /// <summary>
+        /// Stops all Audio Sources.
+        /// </summary>
+        void stopAll();
+
+        /* --------------------------------------------------------------------------- */
+        /* Event Handlers                                                              */
+        /* --------------------------------------------------------------------------- */
+
+        void onLoadScene(LoadSceneEvent* e);
+        void onUnloadScene(UnloadSceneEvent* e);
+        void onObjectEnabled(GameObjectComponent::OnEnableEvent* e);
+        void onObjectDisabled(GameObjectComponent::OnDisableEvent* e);
     };
 }

@@ -33,16 +33,16 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-    registration::class_<AudioSourceComponent>("Audio Source Component")
+    registration::class_<AudioSourceComponent>("Audio Source")
         .property("Audio Clip", &AudioSourceComponent::GetAudioClip, &AudioSourceComponent::SetAudioClip)
         (metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Audio)))
         .property("Mute", &AudioSourceComponent::IsMuted, &AudioSourceComponent::SetMuted)
         .property("Play On Awake", &AudioSourceComponent::IsPlayOnAwake, &AudioSourceComponent::SetPlayOnAwake)
         .property("Loop", &AudioSourceComponent::IsLoop, &AudioSourceComponent::SetLoop)
         .property("Volume", &AudioSourceComponent::GetVolume, &AudioSourceComponent::SetVolume)
-        (metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        (metadata(UI_metadata::DRAG_SPEED, 0.01f))
         .property("Pitch", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
-        (metadata(UI_metadata::DRAG_SPEED, 0.1f));
+        (metadata(UI_metadata::DRAG_SPEED, 0.01f));
     };
 
     bool oo::AudioSourceComponent::IsPlaying() const
@@ -71,10 +71,7 @@ namespace oo
     void oo::AudioSourceComponent::SetMuted(bool m)
     {
         muted = m;
-        if (channel)
-        {
-            FMOD_ERR_HAND(channel->setMute(m));
-        }
+        isDirty = true;
     }
 
     void oo::AudioSourceComponent::SetPlayOnAwake(bool p)
@@ -85,34 +82,26 @@ namespace oo
     void oo::AudioSourceComponent::SetLoop(bool l)
     {
         loop = l;
-        if (channel)
-        {
-            FMOD_ERR_HAND(channel->setLoopCount(l ? -1 : 0));
-        }
+        isDirty = true;
     }
 
     void oo::AudioSourceComponent::SetVolume(float v)
     {
         volume = v;
-        if (channel)
-        {
-            FMOD_ERR_HAND(channel->setVolume(v));
-        }
+        isDirty = true;
     }
 
     void oo::AudioSourceComponent::SetPitch(float p)
     {
         pitch = p;
-        if (channel)
-        {
-            FMOD_ERR_HAND(channel->setPitch(p));
-        }
+        isDirty = true;
     }
 
     void AudioSourceComponent::Play()
     {
         if (!audioClip.IsValid())
             return;
+        Stop(); // always stop whatever sound it was playing before
         FMOD::Sound* sound = audio::GetSound(audioClip.GetData<SoundID>());
         FMOD_ERR_HAND(audio::GetSystem()->playSound(sound, nullptr, false, &channel));
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
@@ -138,5 +127,10 @@ namespace oo
         if (!channel)
             return;
         FMOD_ERR_HAND(channel->setPaused(false));
+    }
+
+    void oo::AudioSourceComponent::ClearDirty()
+    {
+        isDirty = false;
     }
 }

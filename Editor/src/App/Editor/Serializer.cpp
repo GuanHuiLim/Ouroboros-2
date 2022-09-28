@@ -38,6 +38,8 @@ Technology is prohibited.
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include "Ouroboros/Audio/AudioListenerComponent.h"
+#include "Ouroboros/Audio/AudioSourceComponent.h"
 
 Serializer::Serializer()
 {
@@ -65,6 +67,8 @@ void Serializer::Init()
 	AddLoadComponent<oo::RigidbodyComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
+	AddLoadComponent<oo::AudioListenerComponent>();
+	AddLoadComponent<oo::AudioSourceComponent>();
 
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
@@ -241,6 +245,9 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveComponent<oo::LightComponent>(go, val, doc);
+
+	SaveComponent<oo::AudioListenerComponent>(go, val, doc);
+	SaveComponent<oo::AudioSourceComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 
 	SaveComponent<oo::RigidbodyComponent>(go, val, doc);

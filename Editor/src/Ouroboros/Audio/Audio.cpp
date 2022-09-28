@@ -79,8 +79,6 @@ namespace oo
         {
             // Update system
             FMOD_ERR_HAND(system->update());
-
-            // Handle components
         }
 
         void ShutDown()

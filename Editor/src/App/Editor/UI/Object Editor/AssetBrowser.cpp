@@ -64,6 +64,18 @@ void AssetBrowser::FontUI(rttr::variant& data, bool& edited)
 
 void AssetBrowser::AudioUI(rttr::variant& data, bool& edited)
 {
+	ImVec2 windowSize = ImGui::GetContentRegionAvail();
+	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
+
+	for (const auto& assets : Project::GetAssetManager()->GetLoadedAssetsByType(oo::AssetInfo::Type::Audio))
+	{
+		if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+		}
+	}
 }
 
 void AssetBrowser::MeshUI(rttr::variant& data, bool& edited)
