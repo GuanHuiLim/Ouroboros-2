@@ -32,7 +32,30 @@ Technology is prohibited.
 #include <windows.h>
 #include <shobjidl_core.h>
 
+
+#include "Ouroboros/EventSystem/EventManager.h"
+
 ImGuiID StyleEditor::m_styleeditor_popup = 200;
+void StyleEditor::SetPlayMode(ToolbarButtonEvent* e)
+{
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY)
+	{
+		name = playStyleName;
+		LoadStyle();
+
+		(name + '\0').copy(namebuffer, 100);
+	}
+}
+void StyleEditor::SetEditMode(ToolbarButtonEvent* e)
+{
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP)
+	{
+		name = defaultStyleName;
+		LoadStyle();
+
+		(name + '\0').copy(namebuffer, 100);
+	}
+}
 void StyleEditor::InitStyle()
 {
 	name = defaultStyleName;
@@ -42,7 +65,8 @@ void StyleEditor::InitStyle()
 }
 StyleEditor::StyleEditor()
 {
-
+	oo::EventManager::Subscribe<StyleEditor, ToolbarButtonEvent>(this,  &StyleEditor::SetEditMode);
+	oo::EventManager::Subscribe<StyleEditor, ToolbarButtonEvent>(this, &StyleEditor::SetPlayMode);
 }
 StyleEditor::~StyleEditor()
 {

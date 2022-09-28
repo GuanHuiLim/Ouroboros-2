@@ -51,7 +51,7 @@ namespace oo
         /* Getters                                                                     */
         /* --------------------------------------------------------------------------- */
 
-        [[nodiscard]] inline FMOD::System* GetSystem();
+        [[nodiscard]] FMOD::System* GetSystem();
 
         /* --------------------------------------------------------------------------- */
         /* Sound Lifecycle                                                             */

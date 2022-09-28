@@ -83,6 +83,7 @@ namespace oo
         {
             //do nothing if transform did not change
             auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
+            actualObject.modelID = m_comp.model_handle;
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
