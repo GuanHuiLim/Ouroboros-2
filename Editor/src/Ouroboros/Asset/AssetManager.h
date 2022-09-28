@@ -43,6 +43,7 @@ namespace oo
             /* ----------------------------------------------------------------------- */
 
             [[nodiscard]] inline const AssetMap& GetAssets() const { return assets; };
+            [[nodiscard]] inline AssetMap& GetAssets() { return assets; };
 
             /* ----------------------------------------------------------------------- */
             /* Functions                                                               */
