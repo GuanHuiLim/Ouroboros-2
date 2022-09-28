@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ScriptSystem.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
+#include "Ouroboros/Vulkan/RendererComponent.h";
 
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
@@ -33,6 +34,7 @@ namespace oo
         ScriptingLayer(SceneManager const& sceneManager)
         {
             ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
+            ScriptManager::RegisterComponent<MeshRendererComponent>("Ouroboros", "MeshRenderer");
 
             ScriptManager::s_SceneManager = &sceneManager;
             EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)

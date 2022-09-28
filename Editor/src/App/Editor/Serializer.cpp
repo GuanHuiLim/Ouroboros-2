@@ -35,7 +35,10 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include <Ouroboros/Vulkan/RendererComponent.h>
-#include "Ouroboros/Vulkan/LightComponent.h"
+#include <Ouroboros/Physics/ColliderComponents.h>
+#include <Ouroboros/Physics/RigidbodyComponent.h>
+#include <Ouroboros/Vulkan/LightComponent.h>
+
 Serializer::Serializer()
 {
 }
@@ -58,7 +61,11 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
-	AddLoadComponent<oo::LightingComponent>();
+	AddLoadComponent<oo::LightComponent>();
+	AddLoadComponent<oo::RigidbodyComponent>();
+	AddLoadComponent<oo::BoxColliderComponent>();
+	AddLoadComponent<oo::SphereColliderComponent>();
+
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
 		{
@@ -233,8 +240,12 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
-	SaveComponent<oo::LightingComponent>(go, val, doc);
+	SaveComponent<oo::LightComponent>(go, val, doc);
 	SaveScript(go, val, doc);
+
+	SaveComponent<oo::RigidbodyComponent>(go, val, doc);
+	SaveComponent<oo::BoxColliderComponent>(go, val, doc);
+	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)

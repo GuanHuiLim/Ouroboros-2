@@ -84,6 +84,8 @@ namespace oo
         // scenegraph related setters
         void ParentChanged();
 
+        void SetHasChanged(bool value);
+
         RTTR_ENABLE();
     private:
         void CalculateLocalTransform();

@@ -52,11 +52,13 @@ project "Editor"
 
         "%{IncludeDir.launcher}",
         "%{IncludeDir.ecs}",
-
         "%{IncludeDir.sharedlib}",
-		
-		"%{IncludeDir.mono}",
-		"%{IncludeDir.scripting}",
+        
+        "%{IncludeDir.physx}",
+        "%{IncludeDir.physx_foundation}",
+
+        "%{IncludeDir.mono}",
+        "%{IncludeDir.scripting}",
 		
         "%{IncludeDir.fmod}",
 
@@ -72,6 +74,8 @@ project "Editor"
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
+        -- "%{LibraryDir.physx}/Debug",
+        -- "%{LibraryDir.physx}/Release",
         "%{LibraryDir.assimp}/Release",
         "%{LibraryDir.fmod}",
     }
@@ -94,14 +98,22 @@ project "Editor"
         "ECS",
         "Launcher",
         "SharedLib",
-		
-		--"mono-2.0-sgen",
-		"Scripting",
-		"ScriptCore",
+        "Physics",
+        
+        -- "PhysX_64",
+        -- "PhysXCommon_64",
+        -- "PhysXCooking_64",
+        -- "PhysXFoundation_64",
+        -- "PhysXExtensions_static_64",
+        -- "PhysXPvdSDK_static_64",
+
+        --"mono-2.0-sgen",
+        "Scripting",
+        "ScriptCore",
         
         --Linking to vulkan Library [Uncomment the next line when youre done setting up]
         "Vulkan",
-		"assimp-vc142-mt",
+        "assimp-vc142-mt",
 
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
@@ -113,6 +125,12 @@ project "Editor"
     disablewarnings
     {
         "4324" -- padding of glm with std::variant, intended. 
+    }
+
+    -- Editor Level Disable Linker Warning 
+    linkoptions 
+    { 
+        "-IGNORE:4099", -- .pdb not found, for physXPVD .PDB not found <- normal as we are not using it in our editor.
     }
 
     filter "system:windows"
@@ -136,7 +154,7 @@ project "Editor"
         -- if Editor need any prebuild commands regardless of debug/release/production
         prebuildcommands
         {
-			{"call \"%{AppVendor}/vulkan/OO_Vulkan/shaders/compileShaders.bat\"" }
+            {"call \"%{AppVendor}/vulkan/OO_Vulkan/shaders/compileShaders.bat\"" }
         }
 
         -- if Editor needs any postbuild commands regardless of debug/release/production
@@ -163,9 +181,9 @@ project "Editor"
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
 			-- vulkan shaders copy
-		    { "mkdir \"" .. binApp .. "/shaders/bin\"" },
+            { "mkdir \"" .. binApp .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			
-		    { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
+            { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""}, 
         }
     
@@ -194,6 +212,9 @@ project "Editor"
         {
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" \"" .. binApp .. "\""},
+            {"{COPY} \"%{LibraryDir.fmod}/fmodL.dll\" \"" .. binApp .. "\""},
+            -- copy Debug DLLs
+            {"{COPY} \"%{AppDir}/dlls/Debug/\" \"" .. binApp .. "\"" },
         }
 
         links
@@ -204,15 +225,18 @@ project "Editor"
     
     filter "configurations:Release"
         runtime "Release" -- uses the release Runtime Library
-        defines "OO_RELEASE"
+        defines { "OO_RELEASE", "NDEBUG" }
         optimize "On"
         architecture "x86_64"
 
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
-				-- [IMPORTANT] copy command requires a space after the target directory.
+            -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
+            {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
+            -- copy Release DLLs
+            {"{COPY} \"%{AppDir}/dlls/Release/\" \"" .. binApp .. "\"" },
         }
 
         links
@@ -223,15 +247,18 @@ project "Editor"
         
     filter "configurations:Production"
         runtime "Release" -- uses the release Runtime Library
-        defines "OO_PRODUCTION"
+        defines { "OO_PRODUCTION", "NDEBUG" }
         optimize "On"
         architecture "x86_64"
 
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
-				-- [IMPORTANT] copy command requires a space after the target directory.
+            -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
+            {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
+            -- copy Release DLLs
+            {"{COPY} \"%{AppDir}/dlls/release/\" \"" .. binApp .. "\"" },
         }
 
         links
