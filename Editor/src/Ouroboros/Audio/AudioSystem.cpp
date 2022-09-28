@@ -76,6 +76,9 @@ namespace oo
             static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
             world->for_each(query, [&](AudioSourceComponent& as, TransformComponent& tf)
             {
+                if (!as.GetChannel())
+                    return;
+
                 // Set 3D position
                 auto tfPos = tf.GetGlobalPosition();
                 FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
