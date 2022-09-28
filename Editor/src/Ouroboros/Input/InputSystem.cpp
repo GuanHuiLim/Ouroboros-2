@@ -1,3 +1,18 @@
+/************************************************************************************//*!
+\file           InputSystem.cpp
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 26, 2022
+\brief          Defines the input system that handles scene-specific trackers
+                for all possible input axes available to the player
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #include "pch.h"
 #include "InputSystem.h"
 

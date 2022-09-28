@@ -15,6 +15,8 @@ Technology is prohibited.
 #include "pch.h"
 #include "TransformSystem.h"
 
+#include <Ouroboros/Scene/Scene.h>
+
 #include "ouroboros/ECS/DeferredComponent.h"
 
 //#include <JobSystem/src/JobSystem.h>
@@ -24,33 +26,74 @@ Technology is prohibited.
 
 namespace oo
 {
-    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf)
+    TransformSystem::TransformSystem(Scene* scene)
+        : m_scene{ scene }
     {
-        static constexpr const char* const per_transform_update = "per_transform_update";
-        TRACY_TRACK_PERFORMANCE(per_transform_update);
-        TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
-
-
-        // Update local and global transform immediately
-        if (tf.IsDirty())
-        {
-            tf.CalculateLocalTransform();
-        }
-
-        ASSERT_MSG(m_scene->IsValid(go->GetParentUUID()) == false,"Assumes we always have proper parent");
-
-        auto& parentTf = go->GetParent().Transform();
-        // Check if transform has changed locally or if parent has changed [optimization step]
-        if (tf.HasChanged() || parentTf.HasChanged())
-        {
-            tf.SetGlobalTransform(parentTf.GetGlobalMatrix() * tf.GetLocalMatrix());
-        }
-
-        TRACY_PROFILE_SCOPE_END();
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);
     }
 
-    void TransformSystem::UpdateTree(scenenode::shared_pointer node)
+    void TransformSystem::Run(Ecs::ECSWorld* world)
+    {
+        static constexpr const char* const transform_update = "transform_update";
+        TRACY_TRACK_PERFORMANCE(transform_update);
+        TRACY_PROFILE_SCOPE_NC(transform_update, tracy::Color::Gold2);
+
+        // Typical System updates using query//
+        /*
+        Remember to #include "Ouroboros/ECS/ECS.h" for this wrapper functionality
+
+        Option 1 : Makes with Deferred Component auto excluded
+            static Ecs::Query query = Ecs::make_query<GameObjectComponent>();
+            world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here});
+
+        Option 2 : Makes with Deferred Component excluded
+            static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent>();
+            world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here });
+
+        NOTE: this might be extended in the future to include specific components or have
+        various combinations. But as much as possible make_query should work for the most part.
+        */
+
+        // Reset all has changed to false regardless of their previous state.
+        // Note: this should only occure once per frame. Otherwise wonky behaviour.
+        static Ecs::Query query = Ecs::make_query<TransformComponent>();
+        world->for_each(query, [&](TransformComponent& tf) { tf.HasChangedThisFrame = false; });
+
+        // TODO
+        // update local transformations : can be parallelized.
+        UpdateLocalTransforms();
+
+        // Transform System updates via the scenegraph because the order matters
+        auto const& graph = m_scene->GetGraph();
+        scenegraph::shared_pointer root_node = graph.get_root();
+        UpdateTree(root_node, false);
+
+        TRACY_PROFILE_SCOPE_END();
+        TRACY_DISPLAY_PERFORMANCE_SELECTED(transform_update);
+    }
+
+    void TransformSystem::UpdateSubTree(GameObject go)
+    {
+        UpdateLocalTransforms();
+        UpdateTree(go.GetSceneNode().lock(), true);
+    }
+
+
+    void TransformSystem::UpdateLocalTransforms()
+    {
+        // Update their local transform
+        static Ecs::Query query = Ecs::make_query_including_differed<TransformComponent>();
+        m_world->for_each(query, [&](TransformComponent& tf)
+            {
+                // TODO: this part of the code doesn't need to be serial.
+                // Update local and global transform immediately
+                if (tf.LocalMatrixDirty)
+                {
+                    tf.CalculateLocalTransform();
+                }
+            });
+    }
+
+    void TransformSystem::UpdateTree(scenenode::shared_pointer node, bool updateRoot)
     {
         // Transform System updates via the scenegraph because the order matters
         static constexpr const char* const pre_transform_collect = "tree_update";
@@ -60,6 +103,20 @@ namespace oo
         scenegraph::shared_pointer root_node = node;
         std::stack<scenenode::shared_pointer> s;
         scenenode::shared_pointer curr = root_node;
+
+        // update itself or not
+        if (updateRoot)
+        {
+            // Find root gameobject
+            auto const go = m_scene->FindWithInstanceID(node->get_handle());
+
+            UpdateTransform(go, go->Transform());
+            //// Skip gameobjects that has the deferred component
+            //if (go->HasComponent<DeferredComponent>() == false)
+            //{
+            //}
+        }
+
         s.push(curr);
         while (!s.empty())
         {
@@ -73,9 +130,9 @@ namespace oo
                 // Find current gameobject
                 auto const go = m_scene->FindWithInstanceID(child->get_handle());
 
-                // Skip gameobjects that has the deferred component
-                if (go->HasComponent<DeferredComponent>())
-                    continue;
+                //// Skip gameobjects that has the deferred component
+                //if (go->HasComponent<DeferredComponent>())
+                //    continue;
 
                 UpdateTransform(go, go->Transform());
             }
@@ -85,46 +142,40 @@ namespace oo
         TRACY_DISPLAY_PERFORMANCE_SELECTED(pre_transform_collect);
     }
 
-    void TransformSystem::Run(Ecs::ECSWorld* world)
+    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf)
     {
-        static constexpr const char* const transform_update = "transform_update";
-        TRACY_TRACK_PERFORMANCE(transform_update);
-        TRACY_PROFILE_SCOPE_NC(transform_update, tracy::Color::Gold2);
-
-        // Typical System updates using query//
-        /* 
-        Remember to #include "Ouroboros/ECS/ECS.h" for this wrapper functionality
-
-        Option 1 : Makes with Deferred Component auto excluded
-            static Ecs::Query query = Ecs::make_query<GameObjectComponent>();
-            world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here});
+        static constexpr const char* const per_transform_update = "per_transform_update";
+        TRACY_TRACK_PERFORMANCE(per_transform_update);
+        TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
         
-        Option 2 : Makes with Deferred Component excluded
-            static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent>();
-            world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here });
+        /// all parents need to be sure to be updated first.
+        if (tf.GlobalMatrixDirty)
+        {
+            tf.CalculateGlobalTransform();
+            glm::mat4 parentGlobal = go->GetParent().Transform().GlobalTransform;
+            glm::mat4 parent_inverse = glm::affineInverse(parentGlobal) * tf.GlobalTransform.Matrix;
+            tf.SetLocalTransform(parent_inverse);   // decompose to this values.
+            tf.LocalEulerAngles = glm::degrees(quaternion::to_euler(tf.LocalTransform.Orientation));// update fake values outside!
+        }
+        else 
+        {
+            ASSERT_MSG(m_scene->IsValid(go->GetParentUUID()) == false, "Assumes we always have proper parent");
 
-        NOTE: this might be extended in the future to include specific components or have 
-        various combinations. But as much as possible make_query should work for the most part.
-        */
-
-        // Reset all has changed to false regardless of their previous state.
-        // Note: this should only occure once per frame. Otherwise wonky behaviour.
-        static Ecs::Query query = Ecs::make_query<TransformComponent>();
-        world->for_each(query, [&](TransformComponent& tf) { tf.SetHasChanged(false); });
-
-        // Transform System updates via the scenegraph because the order matters
-        auto const&  graph = m_scene->GetGraph();
-        scenegraph::shared_pointer root_node = graph.get_root();
-        UpdateTree(root_node);
+            // Check for valid parent
+            auto& parentTf = go->GetParent().Transform();
+            // Check if transform has changed locally or if parent has changed [optimization step]
+            if (tf.HasChangedThisFrame || parentTf.HasChangedThisFrame)
+            {
+                tf.HasChangedThisFrame = true;
+                tf.GlobalTransform.Matrix = go->GetParent().Transform().GlobalTransform.Matrix * tf.LocalTransform.Matrix;
+                Transform3D::DecomposeValues(tf.GlobalTransform.Matrix, tf.GlobalTransform.Position, tf.GlobalTransform.Orientation.value, tf.GlobalTransform.Scale);
+            }
+        }
 
         TRACY_PROFILE_SCOPE_END();
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(transform_update);
+        TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);
     }
 
-    void TransformSystem::UpdateSubTree(GameObject go)
-    {
-        UpdateTree(go.GetSceneNode().lock());
-    }
 
 }
 

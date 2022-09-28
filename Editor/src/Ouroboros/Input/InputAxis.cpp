@@ -1,3 +1,18 @@
+/************************************************************************************//*!
+\file           InputAxis.cpp
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 26, 2022
+\brief          defines the classes and enums needed to create an axis
+                used to obtain player input
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #include "pch.h"
 #include "InputAxis.h"
 
@@ -238,7 +253,10 @@ namespace oo
     {
         if (inputCode == InputAxis::INPUTCODE_INVALID)
             return 0.0f;
-        float value = input::GetControllerAxisValue(static_cast<input::ControllerAxisCode>(inputCode));
+        input::ControllerAxisCode axisCode = static_cast<input::ControllerAxisCode>(inputCode);
+        float value = input::GetControllerAxisValue(axisCode);
+        if (axisCode == input::ControllerAxisCode::LEFTY || axisCode == input::ControllerAxisCode::RIGHTY)
+            value *= -1;
         if (value >= 0)
             return value / std::numeric_limits<short>().max();
         else
