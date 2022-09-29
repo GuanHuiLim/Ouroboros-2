@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           ScriptManager.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Declares the manager responsible for handling the global functionality of the
+                scripting feature that is unique to each project but that carries over between scenes
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <Scripting/Scripting.h>

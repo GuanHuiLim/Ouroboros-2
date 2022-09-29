@@ -1,3 +1,21 @@
+/************************************************************************************//*!
+\file           ScriptValue.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Declares the ScriptValue struct with the ability to store any supported
+                C# type in C++ for serialization, and displaying/editing in the inspector.
+                This is done by storing all the necessary information in C++ to recreate
+                the C# type when needed. Helper functions are also provided to get a
+                C# variable in the form of a ScriptValue, and to edit C# variables
+                using a given ScriptValue
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <variant>
