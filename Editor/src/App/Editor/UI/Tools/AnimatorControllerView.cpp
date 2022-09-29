@@ -192,16 +192,21 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     {
         if (ImGui::MenuItem("Create State"))
         {
-            //oo::Anim::NodeInfo nodeinfo{
-            //.name{ "Node" },
-            //.animation_name{ oo::Anim::Animation::empty_animation_name },
-            //.speed{ 1.f },
-            //.position{0.f,0.f,0.f},
-            //};
+            //Need to find a way to store the oo::Anim::NodeInfo
+            //Temporary Solution
+            oo::Anim::NodeInfo nodeInfo{
+                .name{"Node"},
+                .animation_name{oo::Anim::Animation::empty_animation_name},
+                .speed{1.f},
+                .position{0.f,0.f,0.f},
+                .group{&animator->GetActualComponent().animTree->groups[0]}
+            };
 
-            //oo::Anim::Node* temp = _animator->AddNode(_animator->GetActualComponent().animTree->groups[0].name, nodeinfo);
-
-            //CreateNode(uniqueId, temp);
+            auto node = new oo::Anim::Node(nodeInfo);
+            //_animator->AddNode(_animator->GetActualComponent().animTree->groups[0].name, defaultNodeInfo);
+            m_newNodes.push_back(node);
+            
+            CreateNode(uniqueId, node);
         }
         ImGui::EndPopup();
     }
@@ -223,38 +228,166 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
 
 void AnimatorControllerView::DisplayParameters()
 {
+    static std::string _paramTypes[] = { "BOOL","TRIGGER","INT","FLOAT" };
+    static bool open4 = false;
+    static int _paramid = 0;
+    int _currParamId = 0;
+
     if (ImGui::Begin("Parameters"))
     {
         ImVec2 textsize = ImGui::CalcTextSize("a");
 
         for (int i = 0; i < animator->GetActualComponent().animTree->parameters.size(); ++i)
         {
-            if (animator->GetActualComponent().animTree->parameters[i].value.is_type<bool>())
+            ++_currParamId;
+            ImGui::PushID(animator->GetActualComponent().animTree->parameters[i].paramID);
+            ImGui::PushItemWidth(-160);
+            if (ImGui::SmallButton("X"))
             {
-                ImGui::Text(animator->GetActualComponent().animTree->parameters[i].name.c_str());
-                ImGui::SameLine(textsize.x * 15);
-                std::string tag = "##" + animator->GetActualComponent().animTree->parameters[i].name;
-                bool& temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
-                ImGui::Checkbox(tag.c_str(), &temp);
+                //remove parameter from the vector
+                animator->GetActualComponent().animTree->parameters.erase(animator->GetActualComponent().animTree->parameters.begin() + i);
             }
-            else if (animator->GetActualComponent().animTree->parameters[i].value.is_type<float>())
+            ImGui::PopItemWidth();
+
+            ImGui::SameLine();
+
+            ImGui::PushItemWidth(-160);
+            auto temp_name = animator->GetActualComponent().animTree->parameters[i].name;
+            if (ImGui::InputText("##Name", &temp_name, ImGuiInputTextFlags_EnterReturnsTrue) == true)
             {
-                ImGui::Text(animator->GetActualComponent().animTree->parameters[i].name.c_str());
-                ImGui::SameLine(textsize.x * 15);
-                std::string tag = "##" + animator->GetActualComponent().animTree->parameters[i].name;
-                float& temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<float>();
-                ImGui::InputFloat(tag.c_str(), &temp);
+                animator->GetActualComponent().animTree->parameters[i].name = temp_name;
             }
-            else if (animator->GetActualComponent().animTree->parameters[i].value.is_type<int>())
+            ImGui::PopItemWidth();
+
+            ImGui::SameLine();
+
+            ImGui::PushItemWidth(-80);
+            ImGui::BeginGroup();
+            ImGui::InputText("##paramstuff", &_paramTypes[(int)animator->GetActualComponent().animTree->parameters[i].type], ImGuiInputTextFlags_ReadOnly);
+            ImGui::SameLine();
+            if (ImGui::ArrowButton("downbtn", ImGuiDir_Down))
             {
-                ImGui::Text(animator->GetActualComponent().animTree->parameters[i].name.c_str());
-                ImGui::SameLine(textsize.x * 15);
-                std::string tag = "##" + animator->GetActualComponent().animTree->parameters[i].name;
-                int& temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<int>();
-                ImGui::InputInt(tag.c_str(), &temp);
+                _paramid = _currParamId;
+                open4 = !open4;
             }
+            if (open4 && _currParamId == _paramid)
+            {
+                if (ImGui::BeginListBox("##params"))
+                {
+                    if (ImGui::Selectable(_paramTypes[0].c_str()))
+                    {
+                        animator->GetActualComponent().animTree->parameters[i].type = oo::Anim::P_TYPE::BOOL;
+                        animator->GetActualComponent().animTree->parameters[i].value = false;
+                        open4 = !open4;
+                    }
+                    if (ImGui::Selectable(_paramTypes[1].c_str()))
+                    {
+                        animator->GetActualComponent().animTree->parameters[i].type = oo::Anim::P_TYPE::TRIGGER;
+                        animator->GetActualComponent().animTree->parameters[i].value = false;
+                        open4 = !open4;
+                    }
+                    if (ImGui::Selectable(_paramTypes[2].c_str()))
+                    {
+                        animator->GetActualComponent().animTree->parameters[i].type = oo::Anim::P_TYPE::INT;
+                        animator->GetActualComponent().animTree->parameters[i].value = 0;
+                        open4 = !open4;
+                    }
+                    if (ImGui::Selectable(_paramTypes[3].c_str()))
+                    {
+                        animator->GetActualComponent().animTree->parameters[i].type = oo::Anim::P_TYPE::FLOAT;
+                        animator->GetActualComponent().animTree->parameters[i].value = 0.0f;
+                        open4 = !open4;
+                    }
+                }
+                ImGui::EndListBox();
+            }
+            ImGui::EndGroup();
+            ImGui::PopItemWidth();
+
+            ImGui::SameLine();
+            ImGui::PushItemWidth(-1);
+            switch (animator->GetActualComponent().animTree->parameters[i].type)
+            {
+                case oo::Anim::P_TYPE::BOOL:
+                {
+                    bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
+                    if (ImGui::Checkbox("##bool", &temp))
+                        animator->GetActualComponent().animTree->parameters[i].value = temp;
+                    break;
+                }
+                case oo::Anim::P_TYPE::TRIGGER:
+                {
+                    bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
+                    if (ImGui::Checkbox("##trigger", &temp))
+                        animator->GetActualComponent().animTree->parameters[i].value = temp;
+                    break;
+                }
+                case oo::Anim::P_TYPE::INT:
+                {
+                    int temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<int>();
+                    if (ImGui::DragInt("##trigger", &temp))
+                        animator->GetActualComponent().animTree->parameters[i].value = temp;
+                    break;
+                }
+                case oo::Anim::P_TYPE::FLOAT:
+                {
+                    float temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<float>();
+                    if (ImGui::DragFloat("##trigger", &temp))
+                        animator->GetActualComponent().animTree->parameters[i].value = temp;
+                    break;
+                }
+            }
+            ImGui::PopItemWidth();
+            ImGui::PopID();
+            ImGui::Separator();
         }
 
+        if (ImGui::Button("+"))
+        {
+            ImGui::OpenPopup("##+");
+        }
+
+        if (ImGui::BeginPopup("##+"))
+        {
+            if (ImGui::MenuItem("BOOL"))
+            {
+                oo::Anim::ParameterInfo param_info{
+                .name{"bool"},
+                .type{oo::Anim::P_TYPE::BOOL}
+                };
+                animator->AddParameter(param_info);
+            }
+            if (ImGui::MenuItem("TRIGGER"))
+            {
+                oo::Anim::ParameterInfo param_info{
+                .name{"trigger"},
+                .type{oo::Anim::P_TYPE::TRIGGER}
+                };
+                animator->AddParameter(param_info);
+            }
+            if (ImGui::MenuItem("FLOAT"))
+            {
+                oo::Anim::ParameterInfo param_info{
+                .name{"float"},
+                .type{oo::Anim::P_TYPE::FLOAT},
+                //optional
+                .value{ 10.f }
+                };
+                animator->AddParameter(param_info);
+            }
+            if (ImGui::MenuItem("INT"))
+            {
+                oo::Anim::ParameterInfo param_info{
+                .name{"Test int"},
+                .type{oo::Anim::P_TYPE::INT},
+                //optional
+                .value{ 10 }
+                };
+                animator->AddParameter(param_info);
+            }
+            ImGui::EndPopup();
+        }
+            
         ImGui::End();
     }
 }
@@ -315,9 +448,6 @@ void AnimatorControllerView::DisplayInspector()
                         ImGui::Text("Fixed Duration");
                         ImGui::SameLine(textsize.x * 25);
                         ImGui::Checkbox("##fixedduration", &id->link->fixed_duration);
-                        //ImGui::Text("Transition Duration");
-                        //ImGui::SameLine(textsize.x * 25);
-                        //ImGui::InputFloat("##transitionDuration", &transitionDuration);
                     }
                     ImGui::TreePop();
                 }

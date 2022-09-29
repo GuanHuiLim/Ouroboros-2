@@ -36,6 +36,8 @@ public:	//Default Functions
 	}
 	~AnimatorControllerView() 
 	{
+		for (oo::Anim::Node* node : m_newNodes)
+			delete node;
 		ed::DestroyEditor(m_Context);
 	}
 
@@ -81,19 +83,22 @@ private: //Member Variables
 		std::string state;
 		std::string savedState;
 
-		NodeInfo(int _id, oo::Anim::Node* _anim_node = nullptr, ImColor _color = ImColor(255, 255, 255)) :
-			id(_id), 
-			anim_node{ _anim_node },
-			color(_color), 
-			size(0, 0), 
-			pos(0, 0), 
-			selected(false)
+		NodeInfo(int _id, 
+				 oo::Anim::Node* _anim_node = nullptr, 
+				 ImColor _color = ImColor(255, 255, 255)) 
+		:id(_id), 
+		anim_node{ _anim_node },
+		color(_color), 
+		size(0, 0), 
+		pos(0, 0), 
+		selected(false)
 		{
 
 		}
 	};
 	std::vector<NodeInfo> m_nodes;
 	std::vector<ed::NodeId> m_nodesId;
+	std::vector<oo::Anim::Node*> m_newNodes;
 	NodeInfo* m_selectedNode		  = nullptr;
 
 	struct LinkInfo
@@ -104,8 +109,15 @@ private: //Member Variables
 		ed::PinId outputID;
 		bool selected;
 
-		LinkInfo(ed::LinkId _id, ed::PinId _inputID = {}, ed::PinId _outputID = {}, oo::Anim::Link* _link = nullptr) :
-			id(_id), inputID(_inputID), outputID(_outputID), selected(false), link{_link}
+		LinkInfo(ed::LinkId _id, 
+				 ed::PinId _inputID = {}, 
+				 ed::PinId _outputID = {}, 
+				 oo::Anim::Link* _link = nullptr) 
+		:id(_id), 
+		inputID(_inputID), 
+		outputID(_outputID), 
+		selected(false), 
+		link{_link}
 		{
 		}
 	};
@@ -127,12 +139,9 @@ private: //Member Functions
 	void DisplayAnimatorController(oo::AnimationComponent* _animator);
 	void DisplayParameters();
 	void DisplayInspector();
-	void OnCreate();
-	NodeInfo* CreateNode(int& uniqueId, oo::Anim::Node* _anim_node = nullptr);
+	NodeInfo* CreateNode(int& uniqueId, oo::Anim::Node* _anim_node);
 	LinkInfo* CreateLink(int& uniqueId, oo::Anim::Link* _anim_link);
 	void OnDelete();
-	void DeleteNode(int& uniqueId);
-	void DeleteLink(int& uniqueId);
 	void RightClickOptions(int& id);
 
 	//Helper Functions
