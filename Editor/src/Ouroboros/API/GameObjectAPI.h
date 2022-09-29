@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include <Scripting/Scripting.h>
-#include <Scripting/ExportAPI.h>
+#include "Ouroboros/Scripting/ExportAPI.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Scripting/ScriptSystem.h"
 

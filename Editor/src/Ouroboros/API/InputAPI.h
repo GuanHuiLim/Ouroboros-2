@@ -12,7 +12,7 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
-#include "Scripting/ExportAPI.h"
+#include "Ouroboros/Scripting/ExportAPI.h"
 #include "Ouroboros/Core/Input.h"
 
 #include "Ouroboros/Input/InputSystem.h"

@@ -15,7 +15,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
-#include "Scripting/ExportAPI.h"
+#include "Ouroboros/Scripting/ExportAPI.h"
 
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Core/WindowsWindow.h"

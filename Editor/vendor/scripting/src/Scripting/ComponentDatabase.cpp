@@ -1,3 +1,19 @@
+/************************************************************************************//*!
+\file           ComponentDatabase.cpp
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          defines the ComponentDatabase class, which acts as the main interface
+                for creating, storing, and deleting instances of C# interfaces to C++
+                ECS components belonging to each GameObject, as well as performing
+                actions on a specified group of C# script instances
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "ComponentDatabase.h"
 
 #include "ScriptEngine.h"

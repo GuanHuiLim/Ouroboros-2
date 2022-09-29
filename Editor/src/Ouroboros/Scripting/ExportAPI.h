@@ -92,6 +92,15 @@ SCRIPT_API_VECTOR3_SET_A(Component, Set##Name, SetVariable, Additional)
 
 #pragma region float
 
+// C# DLLImport code for Getting float
+/*
+[DllImport("__Internal")] private static extern float { Component }_{ Name }(int instanceID);
+*/
+// C# DLLImport code for Setting float
+/*
+[DllImport("__Internal")] private static extern void{ Component }_{ Name }(int instanceID, float value);
+*/
+
 #define SCRIPT_API_FLOAT_GET(Component, Name, Variable) \
 SCRIPT_API float Component##_##Name(Entity instanceID) \
 { \
