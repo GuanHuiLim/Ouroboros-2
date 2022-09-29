@@ -24,7 +24,84 @@ namespace oo::Anim::internal
 		assert(Animation::ID_to_index.contains(id));
 		return Animation::ID_to_index[id];
 	}
+	NodeRef CreateNodeReference(Group& group, size_t id)
+	{
+		int index = 0;
+		for (auto& node : group.nodes)
+		{
+			if (node.node_ID == id)
+			{
+				NodeRef ref{
+					.nodes{&group.nodes},
+					.index{index},
+					.id{id}
+				};
+				return ref;
+			}
+			++index;
+		}
+		assert(false);
+	}
+	NodeRef CreateNodeReference(std::vector<Node>& node_container, size_t id)
+	{
+		int index = 0;
+		for (auto& node : node_container)
+		{
+			if (node.node_ID == id)
+			{
+				NodeRef ref{
+					.nodes{&node_container},
+					.index{index},
+					.id{id} 
+				};
 
+				return ref;
+			}
+			++index;
+		}
+		assert(false);
+	}
+	GroupRef CreateGroupReference(AnimationTree& tree, size_t id)
+	{
+		int index = 0;
+		for (auto& group : tree.groups)
+		{
+			if (group.groupID == id)
+			{
+				GroupRef ref{
+					.groups{&tree.groups},
+					.index{index},
+					.id{id}
+				};
+
+				return ref;
+			}
+			++index;
+		}
+
+		assert(false);
+	}
+	LinkRef CreateLinkReference(Group& group, size_t id)
+	{
+		int index = 0;
+		for (auto& link : group.links)
+		{
+			if (group.groupID == id)
+			{
+				LinkRef ref{
+					.links{&group.links},
+					.index{index},
+					.id{id}
+				};
+
+				return ref;
+			}
+			++index;
+		}
+
+		assert(false);
+	}
+	
 
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type)
 	{
@@ -274,33 +351,34 @@ namespace oo::Anim::internal
 	//set current node
 	//copy the node's trackers
 	//reset timer to 0.0f
-	void SetTrackerCurrentNode(AnimationTracker& tracker, Node& node)
-	{
-		tracker.currentNode = &node;
-		//tracker.trackers = node.trackers;
-		tracker.timer = 0.0f;
-	}
+	//void SetTrackerCurrentNode(AnimationTracker& tracker, Node& node)
+	//{
+	//	tracker.currentNode = &node;
+	//	//tracker.trackers = node.trackers;
+	//	tracker.timer = 0.0f;
+	//}
 
-	void AssignNodeToTracker(AnimationTracker& animTracker, Node& node)
+	void AssignNodeToTracker(AnimationTracker& animTracker, NodeRef node)
 	{
 		//set current node
-		animTracker.currentNode = &node;
+		animTracker.currentNode = node;
 		//reset timers
 		animTracker.timer = 0.f;
 		animTracker.normalized_timer = 0.f;
 		animTracker.global_timer = 0.f;
+		animTracker.num_iterations = 0;
 		//track all timelines in node's animations with trackers
-		animTracker.trackers = node.trackers;
+		animTracker.trackers = node->trackers;
 	}
 
 	//copy animation tree's parameters to the tracker
 	//set the starting node for the tracker and its respective data
-	void InitializeTracker(IAnimationComponent& comp)
+	/*void InitializeTracker(IAnimationComponent& comp)
 	{
 		comp.tracker.parameters = comp.animTree->parameters;
 		SetTrackerCurrentNode(comp.tracker, *(comp.animTree->groups.front().startNode));
 
-	}
+	}*/
 
 	//update a node's trackers to reflect its animation timelines
 	void UpdateNodeTrackers(Node& node)
@@ -330,7 +408,7 @@ namespace oo::Anim::internal
 					continue;
 				//if no conditions return link
 				if (link->conditions.empty())
-					return link;
+					return &(*link);
 
 				//Check conditions
 				bool all_cleared = true;
@@ -340,7 +418,7 @@ namespace oo::Anim::internal
 						all_cleared = false;
 				}
 				if (all_cleared)
-					return link;
+					return &(*link);
 
 				//continue if not all conditions met
 				continue;
@@ -355,7 +433,7 @@ namespace oo::Anim::internal
 						all_cleared = false;
 				}
 				if (all_cleared)
-					return link;
+					return &(*link);
 
 				continue;
 			}			
@@ -395,7 +473,10 @@ namespace oo::Anim::internal
 
 		if (info.tracker.currentNode->GetAnimation().looping &&
 			updatedTimer > info.tracker.currentNode->GetAnimation().animation_length)
+		{
 			info.tracker.timer = updatedTimer - info.tracker.currentNode->GetAnimation().animation_length;
+			++info.tracker.num_iterations;
+		}
 	}
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
@@ -524,6 +605,14 @@ namespace oo::Anim::internal
 		return nullptr;
 	}
 
+	Group* AddGroupToTree(AnimationTree& tree, GroupInfo const& info)
+	{
+		Group new_group{ info };
+
+		auto& group = tree.groups.emplace_back(std::move(new_group));
+		return &group;
+	}
+
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
 		//if node already added to this group then just return it
@@ -535,14 +624,22 @@ namespace oo::Anim::internal
 				return &node;
 			}
 		}
-		//assign the group to the info struct
-		info.group = &group;
+		
 		//create the node and add it to this group
 		Node node{ info };
-		//UpdateNodeTrackers(node);
-
-		
+		UpdateNodeTrackers(node);
 		auto& createdNode = group.nodes.emplace_back(std::move(node));
+
+
+		//reload node references in case any become invalid
+		group.startNode.Reload();
+		for (auto& link : group.links)
+		{
+			link.src.Reload();
+			link.dst.Reload();
+		}
+
+
 		return &createdNode;
 	}
 
@@ -649,13 +746,14 @@ namespace oo::Anim::internal
 
 		//source and destination nodes should exist
 		assert(src_node != nullptr && dst_node != nullptr);
-
-		Link link{ *src_node , *dst_node };
+		auto src_ref = CreateNodeReference(group, src_node->node_ID);
+		auto dst_ref = CreateNodeReference(group, dst_node->node_ID);
+		Link link{ src_ref , dst_ref };
 		link.name = src_node->name + " -> " + dst_node->name;
 
 		auto& createdLink = group.links.emplace_back(std::move(link));
 
-		src_node->outgoingLinks.emplace_back(&createdLink);
+		src_node->outgoingLinks.emplace_back(CreateLinkReference(group, createdLink.linkID));
 
 		return &createdLink;
 	}
@@ -727,7 +825,7 @@ namespace oo::Anim::internal
 		comp.tracker.parameters = comp.animTree->parameters;
 		//set current node to start node
 		assert(comp.animTree->groups.front().startNode);
-		AssignNodeToTracker(comp.tracker, *(comp.animTree->groups.front().startNode));		
+		AssignNodeToTracker(comp.tracker, comp.animTree->groups.front().startNode);
 	}
 
 	void BindConditionsToParameters(AnimationTree& tree)
@@ -797,6 +895,78 @@ namespace oo::Anim::internal
 namespace oo::Anim
 {
 	/*-------------------------------
+	NodeRef
+	-------------------------------*/
+	void NodeRef::Reload()
+	{
+		int currindex{0};
+		for (auto& node : *nodes)
+		{
+			if (node.node_ID == id)
+			{
+				index = currindex;
+			}
+			++currindex;
+		}
+
+		LOG_CORE_ERROR("Animation Node Reference Reload failed!!");
+		assert(false);
+		index = -1;
+	}
+	bool NodeRef::valid() const
+	{
+		return nodes && index >= 0 && index < nodes->size() &&
+			this->operator->()->node_ID == id;
+	}
+	/*-------------------------------
+	GroupRef
+	-------------------------------*/
+	void GroupRef::Reload()
+	{
+		int currindex{ 0 };
+		for (auto& group : *groups)
+		{
+			if (group.groupID == id)
+			{
+				index = currindex;
+			}
+			++currindex;
+		}
+
+		LOG_CORE_ERROR("Animation Group Reference Reload failed!!");
+		assert(false);
+		index = -1;
+	}
+	bool GroupRef::valid() const
+	{
+		return groups && index >= 0 && index < groups->size() &&
+			this->operator->()->groupID == id;
+	}
+	/*-------------------------------
+	LinkRef
+	-------------------------------*/
+	void LinkRef::Reload()
+	{
+		int currindex{ 0 };
+		for (auto& link : *links)
+		{
+			if (link.linkID == id)
+			{
+				index = currindex;
+			}
+			++currindex;
+		}
+
+		LOG_CORE_ERROR("Animation Group Reference Reload failed!!");
+		assert(false);
+		index = -1;
+	}
+	bool LinkRef::valid() const
+	{
+		return links && index >= 0 && index < links->size() &&
+			this->operator->()->linkID == id;
+	}
+	/*-------------------------------
 	Parameter
 	-------------------------------*/
 	Parameter::Parameter(ParameterInfo const& info) :
@@ -850,9 +1020,10 @@ namespace oo::Anim
 	/*-------------------------------
 	Link
 	-------------------------------*/
-	Link::Link(Node& _src, Node& _dst)
+	Link::Link(NodeRef _src, NodeRef _dst)
 		: src{_src} ,
-		dst{_dst}
+		dst{_dst} ,
+		linkID{ internal::generateUID() }
 	{
 
 	}
@@ -885,17 +1056,17 @@ namespace oo::Anim
 	/*-------------------------------
 	Node
 	-------------------------------*/
-	Node::Node(Group& _group, std::string const _name)
+	/*Node::Node(Group& _group, std::string const _name)
 		: group{ _group },
 		name{ _name }
 	{
 
-	}
+	}*/
 
 	Node::Node(NodeInfo& info) 
-		: group{ (assert(info.group), *(info.group))}
+		: group{ (assert(info.group), info.group)}
 		, name{ info.name }
-		, animation_index{internal::GetAnimationIndex(info.animation_name)}
+		, node_ID{info.nodeID == internal::invalid_ID ? internal::generateUID() : info.nodeID }
 	{
 
 	}
@@ -908,19 +1079,35 @@ namespace oo::Anim
 	/*-------------------------------
 	Group
 	-------------------------------*/
-	Group::Group(std::string const _name)
+	/*Group::Group(std::string const _name)
 		: name{ _name }
-		, startNode{nodes, 0}
+		, groupID{ internal::generateUID() }
 	{
 		NodeInfo info{
 			.name{ "Start Node" },
 			.animation_name{ Animation::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
-			.group{this}
+			.group{  }
 		};
 
-		Anim::internal::AddNodeToGroup(*this, info);
+		auto node = Anim::internal::AddNodeToGroup(*this, info);
+		startNode = internal::CreateNodeReference(*this, node->node_ID);
+	}*/
+	Group::Group(GroupInfo const& info)
+		: name{ info.name }
+		, groupID{ info.groupID == internal::invalid_ID ? internal::generateUID() : info.groupID }
+	{
+		NodeInfo n_info{
+			.name{ "Start Node" },
+			.animation_name{ Animation::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f},
+			.group{  }
+		};
+
+		auto node = Anim::internal::AddNodeToGroup(*this, n_info);
+		startNode = internal::CreateNodeReference(*this, node->node_ID);
 	}
 
 	/*-------------------------------
@@ -934,10 +1121,9 @@ namespace oo::Anim
 		tree.name = name;
 		AnimationTree::map.emplace(name, std::move(tree));
 		//create a default group and assign to tree
-		AnimationTree::map[name].groups.emplace_back("Group 1");
-		//Group group{  };
-		//tree.groups.emplace_back(group);
-		
+		GroupInfo info{ .name{"Group 1"} };
+		internal::AddGroupToTree(AnimationTree::map[name], info);
+
 		return &(AnimationTree::map[name]);
 	}
 
@@ -1096,6 +1282,7 @@ namespace oo::Anim
 
 		//add a node to the first group
 		auto& group = tree->groups.front();
+
 		NodeInfo nodeinfo{
 			.name{ "Test Node" },
 			.animation_name{ Animation::empty_animation_name },
@@ -1249,8 +1436,8 @@ namespace oo
 			assert(false);
 			return nullptr;
 		}
-
-		auto node = oo::Anim::internal::AddNodeToGroup(*group, info);
+		info.group = Anim::internal::CreateGroupReference(*tree, group->groupID);
+		auto node = Anim::internal::AddNodeToGroup(*group, info);
 		//node should exist after adding to group
 		if (node == nullptr)
 		{

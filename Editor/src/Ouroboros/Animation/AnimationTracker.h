@@ -24,16 +24,19 @@ namespace oo::Anim
 			bool in_transition{ false };
 			//trackers for the destination node
 			std::vector<ProgressTracker> trackers{};
-			//duration of
+			//how much time has elasped since the transition began
 			float transition_timer{ 0.f };
 		};
 
-		Node* currentNode{ nullptr };
+		NodeRef currentNode;
 		
 		float timer{ 0.f };
 		float normalized_timer{ 0.f };
 		float global_timer{ 0.f };
 		int num_iterations{ 0 };
+
+		InTransitionInfo transition_info{};
+
 		//event tracker, then FBX animations, then properties
 		//these track the various timelines in a single animation
 		std::vector<ProgressTracker> trackers;
