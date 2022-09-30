@@ -101,6 +101,7 @@ void Editor::Update()
 {
 	static bool b = [this]() 
 	{
+		ImGuiManager::InitAssetsAll();
 		m_styleEditor.InitStyle(); 
 		m_toolbar.InitAssets();
 		m_loggingView.InitAsset();
