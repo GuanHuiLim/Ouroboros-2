@@ -115,8 +115,8 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     {
         for (int i = 0; i < _animator->GetActualComponent().animTree->groups[0].links.size(); ++i)
         {
-            NodeInfo* outputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].src.id);
-            NodeInfo* inputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].dst.id);
+            NodeInfo* outputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].src.operator->());
+            NodeInfo* inputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].dst.operator->());
 
             ed::PinId inputPin = outputNode->Output[0].id;
             ed::PinId outputPin = inputNode->Input[0].id;
