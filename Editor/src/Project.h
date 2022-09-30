@@ -13,13 +13,13 @@ public:
 	
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
-	static std::filesystem::path GetAssetFolder() { return s_projectFolder / s_assetFolder; };
-	static std::filesystem::path GetSceneFolder() { return s_projectFolder / s_sceneFolder; };
-	static std::filesystem::path GetPrefabFolder() { return s_projectFolder / s_prefabFolder; };
+	static std::filesystem::path GetAssetFolder() { return s_projectFolder.string() + s_assetFolder.string(); };
+	static std::filesystem::path GetSceneFolder() { return s_projectFolder.string() + s_sceneFolder.string(); };
+	static std::filesystem::path GetPrefabFolder() { return s_projectFolder.string() + s_prefabFolder.string(); };
 
-	static std::filesystem::path GetScriptCoreDLL() { return s_projectFolder / s_scriptcoreDLL; };
-	static std::filesystem::path GetScriptModulePath() { return s_projectFolder / s_scriptmodulePath; };
-	static std::filesystem::path GetScriptBuildPath() { return s_projectFolder / s_scriptbuildPath; };
+	static std::filesystem::path GetScriptCoreDLL() { return s_projectFolder.string() + s_scriptcoreDLL.string(); };
+	static std::filesystem::path GetScriptModulePath() { return s_projectFolder.string() + s_scriptmodulePath.string(); };
+	static std::filesystem::path GetScriptBuildPath() { return s_projectFolder.string() + s_scriptbuildPath.string(); };
 private:
     static void UpdateScriptingFiles();
 	

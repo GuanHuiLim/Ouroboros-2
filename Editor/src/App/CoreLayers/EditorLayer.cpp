@@ -33,7 +33,7 @@ void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
 #ifdef OO_EDITOR
-	ImGuiManager::InitAssetsAll();
+	//ImGuiManager::InitAssetsAll();
 #endif
 }
 
