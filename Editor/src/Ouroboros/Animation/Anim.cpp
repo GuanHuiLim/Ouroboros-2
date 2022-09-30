@@ -444,7 +444,13 @@ namespace oo::Anim::internal
 
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link)
 	{
-		AssignNodeToTracker(info.tracker, link->dst);
+		//AssignNodeToTracker(info.tracker, link->dst);
+		info.tracker.transition_info.in_transition = true;
+		info.tracker.transition_info.transition_timer = 0.f;
+		info.tracker.transition_info.transition_timer = link->transition_offset;
+
+		info.tracker.transition_info.trackers = link->dst->trackers;
+
 	}
 
 	void UpdateTracker(UpdateTrackerInfo& info)
@@ -1098,12 +1104,14 @@ namespace oo::Anim
 		: name{ info.name }
 		, groupID{ info.groupID == internal::invalid_ID ? internal::generateUID() : info.groupID }
 	{
+		//verify tree is valid
+		assert(info.tree);
 		NodeInfo n_info{
 			.name{ "Start Node" },
 			.animation_name{ Animation::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
-			.group{  }
+			.group{ internal::CreateGroupReference(*(info.tree),groupID)}
 		};
 
 		auto node = Anim::internal::AddNodeToGroup(*this, n_info);
@@ -1120,8 +1128,9 @@ namespace oo::Anim
 		AnimationTree tree;
 		tree.name = name;
 		AnimationTree::map.emplace(name, std::move(tree));
+		auto& createdTree = AnimationTree::map[name];
 		//create a default group and assign to tree
-		GroupInfo info{ .name{"Group 1"} };
+		GroupInfo info{ .name{"Group 1"},.tree{&createdTree} };
 		internal::AddGroupToTree(AnimationTree::map[name], info);
 
 		return &(AnimationTree::map[name]);
