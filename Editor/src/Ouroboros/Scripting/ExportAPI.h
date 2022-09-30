@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           ScriptComponent.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Declares the macros used to make exposing C++ functions
+                for C# scripts to use easier
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 /*-----------------------------------------------------------------------------*/
@@ -7,15 +21,14 @@
 /*
 SCRIPT_API { Return Type } { Function Name }(Entity instanceID, { Other Parameters })
 {
-    GameObject obj{ instanceID };
-    if (!GameObject::IsValid(obj))
-    {
-        ScriptEngine::ThrowNullException();
-    }
-    // Add stuff here
-
 }
 */
+
+// If you need to get a scene from an ID, or gameObject from scene, make use of
+// ScriptManager::GetScene
+// ScriptManager::GetObjectFromScene
+// They are special wrapper functions that will throw a C# null reference if the scene/GameObject does not exist 
+
 // Even using helper macros, you'll need to write the C# code on your own. Just copy paste this in the corresponding C# class
 // Replace any bracketed { stuff } with the same name as the C++ code
 /*
