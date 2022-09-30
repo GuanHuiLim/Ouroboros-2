@@ -26,6 +26,7 @@ namespace oo::Anim
 			std::vector<ProgressTracker> trackers{};
 			//how much time has elasped since the transition began
 			float transition_timer{ 0.f };
+			float transition_offset{ 0.f };
 		};
 
 		NodeRef currentNode;

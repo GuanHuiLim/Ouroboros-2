@@ -59,6 +59,7 @@ namespace oo::Anim
 	struct ScriptEvent;
 	struct TimelineInfo;
 	struct Timeline;
+	struct TimelineRef;
 	struct Animation;		//represents property or fbx file animations
 	struct Node;			//a node in the animation tree
 	struct NodeRef;			//a reference class to reference a node
@@ -208,6 +209,7 @@ namespace oo::Anim
 	{
 		std::string name{ "Unnamed Group" };
 		size_t groupID{ std::numeric_limits<size_t>().max() };
+		AnimationTree* tree{nullptr};
 	};
 	
 
@@ -280,6 +282,8 @@ namespace oo::Anim
 		bool has_exit_time{ false };
 		float exit_time{ 0.f };
 		bool fixed_duration{ false };
+		float transition_duration{ 0.f };
+		float transition_offset{ 0.f };
 		std::string name{"Unnamed Link"};
 		std::vector<Condition> conditions{};
 		size_t linkID{ std::numeric_limits<size_t>().max() };
