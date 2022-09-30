@@ -41,6 +41,8 @@ Technology is prohibited.
 #include "Ouroboros/Audio/AudioListenerComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
+#include <Ouroboros/Transform/TransformSystem.h>
+
 Serializer::Serializer()
 {
 }
@@ -393,8 +395,11 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 
 UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
 {
+	// TODO : This can be improved if required. Clean up please
+
 	UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
+	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
 	parents.push(starting);
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
@@ -404,24 +409,64 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 		auto membersEnd = iter->value.MemberEnd();
 		int order = members->value.GetInt();
 
+
 		{//when the order dont match the size it will keep poping until it matches
 		//then parent to it and adds itself
 			while (order != parents.size())
 				parents.pop();
 
-			parents.top()->AddChild(*go,true);
+			parents.top()->AddChild(*go, true);
 			parents.push(go);
 			if (iter == doc.MemberBegin())
 				firstobj = go->GetInstanceID();
 		}
 
+
+		//++members;
+		//{//another element that will store all the component hashes and create the apporiate archtype
+		//	// go->SetArchtype(vector<hashes>);
+		//}
+		////processes the components		
+		//LoadObject(*go, members, membersEnd);
+
+		second_iter.emplace_back(go);
+	}
+
+	scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*starting, false);
+
+	//std::stack<std::shared_ptr<oo::GameObject>> parents;
+	//parents.push(starting);
+	int iteration = 0;
+	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter, ++iteration)
+	{
+		uint64_t id = std::stoull(iter->name.GetString());
+		auto go = second_iter[iteration];
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
 		++members;
+		//processes the components		
+		LoadObject(*go, members, membersEnd);
+
+		//scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*scene.GetRoot());
+
+		//{//when the order dont match the size it will keep poping until it matches
+		////then parent to it and adds itself
+		//	while (order != parents.size())
+		//		parents.pop();
+
+		//	parents.top()->AddChild(*go, true);
+		//	parents.push(go);
+		//	if (iter == doc.MemberBegin())
+		//		firstobj = go->GetInstanceID();
+		//}
+
 		{//another element that will store all the component hashes and create the apporiate archtype
 			// go->SetArchtype(vector<hashes>);
 		}
-		//processes the components		
-		LoadObject(*go, members, membersEnd);
 	}
+
 	ResetDocument();//clear it after using
 	return firstobj;
 }
