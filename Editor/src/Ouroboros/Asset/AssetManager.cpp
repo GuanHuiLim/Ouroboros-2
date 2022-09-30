@@ -96,6 +96,13 @@ namespace oo
     {
         isRunning = false;
         fileWatchThread.join();
+
+        // Destroy all assets
+        // none will survive
+        for (auto& asset : assets.GetAssets())
+        {
+            asset.second.info->copies = { &asset.second };
+        }
     }
 
     Asset AssetManager::Get(const AssetID& snowflake)
