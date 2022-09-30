@@ -48,7 +48,7 @@ namespace oo
 
             GetWorld().Add_System<PhysicsSystem>()->Init();
 
-            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
+            GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
             GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
             //Register All Systems
