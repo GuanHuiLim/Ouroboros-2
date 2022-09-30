@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           TracyClient.cpp
+\project        Ouroboros
+\author         Lim Guan Hui, l.guanhui, 390009020
+\par            email: l.guanhui\@digipen.edu
+\date           Sept 30, 2022
+\brief          File for linking tracy easily
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 //
 //          Tracy profiler
 //         ----------------
