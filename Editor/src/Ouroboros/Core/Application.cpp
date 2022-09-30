@@ -65,7 +65,7 @@ namespace oo
         constexpr const char* const update_loop_name = "core app update_loop";
         //constexpr const char* const update_layerstack_name = "LayerStack OnUpdate";
         //constexpr const char* const imgui_layerstack_name = "LayerStack OnImGuiUpdate";
-
+        UNREFERENCED(update_loop_name);
         while (m_running)
         {
             OO_TracyProfiler::CheckIfServerToBeOpened();

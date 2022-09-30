@@ -32,7 +32,7 @@ namespace Ecs
     }
 
     template<typename ...T>
-    Query make_query_including_differed()
+    Query make_query_including_deferred()
     {
         return [&]()
         {

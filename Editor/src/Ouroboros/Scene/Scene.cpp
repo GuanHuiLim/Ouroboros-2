@@ -67,6 +67,7 @@ namespace oo
     void Scene::Init()
     {
         constexpr const char* const scene_init = "Scene_init";
+        UNREFERENCED(scene_init);
         {
             TRACY_TRACK_PERFORMANCE(scene_init);
             TRACY_PROFILE_SCOPE_NC(scene_init, tracy::Color::Seashell1);
@@ -90,25 +91,6 @@ namespace oo
                 m_ecsWorld->Add_System<oo::AudioSystem>(this);
             }
 
-            // Broadcast event to load scene
-            LoadSceneEvent lse{ this };
-            EventManager::Broadcast<LoadSceneEvent>(&lse);
-
-            // Set Active Event for all objects
-            for (auto& go : m_gameObjects)
-            {
-                if (go->ActiveInHierarchy())
-                {
-                    GameObjectComponent::OnEnableEvent e{ go->GetInstanceID() };
-                    EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&e);
-                }
-                else
-                {
-                    GameObjectComponent::OnDisableEvent e{ go->GetInstanceID() };
-                    EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&e);
-                }
-            }
-            
             PRINT(m_name);
             
             TRACY_PROFILE_SCOPE_END();
@@ -124,6 +106,7 @@ namespace oo
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
             m_ecsWorld->Get_System<oo::AudioSystem>()->Run(m_ecsWorld.get());
             constexpr const char* const scripts_update = "Scripts Update";
+            UNREFERENCED(scripts_update);
             {
                 TRACY_PROFILE_SCOPE(scripts_update);
                 GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
@@ -154,6 +137,7 @@ namespace oo
     void Scene::EndOfFrameUpdate()
     {
         constexpr const char* const scene_end_of_frame_update = "Scene_end_of_frame_update";
+        UNREFERENCED(scene_end_of_frame_update);
         {
             TRACY_TRACK_PERFORMANCE(scene_end_of_frame_update);
             TRACY_PROFILE_SCOPE_NC(scene_end_of_frame_update, tracy::Color::Seashell2);
@@ -203,6 +187,7 @@ namespace oo
     void Scene::LoadScene()
     {
         constexpr const char* const scene_loading = "scene_loading";
+        UNREFERENCED(scene_loading);
         {
             TRACY_TRACK_PERFORMANCE(scene_loading);
             TRACY_PROFILE_SCOPE_NC(scene_loading, tracy::Color::Seashell3);
@@ -246,6 +231,7 @@ namespace oo
     void Scene::UnloadScene()
     {
         constexpr const char* const scene_unload = "scene_unload";
+        UNREFERENCED(scene_unload);
         {
             TRACY_PROFILE_SCOPE_NC(scene_unload, tracy::Color::Seashell4);
             TRACY_TRACK_PERFORMANCE(scene_unload);
@@ -461,6 +447,25 @@ namespace oo
     
     void Scene::LoadFromFile()
     {
+        // Broadcast event to load scene
+        LoadSceneEvent lse{ this };
+        EventManager::Broadcast<LoadSceneEvent>(&lse);
+
+        // Set Active Event for all objects
+        for (auto& go : m_gameObjects)
+        {
+            if (go->ActiveInHierarchy())
+            {
+                GameObjectComponent::OnEnableEvent goOnEnableEvent{ go->GetInstanceID() };
+                EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&goOnEnableEvent);
+            }
+            else
+            {
+                GameObjectComponent::OnDisableEvent goOnDisableEvent{ go->GetInstanceID() };
+                EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&goOnDisableEvent);
+            }
+        }
+
     }
 
     void Scene::SaveToFile()
