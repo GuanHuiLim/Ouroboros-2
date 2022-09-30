@@ -46,7 +46,7 @@ namespace oo
         }
         scriptDatabase.Initialize(executionOrder);
 
-        static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, ScriptComponent>();
+        static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, ScriptComponent>();
 
         isPlaying = true;
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
@@ -126,7 +126,7 @@ namespace oo
     }
     void ScriptSystem::RefreshScriptInfoAll()
     {
-        static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, ScriptComponent>();
+        static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, ScriptComponent>();
 
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
@@ -378,7 +378,7 @@ namespace oo
 
     void ScriptSystem::UpdateAllScriptFieldsWithInfo()
     {
-        static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, ScriptComponent>();
+        static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, ScriptComponent>();
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
                 if (gameObject.Id == GameObject::ROOTID)

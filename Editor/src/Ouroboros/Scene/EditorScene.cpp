@@ -34,6 +34,7 @@ namespace oo
         Scene::Init();
 
         constexpr const char* const editor_scene_init = "Editor scene init";
+        UNREFERENCED(editor_scene_init);
         //constexpr const char* const registration = "registration";
         //constexpr const char* const loading_world = "loading world";
         {

@@ -323,14 +323,14 @@ namespace oo
         m_window.m_width = e->GetWidth();
     }
 
-    void VulkanContext::OnWindowMinimize(WindowMinimizeEvent* e)
+    void VulkanContext::OnWindowMinimize(WindowMinimizeEvent*)
     {
         m_minimized = true;
         m_window.m_height = 0;
         m_window.m_width = 0;
     }
 
-    void VulkanContext::OnWindowRestored(WindowRestoredEvent* e)
+    void VulkanContext::OnWindowRestored(WindowRestoredEvent*)
     {
         m_minimized = false;
         int w, h;

@@ -108,6 +108,7 @@ public:
     void OnUpdate() override
     {
         constexpr const char* const editor_update = "Editor App Update";
+        UNREFERENCED(editor_update);
         TRACY_PROFILE_SCOPE_N(editor_update);
 
         m_imGuiAbstract->Begin();

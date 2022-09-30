@@ -40,6 +40,7 @@ namespace oo
         Scene::Init();
 
         constexpr const char* const registration = "registration";
+        UNREFERENCED(registration);
         {
             TRACY_PROFILE_SCOPE(registration);
 
@@ -78,6 +79,7 @@ namespace oo
         }
 
         constexpr const char* const loading_world = "loading world";
+        UNREFERENCED(loading_world);
         {
             TRACY_PROFILE_SCOPE(loading_world);
             LoadFromFile();
@@ -97,10 +99,12 @@ namespace oo
         //GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
 
         constexpr const char* const runtime_scene_update = "Runtime Scene Update";
+        UNREFERENCED(runtime_scene_update);
         {
             TRACY_PROFILE_SCOPE(runtime_scene_update);
 
             constexpr const char* const input_update = "Input Update";
+            UNREFERENCED(input_update);
             {
                  TRACY_PROFILE_SCOPE(input_update);
                  GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
@@ -108,6 +112,7 @@ namespace oo
             }
 
             constexpr const char* const physics_runtime_update = "Physics Runtime Update";
+            UNREFERENCED(physics_runtime_update);
             {
                 TRACY_PROFILE_SCOPE(physics_runtime_update);
                 GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
@@ -115,6 +120,7 @@ namespace oo
             }
 
             constexpr const char* const animation_update = "Animation Update";
+            UNREFERENCED(animation_update);
             {
                 TRACY_PROFILE_SCOPE(animation_update);
                 GetWorld().Run_System<oo::Anim::AnimationSystem>();
@@ -259,6 +265,7 @@ namespace oo
     void RuntimeScene::StartSimulation()
     {
         constexpr const char* const start_simulation = "Start Simulation";
+        UNREFERENCED(start_simulation);
         {
 
             TRACY_PROFILE_SCOPE(start_simulation);
@@ -278,6 +285,7 @@ namespace oo
     void RuntimeScene::StopSimulation()
     {
         constexpr const char* const stop_simulation = "Stop Simulation";
+        UNREFERENCED(stop_simulation);
         {
             TRACY_PROFILE_SCOPE(stop_simulation);
 

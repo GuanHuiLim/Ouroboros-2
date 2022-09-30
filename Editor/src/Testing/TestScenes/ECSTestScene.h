@@ -38,7 +38,7 @@ public:
 
     virtual void Run(Ecs::ECSWorld * world) override
     {
-        static Ecs::Query query = Ecs::make_query_including_differed<DummyComponent>();
+        static Ecs::Query query = Ecs::make_query_including_deferred<DummyComponent>();
         world->for_each(query, [&](DummyComponent& comp) { Update(comp); });
     }
 };
