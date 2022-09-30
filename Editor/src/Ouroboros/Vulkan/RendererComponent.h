@@ -17,8 +17,12 @@ namespace oo
 
 	struct MeshRendererComponent
 	{
+		Asset albedo_handle;
+		Asset normal_handle;
 		Asset mesh_handle;
 		int submodel_id = 0;
+		uint32_t albedoID = 0xFFFFFFFF;
+		uint32_t normalID = 0xFFFFFFFF;
 
 		//no need to serialize
 		uint32_t model_handle{0};
@@ -51,7 +55,15 @@ namespace oo
 				mesh_handle = _asset;
 				model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
 			}
-		}
+			if (albedo_handle.IsValid())
+			{
+				albedoID = albedo_handle.GetData<uint32_t>();
+			}
+			if (normal_handle.IsValid())
+			{
+				normalID = normal_handle.GetData<uint32_t>();
+			}
+		}	   
 		int GetSubModelID()
 		{
 			return submodel_id;
@@ -60,8 +72,10 @@ namespace oo
 		{
 			if (mesh_handle.IsValid())
 			{
-				submodel_id = id;
-				model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+				auto modelData = mesh_handle.GetData<ModelData*>();
+				id = id %  modelData->gfxMeshIndices.size();
+				submodel_id = id %  modelData->gfxMeshIndices.size();
+				model_handle = modelData->gfxMeshIndices[submodel_id];
 			}
 		}
 		//std::vector<Material> materials;

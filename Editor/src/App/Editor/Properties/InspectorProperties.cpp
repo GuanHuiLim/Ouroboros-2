@@ -188,6 +188,7 @@ InspectorProperties::InspectorProperties()
 		//if (value.IsValid() == false)
 		//	return;
 		ImGui::SameLine();
+		ImGui::PushID(prop.get_name().data());
 		ImGuiID temp = ImGui::GetItemID();
 		if (ImGui::Button("Edit"))
 		{
@@ -198,6 +199,7 @@ InspectorProperties::InspectorProperties()
 				open = temp;
 			}
 		}
+		ImGui::PopID();
 		if (open == temp)
 		{
 			//this meta data is a required field
