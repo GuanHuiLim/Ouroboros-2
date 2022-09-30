@@ -91,25 +91,6 @@ namespace oo
                 m_ecsWorld->Add_System<oo::AudioSystem>(this);
             }
 
-            // Broadcast event to load scene
-            LoadSceneEvent lse{ this };
-            EventManager::Broadcast<LoadSceneEvent>(&lse);
-
-            // Set Active Event for all objects
-            for (auto& go : m_gameObjects)
-            {
-                if (go->ActiveInHierarchy())
-                {
-                    GameObjectComponent::OnEnableEvent goOnEnableEvent{ go->GetInstanceID() };
-                    EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&goOnEnableEvent);
-                }
-                else
-                {
-                    GameObjectComponent::OnDisableEvent goOnDisableEvent{ go->GetInstanceID() };
-                    EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&goOnDisableEvent);
-                }
-            }
-            
             PRINT(m_name);
             
             TRACY_PROFILE_SCOPE_END();
@@ -466,6 +447,25 @@ namespace oo
     
     void Scene::LoadFromFile()
     {
+        // Broadcast event to load scene
+        LoadSceneEvent lse{ this };
+        EventManager::Broadcast<LoadSceneEvent>(&lse);
+
+        // Set Active Event for all objects
+        for (auto& go : m_gameObjects)
+        {
+            if (go->ActiveInHierarchy())
+            {
+                GameObjectComponent::OnEnableEvent goOnEnableEvent{ go->GetInstanceID() };
+                EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&goOnEnableEvent);
+            }
+            else
+            {
+                GameObjectComponent::OnDisableEvent goOnDisableEvent{ go->GetInstanceID() };
+                EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&goOnDisableEvent);
+            }
+        }
+
     }
 
     void Scene::SaveToFile()
