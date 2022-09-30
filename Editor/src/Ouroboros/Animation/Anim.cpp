@@ -611,11 +611,22 @@ namespace oo::Anim::internal
 		return nullptr;
 	}
 
-	Group* AddGroupToTree(AnimationTree& tree, GroupInfo const& info)
+	Group* AddGroupToTree(AnimationTree& tree, GroupInfo& info)
 	{
+		info.tree = &tree;
 		Group new_group{ info };
-
 		auto& group = tree.groups.emplace_back(std::move(new_group));
+		//create the starting node
+		NodeInfo n_info{
+			.name{ "Start Node" },
+			.animation_name{ Animation::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f},
+			.group{ internal::CreateGroupReference(tree,group.groupID)}
+		};
+		auto node = Anim::internal::AddNodeToGroup(group, n_info);
+		group.startNode = internal::CreateNodeReference(group, node->node_ID);
+
 		return &group;
 	}
 
@@ -1105,17 +1116,9 @@ namespace oo::Anim
 		, groupID{ info.groupID == internal::invalid_ID ? internal::generateUID() : info.groupID }
 	{
 		//verify tree is valid
-		assert(info.tree);
-		NodeInfo n_info{
-			.name{ "Start Node" },
-			.animation_name{ Animation::empty_animation_name },
-			.speed{ 1.f },
-			.position{0.f,0.f,0.f},
-			.group{ internal::CreateGroupReference(*(info.tree),groupID)}
-		};
+		//assert(info.tree);
 
-		auto node = Anim::internal::AddNodeToGroup(*this, n_info);
-		startNode = internal::CreateNodeReference(*this, node->node_ID);
+		
 	}
 
 	/*-------------------------------
