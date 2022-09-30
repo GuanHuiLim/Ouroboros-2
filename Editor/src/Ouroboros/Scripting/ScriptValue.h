@@ -56,6 +56,7 @@ namespace oo
             FUNCTION,
         };
 
+        // used to store the necessary info to create a C# enum
         struct enum_type
         {
         public:
@@ -71,6 +72,20 @@ namespace oo
             \return     all options of the C# enum as a list of strings
             *//**********************************************************************************/
             std::vector<std::string> GetOptions() const;
+        };
+
+        // used to store the necessary info to create a C# Vector2
+        struct vec2_type
+        {
+            float x;
+            float y;
+        };
+        // used to store the necessary info to create a C# Vector3
+        struct vec3_type
+        {
+            float x;
+            float y;
+            float z;
         };
 
         // used to store a reference to both C# scripts and C# component interfaces
@@ -89,6 +104,7 @@ namespace oo
             {};
         };
 
+        // used to store the necessary info to create a generic C# Asset
         //struct asset_type
         //{
         //public:
@@ -96,12 +112,14 @@ namespace oo
         //    AssetHandle handle;
         //};
 
+        // used to store the necessary info to create a C# prefab reference
         //struct prefab_type
         //{
         //public:
         //    std::string filePath; // local file path, will prepend prefab file path later
         //};
 
+        // used to store the necessary info to create a C# data container
         struct class_type
         {
         public:
@@ -110,6 +128,7 @@ namespace oo
             std::vector<ScriptFieldInfo> infoList;
         };
 
+        // used to store the necessary info to create a C# List
         struct list_type
         {
         public:
@@ -134,6 +153,7 @@ namespace oo
             void Remove(size_t index);
         };
 
+        // used to store the necessary info for a function call to a specific function in a C# class, with parameters included
         struct function_info
         {
             std::string classNamespace;
@@ -163,7 +183,7 @@ namespace oo
             *//**********************************************************************************/
             bool operator==(function_info const& rhs) const;
         };
-
+        // used to store the necessary info for a function call to a specific function in a C# class for a specific GameObject, with parameters included
         struct function_type
         {
         public:
@@ -177,19 +197,6 @@ namespace oo
                         on the currently stored GameObject
             *//**********************************************************************************/
             void Invoke();
-        };
-
-        struct vec2_type
-        {
-            float x;
-            float y;
-        };
-
-        struct vec3_type
-        {
-            float x;
-            float y;
-            float z;
         };
 
         using value_type = std::variant<
@@ -268,16 +275,24 @@ namespace oo
         value_type value;
 
     public:
+        // used to keep the various methods related to specific C# types consolidated
         struct helper_functions
         {
-            std::function<void(MonoObject* obj, MonoClassField* field, ScriptValue const& value)> SetFieldValue;
-            std::function<ScriptValue(MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)> GetFieldValue;
-
-            std::function<ScriptValue(MonoObject* object, ScriptValue const& refInfo)> GetObjectValue;
-
-            std::function<void(MonoObject* list, MonoClass* elementClass, ScriptValue const& value)> AddToList;
+            std::function<void(MonoObject* obj, MonoClassField* field, ScriptValue const& value)>               SetFieldValue;
+            std::function<ScriptValue(MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)>   GetFieldValue;
+            std::function<ScriptValue(MonoObject* object, ScriptValue const& refInfo)>                          GetObjectValue;
+            std::function<void(MonoObject* list, MonoClass* elementClass, ScriptValue const& value)>            AddToList;
         };
 
+        /*********************************************************************************//*!
+        \brief      Helper function used to convert a pointer to a (C#) MonoType to its
+                    corresponding ScriptValue type enum
+        
+        \param      type
+                the MonoType* to be converted
+
+        \return     the corresponding type_enum of the given MonoType
+        *//**********************************************************************************/
         static type_enum GetType(MonoType* type);
 
         static helper_functions const& GetHelper(type_enum type);
