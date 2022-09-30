@@ -102,10 +102,10 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     }
 
     // Submit Links
-    for (auto& linkInfo : m_links)
-    {
-        ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
-    }
+    //for (auto& linkInfo : m_links)
+    //{
+    //    ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
+    //}
     for (auto& LinkInfo : m_links_)
     {
         ed::Link(LinkInfo.id, LinkInfo.inputID, LinkInfo.outputID);
@@ -115,8 +115,8 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     {
         for (int i = 0; i < _animator->GetActualComponent().animTree->groups[0].links.size(); ++i)
         {
-            NodeInfo* outputNode = FindNode(&_animator->GetActualComponent().animTree->groups[0].links[i].src);
-            NodeInfo* inputNode = FindNode(&_animator->GetActualComponent().animTree->groups[0].links[i].dst);
+            NodeInfo* outputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].src.id);
+            NodeInfo* inputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].dst.id);
 
             ed::PinId inputPin = outputNode->Output[0].id;
             ed::PinId outputPin = inputNode->Input[0].id;
@@ -161,8 +161,8 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                     {
                         m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId });
                         m_links_.back().link = &(_animator->GetActualComponent().animTree->groups[0].links[i]);
-                        m_links.push_back({ ed::LinkId(m_nextLinkId), inputPinId, outputPinId });
-                        m_links.back().link = &(_animator->GetActualComponent().animTree->groups[0].links[i]);
+                        //m_links.push_back({ ed::LinkId(m_nextLinkId), inputPinId, outputPinId });
+                        //m_links.back().link = &(_animator->GetActualComponent().animTree->groups[0].links[i]);
                     }
 
                     // Draw new link.
@@ -199,12 +199,9 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 .animation_name{oo::Anim::Animation::empty_animation_name},
                 .speed{1.f},
                 .position{0.f,0.f,0.f},
-                .group{&animator->GetActualComponent().animTree->groups[0]}
             };
 
-            auto node = new oo::Anim::Node(nodeInfo);
-            //_animator->AddNode(_animator->GetActualComponent().animTree->groups[0].name, defaultNodeInfo);
-            m_newNodes.push_back(node);
+            auto node = _animator->AddNode(_animator->GetActualComponent().animTree->groups[0].name, nodeInfo);
             
             CreateNode(uniqueId, node);
         }
@@ -213,7 +210,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     ed::Resume();
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
-        for (auto& link : m_links)
+        for (auto& link : m_links_)
             ed::Flow(link.id);
 
     // End of interaction with imgui node editor.
@@ -469,13 +466,6 @@ AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& unique
     return &m_nodes.back();
 }
 
-AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(int& uniqueId, oo::Anim::Link* _anim_link)
-{
-    
-
-    return nullptr;
-}
-
 void AnimatorControllerView::OnDelete()
 {
     if (ed::BeginDelete())
@@ -503,26 +493,26 @@ void AnimatorControllerView::OnDelete()
                 {
                     for (const auto& inputPin : id->Input)
                     {
-                        for (size_t i = 0; i < m_links.size(); i++)
+                        for (size_t i = 0; i < m_links_.size(); i++)
                         {
-                            if (m_links[i].outputID == inputPin.id)
+                            if (m_links_[i].outputID == inputPin.id)
                             {
-                                ed::DeleteLink(m_links[i].id);
-                                auto iter = std::find_if(m_links.begin(), m_links.end(), [&](const auto& link) { return link.id == m_links[i].id; });
-                                m_links.erase(iter);
+                                ed::DeleteLink(m_links_[i].id);
+                                auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                m_links_.erase(iter);
                                 continue;
                             }
                         }
                     }
                     for (const auto& outputPin : id->Output)
                     {
-                        for (size_t i = 0; i < m_links.size(); i++)
+                        for (size_t i = 0; i < m_links_.size(); i++)
                         {
-                            if (m_links[i].inputID == outputPin.id)
+                            if (m_links_[i].inputID == outputPin.id)
                             {
-                                ed::DeleteLink(m_links[i].id);
-                                auto iter = std::find_if(m_links.begin(), m_links.end(), [&](const auto& link) { return link.id == m_links[i].id; });
-                                m_links.erase(iter);
+                                ed::DeleteLink(m_links_[i].id);
+                                auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                m_links_.erase(iter);
                                 continue;
                             }
                         }

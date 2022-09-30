@@ -36,8 +36,8 @@ public:	//Default Functions
 	}
 	~AnimatorControllerView() 
 	{
-		for (oo::Anim::Node* node : m_newNodes)
-			delete node;
+		//for (oo::Anim::NodeRef node : m_newNodes)
+		//	delete node;
 		ed::DestroyEditor(m_Context);
 	}
 
@@ -67,7 +67,6 @@ private: //Member Variables
 		{
 		}
 	};
-	std::vector<Pin> m_pins;	//to be used to track which pins are used for links
 
 	struct NodeInfo
 	{
@@ -84,7 +83,7 @@ private: //Member Variables
 		std::string savedState;
 
 		NodeInfo(int _id, 
-				 oo::Anim::Node* _anim_node = nullptr, 
+				 oo::Anim::Node* _anim_node = nullptr,
 				 ImColor _color = ImColor(255, 255, 255)) 
 		:id(_id), 
 		anim_node{ _anim_node },
@@ -97,9 +96,8 @@ private: //Member Variables
 		}
 	};
 	std::vector<NodeInfo> m_nodes;
-	std::vector<ed::NodeId> m_nodesId;
+	std::vector<ed::NodeId> m_nodesId;	//used for displaying onto animator node inspector
 	std::vector<oo::Anim::Node*> m_newNodes;
-	NodeInfo* m_selectedNode		  = nullptr;
 
 	struct LinkInfo
 	{
@@ -121,20 +119,18 @@ private: //Member Variables
 		{
 		}
 	};
-	ImVector<LinkInfo> m_links;
+	//ImVector<LinkInfo> m_links;
 	std::vector<LinkInfo> m_links_;
-	std::vector<ed::LinkId> m_linksId;
-	LinkInfo* m_selectedLink		  = nullptr;
+	std::vector<ed::LinkId> m_linksId;	//used for displaying onto animator link inspector
 
 	bool m_firstFrame				  = true;
 
-	int uniqueId					  = 1;
+	int uniqueId					  = 1;		//for debugging purposes
 	int  m_nextLinkId				  = 100;	//for debugging purposes
 
 private: //Member Functions
 
 	void BuildNode(NodeInfo* node);
-	void BuildNodes();
 
 	void DisplayAnimatorController(oo::AnimationComponent* _animator);
 	void DisplayParameters();
@@ -142,7 +138,7 @@ private: //Member Functions
 	NodeInfo* CreateNode(int& uniqueId, oo::Anim::Node* _anim_node);
 	LinkInfo* CreateLink(int& uniqueId, oo::Anim::Link* _anim_link);
 	void OnDelete();
-	void RightClickOptions(int& id);
+	//void RightClickOptions(int& id);
 
 	//Helper Functions
 	Pin* FindPin(ed::PinId id);
