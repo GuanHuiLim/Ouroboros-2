@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           ScriptManager.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Declares the manager responsible for handling the global functionality of the
+                scripting feature that is unique to each project but that carries over between scenes
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <Scripting/Scripting.h>
@@ -23,13 +37,53 @@ namespace oo
         static std::vector<ScriptClassInfo> s_AfterDefaultOrder;
 
     public:
+        /*********************************************************************************//*!
+        \brief      Used to set up all the required C# related variables to run scripting
+                    when a new or different project is loaded in the editor
+
+        \param      buildPath
+                the file path where the scripting dll can be found and should be built to
+        \param      projectPath
+                the file path to the .csproj of the visual studio C# scripting project
+        *//**********************************************************************************/
         static void LoadProject(std::string const& buildPath, std::string const& projectPath);
+        /*********************************************************************************//*!
+        \brief      attempts to compile all scripts in the loaded project into a dll for execution.
+                    If this fails, the errors will be outputted to the editor's logger.
+
+        \return     true if the scripts were successfully compiled, else false
+        *//**********************************************************************************/
         static bool Compile();
+        /*********************************************************************************//*!
+        \brief      attempts to load a scripting dll for execution at the given path provided
+                    by LoadProject
+        *//**********************************************************************************/
         static void Load();
 
+        /*********************************************************************************//*!
+        \brief      outputs any warnings from the warnings file obtained from
+                    the most recent compilation onto the engine's logger
+
+        \return     true if the warnings file exists and there are warnings, else false
+        *//**********************************************************************************/
         static bool DisplayWarnings();
+        /*********************************************************************************//*!
+        \brief  outputs any errors from the errors file obtained from
+                the most recent compilation onto the engine's logger
+
+        \return     true if the errors file exists and there are errors, else false
+        *//**********************************************************************************/
         static bool DisplayErrors();
 
+        /*********************************************************************************//*!
+        \brief      Helper function used to get a scene by its ID. This is mainly done
+                    in C++ functions meant for C# scripts to call, and has the added feature
+                    of throwing a C# null exception if a scene with the provided ID cannot be found
+
+        \param      sceneID
+                the id of the requested scene
+        \return     a shared_ptr to the requested scene, if it is found
+        *//**********************************************************************************/
         static inline std::shared_ptr<Scene> GetScene(Scene::ID_type sceneID)
         {
             std::weak_ptr scene_weak = s_SceneManager->GetScene(sceneID);
@@ -41,6 +95,19 @@ namespace oo
             return std::dynamic_pointer_cast<Scene>(scene_weak.lock());
         }
 
+        /*********************************************************************************//*!
+        \brief      Helper function used to get a specific GameObject from a scene by its ID.
+                    This is mainly done in C++ functions meant for C# scripts to call,
+                    and has the added feature of throwing a C# null exception if 
+                    a scene or GameObject with the provided ID cannot be found
+
+        \param      sceneID
+                the id of the scene that the requested GameObject belongs to
+        \param      uuid
+                the id of the requested GameObject
+
+        \return     a shared_ptr to the requested GameObject, if it is found
+        *//**********************************************************************************/
         static inline std::shared_ptr<GameObject> GetObjectFromScene(Scene::ID_type sceneID, UUID uuid)
         {
             std::shared_ptr<Scene> scene = GetScene(sceneID);
@@ -77,6 +144,16 @@ namespace oo
 
         static std::vector<MonoClass*> const GetScriptExecutionOrder();
 
+        /*********************************************************************************//*!
+        \brief      Helper function used to register C++ ECS components to the scripting
+                    component database so that the C# interfaces can be linked to their
+                    corresponding C++ ECS component
+
+        \param      name_space
+                the name space of the component's corresponding C# interface's class
+        \param      name
+                the name of the component's corresponding C# interface's class
+        *//**********************************************************************************/
         template<typename T>
         static void RegisterComponent(std::string const& name_space, std::string const& name)
         {
