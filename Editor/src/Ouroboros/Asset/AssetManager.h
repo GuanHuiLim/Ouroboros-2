@@ -101,6 +101,11 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         /// <summary>
+        /// Enables the running of the file watcher.
+        /// </summary>
+        static void GlobalStartRunning();
+
+        /// <summary>
         /// Retrieves an asset using its ID.
         /// </summary>
         /// <param name="snowflake">The ID of the asset.</param>
@@ -172,6 +177,7 @@ namespace oo
         /* Members                                                                     */
         /* --------------------------------------------------------------------------- */
 
+        static bool globalIsRunning;
         bool isRunning = true;
         std::filesystem::path root;
         AssetStore assets;
@@ -191,6 +197,12 @@ namespace oo
         /// </summary>
         /// <param name="dir">The directory.</param>
         void updateAssetPaths(const std::filesystem::path& dir);
+
+        /// <summary>
+        /// Ensures that a meta file for an asset exists
+        /// </summary>
+        /// <param name="fp">The file path of the asset.</param>
+        AssetMetaContent ensureMeta(const std::filesystem::path& fp);
 
         /// <summary>
         /// Loads or retrieves an asset at a given absolute file path.
