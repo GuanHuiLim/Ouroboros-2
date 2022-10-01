@@ -78,7 +78,6 @@ namespace oo::Anim::internal
 			}
 			++index;
 		}
-
 		assert(false);
 	}
 	LinkRef CreateLinkReference(Group& group, size_t id)
@@ -86,7 +85,7 @@ namespace oo::Anim::internal
 		int index = 0;
 		for (auto& link : group.links)
 		{
-			if (group.groupID == id)
+			if (link.linkID == id)
 			{
 				LinkRef ref{
 					.links{&group.links},
@@ -630,12 +629,12 @@ namespace oo::Anim::internal
 
 
 		//reload node references in case any become invalid
-		group.startNode.Reload();
+		/*group.startNode.Reload();
 		for (auto& link : group.links)
 		{
 			link.src.Reload();
 			link.dst.Reload();
-		}
+		}*/
 
 
 		return &createdNode;
@@ -652,10 +651,11 @@ namespace oo::Anim::internal
 			.animation_name{ Animation::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
-			.group{ internal::CreateGroupReference(tree,group.groupID)}
+			.group{ internal::CreateGroupReference(tree,group.groupID)},
+			.nodeID{internal::generateUID() }
 		};
-			auto node = Anim::internal::AddNodeToGroup(group, n_info);
-		group.startNode = internal::CreateNodeReference(group, node->node_ID);
+		auto node = Anim::internal::AddNodeToGroup(group, n_info);
+		group.startNode = internal::CreateNodeReference(group, n_info.nodeID);
 
 		return &group;
 	}
@@ -880,7 +880,7 @@ namespace oo::Anim::internal
 		{
 			for (auto& node : group.nodes)
 			{
-				node.animation_index = GetAnimationIndex(node.animation_ID);
+				node.anim.Reload();
 				UpdateNodeTrackers(node);
 			}
 		}
@@ -910,6 +910,20 @@ namespace oo::Anim::internal
 		}
 	}
 
+	void ReloadReferences(AnimationTree& tree)
+	{
+		for (auto& group : tree.groups)
+		{
+			group.startNode.Reload();
+			for (auto& node : group.nodes)
+			{
+				node.group.Reload();
+				for (auto& link : node.outgoingLinks)
+					link.Reload();
+			}
+		}
+	}
+
 } //namespace oo::Anim::internal
 
 namespace oo::Anim
@@ -925,6 +939,7 @@ namespace oo::Anim
 			if (node.node_ID == id)
 			{
 				index = currindex;
+				return;
 			}
 			++currindex;
 		}
@@ -949,6 +964,7 @@ namespace oo::Anim
 			if (group.groupID == id)
 			{
 				index = currindex;
+				return;
 			}
 			++currindex;
 		}
@@ -973,11 +989,12 @@ namespace oo::Anim
 			if (link.linkID == id)
 			{
 				index = currindex;
+				return;
 			}
 			++currindex;
 		}
 
-		LOG_CORE_ERROR("Animation Group Reference Reload failed!!");
+		LOG_CORE_ERROR("Animation Link Reference Reload failed!!");
 		assert(false);
 		index = -1;
 	}
@@ -985,6 +1002,31 @@ namespace oo::Anim
 	{
 		return links && index >= 0 && index < links->size() &&
 			this->operator->()->linkID == id;
+	}
+	/*-------------------------------
+	AnimRef
+	-------------------------------*/
+	void AnimRef::Reload()
+	{
+		int currindex{ 0 };
+		for (auto& anim : *anims)
+		{
+			if (anim.animation_ID == id)
+			{
+				index = currindex;
+				return;
+			}
+			++currindex;
+		}
+
+		LOG_CORE_ERROR("Animation Reference Reload failed!!");
+		assert(false);
+		index = -1;
+	}
+	bool AnimRef::valid() const
+	{
+		return anims && index >= 0 && index < anims->size() &&
+			this->operator->()->animation_ID == id;
 	}
 	/*-------------------------------
 	Parameter
@@ -1087,15 +1129,18 @@ namespace oo::Anim
 		: group{ (assert(info.group), info.group)}
 		, name{ info.name }
 		, node_ID{info.nodeID == internal::invalid_ID ? internal::generateUID() : info.nodeID }
-		, animation_ID{(assert(Animation::name_to_index.contains(info.animation_name)), 
-			Animation::name_to_index[info.animation_name])}
 	{
-
+		assert(Animation::name_to_index.contains(info.animation_name));
+		anim.anims = &(Animation::animation_storage);
+		anim.id = Animation::animation_storage[
+			Animation::name_to_index[info.animation_name]].animation_ID;
+		anim.Reload();
 	}
 
 	Animation& Node::GetAnimation()
 	{
-		return Animation::animation_storage[animation_index];
+		assert(anim);
+		return *anim;
 	}
 
 	/*-------------------------------
@@ -1256,7 +1301,7 @@ namespace oo::Anim
 			internal::BindConditionsToParameters(tree);
 			internal::BindNodesToAnimations(tree);
 			internal::CalculateAnimationLength(tree);
-
+			internal::ReloadReferences(tree);
 		}
 	}
 
@@ -1462,7 +1507,6 @@ namespace oo
 			assert(false);
 			return nullptr;
 		}
-		
 		return node;
 	}
 

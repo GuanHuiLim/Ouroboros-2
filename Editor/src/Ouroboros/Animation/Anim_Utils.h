@@ -29,6 +29,7 @@ namespace oo::Anim::internal
 {
 	constexpr uint expected_num_anims = 50;
 	constexpr size_t invalid_ID{ std::numeric_limits<size_t>().max() };
+	constexpr uint invalid_index{ std::numeric_limits<uint>().max() };
 	extern std::unordered_map< size_t, rttr::instance(*)(void*)> hash_to_instance;
 
 	void Initialise_hash_to_instance();
@@ -95,7 +96,7 @@ namespace oo::Anim
 	{
 		std::vector<Node>* nodes{ nullptr }; //reference to vector of nodes
 		int index{ -1 };	//node index
-		size_t id{}; //node's unique identifier
+		size_t id{ internal::invalid_ID }; //node's unique identifier
 
 		Node& operator*() const { return (*nodes)[index]; }
 		Node* operator->() const { return &((*nodes)[index]); }
@@ -114,7 +115,7 @@ namespace oo::Anim
 	{
 		std::vector<Group>* groups{ nullptr }; //reference to vector of groups
 		int index{ -1 };	//group index
-		size_t id{ std::numeric_limits<size_t>().max() }; //group's unique identifier
+		size_t id{ internal::invalid_ID }; //group's unique identifier
 
 		Group& operator*() const { return (*groups)[index]; }
 		Group* operator->() const { return &((*groups)[index]); }
@@ -132,8 +133,8 @@ namespace oo::Anim
 	struct LinkRef
 	{
 		std::vector<Link>* links{ nullptr }; //reference to vector of groups
-		int index{ -1 };	//group index
-		size_t id{ std::numeric_limits<size_t>().max() }; //group's unique identifier
+		int index{ -1 };	//link index
+		size_t id{ internal::invalid_ID }; //link's unique identifier
 
 		Link& operator*() const { return (*links)[index]; }
 		Link* operator->() const { return &((*links)[index]); }
@@ -142,7 +143,26 @@ namespace oo::Anim
 			return valid();
 		}
 
-		//recalculates the index by looking for the group in the groups vector
+		//recalculates the index by looking for the link in the links vector
+		void Reload();
+	private:
+		bool valid() const;
+	};
+
+	struct AnimRef
+	{
+		std::vector<Animation>* anims{ nullptr }; //reference to vector of animations
+		int index{ -1 };	//animation index
+		size_t id{ internal::invalid_ID }; //animation's unique identifier
+
+		Animation& operator*() const { return (*anims)[index]; }
+		Animation* operator->() const { return &((*anims)[index]); }
+
+		operator bool() const {
+			return valid();
+		}
+
+		//recalculates the index by looking for the animation in the animations vector
 		void Reload();
 	private:
 		bool valid() const;
@@ -154,16 +174,16 @@ namespace oo::Anim
 		std::string name{};
 		//animation asset loaded from file
 		Asset anim_asset{};
-
-		//used to get the animation's index
-		size_t animation_ID{ std::numeric_limits<size_t>().max() };
-		//index of the animation in the animation vector
-		uint animation_index{ std::numeric_limits<uint>().max() };
-		//Animation animation{};
+		AnimRef anim{};
+		////used to get the animation's index
+		//size_t animation_ID{ internal::invalid_ID };
+		////index of the animation in the animation vector
+		//uint animation_index{ internal::invalid_index };
+		////Animation animation{};
 		float speed{ 1.f };
 		glm::vec3 position{};
 
-		size_t node_ID{ std::numeric_limits<size_t>().max() };
+		size_t node_ID{ internal::invalid_ID };
 
 		//trackers to be given to the animation component 
 		//upon reaching this node
@@ -173,7 +193,7 @@ namespace oo::Anim
 
 		//Node(Group& _group, std::string const _name = "Unnamed Node");
 		Node(NodeInfo& info);
-		void SetAnimation(Asset asset);
+		//void SetAnimation(Asset asset);
 		//void SetAnimation(Asset asset);
 		Animation& GetAnimation();
 	};
@@ -187,7 +207,7 @@ namespace oo::Anim
 
 		//dont fill this up
 		GroupRef group{};
-		size_t nodeID{ std::numeric_limits<size_t>().max() };
+		size_t nodeID{ internal::invalid_ID };
 	};
 
 	
@@ -200,7 +220,7 @@ namespace oo::Anim
 		std::vector<Node> nodes{};
 		std::vector<Link> links{};
 		AnimationTree* tree{ nullptr };
-		size_t groupID{ std::numeric_limits<size_t>().max() };	//unique identifier
+		size_t groupID{ internal::invalid_ID };	//unique identifier
 
 		//Group(std::string const _name = "Unnamed Group");
 		Group(GroupInfo const& info);
@@ -208,7 +228,7 @@ namespace oo::Anim
 	struct GroupInfo
 	{
 		std::string name{ "Unnamed Group" };
-		size_t groupID{ std::numeric_limits<size_t>().max() };
+		size_t groupID{ internal::invalid_ID };
 		AnimationTree* tree{nullptr};
 	};
 	
@@ -220,7 +240,7 @@ namespace oo::Anim
 
 		P_TYPE type{};
 		DataType value{};
-		size_t paramID{ std::numeric_limits<size_t>().max() };
+		size_t paramID{ internal::invalid_ID };
 		std::string name{"Unnamed Parameter"};
 
 		Parameter(ParameterInfo const& info);
@@ -252,7 +272,7 @@ namespace oo::Anim
 		P_TYPE type;
 		DataType value{};
 		//used to track the parameter's index in the animation tree's vector
-		size_t paramID{ std::numeric_limits<size_t>().max() };
+		size_t paramID{ internal::invalid_ID };
 		uint32_t parameterIndex{};
 		CompareFn* compareFn{ nullptr };
 		static CompareFnMap comparisonFn_map;
@@ -269,7 +289,7 @@ namespace oo::Anim
 		//initial value, leave empty for default
 		Condition::DataType value{};
 		//dont fill this
-		size_t _paramID{ std::numeric_limits<size_t>().max() };
+		size_t _paramID{ internal::invalid_ID };
 		//dont fill this
 		Parameter* _param{nullptr};
 	};
@@ -286,7 +306,7 @@ namespace oo::Anim
 		float transition_offset{ 0.f };
 		std::string name{"Unnamed Link"};
 		std::vector<Condition> conditions{};
-		size_t linkID{ std::numeric_limits<size_t>().max() };
+		size_t linkID{ internal::invalid_ID };
 
 		Link(NodeRef _src, NodeRef _dst);
 	};
@@ -389,7 +409,7 @@ namespace oo::Anim
 		
 		float animation_length{0.f};
 
-		size_t animation_ID{ std::numeric_limits<size_t>().max() };
+		size_t animation_ID{ internal::invalid_ID };
 	};	
 
 	
