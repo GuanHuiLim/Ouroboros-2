@@ -611,25 +611,6 @@ namespace oo::Anim::internal
 		return nullptr;
 	}
 
-	Group* AddGroupToTree(AnimationTree& tree, GroupInfo& info)
-	{
-		info.tree = &tree;
-		Group new_group{ info };
-		auto& group = tree.groups.emplace_back(std::move(new_group));
-		//create the starting node
-		NodeInfo n_info{
-			.name{ "Start Node" },
-			.animation_name{ Animation::empty_animation_name },
-			.speed{ 1.f },
-			.position{0.f,0.f,0.f},
-			.group{ internal::CreateGroupReference(tree,group.groupID)}
-		};
-		auto node = Anim::internal::AddNodeToGroup(group, n_info);
-		group.startNode = internal::CreateNodeReference(group, node->node_ID);
-
-		return &group;
-	}
-
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
 		//if node already added to this group then just return it
@@ -641,10 +622,10 @@ namespace oo::Anim::internal
 				return &node;
 			}
 		}
-		
+
 		//create the node and add it to this group
 		Node node{ info };
-		UpdateNodeTrackers(node);
+		//UpdateNodeTrackers(node);
 		auto& createdNode = group.nodes.emplace_back(std::move(node));
 
 
@@ -659,6 +640,27 @@ namespace oo::Anim::internal
 
 		return &createdNode;
 	}
+
+	Group* AddGroupToTree(AnimationTree& tree, GroupInfo& info)
+	{
+		info.tree = &tree;
+		Group new_group{ info };
+		auto& group = tree.groups.emplace_back(std::move(new_group));
+		//create the starting node
+		NodeInfo n_info{
+			.name{ "Start Node" },
+			.animation_name{ Animation::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f},
+			.group{ internal::CreateGroupReference(tree,group.groupID)}
+		};
+			auto node = Anim::internal::AddNodeToGroup(group, n_info);
+		group.startNode = internal::CreateNodeReference(group, node->node_ID);
+
+		return &group;
+	}
+
+	
 
 	//Node* AddNodeToGroup(AnimationTree& tree, std::string const& groupName, Anim::NodeInfo& info)
 	//{
@@ -879,6 +881,7 @@ namespace oo::Anim::internal
 			for (auto& node : group.nodes)
 			{
 				node.animation_index = GetAnimationIndex(node.animation_ID);
+				UpdateNodeTrackers(node);
 			}
 		}
 	}
@@ -1084,6 +1087,8 @@ namespace oo::Anim
 		: group{ (assert(info.group), info.group)}
 		, name{ info.name }
 		, node_ID{info.nodeID == internal::invalid_ID ? internal::generateUID() : info.nodeID }
+		, animation_ID{(assert(Animation::name_to_index.contains(info.animation_name)), 
+			Animation::name_to_index[info.animation_name])}
 	{
 
 	}
