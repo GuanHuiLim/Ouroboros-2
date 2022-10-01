@@ -3,6 +3,7 @@
 #include "MathCommon.h"
 #include "../shaders/shared_structs.h"
 #include "BitContainer.h"
+#include "MeshModel.h"
 
 #include <vector>
 #include <array>
@@ -18,14 +19,14 @@ enum ObjectInstanceFlags : uint32_t // fuck enum class
     SHADOW_RECEIVER  = 0x10, // Object receives shadows (a mask for lighting pass)
     ENABLE_ZPREPASS  = 0x20, // Object is added to Z-Prepass
     TRANSPARENT      = 0x40, // Object is added to forward pass
-    EMITTER          = 0x80 // Object is added to forward pass
+    EMITTER          = 0x80, // Object is an emitter ??
+    SKINNED          = 0x100, // Object is added to skinned pass
                              // etc
 };
 
 struct ObjectInstance
 {
     std::string name;
-
     // Begin These are temp until its fully integrated
     glm::vec3 position{};
     glm::vec3 scale{1.0f};
@@ -39,14 +40,16 @@ struct ObjectInstance
     // End temp stuff
 
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
-
     glm::mat4x4 localToWorld{ 1.0f };
-    
     ObjectInstanceFlags flags{};
+
+    std::vector<glm::mat4> bones;
 
     uint32_t modelID{}; // Index for the mesh
     uint32_t entityID{}; // Unique ID for this entity instance
 };
+
+
 
 struct DecalInstance
 {

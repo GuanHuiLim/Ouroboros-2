@@ -162,12 +162,14 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 #ifdef _DEBUG
 			requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			requiredExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+
 			//
 			// Enable render doc if requested by the user
 			//
 			if(setupSpecs.renderDoc == true)
 			{
 				validationLayers.emplace_back( "VK_LAYER_RENDERDOC_Capture" );
+				//validationLayers.emplace_back( "VK_LAYER_LUNARG_api_dump" ); // for nuclear debugging
 			}
 #endif // DEBUG
 		}

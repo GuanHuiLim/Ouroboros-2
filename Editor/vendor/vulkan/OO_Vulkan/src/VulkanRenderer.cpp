@@ -62,8 +62,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	// Ignore all performance related warnings for now..
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT && !(messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT))
 	{
+		int x;
 		std::cerr << pCallbackData->pMessage << std::endl;
 		//assert(false); temp comment out
+		x= 5; // for breakpoint
 	}
 
 	return VK_FALSE;
@@ -108,7 +110,6 @@ VulkanRenderer::~VulkanRenderer()
 	samplerManager.Shutdown();
 
 	gpuTransformBuffer.destroy();
-	debugTransformBuffer.destroy();
 
 	g_GlobalMeshBuffers.IdxBuffer.destroy();
 	g_GlobalMeshBuffers.VtxBuffer.destroy();
@@ -125,9 +126,9 @@ VulkanRenderer::~VulkanRenderer()
 		descAllocs[i].Cleanup();
 	}
 
-	for (size_t i = 0; i < models.size(); i++)
+	for (size_t i = 0; i < g_globalModels.size(); i++)
 	{
-		models[i].destroy(m_device.logicalDevice);
+		g_globalModels[i].destroy(m_device.logicalDevice);
 	}	
 	for (size_t i = 0; i < g_Textures.size(); i++)
 	{
@@ -213,16 +214,9 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		fbCache.Init(m_device.logicalDevice);
 
-		*const_cast<VkBuffer*>(gpuTransformBuffer.getBufferPtr()) = VK_NULL_HANDLE;
-		std::cout << "gpu xform :" << gpuTransformBuffer.m_size << " " << gpuTransformBuffer.m_capacity << std::endl;
 		gpuTransformBuffer.Init(&m_device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		gpuTransformBuffer.reserve(MAX_OBJECTS);
 
-		// TEMP debug drawing code
-		std::cout << "debug xform :" << debugTransformBuffer.m_size << " " << debugTransformBuffer.m_capacity << std::endl;
-		*const_cast<VkBuffer*>(debugTransformBuffer.getBufferPtr()) = VK_NULL_HANDLE;
-		debugTransformBuffer.Init(&m_device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		debugTransformBuffer.reserve(MAX_OBJECTS);
 
 		CreateDescriptorSets_GPUScene();
 		CreateDescriptorSets_Lights();
@@ -523,12 +517,13 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 
 void VulkanRenderer::CreateDefaultPSOLayouts()
 {
-	std::array<VkDescriptorSetLayout, 4> descriptorSetLayouts = 
+	
+	std::array<VkDescriptorSetLayout,4> descriptorSetLayouts = 
 	{
 		SetLayoutDB::gpuscene, // (set = 0)
 		SetLayoutDB::FrameUniform,  // (set = 1)
 		SetLayoutDB::bindless,  // (set = 2)
-		SetLayoutDB::lights
+		SetLayoutDB::lights, // (set = 3)
 	};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = oGFX::vkutils::inits::pipelineLayoutCreateInfo(descriptorSetLayouts);
@@ -537,12 +532,9 @@ void VulkanRenderer::CreateDefaultPSOLayouts()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
-	VkResult result = vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &PSOLayoutDB::defaultPSOLayout);
+	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &PSOLayoutDB::defaultPSOLayout));
 	VK_NAME(m_device.logicalDevice, "defaultPSOLayout", PSOLayoutDB::defaultPSOLayout);
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create Pipeline Layout!");
-	}
+	
 }
 
 void VulkanRenderer::CreateDebugCallback()
@@ -697,6 +689,11 @@ void VulkanRenderer::UploadLights()
 
 }
 
+void VulkanRenderer::UploadBones()
+{
+
+}
+
 void VulkanRenderer::CreateSynchronisation()
 {
 	imageAvailable.resize(MAX_FRAME_DRAWS);
@@ -833,7 +830,9 @@ void VulkanRenderer::CreateDescriptorSets_GPUScene()
 	info.range = VK_WHOLE_SIZE;
 
 	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
-		.BindBuffer(3, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.BindBuffer(3, gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.BindBuffer(4, gpuBoneMatrixBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.BindBuffer(5, objectInformationBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.Build(descriptorSet_gpuscene,SetLayoutDB::gpuscene);
 }
 
@@ -1138,6 +1137,10 @@ void VulkanRenderer::InitializeRenderBuffers()
         MAX_OBJECTS * sizeof(oGFX::InstanceData));
     VK_NAME(m_device.logicalDevice, "Instance Buffer", instanceBuffer.buffer);
 
+	objectInformationBuffer.Init(&m_device, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	objectInformationBuffer.reserve(MAX_OBJECTS);  
+	VK_NAME(m_device.logicalDevice, "Object inforBuffer", objectInformationBuffer.getBuffer());
+
 	constexpr uint32_t MAX_LIGHTS = 512;
 	// TODO: Currently this is only for OmniLightInstance.
 	// You should also support various light types such as spot lights, etc...
@@ -1149,20 +1152,13 @@ void VulkanRenderer::InitializeRenderBuffers()
 	constexpr uint32_t MAX_GLOBAL_BONES = 2048;
 	constexpr uint32_t MAX_SKINNING_VERTEX_BUFFER_SIZE = 4 * 1024 * 1024; // 4MB
 
-    m_device.CreateBuffer(
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        &boneMatrixBuffer,
-		MAX_GLOBAL_BONES * sizeof(glm::mat4x4));
-    VK_NAME(m_device.logicalDevice, "Bone Matrix Buffer", boneMatrixBuffer.buffer);
+	gpuBoneMatrixBuffer.Init(&m_device, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	gpuBoneMatrixBuffer.reserve(MAX_GLOBAL_BONES * sizeof(glm::mat4x4));
+    VK_NAME(m_device.logicalDevice, "Bone Matrix Buffer", gpuBoneMatrixBuffer.getBuffer());
 
-    m_device.CreateBuffer(
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        &skinningVertexBuffer,
-		MAX_SKINNING_VERTEX_BUFFER_SIZE);
-    VK_NAME(m_device.logicalDevice, "Skinning Vertex Buffer", skinningVertexBuffer.buffer);
-
+	skinningVertexBuffer.Init(&m_device, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	skinningVertexBuffer.reserve(MAX_SKINNING_VERTEX_BUFFER_SIZE);  
+    VK_NAME(m_device.logicalDevice, "Skinning Vertex Buffer", skinningVertexBuffer.getBuffer());
 
 	// TODO: Move other global GPU buffer initialization here...
 }
@@ -1171,8 +1167,9 @@ void VulkanRenderer::DestroyRenderBuffers()
 {
 	indirectCommandsBuffer.destroy();
 	instanceBuffer.destroy();
+	objectInformationBuffer.destroy();
 	globalLightBuffer.destroy();
-	boneMatrixBuffer.destroy();
+	gpuBoneMatrixBuffer.destroy();
 	skinningVertexBuffer.destroy();
 }
 
@@ -1247,23 +1244,12 @@ void VulkanRenderer::UploadInstanceData()
 	gpuTransform.clear();
 	gpuTransform.reserve(MAX_OBJECTS);
 
+	objectInformation.clear();
+	objectInformation.reserve(MAX_OBJECTS);
 
-	if (currWorld)
-	{
-		for (auto& ent :  currWorld->GetAllObjectInstances())
-		{
-			// creates a single transform reference for each entity in the scene
-			size_t x = gpuTransform.size();
-			mat4 xform = ent.localToWorld;
-			GPUTransform gpt;
-			gpt.row0 = vec4(xform[0][0], xform[1][0], xform[2][0], xform[3][0]);
-			gpt.row1 = vec4(xform[0][1], xform[1][1], xform[2][1], xform[3][1]);
-			gpt.row2 = vec4(xform[0][2], xform[1][2], xform[2][2], xform[3][2]);
-			gpuTransform.emplace_back(gpt);
-		}
-	}
-	
-	gpuTransformBuffer.writeTo(gpuTransform.size(), gpuTransform.data());
+	boneMatrices.clear();
+	boneMatrices.reserve(MAX_OBJECTS); // TODO:: change to better max value
+
 	// TODO: Must the entire buffer be uploaded every frame?
 
 	uint32_t indexCounter = 0;
@@ -1272,53 +1258,99 @@ void VulkanRenderer::UploadInstanceData()
 	if (currWorld)
 	{
 		uint32_t matCnt = 0;
-		for (auto& ent: currWorld->GetAllObjectInstances())
+		for (auto& ent : currWorld->GetAllObjectInstances())
 		{
-			oGFX::InstanceData id;
-			//size_t sz = instanceData.size();
-			//for (size_t x = 0; x < models[ent.modelID].meshCount; x++)
+			auto& mdl = g_globalModels[ent.modelID];
+			for (size_t i = 0; i < mdl.m_subMeshes.size(); i++)
 			{
-				// This is per entity. Should be per material.
-				uint32_t albedo = ent.bindlessGlobalTextureIndex_Albedo;
-				uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
-				uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
-				uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
-				const uint8_t perInstanceData = ent.instanceData;
-				constexpr uint32_t invalidIndex = 0xFFFFFFFF;
-				if (albedo == invalidIndex)
-					albedo = 0; // TODO: Dont hardcode this bindless texture index
-				if (normal == invalidIndex)
-					normal = 1; // TODO: Dont hardcode this bindless texture index
-				if (roughness == invalidIndex)
-					roughness = 0; // TODO: Dont hardcode this bindless texture index
-				if (metallic == invalidIndex)
-					metallic = 1; // TODO: Dont hardcode this bindless texture index
 
-				// Important: Make sure this index packing matches the unpacking in the shader
-				const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
-				const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
-				const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
-				const uint32_t unused = (uint32_t)perInstanceData; //matCnt;
-                // Putting these ranges here for easy reference:
-				// 9-bit:  [0 to 511]
-                // 10-bit: [0 to 1023]
-                // 11-bit: [0 to 2047]
-                // 12-bit: [0 to 4095]
-                // 13-bit: [0 to 8191]
-                // 14-bit: [0 to 16383]
-                // 15-bit: [0 to 32767]
-                // 16-bit: [0 to 65535]
+				oGFX::InstanceData id;
+				//size_t sz = instanceData.size();
+				//for (size_t x = 0; x < g_globalModels[ent.modelID].meshCount; x++)
+				{
+					// This is per entity. Should be per material.
+					uint32_t albedo = ent.bindlessGlobalTextureIndex_Albedo;
+					uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
+					uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
+					uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
+					const uint8_t perInstanceData = ent.instanceData;
+					constexpr uint32_t invalidIndex = 0xFFFFFFFF;
+					if (albedo == invalidIndex)
+						albedo = 0; // TODO: Dont hardcode this bindless texture index
+					if (normal == invalidIndex)
+						normal = 1; // TODO: Dont hardcode this bindless texture index
+					if (roughness == invalidIndex)
+						roughness = 0; // TODO: Dont hardcode this bindless texture index
+					if (metallic == invalidIndex)
+						metallic = 1; // TODO: Dont hardcode this bindless texture index
 
-				// TODO: This is the solution for now.
-				// In the future, we can just use an index for all the materials (indirection) to fetch from another buffer.
-				id.instanceAttributes = uvec4(instanceID, unused, albedo_normal, roughness_metallic);
-				
-				instanceData.emplace_back(id);
+					// Important: Make sure this index packing matches the unpacking in the shader
+					const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
+					const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
+					const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
+					auto res = ent.flags & ObjectInstanceFlags::SKINNED;
+					auto isSkin = (res== ObjectInstanceFlags::SKINNED);
+					const uint32_t unused = (uint32_t)perInstanceData | isSkin << 8; //matCnt;
+
+					// Putting these ranges here for easy reference:
+					// 9-bit:  [0 to 511]
+					// 10-bit: [0 to 1023]
+					// 11-bit: [0 to 2047]
+					// 12-bit: [0 to 4095]
+					// 13-bit: [0 to 8191]
+					// 14-bit: [0 to 16383]
+					// 15-bit: [0 to 32767]
+					// 16-bit: [0 to 65535]
+
+					// TODO: This is the solution for now.
+					// In the future, we can just use an index for all the materials (indirection) to fetch from another buffer.
+					id.instanceAttributes = uvec4(instanceID, unused, albedo_normal, roughness_metallic);
+					instanceData.emplace_back(id);
+				}
+
+			} // end m_subMeshes loop
+
+			//for (size_t i = 0; i < mdl.m_subMeshes.size(); i++)
+			{
+				// creates a single transform reference for each entity in the scene
+				size_t x = gpuTransform.size();
+				mat4 xform = ent.localToWorld;
+				GPUTransform gpt;
+				gpt.row0 = vec4(xform[0][0], xform[1][0], xform[2][0], xform[3][0]);
+				gpt.row1 = vec4(xform[0][1], xform[1][1], xform[2][1], xform[3][1]);
+				gpt.row2 = vec4(xform[0][2], xform[1][2], xform[2][2], xform[3][2]);
+				gpuTransform.emplace_back(gpt);
 			}
-			++matCnt;
+			// skined mesh
+			GPUObjectInformation oi;
+			oi.materialIdx = 7; // tem,p
+			if ((ent.flags & ObjectInstanceFlags::SKINNED) == ObjectInstanceFlags::SKINNED)
+			{
+				auto& mdl = g_globalModels[ent.modelID];
+
+				if (ent.bones.empty())
+				{
+					ent.bones.resize(mdl.skeleton->inverseBindPose.size());
+					for (auto& b:ent.bones )
+					{
+						b = mat4(1.0f);
+					}
+				}
+				
+				oi.boneStartIdx = boneMatrices.size();
+				oi.boneCnt = ent.bones.size();
+
+				for (size_t i = 0; i < ent.bones.size(); i++)
+				{
+					boneMatrices.push_back(ent.bones[i]);
+				}
+			}
+
+			objectInformation.push_back(oi);
+
 			++indexCounter;
-		}
-		
+			++matCnt;
+		}// end of entity instance loop
 	}
 	
 
@@ -1326,6 +1358,12 @@ void VulkanRenderer::UploadInstanceData()
 	{
 		return;
 	}
+
+	gpuTransformBuffer.writeTo(gpuTransform.size(), gpuTransform.data());
+	gpuBoneMatrixBuffer.writeTo(boneMatrices.size(), boneMatrices.data());
+
+	objectInformationBuffer.writeTo(objectInformation.size(), objectInformation.data());
+
 
 	vkutils::Buffer stagingBuffer;
 	m_device.CreateBuffer(
@@ -1366,13 +1404,11 @@ void VulkanRenderer::BeginDraw()
 {
 
 	PROFILE_SCOPED();
-	
+
 	//wait for given fence to signal from last draw before continuing
 	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max()));
 	//mainually reset fences
 	VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[currentFrame]));
-
-
 
 	{
 		PROFILE_SCOPED("vkAcquireNextImageKHR");
@@ -1384,6 +1420,7 @@ void VulkanRenderer::BeginDraw()
             imageAvailable[currentFrame], VK_NULL_HANDLE, &swapchainIdx);
 
 		descAllocs[swapchainIdx].ResetPools();
+
 		batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
 		batches.GenerateBatches();
 
@@ -1392,11 +1429,11 @@ void VulkanRenderer::BeginDraw()
 		UploadLights();
 		GenerateCPUIndirectDrawCommands();
 
-		auto dbi = gpuTransformBuffer.GetDescriptorBufferInfo();
 		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
-			.BindBuffer(3, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-			.Build(VulkanRenderer::get()->descriptorSet_gpuscene, SetLayoutDB::gpuscene);
-		gpuTransformBuffer.Updated();
+			.BindBuffer(3, gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.BindBuffer(4, gpuBoneMatrixBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.BindBuffer(5, objectInformationBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.Build(descriptorSet_gpuscene,SetLayoutDB::gpuscene);
 
 		VkDescriptorBufferInfo vpBufferInfo{};
 		vpBufferInfo.buffer = vpUniformBuffer[swapchainIdx];	// buffer to get data from
@@ -1557,7 +1594,7 @@ bool VulkanRenderer::ResizeSwapchain()
 	return true;
 }
 
-ModelData* VulkanRenderer::LoadModelFromFile(const std::string& file)
+ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
 	// new model loader
 	
@@ -1568,7 +1605,7 @@ ModelData* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	flags |= aiProcess_ImproveCacheLocality;
 	flags |= aiProcess_CalcTangentSpace;
 	flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
-	flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
+	//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 	const aiScene *scene = importer.ReadFile(file,flags
 		//  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
 		//| aiProcess_LimitBoneWeights           // 4 weights for skin model max
@@ -1597,159 +1634,386 @@ ModelData* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	{
 		std::cout << "\tMesh" << i << " " << scene->mMeshes[i]->mName.C_Str() << std::endl;
 			std::cout << "\t\tverts:"  << scene->mMeshes[i]->mNumVertices << std::endl;
+			std::cout << "\t\tbones:"  << scene->mMeshes[i]->mNumBones << std::endl;
+			//int sum = 0;
+			//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
+			//{
+			//	std::map<uint32_t, float> wts;
+			//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
+			//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
+			//	{
+			//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
+			//		assert(wts.find(weight.mVertexId) == wts.end());
+			//		wts[weight.mVertexId] = weight.mWeight;
+			//	}
+			//	for (auto [v,w] :wts)
+			//	{
+			//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
+			//	}
+			//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
+			//}
+			//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
 
+#if 0
 	if (scene->HasAnimations())
 	{
-		//std::cout << "Animated scene\n";
-		//for (size_t i = 0; i < scene->mNumAnimations; i++)
-		//{
-		//	std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
-		//	std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
-		//	std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
-		//	std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
-		//	std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
-		//	std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
-		//	std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
-		//	for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
-		//	{
-		//		auto& channel = scene->mAnimations[i]->mChannels[x];
-		//		std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
-		//		for (size_t y = 0; y < channel->mNumPositionKeys; y++)
-		//		{
-		//			std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
-		//			auto& pos = channel->mPositionKeys[y].mValue;
-		//			std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
-		//		}
-		//	}
-		//}
-		//std::cout << std::endl;
+		std::cout << "Animated scene\n";
+		for (size_t i = 0; i < scene->mNumAnimations; i++)
+		{
+			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+			std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
+			std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
+			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
+			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
+			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
+			{
+				auto& channel = scene->mAnimations[i]->mChannels[x];
+				std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
+				for (size_t y = 0; y < channel->mNumPositionKeys; y++)
+				{
+					std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
+					auto& pos = channel->mPositionKeys[y].mValue;
+					std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
+				}
+			}
+		}
+		std::cout << std::endl;
 	}
+#endif
 
-	std::vector<std::string> textureNames = MeshContainer::LoadMaterials(scene);
-	std::vector<int> matToTex(textureNames.size());
-	
-	// TODO: Maybe fix this after materials..
-	// Loop over textureNames and create textures for them
-	//for (size_t i = 0; i < textureNames.size(); i++)
-	//{
-	//	// if material had no texture, set '0' to indicate no texture, texture 0 will be reserved fora  default texture
-	//	if (textureNames[i].empty())
-	//	{
-	//		matToTex[i] = 0;
-	//	}
-	//	else
-	//	{
-	//		// otherwise create texture and set value to index of new texture
-	//		matToTex[i] = CreateTexture(textureNames[i]);
-	//	}
-	//}
 
-	ModelData* mData = new ModelData;
+	ModelFileResource* modelFile = new ModelFileResource;
+	modelFile->fileName = file;
 
-	auto modelResourceIndex = models.size();
-	models.resize(modelResourceIndex + scene->mNumMeshes);
-	mData->gfxMeshIndices.resize(scene->mNumMeshes);
+	auto mdlResourceIdx = g_globalModels.size();
+	modelFile->meshResource = mdlResourceIdx;
+	auto& mdl = g_globalModels.emplace_back(gfxModel{});
+	mdl.name = std::filesystem::path(file).stem().u8string();
+
+	mdl.m_subMeshes.resize(scene->mNumMeshes);
+	modelFile->numSubmesh =scene->mNumMeshes;
+	mdl.cpuModel = modelFile;
+
+	uint32_t totalBones{ 0 };
+	for (size_t i = 0; i < scene->mNumMeshes; i++)
+	{
+		totalBones += scene->mMeshes[i]->mNumBones;
+	}
+	bool hasBone = totalBones > 0;
+
+	if (hasBone)
+	{
+		mdl.skeleton = new oGFX::Skeleton();
+		modelFile->skeleton = mdl.skeleton;
+	}
 
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
-		auto& mdl = models[modelResourceIndex + i];
-		mdl.name = scene->mMeshes[i]->mName.C_Str();
-		mdl.cpuModel = mData;
-		mData->gfxMeshIndices[i] = static_cast<uint32_t>(modelResourceIndex + i);
+		auto& aimesh = scene->mMeshes[i];
+		LoadSubmesh(mdl, mdl.m_subMeshes[i], aimesh, modelFile);
+	}
+	
+	if (hasBone)
+	{
+		mdl.skeleton->boneWeights.resize(modelFile->vertices.size());
+		uint32_t verticesCnt = 0;
+		for (size_t i = 0; i < scene->mNumMeshes; i++)
+		{
+			auto& aimesh = scene->mMeshes[i];
+			LoadBoneInformation(*modelFile,*mdl.skeleton, *aimesh, mdl.skeleton->boneWeights, verticesCnt);
+		}
+		mdl.skeleton->m_boneNodes = new oGFX::BoneNode();
+		BuildSkeletonRecursive(*modelFile, *mdl.skeleton, scene->mRootNode, mdl.skeleton->m_boneNodes);
+		for (size_t i = 0; i < mdl.skeleton->boneWeights.size(); i++)
+		{
+			//auto& ref = mdl.skeleton->boneWeights[i];
+			//std::cout << i;
+			//for (size_t x = 0; x < 4; x++)
+			//{
+			//	std::cout << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
+			//}
+			//std::cout << std::endl;
+		}
 
-		auto cacheVoffset = mData->vertices.size();
-		auto cacheIoffset = mData->indices.size();
-		mdl.mesh = mdl.processMesh(scene->mMeshes[i], scene,
-			*mData);
-
-		mdl.vertices.count = mdl.mesh->vertexCount;
-		mdl.vertices.offset = static_cast<uint32_t>(cacheVoffset);
-		mdl.indices.count = mdl.mesh->indicesCount;
-		mdl.indices.offset = static_cast<uint32_t>(cacheIoffset);
+	}
+	
+	for (auto& sm : mdl.m_subMeshes)
+	{
+		mdl.vertexCount += sm.vertexCount;
+		mdl.indicesCount += sm.indicesCount;
 	}
 
 	//mData->sceneInfo = new Node();
 	//always has one transform, root
-	mData->ModelSceneLoad(scene, *scene->mRootNode, nullptr, glm::mat4{ 1.0f });
-	
-	if (scene->HasAnimations())
-	{
-		mData->boneWeights.resize(mData->vertices.size());
-		mData->ModelBoneLoad(scene, *scene->mRootNode,0);
-	}
+	modelFile->ModelSceneLoad(scene, *scene->mRootNode, nullptr, glm::mat4{ 1.0f });
 		
 	//model.loadNode(nullptr, scene, *scene->mRootNode, 0, *mData);
 	auto cI_offset = g_GlobalMeshBuffers.IdxOffset;
 	auto cV_offset = g_GlobalMeshBuffers.VtxOffset;
 	
-	for (size_t i = modelResourceIndex; i < models.size(); i++)
 	{
-		LoadMeshFromBuffers(mData->vertices, mData->indices, &models[i]);
-
-		//update indices by adding the cached offset
-		models[i].updateOffsets(cI_offset, cV_offset);
-		std::cout << "GPU pos " << models[i].vertices.offset
-			<< " size " << models[i].vertices.count
-			<< std::endl;
+		LoadMeshFromBuffers(modelFile->vertices, modelFile->indices, &mdl);
 	}
 
-	std::cout << "\t [Meshes loaded] " << mData->sceneMeshCount << std::endl;
+	std::cout << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
 
-	return mData;
+	return modelFile;
 }
 
-ModelData* VulkanRenderer::LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex, std::vector<uint32_t>& indices, gfxModel* model)
+void VulkanRenderer::LoadSubmesh(gfxModel& mdl,
+	SubMesh& submesh,
+	aiMesh* aimesh,
+	ModelFileResource* modelFile
+)
+{
+	submesh.name = aimesh->mName.C_Str();
+
+	auto& vertices = modelFile->vertices;
+	auto& indices = modelFile->indices;
+
+	auto cacheVoffset = vertices.size();
+	auto cacheIoffset = indices.size();
+
+	vertices.reserve(vertices.size() + aimesh->mNumVertices);
+	for (size_t i = 0; i < aimesh->mNumVertices; i++)
+	{
+		oGFX::Vertex vertex;
+		vertex.pos = aiVector3D_to_glm(aimesh->mVertices[i]);
+		if (aimesh->HasTextureCoords(0)) // does the mesh contain texture coordinates?
+		{
+			vertex.tex = glm::vec2{ aimesh->mTextureCoords[0][i].x, aimesh->mTextureCoords[0][i].y };
+		}
+		if (aimesh->HasNormals())
+		{
+			vertex.norm = aiVector3D_to_glm(aimesh->mNormals[i]);
+		}
+		if (aimesh->HasTangentsAndBitangents())
+		{
+			vertex.tangent = aiVector3D_to_glm(aimesh->mTangents[i]);
+		}
+		if (aimesh->HasVertexColors(0))
+		{
+			const auto& color = aimesh->mColors[0][i];
+			vertex.col = glm::vec4{ color.r, color.g, color.b, color.a };
+		}
+		vertices.emplace_back(vertex);
+	}
+
+	uint32_t indicesCnt{};
+	for (uint32_t i = 0; i < aimesh->mNumFaces; i++)
+	{
+		const aiFace& face = aimesh->mFaces[i];
+		indicesCnt += face.mNumIndices;
+		for (uint32_t j = 0; j < face.mNumIndices; j++)
+		{
+			indices.push_back(face.mIndices[j]);
+		}
+	}
+
+	submesh.vertexCount = aimesh->mNumVertices;
+	submesh.baseVertex = static_cast<uint32_t>(cacheVoffset);
+	submesh.indicesCount = indicesCnt;
+	submesh.baseIndices = static_cast<uint32_t>(cacheIoffset);
+}
+
+ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
+	std::vector<oGFX::Vertex>& vertex,
+	std::vector<uint32_t>& indices,
+	gfxModel* model
+)
 {
 	uint32_t index = 0;
-	ModelData* m{ nullptr };
+	ModelFileResource* m{ nullptr };
 
 	if (model == nullptr)
 	{
 		// this is a file-less object, generate a model for it
-		index = static_cast<uint32_t>(models.size());
-		models.emplace_back(gfxModel());
-		model = &models[index];
+		index = static_cast<uint32_t>(g_globalModels.size());
+		g_globalModels.emplace_back(gfxModel());
+		model = &g_globalModels[index];
 
-		model->indices.count = static_cast<uint32_t>(indices.size());
-		model->vertices.count = static_cast<uint32_t>(vertex.size());
+		model->indicesCount = static_cast<uint32_t>(indices.size());
+		model->vertexCount = static_cast<uint32_t>(vertex.size());
 
+		SubMesh sm;
+		sm.baseIndices = static_cast<uint32_t>(0);
+		sm.baseVertex = static_cast<uint32_t>(0);
+		sm.indicesCount = static_cast<uint32_t>(indices.size());
+		sm.vertexCount = static_cast<uint32_t>(vertex.size());
+
+		model->m_subMeshes.push_back(sm);
+
+		m = new ModelFileResource();
 		Node* n = new Node{};
-		oGFX::Mesh* msh = new oGFX::Mesh{};
-		msh->indicesOffset = static_cast<uint32_t>(g_GlobalMeshBuffers.IdxOffset);
-		msh->vertexOffset = static_cast<uint32_t>(g_GlobalMeshBuffers.VtxOffset);
-		msh->indicesCount = static_cast<uint32_t>(indices.size());
-		msh->vertexCount = static_cast<uint32_t>(vertex.size());
-		model->mesh = msh;
-		model->nodes.push_back(n);
-
-		m = new ModelData();
+		m->sceneInfo = n;
 		m->vertices = vertex;
 		m->indices = indices;
-		m->gfxMeshIndices.push_back(static_cast<uint32_t>(index));
+		m->numSubmesh = 1;
+		m->meshResource = index;
 
 		model->cpuModel = m;
 	}	
 
 	// these offsets are using local offset based on the buffer.
-	std::cout << "Writing to vtx from data " << model->vertices.offset 
-		<< " for " << model->vertices.count 
-		<<" total " << model->vertices.offset+model->vertices.count 
+	std::cout << "Writing to vtx from data " << model->baseVertex
+		<< " for " << model->vertexCount
+		<<" total " << model->baseVertex+model->vertexCount
 		<< " at GPU buffer " << g_GlobalMeshBuffers.VtxOffset
 		<< std::endl;
-	g_GlobalMeshBuffers.IdxBuffer.writeTo(model->indices.count, indices.data() + model->indices.offset,
+	g_GlobalMeshBuffers.IdxBuffer.writeTo(model->indicesCount, indices.data() + model->baseIndices,
 		g_GlobalMeshBuffers.IdxOffset);
-	g_GlobalMeshBuffers.VtxBuffer.writeTo(model->vertices.count, vertex.data() + model->vertices.offset,
+	g_GlobalMeshBuffers.VtxBuffer.writeTo(model->vertexCount, vertex.data() + model->baseVertex,
 		g_GlobalMeshBuffers.VtxOffset);
 
 	// now we update them to the global offset
-	model->indices.offset = g_GlobalMeshBuffers.IdxOffset;
-	model->vertices.offset = g_GlobalMeshBuffers.VtxOffset;
+	model->baseIndices= g_GlobalMeshBuffers.IdxOffset;
+	model->baseVertex= g_GlobalMeshBuffers.VtxOffset;
 
-	g_GlobalMeshBuffers.IdxOffset += model->indices.count ;
-	g_GlobalMeshBuffers.VtxOffset += model->vertices.count;
+	g_GlobalMeshBuffers.IdxOffset += model->indicesCount;
+	g_GlobalMeshBuffers.VtxOffset += model->vertexCount;
+
+	if (model->skeleton)
+	{
+		auto& sk = model->skeleton;
+		skinningVertexBuffer.writeTo(sk->boneWeights.size(), sk->boneWeights.data(), model->baseVertex);
+	}
 
 	return m;
+}
+
+void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
+	oGFX::Skeleton& skeleton,
+	aiMesh& aimesh,
+	std::vector<oGFX::BoneWeight>& boneWeights,
+	uint32_t& vCnt
+)
+{
+	uint32_t numBones = 0;
+
+	for (size_t i = 0; i < aimesh.mNumBones; i++)
+	{
+		auto& currBone = aimesh.mBones[i];
+		uint32_t boneIndex = 0;
+		std::string boneName = currBone->mName.C_Str();
+
+
+		if (fileData.strToBone.find(boneName) == fileData.strToBone.end())
+		{
+			// bone doesnt exist, allocate
+			boneIndex = numBones++;
+
+			oGFX::BoneInverseBindPoseInfo& invBindPoseInfo = skeleton.inverseBindPose.emplace_back(oGFX::BoneInverseBindPoseInfo{});
+
+			// Map the name of this bone to this index. (map<string,int>)
+			fileData.strToBone[boneName] = boneIndex;
+
+			// Setup information
+			// TODO: quaternions?
+			invBindPoseInfo.transform = aiMat4_to_glm(currBone->mOffsetMatrix);
+			invBindPoseInfo.boneIdx = boneIndex;
+		}
+		else
+		{
+			// bone already exists!
+			boneIndex = fileData.strToBone[boneName];
+		}
+
+		// Add the bone weights for the vertices for the current bone
+		for (size_t j = 0; j < currBone->mNumWeights; ++j)
+		{
+			const unsigned vertexID = currBone->mWeights[j].mVertexId + vCnt;
+			const float weight = currBone->mWeights[j].mWeight;
+
+			bool success = false;
+
+			auto& vertex = boneWeights[vertexID];
+			for (int slot = 0; slot < 4; ++slot)
+			{
+				if (vertex.boneIdx[slot] == boneIndex && boneIndex != 0) {
+					success = true;
+					break;
+				}
+
+				if (vertex.boneWeights[slot] == 0.0f)
+				{
+					vertex.boneIdx[slot] = boneIndex;
+					vertex.boneWeights[slot] = weight;
+					success = true;
+					break;
+				}
+			}
+
+			// Check if the number of weights is >4, just in case, since we dont support
+			if (!success)
+			{
+				// Vertex already has 4 bone weights assigned.
+				assert(false && "Bone weights >4 is not supported.");
+			}
+		}
+
+	} // end bone for
+	vCnt += aimesh.mNumVertices;
+}
+
+void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, oGFX::Skeleton& skeleton, aiNode* ainode, oGFX::BoneNode* node)
+{
+	std::string node_name{ ainode->mName.data };
+	glm::mat4x4 node_transform = aiMat4_to_glm(ainode->mTransformation);
+
+	std::string cName = node_name.substr(node_name.find_last_of("_") + 1);
+
+	// Save the bone index
+	bool bIsBoneNode = false;
+	auto iter = fileData.strToBone.find(node_name);
+	if (iter != fileData.strToBone.end())
+	{
+		bIsBoneNode = true;
+		node->m_BoneIndex = iter->second;
+	}
+
+	// Leaving this here to check the scale
+	aiVector3D pos, scale;
+	aiQuaternion qua;
+	ainode->mTransformation.Decompose(scale, qua, pos);
+
+	if ((scale.x - scale.y) > 0.0001f || (scale.x - scale.z) > 0.0001f)
+	{
+		static bool firstTime = true;
+		if (firstTime)
+		{
+			// Non-uniform scale bone detected...
+			__debugbreak();
+			firstTime = false;
+		}
+	}
+
+	// Copy information from assimp to our nodes.
+	node->mName = node_name;
+	node->mbIsBoneNode = bIsBoneNode;
+	// TODO: quat?
+	node->mModelSpaceLocal = aiMat4_to_glm(ainode->mTransformation);
+	node->mChildren.reserve(ainode->mNumChildren);
+
+	// Recursion through all children
+	for (size_t i = 0; i < ainode->mNumChildren; i++)
+	{
+		node->mChildren.push_back(new oGFX::BoneNode()); // Create the child node.
+		BuildSkeletonRecursive(fileData,skeleton, ainode->mChildren[i], node->mChildren[i]);
+		node->mChildren[i]->mpParent = node; // Link the child to the parent node.
+	}
+}
+
+const oGFX::Skeleton* VulkanRenderer::GetSkeleton(uint32_t modelID)
+{
+	return g_globalModels[modelID].skeleton;
+}
+
+oGFX::CPUSkeletonInstance* VulkanRenderer::CreateSkeletonInstance(uint32_t modelID)
+{
+	return oGFX::CreateCPUSkeleton(g_globalModels[modelID].skeleton);
 }
 
 
