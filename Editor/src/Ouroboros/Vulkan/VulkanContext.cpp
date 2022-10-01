@@ -29,6 +29,7 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/Core/WindowsWindow.h"
+#include <App/Editor/Utility/ImGuiManager.h>
 
 namespace oo
 {
@@ -265,6 +266,8 @@ namespace oo
     {
         ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
         vr->InitImGUI();
+
+        ImGuiManager::InitAssetsAll();
     }
 
     void VulkanContext::ResetImguiInit()

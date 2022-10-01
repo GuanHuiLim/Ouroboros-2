@@ -27,6 +27,9 @@ void ImGuiManager::InitAssetsAll()
 	s_editorAssetManager.LoadDirectory("Log Icons");
 	s_editorAssetManager.LoadDirectory("Generic Button Icons");
 	s_editorAssetManager.LoadDirectory("Component Icons");
+
+	ImGuiManager::s_editorAssetManager.LoadName("FolderIcon.png");
+	ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png");
 }
 
 void ImGuiManager::Create(const std::string name, const bool enabled,const ImGuiWindowFlags_ flag, std::function<void()> fnc, std::function<void()> pre_window)
