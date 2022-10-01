@@ -24,6 +24,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Audio/Audio.h"
 
+#include "Ouroboros/Asset/AssetManager.h"
+
 #include "Timer.h"
 
 namespace oo
@@ -46,6 +48,9 @@ namespace oo
 
         // Initialise audio
         audio::Init();
+
+        // Only start running file watchers ones dependencies are intiialised
+        AssetManager::GlobalStartRunning();
     }
 
     Application::~Application()
