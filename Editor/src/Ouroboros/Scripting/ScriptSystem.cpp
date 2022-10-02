@@ -217,10 +217,11 @@ namespace oo
         std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
         if (!gameObject->ActiveInHierarchy())
             return;
+        MonoObject* obj = scriptDatabase.RetrieveObject(uuid, name_space, name);
         if(isEnabled)
-            InvokeForObject(uuid, "OnEnable");
+            ScriptEngine::InvokeFunction(obj, "OnEnable");
         else
-            InvokeForObject(uuid, "OnDisable");
+            ScriptEngine::InvokeFunction(obj, "OnDisable");
     }
     bool ScriptSystem::CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
