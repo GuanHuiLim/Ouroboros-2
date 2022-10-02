@@ -101,15 +101,11 @@ public:
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
-
-        //m_phy.test();
     }
 
     void OnUpdate() override
     {
-        constexpr const char* const editor_update = "Editor App Update";
-        UNREFERENCED(editor_update);
-        TRACY_PROFILE_SCOPE_N(editor_update);
+        TRACY_PROFILE_SCOPE_N(editor_app_update);
 
         m_imGuiAbstract->Begin();
 

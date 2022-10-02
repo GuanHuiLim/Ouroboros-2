@@ -44,8 +44,6 @@ namespace oo
 
     void AudioSystem::Run(Ecs::ECSWorld* world)
     {
-        static constexpr const char* const AUDIO_UPDATE = "audio_update";
-        TRACY_TRACK_PERFORMANCE(AUDIO_UPDATE);
         TRACY_PROFILE_SCOPE_NC(AUDIO_UPDATE, tracy::Color::Aquamarine1);
 
         // Iterate audio listeners
@@ -99,7 +97,6 @@ namespace oo
         }
 
         TRACY_PROFILE_SCOPE_END();
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(AUDIO_UPDATE);
     }
 
     void AudioSystem::playAllOnAwake()

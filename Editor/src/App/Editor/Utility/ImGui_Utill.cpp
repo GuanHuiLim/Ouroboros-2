@@ -29,8 +29,6 @@ bool ImGuiUtilities::ImageButton_ToolTip(const char* tooltip_name, ImTextureID u
 
 bool ImGuiUtilities::ImageButton_ToolTip(const ImGuiID id, const char* tooltip_desc, ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
 {
-	static constexpr const char* const ImageButtonToolTip = "ImageButtonToolTip";
-	TRACY_TRACK_PERFORMANCE(ImageButtonToolTip);
 	TRACY_PROFILE_SCOPE_NC(ImageButtonToolTip, tracy::Color::Gold3);
 
 	ImGui::PushID(id);
@@ -40,6 +38,6 @@ bool ImGuiUtilities::ImageButton_ToolTip(const ImGuiID id, const char* tooltip_d
 	WarningMessage::DisplayToolTip(tooltip_desc);
 
 	TRACY_PROFILE_SCOPE_END();
-	TRACY_DISPLAY_PERFORMANCE_SELECTED(ImageButtonToolTip);
+
 	return pressed;
 }
