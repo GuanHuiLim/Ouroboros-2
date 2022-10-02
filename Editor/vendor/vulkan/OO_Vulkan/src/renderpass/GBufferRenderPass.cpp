@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           GBufferRenderPass.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a gbuffer pass
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "GBufferRenderPass.h"
 
 #include "imgui/imgui.h"
@@ -6,7 +19,6 @@
 #include "Window.h"
 #include "VulkanRenderer.h"
 #include "VulkanUtils.h"
-#include "VulkanFramebufferAttachment.h"
 #include "FramebufferCache.h"
 #include "FramebufferBuilder.h"
 
