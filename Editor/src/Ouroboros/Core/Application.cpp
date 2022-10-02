@@ -69,6 +69,7 @@ namespace oo
     void Application::Run()
     {
         constexpr const char* const update_loop_name = "core app update loop";
+        std::chrono::file_clock::time_point fileWatchTime = std::chrono::file_clock::now();
         while (m_running)
         {
             OO_TracyProfiler::CheckIfServerToBeOpened();
@@ -81,9 +82,7 @@ namespace oo
 
 
 
-            constexpr const char* const file_watch_name = "core app file watch";
-            TRACY_TRACK_PERFORMANCE(file_watch_name);
-            TRACY_PROFILE_SCOPE_NC(file_watch_name, tracy::Color::Red1);
+            TRACY_PROFILE_SCOPE_NC(FILE_WATCH, tracy::Color::Aquamarine1);
 
             std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
             if (std::chrono::duration_cast<std::chrono::milliseconds>(now - fileWatchTime).count() >= AssetManager::WATCH_INTERVAL)
@@ -94,7 +93,6 @@ namespace oo
             }
 
             TRACY_PROFILE_SCOPE_END();
-            TRACY_DISPLAY_PERFORMANCE_SELECTED(file_watch_name);
 
 
 
