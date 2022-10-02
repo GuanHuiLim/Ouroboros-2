@@ -92,11 +92,14 @@ void main()
 
 	// Render-target composition
 
-	float ambient = 0.5f;
+	float ambient = 0.001;
 	if (DecodeFlags(material.z) == 0x1)
 	{
-		ambient = 1.0f;
+		ambient = 1.0;
 	}
+	float gamma = 2.2;
+	
+	albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
 	vec3 result = albedo.rgb * ambient;
@@ -106,6 +109,8 @@ void main()
 	{
 		result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular);
 	}    	
+	
+	result = pow(result, vec3(1.0/gamma));
    
 	outFragcolor = vec4(result, 1.0);	
 }
