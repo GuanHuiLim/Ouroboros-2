@@ -48,6 +48,7 @@ namespace oo
         comp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
         //HARDCODED AS CUBE, TO BE REMOVED LATER
         comp.model_handle = 0;
+        comp.meshInfo.submeshBits[0] = true;
         
         //update graphics world side
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);

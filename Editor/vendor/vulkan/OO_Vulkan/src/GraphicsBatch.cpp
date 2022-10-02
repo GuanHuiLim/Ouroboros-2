@@ -52,25 +52,24 @@ void GraphicsBatch::GenerateBatches()
 			s_scratchBuffer.clear();
 			for (size_t i = 0; i < model.m_subMeshes.size(); i++)
 			{
+				if (ent.submesh[i] == true)
+				{
+					const auto& subMesh = model.m_subMeshes[i];
+					// clear the buffer to prepare for this model
+					oGFX::IndirectCommand indirectCmd{};
+					indirectCmd.instanceCount = 1;
 
-			}
-			for (auto& subMesh : model.m_subMeshes)
-			{
-				// clear the buffer to prepare for this model
-				oGFX::IndirectCommand indirectCmd{};
-				indirectCmd.instanceCount = 1;
+					// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
+					// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
+					indirectCmd.firstInstance = cnt++;
 
-				// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
-				// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
-				indirectCmd.firstInstance = cnt++;
+					indirectCmd.firstIndex = model.baseIndices + subMesh.baseIndices;
+					indirectCmd.indexCount = subMesh.indicesCount;
+					indirectCmd.vertexOffset = model.baseVertex + subMesh.baseVertex;
 
-				indirectCmd.firstIndex = model.baseIndices + subMesh.baseIndices;
-				indirectCmd.indexCount = subMesh.indicesCount;
-				indirectCmd.vertexOffset = model.baseVertex + subMesh.baseVertex;
-
-				s_scratchBuffer.emplace_back(indirectCmd);
-			}
-			
+					s_scratchBuffer.emplace_back(indirectCmd);
+				}
+			}			
 		}
 		
 		if (ent.flags & Flags::SHADOW_CASTER)

@@ -73,6 +73,9 @@ namespace oo
 			{
 				meshInfo.mesh_handle = _asset;
 				model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
+				// HACK this is needed to render stuff under edit..
+				// meshInfo.submeshBits.reset();
+				// meshInfo.submeshBits[0] = true;
 			}
 			if (albedo_handle.IsValid())
 			{

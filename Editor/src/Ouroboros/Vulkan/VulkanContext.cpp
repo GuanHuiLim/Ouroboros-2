@@ -161,6 +161,7 @@ namespace oo
             myObj.localToWorld = glm::rotate(myObj.localToWorld,glm::radians(myObj.rot), myObj.rotVec);
             myObj.localToWorld = glm::scale(myObj.localToWorld, myObj.scale);
             myObj.bindlessGlobalTextureIndex_Albedo = tex;
+            myObj.submesh[0] = 1;
         }
        
         {
@@ -173,6 +174,7 @@ namespace oo
             myPlane.localToWorld = glm::rotate(myPlane.localToWorld,glm::radians(myPlane.rot), myPlane.rotVec);
             myPlane.localToWorld = glm::scale(myPlane.localToWorld, myPlane.scale);
             myPlane.bindlessGlobalTextureIndex_Albedo = tex;
+            myPlane.submesh[0] = 1;
         }        
 
         vr->SetWorld(&gw);
