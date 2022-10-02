@@ -65,8 +65,8 @@ namespace oo::Anim
 		Animation empty_anim{};
 		empty_anim.name = Animation::empty_animation_name;
 
-		Animation::ID_to_index[empty_anim.animation_ID] = container.size();
-		Animation::name_to_index[empty_anim.name] = container.size();
+		Animation::ID_to_index[empty_anim.animation_ID] = static_cast<uint>(container.size());
+		Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());
 
 		container.emplace_back(std::move(empty_anim));
 		return container;
