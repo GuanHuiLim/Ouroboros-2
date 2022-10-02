@@ -1,5 +1,21 @@
+/************************************************************************************//*!
+\file           ApplicationAPI.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Defines the exported helper functions that the C# scripts will use
+                to perform actions related to the application in general, like 
+                getting the screen size, setting the visibility of the cursor,
+                and quitting the application
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
-#include "Scripting/ExportAPI.h"
+#include "Ouroboros/Scripting/ExportAPI.h"
 
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Core/WindowsWindow.h"

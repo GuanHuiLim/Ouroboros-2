@@ -1,4 +1,19 @@
-﻿#pragma once
+﻿/************************************************************************************//*!
+\file           World.h
+\project        ECS
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          
+The main object through which the entity component system functionality
+is accessed.
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+#pragma once
 #include "EcsUtils.h"
 #include "Archetype.h"
 #include "System.h"

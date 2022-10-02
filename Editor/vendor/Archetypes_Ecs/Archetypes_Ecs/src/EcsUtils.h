@@ -1,4 +1,17 @@
-﻿#pragma once
+﻿/************************************************************************************//*!
+\file           EcsUtils.h
+\project        ECS
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          ECS Utility header
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+#pragma once
 
 #include <cstdint>
 #include <cstddef>
@@ -14,14 +27,14 @@ namespace Ecs
 
 	using byte = unsigned char;
 
-	struct TypeHash;		//MetatypeHash
-	struct ComponentInfo;	//Metatype
+	struct TypeHash;		
+	struct ComponentInfo;	
 	union  EntityID;
 	struct DataChunkHeader;
 	struct DataChunk;
-	struct ComponentCombination; //ChunkComponentList
+	struct ComponentCombination; 
 	struct Archetype;
-	struct EnityToChunk;	//EntityStorage
+	struct EnityToChunk;	
 	struct IQuery;
 	struct IECSWorld;
 	class ECSWorld;

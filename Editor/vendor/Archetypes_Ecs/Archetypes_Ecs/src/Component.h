@@ -1,4 +1,17 @@
-﻿#pragma once
+﻿/************************************************************************************//*!
+\file           Component.h
+\project        ECS
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          Components definition for the ECS 
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+#pragma once
 #include "EcsUtils.h"
 //#include "World.h"
 
@@ -164,9 +177,9 @@ namespace Ecs
 	//set of unique combination of components
 	struct ComponentCombination {
 		struct ComponentIdentifier {
-			const ComponentInfo* type; //information about the type
-			TypeHash hash; // hash of the component
-			uint32_t chunkOffset; //offset from start of chunk
+			const ComponentInfo* type;	//information about the type
+			TypeHash hash;				// hash of the component
+			uint32_t chunkOffset;		//offset from start of chunk
 		};
 		int16_t chunkCapacity{};
 		std::vector<ComponentIdentifier> components{}; //all the components in this archtype
