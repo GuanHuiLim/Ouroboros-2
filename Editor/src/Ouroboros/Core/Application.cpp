@@ -4,7 +4,7 @@
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
 \date           May 05, 2022
-\brief          Core Application Loop and functionality. 
+\brief          Core Application Loop and functionality.
                 Will be inherited by Sandbox project.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
@@ -25,6 +25,8 @@ Technology is prohibited.
 #include "Ouroboros/Audio/Audio.h"
 
 #include "Ouroboros/Asset/AssetManager.h"
+
+#include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Timer.h"
 
@@ -50,7 +52,7 @@ namespace oo
         audio::Init();
 
         // Only start running file watchers ones dependencies are intiialised
-        AssetManager::GlobalStartRunning();
+        /*AssetManager::GlobalStartRunning();*/
     }
 
     Application::~Application()
@@ -70,6 +72,7 @@ namespace oo
         constexpr const char* const update_loop_name = "core app update_loop";
         //constexpr const char* const update_layerstack_name = "LayerStack OnUpdate";
         //constexpr const char* const imgui_layerstack_name = "LayerStack OnImGuiUpdate";
+        std::chrono::file_clock::time_point fileWatchTime = std::chrono::file_clock::now();
         UNREFERENCED(update_loop_name);
         while (m_running)
         {
@@ -80,6 +83,25 @@ namespace oo
             timer::Timestep dt = {};
 
             TRACY_TRACK_PERFORMANCE(update_loop_name);
+
+
+
+            constexpr const char* const file_watch_name = "core app file watch";
+            TRACY_TRACK_PERFORMANCE(file_watch_name);
+            TRACY_PROFILE_SCOPE_NC(file_watch_name, tracy::Color::Red1);
+
+            std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - fileWatchTime).count() >= AssetManager::WATCH_INTERVAL)
+            {
+                FileWatchEvent fwe{ fileWatchTime };
+                EventManager::Broadcast<FileWatchEvent>(&fwe);
+                fileWatchTime = now;
+            }
+
+            TRACY_PROFILE_SCOPE_END();
+            TRACY_DISPLAY_PERFORMANCE_SELECTED(file_watch_name);
+
+
 
             /*Process Inputs here*/
             input::Update();
