@@ -217,6 +217,8 @@ InspectorProperties::InspectorProperties()
 	m_InspectorUI[UI_RTTRType::UItypes::MESH_INFO_TYPE] = [](rttr::property& prop, std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
 		MeshInfo value = v.get_value<MeshInfo>();
+		if (value.mesh_handle.IsValid() == false)
+			return;
 		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
 		if (ImGui::BeginListBox(name.c_str(), { contentRegion.x,contentRegion.y * 0.2f }))
 		{
