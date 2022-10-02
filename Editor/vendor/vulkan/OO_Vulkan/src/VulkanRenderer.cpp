@@ -1691,7 +1691,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	auto mdlResourceIdx = g_globalModels.size();
 	modelFile->meshResource = mdlResourceIdx;
 	auto& mdl = g_globalModels.emplace_back(gfxModel{});
-	mdl.name = std::filesystem::path(file).stem().u8string();
+	mdl.name = std::filesystem::path(file).stem().string();
 
 	mdl.m_subMeshes.resize(scene->mNumMeshes);
 	modelFile->numSubmesh =scene->mNumMeshes;

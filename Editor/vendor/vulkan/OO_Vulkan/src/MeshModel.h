@@ -70,6 +70,7 @@ struct CPUSkeletonInstance
 
 } // end namespace oGFX
 
+#define MAX_SUBMESH 64 
 struct ModelFileResource
 {
     ~ModelFileResource();

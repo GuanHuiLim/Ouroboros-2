@@ -50,6 +50,10 @@ void GraphicsBatch::GenerateBatches()
 		if (ent.modelID != currModelID) // check if we are using the same model
 		{
 			s_scratchBuffer.clear();
+			for (size_t i = 0; i < model.m_subMeshes.size(); i++)
+			{
+
+			}
 			for (auto& subMesh : model.m_subMeshes)
 			{
 				// clear the buffer to prepare for this model

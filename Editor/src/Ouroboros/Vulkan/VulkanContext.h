@@ -63,8 +63,8 @@ namespace oo
         CameraController m_cc;
 
         //TEMP ptrs
-        std::unique_ptr<ModelData> cubeMesh;
-        std::unique_ptr<ModelData> planeMesh;
+        std::unique_ptr<ModelFileResource> cubeMesh;
+        std::unique_ptr<ModelFileResource> planeMesh;
 
         bool m_minimized = false;
     private:

@@ -22,6 +22,6 @@ namespace oo
 		(
 			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
 		)
-		.property("SubmodelID", &MeshRendererComponent::GetSubModelID, &MeshRendererComponent::SetSubModelID);
+		.property("MeshInfo", &MeshRendererComponent::GetMeshInfo, &MeshRendererComponent::SetMeshInfo);
 	}
 }

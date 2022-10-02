@@ -9,18 +9,24 @@
 #include "OO_Vulkan/src/MeshModel.h"
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
+#include <bitset>
 
 #include <rttr/type>
 namespace oo
 {
 	class Material;
 
+	struct MeshInfo
+	{
+		Asset mesh_handle;
+		std::bitset<MAX_SUBMESH> submeshBits;
+	};
+
 	struct MeshRendererComponent
 	{
 		Asset albedo_handle;
 		Asset normal_handle;
-		Asset mesh_handle;
-		int submodel_id = 0;
+		MeshInfo meshInfo;
 		uint32_t albedoID = 0xFFFFFFFF;
 		uint32_t normalID = 0xFFFFFFFF;
 
@@ -28,32 +34,45 @@ namespace oo
 		uint32_t model_handle{0};
 		uint32_t graphicsWorld_ID{};
 
+		MeshInfo GetMeshInfo() 
+		{
+			return meshInfo;
+		}
+
+		void SetMeshInfo(MeshInfo info) 
+		{
+			meshInfo = info;
+		}
+
 		void GetModelHandle()
 		{
-			if (mesh_handle.HasData())
-				model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			if (meshInfo.mesh_handle.HasData())
+				model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
 			else
 				model_handle = 0;
 			
-			//model_handle /*= mesh_handle.GetData<ModelData>().gfxMeshIndices.front()*/;
+			//model_handle /*= meshInfo.mesh_handle.GetData<ModelFileResource>().meshResource*/;
 		}
+		
+		//set a single model and asset
 		void SetModelHandle(Asset _asset, uint32_t _submodel_id)
 		{
-			submodel_id = _submodel_id;
-			mesh_handle = _asset;
+			meshInfo.submeshBits.reset();
+			meshInfo.submeshBits[_submodel_id] = true;
+			meshInfo.mesh_handle = _asset;
 
-			model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
 		}
 		Asset GetMesh()
 		{
-			return mesh_handle;
+			return meshInfo.mesh_handle;
 		}
 		void SetMesh(Asset _asset)
 		{
 			if (_asset.IsValid())
 			{
-				mesh_handle = _asset;
-				model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+				meshInfo.mesh_handle = _asset;
+				model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
 			}
 			if (albedo_handle.IsValid())
 			{
@@ -64,20 +83,9 @@ namespace oo
 				normalID = normal_handle.GetData<uint32_t>();
 			}
 		}	   
-		int GetSubModelID()
-		{
-			return submodel_id;
-		}
-		void SetSubModelID(int id)
-		{
-			if (mesh_handle.IsValid())
-			{
-				auto modelData = mesh_handle.GetData<ModelData*>();
-				id = id %  modelData->gfxMeshIndices.size();
-				submodel_id = id %  modelData->gfxMeshIndices.size();
-				model_handle = modelData->gfxMeshIndices[submodel_id];
-			}
-		}
+
+		
+
 		//std::vector<Material> materials;
 
 		//Lighting

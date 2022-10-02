@@ -24,6 +24,7 @@ enum ObjectInstanceFlags : uint32_t // fuck enum class
                              // etc
 };
 
+//CHAR_BIT * sizeof(uint64_t)
 struct ObjectInstance
 {
     std::string name;
@@ -43,9 +44,11 @@ struct ObjectInstance
     glm::mat4x4 localToWorld{ 1.0f };
     ObjectInstanceFlags flags{};
 
+
     std::vector<glm::mat4> bones;
 
     uint32_t modelID{}; // Index for the mesh
+    std::bitset<MAX_SUBMESH>submesh;// submeshes to draw
     uint32_t entityID{}; // Unique ID for this entity instance
 };
 

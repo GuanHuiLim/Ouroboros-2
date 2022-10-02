@@ -101,6 +101,7 @@ namespace oo
             actualObject.modelID = m_comp.model_handle;
             actualObject.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
             actualObject.bindlessGlobalTextureIndex_Normal= m_comp.normalID;
+            actualObject.submesh = m_comp.meshInfo.submeshBits;
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
