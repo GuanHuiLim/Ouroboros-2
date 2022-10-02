@@ -215,11 +215,11 @@ void PhysxWorld::removeInstance(PhysicsObject obj)
 
         else if (underlying_obj->rigidID == rigid::rdynamic)
             underlying_obj->rd.rigidDynamic->release();
+
+        // release shape
+        //underlying_obj->m_shape->release();
     }
     
-    // release shape
-    m_objects[obj.id].m_shape->release();
-
     // check/find the id from the obj vector then if match 
     // remove from that vector then release
     auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; });
