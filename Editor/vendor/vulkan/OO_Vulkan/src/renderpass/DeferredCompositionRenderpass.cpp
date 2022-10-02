@@ -66,7 +66,7 @@ void DeferredCompositionRenderpass::Draw()
 	rhi::CommandList cmd{ cmdlist };
 	cmd.SetDefaultViewportAndScissor();
 	
-	auto info = vr.globalLightBuffer.GetDescriptorBufferInfo();
+	const auto& info = vr.globalLightBuffer.GetDescriptorBufferInfo();
 	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[swapchainIdx])
 		.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.Build(vr.descriptorSet_lights,SetLayoutDB::lights);
@@ -143,7 +143,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
-	auto dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
+	const auto& dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
     DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.swapchainIdx])
         .BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)

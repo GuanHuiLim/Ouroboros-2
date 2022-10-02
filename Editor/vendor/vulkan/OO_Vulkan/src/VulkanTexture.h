@@ -40,6 +40,8 @@ namespace vkutils
 	class Texture2D : public Texture
 	{
 	public:
+		Texture2D() : Texture() {}
+
 		void loadFromFile(
 			std::string filename,
 			VkFormat format,

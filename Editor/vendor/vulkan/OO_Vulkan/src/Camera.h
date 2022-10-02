@@ -70,8 +70,8 @@ public:
 
 	void Translate(glm::vec3 delta);
 
-	void SetRotationSpeed(float rotationSpeed) { this->rotationSpeed = rotationSpeed; };
-	void SetMovementSpeed(float movementSpeed) { this->movementSpeed = movementSpeed; };
+	void SetRotationSpeed(float _rotationSpeed) { this->rotationSpeed = _rotationSpeed; };
+	void SetMovementSpeed(float _movementSpeed) { this->movementSpeed = _movementSpeed; };
 
 	void ChangeTargetDistance(float delta);
 

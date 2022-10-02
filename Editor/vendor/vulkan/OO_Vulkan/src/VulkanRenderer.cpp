@@ -1339,8 +1339,8 @@ void VulkanRenderer::UploadInstanceData()
 					}
 				}
 				
-				oi.boneStartIdx = boneMatrices.size();
-				oi.boneCnt = ent.bones.size();
+				oi.boneStartIdx = static_cast<uint32_t>(boneMatrices.size());
+				oi.boneCnt = static_cast<uint32_t>(ent.bones.size());
 
 				for (size_t i = 0; i < ent.bones.size(); i++)
 				{
@@ -1691,8 +1691,8 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	modelFile->fileName = file;
 
 	auto mdlResourceIdx = g_globalModels.size();
-	modelFile->meshResource = mdlResourceIdx;
-	auto& mdl = g_globalModels.emplace_back(gfxModel{});
+	modelFile->meshResource = static_cast<uint32_t>(mdlResourceIdx);
+	auto& mdl{ g_globalModels.emplace_back(gfxModel{}) };
 	mdl.name = std::filesystem::path(file).stem().string();
 
 	mdl.m_subMeshes.resize(scene->mNumMeshes);
