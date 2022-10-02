@@ -24,6 +24,17 @@ Technology is prohibited.
 
 #include "Asset.h"
 
+#include "Ouroboros/EventSystem/Event.h"
+
+class FileWatchEvent :public oo::Event
+{
+public:
+    FileWatchEvent(const std::chrono::file_clock::time_point& t) : time{ t } {};
+    ~FileWatchEvent() {};
+
+    std::chrono::file_clock::time_point time;
+};
+
 namespace oo
 {
     class AssetManager
@@ -103,7 +114,7 @@ namespace oo
         /// <summary>
         /// Enables the running of the file watcher.
         /// </summary>
-        static void GlobalStartRunning();
+        //static void GlobalStartRunning();
 
         /// <summary>
         /// Retrieves an asset using its ID.
@@ -177,11 +188,11 @@ namespace oo
         /* Members                                                                     */
         /* --------------------------------------------------------------------------- */
 
-        static bool globalIsRunning;
-        bool isRunning = true;
+        //static bool globalIsRunning;
+        //bool isRunning = true;
         std::filesystem::path root;
         AssetStore assets;
-        std::thread fileWatchThread;
+        //std::thread fileWatchThread;
 
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
@@ -190,7 +201,8 @@ namespace oo
         /// <summary>
         /// Scans the filesystem for changes in files.
         /// </summary>
-        void fileWatch();
+        /// <param name="ev">The file watch event.</param>
+        void fileWatch(FileWatchEvent* ev);
 
         /// <summary>
         /// Recursively update asset paths inside a directory.
