@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           VulkanRenderer.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief               Defines the full vulkan renderer class. 
+The entire class encapsulates the vulkan renderer and acts as an interface for external engines
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -1339,8 +1353,8 @@ void VulkanRenderer::UploadInstanceData()
 					}
 				}
 				
-				oi.boneStartIdx = boneMatrices.size();
-				oi.boneCnt = ent.bones.size();
+				oi.boneStartIdx = static_cast<uint32_t>(boneMatrices.size());
+				oi.boneCnt = static_cast<uint32_t>(ent.bones.size());
 
 				for (size_t i = 0; i < ent.bones.size(); i++)
 				{
@@ -1691,8 +1705,8 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	modelFile->fileName = file;
 
 	auto mdlResourceIdx = g_globalModels.size();
-	modelFile->meshResource = mdlResourceIdx;
-	auto& mdl = g_globalModels.emplace_back(gfxModel{});
+	modelFile->meshResource = static_cast<uint32_t>(mdlResourceIdx);
+	auto& mdl{ g_globalModels.emplace_back(gfxModel{}) };
 	mdl.name = std::filesystem::path(file).stem().string();
 
 	mdl.m_subMeshes.resize(scene->mNumMeshes);

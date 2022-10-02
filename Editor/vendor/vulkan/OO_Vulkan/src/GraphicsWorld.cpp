@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           GraphicsWorld.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines graphics world, a wrapper for objects that require to be rendered.
+    This is used as the main tnerface between the renderer and external engine
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "GraphicsWorld.h"
 
 void GraphicsWorld::BeginFrame()

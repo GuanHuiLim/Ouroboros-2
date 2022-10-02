@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           Camera.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Camera class
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include "MathCommon.h"
@@ -70,8 +83,8 @@ public:
 
 	void Translate(glm::vec3 delta);
 
-	void SetRotationSpeed(float rotationSpeed) { this->rotationSpeed = rotationSpeed; };
-	void SetMovementSpeed(float movementSpeed) { this->movementSpeed = movementSpeed; };
+	void SetRotationSpeed(float _rotationSpeed) { this->rotationSpeed = _rotationSpeed; };
+	void SetMovementSpeed(float _movementSpeed) { this->movementSpeed = _movementSpeed; };
 
 	void ChangeTargetDistance(float delta);
 

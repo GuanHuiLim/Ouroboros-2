@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           DeferredCompositionRenderpass.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a deferred lighting composition pass
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "DeferredCompositionRenderpass.h"
 
 #include "VulkanRenderer.h"
@@ -66,7 +79,7 @@ void DeferredCompositionRenderpass::Draw()
 	rhi::CommandList cmd{ cmdlist };
 	cmd.SetDefaultViewportAndScissor();
 	
-	auto info = vr.globalLightBuffer.GetDescriptorBufferInfo();
+	const auto& info = vr.globalLightBuffer.GetDescriptorBufferInfo();
 	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[swapchainIdx])
 		.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.Build(vr.descriptorSet_lights,SetLayoutDB::lights);
@@ -143,7 +156,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
-	auto dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
+	const auto& dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
     DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.swapchainIdx])
         .BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
