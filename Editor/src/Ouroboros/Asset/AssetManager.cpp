@@ -101,9 +101,21 @@ namespace oo
 
         // Destroy all assets
         // none will survive
+        std::set<AssetInfo*> infos;
         for (auto& asset : assets.GetAssets())
         {
-            asset.second.info->copies = { &asset.second };
+            infos.emplace(asset.second.info);
+            asset.second.info = nullptr;
+        }
+        for (auto& info : infos)
+        {
+            if (!info)
+                continue;
+            if (info->onAssetDestroy)
+                info->onAssetDestroy(*info);
+            if (info->data)
+                delete info->data;
+            delete info;
         }
     }
 
