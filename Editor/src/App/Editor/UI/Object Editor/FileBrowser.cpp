@@ -305,7 +305,7 @@ void FileBrowser::DirectoryBrowser()
 	ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_small);
 	ImGui::SameLine();
 	if (ImGui::Selectable("Assets"))
-		FileBehaviour(Project::GetProjectFolder());
+		FileBehaviour(Project::GetAssetFolder());
 	ImGui::EndGroup();
 
 	ImGui::BeginGroup();

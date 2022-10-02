@@ -1,3 +1,18 @@
+/************************************************************************************//*!
+\file           RendererSystem.cpp
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\par            email: c.tecklee\@digipen.edu
+\date           Sept 30, 2022
+\brief          Renderer System is in charge of putting all rendering related components
+                and performing the correct instructions in order to render the expected
+                scene properly
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "RendererSystem.h"
 #include <rttr/registration>
@@ -33,6 +48,7 @@ namespace oo
         comp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
         //HARDCODED AS CUBE, TO BE REMOVED LATER
         comp.model_handle = 0;
+        comp.meshInfo.submeshBits[0] = true;
         
         //update graphics world side
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
@@ -84,6 +100,9 @@ namespace oo
             //do nothing if transform did not change
             auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
             actualObject.modelID = m_comp.model_handle;
+            actualObject.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
+            actualObject.bindlessGlobalTextureIndex_Normal= m_comp.normalID;
+            actualObject.submesh = m_comp.meshInfo.submeshBits;
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;

@@ -29,13 +29,44 @@ Technology is prohibited.
 #include "App/Editor/Events/ImGuiRestartEvent.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "App/Editor/Events/OpenPromtEvent.h"
+#include "Ouroboros/Core/Events/FileDropEvent.h"
+static void FileDrop(oo::FileDropEvent* e)
+{
+	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf" };
+	if (e->GetType() != oo::FileDropType::DropFile)
+		return;
+	std::filesystem::path p = e->GetFile();
+	std::string ext = p.extension().string();
+	if (ext == ".prefab")
+	{
+		std::filesystem::copy(p, Project::GetPrefabFolder() / p.filename(), std::filesystem::copy_options::overwrite_existing);
+	}
+	else if (ext == ".scn")
+	{
+		std::filesystem::copy(p, Project::GetSceneFolder() / p.filename(), std::filesystem::copy_options::overwrite_existing);
+	}
+	else if (ext == ".cs")
+	{
+		//std::filesystem::copy(p, Project::GetScriptBuildPath() / p.filename(), std::filesystem::copy_options::overwrite_existing);
+	}
+	else
+	{
+		auto iter = s.find(ext);
+		if (iter == s.end())
+		{
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Engine don't support this type");
+			return;
+		}
+		std::filesystem::copy(p, Project::GetAssetFolder() / p.filename(),std::filesystem::copy_options::overwrite_existing);
+	}
+}
 Editor::Editor()
 {
 	UI_RTTRType::Init();
 	Serializer::Init();//runs the init function
 	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
-
+	oo::EventManager::Subscribe<oo::FileDropEvent>(&FileDrop);
 	
 
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
@@ -70,6 +101,7 @@ void Editor::Update()
 {
 	static bool b = [this]() 
 	{
+		//ImGuiManager::InitAssetsAll();
 		m_styleEditor.InitStyle(); 
 		m_toolbar.InitAssets();
 		m_loggingView.InitAsset();

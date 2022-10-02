@@ -133,6 +133,7 @@ namespace oGFX
 	
 		static std::vector<VkVertexInputBindingDescription> bindingDescription {	
 			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_VERTEX_BUFFER_ID,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX),
+			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_WEIGHTS_BUFFER_ID,sizeof(oGFX::BoneWeight),VK_VERTEX_INPUT_RATE_VERTEX),
 			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_INSTANCE_BUFFER_ID,sizeof(oGFX::InstanceData),VK_VERTEX_INPUT_RATE_INSTANCE),
 		};
 		return bindingDescription;
@@ -147,6 +148,8 @@ namespace oGFX
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, col)), // colour attribute
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,3,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, tangent)),//tangent attribute
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,4,VK_FORMAT_R32G32_SFLOAT	  ,offsetof(Vertex, tex)),    //Texture attribute
+		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_WEIGHTS_BUFFER_ID,5,VK_FORMAT_R32G32B32A32_UINT	  ,offsetof(BoneWeight,BoneWeight::boneIdx)),    //bone index
+		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_WEIGHTS_BUFFER_ID,6,VK_FORMAT_R32G32B32A32_SFLOAT	  ,offsetof(BoneWeight, BoneWeight::boneWeights)),    //bone weights
 	
 		// instance data attributes
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_INSTANCE_BUFFER_ID,15,VK_FORMAT_R32G32B32A32_UINT,offsetof(InstanceData, InstanceData::instanceAttributes)),

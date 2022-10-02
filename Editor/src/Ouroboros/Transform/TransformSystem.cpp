@@ -16,13 +16,11 @@ Technology is prohibited.
 #include "TransformSystem.h"
 
 #include <Ouroboros/Scene/Scene.h>
-
 #include "ouroboros/ECS/DeferredComponent.h"
-
-//#include <JobSystem/src/JobSystem.h>
-
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/ECS/ECS.h"
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+//#include <JobSystem/src/JobSystem.h>
 
 namespace oo
 {
@@ -33,9 +31,7 @@ namespace oo
 
     void TransformSystem::Run(Ecs::ECSWorld* world)
     {
-        static constexpr const char* const transform_update = "transform_update";
-        TRACY_TRACK_PERFORMANCE(transform_update);
-        TRACY_PROFILE_SCOPE_NC(transform_update, tracy::Color::Gold2);
+        TRACY_PROFILE_SCOPE_NC(transform_main_update, tracy::Color::Gold2);
 
         // Typical System updates using query//
         /*
@@ -46,7 +42,7 @@ namespace oo
             world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here});
 
         Option 2 : Makes with Deferred Component excluded
-            static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent>();
+            static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent>();
             world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here });
 
         NOTE: this might be extended in the future to include specific components or have
@@ -68,20 +64,25 @@ namespace oo
         UpdateTree(root_node, false);
 
         TRACY_PROFILE_SCOPE_END();
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(transform_update);
     }
 
-    void TransformSystem::UpdateSubTree(GameObject go)
+    void TransformSystem::UpdateSubTree(GameObject go, bool includeItself)
     {
+        TRACY_PROFILE_SCOPE_NC(transform_subtree_update, tracy::Color::Gold3);
+
         UpdateLocalTransforms();
-        UpdateTree(go.GetSceneNode().lock(), true);
+        UpdateTree(go.GetSceneNode().lock(), includeItself);
+        
+        TRACY_PROFILE_SCOPE_END();
     }
 
 
     void TransformSystem::UpdateLocalTransforms()
     {
+        TRACY_PROFILE_SCOPE_NC(transform_local_transform_update, tracy::Color::Gold4);
+
         // Update their local transform
-        static Ecs::Query query = Ecs::make_query_including_differed<TransformComponent>();
+        static Ecs::Query query = Ecs::make_query_including_deferred<TransformComponent>();
         m_world->for_each(query, [&](TransformComponent& tf)
             {
                 // TODO: this part of the code doesn't need to be serial.
@@ -91,13 +92,14 @@ namespace oo
                     tf.CalculateLocalTransform();
                 }
             });
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void TransformSystem::UpdateTree(scenenode::shared_pointer node, bool updateRoot)
     {
         // Transform System updates via the scenegraph because the order matters
-        static constexpr const char* const pre_transform_collect = "tree_update";
-        TRACY_TRACK_PERFORMANCE(pre_transform_collect);
+        
         TRACY_PROFILE_SCOPE_NC(pre_transform_collect, tracy::Color::Gold3);
 
         scenegraph::shared_pointer root_node = node;
@@ -139,13 +141,10 @@ namespace oo
         }
 
         TRACY_PROFILE_SCOPE_END();
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(pre_transform_collect);
     }
 
     void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf)
     {
-        static constexpr const char* const per_transform_update = "per_transform_update";
-        TRACY_TRACK_PERFORMANCE(per_transform_update);
         TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
         
         /// all parents need to be sure to be updated first.
@@ -173,7 +172,6 @@ namespace oo
         }
 
         TRACY_PROFILE_SCOPE_END();
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(per_transform_update);
     }
 
 

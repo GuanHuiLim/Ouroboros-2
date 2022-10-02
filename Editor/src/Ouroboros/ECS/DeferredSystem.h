@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           DeferredComponent.h
+\file           DeferredSystem.h
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420
 \par            email: c.tecklee\@digipen.edu
@@ -35,34 +35,28 @@ namespace oo
         // Removes all deferred component from the system
         virtual void Run(Ecs::ECSWorld* world) override
         {
-            static constexpr const char* const deferred_component_removal = "deferred_component_removal";
-            {
-                TRACY_TRACK_PERFORMANCE(deferred_component_removal);
-                TRACY_PROFILE_SCOPE_NC(deferred_component_removal, tracy::Color::Gold2);
+            TRACY_PROFILE_SCOPE_NC(deferred_component_removal, tracy::Color::Gold2);
 
-                std::vector<UUID> uuids;
+            std::vector<UUID> uuids;
 
-                // we collect all uuids first
-                // we manually build query as we want deferred component 
-                static Ecs::Query query = Ecs::make_query_including_differed<GameObjectComponent, DeferredComponent>();
-                world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& deferredComp)
-                    {
-                        LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);
-                        uuids.emplace_back(gocomp.Id);
-                    });
-
-                // than we start removing 
-                // NOTE : because doing so while iterating will cause issues.
-                for (auto& uuid : uuids)
+            // we collect all uuids first
+            // we manually build query as we want deferred component 
+            static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, DeferredComponent>();
+            world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& deferredComp)
                 {
-                    auto go = m_scene->FindWithInstanceID(uuid);
-                    go->RemoveComponent<DeferredComponent>();
-                }
+                    LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);
+                    uuids.emplace_back(gocomp.Id);
+                });
 
-                TRACY_PROFILE_SCOPE_END();
+            // than we start removing 
+            // NOTE : because doing so while iterating will cause issues.
+            for (auto& uuid : uuids)
+            {
+                auto go = m_scene->FindWithInstanceID(uuid);
+                go->RemoveComponent<DeferredComponent>();
             }
 
-            TRACY_DISPLAY_PERFORMANCE_SELECTED(deferred_component_removal);
+            TRACY_PROFILE_SCOPE_END();
         }
     };
 }

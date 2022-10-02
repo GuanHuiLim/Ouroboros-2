@@ -344,8 +344,8 @@ namespace oo
                 // event begin that triggers once on drop.
                 // triggers only once for multiple file drops.
                 FileDropEvent fileDrop(FileDropType::DropBegin, std::filesystem::path(), event.drop.windowID, event.drop.timestamp);
-                std::string fileDir(event.drop.file);
-                LOG_CORE_INFO("file drop begin {0}, {1}", fileDir, (uint32_t)event.drop.timestamp);
+                //std::string fileDir(event.drop.file); <- drop file is null on begin/end
+                LOG_CORE_INFO("file drop begin {0}", (uint32_t)event.drop.timestamp);
                 break;
             }
             case SDL_DROPFILE:

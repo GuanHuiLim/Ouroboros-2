@@ -1,4 +1,19 @@
-﻿#include "A_Ecs.h"
+﻿/************************************************************************************//*!
+\file           A_Ecs.cpp
+\project        ECS
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          
+A fully functional external archetype-based entity component system requiring only
+this cpp file and its header file
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+#include "A_Ecs.h"
 
 
 namespace Ecs

@@ -31,68 +31,56 @@ namespace oo
 
     void EditorScene::Init()
     {
+        TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
+
         Scene::Init();
 
-        constexpr const char* const editor_scene_init = "Editor scene init";
-        //constexpr const char* const registration = "registration";
-        //constexpr const char* const loading_world = "loading world";
+        //Register All Systems
         {
-            TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
-            //Register All Systems
-            {
-                GetWorld().Add_System<oo::PhysicsSystem>()->Init();
-                //bool wantDebug = true;
+            TRACY_PROFILE_SCOPE_N(editor_registration);
+            GetWorld().Add_System<oo::PhysicsSystem>()->Init();
+            //bool wantDebug = true;
 
-                //TRACY_PROFILE_SCOPE_N(registration);
-                /*GetWorld().RegisterSystem<PrefabComponentSystem>();
-                GetWorld().RegisterSystem<EditorComponentSystem>();
+            //TRACY_PROFILE_SCOPE_N(registration);
+            /*GetWorld().RegisterSystem<PrefabComponentSystem>();
+            GetWorld().RegisterSystem<EditorComponentSystem>();
 
-                GetWorld().RegisterSystem<oo::Renderer2DSystem>(*oo::EditorCamera::g_editorCam, wantDebug);
-                GetWorld().RegisterSystem<oo::ParticleRenderingSystem>();
-                GetWorld().RegisterSystem<oo::QuadtreeSystem>();
-                GetWorld().RegisterSystem<oo::AnimatorSystem>();
-                GetWorld().RegisterSystem<oo::UIRenderingSystem>(wantDebug);
-                GetWorld().RegisterSystem<oo::VideoSystem>();
-                auto scriptSystem = GetWorld().RegisterSystem<oo::ScriptSystem>();
-                GetWorld().RegisterSystem<oo::PhysicsSystem>();
-                GetWorld().RegisterSystem<oo::UISystem>();
-                GetWorld().RegisterSystem<oo::AudioSystem>();
+            GetWorld().RegisterSystem<oo::Renderer2DSystem>(*oo::EditorCamera::g_editorCam, wantDebug);
+            GetWorld().RegisterSystem<oo::ParticleRenderingSystem>();
+            GetWorld().RegisterSystem<oo::QuadtreeSystem>();
+            GetWorld().RegisterSystem<oo::AnimatorSystem>();
+            GetWorld().RegisterSystem<oo::UIRenderingSystem>(wantDebug);
+            GetWorld().RegisterSystem<oo::VideoSystem>();
+            auto scriptSystem = GetWorld().RegisterSystem<oo::ScriptSystem>();
+            GetWorld().RegisterSystem<oo::PhysicsSystem>();
+            GetWorld().RegisterSystem<oo::UISystem>();
+            GetWorld().RegisterSystem<oo::AudioSystem>();
 
-                scriptSystem->SetCallbackInvokes();*/
-                //TRACY_PROFILE_SCOPE_END();
-            }
+            scriptSystem->SetCallbackInvokes();*/
+            TRACY_PROFILE_SCOPE_END();
+        }
 
-            // if filepath is a valid file path
-            if (std::filesystem::exists(GetFilePath()))
-            {
-                {
-                    //TRACY_PROFILE_SCOPE_N(loading_world);
-                    
-                    // load from that file
-                    LoadFromFile();
+        // if filepath is a valid file path
+        if (std::filesystem::exists(GetFilePath()))
+        {
+            TRACY_PROFILE_SCOPE_N(loading_world);
 
-                    //TRACY_PROFILE_SCOPE_END();
-                }
-            }
+            LoadFromFile();
 
             TRACY_PROFILE_SCOPE_END();
         }
 
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void EditorScene::Update()
     {
+        TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
+
         Scene::Update();
 
         GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
 
-        //constexpr const char* const editor_scene_update = "Editor Scene Update";
-        //constexpr const char* const physics_editor_update = "physics editor mode update";
-        //constexpr const char* const transform_update = "transform update";
-        //constexpr const char* const particles_update = "Particles update";
-        //constexpr const char* const animator_update = "animator update";
-        //constexpr const char* const ui_update = "ui update";
-        //constexpr const char* const video_update = "Video update";
         {
             //TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
 
@@ -130,23 +118,28 @@ namespace oo
                 GetWorld().GetSystem<oo::VideoSystem>()->Update(dt);*/
             }
 
-            //TRACY_PROFILE_SCOPE_END();
         }
-
+        
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void EditorScene::LateUpdate()
     {
+        TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void EditorScene::Render()
     {
+        TRACY_PROFILE_SCOPE_NC(editor_scene_rendering, tracy::Color::Cyan);
+
         constexpr float gridSize = 100.0f;
         constexpr float gridIncrement = 1.0f / 5.0f;
 
         DebugDraw::DrawYGrid(gridSize, gridIncrement);
         DebugDraw::DrawYGrid(gridSize, 1.0f, oGFX::Colors::RED);
+
         Scene::Render();
 
         //constexpr const char* const rendering = "Overall Rendering";
@@ -170,11 +163,15 @@ namespace oo
             //TRACY_PROFILE_SCOPE_END();
         }
         //TRACY_DISPLAY_PERFORMANCE_SELECTED(rendering);
+        
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void EditorScene::Exit()
     {
+        TRACY_PROFILE_SCOPE_NC(editor_scene_exit, tracy::Color::Cyan2);
         Scene::Exit();
+        TRACY_PROFILE_SCOPE_END();
 
         // DOES not autosave by default anymore
         //SaveToFile();
@@ -188,7 +185,9 @@ namespace oo
 
     void EditorScene::Save()
     {
+        TRACY_PROFILE_SCOPE_NC(editor_save_to_file, tracy::Color::Cyan3);
         SaveToFile();
+        TRACY_PROFILE_SCOPE_END();
     }
 
 }

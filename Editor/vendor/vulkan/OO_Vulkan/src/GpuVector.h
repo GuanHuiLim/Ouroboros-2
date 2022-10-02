@@ -25,6 +25,7 @@ public:
 	void clear();
 
 	const VkDescriptorBufferInfo& GetDescriptorBufferInfo();
+	const VkDescriptorBufferInfo* GetBufferInfoPtr();
 	bool MustUpdate();
 	void Updated();
 
@@ -212,6 +213,15 @@ inline const VkDescriptorBufferInfo& GpuVector<T>::GetDescriptorBufferInfo()
 	m_descriptor.offset = 0;
 	m_descriptor.range = VK_WHOLE_SIZE;
 	return m_descriptor;
+}
+
+template<typename T>
+inline const VkDescriptorBufferInfo* GpuVector<T>::GetBufferInfoPtr()
+{
+	m_descriptor.buffer = m_buffer;
+	m_descriptor.offset = 0;
+	m_descriptor.range = VK_WHOLE_SIZE;
+	return &m_descriptor;
 }
 
 template<typename T>

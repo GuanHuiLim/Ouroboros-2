@@ -24,6 +24,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Audio/Audio.h"
 
+#include "Ouroboros/Asset/AssetManager.h"
+
 #include "Timer.h"
 
 namespace oo
@@ -46,6 +48,9 @@ namespace oo
 
         // Initialise audio
         audio::Init();
+
+        // Only start running file watchers ones dependencies are intiialised
+        AssetManager::GlobalStartRunning();
     }
 
     Application::~Application()
@@ -61,11 +66,7 @@ namespace oo
 
     void Application::Run()
     {
-        //constexpr const char* const application_run_name = "application run";
-        constexpr const char* const update_loop_name = "core app update_loop";
-        //constexpr const char* const update_layerstack_name = "LayerStack OnUpdate";
-        //constexpr const char* const imgui_layerstack_name = "LayerStack OnImGuiUpdate";
-
+        constexpr const char* const update_loop_name = "core app update loop";
         while (m_running)
         {
             OO_TracyProfiler::CheckIfServerToBeOpened();
@@ -74,7 +75,7 @@ namespace oo
             /*Calculate dt*/
             timer::Timestep dt = {};
 
-            TRACY_TRACK_PERFORMANCE(update_loop_name);
+            TRACY_PROFILE_FRAME_START(update_loop_name);
 
             /*Process Inputs here*/
             input::Update();
@@ -93,7 +94,7 @@ namespace oo
 
             // swap buffers at the end of frame
             m_window->SwapBuffers();
-
+            
             TRACY_PROFILE_END_OF_FRAME();
         }
     }

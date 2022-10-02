@@ -13,7 +13,7 @@ DescriptorBuilder DescriptorBuilder::Begin(DescriptorLayoutCache* layoutCache, D
 	return builder;
 }
 
-DescriptorBuilder& DescriptorBuilder::BindBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlags)
+DescriptorBuilder& DescriptorBuilder::BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlags)
 {
 	//create the descriptor binding for the layout
 	VkDescriptorSetLayoutBinding newBinding = oGFX::vkutils::inits::descriptorSetLayoutBinding(type,stageFlags,binding,1);

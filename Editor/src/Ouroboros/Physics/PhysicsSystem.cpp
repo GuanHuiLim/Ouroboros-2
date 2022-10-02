@@ -28,6 +28,8 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformComponent.h"
 
 #include "OO_Vulkan/src/DebugDraw.h"
+#include "Ouroboros/ECS/ECS.h"
+
 namespace oo
 {
     PhysicsSystem::PhysicsSystem()
@@ -55,12 +57,6 @@ namespace oo
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
     {
-        constexpr const char* const physics_update = "physics_update";
-        constexpr const char* const physics_fixed_update = "physics_fixed_update";
-        constexpr const char* const physics_collision = "physics_collision";
-        constexpr const char* const physics_resolution = "physics_resolution";
-        constexpr const char* const physics_dynamics = "physics_dynamics";
-        constexpr const char* const physics_post_update = "physics_post_update";
         {
             TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
@@ -119,15 +115,9 @@ namespace oo
 
     void PhysicsSystem::EditorUpdate(Timestep deltaTime)
     {
-        constexpr const char* const physics_update = "physics_update";
-        TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
+        TRACY_PROFILE_SCOPE_NC(physics_update_editor, tracy::Color::PeachPuff);
 
-        static Ecs::Query rb_query = []()
-        {
-            Ecs::Query query;
-            query.with<TransformComponent, PhysicsComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
-            return query;
-        }();
+        static Ecs::Query rb_query = Ecs::make_query<TransformComponent, PhysicsComponent, RigidbodyComponent>();
 
         m_world->for_each(rb_query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
         {
@@ -142,12 +132,7 @@ namespace oo
 
         // TODO: This should be temporary soln
         //Updating Drawing of static Box Collider's Bounds
-        static Ecs::Query boxColliderDrawQuery = []()
-        {
-            Ecs::Query query;
-            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<DeferredComponent>().build();
-            return query;
-        }();
+        static Ecs::Query boxColliderDrawQuery = Ecs::make_query<TransformComponent, PhysicsComponent, BoxColliderComponent>();
 
         m_world->for_each(boxColliderDrawQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
             {
@@ -169,12 +154,7 @@ namespace oo
             });
 
         //Updating Static Box Collider's Bounds
-        static Ecs::Query boxColliderQuery = []()
-        {
-            Ecs::Query query;
-            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<DeferredComponent, RigidbodyComponent>().build();
-            return query;
-        }();
+        static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, PhysicsComponent, BoxColliderComponent>().exclude<RigidbodyComponent>();
 
         m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc)
             {
@@ -210,14 +190,9 @@ namespace oo
         EditorUpdate(deltaTime);
         
         // update the physics world using fixed dt.
-        m_physicsWorld.updateScene(FixedDeltaTime);
+        m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
 
-        static Ecs::Query rb_query = []()
-        {
-            Ecs::Query query;
-            query.with<TransformComponent, PhysicsComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
-            return query;
-        }();
+        static Ecs::Query rb_query = Ecs::make_query< TransformComponent, PhysicsComponent, RigidbodyComponent>();
         
         // set position and orientation
         m_world->for_each(rb_query, [&](TransformComponent& tf, PhysicsComponent& phy, RigidbodyComponent& rb)
@@ -230,12 +205,7 @@ namespace oo
             tf.SetGlobalOrientation({ orientation.x, orientation.y, orientation.z, orientation.w });
         });
 
-        static Ecs::Query dynamicBoxColliderQuery = []()
-        {
-            Ecs::Query query;
-            query.with<TransformComponent, PhysicsComponent, BoxColliderComponent, RigidbodyComponent>().exclude<DeferredComponent>().build();
-            return query;
-        }();
+        static Ecs::Query dynamicBoxColliderQuery = Ecs::make_query<TransformComponent, PhysicsComponent, BoxColliderComponent, RigidbodyComponent>();
 
         //Updating Dynamic Box Collider Bounds
         m_world->for_each(dynamicBoxColliderQuery, [&](TransformComponent& tf, PhysicsComponent& phy, BoxColliderComponent& bc, RigidbodyComponent& rb)
@@ -277,9 +247,6 @@ namespace oo
 
     void PhysicsSystem::UpdatePhysicsCollision()
     {
-        constexpr const char* const physics_broadphase = "physics_broadphase";
-        constexpr const char* const physics_narrowphase = "physics_narrowphase";
-        constexpr const char* const physics_callbacks = "physics_callbacks";
         {
             TRACY_PROFILE_SCOPE_NC(physics_broadphase, tracy::Color::PeachPuff);
 

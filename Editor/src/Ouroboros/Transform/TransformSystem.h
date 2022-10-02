@@ -17,8 +17,6 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 
-#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-
 namespace oo
 {
     class Scene;
@@ -31,7 +29,7 @@ namespace oo
         virtual ~TransformSystem() = default;
 
         virtual void Run(Ecs::ECSWorld* world) override;
-        void UpdateSubTree(GameObject go);
+        void UpdateSubTree(GameObject go, bool includeItself = true);
 
     private:
         void UpdateLocalTransforms();

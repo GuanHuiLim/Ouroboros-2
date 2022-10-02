@@ -28,10 +28,10 @@ namespace oo
         registration::class_<TransformComponent>("Transform Component")
             .property("Position", &TransformComponent::GetPosition, &TransformComponent::SetPosition)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Euler Angles", &TransformComponent::GetEulerAngles, &TransformComponent::SetRotation)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property_readonly("Quaternion", &TransformComponent::GetRotationQuat)
+            .property("Quaternion", &TransformComponent::GetRotationQuat, &TransformComponent::SetOrientation)(metadata(UI_metadata::HIDDEN, true))
             .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property_readonly("Local Matrix", &TransformComponent::LocalTransform)
-            .property_readonly("Global Matrix", &TransformComponent::GlobalTransform)
+            .property_readonly("Local Matrix", &TransformComponent::GetLocalMatrix)
+            .property_readonly("Global Matrix", &TransformComponent::GetGlobalMatrix)
             .property_readonly("Global Position", &TransformComponent::GetGlobalPosition)
             .property_readonly("Global Rotation", &TransformComponent::GetGlobalRotationDeg)
             .property_readonly("Global Quaternion", &TransformComponent::GetGlobalRotationQuat)
@@ -52,8 +52,8 @@ namespace oo
     TransformComponent::vec3 TransformComponent::GlobalUp()                   const { return GlobalTransform.Up(); }
     TransformComponent::vec3 TransformComponent::GlobalForward()              const { return GlobalTransform.Forward(); }
                                                 
-    /*TransformComponent::mat4 TransformComponent::GetLocalMatrix()             const { return LocalTransform.GetMatrix(); }
-    TransformComponent::mat4 TransformComponent::GetGlobalMatrix()            const { return GlobalTransform.GetMatrix(); }*/
+    TransformComponent::mat4 TransformComponent::GetLocalMatrix()             const { return LocalTransform.GetMatrix(); }
+    TransformComponent::mat4 TransformComponent::GetGlobalMatrix()            const { return GlobalTransform.GetMatrix(); }
 
     TransformComponent::vec3 TransformComponent::GetGlobalPosition()          const { return GlobalTransform.Position; }
     TransformComponent::mat4 TransformComponent::GetGlobalRotationMatrix()    const { return GlobalTransform.GetRotationMatrix(); }

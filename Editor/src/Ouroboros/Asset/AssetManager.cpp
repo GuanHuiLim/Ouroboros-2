@@ -24,6 +24,8 @@ Technology is prohibited.
 
 namespace oo
 {
+    bool AssetManager::globalIsRunning = false;
+
     Asset& AssetManager::AssetStore::At(AssetID id)
     {
         return assets.at(id);
@@ -96,6 +98,18 @@ namespace oo
     {
         isRunning = false;
         fileWatchThread.join();
+
+        // Destroy all assets
+        // none will survive
+        for (auto& asset : assets.GetAssets())
+        {
+            asset.second.info->copies = { &asset.second };
+        }
+    }
+
+    void AssetManager::GlobalStartRunning()
+    {
+        globalIsRunning = true;
     }
 
     Asset AssetManager::Get(const AssetID& snowflake)
@@ -201,6 +215,13 @@ namespace oo
 
     void AssetManager::fileWatch()
     {
+        // Stall until ready
+        while (!globalIsRunning)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        LOG_INFO("Now watching: {0}", root);
         std::chrono::file_clock::time_point tLast = std::chrono::file_clock::now();
         std::chrono::file_clock::time_point t = std::chrono::file_clock::now();
         while (isRunning)
@@ -227,23 +248,31 @@ namespace oo
                     if (FP_EXT == Asset::EXT_META)
                         continue;
 
-                    const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
-                    if (WRITE_TIME <= tLast || t < WRITE_TIME)
-                        continue;
-
                     auto fpMeta = FP;
                     fpMeta += Asset::EXT_META;
+                    if (!std::filesystem::exists(fpMeta))
+                    {
+                        ensureMeta(FP);
+                    }
 
                     AssetMetaContent meta;
                     std::ifstream ifs = std::ifstream(fpMeta);
                     BinaryIO::Read(ifs, meta);
+                    const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
                     if (!assets.Contains(meta.id))
                     {
                         // Created
                         LoadPath(FP);
-                        LOG_INFO("File {0} created", FP);
+                        LOG_INFO("File {0} loaded", FP);
                     }
-                    else
+                    else if (assets.At(meta.id).info->contentPath != FP)
+                    {
+                        // Moved
+                        assets.At(meta.id).info->contentPath = FP;
+                        assets.At(meta.id).info->metaPath = fpMeta;
+                        LOG_INFO("File {0} moved", FP);
+                    }
+                    else if (tLast < WRITE_TIME && WRITE_TIME <= t)
                     {
                         // Modified
                         assets.At(meta.id).info->contentPath = FP;
@@ -283,7 +312,9 @@ namespace oo
                 auto fpMeta = FP;
                 fpMeta += Asset::EXT_META;
                 if (!std::filesystem::exists(fpMeta))
-                    continue;
+                {
+                    ensureMeta(FP);
+                }
 
                 AssetMetaContent meta;
                 std::ifstream ifs = std::ifstream(fpMeta);
@@ -303,6 +334,31 @@ namespace oo
         }
     }
 
+    AssetMetaContent AssetManager::ensureMeta(const std::filesystem::path& fp)
+    {
+        // Get file paths
+        auto fpMeta = fp;
+        if (fp.extension() != Asset::EXT_META)
+        {
+            fpMeta += Asset::EXT_META;
+        }
+
+        // Ensure meta file exists
+        AssetMetaContent meta;
+        if (!std::filesystem::exists(fpMeta))
+        {
+            meta.id = Asset::GenerateSnowflake();
+            std::ofstream ofs = std::ofstream(fpMeta);
+            BinaryIO::Write(ofs, meta);
+        }
+        else
+        {
+            std::ifstream ifs = std::ifstream(fpMeta);
+            BinaryIO::Read(ifs, meta);
+        }
+        return meta;
+    }
+
     Asset AssetManager::getOrLoadAbsolute(const std::filesystem::path& fp)
     {
         // Get file paths
@@ -319,18 +375,7 @@ namespace oo
         const auto FP_EXT = fpContent.extension();
 
         // Ensure meta file exists
-        AssetMetaContent meta;
-        if (!std::filesystem::exists(fpMeta))
-        {
-            meta.id = Asset::GenerateSnowflake();
-            std::ofstream ofs = std::ofstream(fpMeta);
-            BinaryIO::Write(ofs, meta);
-        }
-        else
-        {
-            std::ifstream ifs = std::ifstream(fpMeta);
-            BinaryIO::Read(ifs, meta);
-        }
+        AssetMetaContent meta = ensureMeta(fpContent);
 
         // Get or load asset
         if (assets.Contains(meta.id))

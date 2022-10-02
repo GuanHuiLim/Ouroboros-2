@@ -177,14 +177,6 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         /// <summary>
-        /// Retrieves the submodel from the asset.
-        /// Throws an exception if the asset is not a model.
-        /// </summary>
-        /// <param name="index">The index.</param>
-        /// <returns>The submodel.</returns>
-        gfxModel& GetSubmodel(size_t index = 0);
-
-        /// <summary>
         /// Retrieves number of submodel in the asset.
         /// Throws an exception if the asset is not a model.
         /// </summary>

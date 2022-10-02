@@ -4,7 +4,9 @@
 \author         Lim Guan Hui, l.guanhui, 2000552
 \par            email: l.guanhui\@digipen.edu
 \date           August 26, 2022
-\brief          BRIEF_HERE
+\brief          
+allows you to arrange and maintain a set of Animations and 
+Animation Transitions for a gameobject object
 
 Copyright (C) 2021 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -27,8 +29,8 @@ namespace oo::Anim
 		//contains a collection of parameters to be checked with conditions
 		std::vector<Parameter> parameters;
 		std::unordered_map<size_t, uint> paramIDtoIndexMap;
-		std::vector<Animation> animations;
-		std::vector<Node> nodes;
+		//std::vector<Animation> animations;
+		//std::vector<Node> nodes;
 
 		static AnimationTree* Create(std::string const name = "Unnamed Animation Tree");
 	};

@@ -43,8 +43,8 @@ namespace oo
         vec3 GlobalUp()        const;
         vec3 GlobalForward()   const;
 
-        //mat4 GetLocalMatrix()  const;
-        //mat4 GetGlobalMatrix() const;
+        mat4 GetLocalMatrix()  const;
+        mat4 GetGlobalMatrix() const;
 
         vec3 GetGlobalPosition()        const;
         mat4 GetGlobalRotationMatrix()  const;

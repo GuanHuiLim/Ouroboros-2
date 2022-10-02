@@ -218,7 +218,7 @@ namespace oo
                 {
                     if (self.data)
                     {
-                        delete self.GetData<ModelData*>();
+                        delete self.GetData<ModelFileResource*>();
                         delete self.data;
                     }
                     self.data = nullptr;
@@ -247,24 +247,13 @@ namespace oo
         return v;
     }
 
-    gfxModel& Asset::GetSubmodel(size_t index)
-    {
-        if (info->type != AssetInfo::Type::Model)
-            throw AssetInvalidTypeException();
-
-        auto data = GetData<ModelData*>();
-        auto vc = Application::Get().GetWindow().GetVulkanContext();
-        auto vr = vc->getRenderer();
-        return vr->models[data->gfxMeshIndices[index]];
-    }
-
     size_t Asset::GetSubmodelCount() const
     {
         if (info->type != AssetInfo::Type::Model)
             throw AssetInvalidTypeException();
 
-        auto data = GetData<ModelData*>();
-        return data->gfxMeshIndices.size();
+        auto data = GetData<ModelFileResource*>();
+        return data->numSubmesh;
     }
 
     void Asset::createData()

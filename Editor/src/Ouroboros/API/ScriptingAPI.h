@@ -1,5 +1,21 @@
+/************************************************************************************//*!
+\file           ScriptingAPI.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Defines the exported helper functions that the C# scripts will use
+                to perform actions related to other C# scripts or C# interfaces to
+                C++ ECS Components. Such actions include adding, getting, and removing
+                C# scripts and C++ ECS Components, and checking if they are enabled
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
-#include <Scripting/ExportAPI.h>
+#include "Ouroboros/Scripting/ExportAPI.h"
 
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Scripting/ScriptSystem.h"

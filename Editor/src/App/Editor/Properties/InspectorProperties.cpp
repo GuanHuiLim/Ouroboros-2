@@ -24,6 +24,7 @@ Technology is prohibited.
 #include "Quaternion/include/Quaternion.h"
 #include "Ouroboros/ECS/GameObject.h"
 #include "App/Editor/UI/Object Editor/AssetBrowser.h"
+#include "Ouroboros/Vulkan/MeshInfo.h"
 InspectorProperties::InspectorProperties()
 {
 	m_InspectorUI[UI_RTTRType::UItypes::BOOL_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
@@ -188,6 +189,7 @@ InspectorProperties::InspectorProperties()
 		//if (value.IsValid() == false)
 		//	return;
 		ImGui::SameLine();
+		ImGui::PushID(prop.get_name().data());
 		ImGuiID temp = ImGui::GetItemID();
 		if (ImGui::Button("Edit"))
 		{
@@ -198,6 +200,7 @@ InspectorProperties::InspectorProperties()
 				open = temp;
 			}
 		}
+		ImGui::PopID();
 		if (open == temp)
 		{
 			//this meta data is a required field
@@ -210,5 +213,29 @@ InspectorProperties::InspectorProperties()
 			edited = true;
 			open = 0;
 		}
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::MESH_INFO_TYPE] = [](rttr::property& prop, std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		MeshInfo value = v.get_value<MeshInfo>();
+		if (value.mesh_handle.IsValid() == false)
+			return;
+		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+		if (ImGui::BeginListBox(name.c_str(), { contentRegion.x,contentRegion.y * 0.2f }))
+		{
+			std::string name;
+			for (auto i = 0; i < value.mesh_handle.GetData<ModelFileResource*>()->numSubmesh; ++i)
+			{
+				name = "Mesh " + std::to_string(i);
+				bool submesh = value.submeshBits[i];
+				if (ImGui::Selectable(name.c_str(), &submesh))
+				{
+					value.submeshBits[i] = submesh;
+					edited = true;
+					endEdit = true;
+				}
+			}
+			ImGui::EndListBox();
+		}
+		if (edited) { v = value; };
 	};
 }

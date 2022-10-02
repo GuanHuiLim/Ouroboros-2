@@ -81,7 +81,9 @@ namespace oo
 
             SDL_GetRelativeMouseState(&m_mouseXDelta, &m_mouseYDelta);
 
+            //TODO : verify
             int state = SDL_GameControllerEventState(SDL_QUERY);
+            UNREFERENCED(state);
 
             //Controller
             // If there is no controllers attached exit

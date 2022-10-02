@@ -66,64 +66,44 @@ namespace oo
 
     void Scene::Init()
     {
-        constexpr const char* const scene_init = "Scene_init";
-        {
-            TRACY_TRACK_PERFORMANCE(scene_init);
-            TRACY_PROFILE_SCOPE_NC(scene_init, tracy::Color::Seashell1);
+        TRACY_PROFILE_SCOPE_NC(base_scene_init, tracy::Color::Seashell1);
 
-            Scene::OnInitEvent e;
-            EventManager::Broadcast(&e);
+        Scene::OnInitEvent e;
+        EventManager::Broadcast(&e);
         
-            // Initialize Default Systems
-            {
-                m_ecsWorld->Add_System<oo::DeferredSystem>(this);
-                //m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
+        // Initialize Default Systems
+        {
+            m_ecsWorld->Add_System<oo::DeferredSystem>(this);
+            //m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
 
-                m_ecsWorld->Add_System<oo::TransformSystem>(this);
-                //m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
+            m_ecsWorld->Add_System<oo::TransformSystem>(this);
+            //m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
 
-                m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
+            m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
-                //rendering system initialization
-                m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
+            //rendering system initialization
+            m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
 
-                m_ecsWorld->Add_System<oo::AudioSystem>(this);
-            }
-
-            // Broadcast event to load scene
-            LoadSceneEvent lse{ this };
-            EventManager::Broadcast<LoadSceneEvent>(&lse);
-
-            // Set Active Event for all objects
-            for (auto& go : m_gameObjects)
-            {
-                if (go->ActiveInHierarchy())
-                {
-                    GameObjectComponent::OnEnableEvent e{ go->GetInstanceID() };
-                    EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&e);
-                }
-                else
-                {
-                    GameObjectComponent::OnDisableEvent e{ go->GetInstanceID() };
-                    EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&e);
-                }
-            }
-            
-            PRINT(m_name);
-            
-            TRACY_PROFILE_SCOPE_END();
+            m_ecsWorld->Add_System<oo::AudioSystem>(this);
         }
 
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_init);
+        PRINT(m_name);
+            
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::Update()
     {
+        TRACY_PROFILE_SCOPE_NC(base_scene_update, tracy::Color::Seashell2);
+
         // Update Systems
         {
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
+
             m_ecsWorld->Get_System<oo::AudioSystem>()->Run(m_ecsWorld.get());
-            constexpr const char* const scripts_update = "Scripts Update";
+
+            //constexpr const char* const scripts_update = "Scripts Update";
+            //UNREFERENCED(scripts_update);
             {
                 TRACY_PROFILE_SCOPE(scripts_update);
                 GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
@@ -133,140 +113,131 @@ namespace oo
         }
 
         PRINT(m_name);
+
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::LateUpdate()
     {
+        TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
+
         m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("LateUpdate");
         PRINT(m_name);
+
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::Render()
     {
-        PRINT(m_name);
+        TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
 
         GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
+        PRINT(m_name);
         
-        //VulkanContext* vkContext = reinterpret_cast<VulkanContext*>(Application::Get().GetWindow().GetRenderingContext());
-        //vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::EndOfFrameUpdate()
     {
-        constexpr const char* const scene_end_of_frame_update = "Scene_end_of_frame_update";
+        TRACY_PROFILE_SCOPE_NC(base_scene_end_of_frame_update, tracy::Color::Seashell4);
+
+        PRINT(m_name);
+
+        //// go through all things to create and add at the end of frame and do so.
+        //for (auto& [go, callback] : m_createList)
+        //{
+        //    CreateGameObjectImmediate(go);
+        //    callback(go);
+        //}
+        //m_createList.clear();
+        m_ecsWorld->Get_System<oo::DeferredSystem>()->Run(m_ecsWorld.get());
+
+        // go through all things to remove at the end of frame and do so.
+        for (auto& uuid : m_removeList)
         {
-            TRACY_TRACK_PERFORMANCE(scene_end_of_frame_update);
-            TRACY_PROFILE_SCOPE_NC(scene_end_of_frame_update, tracy::Color::Seashell2);
+            auto go_ptr = FindWithInstanceID(uuid);
+            ASSERT_MSG
+            (
+                (go_ptr == nullptr),
+                "Attempting to delete an object that's already been removed"
+            );
 
-            PRINT(m_name);
-
-            //// go through all things to create and add at the end of frame and do so.
-            //for (auto& [go, callback] : m_createList)
-            //{
-            //    CreateGameObjectImmediate(go);
-            //    callback(go);
-            //}
-            //m_createList.clear();
-            m_ecsWorld->Get_System<oo::DeferredSystem>()->Run(m_ecsWorld.get());
-
-            // go through all things to remove at the end of frame and do so.
-            for (auto& uuid : m_removeList)
-            {
-                auto go_ptr = FindWithInstanceID(uuid);
-                ASSERT_MSG
-                (
-                    (go_ptr == nullptr),
-                    "Attempting to delete an object that's already been removed"
-                );
-
-                // Actual Deletion
-                RemoveGameObject(go_ptr);
-            }
-            m_removeList.clear();
-
-
-            TRACY_PROFILE_SCOPE_END();
+            // Actual Deletion
+            RemoveGameObject(go_ptr);
         }
+        m_removeList.clear();
 
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_end_of_frame_update);
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::Exit()
     {
+        TRACY_PROFILE_SCOPE_NC(base_scene_exit, tracy::Color::Seashell3);
+
         // Broadcast event to unload scene
         UnloadSceneEvent use{ this };
         EventManager::Broadcast<UnloadSceneEvent>(&use);
 
         PRINT(m_name);
+        
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::LoadScene()
     {
-        constexpr const char* const scene_loading = "scene_loading";
-        {
-            TRACY_TRACK_PERFORMANCE(scene_loading);
-            TRACY_PROFILE_SCOPE_NC(scene_loading, tracy::Color::Seashell3);
+        TRACY_PROFILE_SCOPE_NC(base_scene_load_scene, tracy::Color::Seashell3);
 
-            PRINT(m_name);
+        PRINT(m_name);
             
-            //m_createList.clear();
-            m_removeList.clear();
-            m_lookupTable.clear();
-            m_gameObjects.clear();
-            m_ecsWorld = std::make_unique<Ecs::ECSWorld>();
-            m_graphicsWorld = std::make_unique<GraphicsWorld>();
-            m_scenegraph = std::make_unique<scenegraph>("scenegraph");
-            m_rootGo = nullptr;
+        //m_createList.clear();
+        m_removeList.clear();
+        m_lookupTable.clear();
+        m_gameObjects.clear();
+        m_ecsWorld = std::make_unique<Ecs::ECSWorld>();
+        m_graphicsWorld = std::make_unique<GraphicsWorld>();
+        m_scenegraph = std::make_unique<scenegraph>("scenegraph");
+        m_rootGo = nullptr;
 
-            m_scriptDatabase = std::make_unique<ScriptDatabase>();
-            m_componentDatabase = std::make_unique<ComponentDatabase>(GetID());
+        m_scriptDatabase = std::make_unique<ScriptDatabase>();
+        m_componentDatabase = std::make_unique<ComponentDatabase>(GetID());
 
-            // Creation of root node
-            {
-                // deferred to initialization after itself exist.
-                auto root_handle = m_scenegraph->get_root()->get_handle();
-                m_rootGo = std::make_shared<GameObject>(root_handle, *this);
-                InsertGameObject(m_rootGo);
-                m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
+        // Creation of root node
+        {
+            // deferred to initialization after itself exist.
+            auto root_handle = m_scenegraph->get_root()->get_handle();
+            m_rootGo = std::make_shared<GameObject>(root_handle, *this);
+            InsertGameObject(m_rootGo);
+            m_rootGo->GetComponent<GameObjectComponent>().Node = m_scenegraph->get_root();
                 
-                ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
-            }
-
-            // TODO: Solution To tie graphics world to rendering context for now!
-            static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
-            // comment because cannot 
-            vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
-
-            TRACY_PROFILE_SCOPE_END();
+            ASSERT_MSG((!IsValid(*m_rootGo)), "Sanity check, root created should be from this scene.");
         }
 
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_loading);
+        // TODO: Solution To tie graphics world to rendering context for now!
+        static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
+        // comment because cannot 
+        vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
+
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::UnloadScene()
     {
-        constexpr const char* const scene_unload = "scene_unload";
-        {
-            TRACY_PROFILE_SCOPE_NC(scene_unload, tracy::Color::Seashell4);
-            TRACY_TRACK_PERFORMANCE(scene_unload);
+        TRACY_PROFILE_SCOPE_NC(base_scene_unload_scene, tracy::Color::Seashell4);
 
-            PRINT(m_name);
+        PRINT(m_name);
 
-            EndOfFrameUpdate();
-            m_lookupTable.clear();
-            m_gameObjects.clear();
-            m_rootGo.reset();
-            m_scenegraph.reset();
-            m_ecsWorld.reset();
-            m_graphicsWorld.reset();
+        EndOfFrameUpdate();
+        m_lookupTable.clear();
+        m_gameObjects.clear();
+        m_rootGo.reset();
+        m_scenegraph.reset();
+        m_ecsWorld.reset();
+        m_graphicsWorld.reset();
 
-            m_scriptDatabase.reset();
-            m_componentDatabase.reset();
+        m_scriptDatabase.reset();
+        m_componentDatabase.reset();
             
-            TRACY_PROFILE_SCOPE_END();
-        }
-
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(scene_unload);
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void Scene::ReloadScene()
@@ -418,6 +389,7 @@ namespace oo
             //RecusriveLinkScenegraph(target, new_objects);
         }
 
+        TRACY_PROFILE_SCOPE_NC(duplicate_gameobject, tracy::Color::Seashell4);
 
 
         // Create Parent node
@@ -455,12 +427,36 @@ namespace oo
 
             }
         }
+        
+        TRACY_PROFILE_SCOPE_END();
 
         return dupObjectHead;
     }
     
     void Scene::LoadFromFile()
     {
+        TRACY_PROFILE_SCOPE_NC(base_scene_load_from_file, tracy::Color::Seashell4);
+
+        // Broadcast event to load scene
+        LoadSceneEvent lse{ this };
+        EventManager::Broadcast<LoadSceneEvent>(&lse);
+
+        // Set Active Event for all objects
+        for (auto& go : m_gameObjects)
+        {
+            if (go->ActiveInHierarchy())
+            {
+                GameObjectComponent::OnEnableEvent goOnEnableEvent{ go->GetInstanceID() };
+                EventManager::Broadcast<GameObjectComponent::OnEnableEvent>(&goOnEnableEvent);
+            }
+            else
+            {
+                GameObjectComponent::OnDisableEvent goOnDisableEvent{ go->GetInstanceID() };
+                EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&goOnDisableEvent);
+            }
+        }
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void Scene::SaveToFile()
@@ -469,6 +465,8 @@ namespace oo
 
     Scene::go_ptr Scene::CreateGameObjectImmediate(Scene::go_ptr new_go)
     {
+        TRACY_PROFILE_SCOPE_NC(create_gameobject_immediate, tracy::Color::Seashell4);
+
         Scene::go_ptr newObjectPtr = new_go;
         InsertGameObject(newObjectPtr);
 
@@ -479,6 +477,8 @@ namespace oo
         newObjectPtr->GetComponent<GameObjectComponent>().Node = shared_ptr;
 
         ASSERT_MSG(IsValid(*newObjectPtr) == false, "Sanity check, object created should comply");
+
+        TRACY_PROFILE_SCOPE_END();
 
         return newObjectPtr;
     }
@@ -492,6 +492,8 @@ namespace oo
     void Scene::RemoveGameObject(Scene::go_ptr go_ptr)
     {
         ASSERT(go_ptr == nullptr);
+        
+        TRACY_PROFILE_SCOPE_NC(remove_gameobject, tracy::Color::Seashell4);
 
         // one final broadcast to cleanup anything you need to
         GameObject::OnDestroy e;
@@ -509,6 +511,8 @@ namespace oo
 
         // actual deletion : Immediate.
         m_ecsWorld->destroy(go_ptr->GetEntity());
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     UUID Scene::GetInstanceID(GameObject const& go) const

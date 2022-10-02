@@ -59,8 +59,6 @@ void Toolbar::Show()
 	{
 		ImGui::BeginChild("ChildToolbar", { 0,0 });
 
-		static constexpr const char* const ImageButton = "ImageButton";
-		TRACY_TRACK_PERFORMANCE(ImageButton);
 		TRACY_PROFILE_SCOPE_NC(ImageButton, tracy::Color::Blue);
 		auto data = m_iconsSaved["TranslateButton"].GetData<ImTextureID>();
 		if (ImGuiUtilities::ImageButton_ToolTip(1,"Gizmo Translate Mode",
@@ -73,7 +71,6 @@ void Toolbar::Show()
 		}
 
 		TRACY_PROFILE_SCOPE_END();
-		TRACY_DISPLAY_PERFORMANCE_SELECTED(ImageButton);
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(2,"Gizmo Rotate Mode", 

@@ -3,11 +3,11 @@
 \project        Ouroboros
 \author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
 \par            email: t.tengshuesolomon\@digipen.edu
-\date           August 4, 2021
+\date           Sept 28, 2022
 \brief          Defines the functions declared in ScriptInfo.h to set and retrieve
                 info of C# script instances that will be created during play mode
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
