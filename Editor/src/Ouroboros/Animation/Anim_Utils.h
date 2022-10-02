@@ -411,7 +411,7 @@ namespace oo::Anim
 
 		size_t animation_ID{ internal::generateUID() };
 
-		static std::string LoadAnimationFromFBX(std::string const& filepath);
+		static void LoadAnimationFromFBX(std::string const& filepath);
 		static Animation* AddAnimation(Animation& anim);
 
 	};	
