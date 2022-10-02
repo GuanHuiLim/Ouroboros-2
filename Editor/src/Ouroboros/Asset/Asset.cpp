@@ -88,19 +88,6 @@ namespace oo
 
     Asset::~Asset()
     {
-        if (info)
-        {
-            info->copies.remove(this);
-            if (info->copies.empty())
-            {
-                // Free
-                if (info->onAssetDestroy)
-                    info->onAssetDestroy(*info);
-                if (info->data)
-                    delete info->data;
-                delete info;
-            }
-        }
         info = nullptr;
     }
 
