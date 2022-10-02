@@ -23,6 +23,8 @@ Technology is prohibited.
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
+#include "Project.h"
+#include "App/Editor/UI/Tools/MeshHierarchy.h"
 
 #include <random>
 namespace oo::Anim::internal
@@ -1292,8 +1294,48 @@ namespace oo::Anim
 	/*-------------------------------
 	Animation
 	-------------------------------*/
-	void Animation::LoadAnimationFromFBX(std::string const& filepath)
+	void Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
 	{
+		/*
+		static constexpr auto get_node_hierarchy = [](oGFX::Skeleton const* skeleton, 
+			std::string boneName, std::vector<int>& children_index) 
+		{
+			//skeleton should have nodes!!
+			assert(skeleton->m_boneNodes);
+			//find the node
+			std::stack<oGFX::BoneNode*> stack;
+			std::unordered_map<uint32_t, bool> visited{};
+			stack.push(skeleton->m_boneNodes);
+			visited[skeleton->m_boneNodes->m_BoneIndex] = false;
+			oGFX::BoneNode* targetbone{nullptr};
+			while (stack.empty() == false)
+			{
+				auto curr = stack.top();
+				stack.pop();
+
+				if (visited[curr->m_BoneIndex] == false)
+					visited[curr->m_BoneIndex] = true;
+
+				if (curr->mName == boneName)
+				{
+					targetbone = curr;
+					break;
+				}
+
+				for (auto child : curr->mChildren)
+				{
+					stack.push(child);
+					visited[child->m_BoneIndex] = false;
+				}
+			}
+			//we should have found the target bone by now
+			assert(targetbone);
+
+
+		};*/
+
+
+
 		Assimp::Importer importer;
 		uint flags = 0;
 		flags |= aiProcess_Triangulate;
@@ -1313,6 +1355,42 @@ namespace oo::Anim
 		}
 		assert(scene->HasAnimations());
 
+		//generate hierarchy map
+		std::unordered_map<std::string, std::vector<int>> bone_hierarchy_map{};
+		{
+			std::function<void(oGFX::BoneNode*)> traverse_recursive = [&](oGFX::BoneNode* node)
+			{
+				if (node->mChildren.empty())
+					return;
+
+				int idx = 0;
+				std::vector<int> children_index = bone_hierarchy_map[node->mName];
+				//add a new element
+				children_index.emplace_back(idx);
+				for (auto child : node->mChildren)
+				{
+					//child should not be null!!
+					assert(child);
+					//set it to the correct index
+					children_index.back() = idx;
+					//assign it to the map
+					bone_hierarchy_map[child->mName] = children_index;
+					//recurse
+					traverse_recursive(child);
+					//increment index
+					++idx;
+				}
+
+			};
+
+			auto current = resource->skeleton->m_boneNodes;
+			std::unordered_map< uint32_t, bool> visited{};
+			std::vector<int> children_idx{};
+			bone_hierarchy_map[current->mName] = children_idx;
+			traverse_recursive(current);
+		}
+
+
 		std::cout << "Animated scene\n";
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
@@ -1330,9 +1408,16 @@ namespace oo::Anim
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				std::vector<int> children_index{};
 				//TODO: get node hierarchy and append it to children_index
-					
+				oGFX::BoneNode* curr = resource->skeleton->m_boneNodes;
+				std::string boneName{ channel->mNodeName.C_Str() };
+				//guarding for safety
+				assert(resource->strToBone.contains(boneName));
+				auto boneindex = resource->strToBone[boneName];
+				//bone should exist in the skeleton!!
+				assert(bone_hierarchy_map.contains(boneName));
+				std::vector<int> children_index = bone_hierarchy_map[boneName];
+				//get_node_hierarchy(curr, boneindex, children_index);
 				/*--------
 				position
 				--------*/
@@ -1517,6 +1602,13 @@ namespace oo::Anim
 
 	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
 	{
+		//MeshHierarchy::
+
+		//auto animationfbx_fp = Project::GetAssetFolder().string();
+		//animationfbx_fp += "/AnimationTest_Character_IdleJumpAttack.fbx";
+		
+		//Animation::LoadAnimationFromFBX(animationfbx_fp,);
+
 		auto obj = scene->CreateGameObjectImmediate();
 		obj->AddComponent<MeshRendererComponent>();
 		auto& comp = obj->AddComponent<oo::AnimationComponent>();
