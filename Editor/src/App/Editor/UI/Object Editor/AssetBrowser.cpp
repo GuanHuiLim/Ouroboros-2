@@ -92,7 +92,7 @@ void AssetBrowser::MeshUI(rttr::variant& data, bool& edited)
 			data = assets;
 			edited = true;
 		}
-		/*auto* modeldata = assets.GetData<ModelData*>();
+		/*auto* modeldata = assets.GetData<ModelFileResource*>();
 		auto* node = modeldata->sceneInfo;
 		size_t childSize = node->children.size();
 		ImGuiTreeNodeFlags_ flag = childSize ? ImGuiTreeNodeFlags_OpenOnArrow : ImGuiTreeNodeFlags_Bullet;

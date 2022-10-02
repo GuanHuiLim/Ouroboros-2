@@ -125,8 +125,8 @@ namespace oo
         planeMesh.reset(vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
 
         /// This is an example of how to load in a full scene from FBX.. should work..
-        //std::unique_ptr<ModelData> loadedModel{vr->LoadModelFromFile("Model/Filename.fbx")};
-        //std::function<void(ModelData*,Node*)> EntityHelper = [&](ModelData* model,Node* node) {
+        //std::unique_ptr<ModelFileResource> loadedModel{vr->LoadModelFromFile("Model/Filename.fbx")};
+        //std::function<void(ModelFileResource*,Node*)> EntityHelper = [&](ModelFileResource* model,Node* node) {
         //    if (node->meshRef != static_cast<uint32_t>(-1))
         //    {
         //        auto& ed = entities.emplace_back(EntityInfo{});
@@ -152,7 +152,7 @@ namespace oo
 
         {
             auto& myObj = gw.GetObjectInstance(obj); 
-            myObj.modelID = cubeMesh->gfxMeshIndices.front();
+            myObj.modelID = cubeMesh->meshResource;
             myObj.scale = glm::vec3{ 2.1f,1.1f,1.1f };
             myObj.rotVec = glm::vec3{ 1.1f,1.1f,1.1f };
             myObj.rot = 35.0f;
@@ -161,11 +161,12 @@ namespace oo
             myObj.localToWorld = glm::rotate(myObj.localToWorld,glm::radians(myObj.rot), myObj.rotVec);
             myObj.localToWorld = glm::scale(myObj.localToWorld, myObj.scale);
             myObj.bindlessGlobalTextureIndex_Albedo = tex;
+            myObj.submesh[0] = 1;
         }
        
         {
             auto& myPlane = gw.GetObjectInstance(plane);
-            myPlane.modelID = planeMesh->gfxMeshIndices.front();
+            myPlane.modelID = planeMesh->meshResource;
             myPlane.position = { 0.0f,-1.0f,0.0f };
             myPlane.scale = { 15.0f,1.0f,15.0f };
             myPlane.localToWorld = glm::mat4(1.0f);
@@ -173,6 +174,7 @@ namespace oo
             myPlane.localToWorld = glm::rotate(myPlane.localToWorld,glm::radians(myPlane.rot), myPlane.rotVec);
             myPlane.localToWorld = glm::scale(myPlane.localToWorld, myPlane.scale);
             myPlane.bindlessGlobalTextureIndex_Albedo = tex;
+            myPlane.submesh[0] = 1;
         }        
 
         vr->SetWorld(&gw);

@@ -100,13 +100,13 @@ namespace oo
 #define TRACY_PROFILE_FUNCTION TRACY_TOGGLE(ZoneScoped)
 #define TRACY_PROFILE_FUNCTION_NAMED TRACY_TOGGLE(ZoneScoped())
 /**
- * profiles a scope using RAII to create an object that tracks from when it is created till the end of its lifetime.
+ * profiles a scope using RAII to create an object that tracks from when it is creasted till the end of its lifetime.
  * name provided is to be manually given without any strings as such TRACY_PROFILE_SCOPE(input_name_here)
  */
 //#define TRACY_PROFILE_SCOPE(name) TRACY_TOGGLE(oo::OO_Tracy_Zone OO_tracy_##name(name))
-#define TRACY_PROFILE_SCOPE(name) TRACY_TOGGLE(if (oo::OO_TracyProfiler::m_server_active){TracyCZoneN(info,name,true); oo::OO_Tracy_Zone::ProfileZone(info);})
+#define TRACY_PROFILE_SCOPE(name) static constexpr char const * const name = #name; TRACY_TOGGLE(if (oo::OO_TracyProfiler::m_server_active){TracyCZoneN(info,name,true); oo::OO_Tracy_Zone::ProfileZone(info);})
 #define TRACY_PROFILE_SCOPE_N(name) TRACY_PROFILE_SCOPE(name)
-#define TRACY_PROFILE_SCOPE_NC(name, color) TRACY_TOGGLE(if (oo::OO_TracyProfiler::m_server_active){TracyCZoneNC(info,name,color, true); oo::OO_Tracy_Zone::ProfileZone(info);})
+#define TRACY_PROFILE_SCOPE_NC(name, color) static constexpr char const * const name = #name; TRACY_TOGGLE(if (oo::OO_TracyProfiler::m_server_active){TracyCZoneNC(info,name,color, true); oo::OO_Tracy_Zone::ProfileZone(info);})
 #define TRACY_PROFILE_SCOPE_END() TRACY_TOGGLE(if (oo::OO_TracyProfiler::m_server_active) oo::OO_Tracy_Zone::ProfileZoneEnd();)
 /** ************************************************** */
 //tracking of frames

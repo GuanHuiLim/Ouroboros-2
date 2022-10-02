@@ -57,18 +57,6 @@ namespace oo
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
     {
-        constexpr const char* const physics_update          = "physics_update";
-        constexpr const char* const physics_fixed_update    = "physics_fixed_update";
-        constexpr const char* const physics_collision       = "physics_collision";
-        constexpr const char* const physics_resolution      = "physics_resolution";
-        constexpr const char* const physics_dynamics        = "physics_dynamics";
-        constexpr const char* const physics_post_update     = "physics_post_update";
-        UNREFERENCED(physics_update);
-        UNREFERENCED(physics_fixed_update);
-        UNREFERENCED(physics_collision);
-        UNREFERENCED(physics_resolution);
-        UNREFERENCED(physics_dynamics);
-        UNREFERENCED(physics_post_update);
         {
             TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
@@ -127,9 +115,7 @@ namespace oo
 
     void PhysicsSystem::EditorUpdate(Timestep deltaTime)
     {
-        constexpr const char* const physics_update = "physics_update";
-        UNREFERENCED(physics_update);
-        TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
+        TRACY_PROFILE_SCOPE_NC(physics_update_editor, tracy::Color::PeachPuff);
 
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, PhysicsComponent, RigidbodyComponent>();
 
@@ -261,12 +247,6 @@ namespace oo
 
     void PhysicsSystem::UpdatePhysicsCollision()
     {
-        constexpr const char* const physics_broadphase  = "physics_broadphase";
-        constexpr const char* const physics_narrowphase = "physics_narrowphase";
-        constexpr const char* const physics_callbacks   = "physics_callbacks";
-        UNREFERENCED(physics_broadphase);
-        UNREFERENCED(physics_narrowphase);
-        UNREFERENCED(physics_callbacks);
         {
             TRACY_PROFILE_SCOPE_NC(physics_broadphase, tracy::Color::PeachPuff);
 

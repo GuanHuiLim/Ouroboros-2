@@ -41,6 +41,7 @@ public:
 		SIZE_T_TYPE,
 		ENTITY_TYPE,
 		ASSET_TYPE,
+		MESH_INFO_TYPE,
 	};
 
 	inline static std::unordered_map<rttr::type::type_id, UItypes> types;

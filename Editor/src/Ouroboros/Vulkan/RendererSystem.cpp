@@ -48,6 +48,7 @@ namespace oo
         comp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
         //HARDCODED AS CUBE, TO BE REMOVED LATER
         comp.model_handle = 0;
+        comp.meshInfo.submeshBits[0] = true;
         
         //update graphics world side
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
@@ -101,6 +102,7 @@ namespace oo
             actualObject.modelID = m_comp.model_handle;
             actualObject.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
             actualObject.bindlessGlobalTextureIndex_Normal= m_comp.normalID;
+            actualObject.submesh = m_comp.meshInfo.submeshBits;
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;

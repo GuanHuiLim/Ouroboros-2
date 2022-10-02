@@ -12,10 +12,11 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
-
 #pragma once
-#include "Ouroboros/Asset/AssetManager.h"
 
+#include "glm/common.hpp"
+#include "Ouroboros/Asset/AssetManager.h"
+#include "MeshInfo.h"
 #include <rttr/type>
 namespace oo
 {
@@ -25,8 +26,7 @@ namespace oo
 	{
 		Asset albedo_handle;
 		Asset normal_handle;
-		Asset mesh_handle;
-		int submodel_id = 0;
+		MeshInfo meshInfo;
 		uint32_t albedoID = 0xFFFFFFFF;
 		uint32_t normalID = 0xFFFFFFFF;
 
@@ -34,12 +34,17 @@ namespace oo
 		uint32_t model_handle{0};
 		uint32_t graphicsWorld_ID{};
 
+		MeshInfo GetMeshInfo();
+		/*********************************************************************************//*!
+		\brief      this function will only set the submeshbits
+		*//**********************************************************************************/
+		void SetMeshInfo(MeshInfo info);
 		void GetModelHandle();
+		
+		//set a single model and asset
 		void SetModelHandle(Asset _asset, uint32_t _submodel_id);
 		Asset GetMesh();
 		void SetMesh(Asset _asset);
-		int GetSubModelID();
-		void SetSubModelID(int id);
 
 		//std::vector<Material> materials;
 
