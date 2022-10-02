@@ -46,7 +46,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(AUDIO_UPDATE, tracy::Color::Aquamarine1);
 
-        // fuck u
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;
@@ -142,7 +141,6 @@ namespace oo
 
     void AudioSystem::onLoadScene(LoadSceneEvent* e)
     {
-        // fuck u
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;
@@ -165,7 +163,6 @@ namespace oo
         if (!scene)
             return;
 
-        // fuck u
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;
@@ -191,7 +188,6 @@ namespace oo
         if (!scene)
             return;
 
-        // fuck u
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;
