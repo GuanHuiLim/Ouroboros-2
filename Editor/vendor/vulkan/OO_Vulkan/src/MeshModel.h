@@ -44,6 +44,7 @@ namespace oGFX
 
 struct BoneNode
 {
+    ~BoneNode();
     std::string mName{ "BONE_NAME" };
     uint32_t m_BoneIndex{static_cast<uint32_t>(-1)};
     bool mbIsBoneNode{ false }; // Really a bone for skinning.
@@ -69,6 +70,7 @@ struct BoneWeight
 
 struct Skeleton
 {
+    ~Skeleton();
     oGFX::BoneNode* m_boneNodes{ nullptr };
     std::vector<oGFX::BoneInverseBindPoseInfo>inverseBindPose;
     std::vector<oGFX::BoneWeight>boneWeights;
@@ -76,6 +78,7 @@ struct Skeleton
 
 struct CPUSkeletonInstance
 {
+    ~CPUSkeletonInstance();
     oGFX::BoneNode* m_boneNodes{ nullptr };
 };
 

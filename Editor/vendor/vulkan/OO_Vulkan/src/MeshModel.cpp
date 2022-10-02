@@ -34,9 +34,35 @@ void gfxModel::destroy(VkDevice device)
 
 	if (skeleton)
 	{
-		DFS(DFS, skeleton->m_boneNodes);
+		delete skeleton;
 	}
 
+}
+
+oGFX::BoneNode::~BoneNode()
+{
+	for (auto& c: mChildren)
+	{
+		delete c;
+	}
+}
+
+oGFX::Skeleton::~Skeleton()
+{
+	if (m_boneNodes)
+	{
+		delete m_boneNodes;
+		m_boneNodes = nullptr;
+	}
+}
+
+oGFX::CPUSkeletonInstance::~CPUSkeletonInstance()
+{
+	if (m_boneNodes)
+	{
+		delete m_boneNodes;
+		m_boneNodes = nullptr;
+	}
 }
 
 void ModelFileResource::ModelSceneLoad(const aiScene* scene, 
