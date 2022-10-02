@@ -17,6 +17,8 @@ Technology is prohibited.
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 #include <Ouroboros/ECS/GameObjectComponent.h>
+#include "Ouroboros/Asset/Asset.h"
+#include "Ouroboros/Vulkan/MeshInfo.h"
 SerializerSaveProperties::SerializerSaveProperties()
 {
 	m_save_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
@@ -112,6 +114,13 @@ SerializerSaveProperties::SerializerSaveProperties()
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		obj.AddMember(name, variant.get_value<oo::Asset>().GetID(), doc.GetAllocator());
 		});
+	m_save_commands.emplace(UI_RTTRType::UItypes::MESH_INFO_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
+		std::string temp = p.get_name().data();
+		rapidjson::Value name;
+		auto bitset = variant.get_value<MeshInfo>().submeshBits.to_ullong();
+		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+		obj.AddMember(name, bitset, doc.GetAllocator());
+		});
 }
 
 SerializerLoadProperties::SerializerLoadProperties()
@@ -146,5 +155,11 @@ SerializerLoadProperties::SerializerLoadProperties()
 	m_load_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = static_cast<std::string>(val.GetString()); });
 	m_load_commands.emplace(UI_RTTRType::UItypes::PATH_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetString(); });
 	m_load_commands.emplace(UI_RTTRType::UItypes::ASSET_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = Project::GetAssetManager()->Get(val.GetUint64());});
+	m_load_commands.emplace(UI_RTTRType::UItypes::MESH_INFO_TYPE, [](rttr::variant& var, rapidjson::Value&& val) 
+		{
+			MeshInfo meshInfo;
+			meshInfo.submeshBits = val.GetUint64();
+			var = meshInfo;
+		});
 
 }

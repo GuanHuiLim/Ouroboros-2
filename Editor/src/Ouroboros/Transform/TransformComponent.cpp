@@ -28,7 +28,7 @@ namespace oo
         registration::class_<TransformComponent>("Transform Component")
             .property("Position", &TransformComponent::GetPosition, &TransformComponent::SetPosition)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Euler Angles", &TransformComponent::GetEulerAngles, &TransformComponent::SetRotation)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property_readonly("Quaternion", &TransformComponent::GetRotationQuat)
+            .property("Quaternion", &TransformComponent::GetRotationQuat, &TransformComponent::SetOrientation)(metadata(UI_metadata::HIDDEN, true))
             .property("Scaling", &TransformComponent::GetScale, &TransformComponent::SetScale)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property_readonly("Local Matrix", &TransformComponent::GetLocalMatrix)
             .property_readonly("Global Matrix", &TransformComponent::GetGlobalMatrix)

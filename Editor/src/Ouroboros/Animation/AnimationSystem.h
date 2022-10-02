@@ -4,7 +4,9 @@
 \author         Lim Guan Hui, l.guanhui, 2000552
 \par            email: l.guanhui\@digipen.edu
 \date           August 26, 2022
-\brief          BRIEF_HERE
+\brief          
+Animation system enables animations to be updated and played
+on game objects
 
 Copyright (C) 2021 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -33,6 +35,11 @@ namespace oo::Anim
 		Ecs::ECSWorld* Get_Ecs_World()
 		{
 			return world;
+		}
+		Scene& Get_Scene()
+		{
+			assert(scene);
+			return *scene;
 		}
 
 		Scene::go_ptr CreateAnimationTestObject();

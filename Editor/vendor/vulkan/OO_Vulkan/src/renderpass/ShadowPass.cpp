@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           ShadowPass.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a shadowpass
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "ShadowPass.h"
 
 #include "imgui/imgui.h"
@@ -7,7 +20,6 @@
 #include "VulkanRenderer.h"
 #include "VulkanUtils.h"
 #include "VulkanTexture.h"
-#include "VulkanFramebufferAttachment.h"
 #include "FramebufferCache.h"
 #include "FramebufferBuilder.h"
 
@@ -100,6 +112,7 @@ void ShadowPass::Draw()
 	
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
+	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 

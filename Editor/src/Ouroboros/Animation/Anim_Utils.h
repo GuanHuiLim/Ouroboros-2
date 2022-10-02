@@ -409,7 +409,11 @@ namespace oo::Anim
 		
 		float animation_length{0.f};
 
-		size_t animation_ID{ internal::invalid_ID };
+		size_t animation_ID{ internal::generateUID() };
+
+		static void LoadAnimationFromFBX(std::string const& filepath);
+		static Animation* AddAnimation(Animation& anim);
+
 	};	
 
 	

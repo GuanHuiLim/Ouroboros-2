@@ -1,10 +1,10 @@
 /************************************************************************************//*!
 \file           AnimationTracker.h
-\project        PROJECT_NAME_HERE
+\project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552
 \par            email: l.guanhui\@digipen.edu
 \date           August 26, 2022
-\brief          BRIEF_HERE
+\brief          Tracks a gameobject's animation's progress in an animation tree
 
 Copyright (C) 2021 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -23,10 +23,12 @@ namespace oo::Anim
 		struct InTransitionInfo {
 			bool in_transition{ false };
 			//trackers for the destination node
+			Link* link{ nullptr };
 			std::vector<ProgressTracker> trackers{};
 			//how much time has elasped since the transition began
 			float transition_timer{ 0.f };
 			float transition_offset{ 0.f };
+			float transition_duration{ 0.f };
 		};
 
 		NodeRef currentNode;

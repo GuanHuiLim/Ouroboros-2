@@ -3,10 +3,10 @@
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 390009020
 \par            email: l.guanhui\@digipen.edu
-\date           October 6, 2021
+\date           Sept 30, 2022
 \brief          Provides customised profiling options using the Tracy Profiler.
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
@@ -52,6 +52,9 @@ namespace oo
         {
             TRACY_PROFILE_CONFIG(name, TRACY_PERCENTAGE);
         }
+#else
+        UNREFERENCED(name);
+        UNREFERENCED(value);
 #endif
     }
 
@@ -69,6 +72,8 @@ namespace oo
             auto percentage = plotdata.second / total_time;
             TRACY_PLOT(plotdata.first, percentage * 100.f);
         }
+#else
+        UNREFERENCED(name);
 #endif 
 
     }
@@ -100,6 +105,8 @@ namespace oo
             TRACY_PLOT(plotdata.first, percentage * 100.f);*/
             ++index;
         }
+#else
+        UNREFERENCED(list);
 #endif 
 
     }

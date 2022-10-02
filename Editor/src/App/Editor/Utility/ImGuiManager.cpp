@@ -27,6 +27,9 @@ void ImGuiManager::InitAssetsAll()
 	s_editorAssetManager.LoadDirectory("Log Icons");
 	s_editorAssetManager.LoadDirectory("Generic Button Icons");
 	s_editorAssetManager.LoadDirectory("Component Icons");
+
+	ImGuiManager::s_editorAssetManager.LoadName("FolderIcon.png");
+	ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png");
 }
 
 void ImGuiManager::Create(const std::string name, const bool enabled,const ImGuiWindowFlags_ flag, std::function<void()> fnc, std::function<void()> pre_window)
@@ -41,8 +44,6 @@ void ImGuiManager::UpdateAllUI()
 		if (field.second.m_enabled == false)
 			continue;
 
-		static constexpr const char* const editor_ui_object = "editor_ui_object";
-		TRACY_TRACK_PERFORMANCE(editor_ui_object);
 		TRACY_PROFILE_SCOPE_NC(editor_ui_object, tracy::Color::BlueViolet);
 
 		if (field.second.m_prewindow)
@@ -53,7 +54,6 @@ void ImGuiManager::UpdateAllUI()
 			ImGui::End();
 			
 			TRACY_PROFILE_SCOPE_END();
-			TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_object);
 			continue;
 		}
 
@@ -61,7 +61,6 @@ void ImGuiManager::UpdateAllUI()
 		ImGui::End();
 
 		TRACY_PROFILE_SCOPE_END();
-		TRACY_DISPLAY_PERFORMANCE_SELECTED(editor_ui_object);
 	}
 }
 ImGuiObject& ImGuiManager::GetItem(const std::string& item)

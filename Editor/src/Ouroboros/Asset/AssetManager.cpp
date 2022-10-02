@@ -20,10 +20,13 @@ Technology is prohibited.
 
 #include "Ouroboros/Asset/BinaryIO.h"
 #include "Ouroboros/Core/Application.h"
+#include "Ouroboros/EventSystem/EventManager.h"
 #include "Utility/IEqual.h"
 
 namespace oo
 {
+    //bool AssetManager::globalIsRunning = false;
+
     Asset& AssetManager::AssetStore::At(AssetID id)
     {
         return assets.at(id);
@@ -89,13 +92,14 @@ namespace oo
     AssetManager::AssetManager(std::filesystem::path root)
         : root{ root }
     {
-        fileWatchThread = std::thread(&AssetManager::fileWatch, this);
+        EventManager::Subscribe<AssetManager, FileWatchEvent>(this, &AssetManager::fileWatch);
+        //fileWatchThread = std::thread(&AssetManager::fileWatch, this);
     }
 
     AssetManager::~AssetManager()
     {
-        isRunning = false;
-        fileWatchThread.join();
+        //isRunning = false;
+        //fileWatchThread.join();
 
         // Destroy all assets
         // none will survive
@@ -104,6 +108,11 @@ namespace oo
             asset.second.info->copies = { &asset.second };
         }
     }
+
+    //void AssetManager::GlobalStartRunning()
+    //{
+    //    globalIsRunning = true;
+    //}
 
     Asset AssetManager::Get(const AssetID& snowflake)
     {
@@ -206,73 +215,149 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::LoadName, this, fn, caseSensitive);
     }
 
-    void AssetManager::fileWatch()
+    void AssetManager::fileWatch(FileWatchEvent* ev)
     {
-        std::chrono::file_clock::time_point tLast = std::chrono::file_clock::now();
+        std::chrono::file_clock::time_point tLast = ev->time;
         std::chrono::file_clock::time_point t = std::chrono::file_clock::now();
-        while (isRunning)
+        const std::filesystem::path DIR = std::filesystem::canonical(root);
+        if (std::filesystem::exists(DIR))
         {
-            const std::filesystem::path DIR = std::filesystem::canonical(root);
-            if (std::filesystem::exists(DIR))
+            // Check root
+            const auto ROOT_WRITE_TIME = std::filesystem::last_write_time(DIR);
+            if (tLast < ROOT_WRITE_TIME && ROOT_WRITE_TIME <= t)
             {
-                // Check root
-                const auto ROOT_WRITE_TIME = std::filesystem::last_write_time(DIR);
-                if (tLast < ROOT_WRITE_TIME && ROOT_WRITE_TIME <= t)
-                {
-                    updateAssetPaths(DIR);
-                    LOG_INFO("Root updated, updating all paths");
-                }
-
-                // Iterate root
-                for (auto& fp : std::filesystem::recursive_directory_iterator(DIR))
-                {
-                    const std::filesystem::path FP = std::filesystem::canonical(fp.path());
-                    if (!std::filesystem::is_regular_file(FP))
-                        continue;
-
-                    const std::filesystem::path FP_EXT = FP.extension();
-                    if (FP_EXT == Asset::EXT_META)
-                        continue;
-
-                    const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
-                    if (WRITE_TIME <= tLast || t < WRITE_TIME)
-                        continue;
-
-                    auto fpMeta = FP;
-                    fpMeta += Asset::EXT_META;
-
-                    AssetMetaContent meta;
-                    std::ifstream ifs = std::ifstream(fpMeta);
-                    BinaryIO::Read(ifs, meta);
-                    if (!assets.Contains(meta.id))
-                    {
-                        // Created
-                        LoadPath(FP);
-                        LOG_INFO("File {0} created", FP);
-                    }
-                    else
-                    {
-                        // Modified
-                        assets.At(meta.id).info->contentPath = FP;
-                        assets.At(meta.id).info->metaPath = fpMeta;
-                        assets.At(meta.id).info->timeLoaded = t;
-                        assets.At(meta.id).destroyData();
-                        assets.At(meta.id).createData();
-                        LOG_INFO("File {0} modified", FP);
-                    }
-                }
+                updateAssetPaths(DIR);
+                LOG_INFO("Root updated, updating all paths");
             }
 
-            // Check time elapsed
-            std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
-            while (std::chrono::duration_cast<std::chrono::milliseconds>(now - t).count() < WATCH_INTERVAL)
+            // Iterate root
+            for (auto& fp : std::filesystem::recursive_directory_iterator(DIR))
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                now = std::chrono::file_clock::now();
+                const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+                if (!std::filesystem::is_regular_file(FP))
+                    continue;
+
+                const std::filesystem::path FP_EXT = FP.extension();
+                if (FP_EXT == Asset::EXT_META)
+                    continue;
+
+                auto fpMeta = FP;
+                fpMeta += Asset::EXT_META;
+                if (!std::filesystem::exists(fpMeta))
+                {
+                    ensureMeta(FP);
+                }
+
+                AssetMetaContent meta;
+                std::ifstream ifs = std::ifstream(fpMeta);
+                BinaryIO::Read(ifs, meta);
+                const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
+                if (!assets.Contains(meta.id))
+                {
+                    // Created
+                    LoadPath(FP);
+                    LOG_INFO("File {0} loaded", FP);
+                }
+                else if (assets.At(meta.id).info->contentPath != FP)
+                {
+                    // Moved
+                    assets.At(meta.id).info->contentPath = FP;
+                    assets.At(meta.id).info->metaPath = fpMeta;
+                    LOG_INFO("File {0} moved", FP);
+                }
+                else if (tLast < WRITE_TIME && WRITE_TIME <= t)
+                {
+                    // Modified
+                    assets.At(meta.id).info->contentPath = FP;
+                    assets.At(meta.id).info->metaPath = fpMeta;
+                    assets.At(meta.id).info->timeLoaded = t;
+                    assets.At(meta.id).destroyData();
+                    assets.At(meta.id).createData();
+                    LOG_INFO("File {0} modified", FP);
+                }
             }
-            tLast = t;
-            t = now;
         }
+
+        //// Stall until ready
+        //while (!globalIsRunning)
+        //{
+        //    std::this_thread::sleep_for(std::chrono::seconds(1));
+        //}
+
+        //LOG_INFO("Now watching: {0}", root);
+        //std::chrono::file_clock::time_point tLast = std::chrono::file_clock::now();
+        //std::chrono::file_clock::time_point t = std::chrono::file_clock::now();
+        //while (isRunning)
+        //{
+        //    const std::filesystem::path DIR = std::filesystem::canonical(root);
+        //    if (std::filesystem::exists(DIR))
+        //    {
+        //        // Check root
+        //        const auto ROOT_WRITE_TIME = std::filesystem::last_write_time(DIR);
+        //        if (tLast < ROOT_WRITE_TIME && ROOT_WRITE_TIME <= t)
+        //        {
+        //            updateAssetPaths(DIR);
+        //            LOG_INFO("Root updated, updating all paths");
+        //        }
+
+        //        // Iterate root
+        //        for (auto& fp : std::filesystem::recursive_directory_iterator(DIR))
+        //        {
+        //            const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+        //            if (!std::filesystem::is_regular_file(FP))
+        //                continue;
+
+        //            const std::filesystem::path FP_EXT = FP.extension();
+        //            if (FP_EXT == Asset::EXT_META)
+        //                continue;
+
+        //            auto fpMeta = FP;
+        //            fpMeta += Asset::EXT_META;
+        //            if (!std::filesystem::exists(fpMeta))
+        //            {
+        //                ensureMeta(FP);
+        //            }
+
+        //            AssetMetaContent meta;
+        //            std::ifstream ifs = std::ifstream(fpMeta);
+        //            BinaryIO::Read(ifs, meta);
+        //            const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
+        //            if (!assets.Contains(meta.id))
+        //            {
+        //                // Created
+        //                LoadPath(FP);
+        //                LOG_INFO("File {0} loaded", FP);
+        //            }
+        //            else if (assets.At(meta.id).info->contentPath != FP)
+        //            {
+        //                // Moved
+        //                assets.At(meta.id).info->contentPath = FP;
+        //                assets.At(meta.id).info->metaPath = fpMeta;
+        //                LOG_INFO("File {0} moved", FP);
+        //            }
+        //            else if (tLast < WRITE_TIME && WRITE_TIME <= t)
+        //            {
+        //                // Modified
+        //                assets.At(meta.id).info->contentPath = FP;
+        //                assets.At(meta.id).info->metaPath = fpMeta;
+        //                assets.At(meta.id).info->timeLoaded = t;
+        //                assets.At(meta.id).destroyData();
+        //                assets.At(meta.id).createData();
+        //                LOG_INFO("File {0} modified", FP);
+        //            }
+        //        }
+        //    }
+
+        //    // Check time elapsed
+        //    std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
+        //    while (std::chrono::duration_cast<std::chrono::milliseconds>(now - t).count() < WATCH_INTERVAL)
+        //    {
+        //        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //        now = std::chrono::file_clock::now();
+        //    }
+        //    tLast = t;
+        //    t = now;
+        //}
     }
 
     void AssetManager::updateAssetPaths(const std::filesystem::path& dir)
@@ -290,7 +375,9 @@ namespace oo
                 auto fpMeta = FP;
                 fpMeta += Asset::EXT_META;
                 if (!std::filesystem::exists(fpMeta))
-                    continue;
+                {
+                    ensureMeta(FP);
+                }
 
                 AssetMetaContent meta;
                 std::ifstream ifs = std::ifstream(fpMeta);
@@ -310,6 +397,31 @@ namespace oo
         }
     }
 
+    AssetMetaContent AssetManager::ensureMeta(const std::filesystem::path& fp)
+    {
+        // Get file paths
+        auto fpMeta = fp;
+        if (fp.extension() != Asset::EXT_META)
+        {
+            fpMeta += Asset::EXT_META;
+        }
+
+        // Ensure meta file exists
+        AssetMetaContent meta;
+        if (!std::filesystem::exists(fpMeta))
+        {
+            meta.id = Asset::GenerateSnowflake();
+            std::ofstream ofs = std::ofstream(fpMeta);
+            BinaryIO::Write(ofs, meta);
+        }
+        else
+        {
+            std::ifstream ifs = std::ifstream(fpMeta);
+            BinaryIO::Read(ifs, meta);
+        }
+        return meta;
+    }
+
     Asset AssetManager::getOrLoadAbsolute(const std::filesystem::path& fp)
     {
         // Get file paths
@@ -326,18 +438,7 @@ namespace oo
         const auto FP_EXT = fpContent.extension();
 
         // Ensure meta file exists
-        AssetMetaContent meta;
-        if (!std::filesystem::exists(fpMeta))
-        {
-            meta.id = Asset::GenerateSnowflake();
-            std::ofstream ofs = std::ofstream(fpMeta);
-            BinaryIO::Write(ofs, meta);
-        }
-        else
-        {
-            std::ifstream ifs = std::ifstream(fpMeta);
-            BinaryIO::Read(ifs, meta);
-        }
+        AssetMetaContent meta = ensureMeta(fpContent);
 
         // Get or load asset
         if (assets.Contains(meta.id))

@@ -44,9 +44,16 @@ namespace oo
 
     void AudioSystem::Run(Ecs::ECSWorld* world)
     {
-        static constexpr const char* const AUDIO_UPDATE = "audio_update";
-        TRACY_TRACK_PERFORMANCE(AUDIO_UPDATE);
         TRACY_PROFILE_SCOPE_NC(AUDIO_UPDATE, tracy::Color::Aquamarine1);
+
+        bool isEditor = false;
+        {
+            oo::GetCurrentSceneEvent ev;
+            oo::EventManager::Broadcast(&ev);
+            isEditor = ev.IsEditor;
+        }
+        if (isEditor)
+            return;
 
         // Iterate audio listeners
         {
@@ -57,10 +64,14 @@ namespace oo
             {
                 if (!has)
                 {
-                    auto tfPos = tf.GetGlobalPosition();
+                    const auto tfPos = tf.GetGlobalPosition();
                     FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
-                    // TODO: forward and up vectors
-                    audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, nullptr, nullptr);
+                    const auto tfForward = tf.GlobalForward();
+                    FMOD_VECTOR fmForward = { .x = tfForward.x, .y = tfForward.y, .z = tfForward.z };
+                    const auto tfUp = tf.GlobalUp();
+                    FMOD_VECTOR fmUp = { .x = tfUp.x, .y = tfUp.y, .z = tfUp.z };
+
+                    audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, &fmForward, &fmUp);
                     has = true;
                 }
                 else if (!warned)
@@ -69,6 +80,10 @@ namespace oo
                     warned = true;
                 }
             });
+            if (!has)
+            {
+                LOG_WARN("No Audio Listener in the scene!");
+            }
         }
 
         // Iterate audio sources
@@ -89,7 +104,6 @@ namespace oo
                 {
                     // Update all
                     FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
-                    FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
                     FMOD_ERR_HAND(as.GetChannel()->setLoopCount(as.IsLoop() ? -1 : 0));
                     FMOD_ERR_HAND(as.GetChannel()->setVolume(as.GetVolume()));
                     FMOD_ERR_HAND(as.GetChannel()->setPitch(as.GetPitch()));
@@ -99,7 +113,6 @@ namespace oo
         }
 
         TRACY_PROFILE_SCOPE_END();
-        TRACY_DISPLAY_PERFORMANCE_SELECTED(AUDIO_UPDATE);
     }
 
     void AudioSystem::playAllOnAwake()
@@ -128,7 +141,6 @@ namespace oo
 
     void AudioSystem::onLoadScene(LoadSceneEvent* e)
     {
-        // fuck u
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;
@@ -151,7 +163,6 @@ namespace oo
         if (!scene)
             return;
 
-        // fuck u
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;
@@ -177,7 +188,6 @@ namespace oo
         if (!scene)
             return;
 
-        // fuck u
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;

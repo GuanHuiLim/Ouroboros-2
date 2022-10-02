@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           VulkanDevice.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Declares a vulkan device wrapper
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -19,18 +32,18 @@ struct VulkanDevice
 	
 
 	friend class VulkanRenderer;
-	VkPhysicalDevice physicalDevice;
-	VkDevice logicalDevice;
-	VulkanInstance* m_instancePtr;
+	VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
+	VkDevice logicalDevice{VK_NULL_HANDLE};
+	VulkanInstance* m_instancePtr{nullptr};
 
-	VkQueue graphicsQueue;
-	oGFX::QueueFamilyIndices queueIndices;
-	VkQueue presentationQueue;
+	VkQueue graphicsQueue{VK_NULL_HANDLE};
+	oGFX::QueueFamilyIndices queueIndices{};
+	VkQueue presentationQueue{VK_NULL_HANDLE};
 
-	VkPhysicalDeviceFeatures enabledFeatures;
-	VkPhysicalDeviceProperties properties;
+	VkPhysicalDeviceFeatures enabledFeatures{};
+	VkPhysicalDeviceProperties properties{};
 
-	VkCommandPool commandPool = VK_NULL_HANDLE;
+	VkCommandPool commandPool{ VK_NULL_HANDLE };
 
 	bool CheckDeviceSuitable(const oGFX::SetupInfo& si,VkPhysicalDevice device);
 	bool CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysicalDevice device);	

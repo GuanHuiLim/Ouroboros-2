@@ -3,12 +3,12 @@
 \project        Ouroboros
 \author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
 \par            email: t.tengshuesolomon\@digipen.edu
-\date           August 3, 2021
+\date           Sept 28, 2022
 \brief          Declares the structs required to contain all the information
                 needed to create a new script instance during play mode using data
                 set in the editor inspector durng edit mode
 
-Copyright (C) 2021 DigiPen Institute of Technology.
+Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
@@ -28,6 +28,7 @@ Technology is prohibited.
 
 namespace oo
 {
+    // used to represent a specific field in a C# script instance
     struct ScriptFieldInfo
     {
     public:
@@ -37,9 +38,33 @@ namespace oo
         ScriptFieldInfo(std::string const& name, ScriptValue const& value)
             : name{ name }, value{ value }, script{ nullptr }, scriptField{ nullptr } {}
 
-        ScriptValue TryGetRuntimeValue();
-        void TrySetRuntimeValue(ScriptValue const& newValue);
+        /*********************************************************************************//*!
+        \brief      attempts to try getting the actual C# field value this ScriptFieldInfo represents
+                    in its corresponding C# script instance in the form of a ScriptValue.
+                    If a script reference has not been set yet, then its stored value is returned instead
 
+        \return     the actual value in the C# script instance, or the currently stored value
+                    if a script reference has not been set yet
+        *//**********************************************************************************/
+        ScriptValue TryGetRuntimeValue();
+        /*********************************************************************************//*!
+        \brief      attempts to try setting the actual C# field value this ScriptFieldInfo
+                    represents in its corresponding C# script instance. If a script reference
+                    has not been set yet, then its stored value is updated instead
+
+        \return     newValue
+                the new value of the field
+        *//**********************************************************************************/
+        void TrySetRuntimeValue(ScriptValue const& newValue);
+        /*********************************************************************************//*!
+        \brief      sets the reference to the corresponding C# field of a specific C# script instance
+                    that this ScriptFieldInfo is associated with
+
+        \param     field
+                the pointer to the class field that this ScriptFieldInfo represents
+        \param      obj
+                the pointer to the C# script instance that this ScriptFieldInfo belongs to
+        *//**********************************************************************************/
         void SetScriptReference(MonoClassField* field, MonoObject* obj);
 
     public:
@@ -51,6 +76,7 @@ namespace oo
         MonoClassField* scriptField;
     };
 
+    // used to represent a specific C# class
     struct ScriptClassInfo
     {
         std::string name_space;
@@ -65,6 +91,11 @@ namespace oo
 
         ScriptClassInfo(MonoClass* klass);
 
+        /*********************************************************************************//*!
+        \brief      checks if the C# class this ScriptClassInfo is referring to actually currently exists
+
+        \return     true if the C# class exists, else false
+        *//**********************************************************************************/
         bool IsValid() const;
 
         /*********************************************************************************//*!
@@ -147,6 +178,7 @@ namespace oo
         std::string const ToString() const;
     };
 
+    // used to represent a specific C# script instance
     struct ScriptInfo
     {
         ScriptClassInfo classInfo;

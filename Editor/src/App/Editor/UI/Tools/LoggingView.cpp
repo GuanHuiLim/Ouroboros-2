@@ -67,8 +67,7 @@ void LoggingView::InitAsset()
  */
 void LoggingView::Show()
 {
-	constexpr const char* const loggingview_update = "Logging View Update";
-	TRACY_PROFILE_SCOPE_N(loggingview_update);
+	TRACY_PROFILE_SCOPE_N(logging_view_update);
 
 	static float imageSize = 50.0f;
 	static LoggingView::MessageData msgitem;
@@ -168,9 +167,7 @@ void LoggingView::LogSelectable(MessageData& item,
 								size_t textCount,
 								float imageSize)
 {
-
-	constexpr const char* const logselectable_update = "Log Selectable";
-	TRACY_PROFILE_SCOPE_N(logselectable_update);
+	TRACY_PROFILE_SCOPE_N(log_selectable_update);
 
 	//Begin Draw Selectable Function
 	if (ImGui::Selectable("##Item", &item.selected, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(0, imageSize)))

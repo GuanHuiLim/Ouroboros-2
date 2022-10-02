@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           Anim.cpp
+\project        Ouroboros
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          Definitions for animation related classes
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 
 #include "Anim.h"
@@ -41,6 +54,7 @@ namespace oo::Anim::internal
 			++index;
 		}
 		assert(false);
+		return {};
 	}
 	NodeRef CreateNodeReference(std::vector<Node>& node_container, size_t id)
 	{
@@ -60,6 +74,7 @@ namespace oo::Anim::internal
 			++index;
 		}
 		assert(false);
+		return {};
 	}
 	GroupRef CreateGroupReference(AnimationTree& tree, size_t id)
 	{
@@ -79,6 +94,7 @@ namespace oo::Anim::internal
 			++index;
 		}
 		assert(false);
+		return {};
 	}
 	LinkRef CreateLinkReference(Group& group, size_t id)
 	{
@@ -99,6 +115,7 @@ namespace oo::Anim::internal
 		}
 
 		assert(false);
+		return {};
 	}
 	
 
@@ -117,6 +134,9 @@ namespace oo::Anim::internal
 				return 0.f;
 				break;
 		}
+
+		assert(false);//unknown type?!?!
+		return false;
 	}
 
 	Parameter::DataType ConditionDefaultValue(P_TYPE const type)
@@ -135,7 +155,8 @@ namespace oo::Anim::internal
 			break;
 		}
 
-		assert(false);
+		assert(false); //unknown type?!?!
+		return true;
 	}
 
 
@@ -149,6 +170,9 @@ namespace oo::Anim::internal
 
 		if (value.is_type<float>())
 			return parameter->type == P_TYPE::FLOAT;
+
+		assert(false);
+		return false;
 	}
 
 	bool ConditionSatisfied(Condition& condition, AnimationTracker& tracker)
@@ -161,6 +185,8 @@ namespace oo::Anim::internal
 		assert(condition.compareFn);
 		if (condition.compareFn)
 			return condition.compareFn(condition.value, tracker.parameters[condition.parameterIndex].value);
+
+		return false;
 	}
 
 	void AssignComparisonFunctionToCondition(Condition& condition)
@@ -307,8 +333,17 @@ namespace oo::Anim::internal
 		/*--------------------------------
 		set related game object's data
 		--------------------------------*/
+		GameObject go_root{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
+		GameObject go{ go_root };
+		//traverse the hierarchy
+		for (auto& index : timeline.children_index)
+		{
+			auto children = go.GetDirectChilds();
+			go = children[index];
+		}
+		//get a ptr to the component
 		auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
-			info.tracker_info.entity, info.progressTracker.timeline->component_hash);
+			go.GetEntity(), info.progressTracker.timeline->component_hash);
 
 		//get the instance
 		auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
@@ -335,6 +370,35 @@ namespace oo::Anim::internal
 			//call the respective update function on this tracker
 			progressTracker.updatefunction(p_info, updatedTimer);
 		}
+	}
+
+	KeyFrame* GetCurrentKeyFrame(ProgressTracker& tracker)
+	{
+		return &(tracker.timeline->keyframes[tracker.index]);
+	}
+
+	void UpdateTrackerTransitionProgress(UpdateTrackerInfo& info, float updatedTimer)
+	{
+		auto& trans_info = info.tracker.transition_info;
+		trans_info.transition_timer += info.dt;
+		//if timer still not past offset, continue as normal
+		if (trans_info.transition_timer < trans_info.transition_offset)
+		{
+			UpdateTrackerKeyframeProgress(info, updatedTimer);
+			return;
+		}
+		//interpolate between the src and dst keyframes
+		auto src_percentage = (trans_info.transition_timer - trans_info.transition_offset) / trans_info.transition_duration;
+		auto dst_percentage = 1.f - src_percentage;
+		(void)dst_percentage;
+		//TODO: there is multiple keyframes, and we can only interpolate the same type ones
+		/*for (auto& trackers : info.tracker.trackers)
+		{
+			
+		}*/
+		
+		//auto kf = GetCurrentKeyFrame(info.tracker.trackers)
+
 	}
 	//void UpdateTrackerKeyframeProgress(AnimationComponent& component, AnimationTracker& tracker, float updatedTimer)
 	//{
@@ -443,26 +507,21 @@ namespace oo::Anim::internal
 
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link)
 	{
-		//AssignNodeToTracker(info.tracker, link->dst);
-		info.tracker.transition_info.in_transition = true;
+		AssignNodeToTracker(info.tracker, link->dst);
+		
+		//TODO: transitions
+		/*info.tracker.transition_info.in_transition = true;
+		info.tracker.transition_info.link = link;
 		info.tracker.transition_info.transition_timer = 0.f;
 		info.tracker.transition_info.transition_timer = link->transition_offset;
+		info.tracker.transition_info.transition_duration = link->transition_duration;
 
-		info.tracker.transition_info.trackers = link->dst->trackers;
+		info.tracker.transition_info.trackers = link->dst->trackers;*/
 
 	}
 
 	void UpdateTracker(UpdateTrackerInfo& info)
 	{
-
-		/*TODO------------------------------------------
-		//check node transitions
-		Link* link{ nullptr };
-		auto result = CheckNodeTransitions(tracker.currentNode);
-
-		if (result)
-			ActivateTransition(tracker, link);
-		----------------------------------------------*/
 		auto result = CheckNodeTransitions(info);
 		if (result)
 		{
@@ -473,15 +532,26 @@ namespace oo::Anim::internal
 		info.tracker.timer = updatedTimer;
 		info.tracker.global_timer += info.tracker.currentNode->speed * info.dt;
 		info.tracker.normalized_timer = updatedTimer / info.tracker.currentNode->GetAnimation().animation_length;
-		//check if we passed a keyframe and update
-		UpdateTrackerKeyframeProgress(info, updatedTimer);
-
+		
+		//not in transition
+		if (info.tracker.transition_info.in_transition == false)
+		{
+			//check if we passed a keyframe and update
+			UpdateTrackerKeyframeProgress(info, updatedTimer);
+		}
+		else
+		{
+			//interpolate between src and dst nodes
+			UpdateTrackerTransitionProgress(info, updatedTimer);
+		}
+		//update timer and iterations if animation is looping
 		if (info.tracker.currentNode->GetAnimation().looping &&
 			updatedTimer > info.tracker.currentNode->GetAnimation().animation_length)
 		{
 			info.tracker.timer = updatedTimer - info.tracker.currentNode->GetAnimation().animation_length;
 			++info.tracker.num_iterations;
 		}
+		
 	}
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
@@ -655,6 +725,7 @@ namespace oo::Anim::internal
 			.nodeID{internal::generateUID() }
 		};
 		auto node = Anim::internal::AddNodeToGroup(group, n_info);
+		assert(node);
 		group.startNode = internal::CreateNodeReference(group, n_info.nodeID);
 
 		return &group;
@@ -781,7 +852,7 @@ namespace oo::Anim::internal
 	{
 		Parameter param{ info };
 		auto& parameter = tree.parameters.emplace_back(std::move(param));
-		tree.paramIDtoIndexMap[parameter.paramID] = tree.parameters.size() - 1ull;
+		tree.paramIDtoIndexMap[parameter.paramID] = static_cast<uint>(tree.parameters.size() - 1ull);
 
 		return &parameter;
 	}
@@ -1218,12 +1289,151 @@ namespace oo::Anim
 
 		return tracker;
 	}
+	/*-------------------------------
+	Animation
+	-------------------------------*/
+	void Animation::LoadAnimationFromFBX(std::string const& filepath)
+	{
+		Assimp::Importer importer;
+		uint flags = 0;
+		flags |= aiProcess_Triangulate;
+		flags |= aiProcess_GenSmoothNormals;
+		flags |= aiProcess_ImproveCacheLocality;
+		flags |= aiProcess_CalcTangentSpace;
+		flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
+		//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
+		const aiScene* scene = importer.ReadFile(filepath, flags
+		);
 
+		if (!scene)
+		{
+			assert(false);
+			//return {}; // Dont explode...
+			//throw std::runtime_error("Failed to load model! (" + file + ")");
+		}
+		assert(scene->HasAnimations());
+
+		std::cout << "Animated scene\n";
+		for (size_t i = 0; i < scene->mNumAnimations; i++)
+		{
+			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+			std::cout << "Anim frames: " << scene->mAnimations[i]->mDuration << std::endl;
+			std::cout << "Anim ticksPerSecond: " << scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			std::cout << "Anim duration: " << static_cast<float>(scene->mAnimations[i]->mDuration) / scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			std::cout << "Anim numChannels: " << scene->mAnimations[i]->mNumChannels << std::endl;
+			std::cout << "Anim numMeshChannels: " << scene->mAnimations[i]->mNumMeshChannels << std::endl;
+			std::cout << "Anim numMeshChannels: " << scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
+
+			Animation anim{};
+			anim.name = scene->mAnimations[i]->mName.C_Str();
+
+			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
+			{
+				auto& channel = scene->mAnimations[i]->mChannels[x];
+				std::vector<int> children_index{};
+				//TODO: get node hierarchy and append it to children_index
+					
+				/*--------
+				position
+				--------*/
+				{
+					TimelineInfo timeline_info{
+					.type{Timeline::TYPE::FBX_ANIM},
+					.component_hash{Ecs::ECSWorld::get_component_hash<TransformComponent>()},
+					.rttr_property{ rttr::type::get<TransformComponent>().get_property("Position")},
+					.timeline_name{channel->mNodeName.C_Str()},
+					.children_index = children_index };
+
+					auto timeline = internal::AddTimelineToAnimation(anim, timeline_info);
+					assert(timeline);
+
+					for (size_t y = 0; y < channel->mNumPositionKeys; y++)
+					{
+						auto& key = channel->mPositionKeys[y];
+						KeyFrame kf{ .data{ glm::vec3{key.mValue.x,key.mValue.y,key.mValue.z} },
+						.time{ static_cast<float>(key.mTime) } };
+
+						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						assert(keyframe);
+					}
+				}
+				/*--------
+				rotation
+				--------*/
+				{
+					TimelineInfo timeline_info{
+					.type{Timeline::TYPE::FBX_ANIM},
+					.component_hash{Ecs::ECSWorld::get_component_hash<TransformComponent>()},
+					.rttr_property{ rttr::type::get<TransformComponent>().get_property("Quaternion")},
+					.timeline_name{channel->mNodeName.C_Str()} ,
+					.children_index = children_index };
+
+					auto timeline = internal::AddTimelineToAnimation(anim, timeline_info);
+					assert(timeline);
+
+					for (size_t y = 0; y < channel->mNumRotationKeys; y++)
+					{
+						auto& key = channel->mRotationKeys[y];
+						KeyFrame kf{ .data{ glm::quat{key.mValue.w, key.mValue.x,key.mValue.y,key.mValue.z} },
+						.time{ static_cast<float>(key.mTime) } };
+
+						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						assert(keyframe);
+					}
+				}
+				/*--------
+				scale
+				--------*/
+				{
+					TimelineInfo timeline_info{
+					.type{Timeline::TYPE::FBX_ANIM},
+					.component_hash{Ecs::ECSWorld::get_component_hash<TransformComponent>()},
+					.rttr_property{ rttr::type::get<TransformComponent>().get_property("Scaling")},
+					.timeline_name{channel->mNodeName.C_Str()} ,
+					.children_index = children_index };
+
+					auto timeline = internal::AddTimelineToAnimation(anim, timeline_info);
+					assert(timeline);
+
+					for (size_t y = 0; y < channel->mNumScalingKeys; y++)
+					{
+						auto& key = channel->mScalingKeys[y];
+						KeyFrame kf{ .data{ glm::vec3{key.mValue.x,key.mValue.y,key.mValue.z} },
+						.time{ static_cast<float>(key.mTime) } };
+
+						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						assert(keyframe);
+					}
+				}
+				/*std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
+				for (size_t y = 0; y < channel->mNumPositionKeys; y++)
+				{
+					std::cout << "\t Key_" << std::to_string(y) << " time: " << channel->mPositionKeys[y].mTime << std::endl;
+					auto& pos = channel->mPositionKeys[y].mValue;
+					std::cout << "\t Key_" << std::to_string(y) << " value: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+				}*/
+			}
+
+			auto createdAnim = Animation::AddAnimation(anim);
+			assert(createdAnim);
+		}
+		//std::cout << std::endl;
+		
+	}
+	Animation* Animation::AddAnimation(Animation& anim)
+	{
+		Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
+		Animation::name_to_index[anim.name] = static_cast<uint>(Animation::animation_storage.size());
+
+		auto& createdAnim = Animation::animation_storage.emplace_back(std::move(anim));
+
+		return &createdAnim;
+	}
 
 	/*-------------------------------
 	AnimationSystem
 	-------------------------------*/
-	void AnimationSystem::Init(Ecs::ECSWorld* world, Scene* scene)
+	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
 		static Ecs::Query query = []() {
 			Ecs::Query _query;
@@ -1231,8 +1441,8 @@ namespace oo::Anim
 			return _query;
 		}();
 		internal::Initialise_hash_to_instance();
-		this->world = world;
-		this->scene = scene;
+		this->world = _world;
+		this->scene = _scene;
 		
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)

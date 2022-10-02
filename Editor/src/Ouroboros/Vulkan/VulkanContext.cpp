@@ -29,6 +29,7 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/Core/WindowsWindow.h"
+#include <App/Editor/Utility/ImGuiManager.h>
 
 namespace oo
 {
@@ -124,8 +125,8 @@ namespace oo
         planeMesh.reset(vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
 
         /// This is an example of how to load in a full scene from FBX.. should work..
-        //std::unique_ptr<ModelData> loadedModel{vr->LoadModelFromFile("Model/Filename.fbx")};
-        //std::function<void(ModelData*,Node*)> EntityHelper = [&](ModelData* model,Node* node) {
+        //std::unique_ptr<ModelFileResource> loadedModel{vr->LoadModelFromFile("Model/Filename.fbx")};
+        //std::function<void(ModelFileResource*,Node*)> EntityHelper = [&](ModelFileResource* model,Node* node) {
         //    if (node->meshRef != static_cast<uint32_t>(-1))
         //    {
         //        auto& ed = entities.emplace_back(EntityInfo{});
@@ -151,7 +152,7 @@ namespace oo
 
         {
             auto& myObj = gw.GetObjectInstance(obj); 
-            myObj.modelID = cubeMesh->gfxMeshIndices.front();
+            myObj.modelID = cubeMesh->meshResource;
             myObj.scale = glm::vec3{ 2.1f,1.1f,1.1f };
             myObj.rotVec = glm::vec3{ 1.1f,1.1f,1.1f };
             myObj.rot = 35.0f;
@@ -160,11 +161,12 @@ namespace oo
             myObj.localToWorld = glm::rotate(myObj.localToWorld,glm::radians(myObj.rot), myObj.rotVec);
             myObj.localToWorld = glm::scale(myObj.localToWorld, myObj.scale);
             myObj.bindlessGlobalTextureIndex_Albedo = tex;
+            myObj.submesh[0] = 1;
         }
        
         {
             auto& myPlane = gw.GetObjectInstance(plane);
-            myPlane.modelID = planeMesh->gfxMeshIndices.front();
+            myPlane.modelID = planeMesh->meshResource;
             myPlane.position = { 0.0f,-1.0f,0.0f };
             myPlane.scale = { 15.0f,1.0f,15.0f };
             myPlane.localToWorld = glm::mat4(1.0f);
@@ -172,6 +174,7 @@ namespace oo
             myPlane.localToWorld = glm::rotate(myPlane.localToWorld,glm::radians(myPlane.rot), myPlane.rotVec);
             myPlane.localToWorld = glm::scale(myPlane.localToWorld, myPlane.scale);
             myPlane.bindlessGlobalTextureIndex_Albedo = tex;
+            myPlane.submesh[0] = 1;
         }        
 
         vr->SetWorld(&gw);
@@ -184,8 +187,43 @@ namespace oo
         //m_window.m_width = w;
         //m_window.m_height = h;
 
+  
+    }
+
+    void VulkanContext::SwapBuffers()
+    {
+        if(!m_minimized)
+            vr->Present();
+    }
+
+    void VulkanContext::InitImGui()
+    {
+        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
+        vr->InitImGUI();
+
+        ImGuiManager::InitAssetsAll();
+    }
+
+    void VulkanContext::ResetImguiInit()
+    {
+        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
+        vr->RestartImgui();
+    }
+
+    void VulkanContext::OnImGuiBegin()
+    {
+        ImGui_ImplVulkan_NewFrame();
+       
+    }
+
+    void VulkanContext::OnImGuiEnd()
+    {
+        // Vulkan will call internally
+
+        // temporarily shift here for better structuring
         m_cc.Update(oo::timer::dt());
-        if (vr->PrepareFrame() == true)
+
+        if (vr->PrepareFrame() == true)        
         {
             auto& obj = gw.GetObjectInstance(0);
             obj.rot += 0.25f;
@@ -230,19 +268,19 @@ namespace oo
                 lights[5]->position = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
                 lights[5]->color = glm::vec4(1.0f, 0.7f, 0.3f, 0.0f);
                 lights[5]->radius.x = 25.0f;
-                         
+
                 lights[0]->position.x = sin(glm::radians(360.0f * lightTimer)) * 5.0f;
                 lights[0]->position.z = cos(glm::radians(360.0f * lightTimer)) * 5.0f;
-                         
+
                 lights[1]->position.x = -4.0f + sin(glm::radians(360.0f * lightTimer) + 45.0f) * 2.0f;
                 lights[1]->position.z = 0.0f + cos(glm::radians(360.0f * lightTimer) + 45.0f) * 2.0f;
-                         
+
                 lights[2]->position.x = 4.0f + sin(glm::radians(360.0f * lightTimer)) * 2.0f;
                 lights[2]->position.z = 0.0f + cos(glm::radians(360.0f * lightTimer)) * 2.0f;
-                         
+
                 lights[4]->position.x = 0.0f + sin(glm::radians(360.0f * lightTimer + 90.0f)) * 5.0f;
                 lights[4]->position.z = 0.0f - cos(glm::radians(360.0f * lightTimer + 45.0f)) * 5.0f;
-                         
+
                 lights[5]->position.x = 0.0f + sin(glm::radians(-360.0f * lightTimer + 135.0f)) * 10.0f;
                 lights[5]->position.z = 0.0f - cos(glm::radians(-360.0f * lightTimer - 45.0f)) * 10.0f;
             }
@@ -252,38 +290,13 @@ namespace oo
 
             // Render the frame
             vr->RenderFrame();
-        }
-    }
 
-    void VulkanContext::SwapBuffers()
-    {
-        if(!m_minimized)
-            vr->Present();
-    }
+      
 
-    void VulkanContext::InitImGui()
-    {
-        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
-        vr->InitImGUI();
-    }
-
-    void VulkanContext::ResetImguiInit()
-    {
-        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
-        vr->RestartImgui();
-    }
-
-    void VulkanContext::OnImGuiBegin()
-    {
-        ImGui_ImplVulkan_NewFrame();
-       
-    }
-
-    void VulkanContext::OnImGuiEnd()
-    {
-        // Vulkan will call internally
         if(!m_minimized)
             vr->DrawGUI();
+
+        } // if prepare frame is true
 
         ImGui::EndFrame();
         ImGuiIO& io = ImGui::GetIO();
@@ -323,14 +336,14 @@ namespace oo
         m_window.m_width = e->GetWidth();
     }
 
-    void VulkanContext::OnWindowMinimize(WindowMinimizeEvent* e)
+    void VulkanContext::OnWindowMinimize(WindowMinimizeEvent*)
     {
         m_minimized = true;
         m_window.m_height = 0;
         m_window.m_width = 0;
     }
 
-    void VulkanContext::OnWindowRestored(WindowRestoredEvent* e)
+    void VulkanContext::OnWindowRestored(WindowRestoredEvent*)
     {
         m_minimized = false;
         int w, h;

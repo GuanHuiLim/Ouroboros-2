@@ -1,5 +1,20 @@
+/************************************************************************************//*!
+\file           SceneManagerAPI.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Defines the exported helper functions that the C# scripts will use
+                to interact with the scene manager, like getting the currently active scene,
+                getting specific scene information, like its name, and transitioning into a new scene
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
-#include <Scripting/ExportAPI.h>
+#include "Ouroboros/Scripting/ExportAPI.h"
 
 #include "Ouroboros/Scripting/ScriptManager.h"
 

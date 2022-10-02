@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           VulkanInstance.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief               Defines a vulkan instance wrapper
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "VulkanInstance.h"
 
 #include "VulkanUtils.h"
@@ -162,12 +175,14 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 #ifdef _DEBUG
 			requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			requiredExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+
 			//
 			// Enable render doc if requested by the user
 			//
 			if(setupSpecs.renderDoc == true)
 			{
 				validationLayers.emplace_back( "VK_LAYER_RENDERDOC_Capture" );
+				//validationLayers.emplace_back( "VK_LAYER_LUNARG_api_dump" ); // for nuclear debugging
 			}
 #endif // DEBUG
 		}

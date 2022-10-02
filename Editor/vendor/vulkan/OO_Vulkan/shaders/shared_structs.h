@@ -3,7 +3,8 @@
 
 
 #define BIND_POINT_VERTEX_BUFFER_ID  0
-#define BIND_POINT_INSTANCE_BUFFER_ID  1
+#define BIND_POINT_INSTANCE_BUFFER_ID  2
+#define BIND_POINT_WEIGHTS_BUFFER_ID  1
 #define BIND_POINT_GPU_SCENE_BUFFER_ID  3
 
 
@@ -57,6 +58,15 @@ struct GPUTransform
 	vec4 row1;
 	vec4 row2;
 	vec4 colour; // temp
+};
+
+// struct represents perobject information in gpu
+struct GPUObjectInformation
+{
+    uint boneStartIdx;
+    uint boneCnt;
+    uint materialIdx;
+    uint unused;
 };
 
 #endif //! COMMON_HOST_DEVICE

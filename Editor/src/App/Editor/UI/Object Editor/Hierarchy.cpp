@@ -60,9 +60,6 @@ Hierarchy::Hierarchy()
 
 void Hierarchy::Show()
 {
-
-	static constexpr const char* const hierarchy_ui_update = "hierarchy_ui_update";
-	TRACY_TRACK_PERFORMANCE(hierarchy_ui_update);
 	TRACY_PROFILE_SCOPE_NC(hierarchy_ui_update, tracy::Color::BlueViolet);
 
 	ImGui::BeginChild("search bar", { 0,40 }, false);
@@ -72,7 +69,6 @@ void Hierarchy::Show()
 	m_filter.empty() ? NormalView() : FilteredView();
 
 	TRACY_PROFILE_SCOPE_END();
-	TRACY_DISPLAY_PERFORMANCE_SELECTED(hierarchy_ui_update);
 }
 
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)

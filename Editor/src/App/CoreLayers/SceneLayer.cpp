@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           SceneLayer.cpp
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\par            email: c.tecklee\@digipen.edu
+\date           Jul 1, 2022
+\brief          Defines a layer that will be running in the both the editor and
+                the final distribution build that contains the main rendering scene
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "SceneLayer.h"
 
@@ -24,7 +38,7 @@ namespace oo
 
 #ifdef OO_EDITOR
         EventManager::Subscribe<SceneLayer, ToolbarButtonEvent>(this, &SceneLayer::OnToolbarButtonEvent);
-		ImGuiManager::s_runtime_controller = &m_runtimeController;
+        ImGuiManager::s_runtime_controller = &m_runtimeController;
 #endif
 
     }
@@ -65,6 +79,7 @@ namespace oo
         }
 #else
         //TODO!
+        UNREFERENCED(e);
         m_runtimeController;
 
 #endif
@@ -72,6 +87,7 @@ namespace oo
 
     void SceneLayer::OnToolbarButtonEvent(ToolbarButtonEvent* e)
     {
+#ifdef OO_EDITOR
         switch (e->m_buttonType)
         {
         case ToolbarButtonEvent::ToolbarButton::PLAY:
@@ -84,6 +100,9 @@ namespace oo
             m_editorController.Stop();
             break;
         }
+#endif
+        // TODO
+        UNREFERENCED(e);
     }
 }
 

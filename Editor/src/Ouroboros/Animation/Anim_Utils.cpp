@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           Anim_Utils.cpp
+\project        Ouroboros
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          Utility definitions for Animation
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "Anim_Utils.h"
 #include "Archetypes_Ecs/src/A_Ecs.h"
@@ -51,10 +64,9 @@ namespace oo::Anim
 		//create empty animation
 		Animation empty_anim{};
 		empty_anim.name = Animation::empty_animation_name;
-		empty_anim.animation_ID = internal::generateUID();
 
-		Animation::ID_to_index[empty_anim.animation_ID] = container.size();
-		Animation::name_to_index[empty_anim.name] = container.size();
+		Animation::ID_to_index[empty_anim.animation_ID] = static_cast<uint>(container.size());
+		Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());
 
 		container.emplace_back(std::move(empty_anim));
 		return container;
