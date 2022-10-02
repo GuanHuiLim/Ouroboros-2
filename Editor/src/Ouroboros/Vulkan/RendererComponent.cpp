@@ -44,35 +44,54 @@ namespace oo
 		.property("MeshInfo", &MeshRendererComponent::GetMeshInfo, &MeshRendererComponent::SetMeshInfo);
 	}
 	
+	MeshInfo MeshRendererComponent::GetMeshInfo()
+	{
+		return meshInfo;
+	}
+
+	/*********************************************************************************//*!
+	\brief      this function will only set the submeshbits
+	*//**********************************************************************************/
+	void MeshRendererComponent::SetMeshInfo(MeshInfo info)
+	{
+		meshInfo.submeshBits = info.submeshBits;
+	}
+
 	void MeshRendererComponent::GetModelHandle()
 	{
-		if (mesh_handle.HasData())
-			model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+		if (meshInfo.mesh_handle.HasData())
+			model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
 		else
 			model_handle = 0;
 
-		//model_handle /*= mesh_handle.GetData<ModelData>().gfxMeshIndices.front()*/;
+		//model_handle /*= meshInfo.mesh_handle.GetData<ModelFileResource>().meshResource*/;
 	}
-	
+
+	//set a single model and asset
+
 	void MeshRendererComponent::SetModelHandle(Asset _asset, uint32_t _submodel_id)
 	{
-		submodel_id = _submodel_id;
-		mesh_handle = _asset;
+		meshInfo.submeshBits.reset();
+		meshInfo.submeshBits[_submodel_id] = true;
+		meshInfo.mesh_handle = _asset;
 
-		model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+		model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
 	}
-	
+
 	Asset MeshRendererComponent::GetMesh()
 	{
-		return mesh_handle;
+		return meshInfo.mesh_handle;
 	}
-	
+
 	void MeshRendererComponent::SetMesh(Asset _asset)
 	{
 		if (_asset.IsValid())
 		{
-			mesh_handle = _asset;
-			model_handle = mesh_handle.GetData<ModelData*>()->gfxMeshIndices[submodel_id];
+			meshInfo.mesh_handle = _asset;
+			model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
+			// HACK this is needed to render stuff under edit..
+			// meshInfo.submeshBits.reset();
+			// meshInfo.submeshBits[0] = true;
 		}
 		if (albedo_handle.IsValid())
 		{
@@ -84,19 +103,4 @@ namespace oo
 		}
 	}
 	
-	int MeshRendererComponent::GetSubModelID()
-	{
-		return submodel_id;
-	}
-	
-	void MeshRendererComponent::SetSubModelID(int id)
-	{
-		if (mesh_handle.IsValid())
-		{
-			auto modelData = mesh_handle.GetData<ModelData*>();
-			id = id % modelData->gfxMeshIndices.size();
-			submodel_id = id % modelData->gfxMeshIndices.size();
-			model_handle = modelData->gfxMeshIndices[submodel_id];
-		}
-	}
 }
