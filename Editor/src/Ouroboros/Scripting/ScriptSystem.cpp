@@ -201,7 +201,7 @@ namespace oo
     {
         if (!isPlaying)
             return 0;
-        return scriptDatabase.TryRetrieve(uuid, name_space, name);
+        return scriptDatabase.TryRetrieveDerived(uuid, name_space, name);
     }
     void ScriptSystem::RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {

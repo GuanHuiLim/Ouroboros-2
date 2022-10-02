@@ -39,6 +39,18 @@ namespace oo
             poolList.emplace_back();
             indexMap.emplace(key, poolList.size() - 1UL);
         }
+        MonoClass* monoBehaviour = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        for (MonoClass* klass : classList)
+        {
+            Index index = GetInstancePoolIndex(mono_class_get_namespace(klass), mono_class_get_name(klass));
+            MonoClass* parent = mono_class_get_parent(klass);
+            while (parent != monoBehaviour)
+            {
+                Index parentIndex = GetInstancePoolIndex(mono_class_get_namespace(parent), mono_class_get_name(parent));
+                inheritanceMap[parentIndex].emplace_back(index);
+                parent = mono_class_get_parent(parent);
+            }
+        }
     }
 
     ScriptDatabase::IntPtr ScriptDatabase::Instantiate(UUID id, const char* name_space, const char* name)
@@ -78,6 +90,15 @@ namespace oo
     ScriptDatabase::IntPtr ScriptDatabase::TryRetrieve(UUID id, const char* name_space, const char* name)
     {
         Instance* instance = TryGetInstance(id, name_space, name);
+        if (instance == nullptr)
+            return 0;
+        return instance->handle;
+    }
+
+    ScriptDatabase::IntPtr ScriptDatabase::TryRetrieveDerived(UUID id, const char* name_space, const char* name)
+    {
+        Index baseIndex = GetInstancePoolIndex(name_space, name);
+        Instance* instance = TryGetInstanceDerived(id, baseIndex);
         if (instance == nullptr)
             return 0;
         return instance->handle;
@@ -221,28 +242,12 @@ namespace oo
         return search->second;
     }
 
-    ScriptDatabase::InstancePool& ScriptDatabase::GetInstancePool(const char* name_space, const char* name)
-    {
-        Index index = GetInstancePoolIndex(name_space, name);
-        if(index == INDEX_NOTFOUND)
-            throw std::exception((std::string{ "ScriptDatabase: no such script: " } + name_space + "." + name).c_str());
-        return poolList[index];
-    }
-
     ScriptDatabase::Instance& ScriptDatabase::GetInstance(UUID id, InstancePool& pool)
     {
         auto search = pool.find(id);
         if (search == pool.end())
             throw std::exception("ScriptDatabase: object does not have script instance");
         return search->second;
-    }
-
-    ScriptDatabase::InstancePool* ScriptDatabase::TryGetInstancePool(const char* name_space, const char* name)
-    {
-        Index index = GetInstancePoolIndex(name_space, name);
-        if (index == INDEX_NOTFOUND)
-            nullptr;
-        return &(poolList[index]);
     }
 
     ScriptDatabase::Instance* ScriptDatabase::TryGetInstance(UUID id, InstancePool& pool)
@@ -253,5 +258,24 @@ namespace oo
         if (search == pool.end())
             return nullptr;
         return &(search->second);
+    }
+
+    ScriptDatabase::Instance* ScriptDatabase::TryGetInstanceDerived(UUID id, Index baseIndex)
+    {
+        InstancePool* scriptPool = TryGetInstancePool(baseIndex);
+        if (scriptPool != nullptr)
+        {
+            Instance* instance = TryGetInstance(id, *scriptPool);
+            if (instance != nullptr)
+                return instance;
+        }
+
+        for (Index derived : inheritanceMap[baseIndex])
+        {
+            Instance* instance = TryGetInstanceDerived(id, derived);
+            if (instance != nullptr)
+                return instance;
+        }
+        return nullptr;
     }
 }
