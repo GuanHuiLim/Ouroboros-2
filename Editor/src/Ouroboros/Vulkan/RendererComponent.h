@@ -9,18 +9,12 @@
 #include "OO_Vulkan/src/MeshModel.h"
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
+#include "MeshInfo.h"
 #include <bitset>
-
 #include <rttr/type>
 namespace oo
 {
 	class Material;
-
-	struct MeshInfo
-	{
-		Asset mesh_handle;
-		std::bitset<MAX_SUBMESH> submeshBits;
-	};
 
 	struct MeshRendererComponent
 	{
@@ -38,10 +32,12 @@ namespace oo
 		{
 			return meshInfo;
 		}
-
+		/*********************************************************************************//*!
+		\brief      this function will only set the submeshbits
+		*//**********************************************************************************/
 		void SetMeshInfo(MeshInfo info) 
 		{
-			meshInfo = info;
+			meshInfo.submeshBits = info.submeshBits;
 		}
 
 		void GetModelHandle()
