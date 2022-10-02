@@ -1,6 +1,30 @@
+/************************************************************************************//*!
+\file           phy.h
+\project        Physics
+\author         Ting Shu Mei, shumei.ting, 620003420 | code contribution (100%)
+\par            email: shumei.ting\@digipen.edu
+\date           Oct 02, 2022
+\brief          Using of NVIDIA PhysX Library to build up the Physics System
+                including Dynamics, Collision Detection, Reaction.
+                Physx Github: https://github.com/NVIDIAGameWorks/PhysX
+                Physx Documentation: https://gameworksdocs.nvidia.com/PhysX/4.1/documentation/physxguide/Index.html
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #pragma once
 
+#pragma warning( push )
+#pragma warning( disable : 26812 )
+#pragma warning( disable : 26495 )
+#pragma warning( disable : 26451 )
+#pragma warning( disable : 33010 )
 #include <Physics/Physx/include/PxPhysicsAPI.h>
+#pragma warning( pop )
+
 #include <iostream>
 #include <vector>
 #include <map>
@@ -23,16 +47,6 @@ enum class rigid { none, rstatic, rdynamic };
 enum class shape { none, box, sphere, capsule, plane };
 
 /*
-class Collision {
-
-private:
-
-public:
-
-
-};
-
-
 class EventCallBack : public PxSimulationEventCallback {
 
 private:
@@ -62,15 +76,6 @@ public:
 struct RigidDynamic {
 
     PxRigidDynamic* rigidDynamic = nullptr;
-
-    //PxReal angularDamping;
-    //PxVec3 angularVelocity;
-    ////PxReal invMass;
-    //PxReal linearDamping;
-    //PxVec3 linearVelocity;
-    //PxReal mass;
-    //PxTransform centerOfMass;
-    //PxTransform globalPos;
 };
 
 struct RigidStatic {
@@ -112,10 +117,9 @@ private:
     friend struct PhysicsObject;
 
     PxScene* scene = nullptr;
-    std::map<phy_uuid::UUID, PxMaterial*> mat; // later int change to UUID
+    std::map<phy_uuid::UUID, PxMaterial*> mat;
     PxVec3 gravity;
 
-    //std::map<phy_uuid::UUID, PhysxObject*> all_objects; // store all the objects (lookups for keys / check if empty)
     std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
     std::vector<PhysxObject> m_objects; // to iterate through for setting the data
@@ -130,9 +134,6 @@ public:
     // GRAVITY
     PxVec3 getGravity() const;
     void setGravity(PxVec3 gra);
-
-    // MATERIAL
-    //void destroyMat(phy_uuid::UUID materialID);
 
     // RIGIDBODY
     PhysicsObject createInstance();
@@ -216,10 +217,3 @@ public:
 
     PxPvd* const& pvd__() const;
 };
-
-
-//mATERIAL MAT;
-//PHYSICSWORLD.UPDATESHAPE(OBJID, MAT);
-//MAT = PHYSICSWORLD.GETMATERIAL(OBJID);
-//MAT.SET
-//PHYSICSWORLD.SETMAT(OBJID, MAT);

@@ -1,3 +1,20 @@
+/************************************************************************************//*!
+\file           phy.cpp
+\project        Physics
+\author         Ting Shu Mei, shumei.ting, 620003420 | code contribution (100%)
+\par            email: shumei.ting\@digipen.edu
+\date           Oct 02, 2022
+\brief          Using of NVIDIA PhysX Library to build up the Physics System
+                including Dynamics, Collision Detection, Reaction.
+                Physx Github: https://github.com/NVIDIAGameWorks/PhysX
+                Physx Documentation: https://gameworksdocs.nvidia.com/PhysX/4.1/documentation/physxguide/Index.html 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #include <iostream>
 #include "phy.h"
 
@@ -7,13 +24,14 @@ PVD myPVD;
 
 static constexpr bool use_debugger = false;
 
-// actor might / not release
-// scene (might release all the actor)
-// mDispatcher
-// mPhysics
-
-// check if got pvd then release the pvd then transport
-// mFoundation
+/* release sequence
+actor might / not release
+scene (might release all the actor)
+mDispatcher
+mPhysics
+check if got pvd then release the pvd then transport
+mFoundation
+*/
 
 PxDefaultAllocator      mDefaultAllocatorCallback;
 PxDefaultErrorCallback  mDefaultErrorCallback;
@@ -93,9 +111,6 @@ namespace physx_system {
 /*-----------------------------------------------------------------------------*/
 PhysxWorld::PhysxWorld(PxVec3 grav)
 {
-    // check where leaking
-    //m_objects.reserve(1000);
-
     // Setup scene description
     PxSceneDesc sceneDesc(physx_system::getPhysics()->getTolerancesScale());
     sceneDesc.gravity = grav; // PxVec3(0.0f, -9.81f, 0.0f);
@@ -170,16 +185,6 @@ void PhysxWorld::setGravity(PxVec3 gra) {
     gravity = gra;
 }
 
-// check again need call this at where
-/*
-void PhysxWorld::destroyMat(phy_uuid::UUID materialID) {
-
-    if (mat.contains(materialID)) {
-        mat.at(materialID)->release();
-    }
-}
-*/
-
 PhysicsObject PhysxWorld::createInstance() {
 
     // create instance of the object (on the stack)
@@ -190,7 +195,6 @@ PhysicsObject PhysxWorld::createInstance() {
 
     // store the object
     m_objects.emplace_back(obj);
-    //all_objects.insert({ obj.id, &m_objects.at(m_objects.size() - 1) }); // add back the m_objects last element
     all_objects.insert({ obj.id, m_objects.size() - 1}); // add back the m_objects last element
 
     // return the object i created
@@ -211,22 +215,17 @@ void PhysxWorld::removeInstance(PhysicsObject obj)
 
         else if (underlying_obj->rigidID == rigid::rdynamic)
             underlying_obj->rd.rigidDynamic->release();
+
+        // release shape
+        //underlying_obj->m_shape->release();
     }
     
-    // release shape
-    m_objects[obj.id].m_shape->release();
-
     // check/find the id from the obj vector then if match 
     // remove from that vector then release
     auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; });
     //begin->destroy();
     m_objects.erase(begin);
 }
-
-/*-----------------------------------------------------------------------------*/
-/*                               PhysxObject                                   */
-/*-----------------------------------------------------------------------------*/
-
 
 
 /*-----------------------------------------------------------------------------*/
