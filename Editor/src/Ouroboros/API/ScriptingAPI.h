@@ -29,8 +29,11 @@ namespace oo
     SCRIPT_API ScriptDatabase::IntPtr AddScript(Scene::ID_type sceneID, UUID uuid, const char* name_space, const char* name)
     {
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        if (scene->FindWithInstanceID(uuid) == nullptr)
+        std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(uuid);
+        if (obj == nullptr)
             ScriptEngine::ThrowNullException();
+        obj->GetComponent<ScriptComponent>().AddScriptInfo(ScriptClassInfo{ name_space, name });
+
         ScriptDatabase::IntPtr ptr = scene->GetWorld().Get_System<ScriptSystem>()->AddScript(uuid, name_space, name);
         MonoObject* script = mono_gchandle_get_target(ptr);
         try
@@ -56,8 +59,11 @@ namespace oo
     SCRIPT_API void RemoveScript(Scene::ID_type sceneID, UUID uuid, const char* name_space, const char* name)
     {
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        if (scene->FindWithInstanceID(uuid) == nullptr)
+        std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(uuid);
+        if (obj == nullptr)
             ScriptEngine::ThrowNullException();
+        obj->GetComponent<ScriptComponent>().RemoveScriptInfo(ScriptClassInfo{ name_space, name });
+
         scene->GetWorld().Get_System<ScriptSystem>()->RemoveScript(uuid, name_space, name);
     }
 
