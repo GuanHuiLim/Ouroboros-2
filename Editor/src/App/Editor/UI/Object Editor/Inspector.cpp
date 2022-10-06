@@ -361,10 +361,23 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
 	for (auto& scriptInfo : sc.GetScriptInfoAll())
 	{
+		ImGui::PushID(scriptInfo.first.c_str());
 		bool opened = ImGui::TreeNodeEx(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		{
+			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+			if (ImGui::SmallButton("x"))
+			{
+				sc.RemoveScriptInfo(scriptInfo.second.classInfo);
+				ImGui::PopID();
+				return;
+			}
+		}
 		ImGui::Separator();
 		if (opened == false)
+		{
+			ImGui::PopID();
 			continue;
+		}
 		for (auto& sfi : scriptInfo.second.fieldMap)
 		{
 			bool edit = false;
@@ -398,5 +411,7 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 				new_value = true;
 			}
 		}
+		ImGui::PopID();
+		ImGui::Separator();
 	}
 }
