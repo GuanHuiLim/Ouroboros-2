@@ -54,6 +54,7 @@ namespace oo::Anim::internal
 			++index;
 		}
 		assert(false);
+		return {};
 	}
 	NodeRef CreateNodeReference(std::vector<Node>& node_container, size_t id)
 	{
@@ -73,6 +74,7 @@ namespace oo::Anim::internal
 			++index;
 		}
 		assert(false);
+		return {};
 	}
 	GroupRef CreateGroupReference(AnimationTree& tree, size_t id)
 	{
@@ -92,6 +94,7 @@ namespace oo::Anim::internal
 			++index;
 		}
 		assert(false);
+		return {};
 	}
 	LinkRef CreateLinkReference(Group& group, size_t id)
 	{
@@ -112,6 +115,7 @@ namespace oo::Anim::internal
 		}
 
 		assert(false);
+		return {};
 	}
 	
 
@@ -130,6 +134,9 @@ namespace oo::Anim::internal
 				return 0.f;
 				break;
 		}
+
+		assert(false);//unknown type?!?!
+		return false;
 	}
 
 	Parameter::DataType ConditionDefaultValue(P_TYPE const type)
@@ -148,7 +155,8 @@ namespace oo::Anim::internal
 			break;
 		}
 
-		assert(false);
+		assert(false); //unknown type?!?!
+		return true;
 	}
 
 
@@ -162,6 +170,9 @@ namespace oo::Anim::internal
 
 		if (value.is_type<float>())
 			return parameter->type == P_TYPE::FLOAT;
+
+		assert(false);
+		return false;
 	}
 
 	bool ConditionSatisfied(Condition& condition, AnimationTracker& tracker)
@@ -174,6 +185,8 @@ namespace oo::Anim::internal
 		assert(condition.compareFn);
 		if (condition.compareFn)
 			return condition.compareFn(condition.value, tracker.parameters[condition.parameterIndex].value);
+
+		return false;
 	}
 
 	void AssignComparisonFunctionToCondition(Condition& condition)
@@ -377,11 +390,12 @@ namespace oo::Anim::internal
 		//interpolate between the src and dst keyframes
 		auto src_percentage = (trans_info.transition_timer - trans_info.transition_offset) / trans_info.transition_duration;
 		auto dst_percentage = 1.f - src_percentage;
+		(void)dst_percentage;
 		//TODO: there is multiple keyframes, and we can only interpolate the same type ones
-		for (auto& trackers : info.tracker.trackers)
+		/*for (auto& trackers : info.tracker.trackers)
 		{
 			
-		}
+		}*/
 		
 		//auto kf = GetCurrentKeyFrame(info.tracker.trackers)
 
@@ -711,6 +725,7 @@ namespace oo::Anim::internal
 			.nodeID{internal::generateUID() }
 		};
 		auto node = Anim::internal::AddNodeToGroup(group, n_info);
+		assert(node);
 		group.startNode = internal::CreateNodeReference(group, n_info.nodeID);
 
 		return &group;
@@ -837,7 +852,7 @@ namespace oo::Anim::internal
 	{
 		Parameter param{ info };
 		auto& parameter = tree.parameters.emplace_back(std::move(param));
-		tree.paramIDtoIndexMap[parameter.paramID] = tree.parameters.size() - 1ull;
+		tree.paramIDtoIndexMap[parameter.paramID] = static_cast<uint>(tree.parameters.size() - 1ull);
 
 		return &parameter;
 	}
@@ -1277,7 +1292,7 @@ namespace oo::Anim
 	/*-------------------------------
 	Animation
 	-------------------------------*/
-	std::string Animation::LoadAnimationFromFBX(std::string const& filepath)
+	void Animation::LoadAnimationFromFBX(std::string const& filepath)
 	{
 		Assimp::Importer importer;
 		uint flags = 0;
@@ -1293,7 +1308,7 @@ namespace oo::Anim
 		if (!scene)
 		{
 			assert(false);
-			return {}; // Dont explode...
+			//return {}; // Dont explode...
 			//throw std::runtime_error("Failed to load model! (" + file + ")");
 		}
 		assert(scene->HasAnimations());
@@ -1407,8 +1422,8 @@ namespace oo::Anim
 	}
 	Animation* Animation::AddAnimation(Animation& anim)
 	{
-		Animation::ID_to_index[anim.animation_ID] = Animation::animation_storage.size();
-		Animation::name_to_index[anim.name] = Animation::animation_storage.size();
+		Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
+		Animation::name_to_index[anim.name] = static_cast<uint>(Animation::animation_storage.size());
 
 		auto& createdAnim = Animation::animation_storage.emplace_back(std::move(anim));
 
@@ -1418,7 +1433,7 @@ namespace oo::Anim
 	/*-------------------------------
 	AnimationSystem
 	-------------------------------*/
-	void AnimationSystem::Init(Ecs::ECSWorld* world, Scene* scene)
+	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
 		static Ecs::Query query = []() {
 			Ecs::Query _query;
@@ -1426,8 +1441,8 @@ namespace oo::Anim
 			return _query;
 		}();
 		internal::Initialise_hash_to_instance();
-		this->world = world;
-		this->scene = scene;
+		this->world = _world;
+		this->scene = _scene;
 		
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)

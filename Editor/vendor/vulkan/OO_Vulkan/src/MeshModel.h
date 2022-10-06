@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           MeshModel.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Declares a mesh object and resources for use on CPU and GPU
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -31,14 +44,15 @@ namespace oGFX
 
 struct BoneNode
 {
+    ~BoneNode();
     std::string mName{ "BONE_NAME" };
-    uint32_t m_BoneIndex;
+    uint32_t m_BoneIndex{static_cast<uint32_t>(-1)};
     bool mbIsBoneNode{ false }; // Really a bone for skinning.
-    BoneNode* mpParent;
+    BoneNode* mpParent{ nullptr };
     std::vector<BoneNode*> mChildren;
 
-    glm::mat4 mModelSpaceLocal{};	// Local transformation of the bone in model space
-    glm::mat4 mModelSpaceGlobal{};	// Global transformation of the bone in model space
+    glm::mat4 mModelSpaceLocal{1.0f};	// Local transformation of the bone in model space
+    glm::mat4 mModelSpaceGlobal{1.0f};	// Global transformation of the bone in model space
 };
 
 struct BoneInverseBindPoseInfo
@@ -56,6 +70,7 @@ struct BoneWeight
 
 struct Skeleton
 {
+    ~Skeleton();
     oGFX::BoneNode* m_boneNodes{ nullptr };
     std::vector<oGFX::BoneInverseBindPoseInfo>inverseBindPose;
     std::vector<oGFX::BoneWeight>boneWeights;
@@ -63,6 +78,7 @@ struct Skeleton
 
 struct CPUSkeletonInstance
 {
+    ~CPUSkeletonInstance();
     oGFX::BoneNode* m_boneNodes{ nullptr };
 };
 
@@ -76,8 +92,8 @@ struct ModelFileResource
     ~ModelFileResource();
 
     std::string fileName;
-    uint32_t meshResource;
-    uint32_t numSubmesh;
+    uint32_t meshResource{};
+    uint32_t numSubmesh{};
 
     std::vector<oGFX::Vertex> vertices;
     std::vector<uint32_t> indices;
@@ -96,9 +112,9 @@ struct SubMesh
 {
     std::string name;
     // Sub range of mesh
-    uint32_t baseVertex;
+    uint32_t baseVertex{};
     uint32_t vertexCount{};
-    uint32_t baseIndices;
+    uint32_t baseIndices{};
     uint32_t indicesCount{};
 
     // TODO: Material
@@ -109,9 +125,9 @@ struct gfxModel
     std::string name;
 
     // Whole range of mesh
-    uint32_t baseVertex;
+    uint32_t baseVertex{};
     uint32_t vertexCount{};
-    uint32_t baseIndices;
+    uint32_t baseIndices{};
     uint32_t indicesCount{};
 
     std::vector<SubMesh> m_subMeshes;

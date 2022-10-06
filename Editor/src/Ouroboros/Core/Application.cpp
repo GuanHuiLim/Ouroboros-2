@@ -4,7 +4,7 @@
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
 \date           May 05, 2022
-\brief          Core Application Loop and functionality. 
+\brief          Core Application Loop and functionality.
                 Will be inherited by Sandbox project.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
@@ -25,6 +25,8 @@ Technology is prohibited.
 #include "Ouroboros/Audio/Audio.h"
 
 #include "Ouroboros/Asset/AssetManager.h"
+
+#include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Timer.h"
 
@@ -50,7 +52,7 @@ namespace oo
         audio::Init();
 
         // Only start running file watchers ones dependencies are intiialised
-        AssetManager::GlobalStartRunning();
+        /*AssetManager::GlobalStartRunning();*/
     }
 
     Application::~Application()
@@ -67,6 +69,7 @@ namespace oo
     void Application::Run()
     {
         constexpr const char* const update_loop_name = "core app update loop";
+        std::chrono::file_clock::time_point fileWatchTime = std::chrono::file_clock::now();
         while (m_running)
         {
             OO_TracyProfiler::CheckIfServerToBeOpened();
@@ -76,6 +79,22 @@ namespace oo
             timer::Timestep dt = {};
 
             TRACY_PROFILE_FRAME_START(update_loop_name);
+
+
+
+            TRACY_PROFILE_SCOPE_NC(FILE_WATCH, tracy::Color::Aquamarine1);
+
+            std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - fileWatchTime).count() >= AssetManager::WATCH_INTERVAL)
+            {
+                FileWatchEvent fwe{ fileWatchTime };
+                EventManager::Broadcast<FileWatchEvent>(&fwe);
+                fileWatchTime = now;
+            }
+
+            TRACY_PROFILE_SCOPE_END();
+
+
 
             /*Process Inputs here*/
             input::Update();

@@ -187,8 +187,43 @@ namespace oo
         //m_window.m_width = w;
         //m_window.m_height = h;
 
+  
+    }
+
+    void VulkanContext::SwapBuffers()
+    {
+        if(!m_minimized)
+            vr->Present();
+    }
+
+    void VulkanContext::InitImGui()
+    {
+        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
+        vr->InitImGUI();
+
+        ImGuiManager::InitAssetsAll();
+    }
+
+    void VulkanContext::ResetImguiInit()
+    {
+        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
+        vr->RestartImgui();
+    }
+
+    void VulkanContext::OnImGuiBegin()
+    {
+        ImGui_ImplVulkan_NewFrame();
+       
+    }
+
+    void VulkanContext::OnImGuiEnd()
+    {
+        // Vulkan will call internally
+
+        // temporarily shift here for better structuring
         m_cc.Update(oo::timer::dt());
-        if (vr->PrepareFrame() == true)
+
+        if (vr->PrepareFrame() == true)        
         {
             auto& obj = gw.GetObjectInstance(0);
             obj.rot += 0.25f;
@@ -233,19 +268,19 @@ namespace oo
                 lights[5]->position = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
                 lights[5]->color = glm::vec4(1.0f, 0.7f, 0.3f, 0.0f);
                 lights[5]->radius.x = 25.0f;
-                         
+
                 lights[0]->position.x = sin(glm::radians(360.0f * lightTimer)) * 5.0f;
                 lights[0]->position.z = cos(glm::radians(360.0f * lightTimer)) * 5.0f;
-                         
+
                 lights[1]->position.x = -4.0f + sin(glm::radians(360.0f * lightTimer) + 45.0f) * 2.0f;
                 lights[1]->position.z = 0.0f + cos(glm::radians(360.0f * lightTimer) + 45.0f) * 2.0f;
-                         
+
                 lights[2]->position.x = 4.0f + sin(glm::radians(360.0f * lightTimer)) * 2.0f;
                 lights[2]->position.z = 0.0f + cos(glm::radians(360.0f * lightTimer)) * 2.0f;
-                         
+
                 lights[4]->position.x = 0.0f + sin(glm::radians(360.0f * lightTimer + 90.0f)) * 5.0f;
                 lights[4]->position.z = 0.0f - cos(glm::radians(360.0f * lightTimer + 45.0f)) * 5.0f;
-                         
+
                 lights[5]->position.x = 0.0f + sin(glm::radians(-360.0f * lightTimer + 135.0f)) * 10.0f;
                 lights[5]->position.z = 0.0f - cos(glm::radians(-360.0f * lightTimer - 45.0f)) * 10.0f;
             }
@@ -255,40 +290,13 @@ namespace oo
 
             // Render the frame
             vr->RenderFrame();
-        }
-    }
 
-    void VulkanContext::SwapBuffers()
-    {
-        if(!m_minimized)
-            vr->Present();
-    }
+      
 
-    void VulkanContext::InitImGui()
-    {
-        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
-        vr->InitImGUI();
-
-        ImGuiManager::InitAssetsAll();
-    }
-
-    void VulkanContext::ResetImguiInit()
-    {
-        ImGui_ImplSDL2_InitForVulkan(m_windowHandle);
-        vr->RestartImgui();
-    }
-
-    void VulkanContext::OnImGuiBegin()
-    {
-        ImGui_ImplVulkan_NewFrame();
-       
-    }
-
-    void VulkanContext::OnImGuiEnd()
-    {
-        // Vulkan will call internally
         if(!m_minimized)
             vr->DrawGUI();
+
+        } // if prepare frame is true
 
         ImGui::EndFrame();
         ImGuiIO& io = ImGui::GetIO();

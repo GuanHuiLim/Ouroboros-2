@@ -17,7 +17,7 @@ void CameraController::Update(float dt)
     const bool up    = oo::input::IsKeyHeld(KEY_S);
     const auto [deltax, deltay] = oo::input::GetMouseDelta();
     const glm::vec2 mousedelta{ deltax, deltay };
-    const float wheelDelta = oo::input::GetMouseY();
+    const float wheelDelta{ static_cast<float>(oo::input::GetMouseY()) };
 
     const glm::vec3 amountToRotate = glm::vec3{ mousedelta.y * m_Camera->rotationSpeed, -mousedelta.x * m_Camera->rotationSpeed, 0.0f };
     glm::vec3 amountToTranslate{ 0.0f, 0.0f, 0.0f };
