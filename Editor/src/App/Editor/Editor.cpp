@@ -129,7 +129,28 @@ void Editor::Update()
 	{
 		oo::CommandStackManager::RedoCommand();
 	}
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_C))
+	{
+		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+		auto list = m_hierarchy.GetSelected();
+		if (list.empty() == false)
+		{
+			std::vector<oo::Scene::go_ptr> init_list;
+			for (auto id : list)
+			{
+				init_list.push_back(scene->FindWithInstanceID(id));
+			}
+			Serializer::SaveObjectsAsString(init_list, *scene);
+		}
+	}
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_V))
+	{
+		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 
+		std::string data = ImGui::GetClipboardText();
+		if(data.empty()	== false)
+			Serializer::LoadObjectsFromString(data,scene->GetRoot()->GetInstanceID(), *scene);
+	}
 }
 
 void Editor::MenuBar()
