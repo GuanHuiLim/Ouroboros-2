@@ -118,11 +118,11 @@ namespace oo
                 {
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
-                    self.data.emplace_back(vr->LoadModelFromFile(self.contentPath.string()));
+                    self.data.emplace_back(std::shared_ptr<ModelFileResource>(vr->LoadModelFromFile(self.contentPath.string())));
                 };
                 onAssetDestroy = [](AssetInfo& self)
                 {
-                    delete self.GetData<ModelFileResource*>();
+                    //delete self.GetData<ModelFileResource*>();
                 };
                 break;
             }
