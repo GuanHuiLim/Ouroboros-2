@@ -81,7 +81,7 @@ namespace oo
                 });
                 if (!has)
                 {
-                    LOG_WARN("No Audio Listener in the scene!");
+                    //LOG_WARN("No Audio Listener in the scene!");
                 }
             }
 
