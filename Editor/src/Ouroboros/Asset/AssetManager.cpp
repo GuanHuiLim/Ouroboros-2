@@ -33,6 +33,10 @@ namespace oo
     void AssetManager::AssetStore::clear()
     {
         all.clear();
+        for (auto& map : byType)
+        {
+            map.second.clear();
+        }
         byType.clear();
     }
 
@@ -263,7 +267,7 @@ namespace oo
     Asset AssetManager::loadAssetIntoStore(std::filesystem::path fp, AssetID id)
     {
         AssetInfoPtr info = std::make_shared<AssetInfo>();
-        info->id = AssetInfo::GenerateSnowflake();
+        info->id = id;
         info->contentPath = fp;
         info->metaPath = fp; info->metaPath += Asset::EXT_META;
         info->timeLoaded = std::chrono::file_clock::now();

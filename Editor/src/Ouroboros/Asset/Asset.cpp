@@ -87,10 +87,9 @@ namespace oo
                 {
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
-                    auto data = AssetInfo::TextureData();
-                    data.textureID = vr->CreateTexture(self.contentPath.string());
-                    data.imTextureID = vr->GetImguiID(data.textureID);
-                    self.data = data;
+                    auto tid = vr->CreateTexture(self.contentPath.string());
+                    self.data.emplace_back(tid);
+                    self.data.emplace_back(vr->GetImguiID(tid));
                 };
                 onAssetDestroy = [this](AssetInfo& self)
                 {
@@ -104,14 +103,10 @@ namespace oo
                 // Load audio
                 onAssetCreate = [](AssetInfo& self)
                 {
-                    auto data = AssetInfo::AudioData();
-                    data.soundID = audio::CreateSound(self.contentPath.string());
-                    self.data = data;
+                    self.data.emplace_back(audio::CreateSound(self.contentPath.string()));
                 };
                 onAssetDestroy = [](AssetInfo& self)
                 {
-                    if (self.data)
-                        return;
                     audio::FreeSound(self.GetData<oo::SoundID>());
                 };
                 break;
@@ -123,14 +118,10 @@ namespace oo
                 {
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
-                    auto data = AssetInfo::ModelData();
-                    data.model = vr->LoadModelFromFile(self.contentPath.string());
-                    self.data = data;
+                    self.data.emplace_back(vr->LoadModelFromFile(self.contentPath.string()));
                 };
                 onAssetDestroy = [](AssetInfo& self)
                 {
-                    if (self.data)
-                        return;
                     delete self.GetData<ModelFileResource*>();
                 };
                 break;

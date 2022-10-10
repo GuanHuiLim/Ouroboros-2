@@ -52,20 +52,6 @@ namespace oo
         /* Type Definitions                                                            */
         /* --------------------------------------------------------------------------- */
 
-        struct TextureData
-        {
-            uint32_t textureID;
-            ImTextureID imTextureID;
-        };
-        struct AudioData
-        {
-            SoundID soundID;
-        };
-        struct ModelData
-        {
-            ModelFileResource* model;
-        };
-
         using Callback = std::function<void(AssetInfo&)>;
         enum class Type
         {
@@ -132,7 +118,7 @@ namespace oo
         std::chrono::file_clock::time_point timeLoaded = std::chrono::file_clock::now();
         Callback onAssetCreate = [](AssetInfo&) {};
         Callback onAssetDestroy = [](AssetInfo&) {};
-        rttr::variant data;
+        std::vector<rttr::variant> data;
         Type type = Type::Text;
     };
 
@@ -177,7 +163,7 @@ namespace oo
 #define AI_GETTER(_NAME, _PROP) AI_TYPE(_PROP) _NAME() const { AI_VALUE_OR_DEFAULT(_PROP) }
 
         [[nodiscard]] inline bool IsValid() const { return !info.expired(); };
-        [[nodiscard]] inline AI_GETTER(HasData, data.is_valid());
+        [[nodiscard]] inline AI_GETTER(HasData, data.size() > 0);
         [[nodiscard]] inline AI_GETTER(GetID, id);
         [[nodiscard]] inline AI_GETTER(GetFilePath, contentPath);
         [[nodiscard]] inline AI_GETTER(GetMetaFilePath, metaPath);
@@ -261,7 +247,12 @@ namespace oo
     template<typename T>
     inline T AssetInfo::GetData() const
     {
-        return data.get_value<T>();
+        for (auto& d : data)
+        {
+            if (d.is_type<T>())
+                return d.get_value<T>();
+        }
+        return {};
     }
 
     template<typename T>
