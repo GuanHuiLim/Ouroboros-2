@@ -51,11 +51,17 @@ Technology is prohibited.
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
+
+
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
 		{ ImColor(0.75f,0.2f,0.3f),ImColor(0.3f,0.75f,0.2f),ImColor(0.2f,0.3f,0.75f) },
 		ImVec2{0,0},0)
 {
+	oo::EventManager::Subscribe<CopyButtonEvent>(&CopyEvent);
+	oo::EventManager::Subscribe<PasteButtonEvent>(&PasteEvent);
+
 }
 
 void Hierarchy::Show()
@@ -543,4 +549,43 @@ void Hierarchy::CreateGameObjectImmediate()
 			return;
 		parent_object->AddChild(*go);
 	}
+}
+
+void Hierarchy::CopyEvent(CopyButtonEvent* cbe)
+{
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+	if (ImGui::IsMouseHoveringRect(rect.Min, rect.Max) == false)
+		return;
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto list = Hierarchy::GetSelected();
+	if (list.empty() == false)
+	{
+		std::vector<oo::Scene::go_ptr> init_list;
+		for (auto id : list)
+		{
+			init_list.push_back(scene->FindWithInstanceID(id));
+		}
+		Hierarchy::s_clipboard = Serializer::SaveObjectsAsString(init_list, *scene).c_str();
+		ImGui::SetClipboardText(Hierarchy::s_clipboard.c_str());
+	}
+}
+
+void Hierarchy::PasteEvent(PasteButtonEvent* pbe)
+{
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+
+	if (ImGui::IsMouseHoveringRect(rect.Min, rect.Max) == false)
+		return;
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	std::string data = ImGui::GetClipboardText();
+	if (data.empty() == false)
+	{
+		auto created_items = Serializer::LoadObjectsFromString(Hierarchy::s_clipboard, scene->GetRoot()->GetInstanceID(), *scene);
+	}
+
+}
+
+void Hierarchy::DuplicateEvent(DuplicateButtonEvent* dbe)
+{
 }

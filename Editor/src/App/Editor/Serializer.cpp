@@ -192,7 +192,6 @@ std::string Serializer::SaveObjectsAsString(const std::vector<std::shared_ptr<oo
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
 	std::string temp = buffer.GetString();
-	ImGui::SetClipboardText(temp.c_str());
 	return temp;
 }
 
@@ -214,6 +213,10 @@ std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID pare
 	rapidjson::StringStream stream(data.c_str());
 	rapidjson::Document doc;
 	doc.ParseStream(stream);
+	std::vector<UUID> go_UUID;
+	if (doc.IsObject() == false)
+		return go_UUID;
+
 	auto starting = scene.FindWithInstanceID(parentID);
 
 	ASSERT_MSG(starting == nullptr, "parent not found");
@@ -221,7 +224,6 @@ std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID pare
 	UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
-	std::vector<UUID> go_UUID;
 	parents.push(starting);
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{

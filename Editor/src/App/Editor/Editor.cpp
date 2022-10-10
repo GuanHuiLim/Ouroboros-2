@@ -29,7 +29,13 @@ Technology is prohibited.
 #include "App/Editor/Events/ImGuiRestartEvent.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "App/Editor/Events/OpenPromtEvent.h"
+#include "App/Editor/Events/CopyButtonEvent.h"
+#include "App/Editor/Events/PasteButtonEvent.h"
+#include "App/Editor/Events/DuplicateButtonEvent.h"
+
 #include "Ouroboros/Core/Events/FileDropEvent.h"
+
+
 static void FileDrop(oo::FileDropEvent* e)
 {
 	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf" };
@@ -131,25 +137,14 @@ void Editor::Update()
 	}
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_C))
 	{
-		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		auto list = m_hierarchy.GetSelected();
-		if (list.empty() == false)
-		{
-			std::vector<oo::Scene::go_ptr> init_list;
-			for (auto id : list)
-			{
-				init_list.push_back(scene->FindWithInstanceID(id));
-			}
-			Serializer::SaveObjectsAsString(init_list, *scene);
-		}
+		CopyButtonEvent cbe;
+		oo::EventManager::Broadcast<CopyButtonEvent>(&cbe);
 	}
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_V))
 	{
-		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+		PasteButtonEvent cbe;
+		oo::EventManager::Broadcast<PasteButtonEvent>(&cbe);
 
-		std::string data = ImGui::GetClipboardText();
-		if(data.empty()	== false)
-			Serializer::LoadObjectsFromString(data,scene->GetRoot()->GetInstanceID(), *scene);
 	}
 }
 
