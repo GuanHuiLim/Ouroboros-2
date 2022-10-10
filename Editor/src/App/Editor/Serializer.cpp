@@ -171,7 +171,28 @@ std::string Serializer::SaveDeletedObject(std::shared_ptr<oo::GameObject> go, oo
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
 	std::string temp = buffer.GetString();
-	ResetDocument();
+	return temp;
+}
+
+std::string Serializer::SaveObjectsAsString(const std::vector<std::shared_ptr<oo::GameObject>>& go_list, oo::Scene& scene)
+{
+	std::stack<scenenode::raw_pointer> s;
+	std::stack<scenenode::handle_type> parents;
+	for (auto& go : go_list)
+	{
+		scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+		s.push(curr);
+	}
+	//parents.push((*go_list.begin())->GetSceneNode().lock()->get_handle());
+	rapidjson::Document doc;
+	doc.SetObject();
+	Saving(s, parents, scene, doc);
+	size_t count = 10;
+	rapidjson::StringBuffer buffer(0, count * 200);
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	doc.Accept(writer);
+	std::string temp = buffer.GetString();
+	ImGui::SetClipboardText(temp.c_str());
 	return temp;
 }
 
@@ -186,6 +207,66 @@ UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& s
 	
 	auto firstObj = Loading(parent,scene,doc);
 	return firstObj;
+}
+
+std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID parentID, oo::Scene& scene)
+{
+	rapidjson::StringStream stream(data.c_str());
+	rapidjson::Document doc;
+	doc.ParseStream(stream);
+	auto starting = scene.FindWithInstanceID(parentID);
+
+	ASSERT_MSG(starting == nullptr, "parent not found");
+
+	UUID firstobj;
+	std::stack<std::shared_ptr<oo::GameObject>> parents;
+	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
+	std::vector<UUID> go_UUID;
+	parents.push(starting);
+	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
+	{
+		auto go = scene.CreateGameObjectImmediate();
+		go_UUID.push_back(go->GetInstanceID());
+
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
+
+		{//when the order dont match the size it will keep poping until it matches
+		//then parent to it and adds itself
+			while (order != parents.size())
+				parents.pop();
+
+			if (parents.size())
+				parents.top()->AddChild(*go, true);
+			else
+				starting->AddChild(*go, true);
+
+			parents.push(go);
+			if (iter == doc.MemberBegin())
+				firstobj = go->GetInstanceID();
+		}
+
+		second_iter.emplace_back(go);
+	}
+
+	scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*starting, false);
+
+	int iteration = 0;
+	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter, ++iteration)
+	{
+		auto go = second_iter[iteration];
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
+		++members;
+		//processes the components		
+		LoadObject(*go, members, membersEnd);
+	}
+
+	return go_UUID;
 }
 
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)
@@ -250,20 +331,18 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 
 	SaveComponent<oo::AudioListenerComponent>(go, val, doc);
 	SaveComponent<oo::AudioSourceComponent>(go, val, doc);
-	SaveScript(go, val, doc);
 
 	SaveComponent<oo::RigidbodyComponent>(go, val, doc);
 	SaveComponent<oo::BoxColliderComponent>(go, val, doc);
 	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
+
+	SaveScript(go, val, doc);// this is the last item
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
 {
 	//save everything
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
-	//SaveComponent<oo::GameObjectComponent>(go, val, doc);
-	//SaveComponent<oo::TransformComponent>(go, val, doc);
-	//SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveScript(go, val, doc);
 
 	auto rpj_prefabComponent = val.FindMember(rttr::type::get<oo::PrefabComponent>().get_name().data());

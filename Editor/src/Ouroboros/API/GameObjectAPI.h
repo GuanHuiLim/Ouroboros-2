@@ -29,7 +29,7 @@ namespace oo
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         std::shared_ptr<GameObject> instance = scene->CreateGameObjectDeferred();
 
-        UUID uuid = instance->GetComponent<GameObjectComponent>().Id;
+        UUID uuid = instance->GetInstanceID();
         scene->GetWorld().Get_System<ScriptSystem>()->SetUpObject(uuid);
 
         // Testing, normally fresh GameObjects dont have scripts
