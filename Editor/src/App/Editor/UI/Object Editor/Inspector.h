@@ -14,6 +14,7 @@ Technology is prohibited.
 #pragma once
 //gameobject for getting component
 #include <Ouroboros/ECS/GameObject.h>
+#include <Ouroboros/Asset/Asset.h>
 //undo redo commands
 #include <Ouroboros/Commands/Component_ActionCommand.h>
 #include <Ouroboros/Commands/CommandStackManager.h>

@@ -16,6 +16,7 @@ Technology is prohibited.
 
 #include <filesystem>
 #include <future>
+#include <memory>
 #include <optional>
 #include <thread>
 #include <unordered_map>
@@ -44,37 +45,24 @@ namespace oo
         /* Type Definitions                                                            */
         /* --------------------------------------------------------------------------- */
 
-        using AssetMap = std::unordered_map<AssetID, Asset>;
-        using TypeAssetIDsMap = std::unordered_map<AssetInfo::Type, std::set<AssetID>>;
-        class AssetStore
+        using AssetInfoPtr = std::shared_ptr<AssetInfo>;
+        using AssetInfoMap = std::unordered_map<AssetID, AssetInfoPtr>;
+        using AssetInfoTypedMap = std::unordered_map<AssetInfo::Type, AssetInfoMap>;
+        struct AssetStore
         {
-        public:
-            /* ----------------------------------------------------------------------- */
-            /* Getters                                                                 */
-            /* ----------------------------------------------------------------------- */
+            bool empty() const;
+            void clear();
+            AssetInfoPtr emplace(const AssetID& id, const AssetInfo& info);
+            AssetInfoPtr emplace(const AssetID& id, AssetInfoPtr ptr);
+            void erase(const AssetID& id);
+            AssetInfoPtr& at(const AssetID& id);
+            const AssetInfoPtr& at(const AssetID& id) const;
+            bool contains(const AssetID& id) const;
+            AssetInfoMap& filter(const AssetInfo::Type& type);
+            const AssetInfoMap& filter(const AssetInfo::Type& type)const;
 
-            [[nodiscard]] inline const AssetMap& GetAssets() const { return assets; };
-            [[nodiscard]] inline AssetMap& GetAssets() { return assets; };
-
-            /* ----------------------------------------------------------------------- */
-            /* Functions                                                               */
-            /* ----------------------------------------------------------------------- */
-
-            Asset& At(AssetID id);
-            Asset At(AssetID id) const;
-            std::vector<std::reference_wrapper<Asset>> At(AssetInfo::Type type);
-            std::vector<Asset> At(AssetInfo::Type type) const;
-            Asset Insert(AssetID id, const Asset& asset);
-            void Erase(AssetID id);
-            bool Contains(AssetID id) const;
-
-        private:
-            /* ----------------------------------------------------------------------- */
-            /* Members                                                                 */
-            /* ----------------------------------------------------------------------- */
-
-            AssetMap assets;
-            TypeAssetIDsMap assetsByType;
+            AssetInfoMap all;
+            AssetInfoTypedMap byType;
         };
 
         /* --------------------------------------------------------------------------- */
@@ -99,7 +87,6 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         [[nodiscard]] inline const std::filesystem::path& GetRootDirectory() const { return root; };
-        [[nodiscard]] inline const AssetMap& GetAssets() const { return assets.GetAssets(); };
 
         /* --------------------------------------------------------------------------- */
         /* Setters                                                                     */
@@ -121,14 +108,14 @@ namespace oo
         /// </summary>
         /// <param name="snowflake">The ID of the asset.</param>
         /// <returns>The asset.</returns>
-        Asset Get(const AssetID& snowflake);
+        Asset Get(const AssetID& id);
 
         /// <summary>
         /// Asynchronously retrieves an asset using its ID.
         /// </summary>
         /// <param name="snowflake">The ID of the asset.</param>
         /// <returns>The future asset.</returns>
-        std::future<Asset> GetAsync(const AssetID& snowflake);
+        std::future<Asset> GetAsync(const AssetID& id);
 
         /// <summary>
         /// Retrieves all loaded assets of a given type.
@@ -188,11 +175,8 @@ namespace oo
         /* Members                                                                     */
         /* --------------------------------------------------------------------------- */
 
-        //static bool globalIsRunning;
-        //bool isRunning = true;
         std::filesystem::path root;
-        AssetStore assets;
-        //std::thread fileWatchThread;
+        AssetStore store;
 
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
@@ -224,12 +208,14 @@ namespace oo
         Asset getOrLoadAbsolute(const std::filesystem::path& fp);
 
         /// <summary>
-        /// Creates an asset object from a given file.
+        /// Loads asset info from a given file into the store.
         /// </summary>
         /// <param name="fp">The file path.</param>
         /// <param name="id">The asset ID.</param>
         /// <returns>The asset.</returns>
-        Asset createAsset(std::filesystem::path fp, AssetID id = Asset::GenerateSnowflake());
+        Asset loadAssetIntoStore(std::filesystem::path fp, AssetID id = Asset::GenerateSnowflake());
+
+        friend Asset;
     };
 
     class AssetNotFoundException : public std::exception
