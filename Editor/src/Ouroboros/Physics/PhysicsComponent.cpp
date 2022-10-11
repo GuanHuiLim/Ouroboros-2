@@ -14,7 +14,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "PhysicsComponent.h"
-
+#include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
 namespace oo
 {
@@ -22,6 +22,6 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<PhysicsComponent>("Physics");
+        registration::class_<PhysicsComponent>("Physics")(metadata(UI_metadata::NOT_REMOVABLE, true));
     }
 }
