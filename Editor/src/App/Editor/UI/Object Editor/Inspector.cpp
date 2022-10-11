@@ -38,6 +38,7 @@ Technology is prohibited.
 #include <Ouroboros/Audio/AudioSourceComponent.h>
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
+#include <Ouroboros/ECS/DuplicatedComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
@@ -128,6 +129,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
+	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 
 
 	DisplayComponent<oo::PhysicsComponent>(gameobject);
