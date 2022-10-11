@@ -30,6 +30,7 @@ namespace oo
 {
     // forward declare event
     struct GetCurrentSceneEvent;
+    struct GetCurrentSceneStateEvent;
 
     class SceneLayer final : public oo::Layer
     {
@@ -54,6 +55,7 @@ namespace oo
 
     private:
         void OnGetCurrentSceneEvent(GetCurrentSceneEvent* e);
+        void OnGetCurrentSceneStateEvent(GetCurrentSceneStateEvent* e);
 #ifdef OO_EDITOR
         void OnToolbarButtonEvent(ToolbarButtonEvent* e);
 #endif

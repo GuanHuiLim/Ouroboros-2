@@ -35,6 +35,7 @@ namespace oo
     {
         // This should be the only subscriber for this event!
         EventManager::Subscribe<SceneLayer, GetCurrentSceneEvent>(this, &SceneLayer::OnGetCurrentSceneEvent);
+        EventManager::Subscribe<SceneLayer, GetCurrentSceneStateEvent>(this, &SceneLayer::OnGetCurrentSceneStateEvent);
 
 #ifdef OO_EDITOR
         EventManager::Subscribe<SceneLayer, ToolbarButtonEvent>(this, &SceneLayer::OnToolbarButtonEvent);
@@ -93,6 +94,11 @@ namespace oo
             break;
         }
 #endif
+    }
+
+    void SceneLayer::OnGetCurrentSceneStateEvent(GetCurrentSceneStateEvent* e)
+    {
+        e->state = m_activeState;
     }
 
 #ifdef OO_EDITOR
