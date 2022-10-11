@@ -121,7 +121,7 @@ namespace oo
     }
     void ScriptSystem::OnObjectDestroyed(GameObject::OnDestroy* e)
     {
-        UUID uuid = e->go->GetComponent<GameObjectComponent>().Id;
+        UUID uuid = e->go->GetInstanceID();
         if (scene.FindWithInstanceID(uuid) == nullptr)
             return;
         scriptDatabase.Delete(uuid);

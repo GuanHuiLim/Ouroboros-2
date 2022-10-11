@@ -134,7 +134,7 @@ public:
         if (m_editorLayer->GetEditorMode() == true)
         {
             CloseProjectEvent e;
-            OpenPromptEvent<CloseProjectEvent> ope(e, [&]() { Close(); });
+			OpenPromptEvent<CloseProjectEvent> ope(e, [&]() {Close(); });
             oo::EventManager::Broadcast(&ope);
         }
         else

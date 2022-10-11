@@ -74,7 +74,13 @@ public:
 	static UUID LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go,oo::Scene & scene);
 
 	static std::string SaveDeletedObject(std::shared_ptr<oo::GameObject> go,oo::Scene& scene);
+	static std::string SaveObjectsAsString(const std::vector<std::shared_ptr<oo::GameObject>>& go_list, oo::Scene& scene);
+
 	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
+	/*********************************************************************************//*!
+	\brief      Recreation of the object 
+	*//**********************************************************************************/
+	static std::vector<UUID> LoadObjectsFromString(std::string& data,UUID parentID, oo::Scene& scene);
 private:
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);
