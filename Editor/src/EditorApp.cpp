@@ -58,6 +58,7 @@ Technology is prohibited.
 // Scripting
 #include <Scripting/Scripting.h>
 
+// Should only let guan hui change these variables.
 static constexpr const char* const EditorVersionNumber = "2.00";
 static constexpr const char* const GameVersionNumber = "1.00";
 
@@ -65,26 +66,25 @@ class EditorApp final : public oo::Application
 {
 public:
     EditorApp(oo::CommandLineArgs args)
-        : Application{ "Ouroboros v2.0", args }
+        : Application{ std::string{"Ouroboros v"} + EditorVersionNumber, args }
+        , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
-        // Scripting Layer
-        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
-
-        //Debug Layers
+        //Debug Test Layers
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        //m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
 #ifdef OO_EDITOR
-        m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
-        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());
+        //m_layerset.PushLayer(std::make_shared<MainDebugLayer>());     //menu to test various debug scenes
+        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());      //FPS display counter
 #endif
         // Main Layers
-        m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
+        // Scripting Layer
+        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
+        // Scene Layer [Have differing code for OO_EDITOR AND OO_EXECUTABLE]
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
-        
+        // Editor Layer [Have differing code for OO_EDITOR AND OO_EXECUTABLE]
         // have this for both executable version as well for easy debugging purposes.
         m_editorLayer = std::make_shared<EditorLayer>(m_sceneManager);
         m_layerset.PushLayer(m_editorLayer);
-
-        m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
 
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
@@ -121,7 +121,7 @@ public:
         if (m_editorLayer->GetEditorMode() == true)
         {
             CloseProjectEvent e;
-			OpenPromptEvent<CloseProjectEvent> ope(e, [&]() {Close(); });
+            OpenPromptEvent<CloseProjectEvent> ope(e, [&]() { Close(); });
             oo::EventManager::Broadcast(&ope);
         }
         else
@@ -140,19 +140,17 @@ private:
 
 class EndProduct final : public oo::Application
 {
-
 public:
     EndProduct(oo::CommandLineArgs args)
-        : Application{ "Minute", args }
+        : Application{ std::string{"Minute v"} + GameVersionNumber, args }
     {
-        // Scripting Layer
-        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
-
         //Debug Layers
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
 
         // Main Layers
-        m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
+        // Scripting Layer
+        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
+        // Scene Layer
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
 
         // only for the end product we do this instead
@@ -162,7 +160,7 @@ public:
 
     void OnUpdate() override
     {
-        TRACY_PROFILE_SCOPE_N(editor_app_update);
+        TRACY_PROFILE_SCOPE_N(end_product_app_update);
 
         m_layerset.Update();
 
