@@ -58,6 +58,7 @@ namespace oo
             LOG_WARN("ScriptSystem: No scripts found, ScriptSystem functions will not be run");
             return true;
         }
+        componentDatabase.Initialize();
         scriptDatabase.Initialize(executionOrder);
 
         static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, ScriptComponent>();
@@ -240,7 +241,7 @@ namespace oo
     {
         if (!isPlaying)
             return 0;
-        return componentDatabase.TryRetrieve(uuid, name_space, name);
+        return componentDatabase.TryRetrieveDerived(uuid, name_space, name);
     }
     void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {

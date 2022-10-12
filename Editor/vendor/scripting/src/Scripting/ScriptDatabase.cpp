@@ -270,7 +270,10 @@ namespace oo
                 return instance;
         }
 
-        for (Index derived : inheritanceMap[baseIndex])
+        auto potentialDerived = inheritanceMap.find(baseIndex);
+        if (potentialDerived == inheritanceMap.end())
+            return nullptr;
+        for (Index derived : potentialDerived->second)
         {
             Instance* instance = TryGetInstanceDerived(id, derived);
             if (instance != nullptr)
