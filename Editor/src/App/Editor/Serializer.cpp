@@ -24,6 +24,7 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObject.h>
 
 #include <Ouroboros/EventSystem/EventManager.h>
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
@@ -273,6 +274,13 @@ std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID pare
 
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)
 {
+	//oo::GetCurrentSceneStateEvent currentSceneEvent;
+	//oo::EventManager::Broadcast<oo::GetCurrentSceneStateEvent>(&currentSceneEvent);
+	//if (currentSceneEvent.state == oo::SCENE_STATE::RUNNING)
+	//{
+	//	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Not allowed to save in Play Mode!");
+	//	return;
+	//}
 	scenenode::raw_pointer curr;
 	while (!s.empty())
 	{
