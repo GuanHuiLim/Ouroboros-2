@@ -554,7 +554,7 @@ void Hierarchy::CreateGameObjectImmediate()
 void Hierarchy::CopyEvent(CopyButtonEvent* cbe)
 {
 	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
-	if (ImGui::IsMouseHoveringRect(rect.Min, rect.Max) == false)
+	if (rect.Contains(ImGui::GetMousePos()) == false)
 		return;
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto list = Hierarchy::GetSelected();
@@ -573,8 +573,7 @@ void Hierarchy::CopyEvent(CopyButtonEvent* cbe)
 void Hierarchy::PasteEvent(PasteButtonEvent* pbe)
 {
 	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
-
-	if (ImGui::IsMouseHoveringRect(rect.Min, rect.Max) == false)
+	if (rect.Contains(ImGui::GetMousePos()) == false)
 		return;
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
