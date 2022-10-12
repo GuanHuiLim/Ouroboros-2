@@ -52,64 +52,64 @@ namespace oo
             oo::EventManager::Broadcast(&ev);
             isEditor = ev.IsEditor;
         }
-        if (isEditor)
-            return;
-
-        // Iterate audio listeners
+        if (!isEditor)
         {
-            static Ecs::Query query = Ecs::make_query<AudioListenerComponent>();
-            bool has = false;
-            bool warned = false;
-            world->for_each(query, [&](AudioListenerComponent& al, TransformComponent& tf)
+            // Iterate audio listeners
             {
+                static Ecs::Query query = Ecs::make_query<AudioListenerComponent>();
+                bool has = false;
+                bool warned = false;
+                world->for_each(query, [&](AudioListenerComponent& al, TransformComponent& tf)
+                {
+                    if (!has)
+                    {
+                        const auto tfPos = tf.GetGlobalPosition();
+                        FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
+                        const auto tfForward = tf.GlobalForward();
+                        FMOD_VECTOR fmForward = { .x = tfForward.x, .y = tfForward.y, .z = tfForward.z };
+                        const auto tfUp = tf.GlobalUp();
+                        FMOD_VECTOR fmUp = { .x = tfUp.x, .y = tfUp.y, .z = tfUp.z };
+
+                        audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, &fmForward, &fmUp);
+                        has = true;
+                    }
+                    else if (!warned)
+                    {
+                        LOG_WARN("Should not have more than one Audio Listener in a scene!");
+                        warned = true;
+                    }
+                });
                 if (!has)
                 {
-                    const auto tfPos = tf.GetGlobalPosition();
-                    FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
-                    const auto tfForward = tf.GlobalForward();
-                    FMOD_VECTOR fmForward = { .x = tfForward.x, .y = tfForward.y, .z = tfForward.z };
-                    const auto tfUp = tf.GlobalUp();
-                    FMOD_VECTOR fmUp = { .x = tfUp.x, .y = tfUp.y, .z = tfUp.z };
-
-                    audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, &fmForward, &fmUp);
-                    has = true;
+                    //LOG_WARN("No Audio Listener in the scene!");
                 }
-                else if (!warned)
-                {
-                    LOG_WARN("Should not have more than one Audio Listener in a scene!");
-                    warned = true;
-                }
-            });
-            if (!has)
-            {
-                LOG_WARN("No Audio Listener in the scene!");
             }
-        }
 
-        // Iterate audio sources
-        {
-            static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
-            world->for_each(query, [&](AudioSourceComponent& as, TransformComponent& tf)
+            // Iterate audio sources
             {
-                if (!as.GetChannel())
-                    return;
-
-                // Set 3D position
-                auto tfPos = tf.GetGlobalPosition();
-                FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
-                as.GetChannel()->set3DAttributes(&fmPos, nullptr);
-
-                // Check dirty flag
-                if (as.IsDirty())
+                static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
+                world->for_each(query, [&](AudioSourceComponent& as, TransformComponent& tf)
                 {
-                    // Update all
-                    FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
-                    FMOD_ERR_HAND(as.GetChannel()->setLoopCount(as.IsLoop() ? -1 : 0));
-                    FMOD_ERR_HAND(as.GetChannel()->setVolume(as.GetVolume()));
-                    FMOD_ERR_HAND(as.GetChannel()->setPitch(as.GetPitch()));
-                    as.ClearDirty();
-                }
-            });
+                    if (!as.GetChannel())
+                        return;
+
+                    // Set 3D position
+                    auto tfPos = tf.GetGlobalPosition();
+                    FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
+                    as.GetChannel()->set3DAttributes(&fmPos, nullptr);
+
+                    // Check dirty flag
+                    if (as.IsDirty())
+                    {
+                        // Update all
+                        FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
+                        FMOD_ERR_HAND(as.GetChannel()->setLoopCount(as.IsLoop() ? -1 : 0));
+                        FMOD_ERR_HAND(as.GetChannel()->setVolume(as.GetVolume()));
+                        FMOD_ERR_HAND(as.GetChannel()->setPitch(as.GetPitch()));
+                        as.ClearDirty();
+                    }
+                });
+            }
         }
 
         TRACY_PROFILE_SCOPE_END();
