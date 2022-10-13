@@ -16,6 +16,7 @@ Technology is prohibited.
 
 #include <Archetypes_ECS/src/A_Ecs.h>
 #include "DeferredComponent.h"
+#include "DuplicatedComponent.h"
 
 namespace Ecs
 {
@@ -26,13 +27,13 @@ namespace Ecs
         return [&]()
         {
             Ecs::Query query;
-            query.with<T...>().exclude<oo::DeferredComponent>().build();
+            query.with<T...>().exclude<oo::DeferredComponent, oo::DuplicatedComponent>().build();
             return query;
         }();
     }
 
     template<typename ...T>
-    Query make_query_including_deferred()
+    Query make_raw_query()
     {
         return [&]()
         {

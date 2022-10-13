@@ -22,6 +22,7 @@ Technology is prohibited.
 #include "Ouroboros/Scene/EditorController.h"
 
 #include "Ouroboros/EventSystem/Event.h"
+#include "App/SceneHeader.h"
 
 class ToolbarButtonEvent;
 
@@ -29,6 +30,7 @@ namespace oo
 {
     // forward declare event
     struct GetCurrentSceneEvent;
+    struct GetCurrentSceneStateEvent;
 
     class SceneLayer final : public oo::Layer
     {
@@ -47,10 +49,19 @@ namespace oo
         void OnDetach() override final;
         void OnUpdate() override final;
 
+        inline SCENE_STATE GetActiveState() const { return m_activeState; };
+        bool GetActiveScenePaused() const;
+        bool GetActiveSceneStepMode() const;
+
     private:
         void OnGetCurrentSceneEvent(GetCurrentSceneEvent* e);
-        
+        void OnGetCurrentSceneStateEvent(GetCurrentSceneStateEvent* e);
+#ifdef OO_EDITOR
         void OnToolbarButtonEvent(ToolbarButtonEvent* e);
+#endif
+    
+    private:
+        SCENE_STATE m_activeState;
     };
 
 }

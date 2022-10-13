@@ -18,7 +18,7 @@ Technology is prohibited.
 #pragma once
 
 #include "Ouroboros/EventSystem/Event.h"
-
+#include "App/SceneHeader.h"
 namespace oo
 {
     //forward declare
@@ -34,4 +34,8 @@ namespace oo
         bool IsEditor = true;
     };
 
+    struct GetCurrentSceneStateEvent : public Event
+    {
+        SCENE_STATE state = SCENE_STATE::EDITING;
+    };
 }

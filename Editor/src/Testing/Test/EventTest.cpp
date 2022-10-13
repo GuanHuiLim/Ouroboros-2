@@ -46,4 +46,18 @@ void RetrieveScene()
     // Get ecs_world
     auto& ecs_world = scn->GetWorld();
     UNREFERENCED(ecs_world);
+
+    { // event found here #include <Ouroboros/EventSystem/EventTypes.h>
+        oo::GetCurrentSceneStateEvent e;
+        oo::EventManager::Broadcast(&e);
+        switch (e.state)
+        {
+        case oo::SCENE_STATE::EDITING:
+            std::cout << "Editing!" << std::endl;
+            break;
+        case oo::SCENE_STATE::RUNNING :
+            std::cout << "Running!" << std::endl;
+            break;
+        }
+    }
 }

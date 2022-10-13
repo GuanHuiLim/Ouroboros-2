@@ -27,6 +27,7 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/ECS/DeferredSystem.h"
+#include "Ouroboros/ECS/DuplicatedSystem.h"
 
 #include "Ouroboros/Scripting/ScriptSystem.h"
 
@@ -74,10 +75,9 @@ namespace oo
         // Initialize Default Systems
         {
             m_ecsWorld->Add_System<oo::DeferredSystem>(this);
-            //m_ecsWorld->Get_System<oo::DeferredSystem>()->Link(this);
+            m_ecsWorld->Add_System<oo::DuplicatedSystem>(this);
 
             m_ecsWorld->Add_System<oo::TransformSystem>(this);
-            //m_ecsWorld->Get_System<oo::TransformSystem>()->Link(this);
 
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
@@ -150,6 +150,8 @@ namespace oo
         //    callback(go);
         //}
         //m_createList.clear();
+        
+        m_ecsWorld->Get_System<oo::DuplicatedSystem>()->Run(m_ecsWorld.get());
         m_ecsWorld->Get_System<oo::DeferredSystem>()->Run(m_ecsWorld.get());
 
         // go through all things to remove at the end of frame and do so.
