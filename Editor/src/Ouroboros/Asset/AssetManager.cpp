@@ -21,6 +21,7 @@ Technology is prohibited.
 #include "Ouroboros/Asset/BinaryIO.h"
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Utility/IEqual.h"
 
 namespace oo
@@ -42,19 +43,14 @@ namespace oo
 
     AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const AssetInfo& info)
     {
-        auto sp = std::make_shared<AssetInfo>(info);
-        all.emplace(id, sp);
-        if (!byType.contains(info.type))
-            byType.emplace(info.type, AssetInfoMap());
-        byType.at(info.type).emplace(id, sp);
-        return sp;
+        return emplace(id, std::make_shared<AssetInfo>(info));
     }
 
     AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, AssetInfoPtr ptr)
     {
         all.emplace(id, ptr);
         if (!ptr)
-            return {};
+            return ptr;
         if (!byType.contains(ptr->type))
             byType.emplace(ptr->type, AssetInfoMap());
         byType.at(ptr->type).emplace(id, ptr);
@@ -63,7 +59,7 @@ namespace oo
 
     void AssetManager::AssetStore::erase(const AssetID& id)
     {
-        if (!all.contains(id))
+        if (!contains(id))
             return;
         auto sp = all.at(id);
         if (sp && byType.contains(sp->type))
@@ -102,6 +98,8 @@ namespace oo
     AssetManager::AssetManager(std::filesystem::path root)
         : root{ root }
     {
+        EventManager::Subscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
+        EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
     }
 
     AssetManager::~AssetManager()
@@ -199,14 +197,102 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::LoadDirectory, this, fn, caseSensitive);
     }
 
-    void AssetManager::fileWatch(FileWatchEvent* ev)
+    void AssetManager::ReloadAssets()
     {
-        // TODO
+        FileWatchEvent fwe{ lastReloadTime };
+        EventManager::Broadcast<FileWatchEvent>(&fwe);
     }
 
-    void AssetManager::updateAssetPaths(const std::filesystem::path& dir)
+    void AssetManager::ForceReloadAssets()
     {
-        // TODO
+        FileWatchEvent fwe{ std::chrono::file_clock::time_point() };
+        EventManager::Broadcast<FileWatchEvent>(&fwe);
+    }
+
+    void AssetManager::windowFocusHandler(WindowFocusEvent*)
+    {
+        ReloadAssets();
+    }
+
+    void AssetManager::watchFiles(FileWatchEvent* ev)
+    {
+        TRACY_PROFILE_SCOPE_NC(ASSET_MANAGER_WATCH_FILES, tracy::Color::Aquamarine1);
+
+        std::chrono::file_clock::time_point tLast = ev->time;
+        const std::filesystem::path DIR = std::filesystem::canonical(root);
+        if (std::filesystem::exists(DIR))
+        {
+            iterateDirectory(DIR, tLast);
+        }
+        lastReloadTime = std::chrono::file_clock::now();
+
+        TRACY_PROFILE_SCOPE_END();
+    }
+
+    void AssetManager::iterateDirectory(const std::filesystem::path& dir,
+                                        const std::chrono::file_clock::time_point& tLast,
+                                        const std::chrono::file_clock::time_point& t)
+    {
+        // Check if directory was updated recently
+        const auto DIR_WRITE_TIME = std::filesystem::last_write_time(dir);
+        if (tLast < DIR_WRITE_TIME && DIR_WRITE_TIME <= t)
+        {
+            LOG_INFO("Iterating {0}", dir);
+
+            for (auto& fp : std::filesystem::directory_iterator(dir))
+            {
+                const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+
+                // Recurse
+                if (std::filesystem::is_directory(FP))
+                    iterateDirectory(FP, tLast, t);
+
+                // Check if file
+                if (!std::filesystem::is_regular_file(FP))
+                    continue;
+
+                // Check if not meta file
+                const std::filesystem::path FP_EXT = FP.extension();
+                if (FP_EXT == Asset::EXT_META)
+                    continue;
+
+                // Ensure meta file exists
+                auto fpMeta = FP;
+                fpMeta += Asset::EXT_META;
+                if (!std::filesystem::exists(fpMeta))
+                {
+                    ensureMeta(FP);
+                }
+
+                // Read meta contents
+                AssetMetaContent meta;
+                std::ifstream ifs = std::ifstream(fpMeta);
+                BinaryIO::Read(ifs, meta);
+                const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
+                if (!store.contains(meta.id))
+                {
+                    // Created
+                    LoadPath(FP);
+                    LOG_INFO("Load {0}", FP);
+                }
+                else if (store.at(meta.id)->contentPath != FP)
+                {
+                    // Moved
+                    store.at(meta.id)->contentPath = FP;
+                    store.at(meta.id)->metaPath = fpMeta;
+                    LOG_INFO("Move {0}", FP);
+                }
+                else if (tLast < WRITE_TIME && WRITE_TIME <= t)
+                {
+                    // Modified
+                    store.at(meta.id)->contentPath = FP;
+                    store.at(meta.id)->metaPath = fpMeta;
+                    store.at(meta.id)->timeLoaded = t;
+                    store.at(meta.id)->Reload();
+                    LOG_INFO("Modify {0}", FP);
+                }
+            }
+        }
     }
 
     AssetMetaContent AssetManager::ensureMeta(const std::filesystem::path& fp)

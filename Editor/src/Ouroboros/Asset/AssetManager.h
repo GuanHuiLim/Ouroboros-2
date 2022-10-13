@@ -25,6 +25,7 @@ Technology is prohibited.
 
 #include "Asset.h"
 
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/EventSystem/Event.h"
 
 class FileWatchEvent :public oo::Event
@@ -170,6 +171,16 @@ namespace oo
         /// <returns>The assets matching the criteria.</returns>
         std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive = true);
 
+        /// <summary>
+        /// Reloads all updated assets.
+        /// </summary>
+        void ReloadAssets();
+
+        /// <summary>
+        /// Reloads all assets.
+        /// </summary>
+        void ForceReloadAssets();
+
     private:
         /* --------------------------------------------------------------------------- */
         /* Members                                                                     */
@@ -177,22 +188,33 @@ namespace oo
 
         std::filesystem::path root;
         AssetStore store;
+        std::chrono::file_clock::time_point lastReloadTime;
 
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
         /// <summary>
+        /// Handles the window focus event.
+        /// </summary>
+        /// <param name="ev">The window focus event.</param>
+        void windowFocusHandler(WindowFocusEvent*);
+
+        /// <summary>
         /// Scans the filesystem for changes in files.
         /// </summary>
         /// <param name="ev">The file watch event.</param>
-        void fileWatch(FileWatchEvent* ev);
+        void watchFiles(FileWatchEvent* ev);
 
         /// <summary>
-        /// Recursively update asset paths inside a directory.
+        /// Iterates through a directory for changes in the filesystem.
         /// </summary>
-        /// <param name="dir">The directory.</param>
-        void updateAssetPaths(const std::filesystem::path& dir);
+        /// <param name="dir">The directory to iterate.</param>
+        /// <param name="lastTime">The last time at which an iteration was performed.</param>
+        /// <param name="iterationTime">The time at which this iteration is performed.</param>
+        void iterateDirectory(const std::filesystem::path& dir,
+                              const std::chrono::file_clock::time_point& lastTime,
+                              const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
 
         /// <summary>
         /// Ensures that a meta file for an asset exists
