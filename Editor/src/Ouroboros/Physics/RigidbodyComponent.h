@@ -20,21 +20,10 @@ Technology is prohibited.
 
 #include <glm/glm.hpp>
 #include <rttr/type>
+#include <Physics/Source/phy.h>
 
 namespace oo
 {
-    struct MassData final
-    {
-        double Mass = 10.0;
-        double InverseMass = 0.1;
-
-        //// for rotations
-        //double Inertia = 0.0;
-        //double InverseInertia = 0.0;
-
-        RTTR_ENABLE();
-    };
-
     /*-----------------------------------------------------------------------------*/
     /* Describes the supported variables that make up a material and how           */
     /* rigidbodies reacts when moving or collision.                                */
@@ -48,9 +37,27 @@ namespace oo
         double DynamicFriction  = 0.2;
         double StaticFriction   = 0.4;
 
+        PhysicsMaterial() = default;
+
+        PhysicsMaterial(::Material const& mat)
+            : Restitution { mat.restitution }
+            , DynamicFriction { mat.dynamicFriction }
+            , StaticFriction { mat.staticFriction }
+        {
+        }
+        
+        operator ::Material()
+        {
+            return ::Material
+            { 
+                .staticFriction = static_cast<float>(StaticFriction), 
+                .dynamicFriction = static_cast<float>(DynamicFriction), 
+                .restitution = static_cast<float>(Restitution)
+            };
+        }
+
         RTTR_ENABLE();
     };
-
 
     /*-----------------------------------------------------------------------------*/
     /* Describes and Enables Entites with this component attached to               */
@@ -58,72 +65,56 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     class RigidbodyComponent final
     {
-    private:
-        PhysicsMaterial m_material;
-        MassData m_data;
-
-        //vec2 m_linearVelocity;
-        //vec2 m_force;
-
-        //// Angular components : most components are float in 2D, vec3 in 3D
-        ////double m_orientation;
-        //double m_angularVelocity;
-        //double m_torque;
-
-        //// Used for interpolation
-        //vec3 m_prevPos;
-
-        ////Accumulated impulse
-        //vec2 m_accumulatedImpulse;
-
-        // Center of Mass
-        vec2 m_centerOfMass;
-    
     public:
-        /*-----------------------------------------------------------------------------*/
-        /* Public Adaptable Variables                                                  */
-        /*-----------------------------------------------------------------------------*/
-        bool Kinematic = false;
-        bool Interpolate = false;
-        bool UseAutoMass = true;
-        bool DoNotRotate = false;
-        double GravityScale = 1.0f;
-        double LinearDrag = 0.1f;
-        double AngularDrag = 0.1f;
-        vec2 CenterOfMassOffset = vec2{ 0 };
+        PhysicsObject object{};
 
-        /*-----------------------------------------------------------------------------*/
-        /* Public Interface Functions                                                  */
-        /*-----------------------------------------------------------------------------*/
+        PhysicsMaterial GetMaterial() const;
+        glm::vec3 GetPositionInPhysicsWorld() const;
+        glm::quat GetOrientationInPhysicsWorld() const;
 
-        /*-----------------------------------------------------------------------------*/
-        /* Getter Functions                                                            */
-        /*-----------------------------------------------------------------------------*/
-        double GetMass()                const { return m_data.Mass; }
-        double GetInverseMass()         const { return m_data.InverseMass; }
-        /*double GetInertia()             const { return m_data.Inertia; }
-        double GetInverseInertia()      const { return m_data.InverseInertia; }*/
-        /*double GetAngularVelocity()     const { return m_angularVelocity; }
-        vec2 GetForce()                 const { return m_force; }
-        vec2 GetVelocity()              const { return m_linearVelocity; }*/
-        PhysicsMaterial GetMaterial()   const { return m_material; }
+        bool StaticObject = true;
+        bool GetStatic() const;
+        void SetStatic(bool result);
 
-        /*-----------------------------------------------------------------------------*/
-        /* Setter Functions                                                            */
-        /*-----------------------------------------------------------------------------*/
-        /*void SetVelocity(vec2 newVel) { m_linearVelocity = newVel; }
-        void SetForce(vec2 newForce) { m_force = newForce; }
-        void SetTorque(double newTorque) { m_torque = newTorque; }*/
-        void SetMaterial(PhysicsMaterial material) { m_material = material; }
+        //rigid GetRigidType() const { object.getRigidType(type); }
+        //void SetRigidType(rigid type) { object.setRigidType(type); }
+        
+        void SetMaterial(PhysicsMaterial material);
+        void SetPosOrientation(PxVec3 pos, PxQuat quat);
 
-        /*-----------------------------------------------------------------------------*/
-        /* Query Functions                                                             */
-        /*-----------------------------------------------------------------------------*/
-        //bool IsKinematic()  const { return Kinematic; }
-        //bool IsDynamic()    const { return !Kinematic; }
+        void EnableGravity(bool enable);
+        //void SetKinematic(bool kine) { object.setKinematic(kine); }
 
-        //void SetInertia();
-        //void ResetInertia() { m_data.Inertia = m_data.InverseInertia = 0.f; }
+        // set default value for each type of shape & can change shape too
+        //void SetShape(shape shape) { object.setShape(shape); }
+
+        //// change each individual property based on its shape
+        //void SetBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth)
+        //{
+        //    object.setBoxProperty(halfextent_width, halfextent_height, halfextent_depth);
+        //}
+
+        //void SetSphereProperty(float radius)
+        //{
+        //    object.setSphereProperty(radius);
+        //}
+
+        ////void setPlaneProperty(float radius);
+        //void SetCapsuleProperty(float radius, float halfHeight)
+        //{
+        //    object.setCapsuleProperty(radius, halfHeight);
+        //}
+
+        // prob functions that dont really need
+        void SetMass(float mass);
+
+        void SetAngularDamping(float angularDamping);
+
+        void SetAngularVelocity(glm::vec3 angularVelocity);
+
+        void SetLinearDamping(float linearDamping);
+
+        void SetVelocity(glm::vec3 linearVelocity);
 
         RTTR_ENABLE();
     };
