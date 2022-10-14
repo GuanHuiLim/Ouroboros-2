@@ -25,6 +25,7 @@ Technology is prohibited.
 //#include "Ouroboros/Vulkan/RendererSystem.h"
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Vulkan/RendererSystem.h"
 
 namespace oo
 {
@@ -211,6 +212,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(runtime_scene_rendering);
         Scene::Render();
+        GetWorld().Get_System<MeshRendererSystem>()->UpdateCameras();
         TRACY_PROFILE_SCOPE_END();
         //constexpr const char* const text_rendering = "Text Rendering";
         {

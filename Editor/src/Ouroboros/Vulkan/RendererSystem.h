@@ -14,12 +14,14 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
+
 #include "RendererComponent.h"
 #include "LightComponent.h"
+#include "CameraComponent.h"
+
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
-
 namespace oo
 {
     class MeshRendererSystem : public Ecs::System
@@ -41,5 +43,6 @@ namespace oo
         //void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
 
         virtual void Run(Ecs::ECSWorld* world) override;
+        void UpdateCameras();
     };
 }

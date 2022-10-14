@@ -19,7 +19,6 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
-//#include "Ouroboros/Physics/PhysicsComponent.h"
 #include "Ouroboros/Physics/RigidbodyComponent.h"
 #include "Ouroboros/Physics/ColliderComponents.h"
 
@@ -174,7 +173,6 @@ namespace oo
 
             // set box size
             rb.object.setCapsuleProperty(GlobalHalfExtents.x * 2, GlobalHalfExtents.y * 2);
-            //rb.object.setBoxProperty(bc.GlobalExtents.x, bc.GlobalExtents.y, bc.GlobalExtents.z);
         });
 
         // Update global bounds of all objects
