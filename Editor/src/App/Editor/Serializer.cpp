@@ -353,13 +353,14 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 {
 	//save everything
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
-	SaveScript(go, val, doc);
+	//SaveScript(go, val, doc);
 
 	auto rpj_prefabComponent = val.FindMember(rttr::type::get<oo::PrefabComponent>().get_name().data());
 
 	auto& prefabcomponent = go.GetComponent<oo::PrefabComponent>();
 	std::string& prefab_data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder()/prefabcomponent.prefab_filePath).string());
 	rapidjson::Document prefab_doc;
+	
 	rapidjson::StringStream stream(prefab_data.c_str());
 	prefab_doc.ParseStream(stream);
 	//+1 to skip the first value
@@ -391,7 +392,14 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 					continue;
 				}
 				auto member = orignal_component.FindMember(iter_childVariables->name);
-				if (member->value == iter_childVariables->value)
+				if (member->value.IsFloat())
+				{
+					float a = member->value.GetFloat();
+					float b = iter_childVariables->value.GetFloat();
+					if(std::abs(a - b) < rapidjson_epsilon)//prevent float values from constantly overwriting
+						delete_list.push_back(iter_childVariables->name.GetString());
+				}
+				else if (member->value == iter_childVariables->value)
 				{
 					delete_list.push_back(iter_childVariables->name.GetString());
 				}

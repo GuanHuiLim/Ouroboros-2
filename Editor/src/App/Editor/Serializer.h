@@ -117,6 +117,7 @@ private:
 	inline static SerializerLoadProperties m_LoadProperties;
 	inline static SerializerScriptingLoadProperties m_loadScriptProperties;
 	inline static constexpr int rapidjson_precision = 4;
+	inline static constexpr float rapidjson_epsilon = 0.0001f;
 };
 
 template<typename Component>
@@ -225,13 +226,15 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 	
 	rapidjson::Document document;
 	document.ParseStream(stream);
-
+	std::map<UUID, UUID> scripts_id_mapping;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::shared_ptr<oo::GameObject> gameobj = scene->FindWithInstanceID(go.GetInstanceID());
 	parents.push(gameobj);
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
-		//gameobj->SetName(iter->name.GetString());
+		//map their old id to their current IDs
+		scripts_id_mapping.emplace(std::stoull(iter->name.GetString()), gameobj->GetInstanceID());
+		
 		gameobj->SetIsPrefab(true);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
@@ -247,6 +250,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		}
 
 		++members;
+		//futher optimizations
 		{//another element that will store all the component hashes and create the apporiate archtype
 			// go->SetArchtype(vector<hashes>);
 		}
@@ -265,6 +269,9 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 			gameobj = scene->CreateGameObjectImmediate();
 		}
 	}
+	//remapping of scripts here.
+
+
 
 	//oo::PrefabComponent& component = go.GetComponent<oo::PrefabComponent>();
 	////hardcoding this for now
