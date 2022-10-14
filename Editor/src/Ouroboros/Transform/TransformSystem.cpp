@@ -42,7 +42,7 @@ namespace oo
             world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here});
 
         Option 2 : Makes with Deferred Component excluded
-            static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent>();
+            static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent>();
             world->for_each(query, [&](GameObjectComponent& gocomp, TransformComponent& tf) { // do function here });
 
         NOTE: this might be extended in the future to include specific components or have
@@ -82,7 +82,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(transform_local_transform_update, tracy::Color::Gold4);
 
         // Update their local transform
-        static Ecs::Query query = Ecs::make_query_including_deferred<TransformComponent>();
+        static Ecs::Query query = Ecs::make_raw_query<TransformComponent>();
         m_world->for_each(query, [&](TransformComponent& tf)
             {
                 // TODO: this part of the code doesn't need to be serial.

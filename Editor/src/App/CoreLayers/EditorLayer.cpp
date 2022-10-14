@@ -32,22 +32,14 @@ Technology is prohibited.
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
-#ifdef OO_EDITOR
-	//ImGuiManager::InitAssetsAll();
-#endif
 }
-
-// TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
-// PROPERLY FOR IMGUI RENDERING TO TAKE PLACE
 
 void EditorLayer::OnUpdate()
 {
 	TRACY_PROFILE_SCOPE_NC(editor_ui_update, tracy::Color::Blue);
 
-#ifndef OO_END_PRODUCT
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
-#endif
 #ifdef OO_EDITOR
     else
 	    m_editor.Update();
@@ -72,14 +64,7 @@ void EditorLayer::OnUpdate()
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
-
-
 	}
-    //m_editor.ShowAllWidgets();
-
-    //if (m_demo)
-    //    ImGui::ShowDemoWindow(&m_demo);
-
 
 	TRACY_PROFILE_SCOPE_END();
 }

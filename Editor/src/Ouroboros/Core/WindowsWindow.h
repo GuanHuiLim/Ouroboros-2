@@ -15,8 +15,6 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-//#include "Ouroboros/Core/Window.h"
-
 #include <string>
 
 //forward declaration
@@ -37,7 +35,6 @@ namespace oo
     };
 
     //forward declaration
-    //class GraphicsContext;
     class VulkanContext;
 
     /********************************************************************************//*!
@@ -79,7 +76,7 @@ namespace oo
 
         void* GetNativeWindow() const { return m_window; }
         //void* GetRenderingContext() const { return m_context; }
-        VulkanContext* GetVulkanContext() const { return m_context; }
+        VulkanContext* GetVulkanContext() const { return m_context.get(); }
 
         bool IsVSync() const;
         bool IsFullscreen() const;
@@ -99,19 +96,8 @@ namespace oo
 
     private:
         SDL_Window* m_window;
-        //GraphicsContext* m_context;
-        VulkanContext* m_context;
-
-    private:
-        struct WindowData
-        {
-            std::string Title = "Default Title";
-            unsigned int Width = 1600, Height = 900;
-            bool VSync = true;
-            bool FullScreen = false;
-        };
-
-        WindowData m_data;
+        std::unique_ptr<VulkanContext> m_context;
+        WindowProperties m_data;
         bool m_focused;
     };
 }

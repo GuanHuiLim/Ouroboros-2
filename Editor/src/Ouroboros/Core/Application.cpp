@@ -80,22 +80,6 @@ namespace oo
 
             TRACY_PROFILE_FRAME_START(update_loop_name);
 
-
-
-            TRACY_PROFILE_SCOPE_NC(FILE_WATCH, tracy::Color::Aquamarine1);
-
-            std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - fileWatchTime).count() >= AssetManager::WATCH_INTERVAL)
-            {
-                FileWatchEvent fwe{ fileWatchTime };
-                EventManager::Broadcast<FileWatchEvent>(&fwe);
-                fileWatchTime = now;
-            }
-
-            TRACY_PROFILE_SCOPE_END();
-
-
-
             /*Process Inputs here*/
             input::Update();
 

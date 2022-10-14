@@ -133,4 +133,6 @@ namespace oo
         m_sceneManager.ChangeScene(m_loadpaths[index].SceneName);
     }
 
+    std::weak_ptr<RuntimeScene> RuntimeController::GetRuntimeScene() const { return m_runtimeScene; }
+
 }

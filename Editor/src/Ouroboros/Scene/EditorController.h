@@ -27,6 +27,7 @@ Technology is prohibited.
 //#include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 
+#include "App/SceneHeader.h"
 namespace oo
 {
     class EditorController
@@ -45,7 +46,7 @@ namespace oo
         };
 
     public:
-        EditorController(SceneManager& sceneManager, RuntimeController& runtimeController);
+        EditorController(SceneManager& sceneManager, RuntimeController& runtimeController, SCENE_STATE& activeState);
 
         void Simulate();
         void Pause();
@@ -53,18 +54,11 @@ namespace oo
 
         void Init(SceneInfo startfile);
         void LoadScene(const std::string& file);
-        bool GetActiveScenePaused() const;
-        bool GetActiveSceneStepMode() const;
+        /*bool GetActiveScenePaused() const;
+        bool GetActiveSceneStepMode() const;*/
 
-        enum class STATE
-        {
-            EDITING,
-            RUNNING,
-        };
-
-        STATE GetActiveState() const { return m_activeState; };
-        std::weak_ptr<EditorScene> GetEditorScene() const { return m_editorScene; }
-        std::weak_ptr<RuntimeScene> GetRuntimeScene() const { return m_runtimeScene; }
+        std::weak_ptr<EditorScene> GetEditorScene() const;
+        std::weak_ptr<RuntimeScene> GetRuntimeScene() const;
         
     private:
         void OnLoadProjectEvent(LoadProjectEvent* loadProjEvent);
@@ -72,11 +66,10 @@ namespace oo
         void OnRuntimeSceneChange(Scene::OnInitEvent*);
 
         std::weak_ptr<EditorScene> m_editorScene = {};
-        std::weak_ptr<RuntimeScene> m_runtimeScene = {};
-
-        STATE m_activeState = STATE::EDITING;
+        
         bool m_temporaryAdd = false;
 
+        SCENE_STATE& m_activeState;
         SceneManager& m_sceneManager;
         RuntimeController& m_runtimeController;
     };

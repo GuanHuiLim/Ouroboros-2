@@ -21,6 +21,7 @@ Technology is prohibited.
 namespace oo
 {
     std::unordered_map<std::string, ComponentDatabase::ComponentType> ComponentDatabase::componentTypeMap;
+    std::unordered_map<std::string, std::vector<std::string>> ComponentDatabase::inheritanceMap;
 
     void ComponentDatabase::RegisterComponent(std::string const& name_space, std::string const& name,
         ComponentAction Add, ComponentAction Remove, ComponentCheck Has,
@@ -43,12 +44,27 @@ namespace oo
 
     ComponentDatabase::ComponentDatabase(SceneID sceneID) : sceneID{ sceneID }
     {
-
     }
 
     ComponentDatabase::~ComponentDatabase()
     {
         DeleteAll();
+    }
+
+    void ComponentDatabase::Initialize()
+    {
+        MonoClass* componentClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Component");
+        for (auto const& [key, type] : componentTypeMap)
+        {
+            MonoClass* klass = ScriptEngine::GetClass("ScriptCore", type.name_space.c_str(), type.name.c_str());
+            MonoClass* parent = mono_class_get_parent(klass);
+            while (parent != componentClass && parent != nullptr)
+            {
+                std::string parentKey = std::string{ mono_class_get_namespace(parent) } + "." + mono_class_get_name(parent);
+                inheritanceMap[parentKey].emplace_back(key);
+                parent = mono_class_get_parent(parent);
+            }
+        }
     }
 
     void ComponentDatabase::InstantiateObjectFull(UUID id)
@@ -87,7 +103,7 @@ namespace oo
         mono_field_set_value(GO, transformField, transform);
     }
 
-ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* name_space, const char* name, bool onlyScript)
+    ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* name_space, const char* name, bool onlyScript)
     {
         IntPtr* component = TryGetComponent(id, name_space, name);
         if(component == nullptr)
@@ -136,6 +152,14 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
     ComponentDatabase::IntPtr ComponentDatabase::TryRetrieve(UUID id, const char* name_space, const char* name)
     {
         IntPtr* ptr = TryGetComponent(id, name_space, name);
+        if (ptr == nullptr)
+            return 0;
+        return *ptr;
+    }
+
+    ComponentDatabase::IntPtr ComponentDatabase::TryRetrieveDerived(UUID id, const char* name_space, const char* name)
+    {
+        IntPtr* ptr = TryGetComponentDerived(id, name_space, name);
         if (ptr == nullptr)
             return 0;
         return *ptr;
@@ -207,13 +231,18 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
         objectMap.clear();
     }
 
+    ComponentDatabase::ComponentType& ComponentDatabase::GetComponentType(const char* key)
+    {
+        auto search = componentTypeMap.find(key);
+        if (search == componentTypeMap.end())
+            throw std::exception((std::string{ "ComponentDatabase: component not registered: " } + key).c_str());
+        return search->second;
+    }
+
     ComponentDatabase::ComponentType& ComponentDatabase::GetComponentType(const char* name_space, const char* name)
     {
         std::string key = std::string{ name_space } + "." + name;
-        auto search = componentTypeMap.find(key);
-        if(search == componentTypeMap.end())
-            throw std::exception((std::string{ "ComponentDatabase: component not registered: " } + key).c_str());
-        return search->second;
+        return GetComponentType(key.c_str());
     }
 
     ComponentDatabase::Object& ComponentDatabase::GetObject(UUID uuid)
@@ -229,13 +258,18 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
         return object.componentList[type.index];
     }
 
-    ComponentDatabase::ComponentType* ComponentDatabase::TryGetComponentType(const char* name_space, const char* name)
+    ComponentDatabase::ComponentType* ComponentDatabase::TryGetComponentType(const char* key)
     {
-        std::string key = std::string{ name_space } + "." + name;
         auto search = componentTypeMap.find(key);
         if (search == componentTypeMap.end())
             return nullptr;
         return &(search->second);
+    }
+
+    ComponentDatabase::ComponentType* ComponentDatabase::TryGetComponentType(const char* name_space, const char* name)
+    {
+        std::string key = std::string{ name_space } + "." + name;
+        return TryGetComponentType(key.c_str());
     }
 
     ComponentDatabase::Object* ComponentDatabase::TryGetObject(UUID uuid)
@@ -249,5 +283,45 @@ ComponentDatabase::IntPtr ComponentDatabase::Instantiate(UUID id, const char* na
     ComponentDatabase::IntPtr* ComponentDatabase::TryGetComponent(Object& object, ComponentType& type)
     {
         return &(object.componentList[type.index]);
+    }
+
+    ComponentDatabase::IntPtr* ComponentDatabase::TryGetComponent(UUID uuid, const char* name_space, const char* name)
+    {
+        Object* object = TryGetObject(uuid);
+        if (object == nullptr)
+            return nullptr;
+        ComponentType* type = TryGetComponentType(name_space, name);
+        if (type == nullptr)
+            return nullptr;
+        return TryGetComponent(*object, *type);
+    }
+
+    ComponentDatabase::IntPtr* ComponentDatabase::TryGetComponentDerived(UUID uuid, const char* name_space, const char* name)
+    {
+        Object* object = TryGetObject(uuid);
+        if (object == nullptr)
+            return nullptr;
+        ComponentType* type = TryGetComponentType(name_space, name);
+        if (type != nullptr)
+        {
+            IntPtr* ptr = TryGetComponent(*object, *type);
+            if (*ptr != 0)
+                return ptr;
+        }
+
+        auto potentialDerived = inheritanceMap.find(std::string{ name_space } + "." + name);
+        if (potentialDerived == inheritanceMap.end())
+            return nullptr;
+        for (std::string const& derived : potentialDerived->second)
+        {
+            ComponentType* derivedType = TryGetComponentType(derived.c_str());
+            if (derivedType != nullptr)
+            {
+                IntPtr* ptr = TryGetComponent(*object, *derivedType);
+                if (*ptr != 0)
+                    return ptr;
+            }
+        }
+        return nullptr;
     }
 }
