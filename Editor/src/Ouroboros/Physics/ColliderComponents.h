@@ -59,10 +59,19 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     struct BoxColliderComponent final : public ColliderBase
     {
-        AABB Bounds = { { -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f } };
+        //AABB Bounds = { { -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f } };
+        vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
         vec3 Size = { 1.f, 1.f, 1.f };
-        
-        AABB GlobalBounds;
+        vec3 GlobalHalfExtents = { 0.5f, 0.5f, 0.5f };
+        //AABB GlobalBounds;
+
+        RTTR_ENABLE(ColliderBase);
+    };
+
+    struct CapsuleColliderComponent final :public ColliderBase
+    {
+        float Radius        = 0.5f;
+        float HalfHeight    = 0.5f;
 
         RTTR_ENABLE(ColliderBase);
     };

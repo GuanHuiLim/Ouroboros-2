@@ -42,7 +42,6 @@ Technology is prohibited.
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
-#include <Ouroboros/Physics/PhysicsComponent.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 
@@ -131,12 +130,10 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 
-
-	DisplayComponent<oo::PhysicsComponent>(gameobject);
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
-	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
+	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
 
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
@@ -167,6 +164,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
 
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
