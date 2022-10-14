@@ -78,6 +78,9 @@ namespace oo
         void UpdateCallbacks();
         void ResolvePhysicsResolution();
         void PostUpdate();
+        void DrawDebugColliders();
+
+        void EditorCoreUpdate();
 
 #if PHYSICS_DEBUG_MSG && OO_DEBUG || PHYSICS_DEBUG_MSG && OO_RELEASE
         std::uint64_t m_collisionChecks = 0, m_actualCollisions = 0;
