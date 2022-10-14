@@ -39,16 +39,16 @@ namespace oo
 
         PhysicsMaterial() = default;
 
-        PhysicsMaterial(::Material const& mat)
+        PhysicsMaterial(myPhysx::Material const& mat)
             : Restitution { mat.restitution }
             , DynamicFriction { mat.dynamicFriction }
             , StaticFriction { mat.staticFriction }
         {
         }
         
-        operator ::Material()
+        operator myPhysx::Material()
         {
-            return ::Material
+            return myPhysx::Material
             { 
                 .staticFriction = static_cast<float>(StaticFriction), 
                 .dynamicFriction = static_cast<float>(DynamicFriction), 
@@ -58,6 +58,14 @@ namespace oo
 
         RTTR_ENABLE();
     };
+    
+    enum class ForceMode
+    {
+        FORCE,
+        ACCELERATION,
+        IMPULSE,
+        VELOCITY_CHANGE,
+    };
 
     /*-----------------------------------------------------------------------------*/
     /* Describes and Enables Entites with this component attached to               */
@@ -66,31 +74,44 @@ namespace oo
     class RigidbodyComponent final
     {
     public:
-        PhysicsObject object{};
+        bool IsStaticObject = true;
+        myPhysx::PhysicsObject object{};
 
         PhysicsMaterial GetMaterial() const;
         glm::vec3 GetPositionInPhysicsWorld() const;
         glm::quat GetOrientationInPhysicsWorld() const;
 
-        bool StaticObject = true;
-        bool GetStatic() const;
         void SetStatic(bool result);
-        
+
+        float GetMass() const;
+        float GetAngularDamping() const;
+        glm::vec3 GetAngularVelocity() const;
+        float GetLinearDamping() const;
+        glm::vec3 GetLinearVelocity() const;
+
+        bool IsGravityEnabled() const;
+        bool IsGravityDisabled() const;
+
+        bool IsStatic() const;
+        bool IsKinematic() const;
+        bool IsDynamic() const;
+
         void SetMaterial(PhysicsMaterial material);
-        void SetPosOrientation(PxVec3 pos, PxQuat quat);
+        void SetPosOrientation(glm::vec3 pos, glm::quat quat);
 
-        void EnableGravity(bool enable);
-        //void SetKinematic(bool kine) { object.setKinematic(kine); }
-
+        void SetGravity(bool enable);
+        void EnableGravity();
+        void DisableGravity();
+        
+        void SetKinematic(bool kine);
         void SetMass(float mass);
-
         void SetAngularDamping(float angularDamping);
-
         void SetAngularVelocity(glm::vec3 angularVelocity);
-
         void SetLinearDamping(float linearDamping);
+        void SetLinearVelocity(glm::vec3 linearVelocity);
 
-        void SetVelocity(glm::vec3 linearVelocity);
+        void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
+        void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
 
         RTTR_ENABLE();
     };

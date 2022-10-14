@@ -140,8 +140,12 @@ namespace oo
     // additional function that runs during runtime scene only.
     void MeshRendererSystem::UpdateCameras()
     {
+        // TODO: debug draw the camera's view in editormode
+        //DebugDraw::AddLine();
+        
         // Update Camera
         // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
+        
         auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
         static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
         m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)

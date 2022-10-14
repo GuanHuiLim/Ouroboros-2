@@ -129,7 +129,7 @@ namespace oo
         {
             auto pos    = tf.GetGlobalPosition();
             auto quat   = tf.GetGlobalRotationQuat();
-            rb.object.setPosOrientation( { pos.x, pos.y, pos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z  } );
+            rb.SetPosOrientation(pos, quat);
         });
 
         //Updating box collider's bounds and debug drawing
@@ -352,13 +352,13 @@ namespace oo
         auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
 
         // create box
-        rb_comp.object.setShape(shape::box);
+        rb_comp.object.setShape(myPhysx::shape::box);
     }
 
     void PhysicsSystem::OnBoxColliderRemove(Ecs::ComponentEvent<BoxColliderComponent>* bc)
     {
         auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
-        rb_comp.object.setShape(shape::none);
+        rb_comp.object.setShape(myPhysx::shape::none);
     }
 
     void PhysicsSystem::OnCapsuleColliderAdd(Ecs::ComponentEvent<CapsuleColliderComponent>* cc)
@@ -372,13 +372,13 @@ namespace oo
         auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
 
         // create box
-        rb_comp.object.setShape(shape::capsule);
+        rb_comp.object.setShape(myPhysx::shape::capsule);
     }
 
     void PhysicsSystem::OnCapsuleColliderRemove(Ecs::ComponentEvent<CapsuleColliderComponent>* cc)
     {
         auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
-        rb_comp.object.setShape(shape::none);
+        rb_comp.object.setShape(myPhysx::shape::none);
     }
 
    /* void PhysicsSystem::OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb)

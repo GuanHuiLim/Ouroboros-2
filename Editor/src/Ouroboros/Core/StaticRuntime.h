@@ -19,7 +19,7 @@ Technology is prohibited.
 
 #include "Timer.h"
 #include "Log.h"
-#include "Physics/Source/phy.h"
+#include <Physics/Source/phy.h>
 
 namespace oo
 {
@@ -30,7 +30,7 @@ namespace oo
             log::init();
             LOG_CORE_INFO("Begin loading static lifetime objects");
             timer::init();
-            physx_system::init();
+            myPhysx::physx_system::init();
         }
     
         void terminate()
@@ -38,7 +38,7 @@ namespace oo
             timer::terminate();
             LOG_CORE_INFO("Finish unloading static lifetime objects");
             log::shutdown();
-            physx_system::shutdown();
+            myPhysx::physx_system::shutdown();
         }
     };
 }
