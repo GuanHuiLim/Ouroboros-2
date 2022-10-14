@@ -85,7 +85,7 @@ namespace oo
         Scene* m_scene;
 
         //underlying physics world
-        PhysxWorld m_physicsWorld;
+        myPhysx::PhysxWorld m_physicsWorld;
 
         //time accumulator
         double m_accumulator;
