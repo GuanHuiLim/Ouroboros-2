@@ -34,6 +34,8 @@ workspace "Ouroboros"
         "GLM_FORCE_PURE",
         "GLM_FORCE_SSE42",
         "GLM_FORCE_DEFAULT_ALIGNED_GENTYPES", 
+
+        "RAPIDJSON_SSE42",
     }
 
     --platform defines
