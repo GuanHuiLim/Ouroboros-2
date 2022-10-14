@@ -355,8 +355,12 @@ void PhysicsObject::setKinematic(bool kine) {
 
         PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-        if (underlying_obj->rigidID == rigid::rdynamic)
+        if (underlying_obj->rigidID == rigid::rdynamic) {
+
             underlying_obj->rd.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
+
+            underlying_obj->kinematic = kine;
+        }
     }
 }
 
@@ -366,7 +370,9 @@ void PhysicsObject::setGravity(bool grav) {
 
         PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-        underlying_obj->rd.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, grav);       
+        underlying_obj->rd.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, grav);    
+
+        underlying_obj->gravity = grav;
     }
 }
 
