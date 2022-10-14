@@ -75,9 +75,6 @@ namespace oo
         bool StaticObject = true;
         bool GetStatic() const;
         void SetStatic(bool result);
-
-        //rigid GetRigidType() const { object.getRigidType(type); }
-        //void SetRigidType(rigid type) { object.setRigidType(type); }
         
         void SetMaterial(PhysicsMaterial material);
         void SetPosOrientation(PxVec3 pos, PxQuat quat);
@@ -85,27 +82,6 @@ namespace oo
         void EnableGravity(bool enable);
         //void SetKinematic(bool kine) { object.setKinematic(kine); }
 
-        // set default value for each type of shape & can change shape too
-        //void SetShape(shape shape) { object.setShape(shape); }
-
-        //// change each individual property based on its shape
-        //void SetBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth)
-        //{
-        //    object.setBoxProperty(halfextent_width, halfextent_height, halfextent_depth);
-        //}
-
-        //void SetSphereProperty(float radius)
-        //{
-        //    object.setSphereProperty(radius);
-        //}
-
-        ////void setPlaneProperty(float radius);
-        //void SetCapsuleProperty(float radius, float halfHeight)
-        //{
-        //    object.setCapsuleProperty(radius, halfHeight);
-        //}
-
-        // prob functions that dont really need
         void SetMass(float mass);
 
         void SetAngularDamping(float angularDamping);

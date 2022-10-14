@@ -50,6 +50,7 @@ Technology is prohibited.
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/RendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include <Ouroboros/Vulkan/CameraComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -139,6 +140,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
+	DisplayComponent<oo::CameraComponent>(gameobject);
 
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
@@ -170,6 +172,8 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
+
 		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 

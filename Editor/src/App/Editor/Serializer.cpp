@@ -39,6 +39,7 @@ Technology is prohibited.
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include <Ouroboros/Vulkan/CameraComponent.h>
 #include "Ouroboros/Audio/AudioListenerComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
@@ -67,6 +68,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
 	AddLoadComponent<oo::LightComponent>();
+	AddLoadComponent<oo::CameraComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
 	AddLoadComponent<oo::CapsuleColliderComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
@@ -341,6 +343,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveComponent<oo::LightComponent>(go, val, doc);
+	SaveComponent<oo::CameraComponent>(go, val, doc);
 
 	SaveComponent<oo::AudioListenerComponent>(go, val, doc);
 	SaveComponent<oo::AudioSourceComponent>(go, val, doc);
