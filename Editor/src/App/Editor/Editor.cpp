@@ -125,7 +125,6 @@ void Editor::Update()
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 		Serializer::SaveScene(*(scene));
-		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 	}
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Z))
 	{
@@ -247,7 +246,6 @@ void PopupHelperWindow::CloseProjectPopup()
 				eventAfterPrompt.nextAction();
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 			Serializer::SaveScene(*(scene));
-			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -298,7 +296,6 @@ void PopupHelperWindow::OpenFilePopup()
 			//save the scene
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 			Serializer::SaveScene(*(scene));
-			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 		}
 		ImGui::SameLine();
 		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
