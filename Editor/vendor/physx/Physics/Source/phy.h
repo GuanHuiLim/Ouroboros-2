@@ -36,184 +36,204 @@ Technology is prohibited.
 
 using namespace physx;
 
-class Collision;
+namespace myPhysx {
 
-class PhysxWorld;
-class PVD;
-struct PhysxObject;
-struct PhysicsObject;
+    class Collision;
 
-enum class rigid { none, rstatic, rdynamic };
-enum class shape { none, box, sphere, capsule, plane };
+    class PhysxWorld;
+    class PVD;
+    struct PhysxObject;
+    struct PhysicsObject;
 
-/*
-class EventCallBack : public PxSimulationEventCallback {
+    enum class rigid { none, rstatic, rdynamic };
+    enum class shape { none, box, sphere, capsule, plane };
+    enum class force { conventional, explosive, velocity, acceleration };
 
-private:
+    /*
+    class EventCallBack : public PxSimulationEventCallback {
 
-public:
-    void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override {
-        printf("CALLBACK: onConstraintBreak\n");
-    }
-    void onWake(PxActor** actors, PxU32 count) override {
-        printf("CALLBACK: onWake\n");
-    }
-    void onSleep(PxActor** actors, PxU32 count) override {
-        printf("CALLBACK: onSleep\n");
-    }
-    void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) override {
-        printf("CALLBACK: onContact\n");
-    }
-    void onTrigger(PxTriggerPair* pairs, PxU32 count) override {
-        printf("CALLBACK: onTrigger\n");
-    }
-    void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override {
-        printf("CALLBACK: onAdvance\n");
-    }
-};
-*/
+    private:
 
-struct RigidDynamic {
+    public:
+        void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override {
+            printf("CALLBACK: onConstraintBreak\n");
+        }
+        void onWake(PxActor** actors, PxU32 count) override {
+            printf("CALLBACK: onWake\n");
+        }
+        void onSleep(PxActor** actors, PxU32 count) override {
+            printf("CALLBACK: onSleep\n");
+        }
+        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) override {
+            printf("CALLBACK: onContact\n");
+        }
+        void onTrigger(PxTriggerPair* pairs, PxU32 count) override {
+            printf("CALLBACK: onTrigger\n");
+        }
+        void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override {
+            printf("CALLBACK: onAdvance\n");
+        }
+    };
+    */
 
-    PxRigidDynamic* rigidDynamic = nullptr;
-};
+    struct RigidDynamic {
 
-struct RigidStatic {
+        PxRigidDynamic* rigidDynamic = nullptr;
+    };
 
-    PxRigidStatic* rigidStatic = nullptr;
+    struct RigidStatic {
 
-    /// other variables if needed
-};
+        PxRigidStatic* rigidStatic = nullptr;
+    };
 
-// unprotected class
-struct Material {
+    // unprotected class
+    struct Material {
 
-    PxReal staticFriction;
-    PxReal dynamicFriction;
-    PxReal restitution;
-};
+        PxReal staticFriction;
+        PxReal dynamicFriction;
+        PxReal restitution;
+    };
 
-// backend holds the overall info of the entire physics engine
-namespace physx_system {
+    // backend holds the overall info of the entire physics engine
+    namespace physx_system {
 
-    void init();
+        void init();
 
-    void shutdown();
+        void shutdown();
 
-    PxFoundation* createFoundation();
+        PxFoundation* createFoundation();
 
-    PxPhysics* createPhysics();
+        PxPhysics* createPhysics();
 
-    PxFoundation* getFoundation();
+        PxFoundation* getFoundation();
 
-    PxPhysics* getPhysics();
-};
+        PxPhysics* getPhysics();
+    };
 
-// describes a physics scene
-class PhysxWorld {
+    // describes a physics scene
+    class PhysxWorld {
 
-private:
+    private:
 
-    friend struct PhysicsObject;
+        friend struct PhysicsObject;
 
-    PxScene* scene = nullptr;
-    std::map<phy_uuid::UUID, PxMaterial*> mat;
-    PxVec3 gravity;
+        PxScene* scene = nullptr;
+        std::map<phy_uuid::UUID, PxMaterial*> mat;
+        PxVec3 gravity;
 
-    std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
+        std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
-    std::vector<PhysxObject> m_objects; // to iterate through for setting the data
+        std::vector<PhysxObject> m_objects; // to iterate through for setting the data
 
-public:
+    public:
 
-    // SCENE
-    PhysxWorld(PxVec3 gravity);
-    ~PhysxWorld();
-    void updateScene(float dt);
+        // SCENE
+        PhysxWorld(PxVec3 gravity);
+        ~PhysxWorld();
+        void updateScene(float dt);
 
-    // GRAVITY
-    PxVec3 getGravity() const;
-    void setGravity(PxVec3 gra);
+        // GRAVITY
+        PxVec3 getWorldGravity() const;
+        void setWorldGravity(PxVec3 gra);
 
-    // RIGIDBODY
-    PhysicsObject createInstance();
-    void removeInstance(PhysicsObject obj);
+        // RIGIDBODY
+        PhysicsObject createInstance();
+        void removeInstance(PhysicsObject obj);
 
-    //CHECKING QUERY
-};
+        //CHECKING QUERY
+    };
 
-// associated to each object in the physics world (me store)
-struct PhysxObject {
+    // associated to each object in the physics world (me store)
+    struct PhysxObject {
 
-    phy_uuid::UUID id = 0;
-    phy_uuid::UUID matID = 0;
+        phy_uuid::UUID id = 0;
+        phy_uuid::UUID matID = 0;
 
-    // shape
-    PxShape* m_shape = nullptr; // prob no need this
-    shape shape = shape::none;
+        // shape
+        PxShape* m_shape = nullptr; // prob no need this
+        shape shape = shape::none;
 
-    // ensure at least static or dynamic is init
-    RigidStatic rs{};
-    RigidDynamic rd{};
+        // ensure at least static or dynamic is init
+        RigidStatic rs{};
+        RigidDynamic rd{};
 
-    rigid rigidID = rigid::none;
+        rigid rigidID = rigid::none;
 
-    bool gravity = true;
-    bool kinematic = false;
-};
+        bool gravity = true; // static should be false
+        bool kinematic = false;
+    };
 
-struct PhysicsObject { // you store
+    struct PhysicsObject { // you store
 
-    phy_uuid::UUID id;
-    PhysxWorld* world;
+        phy_uuid::UUID id;
+        PhysxWorld* world;
 
-    // GETTERS
-    Material getMaterial() const;
-    PxVec3 getposition() const;
-    PxQuat getOrientation() const;
+        // GETTERS
+        Material getMaterial() const;
+        PxVec3 getposition() const;
+        PxQuat getOrientation() const;
 
-    // SETTERS
-    void setRigidType(rigid type);
-    void setMaterial(Material material);
-    //void setposition(PxVec3 pos);
-    //void setOrientation(PxQuat quat);
-    void setPosOrientation(PxVec3 pos, PxQuat quat);
+        PxReal getMass() const;
+        PxReal getInvMass() const;
+        PxReal getAngularDamping() const;
+        PxVec3 getAngularVelocity() const;
+        PxReal getLinearDamping() const;
+        PxVec3 getLinearVelocity() const;
 
-    void setGravity(bool gravity);
-    void setKinematic(bool kine);
+        bool getGravity() const;
+        bool getKinematic() const;
 
-    // set default value for each type of shape & can change shape too
-    void setShape(shape shape);
+        // SETTERS
+        void setRigidType(rigid type);
+        void setMaterial(Material material);
+        void setPosOrientation(PxVec3 pos, PxQuat quat);
 
-    // change each individual property based on its shape
-    void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
-    void setSphereProperty(float radius);
-    //void setPlaneProperty(float radius);
-    void setCapsuleProperty(float radius, float halfHeight);
+        void setMass(PxReal mass);
+        void setMassSpaceInertia(PxVec3 mass);
+        void setAngularDamping(PxReal angularDamping);
+        void setAngularVelocity(PxVec3 angularVelocity);
+        void setLinearDamping(PxReal linearDamping);
+        void setLinearVelocity(PxVec3 linearVelocity);
 
-    // prob functions that dont really need
-    void setMass(PxReal mass);
-    void setAngularDamping(PxReal angularDamping);
-    void setAngularVelocity(PxVec3 angularVelocity);
-    void setLinearDamping(PxReal linearDamping);
-    void setLinearVelocity(PxVec3 linearVelocity);
-};
+        void setGravity(bool gravity);
+        void setKinematic(bool kine);
+
+        // FORCE
+        void addForce(PxVec3 f_amount, force f);
+        void addTorque(PxVec3 f_amount, force f);
+
+        // set default value for each type of shape & can change shape too
+        void setShape(shape shape);
+        void removeShape();
+
+        // change each individual property based on its shape
+        void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
+        void setSphereProperty(float radius);
+        void setCapsuleProperty(float radius, float halfHeight);
+        //void setPlaneProperty(float radius);
+
+    };
 
 
-// Physx visual degguer
-class PVD {
+    // Physx visual degguer
+    class PVD {
 
-private:
+    private:
 
-    PxPvd* mPVD;
+        PxPvd* mPVD;
 
-public:
+        PxPvdTransport* mTransport;
 
-    PxPvd* createPvd(PxFoundation* foundation, const char* ip);
+    public:
 
-    void setupPvd(PxScene* scene);
+        PxPvd* createPvd(PxFoundation* foundation, const char* ip);
 
-    PxPvd*& pvd__();
+        void setupPvd(PxScene* scene);
 
-    PxPvd* const& pvd__() const;
+        PxPvdTransport* getTransport();
+
+        PxPvd*& pvd__();
+
+        PxPvd* const& pvd__() const;
+    };
 };
