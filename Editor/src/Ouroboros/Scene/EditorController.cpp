@@ -40,6 +40,8 @@ namespace oo
 
     void EditorController::OnLoadProjectEvent(LoadProjectEvent* loadProjEvent)
     {
+        LOG_TRACE("Editor Controller Received and Resolving Load Project Event");
+
         std::filesystem::path filename = loadProjEvent->m_startScene;
         SceneInfo sceneData{ filename.stem().string(), loadProjEvent->m_startScene };
         Init(sceneData);
@@ -47,6 +49,8 @@ namespace oo
 
     void EditorController::OnOpenFileEvent(OpenFileEvent* openFileEvent)
     {
+        LOG_TRACE("Editor Controller Received and Resolving Open File Event");
+
         if (openFileEvent->m_type == OpenFileEvent::FileType::PREFAB ||
             openFileEvent->m_type == OpenFileEvent::FileType::SCENE)
         {
@@ -89,28 +93,34 @@ namespace oo
             // set active scene to runtime scene
             m_activeState = SCENE_STATE::RUNNING;
 
-            //Force save when you press play [ not sure if intended ]
-            m_editorScene.lock()->Save();
+            auto editor_scene = m_editorScene.lock();
+            ASSERT_MSG(editor_scene == nullptr, "editor scene shouldn't be null now!");
 
-            m_temporaryAdd = !m_runtimeController.HasScene(m_editorScene.lock()->GetID());
+            //Force save when you press play [ not sure if intended ]
+            editor_scene->Save();
+
+            auto editor_scene_name = editor_scene->GetSceneName();
+            m_temporaryAdd = !m_runtimeController.HasScene(editor_scene_name);
             // add selected path as load path
             if (m_temporaryAdd)
-                m_runtimeController.AddLoadPath(m_editorScene.lock()->GetSceneName(), m_editorScene.lock()->GetFilePath());
+                m_runtimeController.AddLoadPath(editor_scene_name, editor_scene->GetFilePath());
 
             // Generate all the scenes on run
             m_runtimeController.GenerateScenes();
 
             // Change runtime scene to currently selected
-            m_runtimeController.ChangeRuntimeScene(m_editorScene.lock()->GetSceneName());
+            m_runtimeController.ChangeRuntimeScene(editor_scene_name);
         }
         // if in runtime 
         else if (m_activeState == SCENE_STATE::RUNNING)
         {
+            auto runtime_scene = m_runtimeController.GetRuntimeScene().lock();
+            ASSERT_MSG(runtime_scene == nullptr, "runtime scene shouldn't be null now!");
             // check if its paused
-
-            if (m_runtimeController.GetRuntimeScene().lock()->IsPaused())
+            if (runtime_scene->IsPaused())
             {
-                m_runtimeController.GetRuntimeScene().lock()->ResumeSimulation();
+                runtime_scene->ResumeSimulation();
+                LOG_TRACE("Resuming simulation of runtime scene \"{0}\"", runtime_scene->GetSceneName());
             }
             //else // is either in step mode or all good.
             //{
@@ -128,13 +138,18 @@ namespace oo
         OnPauseEvent onPauseEvent;
         EventManager::Broadcast(&onPauseEvent);
 
-        if (m_runtimeController.GetRuntimeScene().lock()->IsStepMode())
+        auto runtime_scene = m_runtimeController.GetRuntimeScene().lock();
+        ASSERT_MSG(runtime_scene == nullptr, "runtime scene shouldn't be null!");
+
+        if (runtime_scene->IsStepMode())
         {
-            m_runtimeController.GetRuntimeScene().lock()->ProcessFrame(1);
+            runtime_scene->ProcessFrame(1);
+            LOG_TRACE("Stepping through runtime scene \"{0}\"", runtime_scene->GetSceneName());
         }
-        else if (!m_runtimeController.GetRuntimeScene().lock()->IsPaused()) // check if runtime scene is currently paused.
+        else if (!runtime_scene->IsPaused()) // check if runtime scene is currently paused.
         {
-            m_runtimeController.GetRuntimeScene().lock()->PauseSimulation();
+            runtime_scene->PauseSimulation();
+            LOG_TRACE("Paused runtime scene \"{0}\"", runtime_scene->GetSceneName());
         }
         //else // scene is already paused, proceed to step mode.
         //{
@@ -144,9 +159,9 @@ namespace oo
 
     void EditorController::LoadScene(const std::string& newPath)
     {
-        LOG_TRACE("Loading new Scene at path {0}", newPath);
-
         if (m_activeState == SCENE_STATE::RUNNING) return;
+
+        LOG_TRACE("Editor Scene Loading New Scene at path \"{0}\"", newPath);
 
         // Remove all old scenes when loading a new one
         m_runtimeController.RemoveScenes();
@@ -162,7 +177,6 @@ namespace oo
         m_editorScene.lock()->SetNewPath(newPath);
         // reload active scene [ this scene ]
         m_sceneManager.ReloadActiveScene();
-
         // reset runtime Scene to be nullptr
         m_runtimeController.GetRuntimeScene().lock() = nullptr;
     }
@@ -170,16 +184,6 @@ namespace oo
     std::weak_ptr<EditorScene> EditorController::GetEditorScene() const { return m_editorScene; }
 
     std::weak_ptr<RuntimeScene> EditorController::GetRuntimeScene() const { return m_runtimeController.GetRuntimeScene(); }
-
-    /*bool EditorController::GetActiveScenePaused() const
-    {
-        return m_activeState == SCENE_STATE::RUNNING && m_runtimeController.GetRuntimeScene().lock()->IsPaused();
-    }
-
-    bool EditorController::GetActiveSceneStepMode() const
-    {
-        return m_activeState == SCENE_STATE::RUNNING && m_runtimeController.GetRuntimeScene().lock()->IsStepMode();
-    }*/
 
     void EditorController::Stop()
     {
@@ -197,7 +201,7 @@ namespace oo
         //    oo::Timestep::TimeScale = 1.0;
         //}
 
-        LOG_INFO("Changing back to Editor Scene: {0}!", m_editorScene.lock()->GetSceneName());
+        LOG_INFO("Changing to Editor Scene named \"{0}\"!", m_editorScene.lock()->GetSceneName());
 
         m_runtimeController.RemoveScenes();
         
@@ -216,7 +220,10 @@ namespace oo
     {
         // if the scene is active, it has to be a runtime scene!
         if (m_activeState == SCENE_STATE::RUNNING)
-            m_runtimeController.GetRuntimeScene() = std::static_pointer_cast<RuntimeScene>(m_sceneManager.GetActiveScene().lock());
+        {
+            auto new_runtimescene = std::static_pointer_cast<RuntimeScene>(m_sceneManager.GetActiveScene().lock());
+            m_runtimeController.SetRuntimeScene(new_runtimescene);
+        }
     }
 
 }
