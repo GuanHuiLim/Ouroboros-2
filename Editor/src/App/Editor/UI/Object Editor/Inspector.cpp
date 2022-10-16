@@ -38,6 +38,7 @@ Technology is prohibited.
 #include <Ouroboros/Audio/AudioSourceComponent.h>
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
+#include <Ouroboros/ECS/DuplicatedComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
@@ -128,6 +129,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
+	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 
 
 	DisplayComponent<oo::PhysicsComponent>(gameobject);
@@ -213,6 +215,8 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 		}
 		if (ImGui::Selectable(name.c_str(), false))
 		{
+            auto ss = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetWorld().Get_System<oo::ScriptSystem>();
+            ss->AddScript(go.GetInstanceID(), script.name_space.c_str(), script.name.c_str());
 			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
 			ImGui::PopStyleColor();
 			return true;
@@ -356,15 +360,32 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 
 void Inspector::DisplayScript(oo::GameObject& gameobject)
 {
+    auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+    auto ss = scene->GetWorld().Get_System<oo::ScriptSystem>();
+
 	static oo::ScriptFieldInfo pre_val;
 	static bool new_value = true;
 	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
 	for (auto& scriptInfo : sc.GetScriptInfoAll())
 	{
+		ImGui::PushID(scriptInfo.first.c_str());
 		bool opened = ImGui::TreeNodeEx(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		{
+			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+			if (ImGui::SmallButton("x"))
+			{
+                ss->RemoveScript(gameobject.GetInstanceID(), scriptInfo.second.classInfo.name_space.c_str(), scriptInfo.second.classInfo.name.c_str());
+				sc.RemoveScriptInfo(scriptInfo.second.classInfo);
+				ImGui::PopID();
+				return;
+			}
+		}
 		ImGui::Separator();
 		if (opened == false)
+		{
+			ImGui::PopID();
 			continue;
+		}
 		for (auto& sfi : scriptInfo.second.fieldMap)
 		{
 			bool edit = false;
@@ -398,5 +419,7 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 				new_value = true;
 			}
 		}
+		ImGui::PopID();
+		ImGui::Separator();
 	}
 }

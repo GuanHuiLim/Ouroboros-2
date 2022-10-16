@@ -854,6 +854,9 @@ namespace Ecs::internal
 
 		const ComponentInfo* type = get_ComponentInfo<C>();
 
+		//broadcast callback
+		broadcast_remove_component_callback(world, id, get_entity_component<C>(world, id));
+
 		Archetype* oldarch = get_entity_archetype(world, id);
 		ComponentCombination* oldlist = oldarch->componentList;
 		bool typeFound = false;
@@ -871,8 +874,6 @@ namespace Ecs::internal
 
 		Archetype* newArch = oldarch;
 		if (typeFound) {
-			//broadcast callback
-			broadcast_remove_component_callback(world, id, get_entity_component<C>(world, id));
 
 			lenght--;
 			sort_ComponentInfos(temporalComponentInfoArray, lenght);

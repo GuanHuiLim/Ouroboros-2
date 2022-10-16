@@ -13,7 +13,9 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "SerializerScriptingProperties.h"
-
+#include "SceneManagement/include/SceneManager.h"
+#include "Ouroboros/Scene/Scene.h"
+#include "App/Editor/Utility/ImGuiManager.h"
 
 SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 {
@@ -71,6 +73,18 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			rapidjson::Value data(sfi.value.GetValue<oo::ScriptValue::enum_type>().index);
 			val.AddMember(name, data, doc.GetAllocator());
 		});
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+			UUID id = sfi.value.GetValue<UUID>();
+			//check if object is valid before saving.
+			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
+			if (go == nullptr)
+				id = -1;
+			rapidjson::Value data(id.GetUUID());
+			val.AddMember(name, data, doc.GetAllocator());
+		});
 }
 
 SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
@@ -101,7 +115,11 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 		});
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ENUM, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{ 
-			
 			sfi.value.GetValue<oo::ScriptValue::enum_type>().index = val.GetUint(); 
+		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+			UUID id = val.GetUint64();
+			sfi.value.SetValue(id); 
 		});
 }

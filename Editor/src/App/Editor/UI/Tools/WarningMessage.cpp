@@ -18,6 +18,7 @@ Technology is prohibited.
 //#include <Editor/GUIglobals.h>
 #include "Ouroboros/Core/Timer.h"
 #include "Ouroboros/Core/Assert.h"
+#include "App/Editor/Utility/Windows_Utill.h"
 void WarningMessage::Show()
 {
 	if (s_ShowWarning == false)
@@ -61,15 +62,24 @@ void WarningMessage::Show()
 }
 void WarningMessage::DisplayWarning(DisplayType type ,const std::string& str,float time)
 {
-	if(type == DisplayType::DISPLAY_ERROR)//should cause a debug break when debugging
-		ASSERT_MSG(true, s_WarningMessage.c_str());
+	switch (type)
+	{
+	case WarningMessage::DisplayType::DISPLAY_LOG:
+		break;
+	case WarningMessage::DisplayType::DISPLAY_WARNING:
+		WindowsUtilities::Windows_Beep_Warn(); break;
+	case WarningMessage::DisplayType::DISPLAY_ERROR:
+		ASSERT_MSG(true, s_WarningMessage.c_str()); break;
+	}
 
+	
 	s_dtype = type;
 	s_WarningMessage = str;
 	s_ShowWarning = true;
 	s_counter = time;
 	s_position[0] = ImGui::GetMousePos().x;
 	s_position[1] = ImGui::GetMousePos().y;
+	
 }
 
 void WarningMessage::DisplayToolTip(const std::string& str)

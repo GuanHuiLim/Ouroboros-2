@@ -25,7 +25,7 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<TransformComponent>("Transform Component")
+        registration::class_<TransformComponent>("Transform Component")(metadata(UI_metadata::NOT_REMOVABLE,true))
             .property("Position", &TransformComponent::GetPosition, &TransformComponent::SetPosition)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Euler Angles", &TransformComponent::GetEulerAngles, &TransformComponent::SetRotation)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Quaternion", &TransformComponent::GetRotationQuat, &TransformComponent::SetOrientation)(metadata(UI_metadata::HIDDEN, true))

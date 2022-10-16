@@ -42,6 +42,7 @@ namespace oo
         // Creators
         static MonoObject* CreateObject(MonoClass* klass);
         static MonoString* CreateString(const char* text);
+        static MonoArray* CreateArray(MonoClass* klass, size_t size);
 
         // Accessors
         static MonoImage* GetLibrary(const char* aLibrary);

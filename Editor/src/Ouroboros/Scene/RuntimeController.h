@@ -35,7 +35,9 @@ namespace oo
     private:
         container_type m_loadpaths;
         SceneManager& m_sceneManager;
-        
+
+        std::weak_ptr<RuntimeScene> m_runtimeScene = {};
+
         void OnLoadProjectEvent(LoadProjectEvent*);
 
     public:
@@ -54,6 +56,8 @@ namespace oo
         void Swap(size_type index1, size_type index2);
         void ChangeRuntimeScene(std::string_view sceneName);
         void ChangeRuntimeScene(size_type index);
+
+        std::weak_ptr<RuntimeScene> GetRuntimeScene() const;
     };
 
 }

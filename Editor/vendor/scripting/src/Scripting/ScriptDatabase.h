@@ -51,6 +51,7 @@ namespace oo
         using InstancePool = std::unordered_map<UUID, Instance>;
         std::unordered_map<std::string, Index> indexMap;
         std::vector<InstancePool> poolList;
+        std::unordered_map<Index, std::vector<Index>> inheritanceMap;
         // std::unordered_map<std::string, InstancePool> scriptMap;
 
     public:
@@ -75,6 +76,14 @@ namespace oo
                 return nullptr;
             return mono_gchandle_get_target(ptr);
         }
+        IntPtr TryRetrieveDerived(UUID id, const char* name_space, const char* name);
+        inline MonoObject* TryRetrieveDerivedObject(UUID id, const char* name_space, const char* name)
+        {
+            IntPtr ptr = TryRetrieveDerived(id, name_space, name);
+            if (ptr == 0)
+                return nullptr;
+            return mono_gchandle_get_target(ptr);
+        }
 
         bool CheckEnabled(UUID id, const char* name_space, const char* name);
         void SetEnabled(UUID id, const char* name_space, const char* name, bool isEnabled);
@@ -94,18 +103,52 @@ namespace oo
     private:
         Index GetInstancePoolIndex(const char* name_space, const char* name);
 
-        InstancePool& GetInstancePool(const char* name_space, const char* name);
+        inline InstancePool& GetInstancePool(Index index)
+        {
+            if (index == INDEX_NOTFOUND)
+                throw std::exception{ "ScriptDatabase GetInstancePool: no such script" };
+            return poolList[index];
+        }
+        inline InstancePool& GetInstancePool(const char* name_space, const char* name)
+        {
+            Index index = GetInstancePoolIndex(name_space, name);
+            return GetInstancePool(index);
+        }
+
+        inline InstancePool* TryGetInstancePool(Index index)
+        {
+            if (index == INDEX_NOTFOUND)
+                nullptr;
+            return &(poolList[index]);
+        }
+        inline InstancePool* TryGetInstancePool(const char* name_space, const char* name)
+        {
+            Index index = GetInstancePoolIndex(name_space, name);
+            return TryGetInstancePool(index);
+        }
+
         Instance& GetInstance(UUID id, InstancePool& pool);
 
+        inline Instance& GetInstance(UUID id, Index index)
+        {
+            InstancePool& scriptPool = GetInstancePool(index);
+            return GetInstance(id, scriptPool);
+        }
         inline Instance& GetInstance(UUID id, const char* name_space, const char* name)
         {
             InstancePool& scriptPool = GetInstancePool(name_space, name);
             return GetInstance(id, scriptPool);
         }
 
-        InstancePool* TryGetInstancePool(const char* name_space, const char* name);
         Instance* TryGetInstance(UUID id, InstancePool& pool);
 
+        inline Instance* TryGetInstance(UUID id, Index index)
+        {
+            InstancePool* scriptPool = TryGetInstancePool(index);
+            if (scriptPool == nullptr)
+                return nullptr;
+            return TryGetInstance(id, *scriptPool);
+        }
         inline Instance* TryGetInstance(UUID id, const char* name_space, const char* name)
         {
             InstancePool* scriptPool = TryGetInstancePool(name_space, name);
@@ -113,5 +156,7 @@ namespace oo
                 return nullptr;
             return TryGetInstance(id, *scriptPool);
         }
+
+        Instance* TryGetInstanceDerived(UUID id, Index baseIndex);
     };
 }

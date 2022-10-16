@@ -24,6 +24,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 
 #include "SceneManagement/include/SceneManager.h"
+#include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/ECS/GameObject.h"
 
@@ -110,7 +111,9 @@ ScriptingProperties::ScriptingProperties()
 			auto data = v.TryGetRuntimeValue().GetValue<UUID>();
 			auto uuid = data.GetUUID();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::DragScalarN(v.name.c_str(), ImGuiDataType_U64, &uuid, 1);
+			auto gameobject_ptr = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(data);
+			std::string referenceObj = gameobject_ptr == nullptr ? "Invalid Object" : gameobject_ptr->Name();
+			ImGui::InputText(v.name.c_str(), &referenceObj,ImGuiInputTextFlags_ReadOnly);
 			ImGui::PopItemFlag();
 			if (ImGui::BeginDragDropTarget())
 			{

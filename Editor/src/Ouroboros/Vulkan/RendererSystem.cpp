@@ -89,12 +89,18 @@ namespace oo
 
     void oo::MeshRendererSystem::Run(Ecs::ECSWorld* world)
     {
-        static Ecs::Query mesh_query = []() 
+        // Update Newly Duplicated Lights
+        static Ecs::Query duplicated_lights_query = Ecs::make_raw_query<LightComponent, TransformComponent, DuplicatedComponent>();
+        world->for_each(duplicated_lights_query, [&](LightComponent& lightComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
         {
-            Ecs::Query query;
-            return query.with<MeshRendererComponent, TransformComponent>().build();
-        }();
+            lightComp.Light_ID = m_graphicsWorld->CreateLightInstance();
+            //update graphics world side to prevent wrong initial placement
+            auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+            graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+        });
+        
 
+        static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent>();
         world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
         {
             //do nothing if transform did not change
@@ -108,12 +114,9 @@ namespace oo
                 actualObject.localToWorld = transformComp.GlobalTransform;
             });
 
+
         // Update Lights
-        static Ecs::Query light_query = []() 
-        {
-            Ecs::Query query;
-            return query.with<LightComponent, TransformComponent>().build();
-        }();
+        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
 
         world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
         {

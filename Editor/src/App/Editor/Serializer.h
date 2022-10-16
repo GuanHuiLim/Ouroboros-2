@@ -74,12 +74,20 @@ public:
 	static UUID LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go,oo::Scene & scene);
 
 	static std::string SaveDeletedObject(std::shared_ptr<oo::GameObject> go,oo::Scene& scene);
+	static std::string SaveObjectsAsString(const std::vector<std::shared_ptr<oo::GameObject>>& go_list, oo::Scene& scene);
+
 	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
+	/*********************************************************************************//*!
+	\brief      Recreation of the object 
+	*//**********************************************************************************/
+	static std::vector<UUID> LoadObjectsFromString(std::string& data,UUID parentID, oo::Scene& scene);
 private:
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val,rapidjson::Document& doc);
 	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
+	static void SavePrefabObject_SubValues(rapidjson::Value& current, const rapidjson::Value& original);
+
 	template <typename Component>
 	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
 	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
@@ -96,6 +104,7 @@ private:
 	//scripts
 	static void SaveScript(oo::GameObject& go,rapidjson::Value& val,rapidjson::Document& doc);
 	static void LoadScript(oo::GameObject& go,rapidjson::Value&& val);
+	static void RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::GameObject& go);
 protected://rpj wrappers
 	static void ResetDocument() noexcept;
 protected://serialzation helpers
@@ -111,6 +120,7 @@ private:
 	inline static SerializerLoadProperties m_LoadProperties;
 	inline static SerializerScriptingLoadProperties m_loadScriptProperties;
 	inline static constexpr int rapidjson_precision = 4;
+	inline static constexpr float rapidjson_epsilon = 0.0001f;
 };
 
 template<typename Component>
@@ -219,13 +229,17 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 	
 	rapidjson::Document document;
 	document.ParseStream(stream);
-
+	std::unordered_map<UUID, UUID> scripts_id_mapping;
+	std::vector<std::shared_ptr<oo::GameObject>> all_objects;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::shared_ptr<oo::GameObject> gameobj = scene->FindWithInstanceID(go.GetInstanceID());
 	parents.push(gameobj);
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
-		//gameobj->SetName(iter->name.GetString());
+		//map their old id to their current IDs
+		scripts_id_mapping.emplace(std::stoull(iter->name.GetString()), gameobj->GetInstanceID());
+		all_objects.push_back(gameobj);
+
 		gameobj->SetIsPrefab(true);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
@@ -241,6 +255,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 		}
 
 		++members;
+		//futher optimizations
 		{//another element that will store all the component hashes and create the apporiate archtype
 			// go->SetArchtype(vector<hashes>);
 		}
@@ -259,6 +274,12 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 			gameobj = scene->CreateGameObjectImmediate();
 		}
 	}
+	//remapping of scripts here.
+	for (auto go_ptr : all_objects)
+	{
+		RemapScripts(scripts_id_mapping, *go_ptr);
+	}
+
 
 	//oo::PrefabComponent& component = go.GetComponent<oo::PrefabComponent>();
 	////hardcoding this for now

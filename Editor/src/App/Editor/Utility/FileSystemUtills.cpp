@@ -44,6 +44,10 @@ std::filesystem::path FileSystemUtils::CreateItem(const std::string& filename, c
 		{
 			//ENGINE_ASSERT_MSG(false, "Failed to create file");
 		}
+		if (ext == ".scn")//for scenes
+		{
+			ifs.write("{}",3);
+		}
 		ifs.close();
 	}
 	return current;

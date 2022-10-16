@@ -142,6 +142,11 @@ namespace oo
         return mono_string_new(mono_domain_get(), text);
     }
 
+    MonoArray* ScriptEngine::CreateArray(MonoClass* klass, size_t size)
+    {
+        return mono_array_new(mono_domain_get(), klass, size);
+    }
+
     // Accessors
 
     MonoImage* ScriptEngine::GetLibrary(const char* aLibrary)
