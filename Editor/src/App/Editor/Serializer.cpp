@@ -298,6 +298,7 @@ void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenen
 		gameobject_start.SetObject();
 		gameobject_start.AddMember("Order", parents.size(), doc.GetAllocator());
 
+		//having the prefabcomponent marks it as the start of the saving operation
 		bool is_prefab = go->HasComponent<oo::PrefabComponent>();
 		is_prefab ? SavePrefabObject(*go, gameobject_start,doc) : SaveObject(*go, gameobject_start,doc);
 

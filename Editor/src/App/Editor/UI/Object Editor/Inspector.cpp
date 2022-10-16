@@ -99,10 +99,9 @@ void Inspector::Show()
 			gameobject->SetActive(active);
 		if (gameobject->HasComponent<oo::PrefabComponent>())
 		{
-			if (ImGui::Button("Update Prefab"))
+			if (ImGui::Button("Break Prefab"))
 			{
-				OpenFileEvent ofe(gameobject->GetComponent<oo::PrefabComponent>().prefab_filePath);
-				oo::EventManager::Broadcast(&ofe);
+				oo::PrefabManager::BreakPrefab(gameobject);
 			}
 		}
 		else
@@ -126,6 +125,7 @@ void Inspector::Show()
 }
 void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
+	ImGui::PushItemWidth(200.0f);
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
@@ -147,6 +147,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	
 	DisplayScript(gameobject);
+	ImGui::PopItemWidth();
 }
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
 {
@@ -394,8 +395,12 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 			auto iter = m_scriptingProperties.m_scriptUI.find(sfi.second.value.GetValueType());
 			if (iter == m_scriptingProperties.m_scriptUI.end())
 				continue;
-			else	
+			else
+			{
+				ImGui::PushID(sfi.first.c_str());
 				iter->second(s_value, edit, edited);
+				ImGui::PopID();
+			}
 
 			//undo redo code here
 			if (edit == true)
