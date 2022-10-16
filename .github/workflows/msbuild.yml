@@ -23,8 +23,8 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        build: [Debug, Release, Production]
-        type: [Editor, Executable]
+        build: [Debug] # Debug, Release, Production
+        type: [Editor] # Editor, Executable
         
     steps:
     - uses: actions/checkout@main
@@ -45,4 +45,4 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild /m /p:Configuration=${{matrix.build}} ${{env.SOLUTION_FILE_PATH}}
+      run: msbuild /m /p:Configuration=${{matrix.build}} /p:Configuration=${{matrix.type}} ${{env.SOLUTION_FILE_PATH}}
