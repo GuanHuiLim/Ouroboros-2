@@ -29,7 +29,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-       submodules: recursive
+       submodules: true
 
     - name: Generating Project
       run: scripts/Windows-GenerateProject.bat
