@@ -27,7 +27,9 @@ jobs:
         platform: [Editor] # Editor, Executable
         
     steps:
-    - uses: actions/checkout@main
+    - uses: actions/checkout@v3
+      with:
+       submodules: recursive
 
     - name: Generating Project
       run: scripts/Windows-GenerateProject.bat
