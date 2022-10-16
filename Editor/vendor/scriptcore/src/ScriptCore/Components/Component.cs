@@ -115,6 +115,16 @@ namespace Ouroboros
             return gameObject.GetComponent<T>();
         }
 
+        public Component[] GetComponentsInChildren(Type type, bool includeSelf = false)
+        {
+            return gameObject.GetComponentsInChildren(type, includeSelf);
+        }
+
+        public T[] GetComponentsInChildren<T>(bool includeSelf = false) where T : Component
+        {
+            return gameObject.GetComponentsInChildren<T>(includeSelf);
+        }
+
         public void RemoveComponent(Type type)
         {
             gameObject.RemoveComponent(type);

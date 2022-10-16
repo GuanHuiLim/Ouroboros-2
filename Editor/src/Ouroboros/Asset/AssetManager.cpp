@@ -18,132 +18,117 @@ Technology is prohibited.
 
 #include <imgui/imgui.h>
 
-#include "BinaryIO.h"
+#include "Ouroboros/Asset/BinaryIO.h"
 #include "Ouroboros/Core/Application.h"
-#include "Ouroboros/Vulkan/VulkanContext.h"
-
-namespace
-{
-    bool iequal(const std::string& a, const std::string& b)
-    {
-        return std::equal(a.begin(), a.end(),
-                          b.begin(), b.end(),
-                          [](char a, char b)
-        {
-            return tolower(a) == tolower(b);
-        });
-    }
-}
+#include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Utility/IEqual.h"
 
 namespace oo
 {
-    Asset& AssetManager::AssetStore::At(AssetID id)
+    bool AssetManager::AssetStore::empty() const
     {
-        return assets.at(id);
+        return all.empty();
     }
 
-    Asset AssetManager::AssetStore::At(AssetID id) const
+    void AssetManager::AssetStore::clear()
     {
-        return assets.at(id);
-    }
-
-    std::vector<std::reference_wrapper<Asset>> AssetManager::AssetStore::At(AssetInfo::Type type)
-    {
-        std::vector<std::reference_wrapper<Asset>> v;
-        if (assetsByType.contains(type))
+        all.clear();
+        for (auto& map : byType)
         {
-            auto& vid = assetsByType.at(type);
-            std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
-            {
-                return std::ref(assets.at(e));
-            });
+            map.second.clear();
         }
-        return v;
+        byType.clear();
     }
 
-    std::vector<Asset> AssetManager::AssetStore::At(AssetInfo::Type type) const
+    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const AssetInfo& info)
     {
-        std::vector<Asset> v;
-        if (assetsByType.contains(type))
-        {
-            auto& vid = assetsByType.at(type);
-            std::transform(vid.begin(), vid.end(), std::back_inserter(v), [this](const AssetID& e)
-            {
-                return assets.at(e);
-            });
-        }
-        return v;
+        return emplace(id, std::make_shared<AssetInfo>(info));
     }
 
-    Asset AssetManager::AssetStore::Insert(AssetID id, const Asset& asset)
+    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, AssetInfoPtr ptr)
     {
-        assets.insert({ id, asset });
-        if (!assetsByType.contains(asset.GetType()))
-            assetsByType.insert({ asset.GetType(), {} });
-        assetsByType.at(asset.GetType()).insert(id);
-        return asset;
+        all.emplace(id, ptr);
+        if (!ptr)
+            return ptr;
+        if (!byType.contains(ptr->type))
+            byType.emplace(ptr->type, AssetInfoMap());
+        byType.at(ptr->type).emplace(id, ptr);
+        return ptr;
     }
 
-    void AssetManager::AssetStore::Erase(AssetID id)
+    void AssetManager::AssetStore::erase(const AssetID& id)
     {
-        if (assets.contains(id))
-        {
-            const auto& ASSET = assets.at(id);
-            assetsByType.at(ASSET.GetType()).erase(id);
-            assets.erase(id);
-        }
+        if (!contains(id))
+            return;
+        auto sp = all.at(id);
+        if (sp && byType.contains(sp->type))
+            byType.at(sp->type).erase(id);
+        all.erase(id);
     }
 
-    bool AssetManager::AssetStore::Contains(AssetID id) const
+    std::shared_ptr<AssetInfo>& AssetManager::AssetStore::at(const AssetID& id)
     {
-        return assets.contains(id);
+        return all.at(id);
     }
+
+    const std::shared_ptr<AssetInfo>& AssetManager::AssetStore::at(const AssetID& id) const
+    {
+        return all.at(id);
+    }
+
+    bool AssetManager::AssetStore::contains(const AssetID& id) const
+    {
+        return all.contains(id);
+    }
+
+    AssetManager::AssetInfoMap& AssetManager::AssetStore::filter(const AssetInfo::Type& type)
+    {
+        if (!byType.contains(type))
+            byType.at(type) = {};
+        return byType.at(type);
+    }
+
+    const AssetManager::AssetInfoMap& AssetManager::AssetStore::filter(const AssetInfo::Type& type) const
+    {
+        return byType.at(type);
+    }
+
 
     AssetManager::AssetManager(std::filesystem::path root)
         : root{ root }
     {
-        fileWatchThread = std::thread(&AssetManager::fileWatch, this);
+        EventManager::Subscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
+        EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
     }
 
     AssetManager::~AssetManager()
     {
-        isRunning = false;
-        fileWatchThread.join();
+        store.clear();
     }
 
-    Asset AssetManager::Get(const AssetID& snowflake)
+    Asset AssetManager::Get(const AssetID& id)
     {
-        // Get asset from asset store
-        if (assets.Contains(snowflake))
-        {
-            const auto& ASSET = assets.At(snowflake);
-            const auto FP = ASSET.GetFilePath();
-            if (std::filesystem::exists(FP))
-            {
-                return ASSET;
-            }
-
-            // Remove meta file
-            auto fpMeta = FP;
-            fpMeta += Asset::EXT_META;
-            if (std::filesystem::exists(fpMeta))
-            {
-                std::filesystem::remove(fpMeta);
-            }
-
-            assets.Erase(snowflake);
-        }
-        return Asset();
+        Asset asset;
+        if (store.contains(id))
+            asset.info = store.at(id);
+        return asset;
     }
 
-    std::future<Asset> AssetManager::GetAsync(const AssetID& snowflake)
+    std::future<Asset> AssetManager::GetAsync(const AssetID& id)
     {
-        return std::async(std::launch::async, &AssetManager::Get, this, snowflake);
+        return std::async(std::launch::async, &AssetManager::Get, this, id);
     }
 
     std::vector<Asset> AssetManager::GetLoadedAssetsByType(AssetInfo::Type type) const
     {
-        return assets.At(type);
+        std::vector<Asset> v;
+        auto filtered = store.filter(type);
+        std::transform(filtered.begin(), filtered.end(), std::back_inserter(v), [this](const decltype(*filtered.begin())& e)
+        {
+            return Asset(e.second);
+        });
+        return v;
     }
 
     Asset AssetManager::LoadPath(const std::filesystem::path& fp)
@@ -209,110 +194,131 @@ namespace oo
 
     std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive)
     {
-        return std::async(std::launch::async, &AssetManager::LoadName, this, fn, caseSensitive);
+        return std::async(std::launch::async, &AssetManager::LoadDirectory, this, fn, caseSensitive);
     }
 
-    void AssetManager::fileWatch()
+    void AssetManager::ReloadAssets()
     {
-        std::chrono::file_clock::time_point tLast = std::chrono::file_clock::now();
-        std::chrono::file_clock::time_point t = std::chrono::file_clock::now();
-        while (isRunning)
+        FileWatchEvent fwe{ lastReloadTime };
+        EventManager::Broadcast<FileWatchEvent>(&fwe);
+    }
+
+    void AssetManager::ForceReloadAssets()
+    {
+        FileWatchEvent fwe{ std::chrono::file_clock::time_point() };
+        EventManager::Broadcast<FileWatchEvent>(&fwe);
+    }
+
+    void AssetManager::windowFocusHandler(WindowFocusEvent*)
+    {
+        ReloadAssets();
+    }
+
+    void AssetManager::watchFiles(FileWatchEvent* ev)
+    {
+        TRACY_PROFILE_SCOPE_NC(ASSET_MANAGER_WATCH_FILES, tracy::Color::Aquamarine1);
+
+        std::chrono::file_clock::time_point tLast = ev->time;
+        const std::filesystem::path DIR = std::filesystem::canonical(root);
+        if (std::filesystem::exists(DIR))
         {
-            const std::filesystem::path DIR = std::filesystem::canonical(root);
-            if (std::filesystem::exists(DIR))
-            {
-                // Check root
-                const auto ROOT_WRITE_TIME = std::filesystem::last_write_time(DIR);
-                if (tLast < ROOT_WRITE_TIME && ROOT_WRITE_TIME <= t)
-                {
-                    updateAssetPaths(DIR);
-                }
-
-                // Iterate root
-                for (auto& fp : std::filesystem::recursive_directory_iterator(DIR))
-                {
-                    const std::filesystem::path FP = std::filesystem::canonical(fp.path());
-                    if (!std::filesystem::is_regular_file(FP))
-                        continue;
-
-                    const std::filesystem::path FP_EXT = FP.extension();
-                    if (FP_EXT == Asset::EXT_META)
-                        continue;
-
-                    const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
-                    if (WRITE_TIME <= tLast || t < WRITE_TIME)
-                        continue;
-
-                    auto fpMeta = FP;
-                    fpMeta += Asset::EXT_META;
-
-                    AssetMetaContent meta;
-                    std::ifstream ifs = std::ifstream(fpMeta);
-                    BinaryIO::Read(ifs, meta);
-                    if (!assets.Contains(meta.id))
-                    {
-                        // Created
-                        LoadPath(FP);
-                        std::cout << "Created " << FP << "\n";
-                    }
-                    else
-                    {
-                        // Modified
-                        assets.At(meta.id).info->contentPath = FP;
-                        assets.At(meta.id).info->metaPath = fpMeta;
-                        assets.At(meta.id).info->timeLoaded = t;
-                        assets.At(meta.id).destroyData();
-                        assets.At(meta.id).createData();
-                        std::cout << "Modified " << FP << "\n";
-                    }
-                }
-            }
-
-            // Check time elapsed
-            std::chrono::file_clock::time_point now = std::chrono::file_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - t).count() < WATCH_INTERVAL)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                continue;
-            }
-            tLast = t;
-            t = now;
+            iterateDirectory(DIR, tLast);
         }
+        lastReloadTime = std::chrono::file_clock::now();
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
-    void AssetManager::updateAssetPaths(const std::filesystem::path& dir)
+    void AssetManager::iterateDirectory(const std::filesystem::path& dir,
+                                        const std::chrono::file_clock::time_point& tLast,
+                                        const std::chrono::file_clock::time_point& t)
     {
-        for (auto& fp : std::filesystem::directory_iterator(dir))
+        // Check if directory was updated recently
+        const auto DIR_WRITE_TIME = std::filesystem::last_write_time(dir);
+        if (tLast < DIR_WRITE_TIME && DIR_WRITE_TIME <= t)
         {
-            if (std::filesystem::is_regular_file(fp))
+            LOG_INFO("Iterating {0}", dir);
+
+            for (auto& fp : std::filesystem::directory_iterator(dir))
             {
                 const std::filesystem::path FP = std::filesystem::canonical(fp.path());
 
+                // Recurse
+                if (std::filesystem::is_directory(FP))
+                    iterateDirectory(FP, tLast, t);
+
+                // Check if file
+                if (!std::filesystem::is_regular_file(FP))
+                    continue;
+
+                // Check if not meta file
                 const std::filesystem::path FP_EXT = FP.extension();
                 if (FP_EXT == Asset::EXT_META)
                     continue;
 
+                // Ensure meta file exists
                 auto fpMeta = FP;
                 fpMeta += Asset::EXT_META;
                 if (!std::filesystem::exists(fpMeta))
-                    continue;
+                {
+                    ensureMeta(FP);
+                }
 
+                // Read meta contents
                 AssetMetaContent meta;
                 std::ifstream ifs = std::ifstream(fpMeta);
                 BinaryIO::Read(ifs, meta);
-                if (assets.Contains(meta.id) && assets.At(meta.id).info->contentPath != FP)
+                const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
+                if (!store.contains(meta.id))
+                {
+                    // Created
+                    LoadPath(FP);
+                    LOG_INFO("Load {0}", FP);
+                }
+                else if (store.at(meta.id)->contentPath != FP)
                 {
                     // Moved
-                    assets.At(meta.id).info->contentPath = FP;
-                    assets.At(meta.id).info->metaPath = fpMeta;
-                    std::cout << "Moved " << FP << "\n";
+                    store.at(meta.id)->contentPath = FP;
+                    store.at(meta.id)->metaPath = fpMeta;
+                    LOG_INFO("Move {0}", FP);
+                }
+                else if (tLast < WRITE_TIME && WRITE_TIME <= t)
+                {
+                    // Modified
+                    store.at(meta.id)->contentPath = FP;
+                    store.at(meta.id)->metaPath = fpMeta;
+                    store.at(meta.id)->timeLoaded = t;
+                    store.at(meta.id)->Reload();
+                    LOG_INFO("Modify {0}", FP);
                 }
             }
-            else if (std::filesystem::is_directory(fp))
-            {
-                updateAssetPaths(fp);
-            }
         }
+    }
+
+    AssetMetaContent AssetManager::ensureMeta(const std::filesystem::path& fp)
+    {
+        // Get meta path
+        auto fpMeta = fp;
+        if (fp.extension() != Asset::EXT_META)
+        {
+            fpMeta += Asset::EXT_META;
+        }
+
+        AssetMetaContent meta;
+        if (!std::filesystem::exists(fpMeta))
+        {
+            // Create meta file
+            meta.id = Asset::GenerateSnowflake();
+            std::ofstream ofs = std::ofstream(fpMeta);
+            BinaryIO::Write(ofs, meta);
+        }
+        else
+        {
+            // Read meta file
+            std::ifstream ifs = std::ifstream(fpMeta);
+            BinaryIO::Read(ifs, meta);
+        }
+        return meta;
     }
 
     Asset AssetManager::getOrLoadAbsolute(const std::filesystem::path& fp)
@@ -330,80 +336,29 @@ namespace oo
         }
         const auto FP_EXT = fpContent.extension();
 
-        // Ensure meta file exists
-        AssetMetaContent meta;
-        if (!std::filesystem::exists(fpMeta))
-        {
-            meta.id = Asset::GenerateSnowflake();
-            std::ofstream ofs = std::ofstream(fpMeta);
-            BinaryIO::Write(ofs, meta);
-        }
-        else
-        {
-            std::ifstream ifs = std::ifstream(fpMeta);
-            BinaryIO::Read(ifs, meta);
-        }
-
         // Get or load asset
-        if (assets.Contains(meta.id))
+        AssetMetaContent meta = ensureMeta(fpContent);
+        if (store.contains(meta.id))
         {
             // Get asset
-            return assets.At(meta.id);
+            return Asset(store.at(meta.id));
         }
         else
         {
             // Load asset
-            Asset asset = createAsset(fpContent);
-            assets.Insert(meta.id, asset);
-            return asset;
+            return loadAssetIntoStore(fpContent, meta.id);
         }
     }
 
-    Asset AssetManager::createAsset(std::filesystem::path fp)
+    Asset AssetManager::loadAssetIntoStore(std::filesystem::path fp, AssetID id)
     {
-        const auto FP_EXT = fp.extension();
-        Asset asset = Asset(std::filesystem::canonical(fp));
-        if (std::find_if(Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end(), [FP_EXT](const auto& e)
-        {
-            return iequal(e, FP_EXT.string());
-        }) != Asset::EXTS_TEXTURE.end())
-        {
-            // Load texture
-            asset.info->type = AssetInfo::Type::Texture;
-            asset.info->onAssetCreate = [fp](AssetInfo& self)
-            {
-                auto vc = Application::Get().GetWindow().GetVulkanContext();
-                auto vr = vc->getRenderer();
-                auto data1 = vr->CreateTexture(fp.string());
-                auto data2 = vr->GetImguiID(data1);
-
-                struct DataStruct
-                {
-                    decltype(data1) data1;
-                    decltype(data2) data2;
-                };
-                self.data = new DataStruct;
-                *reinterpret_cast<DataStruct*>(self.data) = {
-                    .data1 = data1,
-                    .data2 = data2
-                };
-                self.dataTypeOffsets = {};
-                self.dataTypeOffsets[std::type_index(typeid(decltype(data1)))] = offsetof(DataStruct, data1);
-                self.dataTypeOffsets[std::type_index(typeid(decltype(data2)))] = offsetof(DataStruct, data2);
-            };
-            asset.info->onAssetDestroy = [fp](AssetInfo& self)
-            {
-                // TODO: Unload texture
-                if (self.data)
-                    delete self.data;
-                self.data = nullptr;
-                self.dataTypeOffsets.clear();
-            };
-        }
-
-        // Call asset creation callback
-        asset.createData();
-
-        return asset;
+        AssetInfoPtr info = std::make_shared<AssetInfo>();
+        info->id = id;
+        info->contentPath = fp;
+        info->metaPath = fp; info->metaPath += Asset::EXT_META;
+        info->timeLoaded = std::chrono::file_clock::now();
+        info->Reload();
+        return Asset(store.emplace(info->id, info));
     }
+
 }

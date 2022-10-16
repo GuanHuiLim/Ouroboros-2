@@ -9,6 +9,11 @@ layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in vec3 inTangent;
 layout(location = 4) in vec2 inUV;
+
+layout(location = 5)in uvec4 inBoneIdx;
+layout(location = 6)in vec4 inBoneWeights;
+
+
 layout(location = 15) in uvec4 inInstanceData;
 
 // Note: Sending too much stuff from VS to FS can result in bottleneck...
@@ -34,25 +39,22 @@ layout(std430, set = 0, binding = 3) readonly buffer GPUScene
 	GPUTransform GPUScene_SSBO[];
 };
 
-/* // TODO: Non-precomputed skinning
-layout(std430, set = 0, binding = 4) readonly buffer BoneBuffer
-{
-	mat4x4 BoneBuffer_SSBO[];
-};
-*/
+#include "skinning.shader"
 
-layout(push_constant) uniform PushLight
+layout(std430, set = 0, binding = 5) readonly buffer GPUobject
 {
-	mat4 instanceMatrix;
-	vec3 pos;
-}pushLight;
+	GPUObjectInformation GPUobjectInfo[];
+};
 
 void main()
 {
-	const uint localToWorldMatrixIndex = inInstanceData.x;
 
+	const uint instanceIndex = inInstanceData.x;
+
+	GPUObjectInformation objectInfo = GPUobjectInfo[inInstanceData.x];
 	//decode the matrix into transform matrix
-	const mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[localToWorldMatrixIndex]);
+	mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[instanceIndex]);
+	
 	// inefficient
 	const mat4 inverseMat = inverse(dInsMatrix);
 
@@ -60,7 +62,17 @@ void main()
 	
 	outLightData.btn = mat3(inTangent, binormal, mat3(transpose(inverseMat))*inNormal);
 
-	outPosition = dInsMatrix * vec4(inPosition,1.0);
+	 bool skinned = (inInstanceData.y & 0xFF00 ) > 1;
+    if(skinned)
+	{
+		mat4x4 boneToModel; // what do i do with this
+		outPosition = ComputeSkinnedVertexPosition(dInsMatrix,inPosition,inBoneIdx,inBoneWeights,objectInfo.boneStartIdx,boneToModel);
+	}
+	else{
+		outPosition = dInsMatrix * vec4(inPosition,1.0);
+	}
+
+
 	gl_Position = uboFrameContext.viewProjection * outPosition;
 	
 	outUV = inUV;

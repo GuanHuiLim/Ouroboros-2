@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           GBufferRenderPass.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a gbuffer pass
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "GBufferRenderPass.h"
 
 #include "imgui/imgui.h"
@@ -6,7 +19,6 @@
 #include "Window.h"
 #include "VulkanRenderer.h"
 #include "VulkanUtils.h"
-#include "VulkanFramebufferAttachment.h"
 #include "FramebufferCache.h"
 #include "FramebufferBuilder.h"
 
@@ -100,12 +112,23 @@ void GBufferRenderPass::Draw()
 		std::array<VkDescriptorSet, 3>{
 			vr.descriptorSet_gpuscene,
 			vr.descriptorSets_uniform[swapchainIdx],
-			vr.descriptorSet_bindless}
+			vr.descriptorSet_bindless,
+	}
 	);
 
 	cmd.BindPSO(pso_GBufferDefault);
 	// Bind merged mesh vertex & index buffers, instancing buffers.
+	std::vector<VkBuffer> vtxBuffers{
+		vr.g_GlobalMeshBuffers.VtxBuffer.getBuffer(),
+		vr.skinningVertexBuffer.getBuffer(),
+	};
+
+	VkDeviceSize offsets[2]{
+		0,
+		0
+	};
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
+	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.buffer, 0, vr.objectCount);

@@ -2,7 +2,7 @@
 SETLOCAL EnableDelayedExpansion
 
 rem This sets this batch file's dir to itself
-cd /d %~dp0
+pushd %~dp0
 
 set OUTPUT=bin\
 
@@ -18,32 +18,35 @@ for %%i in (*.vert *.frag *.comp *.geom) do (
 	rem forfiles /M "%%~i.spv" /C "cmd /c set time=@ftime set date=@fdate 
 	rem echo !time!
 	rem echo !date!
-	 echo %%~ti
-	for /f "tokens=1-8 delims=:0/,. " %%A in ("%%~ti") do (
-	set /A "Day=%%A"
-	set /A "Month=%%B"
-	set /A "Year=%%D"
-	set /A "Hour=%%E"
-	set /A "Min=%%F"
-	set "f=%%G"
+	rem echo %%~ti
+	for /f "tokens=1-10 delims=:/,. " %%A in ("%%~ti") do (
+	 rem hacky fix for integer stuff replacement
+	set /A "Day=10000%%A %% 10000"
+	set /A "Month=10000%%B %% 10000"
+	set /A "Year=10000%%C %% 10000"
+	set /A "Hour=10000%%D %% 10000"
+	set /A "Min=10000%%E %% 10000"
+	set "f=%%F"
 	if !f! == pm if !Hour! neq 12 ( set /A Hour=!Hour!+12 )
 	)
-	rem echo year !Year!	
-	rem echo month !Month!
-	rem echo day !Day!
-	rem echo hours !Hour!
-	rem echo min !Min!
+	
+	 rem echo day !Day!
+	 rem echo month !Month!
+	 rem echo year !Year!	
+	 rem echo hours !Hour!
+	 rem echo min !Min!	 
+	 rem echo ampm !f!
 	set /A compile=0
 	for %%j in ("%OUTPUT%%%~i.spv") do (
 	 IF exist "%%~j" (
-				 echo %%~tj				
-				for /f "tokens=1-8 delims=:0/,. " %%A in ("%%~tj") do (
-				set /A "jDay=%%A"
-				set /A "jMonth=%%B"
-				set /A "jYear=%%D"
-				set /A "jHour=%%E"
-				set /A "jMin=%%F"
-				set "f=%%G"
+				rem echo %%~tj				
+				for /f "tokens=1-10 delims=:/,. " %%A in ("%%~tj") do (
+				set /A "jDay=10000%%A %% 10000"
+				set /A "jMonth=10000%%B %% 10000"
+				set /A "jYear=10000%%C %% 10000"
+				set /A "jHour=10000%%D %% 10000"
+				set /A "jMin=10000%%E %% 10000"
+				set "f=%%F"
 				if !f! == pm if !jHour! neq 12 ( set /A jHour=!jHour!+12 )
 				)
 				rem echo jyear !jYear!	
@@ -51,6 +54,7 @@ for %%i in (*.vert *.frag *.comp *.geom) do (
 				rem echo jday !jDay!
 				rem echo jhours !jHour!
 				rem echo jmin !jMin!
+				rem echo ampm !f!
 				
 				set /A compile=0
 				
@@ -106,11 +110,14 @@ for %%i in (*.vert *.frag *.comp *.geom) do (
 	)else (
 		:: This "CMD" here is needed as a hack...
 		CMD /C echo/ 
-		echo [93m!numberstring:~-28! ^| NC[0m)
+		echo [93m!numberstring:~-28! ^| no action[0m)
 	)
 	
 	rem echo.
  )
+ 
+ 
+popd
  echo.
  rem call touch done.txt
  echo Finished

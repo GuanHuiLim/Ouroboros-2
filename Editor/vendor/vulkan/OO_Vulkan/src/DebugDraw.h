@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           DebugDraw.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Declares a debug drawing class that allows external engine to interafce with debug drawing
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -22,5 +35,13 @@ struct DebugDraw
 	// Debug draws a circular disc, using a direction/normal. The 2 basis vectors will be implicitly generated internally.
 	static void AddDisc(const glm::vec3& center, float radius, const glm::vec3& normal, const oGFX::Color& color = oGFX::Colors::WHITE);
 	
+	// Debug draws the grid for editor. It will always be at origin.. if needed can modify
+	static void DrawYGrid(float gridSize, float gapSize, const oGFX::Color& col = oGFX::Colors::LIGHT_GREY);
+	
 	// Add more as needed...
+
+	// These are experimental, use at your own risk...
+
+	// This requires the camera position!!
+	static void AddSphereAs3Disc1HorizonDisc(const glm::vec3& center, float radius, const glm::vec3& cameraPosition, const oGFX::Color& color = oGFX::Colors::WHITE);
 };

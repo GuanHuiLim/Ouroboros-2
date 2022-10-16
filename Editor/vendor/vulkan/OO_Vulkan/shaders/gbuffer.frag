@@ -5,6 +5,8 @@
 layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inColor;
+
+
 layout(location = 15) in flat uvec4 inInstanceData;
 layout(location = 7) in struct
 {
@@ -91,6 +93,7 @@ void main()
     const uint textureIndex_Roughness = inInstanceData.w >> 16;
     const uint textureIndex_Metallic  = inInstanceData.w & 0xFFFF;
     uint perInstanceData              = inInstanceData.y & 0xFF;
+   
 
     {
         outAlbedo.rgb = texture(textureDescriptorArray[textureIndex_Albedo], inUV.xy).rgb;
@@ -98,10 +101,14 @@ void main()
         // !! DANGER !! - Dont ever learn this... Look at assembly/performance first.
         Jump(perInstanceData, outAlbedo.rgb);
     }
-
+	
     {
-        outNormal = vec4(inLightData.btn[2], 1.0f);
+        outNormal = vec4(inLightData.btn[2], 0.0f);
     }
+	if(textureIndex_Normal != 1)
+	{
+		outNormal.rgb = normalize(outNormal.rgb+texture(textureDescriptorArray[textureIndex_Normal], inUV.xy).rgb);
+	}
 
     {
         // Commented out because unused.

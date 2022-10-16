@@ -1,5 +1,20 @@
+/************************************************************************************//*!
+\file          InputManagerUI.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Input Manager to bind keys to actions 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "InputManagerUI.h"
+
+#include "Ouroboros/Core/ControllerCode.h"
 #include "Ouroboros/Input/InputManager.h"
 
 
@@ -25,8 +40,8 @@ void InputManagerUI::Show()
 	for (auto& input : oo::InputManager::GetAxes())
 	{
 		ImGui::Separator();
-		
-		bool opened = ImGui::TreeNodeEx(input.GetName().c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen| ImGuiTreeNodeFlags_DefaultOpen);
+
+		bool opened = ImGui::TreeNodeEx(input.GetName().c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
 		ImGui::Separator();
 		if (opened == false)
 			continue;
@@ -46,37 +61,79 @@ void InputManagerUI::Show()
 			ImGui::Separator();
 			continue;
 		}
-			
+
 
 		//buttons
-		int key = static_cast<int>(input.GetNegativeButton());
+		int key = static_cast<int>(input.GetSettings().negativeButton);
 		if (DrawKeyInputUI("Negative Button", key, oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetNegativeButton(static_cast<oo::InputAxis::InputCode>(key));
+			input.GetSettings().negativeButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		key = static_cast<int>(input.GetPositiveButton());
-		if (DrawKeyInputUI("Positive Button", key,oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetPositiveButton(static_cast<oo::InputAxis::InputCode>(key));
+		key = static_cast<int>(input.GetSettings().positiveButton);
+		if (DrawKeyInputUI("Positive Button", key, oo::InputAxis::InputType::MouseButton == actualInputType))
+			input.GetSettings().positiveButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		key = static_cast<int>(input.GetNegativeAltButton());
-		if (DrawKeyInputUI("Negative Alt Button", key,oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetNegativeAltButton(static_cast<oo::InputAxis::InputCode>(key));
+		key = static_cast<int>(input.GetSettings().negativeAltButton);
+		if (DrawKeyInputUI("Negative Alt Button", key, oo::InputAxis::InputType::MouseButton == actualInputType))
+			input.GetSettings().negativeAltButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		key = static_cast<int>(input.GetPositiveAltButton());
+		key = static_cast<int>(input.GetSettings().positiveAltButton);
 		if (DrawKeyInputUI("Positive Alt Button", key, oo::InputAxis::InputType::MouseButton == actualInputType))
-			input.SetPositiveAltButton(static_cast<oo::InputAxis::InputCode>(key));
+			input.GetSettings().positiveAltButton = static_cast<oo::InputAxis::InputCode>(key);
 
-		unsigned pressesRequired = input.GetPressesRequired();
+		unsigned pressesRequired = input.GetSettings().pressesRequired;
 		if (ImGui::DragScalarN("Presses Required", ImGuiDataType_::ImGuiDataType_U32, &pressesRequired, 1, 0.1f))
-			input.SetPressesRequired(pressesRequired);
+			input.GetSettings().pressesRequired = pressesRequired;
 
-		float maxGapTime = input.GetMaxGapTime();
+		float maxGapTime = input.GetSettings().maxGapTime;
 		if (ImGui::DragFloat("Max Gap Time", &maxGapTime, 0.1f))
-			input.SetMaxGapTime(maxGapTime);
+			input.GetSettings().maxGapTime = maxGapTime;
 
-		float holdDurationRequired = input.GetHoldDurationRequired();
+		float holdDurationRequired = input.GetSettings().holdDurationRequired;
 		if (ImGui::DragFloat("Hold Duration Required", &holdDurationRequired, 0.1f))
-			input.SetHoldDurationRequired(holdDurationRequired);
-		
+			input.GetSettings().holdDurationRequired = holdDurationRequired;
+
+		ImGui::Text("Controller Settings");
+		//__________________________CONTROLLER______________________//
+		auto a = input.GetControllerType();
+		inputType = static_cast<int>(a);
+		if (DrawControllerInputUI<oo::InputAxis::ControllerInputType>("Controller Input Type", inputType))
+			input.SetControllerType(static_cast<oo::InputAxis::ControllerInputType>(inputType));
+		if (input.GetControllerType() == oo::InputAxis::ControllerInputType::Button)
+		{
+			key = static_cast<int>(input.GetControllerSettings().negativeButton);
+			if (DrawControllerInputUI<oo::input::ControllerButtonCode>("Negative Controller", key))
+				input.GetControllerSettings().negativeButton = static_cast<oo::InputAxis::InputCode>(key);
+
+			key = static_cast<int>(input.GetControllerSettings().positiveButton);
+			if (DrawControllerInputUI<oo::input::ControllerButtonCode>("Positive Controller", key))
+				input.GetControllerSettings().positiveButton = static_cast<oo::InputAxis::InputCode>(key);
+
+			key = static_cast<int>(input.GetControllerSettings().negativeAltButton);
+			if (DrawControllerInputUI<oo::input::ControllerButtonCode>("Negative Alt Controller", key))
+				input.GetControllerSettings().negativeAltButton = static_cast<oo::InputAxis::InputCode>(key);
+
+			key = static_cast<int>(input.GetControllerSettings().positiveAltButton);
+			if (DrawControllerInputUI<oo::input::ControllerButtonCode>("Positive Alt Controller", key))
+				input.GetControllerSettings().positiveAltButton = static_cast<oo::InputAxis::InputCode>(key);
+		}
+		else
+		{
+			key = static_cast<int>(input.GetControllerSettings().positiveButton);
+			if (DrawControllerInputUI<oo::input::ControllerAxisCode>("Direction", key))
+				input.GetControllerSettings().positiveButton = static_cast<oo::InputAxis::InputCode>(key);
+		}
+		unsigned controllerpressesRequired = input.GetControllerSettings().pressesRequired;
+		if (ImGui::DragScalarN("Presses Required Controller", ImGuiDataType_::ImGuiDataType_U32, &controllerpressesRequired, 1, 0.1f))
+			input.GetControllerSettings().pressesRequired = controllerpressesRequired;
+
+		float controllermaxGapTime = input.GetControllerSettings().maxGapTime;
+		if (ImGui::DragFloat("Max Gap Time Controller", &controllermaxGapTime, 0.1f))
+			input.GetControllerSettings().maxGapTime = controllermaxGapTime;
+
+		float controllerholdDurationRequired = input.GetControllerSettings().holdDurationRequired;
+		if (ImGui::DragFloat("Hold Duration Required Controller", &controllerholdDurationRequired, 0.1f))
+			input.GetControllerSettings().holdDurationRequired = controllerholdDurationRequired;
+
 		ImGui::PopID();
 		ImGui::Separator();
 	}
@@ -128,7 +185,9 @@ bool InputManagerUI::DrawKeyInputUI(const std::string& UIname,int& curr, bool mo
 {
 	rttr::enumeration e = (mouse ? rttr::type::get<oo::input::MouseCode>() : rttr::type::get<oo::input::KeyCode>()).get_enumeration();
 	auto values = e.get_values();
-	std::string name = (curr < 0) ? "Invalid" : e.value_to_name(oo::input::KeyCode(curr)).data();
+    std::string name;
+    if(mouse) name = (curr < 0) ? "Invalid" : e.value_to_name(oo::input::MouseCode(curr)).data();
+    else name = (curr < 0) ? "Invalid" : e.value_to_name(oo::input::KeyCode(curr)).data();
 	ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 	ImGui::InputText(UIname.c_str(), &name);
 	ImGui::PopItemFlag();
@@ -157,3 +216,4 @@ bool InputManagerUI::DrawKeyInputUI(const std::string& UIname,int& curr, bool mo
 	ImGui::PopID();
 	return changed;
 }
+

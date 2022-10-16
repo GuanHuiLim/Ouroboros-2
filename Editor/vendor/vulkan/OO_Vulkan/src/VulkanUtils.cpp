@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           VulkanUtils.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief          Utility function definitions
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 
 #if defined(_WIN32)
 #ifndef NOMINMAX
@@ -133,6 +146,7 @@ namespace oGFX
 	
 		static std::vector<VkVertexInputBindingDescription> bindingDescription {	
 			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_VERTEX_BUFFER_ID,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX),
+			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_WEIGHTS_BUFFER_ID,sizeof(oGFX::BoneWeight),VK_VERTEX_INPUT_RATE_VERTEX),
 			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_INSTANCE_BUFFER_ID,sizeof(oGFX::InstanceData),VK_VERTEX_INPUT_RATE_INSTANCE),
 		};
 		return bindingDescription;
@@ -147,18 +161,13 @@ namespace oGFX
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, col)), // colour attribute
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,3,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, tangent)),//tangent attribute
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,4,VK_FORMAT_R32G32_SFLOAT	  ,offsetof(Vertex, tex)),    //Texture attribute
+		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_WEIGHTS_BUFFER_ID,5,VK_FORMAT_R32G32B32A32_UINT	  ,offsetof(BoneWeight,BoneWeight::boneIdx)),    //bone index
+		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_WEIGHTS_BUFFER_ID,6,VK_FORMAT_R32G32B32A32_SFLOAT	  ,offsetof(BoneWeight, BoneWeight::boneWeights)),    //bone weights
 	
 		// instance data attributes
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_INSTANCE_BUFFER_ID,15,VK_FORMAT_R32G32B32A32_UINT,offsetof(InstanceData, InstanceData::instanceAttributes)),
 		};
 		return attributeDescriptions;
-	}
-
-	const std::vector<VkDescriptorSet>& GetGFXDescriptoSetGroup()
-	{
-		// TODO : return some stuff
-		assert(true);
-		return {};
 	}
 
 	oGFX::SwapChainDetails GetSwapchainDetails(VulkanInstance& instance, VkPhysicalDevice device)

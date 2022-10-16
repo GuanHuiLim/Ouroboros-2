@@ -16,22 +16,36 @@ Technology is prohibited.
 
 #include <array>
 #include <filesystem>
+#include <memory>
 #include <typeinfo>
 #include <typeindex>
 #include <unordered_map>
+
+#include <imgui/imgui.h>
+#include <rttr/variant.h>
+
+#include "OO_Vulkan/src/MeshModel.h"
+#include "Ouroboros/Audio/Audio.h"
 
 namespace oo
 {
     class Asset;
     class AssetManager;
 
-    using AssetID = uint64_t;
+    using Snowflake = uint64_t;
+    using AssetID = Snowflake;
 
+    /// <summary>
+    /// Content for a meta file.
+    /// </summary>
     struct AssetMetaContent
     {
         AssetID id;
     };
 
+    /// <summary>
+    /// Underlying data for an asset.
+    /// </summary>
     struct AssetInfo
     {
         /* --------------------------------------------------------------------------- */
@@ -39,30 +53,78 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         using Callback = std::function<void(AssetInfo&)>;
-        using DataTypeOffsetsType = std::unordered_map<std::type_index, size_t>;
         enum class Type
         {
             Text = 0,
             Texture,
             Font,
             Audio,
+            Model,
         };
+
+        /* --------------------------------------------------------------------------- */
+        /* Constants                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        static constexpr AssetID ID_NULL = 0;
+
+        /* --------------------------------------------------------------------------- */
+        /* Constructors and Destructors                                                */
+        /* --------------------------------------------------------------------------- */
+
+        ~AssetInfo();
+
+        /* --------------------------------------------------------------------------- */
+        /* Functions                                                                   */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Generates a unique Snowflake ID.
+        /// </summary>
+        /// <returns>The Snowflake ID.</returns>
+        static Snowflake GenerateSnowflake();
+
+        /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        void Reload();
+
+        /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        /// <param name="type">The explicit type of asset to load as.</param>
+        void Reload(AssetInfo::Type type);
+
+        /// <summary>
+        /// Writes the data from the asset into the file.
+        /// </summary>
+        void Overwrite();
+
+        /// <summary>
+        /// Retrieves the data stored by the asset of a given type.
+        /// </summary>
+        /// <typeparam name="T">The type of data.</typeparam>
+        /// <returns>The data.</returns>
+        template<typename T>
+        [[nodiscard]] inline T GetData() const;
 
         /* --------------------------------------------------------------------------- */
         /* Members                                                                     */
         /* --------------------------------------------------------------------------- */
 
+        AssetID id;
         std::filesystem::path contentPath;
         std::filesystem::path metaPath;
         std::chrono::file_clock::time_point timeLoaded = std::chrono::file_clock::now();
-        std::list<Asset*> copies;
         Callback onAssetCreate = [](AssetInfo&) {};
         Callback onAssetDestroy = [](AssetInfo&) {};
-        void* data = nullptr;
-        DataTypeOffsetsType dataTypeOffsets;
+        std::vector<rttr::variant> data;
         Type type = Type::Text;
     };
 
+    /// <summary>
+    /// Interface for an AssetInfo.
+    /// </summary>
     class Asset
     {
     public:
@@ -73,72 +135,107 @@ namespace oo
         using Extension = const char*;
         template <size_t N>
         using ExtensionList = std::array<Extension, N>;
+        using AssetInfoPtr = std::weak_ptr<AssetInfo>;
 
         /* --------------------------------------------------------------------------- */
         /* Constants                                                                   */
         /* --------------------------------------------------------------------------- */
 
-        static constexpr AssetID ID_NULL = 0;
+        static constexpr AssetID ID_NULL = AssetInfo::ID_NULL;
         static constexpr Extension EXT_META = ".meta";
-        static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".ogg" };
+        static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".dds" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
-
-        /* --------------------------------------------------------------------------- */
-        /* Static Functions                                                            */
-        /* --------------------------------------------------------------------------- */
-
-        static AssetID GenerateSnowflake();
+        static constexpr ExtensionList<1> EXTS_MODEL = { ".fbx" };
 
         /* --------------------------------------------------------------------------- */
         /* Constructors and Destructors                                                */
         /* --------------------------------------------------------------------------- */
 
-        Asset(std::filesystem::path contentPath = {}, AssetID id = ID_NULL);
-        Asset(const Asset& other);
-        Asset(Asset&& other);
-        Asset& operator=(const Asset& other);
-        Asset& operator=(Asset&& other);
-        ~Asset();
+        Asset() = default;
 
         /* --------------------------------------------------------------------------- */
         /* Getters                                                                     */
         /* --------------------------------------------------------------------------- */
 
-        [[nodiscard]] inline bool IsValid() const { return id == ID_NULL; };
-        [[nodiscard]] inline const AssetID& GetID() const { return id; };
-        [[nodiscard]] inline const auto& GetFilePath() const { return info->contentPath; };
-        [[nodiscard]] inline const auto& GetMetaFilePath() const { return info->metaPath; };
-        [[nodiscard]] inline const auto& GetTimeLoaded() const { return info->timeLoaded; };
-        [[nodiscard]] inline const std::list<Asset*>& GetCopies() const { return info->copies; };
-        [[nodiscard]] inline size_t GetUseCount() const { return info->copies.size(); };
-        [[nodiscard]] inline void* GetRawData() const { return info->data; };
-        [[nodiscard]] inline bool HasData() const { return info->data; };
-        template<typename T>
-        [[nodiscard]] inline T GetData() const;
-        [[nodiscard]] inline AssetInfo::Type GetType() const { return info->type; }
+#define AI_TYPE(_PROP) decltype(AssetInfo::_PROP)
+#define AI_VALUE_OR_DEFAULT(_PROP) if (auto sp = info.lock()) return sp->_PROP; return {};
+#define AI_GETTER(_NAME, _PROP) AI_TYPE(_PROP) _NAME() const { AI_VALUE_OR_DEFAULT(_PROP) }
 
-    private:
+        [[nodiscard]] inline bool IsValid() const { return !info.expired(); };
+        [[nodiscard]] inline AI_GETTER(HasData, data.size() > 0);
+        [[nodiscard]] inline AI_GETTER(GetID, id);
+        [[nodiscard]] inline AI_GETTER(GetFilePath, contentPath);
+        [[nodiscard]] inline AI_GETTER(GetMetaFilePath, metaPath);
+        [[nodiscard]] inline AI_GETTER(GetTimeLoaded, timeLoaded);
+        [[nodiscard]] inline AI_GETTER(GetRawData, data);
+        [[nodiscard]] inline AI_GETTER(GetType, type);
+
+#undef AI_GETTER
+#undef AI_VALUE_OR_DEFAULT
+#undef AI_TYPE
+
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
-        /****************************************************************************//*!
-        @brief  Shorthand for calling the create callback of the asset's info.
-        *//*****************************************************************************/
-        void createData();
+        /// <summary>
+        /// Generates a unique Snowflake ID.
+        /// </summary>
+        /// <returns>The Snowflake ID.</returns>
+        static Snowflake GenerateSnowflake();
 
-        /****************************************************************************//*!
-        @brief  Shorthand for calling the destroy callback of the asset's info.
-        *//*****************************************************************************/
-        void destroyData();
+        /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        void Reload();
+
+        /// <summary>
+        /// Reloads the data from the file into the asset.
+        /// </summary>
+        /// <param name="type">The explicit type of asset to load as.</param>
+        void Reload(AssetInfo::Type type);
+
+        /// <summary>
+        /// Writes the data from the asset into the file.
+        /// </summary>
+        void Overwrite();
+
+        /// <summary>
+        /// Retrieves the data stored by the asset of a given type.
+        /// </summary>
+        /// <typeparam name="T">The type of data.</typeparam>
+        /// <returns>The data.</returns>
+        template<typename T>
+        [[nodiscard]] inline T GetData() const;
+
+        /* --------------------------------------------------------------------------- */
+        /* Bespoke Functions                                                           */
+        /* --------------------------------------------------------------------------- */
+
+        /// <summary>
+        /// Retrieves number of submodel in the asset.
+        /// Throws an exception if the asset is not a model.
+        /// </summary>
+        /// <returns>The number.</returns>
+        size_t GetSubmodelCount() const;
+
+
+        // TODO: write more wrappers for accessing data eg submeshes, imguiID
+
+
+    private:
+        /* --------------------------------------------------------------------------- */
+        /* Constructors and Destructors                                                */
+        /* --------------------------------------------------------------------------- */
+
+        Asset(AssetInfoPtr info) : info{ info } {}
 
         /* --------------------------------------------------------------------------- */
         /* Members                                                                     */
         /* --------------------------------------------------------------------------- */
 
-        AssetID id;
-        AssetInfo* info;
+        AssetInfoPtr info;
 
         /* --------------------------------------------------------------------------- */
         /* Friends                                                                     */
@@ -148,23 +245,33 @@ namespace oo
     };
 
     template<typename T>
+    inline T AssetInfo::GetData() const
+    {
+        for (auto& d : data)
+        {
+            if (d.is_type<T>())
+                return d.get_value<T>();
+        }
+        return {};
+    }
+
+    template<typename T>
     inline T Asset::GetData() const
     {
-        // Segmented structure reinterpretation
-        if (info->dataTypeOffsets.find(std::type_index(typeid(T))) != info->dataTypeOffsets.end())
-        {
-            size_t offset = info->dataTypeOffsets[std::type_index(typeid(T))];
-            char* ptr = reinterpret_cast<char*>(info->data);
-            return *reinterpret_cast<T*>(ptr + offset);
-        }
-
-        // Direct reinterpretation
-        return *reinterpret_cast<T*>(info->data);
+        if (auto sp = info.lock())
+            return sp->GetData<T>();
+        return {};
     }
 
     class AssetDataNotFoundException : public std::exception
     {
     public:
         AssetDataNotFoundException(const std::string& what = "Asset Data Not Found") : std::exception(what.c_str()) {}
+    };
+
+    class AssetInvalidTypeException : public std::exception
+    {
+    public:
+        AssetInvalidTypeException(const std::string& what = "Asset Invalid Type") : std::exception(what.c_str()) {}
     };
 }

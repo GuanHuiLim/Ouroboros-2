@@ -40,6 +40,15 @@ namespace oo
         static constexpr uint64_t   ROOTID = std::numeric_limits<uint64_t>::min();
         static constexpr Entity     ROOT = std::numeric_limits<Entity>::min();
 
+        //Events
+
+        // will be broadcasted right before the removal.
+        // potentially dangerous, make sure you know what you're doing.
+        struct OnDestroy : public Event
+        {
+            GameObject* go;
+        };
+
     private:
         Scene* m_scene = nullptr;
         Entity m_entity = NOTFOUND; //default to not found
@@ -154,6 +163,9 @@ namespace oo
         template<typename Component>
         void RemoveComponent() const;
 
+        template<>
+        void RemoveComponent<TransformComponent>() const;
+
         template<typename Component, typename...Args>
         Component& EnsureComponent(Args...args) const;
 
@@ -201,6 +213,12 @@ namespace oo
         ASSERT_MSG(m_scene == nullptr, " scene shouldn't be null! Likely created gameobject wrongly");
         ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
         m_scene->GetWorld().remove_component<Component>(m_entity);
+    }
+
+    template<>
+    inline void GameObject::RemoveComponent<TransformComponent>() const
+    {
+        throw "Cannot remove the transform component!";
     }
 
     template<typename Component, typename ...Args>

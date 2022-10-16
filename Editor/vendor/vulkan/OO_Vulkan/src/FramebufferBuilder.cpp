@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           FramebufferBuilder.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a framebuffer builder
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "FramebufferBuilder.h"
 #include "FramebufferCache.h"
 
@@ -29,8 +42,8 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, VkRenderPass renderPa
 	bool swapchainTarget = textures.front()->targetSwapchain;
 	for (auto& tex : textures)
 	{
-		assert(swapchainTarget == tex->targetSwapchain, "Swapchain Target Unexpected!");
-		assert(w == tex->width && h == tex->height, "Incompatible attachment sizes!");
+		assert(swapchainTarget == tex->targetSwapchain && "Swapchain Target Unexpected!");
+		assert(w == tex->width && h == tex->height && "Incompatible attachment sizes!");
 	}
 
 	VkFramebufferCreateInfo fbInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };

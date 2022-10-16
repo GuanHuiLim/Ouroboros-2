@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           MeshModel.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Declares a mesh object and resources for use on CPU and GPU
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -11,53 +24,76 @@
 #include "assimp/scene.h"
 #pragma warning( pop )
 
-class MeshContainer
+
+inline glm::vec3 aiVector3D_to_glm(const aiVector3D& v)
 {
-public:
-    MeshContainer() = default;
-    MeshContainer(std::vector<Mesh> newMeshList);
+    return glm::vec3{ v.x, v.y, v.z };
+}
 
-    size_t getMeshCount();
-    Mesh *getMesh(size_t index);
+inline glm::mat4 aiMat4_to_glm(const aiMatrix4x4& m)
+{
+    return glm::mat4{
+        { m.a1, m.b1, m.c1, m.d1 },
+        { m.a2, m.b2, m.c2, m.d2 },
+        { m.a3, m.b3, m.c3, m.d3 },
+        { m.a4, m.b4, m.c4, m.d4 },	};
+}
 
-    const glm::mat4& getModel();
-    void setModel(glm::mat4 newModel);
+namespace oGFX
+{
 
-    void destroyMeshModel();
+struct BoneNode
+{
+    ~BoneNode();
+    std::string mName{ "BONE_NAME" };
+    uint32_t m_BoneIndex{static_cast<uint32_t>(-1)};
+    bool mbIsBoneNode{ false }; // Really a bone for skinning.
+    BoneNode* mpParent{ nullptr };
+    std::vector<BoneNode*> mChildren;
 
-    static std::vector<std::string> LoadMaterials(const aiScene *scene);
-    static std::vector<Mesh> LoadNode(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool commandPool,
-        aiNode *node, const aiScene *scene, std::vector<int> matToTex);
-    static Mesh LoadMesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool commandPool,
-        aiMesh *mesh, const aiScene *scene, std::vector<int> matToTex);
-
-private:
-    std::vector<Mesh> meshList;
-    glm::mat4 model{ 1.0f };
+    glm::mat4 mModelSpaceLocal{1.0f};	// Local transformation of the bone in model space
+    glm::mat4 mModelSpaceGlobal{1.0f};	// Global transformation of the bone in model space
 };
 
-struct BoneInfo
+struct BoneInverseBindPoseInfo
 {
-    int id;
-
-    /*offset matrix transforms vertex from model space to bone space*/
-    glm::mat4 offset;
+    uint32_t boneIdx{ 0 };
+    glm::mat4 transform{ 1.0f };
 };
 
-struct Bone
+constexpr uint32_t MAX_BONE_NUM = 4;
+struct BoneWeight
 {
-    glm::vec3 position;
-    glm::quat orientation;
-    glm::vec3 scale;
+    uint32_t boneIdx[MAX_BONE_NUM];
+    float boneWeights[MAX_BONE_NUM];
 };
 
-
-struct ModelData
+struct Skeleton
 {
-    ~ModelData();
+    ~Skeleton();
+    oGFX::BoneNode* m_boneNodes{ nullptr };
+    std::vector<oGFX::BoneInverseBindPoseInfo>inverseBindPose;
+    std::vector<oGFX::BoneWeight>boneWeights;
+};
+
+struct CPUSkeletonInstance
+{
+    ~CPUSkeletonInstance();
+    oGFX::BoneNode* m_boneNodes{ nullptr };
+};
+
+[[nodiscard]] CPUSkeletonInstance* CreateCPUSkeleton(const Skeleton* skeleton);
+
+} // end namespace oGFX
+
+#define MAX_SUBMESH 64 
+struct ModelFileResource
+{
+    ~ModelFileResource();
 
     std::string fileName;
-    std::vector<uint32_t> gfxMeshIndices;
+    uint32_t meshResource{};
+    uint32_t numSubmesh{};
 
     std::vector<oGFX::Vertex> vertices;
     std::vector<uint32_t> indices;
@@ -65,45 +101,41 @@ struct ModelData
     Node* sceneInfo{ nullptr };
     uint32_t sceneMeshCount{};
 
-
-    std::unordered_map<std::string, BoneInfo> strToBone;
-    std::vector<Bone> bones;
-    uint32_t boneCnt{};
+    const oGFX::Skeleton* skeleton{ nullptr };
+    std::unordered_map<std::string, uint32_t> strToBone;
 
     void ModelSceneLoad(const aiScene* scene, const aiNode& node, Node* parent,const glm::mat4 accMat);
+    void ModelBoneLoad(const aiScene* scene, const aiNode& node, uint32_t vertOffset);
+};
+
+struct SubMesh
+{
+    std::string name;
+    // Sub range of mesh
+    uint32_t baseVertex{};
+    uint32_t vertexCount{};
+    uint32_t baseIndices{};
+    uint32_t indicesCount{};
+
+    // TODO: Material
 };
 
 struct gfxModel
 {
-    struct Vertices
-    {
-        uint32_t count{};
-        uint32_t offset{};
-        VkBuffer buffer{};
-        VkDeviceMemory memory{};
-    } vertices{};
+    std::string name;
 
-    struct Indices
-    {
-        uint32_t count{};
-        uint32_t offset{};
-        VkBuffer buffer{};
-        VkDeviceMemory memory{};
-    } indices{};
+    // Whole range of mesh
+    uint32_t baseVertex{};
+    uint32_t vertexCount{};
+    uint32_t baseIndices{};
+    uint32_t indicesCount{};
 
-    ModelData* cpuModel{ nullptr };
-    std::vector<Node*> nodes;
-    std::string name;   
-    oGFX::Mesh* mesh{ nullptr };
+    std::vector<SubMesh> m_subMeshes;
+
+    ModelFileResource* cpuModel{ nullptr };
+    oGFX::Skeleton* skeleton{ nullptr };
 
     void destroy(VkDevice device);
-
-    void loadNode(Node* parent, const aiScene* scene, const aiNode& node, uint32_t nodeIndex,
-        ModelData& cpumodel);
-    void loadNode(const aiScene* scene,const aiNode& node, Node* parent, ModelData& cpuModel, glm::mat4 accMat);
-
-    void updateOffsets(uint32_t idxOffset, uint32_t vertOffset);
-    oGFX::Mesh* processMesh(aiMesh* mesh, const aiScene* scene, std::vector<oGFX::Vertex>& vertices, std::vector<uint32_t>& indices);
 private:
 
 };

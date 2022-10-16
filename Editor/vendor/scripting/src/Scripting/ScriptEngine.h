@@ -1,3 +1,18 @@
+/************************************************************************************//*!
+\file           ScriptEngine.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          declares the ScriptEngine class, which acts as the main interface
+                for performing any C# scripting-related actions
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #pragma once
 
 #include <string>
@@ -27,6 +42,7 @@ namespace oo
         // Creators
         static MonoObject* CreateObject(MonoClass* klass);
         static MonoString* CreateString(const char* text);
+        static MonoArray* CreateArray(MonoClass* klass, size_t size);
 
         // Accessors
         static MonoImage* GetLibrary(const char* aLibrary);

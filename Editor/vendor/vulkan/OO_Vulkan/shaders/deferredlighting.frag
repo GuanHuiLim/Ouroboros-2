@@ -15,40 +15,53 @@ layout (set = 0, binding = 5) uniform sampler2D samplerDepth;
 
 #include "shared_structs.h"
 
-layout (binding = 6) uniform UBO
+
+layout(std430, set = 0, binding = 7) readonly buffer Lights
 {
-	OmniLightInstance lights[6];
-	vec4 viewPos;
-	int displayDebugTarget;
-} ubo;
+	SpotLightInstance Lights_SSBO[];
+};
 
-const int lightCount = 6;
+layout( push_constant ) uniform pc
+{
+	LightPC lightPC;
+};
 
-vec3 CalculatePointLight_NonPBR(int lightIndex, in vec3 fragPos, in vec3 normal, in vec3 albedo, in float specular)
+#include "lightingEquations.shader"
+
+vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular)
 {
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);
+	vec3 N = normal;
+	float alpha = roughness;
+	vec3 Kd = albedo;
+	vec3 Ks = vec3(specular);
 	
 	// Vector to light
-	vec3 L = ubo.lights[lightIndex].position.xyz - fragPos;
+	vec3 L = Lights_SSBO[lightIndex].position.xyz - fragPos;
 	// Distance from light to fragment position
 	float dist = length(L);
 	
+	
 	// Viewer to fragment
-	vec3 V = ubo.viewPos.xyz - fragPos;
-	V = normalize(V);
+	vec3 V = uboFrameContext.cameraPosition.xyz - fragPos;
 	
 	//if(dist < ubo.lights[lightIndex].radius)
 	{
+	
+		V = normalize(V);
+		
 		// Light to fragment
 		L = normalize(L);
+		
+		vec3 H = normalize(L+V);
 	
 		// Attenuation
-		float atten = ubo.lights[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);
+		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);
 	
 		// Diffuse part
 		vec3 N = normalize(normal);
 		float NdotL = max(0.0, dot(N, L));
-		vec3 diff = ubo.lights[lightIndex].color.xyz * albedo.rgb * NdotL * atten;
+		vec3 diff = Lights_SSBO[lightIndex].color.xyz * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
 	
 		// Specular part
 		// Specular map values are stored in alpha of albedo mrt
@@ -74,23 +87,30 @@ void main()
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
+	float specular = material.b;
+	float roughness = material.r;
 
 	// Render-target composition
 
-	float ambient = 0.5f;
+	float ambient = 0.001;
 	if (DecodeFlags(material.z) == 0x1)
 	{
-		ambient = 1.0f;
+		ambient = 1.0;
 	}
+	float gamma = 2.2;
+	
+	albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
 	vec3 result = albedo.rgb * ambient;
 	
 	// Point Lights
-	for(int i = 0; i < lightCount; ++i)
+	for(int i = 0; i < lightPC.numLights.x; ++i)
 	{
-		result += CalculatePointLight_NonPBR(i, fragPos, normal, albedo.rgb, albedo.a);
+		result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular);
 	}    	
+	
+	result = pow(result, vec3(1.0/gamma));
    
 	outFragcolor = vec4(result, 1.0);	
 }

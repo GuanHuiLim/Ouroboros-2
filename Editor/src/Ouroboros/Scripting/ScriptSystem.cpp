@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           ScriptSystem.cpp
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Defines the system responsible for handling the scene specific
+                functionality of the scripting feature that varies between scenes
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "ScriptSystem.h"
 
@@ -5,6 +19,8 @@
 
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Scene/EditorController.h"
+
+#include "Ouroboros/ECS/ECS.h"
 
 namespace oo
 {
@@ -14,12 +30,14 @@ namespace oo
     {
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
+        EventManager::Subscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
     }
 
     ScriptSystem::~ScriptSystem()
     {
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
+        EventManager::Unsubscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
 
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
@@ -40,14 +58,10 @@ namespace oo
             LOG_WARN("ScriptSystem: No scripts found, ScriptSystem functions will not be run");
             return true;
         }
+        componentDatabase.Initialize();
         scriptDatabase.Initialize(executionOrder);
 
-        static Ecs::Query query = []()
-        {
-            Ecs::Query query;
-            query.with<GameObjectComponent, ScriptComponent>().build();
-            return query;
-        }();
+        static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, ScriptComponent>();
 
         isPlaying = true;
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
@@ -106,6 +120,14 @@ namespace oo
             return;
         InvokeForObject(e->Id, "OnDisable");
     }
+    void ScriptSystem::OnObjectDestroyed(GameObject::OnDestroy* e)
+    {
+        UUID uuid = e->go->GetInstanceID();
+        if (scene.FindWithInstanceID(uuid) == nullptr)
+            return;
+        scriptDatabase.Delete(uuid);
+        componentDatabase.Delete(uuid);
+    }
 
     void ScriptSystem::ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
     {
@@ -119,12 +141,7 @@ namespace oo
     }
     void ScriptSystem::RefreshScriptInfoAll()
     {
-        static Ecs::Query query = []()
-        {
-            Ecs::Query query;
-            query.with<GameObjectComponent, ScriptComponent>().build();
-            return query;
-        }();
+        static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, ScriptComponent>();
 
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
@@ -185,7 +202,7 @@ namespace oo
     {
         if (!isPlaying)
             return 0;
-        return scriptDatabase.TryRetrieve(uuid, name_space, name);
+        return scriptDatabase.TryRetrieveDerived(uuid, name_space, name);
     }
     void ScriptSystem::RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -201,10 +218,11 @@ namespace oo
         std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
         if (!gameObject->ActiveInHierarchy())
             return;
+        MonoObject* obj = scriptDatabase.RetrieveObject(uuid, name_space, name);
         if(isEnabled)
-            InvokeForObject(uuid, "OnEnable");
+            ScriptEngine::InvokeFunction(obj, "OnEnable");
         else
-            InvokeForObject(uuid, "OnDisable");
+            ScriptEngine::InvokeFunction(obj, "OnDisable");
     }
     bool ScriptSystem::CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -223,7 +241,7 @@ namespace oo
     {
         if (!isPlaying)
             return 0;
-        return componentDatabase.TryRetrieve(uuid, name_space, name);
+        return componentDatabase.TryRetrieveDerived(uuid, name_space, name);
     }
     void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -376,12 +394,7 @@ namespace oo
 
     void ScriptSystem::UpdateAllScriptFieldsWithInfo()
     {
-        static Ecs::Query query = []()
-        {
-            Ecs::Query query;
-            query.with<GameObjectComponent, ScriptComponent>().build();
-            return query;
-        }();
+        static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, ScriptComponent>();
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
                 if (gameObject.Id == GameObject::ROOTID)
@@ -391,11 +404,11 @@ namespace oo
     }
     void ScriptSystem::UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script)
     {
-        for (auto& [key, scriptInfo] : script.GetScriptInfoAll())
+        for (auto& [scriptKey, scriptInfo] : script.GetScriptInfoAll())
         {
             MonoObject* scriptObj = scriptDatabase.RetrieveObject(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
             MonoClass* scriptClass = ScriptEngine::GetClass("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
-            for (auto& [key, fieldInfo] : scriptInfo.fieldMap)
+            for (auto& [fieldKey, fieldInfo] : scriptInfo.fieldMap)
             {
                 MonoClassField* field = mono_class_get_field_from_name(scriptClass, fieldInfo.name.c_str());
                 ScriptValue::SetFieldValue(scriptObj, field, fieldInfo.value);

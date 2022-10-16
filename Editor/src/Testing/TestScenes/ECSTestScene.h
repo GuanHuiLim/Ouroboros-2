@@ -16,6 +16,7 @@ Technology is prohibited.
 #include"TestScene.h"
 #include <Archetypes_ECS/src/A_Ecs.h>
 #include "Ouroboros/Core/Base.h"
+#include "Ouroboros/ECS/ECS.h"
 
 struct DummyComponent
 {
@@ -37,8 +38,7 @@ public:
 
     virtual void Run(Ecs::ECSWorld * world) override
     {
-        Ecs::Query query;
-        query.with<DummyComponent>().build();
+        static Ecs::Query query = Ecs::make_raw_query<DummyComponent>();
         world->for_each(query, [&](DummyComponent& comp) { Update(comp); });
     }
 };

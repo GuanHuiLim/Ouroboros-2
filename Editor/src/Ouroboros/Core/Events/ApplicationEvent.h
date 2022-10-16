@@ -74,6 +74,7 @@ namespace oo
     {
     public:
         WindowLoseFocusEvent() = default;
+
         EVENT_CLASS_TYPE(WINDOWLOSEFOCUS)
         EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
@@ -83,6 +84,48 @@ namespace oo
     public:
         WindowMovedEvent() = default;
         EVENT_CLASS_TYPE(WINDOWMOVED)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
+    };
+
+    /********************************************************************************//*!
+     @brief     Implements a Window Minimize Event
+     @note      Window Maximize Event is not the inverse of Window Minimize event.
+                The inverse of Minimize is Restored.
+    *//*********************************************************************************/
+    class WindowMinimizeEvent final : public AppEvent
+    {
+    public:
+        WindowMinimizeEvent() = default;
+        EVENT_CLASS_TYPE(WINDOWMINIMIZE)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
+    };
+
+    /********************************************************************************//*!
+     @brief     Implements a Window Maximize Event
+     @note      Window Maximize Event is not the inverse of Window Minimize event.
+                The inverse of Minimize is Window Restored event.
+    *//*********************************************************************************/
+    class WindowMaximizeEvent final : public AppEvent
+    {
+    public:
+        WindowMaximizeEvent() = default;
+
+        EVENT_CLASS_TYPE(WINDOWMAXIMIZE)
+        EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
+    };
+
+
+    /********************************************************************************//*!
+     @brief     Implements a Window Maximize Event
+     @note      Window Maximize Event is not the inverse of Window Minimize event.
+                The inverse of Minimize is Restored.
+    *//*********************************************************************************/
+    class WindowRestoredEvent final : public AppEvent
+    {
+    public:
+        WindowRestoredEvent() = default;
+
+        EVENT_CLASS_TYPE(WINDOWRESTORED)
         EVENT_CLASS_CATEGORY(bitmask{ EVENT_CATEGORY::APPLICATION })
     };
 

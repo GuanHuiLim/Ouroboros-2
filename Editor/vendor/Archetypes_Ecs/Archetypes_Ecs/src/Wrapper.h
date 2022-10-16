@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           Wrapper.h
+\project        ECS
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          Wrapper class for the IECSWorld class, to be used externally
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 #include "Query.h"
 #include "World.h"
@@ -101,15 +114,15 @@ namespace Ecs
 		//gets the name hash of the component to be used for ecs functions that use
 		//component hash
 		template<typename C>
-		size_t get_component_hash()
+		static const size_t get_component_hash()
 		{
-			return world.get_component_hash<C>();
+			return IECSWorld::get_component_hash<C>();
 		}
 		//gets the component info struct which stores information about the component
 		template<typename C>
-		ComponentInfo const* get_component_info() const
+		static ComponentInfo const* get_component_info()
 		{
-			return world.get_component_info<C>();
+			return IECSWorld::get_component_info<C>();
 		}
 		//get component via the hash of the component 
 		//retrieved via the ComponentInfo struct or the get_component_hash function
@@ -118,7 +131,7 @@ namespace Ecs
 		// a void ptr to a component from an entity id
 		// given the entity id and the component hash
 		//function format is void*(IECSWorld&, EntityID);
-		GetCompFn* get_component_Fn(size_t const hash);
+		static GetCompFn* get_component_Fn(size_t const hash);
 
 		size_t get_num_components(EntityID id)
 		{

@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           BitContainer.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Bit container class which holds static data and indexes to objects
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include "VulkanUtils.h" // this is probably bad
@@ -24,8 +37,8 @@ public:
 				m_end{end},
 				m_b{bits}
 		{}
-		reference operator*() const { return *m_ptr; }
-		pointer operator->() { return m_ptr; }
+		reference operator*() const { assert("Dereferenced Bitcontainer end ptr!" && m_ptr < m_end);  return *m_ptr; }
+		pointer operator->() { assert("Dereferenced Bitcontainer end ptr!" && m_ptr < m_end); return m_ptr; }
 
 		// Prefix increment
 		Iterator& operator++();
@@ -53,6 +66,7 @@ public:
 	void Remove(int32_t id);
 	T& Get(int32_t id);
 	void Clear();
+	size_t size();
 
 	auto Raw();
 
@@ -63,6 +77,8 @@ public:
 private:
 	std::bitset<MAX_OBJECTS> m_bits{};
 	std::vector<T> m_data{};
+
+	size_t m_size{};
 };
 
 template <typename T, int32_t MAX_OBJECTS>
@@ -113,6 +129,7 @@ inline int32_t BitContainer<T, MAX_OBJECTS>::Add(const T& obj)
 			id = int32_t(i);
 
 			m_data[id] = obj;
+			++m_size;
 			return id;
 		}
 	}
@@ -127,6 +144,7 @@ inline void BitContainer<T, MAX_OBJECTS>::Remove(int32_t id)
 	if (m_bits[id] == true)
 	{
 		m_bits[id] = false;
+		--m_size;
 		return;
 	}
 	assert(false); // removed invalid object
@@ -150,6 +168,13 @@ inline void BitContainer<T, MAX_OBJECTS>::Clear()
 	{
 		m_bits[i] = false;
 	}
+	m_size = 0;
+}
+
+template<typename T, int32_t MAX_OBJECTS>
+inline size_t BitContainer<T, MAX_OBJECTS>::size()
+{
+	return m_size;
 }
 
 template<typename T, int32_t MAX_OBJECTS>

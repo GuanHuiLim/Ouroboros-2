@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file           ScriptEngine.cpp
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          defines the ScriptEngine class, which acts as the main interface
+                for performing any C# scripting-related actions
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "ScriptEngine.h"
 
 #include <fstream>
@@ -126,6 +140,11 @@ namespace oo
     MonoString* ScriptEngine::CreateString(const char* text)
     {
         return mono_string_new(mono_domain_get(), text);
+    }
+
+    MonoArray* ScriptEngine::CreateArray(MonoClass* klass, size_t size)
+    {
+        return mono_array_new(mono_domain_get(), klass, size);
     }
 
     // Accessors

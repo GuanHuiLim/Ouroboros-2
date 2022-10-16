@@ -18,6 +18,7 @@ Technology is prohibited.
 //#include "Ouroboros/Transform/TransformSystem.h"
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
+#include "Ouroboros/ECS/DuplicatedComponent.h"
 
 #include "Ouroboros/Scripting/ScriptComponent.h"
 
@@ -46,6 +47,8 @@ namespace oo
     {
         UUID new_uuid {};
         SetupGo(new_uuid, m_entity);
+        // mark item as duplicated. duplicated items will be ignored for the first frame to get it properly set up
+        m_scene->GetWorld().add_component<oo::DuplicatedComponent>(m_entity);
     }
 
     GameObject::GameObject(UUID uuid, Scene& scene)
@@ -72,19 +75,19 @@ namespace oo
     void GameObject::AddChild(GameObject const& child, bool preserveTransforms) const
     {
         TransformComponent& child_tf = child.Transform();
-        mat4 og_parent_tf = child.GetParent().Transform().GetGlobalMatrix();
+        mat4 og_parent_tf = child.GetParent().Transform().GlobalTransform;
         scenenode::shared_pointer parentNode = GetSceneNode().lock();
         scenenode::shared_pointer childNode = child.GetSceneNode().lock();
         // if parent and child are valid and parent successfully added child
         if (parentNode && childNode && parentNode->add_child(childNode))
         {
             // notify child node that its parent has changed.
-            child_tf.ParentChanged();
+            child_tf.GlobalMatrixDirty = true;
 
             if (preserveTransforms)
             {
-                mat4 new_parent_inv = glm::inverse(Transform().GetGlobalMatrix());
-                child_tf.SetLocalTransform(new_parent_inv * og_parent_tf * child_tf.GetLocalMatrix());
+                mat4 new_parent_inv = glm::affineInverse(Transform().GlobalTransform.Matrix);
+                child_tf.SetLocalTransform(new_parent_inv * og_parent_tf * child_tf.LocalTransform.Matrix);
             }
 
             // Properly propagate parent gameobject's active downwards
@@ -138,7 +141,7 @@ namespace oo
     GameObject GameObject::GetParent() const
     {
         UUID parent_uuid = GetParentUUID();
-        ASSERT(parent_uuid == scenenode::NOTFOUND, "this should never happen except for the root node");
+        ASSERT_MSG(parent_uuid == scenenode::NOTFOUND, "this should never happen except for the root node");
         return *m_scene->FindWithInstanceID(parent_uuid);
     }
 

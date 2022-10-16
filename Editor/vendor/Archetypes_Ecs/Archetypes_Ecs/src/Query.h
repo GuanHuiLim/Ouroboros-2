@@ -1,4 +1,19 @@
-﻿#pragma once
+﻿/************************************************************************************//*!
+\file           Query.h
+\project        ECS
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          
+Internal base query class that allows for setting filters for the ECS's iterative
+functionalities
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+#pragma once
 #include "EcsUtils.h"
 #include "Component.h"
 

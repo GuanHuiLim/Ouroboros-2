@@ -1,8 +1,55 @@
+/************************************************************************************//*!
+\file           DebugDraw.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a debug drawing class that allows external engine to interafce with debug drawing
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 #include "DebugDraw.h"
 #include "VulkanRenderer.h"
 #include "IcoSphereCreator.h"
 #include <cmath>
+
+template<typename T>
+void CalculateTangentSpace(const T& normal, T& out0, T& out1)
+{
+	if (fabsf(normal[2]) > 0.7071067811865475244008443621048490f)
+	{
+		// out0 in y-z plane
+		const float a = normal[1] * normal[1] + normal[2] * normal[2];
+        const float k = 1.0f / sqrtf(a);
+		out0 = { 0.0f, -normal[2] * k, normal[1] * k };
+		// out1 = n x out1
+		out1 = { a * k, -normal[0] * out0[2], normal[0] * out0[1] };
+	}
+	else
+	{
+		// out0 in x-y plane
+		const float a = normal[0] * normal[0] + normal[1] * normal[1];
+		const float k = 1.0f / sqrtf(a);
+		out0 = { -normal[1] * k, normal[0] * k, 0.0f };
+		// out1 = n x out1
+		out1 = { -normal[2] * out0[1], normal[2] * out0[0], a * k };
+	}
+}
+
+static void CalculateHorizonDisc(const glm::vec3& cameraPosition, const glm::vec3& sphereCenter, float sphereRadius, glm::vec3& outPosition, glm::vec3& outNormal)
+{
+	const float radius = sphereRadius * 0.5f;
+	const float d = glm::distance(sphereCenter, cameraPosition);
+	const float l = glm::sqrt(d * d - radius * radius);
+	outNormal = glm::normalize(cameraPosition - sphereCenter);
+	const float h = (radius * l) / d;
+	const float s = glm::sqrt(radius * radius - h * h);
+	outPosition = sphereCenter + outNormal * s;
+}
 
 void DebugDraw::AddLine(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Color& col)
 {
@@ -12,7 +59,6 @@ void DebugDraw::AddLine(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Co
     vr->g_DebugDrawVertexBufferCPU.emplace_back(oGFX::DebugVertex{ p1, col });
     vr->g_DebugDrawIndexBufferCPU.emplace_back(0 + static_cast<uint32_t>(sz));
     vr->g_DebugDrawIndexBufferCPU.emplace_back(1 + static_cast<uint32_t>(sz));
-
 }
 
 void DebugDraw::AddAABB(const AABB& aabb, const oGFX::Color& col)
@@ -81,7 +127,7 @@ void DebugDraw::AddSphere(const Sphere& sphere, const oGFX::Color& col)
     oGFX::DebugVertex vert;
     for (const auto& v : vertices)
     {
-        vert.pos = vert.pos * sphere.radius + sphere.center;
+        vert.pos = v.pos * sphere.radius + sphere.center;
         vert.col = col;
         vr->g_DebugDrawVertexBufferCPU.push_back(vert);
     }
@@ -116,16 +162,16 @@ void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& 
     constexpr float k_increment = 2.0f * 3.1415f / (float)k_segments;
     static const std::array<glm::vec2, 32> s_UnitCircleVertices =
     {
-        glm::vec2{ sinf(0 * k_increment), cosf(0 * k_increment)},
-        glm::vec2{ sinf(1 * k_increment), cosf(1 * k_increment)},
-        glm::vec2{ sinf(2 * k_increment), cosf(2 * k_increment)},
-        glm::vec2{ sinf(3 * k_increment), cosf(3 * k_increment)},
-        glm::vec2{ sinf(4 * k_increment), cosf(4 * k_increment)},
-        glm::vec2{ sinf(5 * k_increment), cosf(5 * k_increment)},
-        glm::vec2{ sinf(6 * k_increment), cosf(6 * k_increment)},
-        glm::vec2{ sinf(7 * k_increment), cosf(7 * k_increment)},
-        glm::vec2{ sinf(8 * k_increment), cosf(8 * k_increment)},
-        glm::vec2{ sinf(9 * k_increment), cosf(9 * k_increment)},
+        glm::vec2{ sinf( 0 * k_increment), cosf( 0 * k_increment)},
+        glm::vec2{ sinf( 1 * k_increment), cosf( 1 * k_increment)},
+        glm::vec2{ sinf( 2 * k_increment), cosf( 2 * k_increment)},
+        glm::vec2{ sinf( 3 * k_increment), cosf( 3 * k_increment)},
+        glm::vec2{ sinf( 4 * k_increment), cosf( 4 * k_increment)},
+        glm::vec2{ sinf( 5 * k_increment), cosf( 5 * k_increment)},
+        glm::vec2{ sinf( 6 * k_increment), cosf( 6 * k_increment)},
+        glm::vec2{ sinf( 7 * k_increment), cosf( 7 * k_increment)},
+        glm::vec2{ sinf( 8 * k_increment), cosf( 8 * k_increment)},
+        glm::vec2{ sinf( 9 * k_increment), cosf( 9 * k_increment)},
         glm::vec2{ sinf(10 * k_increment), cosf(10 * k_increment)},
         glm::vec2{ sinf(11 * k_increment), cosf(11 * k_increment)},
         glm::vec2{ sinf(12 * k_increment), cosf(12 * k_increment)},
@@ -153,39 +199,15 @@ void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& 
     const glm::vec3 b0 = glm::normalize(basis0) * radius;
     const glm::vec3 b1 = glm::normalize(basis1) * radius;
 
-    for (int i = 0; i < k_segments - 1; ++i)
+    for (size_t i = 0; i < k_segments - 1; ++i)
     {
-        DebugDraw::AddLine(center + s_UnitCircleVertices[i    ].x * b0 + s_UnitCircleVertices[i    ].y * b1,
-                           center + s_UnitCircleVertices[i + 1].x * b0 + s_UnitCircleVertices[i + 1].y * b1,
+        DebugDraw::AddLine(center + s_UnitCircleVertices[i       ].x * b0 + s_UnitCircleVertices[i       ].y * b1,
+                           center + s_UnitCircleVertices[i + 1ull].x * b0 + s_UnitCircleVertices[i + 1ull].y * b1,
                            color);
     }
-    DebugDraw::AddLine(center + s_UnitCircleVertices[k_segments - 1].x * b0 + s_UnitCircleVertices[k_segments - 1].y * b1,
-		               center + s_UnitCircleVertices[0             ].x * b0 + s_UnitCircleVertices[0             ].y * b1,
+    DebugDraw::AddLine(center + s_UnitCircleVertices[k_segments - 1ull].x * b0 + s_UnitCircleVertices[k_segments - 1ull].y * b1,
+		               center + s_UnitCircleVertices[0                ].x * b0 + s_UnitCircleVertices[0                ].y * b1,
 		               color);
-}
-
-//----------------------------------------------------------------------------------------------------
-template<typename T>
-void CalculateTangentSpace(const T& normal, T& out0, T& out1)
-{
-	if (fabsf(normal[2]) > 0.7071067811865475244008443621048490f)
-	{
-		// out0 in y-z plane
-		float a = normal[1] * normal[1] + normal[2] * normal[2];
-		float k = 1.0f / sqrtf(a);
-		out0 = { 0.0f, -normal[2] * k, normal[1] * k };
-		// out1 = n x out1
-		out1 = { a * k, -normal[0] * out0[2], normal[0] * out0[1] };
-	}
-	else
-    {
-		// out0 in x-y plane
-		float a = normal[0] * normal[0] + normal[1] * normal[1];
-		float k = 1.0f / sqrtf(a);
-		out0 = { -normal[1] * k, normal[0] * k, 0.0f };
-		// out1 = n x out1
-		out1 = { -normal[2] * out0[1], normal[2] * out0[0], a * k };
-	}
 }
 
 void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& normal, const oGFX::Color& color)
@@ -194,4 +216,37 @@ void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& 
 	glm::vec3 basis1;
     CalculateTangentSpace(normal, basis0, basis1);
     DebugDraw::AddDisc(center, radius, basis0, basis1, color);
+}
+
+void DebugDraw::AddSphereAs3Disc1HorizonDisc(const glm::vec3& center, float radius, const glm::vec3& cameraPosition, const oGFX::Color& color)
+{
+    DebugDraw::AddDisc(center, radius, { 1.0f, 0.0f, 0.0f }, color);
+    DebugDraw::AddDisc(center, radius, { 0.0f, 1.0f, 0.0f }, color);
+    DebugDraw::AddDisc(center, radius, { 0.0f, 0.0f, 1.0f }, color);
+    glm::vec3 position;
+    glm::vec3 normal;
+    CalculateHorizonDisc(cameraPosition, center, radius, position, normal);
+    DebugDraw::AddDisc(position, radius, normal, color);
+}
+
+void DebugDraw::DrawYGrid(float gridSize, float gapSize, const oGFX::Color & col)
+{
+    const float halfGrid = gridSize/2.0f;
+    const float numLines = gridSize / gapSize;
+
+    const Point3D bottomLeft{ -halfGrid,0.0f,-halfGrid };
+    const Point3D topRight{ halfGrid ,0.0f, halfGrid };
+
+    const auto iters = numLines;
+    for (size_t x = 0; x < iters; x++)
+    {
+        DebugDraw::AddLine(bottomLeft + Point3D{ gapSize * x,0.0f,0.0f }, topRight - Point3D{ gapSize * (iters - x),0.0f,0.0f }, oGFX::Colors::LIGHT_GREY);
+    }
+    for (size_t z = 0; z< iters; z++)
+    {
+        DebugDraw::AddLine(bottomLeft + Point3D{ 0.0f,0.0f, gapSize*z }, topRight - Point3D{ 0.0f,0.0f ,gapSize * (iters - z)}, oGFX::Colors::LIGHT_GREY);
+    }
+    DebugDraw::AddLine(bottomLeft + Point3D{ gridSize ,0.0f,0.0f }, topRight , oGFX::Colors::LIGHT_GREY);
+    DebugDraw::AddLine(bottomLeft + Point3D{ 0.0f,0.0f, gridSize }, topRight , oGFX::Colors::LIGHT_GREY);
+
 }

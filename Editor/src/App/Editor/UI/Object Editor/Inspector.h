@@ -1,6 +1,20 @@
+/************************************************************************************//*!
+\file          Inspector.h
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Declarations for Inspector 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 //gameobject for getting component
 #include <Ouroboros/ECS/GameObject.h>
+#include <Ouroboros/Asset/Asset.h>
 //undo redo commands
 #include <Ouroboros/Commands/Component_ActionCommand.h>
 #include <Ouroboros/Commands/CommandStackManager.h>
@@ -102,13 +116,31 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 	
 	auto& component = gameobject.GetComponent<Component>();
 	rttr::type type = component.get_type();
-	
 	bool open = ImGui::TreeNodeEx(type.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+	ImGui::PushID(type.get_name().data());
+	{
+		bool smallbtn = true;
+		rttr::variant metadata_removable = type.get_metadata(UI_metadata::NOT_REMOVABLE);
+		if (metadata_removable.is_valid())
+			smallbtn = false;
+		if (smallbtn)
+		{
+			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+			if (ImGui::SmallButton("x"))
+			{
+				gameobject.RemoveComponent<Component>();
+				ImGui::PopID();
+				return;
+			}
+		}
+	}
+	ImGui::PopID();
+
 	ImGui::Separator();
 	if (open == false)
 		return;
 
-	ImGui::PushID(type.get_id());
+	ImGui::PushID(static_cast<int>(type.get_id()));
 	for (rttr::property prop : type.get_properties())
 	{
 		bool propReadonly = prop.is_readonly();

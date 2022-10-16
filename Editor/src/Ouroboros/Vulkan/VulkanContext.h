@@ -22,16 +22,20 @@ Technology is prohibited.
 // TODO: remove
 #include "Ouroboros/Core/CameraController.h"
 
-//#include "vk_engine.h"
 struct SDL_Window;
 
 namespace oo
 {
-    class VulkanContext //: public GraphicsContext
+    // forward declaration
+    class WindowResizeEvent;
+    class WindowMinimizeEvent;
+    class WindowRestoredEvent;
+
+    class VulkanContext final //: public GraphicsContext
     {
     public:
         VulkanContext(SDL_Window* window);
-        virtual ~VulkanContext();
+        ~VulkanContext();
 
         void Init();
         void OnUpdateBegin();
@@ -57,9 +61,14 @@ namespace oo
         CameraController m_cc;
 
         //TEMP ptrs
-        std::unique_ptr<ModelData> cubeMesh;
-        std::unique_ptr<ModelData> planeMesh;
+        std::unique_ptr<ModelFileResource> cubeMesh;
+        std::unique_ptr<ModelFileResource> planeMesh;
 
-        //static VulkanEngine vkEngine;
+        bool m_minimized = false;
+
+    private:
+        void OnWindowResize(WindowResizeEvent* e);
+        void OnWindowMinimize(WindowMinimizeEvent* e);
+        void OnWindowRestored(WindowRestoredEvent* e);
     };
 }

@@ -1,4 +1,17 @@
-﻿#pragma once
+﻿/************************************************************************************//*!
+\file           Component.h
+\project        ECS
+\author         Lim Guan Hui, l.guanhui, 2000552
+\par            email: l.guanhui\@digipen.edu
+\date           October 2, 2022
+\brief          Components definition for the ECS 
+
+Copyright (C) 2021 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+#pragma once
 #include "EcsUtils.h"
 //#include "World.h"
 
@@ -31,6 +44,16 @@ namespace Ecs
 			return hash_fnv1a(name_detail<T>());
 		}
 	};
+
+	template<typename T>
+	struct ComponentEvent : public Ecs::internal::event::Event
+	{
+		T& component;
+		EntityID entityID;
+		ComponentEvent(EntityID eid, T& _component)
+			: component{ _component }, entityID{ eid } {};
+	};
+
 	//struct containing information about a unique component type
 	struct ComponentInfo
 	{
@@ -40,6 +63,7 @@ namespace Ecs
 		using MoveConstructorFn = void(void* self, void* other);
 		using MoveAssignmentFn = void(void* self, void* other);
 		using GetComponentFn = GetCompFn;
+		using BroadcastComponentEventFn = void(IECSWorld& world, EntityID id);
 
 		TypeHash hash{};
 
@@ -50,6 +74,8 @@ namespace Ecs
 		MoveConstructorFn* move_constructor{ nullptr };
 		MoveAssignmentFn*  move_assignment{ nullptr };
 		GetComponentFn* get_component{ nullptr };
+		BroadcastComponentEventFn* broadcast_AddComponentEvent{ nullptr };
+		BroadcastComponentEventFn* broadcast_RemoveComponentEvent{ nullptr };
 		uint16_t size{ 0 };
 		uint16_t align{ 0 };
 
@@ -66,55 +92,70 @@ namespace Ecs
 			return hash;
 		};
 		template<typename T>
-		static constexpr ComponentInfo build() {
+		static constexpr ComponentInfo build();
+		// {
 
-			ComponentInfo info{};
-			info.hash = build_hash<T>();
-			info.name = typeid(T).name();
+		//	ComponentInfo info{};
+		//	info.hash = build_hash<T>();
+		//	info.name = typeid(T).name();
 
-			if constexpr (std::is_empty_v<T>)
-			{
-				info.align = 0;
-				info.size = 0;
-			}
-			else {
-				info.align = alignof(T);
-				info.size = sizeof(T);
-			}
+		//	if constexpr (std::is_empty_v<T>)
+		//	{
+		//		info.align = 0;
+		//		info.size = 0;
+		//	}
+		//	else {
+		//		info.align = alignof(T);
+		//		info.size = sizeof(T);
+		//	}
 
-			info.constructor = [](void* p)
-			{
-				new(p) T{};
-			};
-			info.destructor = [](void* p)
-			{
-				((T*)p)->~T();
-			};
+		//	info.constructor = [](void* p)
+		//	{
+		//		new(p) T{};
+		//	};
+		//	info.destructor = [](void* p)
+		//	{
+		//		((T*)p)->~T();
+		//	};
 
-			info.copy_constructor = [](void* self, void* copy)
-			{
-				new(self) T{*(static_cast<T*>(copy))};
-			};
+		//	info.copy_constructor = [](void* self, void* copy)
+		//	{
+		//		new(self) T{*(static_cast<T*>(copy))};
+		//	};
 
-			info.move_constructor = [](void* self, void* other)
-			{
-				new(self) T{ std::move( *(static_cast<T*>(other)) ) };
-			};
+		//	info.move_constructor = [](void* self, void* other)
+		//	{
+		//		new(self) T{ std::move( *(static_cast<T*>(other)) ) };
+		//	};
 
-			info.move_assignment = [](void* self, void* other)
-			{
-				T* ptr = static_cast<T*>(self);
-				*ptr = std::move(*(static_cast<T*>(other)));
-			};
+		//	info.move_assignment = [](void* self, void* other)
+		//	{
+		//		T* ptr = static_cast<T*>(self);
+		//		*ptr = std::move(*(static_cast<T*>(other)));
+		//	};
 
-			info.get_component = [](IECSWorld& world, EntityID id)
-			{
-				T& comp = world.get_component<T>(id);
-				return static_cast<void*>(&comp);
-			};
+		//	info.get_component = [](IECSWorld& world, EntityID id)
+		//	{
+		//		T& comp = world.get_component<T>(id);
+		//		return static_cast<void*>(&comp);
+		//	};
+		//	info.broadcast_AddComponentEvent = [](IECSWorld& world, EntityID id)
+		//	{
+		//		size_t hash = IECSWorld::get_component_hash<T>();
+		//		T& comp = world.get_component<T>(id);
+		//		ComponentEvent evnt{ id,comp };
+		//		world.onAddComponent_Callbacks[hash].Broadcast(&evnt);
+		//	};
+		//	/*info.broadcast_RemoveComponentEvent = [](IECSWorld& world, EntityID id)
+		//	{
+		//		size_t hash = IECSWorld::get_component_hash<T>();
+		//		T& comp = world.get_component<T>(id);
+		//		ComponentEvent evnt{ id,comp };
+		//		world.onRemoveComponent_Callbacks[hash].Broadcast(&evnt);
+		//	};*/
 
-			return info;
-		};
+		//	return info;
+		//};
 	};
 
 	//linked list header
@@ -136,9 +177,9 @@ namespace Ecs
 	//set of unique combination of components
 	struct ComponentCombination {
 		struct ComponentIdentifier {
-			const ComponentInfo* type; //information about the type
-			TypeHash hash; // hash of the component
-			uint32_t chunkOffset; //offset from start of chunk
+			const ComponentInfo* type;	//information about the type
+			TypeHash hash;				// hash of the component
+			uint32_t chunkOffset;		//offset from start of chunk
 		};
 		int16_t chunkCapacity{};
 		std::vector<ComponentIdentifier> components{}; //all the components in this archtype
@@ -177,15 +218,8 @@ namespace Ecs
 		}
 	};
 
-
-	template<typename T>
-	struct ComponentEvent : public Ecs::internal::event::Event
-	{
-		T& component;
-		EntityID entityID;
-		ComponentEvent(EntityID eid, T& _component) 
-			: component{ _component }, entityID{ eid } {};
-	};
+	
 
 	using TestComponentEvent = ComponentEvent<TestComponent>;
+	
 }

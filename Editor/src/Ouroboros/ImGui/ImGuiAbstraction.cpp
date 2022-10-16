@@ -118,7 +118,6 @@ namespace oo
 #endif
         
         ImGui::NewFrame();
-
     }
 
     void ImGuiAbstraction::End()
@@ -131,6 +130,16 @@ namespace oo
         // Rendering
         ImGui::Render();
         
+        //renderer imgui end used to be here.
+
+        ImGui::EndFrame();
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
+
         m_renderer->OnImGuiEnd();
     }
 

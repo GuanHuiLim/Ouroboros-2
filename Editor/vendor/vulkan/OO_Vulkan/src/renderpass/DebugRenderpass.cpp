@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           DebugRenderpass.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a debug drawing pass
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "DebugRenderpass.h"
 
 #include <array>
@@ -320,7 +333,7 @@ void DebugDrawRenderpass::CreatePipeline()
 
 				// Create all permutations of PSO needed
 				{
-					VkPipeline& pso = m_DebugDrawPSOSelector.psos[i + 2 * j];
+					VkPipeline& pso = m_DebugDrawPSOSelector.psos[i + 2ull * j];
 					VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pso));
 					VK_NAME(m_device.logicalDevice, "DebugDrawLinesPSO", pso);
 				}

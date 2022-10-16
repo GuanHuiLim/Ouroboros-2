@@ -1,5 +1,19 @@
+/************************************************************************************//*!
+\file           TransformAPI.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Sept 28, 2022
+\brief          Defines the exported helper functions that the C# scripts will use
+                to interact with the C++ Transform3D ECS System/Component
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
-#include <Scripting/ExportAPI.h>
+#include "Ouroboros/Scripting/ExportAPI.h"
 
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Scripting/ScriptSystem.h"
@@ -25,7 +39,7 @@ namespace oo
         component.SetPosition({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetGlobalPosition(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -45,7 +59,7 @@ namespace oo
         component.SetGlobalPosition({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetLocalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -65,7 +79,7 @@ namespace oo
         component.SetRotation({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetGlobalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -85,7 +99,7 @@ namespace oo
         component.SetGlobalRotation({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetLocalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -105,7 +119,7 @@ namespace oo
         component.SetScale({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetGlobalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -125,13 +139,13 @@ namespace oo
         component.SetGlobalScale({ x, y, z });
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API int Transform_GetChildCount(Scene::ID_type sceneID, UUID uuid)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
-        return obj->GetDirectChildCount();
+        return static_cast<int>(obj->GetDirectChildCount());
     }
 
     SCRIPT_API ComponentDatabase::IntPtr Transform_GetChild(Scene::ID_type sceneID, UUID uuid, size_t childIndex)
@@ -162,7 +176,7 @@ namespace oo
         parentObj->AddChild(*obj, preserveTransforms);
 
         //manually update all transforms if set parent is called
-        scene->GetWorld().Get_System<TransformSystem>()->Run(&(scene->GetWorld()));
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API uint32_t Transform_GetParent(Scene::ID_type sceneID, UUID uuid)

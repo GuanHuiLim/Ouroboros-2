@@ -25,51 +25,25 @@ Technology is prohibited.
 #include <Ouroboros/Core/Application.h>
 #include <Ouroboros/Vulkan/VulkanContext.h>
 
-//ASSET MANAGER EXAMPLE
-//static oo::AssetManager manager = oo::AssetManager("./assets");
-//static oo::Asset myImageAsset;
+#include "Ouroboros/Audio/Audio.h"
+
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
-#ifdef OO_EDITOR
-	ImGuiManager::InitAssetsAll();
-#endif
-
-	//ASSET MANAGER EXAMPLE
-	/*try
-	{
-		//Asset myFile = manager.LoadFile("assets/infile.txt");
-		manager.LoadDirectory("./");
-		auto v = manager.LoadName("Arcadia.png", false);
-		if (v.size() > 0)
-			myImageAsset = v[0];
-	}
-	catch (...)
-	{
-		std::cout << "not found\n";
-	}*/
 }
-
-// TODO : IMGUI DOESNT WORK YET FOR NOW. VULKAN NEEDS TO BE SET UP
-// PROPERLY FOR IMGUI RENDERING TO TAKE PLACE
 
 void EditorLayer::OnUpdate()
 {
-#ifndef OO_END_PRODUCT
+	TRACY_PROFILE_SCOPE_NC(editor_ui_update, tracy::Color::Blue);
+
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
-#endif
 #ifdef OO_EDITOR
     else
 	    m_editor.Update();
 #endif
-
-	//ASSET MANAGER EXAMPLE
-	/*if (myImageAsset.HasData())
-	{
-		ImGui::Image(reinterpret_cast<void*>(myImageAsset.GetData<ImTextureID>()), ImVec2(100, 100));
-	}*/
 
 	//top menu bar
 	//Editor::MenuBar();
@@ -91,10 +65,6 @@ void EditorLayer::OnUpdate()
 		}
 		ImGui::EndMainMenuBar();
 	}
-    //m_editor.ShowAllWidgets();
 
-    //if (m_demo)
-    //    ImGui::ShowDemoWindow(&m_demo);
-
-
+	TRACY_PROFILE_SCOPE_END();
 }

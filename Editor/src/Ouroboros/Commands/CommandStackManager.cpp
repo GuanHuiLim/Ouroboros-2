@@ -49,9 +49,9 @@ void oo::CommandStackManager::AddCommand(ActionCommand* command)
 	while (s_current < 0)
 	{
 		++s_current;
-		auto command = s_commands.back();
+		auto last_command = s_commands.back();
+		delete last_command;
 		s_commands.pop_back();
-		delete command;
 	}
 	s_current = 0;
 	s_commands.push_back(command);

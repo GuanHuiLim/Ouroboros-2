@@ -1,6 +1,6 @@
 /************************************************************************************//*!
 \file          ToolbarView.cpp
-\project       Ouroboros
+\project       Editor
 \author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution (100%)
 \par           email: junxiang.leong\@digipen.edu
 \date          October 3, 2021
@@ -37,16 +37,32 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
+void Toolbar::InitAssets()
+{
+	m_iconsSaved.emplace("TranslateButton", *ImGuiManager::s_editorAssetManager.LoadName("TranslateButton.png").begin());
+	m_iconsSaved.emplace("RotateButton", *ImGuiManager::s_editorAssetManager.LoadName("RotateButton.png").begin());
+	m_iconsSaved.emplace("ScaleButton", *ImGuiManager::s_editorAssetManager.LoadName("ScaleButton.png").begin());
+	m_iconsSaved.emplace("PlayButton", *ImGuiManager::s_editorAssetManager.LoadName("PlayButton.png").begin());
+	m_iconsSaved.emplace("PauseButton", *ImGuiManager::s_editorAssetManager.LoadName("PauseButton.png").begin());
+	m_iconsSaved.emplace("StopButton", *ImGuiManager::s_editorAssetManager.LoadName("StopButton.png").begin());
+	m_iconsSaved.emplace("LockButton", *ImGuiManager::s_editorAssetManager.LoadName("LockButton.png").begin());
+	m_iconsSaved.emplace("ListIcon", *ImGuiManager::s_editorAssetManager.LoadName("ListIcon.png").begin());
+	m_iconsSaved.emplace("GridIcon", *ImGuiManager::s_editorAssetManager.LoadName("GridIcon.png").begin());
+
+}
 void Toolbar::Show()
 {
 	float w = ImGui::GetWindowWidth();
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0,0 });
 	{
 		ImGui::BeginChild("ChildToolbar", { 0,0 });
-		
+
+		TRACY_PROFILE_SCOPE_NC(ImageButton, tracy::Color::Blue);
+		auto data = m_iconsSaved["TranslateButton"].GetData<ImTextureID>();
 		if (ImGuiUtilities::ImageButton_ToolTip(1,"Gizmo Translate Mode",
-			ImGuiManager::s_editorAssetManager.LoadName("TranslateButton.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["TranslateButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
 			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::TRANSLATE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
@@ -54,9 +70,11 @@ void Toolbar::Show()
 			oo::EventManager::Broadcast(&tbe);
 		}
 
+		TRACY_PROFILE_SCOPE_END();
+
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(2,"Gizmo Rotate Mode", 
-			ImGuiManager::s_editorAssetManager.LoadName("RotateButton.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["RotateButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
 			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::ROTATE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
@@ -66,7 +84,7 @@ void Toolbar::Show()
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(3, "Gizmo Scale Mode",
-			ImGuiManager::s_editorAssetManager.LoadName("ScaleButton.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["ScaleButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
 			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::SCALE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
@@ -90,7 +108,7 @@ void Toolbar::Show()
 	{
 		ImGui::BeginChild("ChildToolbar2", { 0,0 });
 		if (ImGuiUtilities::ImageButton_ToolTip(4, "Start Simulation", 
-			ImGuiManager::s_editorAssetManager.LoadName("PlayButton.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["PlayButton"].GetData<ImTextureID>(),
 			{btn_width,btn_height}))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PLAY);
@@ -99,7 +117,7 @@ void Toolbar::Show()
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(5, "Pause/Next frame",
-			ImGuiManager::s_editorAssetManager.LoadName("PauseButton.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["PauseButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PAUSE);
@@ -108,7 +126,7 @@ void Toolbar::Show()
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(6, "Stop Simulation",
-			ImGuiManager::s_editorAssetManager.LoadName("StopButton.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["StopButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::STOP);
@@ -121,7 +139,7 @@ void Toolbar::Show()
 		ImGui::SameLine(w - (btn_width * 5));
 		ImGui::BeginChild("ChildToolbar3", { 0,0 });
 		if (ImGuiUtilities::ImageButton_ToolTip(7, "Undocks the toolbar",
-			ImGuiManager::s_editorAssetManager.LoadName("LockButton.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["LockButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }))
 		{
 			docking = !docking;
@@ -130,7 +148,7 @@ void Toolbar::Show()
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(8, "Pen Tool", 
-			ImGuiManager::s_editorAssetManager.LoadName("ListIcon.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["ListIcon"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }))
 		{
 			try
@@ -148,7 +166,7 @@ void Toolbar::Show()
 		ImGui::SameLine();
 		
 		if (ImGuiUtilities::ImageButton_ToolTip(9, "Open Calculator",
-			ImGuiManager::s_editorAssetManager.LoadName("GridIcon.png").begin()->GetData<ImTextureID>(),
+			m_iconsSaved["GridIcon"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }))
 		{
 			ShellExecute(0, 0, L"calculator:\\", 0, 0, SW_SHOW);

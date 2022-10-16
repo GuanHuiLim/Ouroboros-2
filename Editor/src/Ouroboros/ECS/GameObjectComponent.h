@@ -27,7 +27,7 @@ namespace oo
     class GameObjectComponent
     {
     public:
-		bool IsPrefab = false;
+        bool IsPrefab = false;
         bool Active = true;
         bool ActiveInHierarchy = true;
         UUID Id;

@@ -4,7 +4,7 @@
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
 \date           May 05, 2022
-\brief          Core Application Loop and functionality. 
+\brief          Core Application Loop and functionality.
                 Will be inherited by Sandbox project.
 
 Copyright (C) 2022 DigiPen Institute of Technology.
@@ -21,6 +21,12 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+
+#include "Ouroboros/Audio/Audio.h"
+
+#include "Ouroboros/Asset/AssetManager.h"
+
+#include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Timer.h"
 
@@ -41,6 +47,12 @@ namespace oo
 
         /*Initialize Input Management*/
         input::Init();
+
+        // Initialise audio
+        audio::Init();
+
+        // Only start running file watchers ones dependencies are intiialised
+        /*AssetManager::GlobalStartRunning();*/
     }
 
     Application::~Application()
@@ -48,16 +60,16 @@ namespace oo
         /*Shutdown Input Management*/
         input::ShutDown();
 
+        // Shutdown audio
+        audio::ShutDown();
+
         //m_window->~Window();
     }
 
     void Application::Run()
     {
-        //constexpr const char* const application_run_name = "application run";
-        constexpr const char* const update_loop_name = "core app update_loop";
-        //constexpr const char* const update_layerstack_name = "LayerStack OnUpdate";
-        //constexpr const char* const imgui_layerstack_name = "LayerStack OnImGuiUpdate";
-
+        constexpr const char* const update_loop_name = "core app update loop";
+        std::chrono::file_clock::time_point fileWatchTime = std::chrono::file_clock::now();
         while (m_running)
         {
             OO_TracyProfiler::CheckIfServerToBeOpened();
@@ -66,10 +78,13 @@ namespace oo
             /*Calculate dt*/
             timer::Timestep dt = {};
 
-            TRACY_TRACK_PERFORMANCE(update_loop_name);
+            TRACY_PROFILE_FRAME_START(update_loop_name);
 
             /*Process Inputs here*/
             input::Update();
+
+            // Update audio
+            audio::Update();
 
             /* Process window input events */
             m_window->ProcessEvents();
@@ -82,7 +97,7 @@ namespace oo
 
             // swap buffers at the end of frame
             m_window->SwapBuffers();
-
+            
             TRACY_PROFILE_END_OF_FRAME();
         }
     }

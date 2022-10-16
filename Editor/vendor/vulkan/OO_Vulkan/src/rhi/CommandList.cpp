@@ -1,6 +1,20 @@
+/************************************************************************************//*!
+\file           CommandList.cpp
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief               Defines a command list RHI to keep track of state
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "CommandList.h"
 
 #include "VulkanRenderer.h"
+#include <cassert>
 
 namespace rhi
 {
@@ -8,6 +22,13 @@ namespace rhi
 void CommandList::BindPSO(const VkPipeline& pso)
 {
 	vkCmdBindPipeline(m_VkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pso);
+}
+
+void CommandList::SetPushConstant(VkPipelineLayout layout, const VkPushConstantRange& pcr, const void* data)
+{
+	memset(m_push_constant, 0, 128);
+	memcpy(m_push_constant, data, pcr.size);
+	vkCmdPushConstants(m_VkCommandBuffer, layout, VK_SHADER_STAGE_ALL,pcr.offset,pcr.size,data);
 }
 
 void CommandList::BindVertexBuffer(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets /*= nullptr*/)
@@ -28,6 +49,8 @@ void CommandList::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint
 
 void CommandList::BindDescriptorSet(VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount /*= 1*/, const uint32_t* pDynamicOffsets /*= nullptr */)
 {
+	m_pipeLayout = layout;
+
 	uint32_t dynamicOffset = 0;
 	vkCmdBindDescriptorSets(
 		m_VkCommandBuffer,
@@ -52,6 +75,11 @@ void CommandList::SetDefaultViewportAndScissor()
 
 void CommandList::SetViewport(uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
+	assert(viewportCount < 8);
+	for (size_t i = 0; i < viewportCount; i++)
+	{
+		m_viewport[i] = pViewports[i];
+	}
 	vkCmdSetViewport(m_VkCommandBuffer, firstViewport, viewportCount, pViewports);
 }
 
@@ -63,6 +91,11 @@ void CommandList::SetViewport(const VkViewport& viewport)
 
 void CommandList::SetScissor(uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
 {
+	assert(scissorCount < 8);
+	for (size_t i = 0; i < scissorCount; i++)
+	{
+		m_scissor[i] = pScissors[i];
+	}
 	vkCmdSetScissor(m_VkCommandBuffer, firstScissor, scissorCount, pScissors);
 }
 

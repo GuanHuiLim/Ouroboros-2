@@ -1,11 +1,22 @@
+/************************************************************************************//*!
+\file           RendererComponent.h
+\project        Ouroboros
+\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\par            email: c.tecklee\@digipen.edu
+\date           Sept 30, 2022
+\brief          Describes the Mesh Renderer and Skin Mesh Renderer Components that'll
+				be the interface for users to fill up and used by renderer system.
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
-#include "pch.h"
+
 #include "glm/common.hpp"
 #include "Ouroboros/Asset/AssetManager.h"
-#include "OO_Vulkan/src/MeshModel.h"
-#include "Archetypes_Ecs/src/A_Ecs.h"
-#include "OO_Vulkan/src/DefaultMeshCreator.h"
-
+#include "MeshInfo.h"
 #include <rttr/type>
 namespace oo
 {
@@ -13,16 +24,27 @@ namespace oo
 
 	struct MeshRendererComponent
 	{
-		Asset mesh_handle;
+		Asset albedo_handle;
+		Asset normal_handle;
+		MeshInfo meshInfo;
+		uint32_t albedoID = 0xFFFFFFFF;
+		uint32_t normalID = 0xFFFFFFFF;
 
 		//no need to serialize
 		uint32_t model_handle{0};
-		uint32_t graphicsWorld_ID;
+		uint32_t graphicsWorld_ID{};
 
-		void GetModelHandle()
-		{
-			model_handle = mesh_handle.GetData<ModelData>().gfxMeshIndices.front();
-		}
+		MeshInfo GetMeshInfo();
+		/*********************************************************************************//*!
+		\brief      this function will only set the submeshbits
+		*//**********************************************************************************/
+		void SetMeshInfo(MeshInfo info);
+		void GetModelHandle();
+		
+		//set a single model and asset
+		void SetModelHandle(Asset _asset, uint32_t _submodel_id);
+		Asset GetMesh();
+		void SetMesh(Asset _asset);
 
 		//std::vector<Material> materials;
 
@@ -37,23 +59,8 @@ namespace oo
 	struct SkinMeshRendererComponent
 	{
 		Asset mesh_handle;
+
+
 	};
 
 }
-
-// testing code i assume
-//namespace oo::Mesh
-//{
-//	auto CreateCubeMeshObject(Scene* scene, GraphicsWorld* graphicsWorld)
-//	{
-//		//auto cubeMesh = CreateDefaultCubeMesh();
-//
-//		auto gameObj = scene->CreateGameObjectImmediate();
-//		auto& meshRenderer = gameObj->AddComponent<MeshRendererComponent>();
-//		meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
-//		meshRenderer.model_handle = 0;
-//		//meshRenderer.graphicsWorld_ID = graphicsWorld->CreateObjectInstance();
-//
-//		return gameObj;
-//	}
-//}

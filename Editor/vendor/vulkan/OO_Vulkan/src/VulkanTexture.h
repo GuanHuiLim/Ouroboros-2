@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           VulkanTexture.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              A texture wrapper object for vulkan texture
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include <fstream>
@@ -28,9 +41,9 @@ namespace vkutils
 		uint32_t layerCount{};
 		VkDescriptorImageInfo descriptor{};
 		VkSampler sampler{};
-		VkImageUsageFlags usage;
-		VkImageAspectFlags aspectMask;
-		VkMemoryPropertyFlags MemProps;
+		VkImageUsageFlags usage{};
+		VkImageAspectFlags aspectMask{};
+		VkMemoryPropertyFlags MemProps{};
 		bool targetSwapchain = true;
 		
 		void updateDescriptor();
@@ -40,6 +53,8 @@ namespace vkutils
 	class Texture2D : public Texture
 	{
 	public:
+		Texture2D() : Texture() {}
+
 		void loadFromFile(
 			std::string filename,
 			VkFormat format,

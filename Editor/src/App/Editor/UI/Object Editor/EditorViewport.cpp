@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file          EditorViewport.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         a viewport for the editor to allow the gizmo to interact with the object. 
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -60,7 +73,15 @@ void EditorViewport::Show()
 
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
-	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty())
+
+	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
+	{
+		return;
+	}
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
+	if (gameobject == nullptr || scene->IsValid(*gameobject) == false)
 	{
 		return;
 	}
@@ -92,41 +113,48 @@ void EditorViewport::Show()
 	ImGuizmo::SetGizmoSizeClipSpace(originalGuizmoSize * gizmoSize);
 
 	ImGuizmo::BeginFrame();
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
 	oo::TransformComponent& transform = gameobject->GetComponent<oo::TransformComponent>();
 
-	glm::vec3 mScale = transform.GetGlobalScale();
-	glm::vec3 mRot = transform.GetGlobalRotationDeg();
-	glm::vec3 mTrans = transform.GetGlobalPosition();
-	glm::mat4 m_matrix = transform.GetGlobalMatrix();
+	glm::mat4 m_matrix = transform.GlobalTransform;
 	ImGuizmo::SetOrthographic(false);
 
 	ImGuizmo::SetDrawlist();
 
-	ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
+	//ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
 
-	if (ImGuizmo::Manipulate(view, projection, (ImGuizmo::OPERATION)m_gizmoOperation, ImGuizmo::MODE::WORLD, glm::value_ptr(m_matrix)))
+	if (ImGuizmo::Manipulate(view, projection, (ImGuizmo::OPERATION)m_gizmoOperation, (ImGuizmo::MODE)m_gizmoMode, glm::value_ptr(m_matrix)))
 	{
 		if (ImGuizmo::IsUsing())
 		{
-			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(m_matrix),
+			glm::vec3 mScale = transform.GetGlobalScale();
+			glm::quat mRot = transform.GetRotationQuat();
+			glm::vec3 mTrans = transform.GetGlobalPosition();
+
+			/*ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(m_matrix),
 				glm::value_ptr(mTrans),
 				glm::value_ptr(mRot),
-				glm::value_ptr(mScale));
+				glm::value_ptr(mScale));*/
+			
+			// If we can't trust imguizmo, we can still trust glm.
+			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
+
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
+			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.
 		}
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)))
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
+		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)))
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
+		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)))
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
+		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
 	}
 }

@@ -17,12 +17,15 @@ Technology is prohibited.
 
 #include <rttr/registration>
 #include <Ouroboros/EventSystem/EventManager.h>
+
+#include <Ouroboros/ECS/GameObject.h>
+#include <App/Editor/Properties/UI_metadata.h>
 namespace oo
 {
     RTTR_REGISTRATION
     {
         using namespace rttr;
-	registration::class_<oo::GameObjectComponent>("GameObject")
+	registration::class_<oo::GameObjectComponent>("GameObject")(metadata(UI_metadata::NOT_REMOVABLE,true))
 		.property("Active", &GameObjectComponent::Active)
 		.property("Name", &GameObjectComponent::Name)
 		.property_readonly("UUID", &GameObjectComponent::Id)

@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           GpuVector.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Defines a wrapper object for resiable GPU buffer. Generally bad idea
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 #include "vulkan/vulkan.h"
 #include <iostream>
@@ -25,6 +38,7 @@ public:
 	void clear();
 
 	const VkDescriptorBufferInfo& GetDescriptorBufferInfo();
+	const VkDescriptorBufferInfo* GetBufferInfoPtr();
 	bool MustUpdate();
 	void Updated();
 
@@ -212,6 +226,15 @@ inline const VkDescriptorBufferInfo& GpuVector<T>::GetDescriptorBufferInfo()
 	m_descriptor.offset = 0;
 	m_descriptor.range = VK_WHOLE_SIZE;
 	return m_descriptor;
+}
+
+template<typename T>
+inline const VkDescriptorBufferInfo* GpuVector<T>::GetBufferInfoPtr()
+{
+	m_descriptor.buffer = m_buffer;
+	m_descriptor.offset = 0;
+	m_descriptor.range = VK_WHOLE_SIZE;
+	return &m_descriptor;
 }
 
 template<typename T>

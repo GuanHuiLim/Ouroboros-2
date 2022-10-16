@@ -1,3 +1,16 @@
+/************************************************************************************//*!
+\file           VulkanUtils.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief          Utility functiosn for vulkan ease of use. mostly inlined
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 #include <vulkan/vulkan.h>
 #include "MathCommon.h"
@@ -121,6 +134,7 @@ namespace oGFX
 		glm::vec3 col{0.0f,1.0f,0.0f}; // Vertex colour (r, g, b)
 		glm::vec2 tex{}; // Texture Coords(u,v)
 		glm::vec3 tangent{}; // Vertex normal (x, y, z)
+		uint32_t boneWeights{};
 	};
 
 	struct DebugVertex
@@ -144,8 +158,6 @@ namespace oGFX
 
 	const std::vector<VkVertexInputBindingDescription>& GetGFXVertexInputBindings();	
 	const std::vector<VkVertexInputAttributeDescription>& GetGFXVertexInputAttributes();
-	const std::vector<VkDescriptorSet>& GetGFXDescriptoSetGroup();
-	
 
 	oGFX::SwapChainDetails GetSwapchainDetails(VulkanInstance& instance, VkPhysicalDevice device);
 	oGFX::QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
@@ -414,7 +426,7 @@ namespace oGFX
 				VkDescriptorSet dstSet,
 				VkDescriptorType type,
 				uint32_t binding,
-				VkDescriptorBufferInfo* bufferInfo,
+				const VkDescriptorBufferInfo* bufferInfo,
 				uint32_t descriptorCount = 1)
 			{
 				VkWriteDescriptorSet writeDescriptorSet {};

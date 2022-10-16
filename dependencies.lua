@@ -29,7 +29,7 @@ IncludeDir["rttr"]          = AppVendor .. "/rttr/src"
 IncludeDir["SDL"]           = AppVendor .. "/sdl2/include"
 IncludeDir["spdlog"]        = AppVendor .. "/spdlog/include"
 -- IncludeDir["stb_image"]     = EngineVendor .. "/stb_image"
--- IncludeDir["fmod"]          = EngineVendor .. "/fmod/core/inc"
+IncludeDir["fmod"]          = AppVendor .. "/fmod/core/inc"
 -- IncludeDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/inc"    -- fmod studio requires fmod inc too
 -- IncludeDir["ffmpeg"]      	= EngineVendor .. "/ffmpeg/"
 -- IncludeDir["freetype"]      = EngineVendor .. "/freetype/include"
@@ -40,6 +40,9 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader"
 -- IncludeDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap"
 -- IncludeDir["vma"]           = EngineVendor .. "/vma"
+
+IncludeDir["physx"]                 = AppVendor .. "/physx"
+IncludeDir["physx_foundation"]      = AppVendor .. "/physx/Physics/Physx/pxshared/include"
 
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
@@ -53,7 +56,9 @@ LibraryDir                  = {}
 -- LibraryDir["mono"]          = EngineVendor .. "/mono/lib"
 LibraryDir["rttr"]          = AppVendor .. "/rttr/lib"
 LibraryDir["SDL"]           = AppVendor .. "/sdl2/lib/x64"
+LibraryDir["physx"]           = AppVendor .. "/physx/Physics/Physx/lib"
 -- LibraryDir["fmod"]          = EngineVendor .. "/fmod/core/lib/x64"
+LibraryDir["fmod"]          = AppVendor .. "/fmod/core/lib/x64"
 -- LibraryDir["fmod_studio"]   = EngineVendor .. "/fmod/studio/lib/x64"
 -- LibraryDir["ffmpeg"]   		= EngineVendor .. "/ffmpeg/lib64"
 -- LibraryDir["freetype"]      = EngineVendor .. "/freetype/x64"

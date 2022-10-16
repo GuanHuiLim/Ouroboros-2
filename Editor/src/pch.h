@@ -31,15 +31,23 @@ Technology is prohibited.
 //#include <oom/oom.hpp>
 //#include <rttr/registration>
 
-#define GLM_FORCE_SILENT_WARNINGS
-#define GLM_FORCE_PURE
-#define GLM_FORCE_SSE42 //GLM_FORCE_SSE2 or GLM_FORCE_SSE42 if your processor supports it
-////#define GLM_FORCE_SIMD_AVX2
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES // POTENTIAL cause of problems : becareful!
+// defines moved to global solution level define
+//#define GLM_FORCE_SILENT_WARNINGS
+//#define GLM_FORCE_PURE
+//#define GLM_FORCE_SSE42 //GLM_FORCE_SSE2 or GLM_FORCE_SSE42 if your processor supports it
+//////#define GLM_FORCE_SIMD_AVX2
+//#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES // POTENTIAL cause of problems : becareful!
 #include <glm/glm.hpp>
 #include <glm/matrix.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+
+#include <fmod.hpp>
+// ecs
+#include <Archetypes_Ecs/src/A_Ecs.h>
+#include "Ouroboros/ECS/ECS.h"
+#include "Ouroboros/ECS/DeferredComponent.h"
+#include "Ouroboros/ECS/DuplicatedComponent.h"
 
 // Utility files
 //#include "Utility/Bitmask.h"

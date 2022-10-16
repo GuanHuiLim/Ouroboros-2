@@ -1,3 +1,17 @@
+/************************************************************************************//*!
+\file          InspectorProperties.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Contains the properties of how each value type will be displayed on
+			   the editor.
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 #include "InspectorProperties.h"
 #include "UI_metadata.h"
@@ -10,6 +24,7 @@
 #include "Quaternion/include/Quaternion.h"
 #include "Ouroboros/ECS/GameObject.h"
 #include "App/Editor/UI/Object Editor/AssetBrowser.h"
+#include "Ouroboros/Vulkan/MeshInfo.h"
 InspectorProperties::InspectorProperties()
 {
 	m_InspectorUI[UI_RTTRType::UItypes::BOOL_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
@@ -28,6 +43,18 @@ InspectorProperties::InspectorProperties()
 				speed = variant_speed.get_value<float>();
 		}
 		edited = ImGui::DragFloat(name.c_str(), &value, speed);
+		if (edited) { v = value; endEdit = true; };
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::INT_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		int32_t value = v.get_value<int32_t>();
+		float speed = 1.0f;
+		{
+			rttr::variant variant_speed = prop.get_metadata(UI_metadata::DRAG_SPEED);
+			if (variant_speed.is_valid())
+				speed = variant_speed.get_value<float>();
+		}
+		edited = ImGui::DragInt(name.c_str(), &value, speed);
 		if (edited) { v = value; endEdit = true; };
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::STRING_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
@@ -157,9 +184,12 @@ InspectorProperties::InspectorProperties()
 	{
 		auto value = v.get_value<oo::Asset>();
 		static ImGuiID open = 0;
-		std::string string_temp = value.GetFilePath().stem().string();
+		std::string string_temp = (value.IsValid())? value.GetFilePath().stem().string() : "Invalid Data";
 		ImGui::InputText(name.c_str(), &string_temp,ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+		//if (value.IsValid() == false)
+		//	return;
 		ImGui::SameLine();
+		ImGui::PushID(prop.get_name().data());
 		ImGuiID temp = ImGui::GetItemID();
 		if (ImGui::Button("Edit"))
 		{
@@ -170,6 +200,7 @@ InspectorProperties::InspectorProperties()
 				open = temp;
 			}
 		}
+		ImGui::PopID();
 		if (open == temp)
 		{
 			//this meta data is a required field
@@ -182,5 +213,29 @@ InspectorProperties::InspectorProperties()
 			edited = true;
 			open = 0;
 		}
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::MESH_INFO_TYPE] = [](rttr::property& prop, std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		MeshInfo value = v.get_value<MeshInfo>();
+		if (value.mesh_handle.IsValid() == false)
+			return;
+		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+		if (ImGui::BeginListBox(name.c_str(), { contentRegion.x,contentRegion.y * 0.2f }))
+		{
+			std::string name;
+			for (auto i = 0; i < value.mesh_handle.GetData<ModelFileResource*>()->numSubmesh; ++i)
+			{
+				name = "Mesh " + std::to_string(i);
+				bool submesh = value.submeshBits[i];
+				if (ImGui::Selectable(name.c_str(), &submesh))
+				{
+					value.submeshBits[i] = submesh;
+					edited = true;
+					endEdit = true;
+				}
+			}
+			ImGui::EndListBox();
+		}
+		if (edited) { v = value; };
 	};
 }

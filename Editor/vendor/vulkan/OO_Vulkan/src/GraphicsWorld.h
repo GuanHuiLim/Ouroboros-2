@@ -1,8 +1,23 @@
+/************************************************************************************//*!
+\file           GraphicsWorld.h
+\project        Ouroboros
+\author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
+\par            email: j.kong\@digipen.edu
+\date           Oct 02, 2022
+\brief              Declares graphics world, a wrapper for objects that require to be rendered.
+    This is used as the main tnerface between the renderer and external engine
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #pragma once
 
 #include "MathCommon.h"
 #include "../shaders/shared_structs.h"
 #include "BitContainer.h"
+#include "MeshModel.h"
 
 #include <vector>
 #include <array>
@@ -17,14 +32,16 @@ enum ObjectInstanceFlags : uint32_t // fuck enum class
     SHADOW_CASTER    = 0x8,  // Object casts shadows (put it into shadow render pass)
     SHADOW_RECEIVER  = 0x10, // Object receives shadows (a mask for lighting pass)
     ENABLE_ZPREPASS  = 0x20, // Object is added to Z-Prepass
-    TRANSPARENT      = 0x40 // Object is added to forward pass
+    TRANSPARENT      = 0x40, // Object is added to forward pass
+    EMITTER          = 0x80, // Object is an emitter ??
+    SKINNED          = 0x100, // Object is added to skinned pass
                              // etc
 };
 
+//CHAR_BIT * sizeof(uint64_t)
 struct ObjectInstance
 {
     std::string name;
-
     // Begin These are temp until its fully integrated
     glm::vec3 position{};
     glm::vec3 scale{1.0f};
@@ -38,14 +55,18 @@ struct ObjectInstance
     // End temp stuff
 
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
-
     glm::mat4x4 localToWorld{ 1.0f };
-    
     ObjectInstanceFlags flags{};
 
+
+    std::vector<glm::mat4> bones;
+
     uint32_t modelID{}; // Index for the mesh
+    std::bitset<MAX_SUBMESH>submesh;// submeshes to draw
     uint32_t entityID{}; // Unique ID for this entity instance
 };
+
+
 
 struct DecalInstance
 {
@@ -76,17 +97,22 @@ public:
     int32_t CreateObjectInstance(ObjectInstance obj);
     ObjectInstance& GetObjectInstance(int32_t id);
     void DestroyObjectInstance(int32_t id);
-
     void ClearObjectInstances();
 
-    // TODO: Fix Me ! This is for testing
-    std::array<OmniLightInstance, 6> m_HardcodedOmniLights;
+    int32_t CreateLightInstance();
+    int32_t CreateLightInstance(OmniLightInstance obj);
+    OmniLightInstance& GetLightInstance(int32_t id);
+    void DestroyLightInstance(int32_t id);
+    void ClearLightInstances();
+
+
     // TODO: Fix Me ! This is for testing
     DecalInstance m_HardcodedDecalInstance;
 
 private:
-    int32_t entityCount{};
+    int32_t m_entityCount{};
     BitContainer<ObjectInstance> m_ObjectInstances;
+    int32_t m_lightCount{};
     BitContainer<OmniLightInstance> m_OmniLightInstances;
     //etc
 

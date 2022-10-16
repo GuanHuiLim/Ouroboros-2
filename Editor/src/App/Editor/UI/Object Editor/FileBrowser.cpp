@@ -1,3 +1,22 @@
+/************************************************************************************//*!
+\file          FileBrowser.cpp
+\project       Editor
+\author        Leong Jun Xiang, junxiang.leong , 390007920 | code contribution 100%
+\par           email: junxiang.leong\@digipen.edu
+\date          September 26, 2022
+\brief         Interact with the files inside
+			   Edit Files
+			   Open Files
+			   Delete Files
+			   Create Files
+			   Open other UIs
+
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
 #include "pch.h"
 
 #include "FileBrowser.h"
@@ -286,7 +305,7 @@ void FileBrowser::DirectoryBrowser()
 	ImGui::Image(ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_small);
 	ImGui::SameLine();
 	if (ImGui::Selectable("Assets"))
-		FileBehaviour(Project::GetProjectFolder());
+		FileBehaviour(Project::GetAssetFolder());
 	ImGui::EndGroup();
 
 	ImGui::BeginGroup();
