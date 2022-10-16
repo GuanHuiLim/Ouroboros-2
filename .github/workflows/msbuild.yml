@@ -27,16 +27,15 @@ jobs:
         type: [Editor, Executable]
         
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@main
 
     - name: Generating Project
       run: scripts/Windows-GenerateProject.bat
       
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
-      with:
+      # with:
        # vs-version: '[16.4)'
-       msbuild-architecture: x64
 
     - name: Restore NuGet packages
       working-directory: ${{env.GITHUB_WORKSPACE}}
