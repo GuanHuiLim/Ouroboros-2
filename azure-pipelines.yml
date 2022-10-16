@@ -26,4 +26,3 @@ steps:
     msbuildArchitecture: 'x64'
     platform: 'x64'
     configuration: 'Debug'
-    msbuildArguments: 'Ouroboros.sln'
