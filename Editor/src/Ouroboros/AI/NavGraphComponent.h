@@ -26,7 +26,7 @@ namespace oo
 	class NavGraphComponent
 	{
 		using Vector2 = glm::vec2;
-		using Vector3 = Transform::vec3;
+		using Vector3 = glm::vec3;
 
 	public:
 		//Modifiable Data

@@ -23,7 +23,7 @@ namespace oo
 {
 	class NavAgentComponent
 	{
-		using Vector3 = Transform::vec3;
+		using Vector3 = glm::vec3;
 	public:
 		float speed = 20.0f;
 		bool drawGizmos = false;

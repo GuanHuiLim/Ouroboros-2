@@ -30,7 +30,7 @@ namespace oo
 {
 	class NavSystem final: public Ecs::System
 	{
-		using Vector3 = Transform::vec3;
+		using Vector3 = glm::vec3;
 		using Vector2 = glm::vec2;
 	public:
 		NavSystem(Scene* scene) : m_scene{scene} {}
