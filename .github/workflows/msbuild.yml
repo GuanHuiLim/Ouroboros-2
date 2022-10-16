@@ -27,7 +27,7 @@ jobs:
         platform: [Editor] # Editor, Executable
         
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@spironan-patch-2
       with:
        submodules: true
        fetch-depth: 0
