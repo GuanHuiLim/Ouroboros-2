@@ -114,7 +114,6 @@ void Serializer::SaveScene(oo::Scene& scene)
 		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
 		writer.SetMaxDecimalPlaces(rapidjson_precision);
 		doc.Accept(writer);
-		ResetDocument();
 		ofs.close();
 	}
 	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
@@ -154,7 +153,6 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
 		writer.SetMaxDecimalPlaces(rapidjson_precision);
 		doc.Accept(writer);
-		ResetDocument();
 		ofs.close();
 	}
 	return newprefabPath;
@@ -547,8 +545,6 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 
 UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
 {
-	// TODO : This can be improved if required. Clean up please
-
 	UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
@@ -590,7 +586,6 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 		LoadObject(*go, members, membersEnd);
 	}
 
-	ResetDocument();//clear it after using
 	return firstobj;
 }
 
@@ -688,49 +683,60 @@ UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scen
 
 	rapidjson::Document document;
 	document.ParseStream(stream);
-	//script remapping
 	std::unordered_map<UUID, UUID> script_remappingObj;
 	std::vector<std::shared_ptr<oo::GameObject>> all_objects;
-	//normal stuff
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
-	auto gameobj = (go);
+	std::shared_ptr<oo::GameObject> gameobj = go;
+	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
 	parents.push(gameobj);
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
-		//remap the old ids to the new ids
-		all_objects.emplace_back(gameobj);
+		//map their old id to their current IDs
 		script_remappingObj.emplace(std::stoull(iter->name.GetString()), gameobj->GetInstanceID());
-
+		all_objects.push_back(gameobj);
 		gameobj->SetIsPrefab(true);
-		auto members = iter->value.MemberBegin();//get the order of hierarchy
-		auto membersEnd = iter->value.MemberEnd();
-		int order = members->value.GetInt();
 
-		{//when the order dont match the size it will keep poping until it matches
-		//then parent to it and adds itself
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		int order = members->value.GetInt();
+		{
+			//when the order dont match the size it will keep poping until it matches
+			//then parent to it and adds itself
 			while (order != parents.size())
 				parents.pop();
 
-			parents.top()->AddChild(*gameobj);
+			parents.top()->AddChild(*gameobj, true);
 			parents.push(gameobj);
 		}
 
-		++members;
-		{//another element that will store all the component hashes and create the apporiate archtype
-			// go->SetArchtype(vector<hashes>);
-		}
-		//processes the components		
-		LoadObject(*gameobj, members, membersEnd);
+		second_iter.emplace_back(gameobj);
 		++iter;
 		if (iter != document.MemberEnd())
 		{
 			gameobj = scene.CreateGameObjectImmediate();
 		}
+
 	}
+
+	scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*go, false);
+
+	int iteration = 0;
+	for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter, ++iteration)
+	{
+		auto child_object = second_iter[iteration];
+		auto members = iter->value.MemberBegin(); //get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+
+		++members;
+
+		//processes the components		
+		LoadObject(*child_object, members, membersEnd);
+	}
+
 	for (auto obj : all_objects)
 	{
 		RemapScripts(script_remappingObj,*obj);
 	}
+
 	return firstobj;
 }
 
@@ -826,11 +832,5 @@ void Serializer::RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::Gam
 
 		}
 	}
-}
-
-void Serializer::ResetDocument() noexcept
-{
-	//rapidjson::Document d; // new temp document
-	//doc.Swap(d).SetObject(); // minimize and recreate allocator
 }
 
