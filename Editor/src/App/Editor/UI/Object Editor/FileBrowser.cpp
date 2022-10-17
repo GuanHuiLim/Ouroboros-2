@@ -44,16 +44,16 @@ FileBrowser::FileBrowser()
 
 void FileBrowser::InitAssets()
 {
-	m_Icons.emplace(".png", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PNGIcon.png"));
-	m_Icons.emplace(".obj", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/OBJFileIcon.png"));
-	m_Icons.emplace(".mp3", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/MP3FileIcon.png"));
-	m_Icons.emplace(".prefab", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PrefabIcon.png"));
-	m_Icons.emplace(".scn", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/SceneIcon.png"));
-	m_Icons.emplace(".anim", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimationClipIcon.png"));
-	m_Icons.emplace(".controller", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimatorIcon.png"));
-	m_Icons.emplace(".cs", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/CSFileIcon.png"));
-	m_Icons.emplace("generic", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/GenericFileIcon.png"));
-	m_Icons.emplace("", ImGuiManager::s_editorAssetManager.LoadPath("File Icons/FolderIcon.png"));
+	m_Icons[".png"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PNGIcon.png");
+	m_Icons[".obj"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/OBJFileIcon.png");
+	m_Icons[".mp3"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/MP3FileIcon.png");
+	m_Icons[".prefab"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PrefabIcon.png");
+	m_Icons[".scn"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/SceneIcon.png");
+	m_Icons[".anim"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimationClipIcon.png");
+	m_Icons[".controller"]	= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimatorIcon.png");
+	m_Icons[".cs"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/CSFileIcon.png");
+	m_Icons["generic"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/GenericFileIcon.png");
+	m_Icons["folder"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/FolderIcon.png");
 }
 
 inline void FileBrowser::SetDirectory(LoadProjectEvent* lpe)
@@ -303,12 +303,13 @@ void FileBrowser::DirectoryBrowser()
 	ImVec2 size = ImGui::GetContentRegionAvail();
 	ImGui::BeginGroup();
 
-	//ImGui::BeginGroup();
-	//ImGui::Image(m_Icons["generic"].GetData<ImTextureID>(), ImGui_StylePresets::image_small);
-	//ImGui::SameLine();
-	//if (ImGui::Selectable("Assets"))
-	//	FileBehaviour(Project::GetAssetFolder());
-	//ImGui::EndGroup();
+	ImGui::BeginGroup();
+	//generic
+	ImGui::Image(m_Icons["generic"].GetData<ImTextureID>(), ImGui_StylePresets::image_small);
+	ImGui::SameLine();
+	if (ImGui::Selectable("Assets"))
+		FileBehaviour(Project::GetAssetFolder());
+	ImGui::EndGroup();
 
 	ImGui::BeginGroup();
 	ImGui::Image(m_Icons[".prefab"].GetData<ImTextureID>(), ImGui_StylePresets::image_small);
@@ -464,6 +465,12 @@ void FileBrowser::BuildDirectoryList(const std::string& path)
 	m_directoryList.reserve(list.size());
 	m_directoryList.clear();//clear all directory
 	m_selectedList.clear();//clear all selection
+	
+	//TODO: find a beter soln for this
+	//load the assets if this triggers early
+	if (m_Icons.empty())
+		InitAssets();
+	
 	for (auto& directory : list)
 	{
 		m_directoryList.emplace_back(DirectoryInfo{ GetIcon(directory.extension().string()),directory});
@@ -472,11 +479,12 @@ void FileBrowser::BuildDirectoryList(const std::string& path)
 
 ImTextureID FileBrowser::GetIcon(const std::string& ext)
 {
+	//folder
 	if (ext.empty())
-		return m_Icons[""].GetData<ImTextureID>();
+		return m_Icons["folder"].GetData<ImTextureID>();
 
 	auto iter = m_Icons.find(ext);
-
+	//generic
 	if (iter == m_Icons.end())
 		return m_Icons["generic"].GetData<ImTextureID>();
 
@@ -517,6 +525,7 @@ void FileBrowser::RecursiveDirective(const std::filesystem::path& path)
 		{
 			continue;
 		}
+		//generic
 		ImGui::Image(m_Icons["generic"].GetData<ImTextureID>(), {15,15});
 		flag = ImGuiTreeNodeFlags_OpenOnArrow;
 
