@@ -249,8 +249,19 @@ namespace oo
     {
         for (auto& d : data)
         {
-            if (d.is_type<T>())
-                return d.get_value<T>();
+            if constexpr (std::is_pointer<T>::value)
+            {
+                if (d.is_type<T>())
+                    return d.get_value<T>();
+                using T_sptr = std::shared_ptr<std::remove_pointer_t<T>>;
+                if (d.is_type<T_sptr>())
+                    return d.get_value<T_sptr>().get();
+            }
+            else
+            {
+                if (d.is_type<T>())
+                    return d.get_value<T>();
+            }
         }
         return {};
     }
