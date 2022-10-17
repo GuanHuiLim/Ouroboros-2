@@ -20,9 +20,12 @@ Technology is prohibited.
 
 using namespace physx;
 
+static constexpr bool use_debugger = false;
+
+static myPhysx::EventCallBack mEventCallback;
+
 myPhysx::PVD myPVD;
 
-static constexpr bool use_debugger = false;
 
 /* release sequence
 actor might / not release
@@ -81,6 +84,33 @@ namespace myPhysx
             return mPhysics;
         }
 
+        // detects a trigger using the shape's simulation filter data
+        bool isTrigger(const PxFilterData& data) {
+
+            if (data.word0 != 0xffffffff || data.word1 != 0xffffffff || 
+                data.word2 != 0xffffffff || data.word3 != 0xffffffff)
+                return false;
+
+            return true;
+        }
+
+        bool isTriggerShape(PxShape* shape) {
+
+            // detects native built-in triggers.
+            if (shape->getFlags() & PxShapeFlag::eTRIGGER_SHAPE)
+                return true;
+
+            // detects our emulated triggers using the simulation filter data
+            if (physx_system::isTrigger(shape->getSimulationFilterData()))
+                return true;
+
+            // detects our emulated triggers using the simulation filter callback
+            if (shape->userData)
+                return true;
+
+            return false;
+        }
+
         void init() {
 
             createFoundation();
@@ -113,8 +143,7 @@ namespace myPhysx
 
     }
 
-
-    /*-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------*/
 /*                               PhysxWorld                                    */
 /*-----------------------------------------------------------------------------*/
     PhysxWorld::PhysxWorld(PxVec3 grav)
@@ -134,7 +163,7 @@ namespace myPhysx
         // report all the static-kin contacts
         sceneDesc.staticKineFilteringMode = PxPairFilteringMode::eKEEP;
 
-        //sceneDesc.simulationEventCallback = &event_callback;
+        sceneDesc.simulationEventCallback = &mEventCallback;
         //sceneDesc.filterShader = contactReportFilterShader;
 
         scene = physx_system::getPhysics()->createScene(sceneDesc);
@@ -236,9 +265,9 @@ namespace myPhysx
     }
 
 
-    /*-----------------------------------------------------------------------------*/
-    /*                               PhysicsObject                                 */
-    /*-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------*/
+/*                               PhysicsObject                                 */
+/*-----------------------------------------------------------------------------*/
     void PhysicsObject::setRigidType(rigid type) {
 
         PxTransform temp_trans{ PxVec3(0) }; // set default to 0
@@ -297,7 +326,6 @@ namespace myPhysx
 
             underlying_obj->shape = shape; // set new shape enum
 
-            // SWITCH
             // CHECK AGAINST THE TYPE OF SHAPE
             if (shape == shape::box) {
                 PxBoxGeometry temp_box{ 0.5f,0.5f,0.5f };
@@ -351,7 +379,7 @@ namespace myPhysx
         }
     }
 
-    void PhysicsObject::setKinematic(bool kine) {
+    void PhysicsObject::enableKinematic(bool kine) {
 
         if (world->all_objects.contains(id)) {
 
@@ -366,7 +394,7 @@ namespace myPhysx
         }
     }
 
-    void PhysicsObject::setGravity(bool grav) {
+    void PhysicsObject::disableGravity(bool grav) {
 
         if (world->all_objects.contains(id)) {
 
@@ -375,6 +403,24 @@ namespace myPhysx
             underlying_obj->rd.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, grav);
 
             underlying_obj->gravity = grav;
+        }
+    }
+
+    void PhysicsObject::setTriggerShape(bool trigger) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->m_shape) {
+
+                underlying_obj->trigger = trigger;
+
+                if (trigger)
+                    underlying_obj->m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
+                else
+                    underlying_obj->m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
+            }
         }
     }
 
@@ -609,6 +655,19 @@ namespace myPhysx
         return PxVec3{};
     }
 
+    bool PhysicsObject::getTrigger() const {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            return underlying_obj->trigger;
+        }
+
+        // default return.
+        return false;
+    }
+
     bool PhysicsObject::getGravity() const {
 
         if (world->all_objects.contains(id)) {
@@ -712,15 +771,15 @@ namespace myPhysx
             if (underlying_obj->rigidID == rigid::rdynamic) {
 
                 switch (type) {
-                case force::conventional:
+                case force::force:
                     underlying_obj->rd.rigidDynamic->addForce(f_amount, PxForceMode::eFORCE);
                     break;
 
-                case force::explosive:
+                case force::impulse:
                     underlying_obj->rd.rigidDynamic->addForce(f_amount, PxForceMode::eIMPULSE);
                     break;
 
-                case force::velocity:
+                case force::velocityChanged:
                     underlying_obj->rd.rigidDynamic->addForce(f_amount, PxForceMode::eVELOCITY_CHANGE);
                     break;
 
@@ -744,15 +803,15 @@ namespace myPhysx
             if (underlying_obj->rigidID == rigid::rdynamic) {
 
                 switch (type) {
-                case force::conventional:
+                case force::force:
                     underlying_obj->rd.rigidDynamic->addTorque(f_amount, PxForceMode::eFORCE);
                     break;
 
-                case force::explosive:
+                case force::impulse:
                     underlying_obj->rd.rigidDynamic->addTorque(f_amount, PxForceMode::eIMPULSE);
                     break;
 
-                case force::velocity:
+                case force::velocityChanged:
                     underlying_obj->rd.rigidDynamic->addTorque(f_amount, PxForceMode::eVELOCITY_CHANGE);
                     break;
 
@@ -767,11 +826,11 @@ namespace myPhysx
         }
     }
 
+    
 
-
-    /*-----------------------------------------------------------------------------*/
-    /*                               PVD                                           */
-    /*-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------*/
+/*                               PVD                                           */
+/*-----------------------------------------------------------------------------*/
     PxPvd* PVD::createPvd(PxFoundation* foundation, const char* ip) {
 
         mPVD = PxCreatePvd(*foundation);

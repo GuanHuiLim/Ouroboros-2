@@ -47,34 +47,69 @@ namespace myPhysx {
 
     enum class rigid { none, rstatic, rdynamic };
     enum class shape { none, box, sphere, capsule, plane };
-    enum class force { conventional, explosive, velocity, acceleration };
+    enum class force { force, acceleration, impulse, velocityChanged };
 
-    /*
     class EventCallBack : public PxSimulationEventCallback {
-
-    private:
 
     public:
         void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override {
             printf("CALLBACK: onConstraintBreak\n");
         }
+
         void onWake(PxActor** actors, PxU32 count) override {
             printf("CALLBACK: onWake\n");
         }
+
         void onSleep(PxActor** actors, PxU32 count) override {
             printf("CALLBACK: onSleep\n");
         }
-        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) override {
+
+        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) override {
             printf("CALLBACK: onContact\n");
+            printf("PAIRS: %d\n", count);
+
+            while (count--) {
+
+                const PxContactPair& current = *pairs++;
+
+                if (current.events & (PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_CCD))
+                    printf("Shape is entering trigger contact volume\n");
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS)
+                    printf("Shape is still within trigger contact volume\n");
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST)
+                    printf("Shape is leaving trigger contact volume\n");
+
+                //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
+                //    printf("Trigger-trigger overlap detected\n");
+            }
+
         }
+
         void onTrigger(PxTriggerPair* pairs, PxU32 count) override {
             printf("CALLBACK: onTrigger\n");
+            printf("PAIRS: %d\n", count);
+
+            while (count--) {
+
+                const PxTriggerPair& current = *pairs++;
+
+                if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) // OnTriggerEnter
+                    printf("Shape is entering trigger volume\n");
+
+                if (current.status & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) // OnTriggerStay
+                    printf("Shape is still within trigger volume\n");
+
+                if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) // OnTriggerExit
+                    printf("Shape is leaving trigger volume\n");
+            }
         }
+
         void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override {
             printf("CALLBACK: onAdvance\n");
         }
     };
-    */
 
     struct RigidDynamic {
 
@@ -108,6 +143,10 @@ namespace myPhysx {
         PxFoundation* getFoundation();
 
         PxPhysics* getPhysics();
+
+        bool isTrigger(const PxFilterData& data);
+
+        bool isTriggerShape(PxShape* shape);
     };
 
     // describes a physics scene
@@ -159,6 +198,7 @@ namespace myPhysx {
 
         rigid rigidID = rigid::none;
 
+        bool trigger = false;
         bool gravity = true; // static should be false
         bool kinematic = false;
     };
@@ -180,6 +220,7 @@ namespace myPhysx {
         PxReal getLinearDamping() const;
         PxVec3 getLinearVelocity() const;
 
+        bool getTrigger() const;
         bool getGravity() const;
         bool getKinematic() const;
 
@@ -195,9 +236,12 @@ namespace myPhysx {
         void setLinearDamping(PxReal linearDamping);
         void setLinearVelocity(PxVec3 linearVelocity);
 
-        void setGravity(bool gravity);
-        void setKinematic(bool kine);
+        void disableGravity(bool gravity);
+        void enableKinematic(bool kine);
 
+        // TRIGGERS
+        void setTriggerShape(bool trigger);
+        
         // FORCE
         void addForce(PxVec3 f_amount, force f);
         void addTorque(PxVec3 f_amount, force f);

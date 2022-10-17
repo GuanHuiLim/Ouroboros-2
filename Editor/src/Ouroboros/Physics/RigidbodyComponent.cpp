@@ -146,20 +146,20 @@ namespace oo
     
     void oo::RigidbodyComponent::SetGravity(bool enable)
     {
-        object.setGravity(enable);
+        object.disableGravity(enable);
     }
 
     void RigidbodyComponent::EnableGravity()
     { 
-        object.setGravity(true);
+        object.disableGravity(true);
     }
     
     void RigidbodyComponent::DisableGravity()
     {
-        object.setGravity(false);
+        object.disableGravity(false);
     }
 
-    void oo::RigidbodyComponent::SetKinematic(bool kine) { object.setKinematic(kine); }
+    void oo::RigidbodyComponent::SetKinematic(bool kine) { object.enableKinematic(kine); }
 
     // prob functions that dont really need
 
@@ -193,7 +193,7 @@ namespace oo
         switch (type)
         {
         case ForceMode::FORCE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocity);
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::force);
             break;
 
         case ForceMode::ACCELERATION:
@@ -201,11 +201,11 @@ namespace oo
             break;
         
         case ForceMode::IMPULSE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::explosive);
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::impulse);
             break;
         
         case ForceMode::VELOCITY_CHANGE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::conventional);
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocityChanged);
             break;
         }
     }
@@ -215,7 +215,7 @@ namespace oo
         switch (type)
         {
         case ForceMode::FORCE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocity);
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::force);
             break;
 
         case ForceMode::ACCELERATION:
@@ -223,11 +223,11 @@ namespace oo
             break;
 
         case ForceMode::IMPULSE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::explosive);
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::impulse);
             break;
 
         case ForceMode::VELOCITY_CHANGE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::conventional);
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocityChanged);
             break;
         }
     }
