@@ -17,7 +17,8 @@ variables:
   VULKAN_SDK: C:/VulkanSDK/1.2.148.0
 
 steps:
-- checkout: self
+
+- checkout: none
   submodules: true
 - task: Bash@3
   inputs:
