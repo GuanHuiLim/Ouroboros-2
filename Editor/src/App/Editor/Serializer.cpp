@@ -24,6 +24,7 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObject.h>
 
 #include <Ouroboros/EventSystem/EventManager.h>
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
@@ -82,6 +83,14 @@ void Serializer::Init()
 
 void Serializer::SaveScene(oo::Scene& scene)
 {
+	oo::GetCurrentSceneStateEvent currentSceneEvent;
+	oo::EventManager::Broadcast<oo::GetCurrentSceneStateEvent>(&currentSceneEvent);
+	if (currentSceneEvent.state == oo::SCENE_STATE::RUNNING)
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Not allowed to save in Play Mode!");
+		return;
+	}
+
 	scenegraph sg = scene.GetGraph();
 
 	std::stack<scenenode::raw_pointer> s;
@@ -108,6 +117,7 @@ void Serializer::SaveScene(oo::Scene& scene)
 		ResetDocument();
 		ofs.close();
 	}
+	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 }
 
 void Serializer::LoadScene(oo::Scene& scene)
@@ -192,7 +202,6 @@ std::string Serializer::SaveObjectsAsString(const std::vector<std::shared_ptr<oo
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
 	std::string temp = buffer.GetString();
-	ImGui::SetClipboardText(temp.c_str());
 	return temp;
 }
 
@@ -214,6 +223,10 @@ std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID pare
 	rapidjson::StringStream stream(data.c_str());
 	rapidjson::Document doc;
 	doc.ParseStream(stream);
+	std::vector<UUID> go_UUID;
+	if (doc.IsObject() == false)
+		return go_UUID;
+
 	auto starting = scene.FindWithInstanceID(parentID);
 
 	ASSERT_MSG(starting == nullptr, "parent not found");
@@ -221,7 +234,6 @@ std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID pare
 	UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
-	std::vector<UUID> go_UUID;
 	parents.push(starting);
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
@@ -343,18 +355,28 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 {
 	//save everything
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
-	SaveScript(go, val, doc);
+	//SaveScript(go, val, doc);
 
 	auto rpj_prefabComponent = val.FindMember(rttr::type::get<oo::PrefabComponent>().get_name().data());
 
 	auto& prefabcomponent = go.GetComponent<oo::PrefabComponent>();
 	std::string& prefab_data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder()/prefabcomponent.prefab_filePath).string());
 	rapidjson::Document prefab_doc;
+	
 	rapidjson::StringStream stream(prefab_data.c_str());
 	prefab_doc.ParseStream(stream);
 	//+1 to skip the first value
 	int child_counter = 0;
 	auto childrens = go.GetChildren(true);
+	std::unordered_map<UUID, UUID> all_mappedUUID;
+	{//script mapping
+		auto all_uuids = go.GetChildrenUUID(true);
+		int counter = 0;
+		for (auto iter_member = prefab_doc.MemberBegin(); iter_member != prefab_doc.MemberEnd(); ++iter_member,++counter)
+		{
+			all_mappedUUID.emplace(all_uuids[counter], std::stoull(iter_member->name.GetString()));
+		}
+	}
 	//per child
 	for (auto iter_member = prefab_doc.MemberBegin(); iter_member != prefab_doc.MemberEnd(); ++iter_member)
 	{
@@ -362,6 +384,38 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 		auto orignal_obj = iter_member->value.GetObj();
 		SaveObject(childrens[child_counter], child_value, doc);
 		std::vector<std::string> component_delete_list;
+		//super expensive check
+		{//scripts remapping if found to be similar
+			std::string componentName = rttr::type::get<oo::ScriptComponent>().get_name().data();
+			auto& current_scriptComponent = child_value.FindMember(componentName.c_str())->value;
+			auto& sc = childrens[child_counter].GetComponent<oo::ScriptComponent>();
+			for (auto& scriptInfo : sc.GetScriptInfoAll())
+			{
+				auto& current_scriptField = current_scriptComponent.FindMember(scriptInfo.first.c_str())->value;
+				
+				for (auto& sfi : scriptInfo.second.fieldMap)
+				{
+					switch (sfi.second.value.GetValueType())
+					{
+					case oo::ScriptValue::type_enum::GAMEOBJECT:
+					{
+						auto& current_sfi = current_scriptField.FindMember(sfi.first.c_str())->value;
+						UUID current_uuid_val = sfi.second.value.GetValue<UUID>();
+						auto iter = all_mappedUUID.find(current_uuid_val);
+						if (iter != all_mappedUUID.end())
+							current_sfi.SetUint64(iter->second.GetUUID());
+						else
+							current_sfi.SetUint64(-1);
+					}break;
+					case oo::ScriptValue::type_enum::FUNCTION:
+					{
+						//TODO
+					}break;
+					}
+				}
+			}
+		}
+		
 		//each component
 		for (auto iter_childcomponent = child_value.MemberBegin(); iter_childcomponent != child_value.MemberEnd(); ++iter_childcomponent)
 		{
@@ -372,28 +426,8 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 			auto& orignal_component = orignal_obj.FindMember(iter_childcomponent->name)->value;
 			auto& current_component = iter_childcomponent->value;
 			//each variable
-			std::vector<std::string> delete_list;
-			for (auto iter_childVariables = current_component.MemberBegin(); iter_childVariables != current_component.MemberEnd(); ++iter_childVariables)
-			{
-				std::string debug_stirng = iter_childVariables->name.GetString();
-				if (orignal_component.HasMember(iter_childVariables->name) == false)
-				{
-					continue;
-				}
-				auto member = orignal_component.FindMember(iter_childVariables->name);
-				if (member->value == iter_childVariables->value)
-				{
-					delete_list.push_back(iter_childVariables->name.GetString());
-				}
-			}
-			if (delete_list.size() == current_component.MemberCount())
-				current_component.RemoveAllMembers();
-			else
-			{
-				for (auto iters : delete_list)
-					current_component.RemoveMember(iters.c_str());
-			}
-			//remove the component
+			SavePrefabObject_SubValues(current_component, orignal_component);
+
 			//usually there will be a 100% match which will make child_value empty
 			if (current_component.MemberCount() == 0)
 			{
@@ -414,6 +448,45 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 	}
 	//default overwrite
 	return;
+}
+
+void Serializer::SavePrefabObject_SubValues(rapidjson::Value& current,const rapidjson::Value& original)
+{
+	std::vector<std::string> subObject_deletelist;
+
+	for (auto iter = current.MemberBegin(); iter != current.MemberEnd(); ++iter)
+	{
+		if (original.HasMember(iter->name) == false)
+		{
+			continue;
+		}
+		auto orignal_member = original.FindMember(iter->name);
+		if (iter->value.IsObject())
+		{
+			SavePrefabObject_SubValues(iter->value, orignal_member->value);
+			if (iter->value.MemberCount() == 0)
+				subObject_deletelist.push_back(iter->name.GetString());
+		}
+		else if (iter->value.IsFloat())
+		{
+			float a = orignal_member->value.GetFloat();
+			float b = iter->value.GetFloat();
+			if (std::abs(a - b) < rapidjson_epsilon)//prevent float values from constantly overwriting
+				subObject_deletelist.push_back(iter->name.GetString());
+		}
+		else if (iter->value == orignal_member->value)
+		{
+			subObject_deletelist.push_back(iter->name.GetString());
+		}
+	}
+
+	if (subObject_deletelist.size() == current.MemberCount())
+		current.RemoveAllMembers();
+	else
+	{
+		for (auto iters : subObject_deletelist)
+			current.RemoveMember(iters.c_str());
+	}
 }
 
 void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc)
@@ -615,13 +688,19 @@ UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scen
 
 	rapidjson::Document document;
 	document.ParseStream(stream);
-
+	//script remapping
+	std::unordered_map<UUID, UUID> script_remappingObj;
+	std::vector<std::shared_ptr<oo::GameObject>> all_objects;
+	//normal stuff
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	auto gameobj = (go);
 	parents.push(gameobj);
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
-		//gameobj->SetName(iter->name.GetString());
+		//remap the old ids to the new ids
+		all_objects.emplace_back(gameobj);
+		script_remappingObj.emplace(std::stoull(iter->name.GetString()), gameobj->GetInstanceID());
+
 		gameobj->SetIsPrefab(true);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
@@ -647,6 +726,10 @@ UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scen
 		{
 			gameobj = scene.CreateGameObjectImmediate();
 		}
+	}
+	for (auto obj : all_objects)
+	{
+		RemapScripts(script_remappingObj,*obj);
 	}
 	return firstobj;
 }
@@ -699,6 +782,49 @@ void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptCompone
         {
             LOG_ERROR("{0} (DON'T SAVE OR SCRIPTS WILL BE DELETED FROM GAMEOBJECTS)", e.what());
         }
+	}
+}
+
+void Serializer::RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::GameObject& go)
+{
+	oo::ScriptComponent& sc = go.GetComponent<oo::ScriptComponent>();
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto& scriptInfo : sc.GetScriptInfoAll())
+	{
+		for (auto& scriptFieldInfo : scriptInfo.second.fieldMap)
+		{
+			switch (scriptFieldInfo.second.value.GetValueType())
+			{
+			case oo::ScriptValue::type_enum::GAMEOBJECT:
+			{
+				UUID id = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<UUID>();
+				auto iter = scriptIds.find(id);
+				if (iter == scriptIds.end())
+				{
+					id = -1;
+				}
+				else
+					id = iter->second;
+				scriptFieldInfo.second.TrySetRuntimeValue(oo::ScriptValue{ id });
+				break;
+			}
+			case oo::ScriptValue::type_enum::FUNCTION:
+			{
+				auto function = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<oo::ScriptValue::function_type>();
+				function.m_objID;
+				auto iter = scriptIds.find(function.m_objID);
+				if (iter == scriptIds.end())
+				{
+					function = oo::ScriptValue::function_type();
+				}
+				else
+					function.m_objID = iter->second;
+				scriptFieldInfo.second.TrySetRuntimeValue(oo::ScriptValue{ function });
+				break;
+			}
+			}
+
+		}
 	}
 }
 

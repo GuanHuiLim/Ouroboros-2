@@ -18,6 +18,9 @@ Technology is prohibited.
 #include <scenegraph/include/Scenegraph.h>
 #include <string>
 #include "App/Editor/Utility/ImGui_ToggleButton.h"
+#include "App/Editor/Events/CopyButtonEvent.h"
+#include "App/Editor/Events/PasteButtonEvent.h"
+#include "App/Editor/Events/DuplicateButtonEvent.h"
 class Hierarchy
 {
 public:
@@ -42,6 +45,11 @@ protected:
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
 	static constexpr const unsigned int Popup_ID = 100000;
+
+	static void CopyEvent(CopyButtonEvent* cbe);
+	static void PasteEvent(PasteButtonEvent* pbe);
+	static void DuplicateEvent(DuplicateButtonEvent* dbe);
+	inline static std::string s_clipboard;
 private:
 	enum class FilterTypes
 	{
