@@ -29,7 +29,6 @@ steps:
                 unzip vulkan-runtime.zip
                 cp VulkanRT-1.2.148.0-Components/x64/vulkaninfo.exe $VULKAN_SDK/Bin
                 cp VulkanRT-1.2.148.0-Components/x64/vulkan-1.dll $VULKAN_SDK/Bin
-              displayName: Installing Vulkan
 - task: BatchScript@1
   inputs:
     filename: 'scripts/Windows-GenerateProject.bat'
