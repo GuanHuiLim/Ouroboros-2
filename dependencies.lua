@@ -14,6 +14,8 @@ binApp                      = binOut .. "/" .. App
 
 -- retrieving vulkan from pc
 VULKAN_SDK = os.getenv("VULKAN_SDK")
+if (VULKAN_SDK == nil)
+	VULKAN_SDK = MainDir .. "/" .. "VULKAN_SDK" .. "/" .. "1.3.224.1"
 
 -- Include directories relative to root folder (solution directory)
 IncludeDir                  = {}
