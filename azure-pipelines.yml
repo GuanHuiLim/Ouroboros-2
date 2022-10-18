@@ -14,13 +14,22 @@ variables:
   buildPlatform: 'x64'
   buildConfiguration: 'Release'
   appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
-  VULKAN_SDK: C:/VulkanSDK/1.2.148.0
-  VULKAN_VERSION: 1.2.148.0
+  #VULKAN_SDK: C:/VulkanSDK/1.2.148.0
+  VULKAN_VERSION: 1.3.224.1
+
+resources:
+  repositories:
+  - repository: vulkan_sdk_repo
+    type: github
+    name: https://github.com/GuanHuiLim/VulkanSDK
+
 
 steps:
+- checkout: vulkan_sdk_repo
 - task: CmdLine@2
   inputs:
-    script: 'curl -O https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe'
+    script: 'set PATH=%VULKAN_SDK%;%CD%/VulkanSDK'
+
 #- task: Bash@3
 #  inputs:
 #    targetType: 'inline'
