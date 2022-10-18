@@ -36,7 +36,7 @@ steps:
     filename: 'scripts/Windows-GenerateProject.bat'
 - task: MSBuild@1
   inputs:
-    solution: '**/*.sln'
+    solution: 'Ouroboros.sln'
     maximumCpuCount: true
     msbuildArchitecture: 'x64'
     platform: 'Editor'
