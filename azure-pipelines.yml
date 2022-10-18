@@ -57,3 +57,18 @@ steps:
     msbuildArchitecture: 'x64'
     platform: 'Editor'
     configuration: 'Debug'
+
+- task: MSBuild@1
+  inputs:
+    solution: 'Ouroboros.sln'
+    maximumCpuCount: true
+    msbuildArchitecture: 'x64'
+    platform: 'Editor'
+    configuration: 'Release'
+- task: MSBuild@1
+  inputs:
+    solution: 'Ouroboros.sln'
+    maximumCpuCount: true
+    msbuildArchitecture: 'x64'
+    platform: 'Editor'
+    configuration: 'Production'
