@@ -90,5 +90,14 @@ namespace Ouroboros
         {
             get { return AudioSourceComponent_GetPlaybackTime(gameObject.scene, gameObject.GetInstanceID()); }
         }
+
+        [DllImport("__Internal")] private static extern ulong AudioSourceComponent_GetAudioClip(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetAudioClip(uint sceneID, ulong instanceID, ulong assetID);
+
+        public AudioClip clip
+        {
+            get { return new AudioClip(AudioSourceComponent_GetAudioClip(gameObject.scene, gameObject.GetInstanceID())); }
+            set { AudioSourceComponent_SetAudioClip(gameObject.scene, gameObject.GetInstanceID(), value.GetID()); }
+        }
     }
 }
