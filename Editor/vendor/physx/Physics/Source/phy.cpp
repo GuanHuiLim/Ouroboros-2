@@ -295,10 +295,14 @@ namespace myPhysx
             // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
             if (type == rigid::rstatic) {
                 underlying_obj->rs.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
+                underlying_obj->rs.rigidStatic->userData = this;
+                printf("actl value %llu vs pointer value: %llu \n", id, reinterpret_cast<PhysicsObject*>(underlying_obj->rs.rigidStatic->userData)->id);
                 world->scene->addActor(*underlying_obj->rs.rigidStatic);
             }
             else if (type == rigid::rdynamic) {
                 underlying_obj->rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
+                underlying_obj->rd.rigidDynamic->userData = this;
+                printf("actl value %llu vs pointer value: %llu \n", id, reinterpret_cast<PhysicsObject*>(underlying_obj->rd.rigidDynamic->userData)->id);
                 world->scene->addActor(*underlying_obj->rd.rigidDynamic);
             }
         }
@@ -871,6 +875,63 @@ namespace myPhysx
     PxPvd* const& PVD::pvd__() const {
 
         return mPVD;
+    }
+    
+    void EventCallBack::onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) {
+        printf("CALLBACK: onConstraintBreak\n");
+    }
+    void EventCallBack::onWake(PxActor** actors, PxU32 count) {
+        printf("CALLBACK: onWake\n");
+    }
+    void EventCallBack::onSleep(PxActor** actors, PxU32 count) {
+        printf("CALLBACK: onSleep\n");
+    }
+    void EventCallBack::onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) {
+        printf("CALLBACK: onContact\n");
+        printf("PAIRS: %d\n", count);
+
+        while (count--) {
+
+            const PxContactPair& current = *pairs++;
+
+            if (current.events & (PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_CCD))
+                printf("Shape is entering trigger contact volume\n");
+
+            if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS)
+                printf("Shape is still within trigger contact volume\n");
+
+            if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST)
+                printf("Shape is leaving trigger contact volume\n");
+
+            //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
+            //    printf("Trigger-trigger overlap detected\n");
+        }
+
+    }
+    void EventCallBack::onTrigger(PxTriggerPair* pairs, PxU32 count) {
+        printf("CALLBACK: onTrigger\n");
+        printf("PAIRS: %d\n", count);
+
+        while (count--) {
+
+            auto trigger_id = reinterpret_cast<PhysicsObject*>(pairs->triggerActor->userData)->id;
+            auto other_id = reinterpret_cast<PhysicsObject*>(pairs->otherActor->userData)->id;
+            printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
+
+            const PxTriggerPair& current = *pairs++;
+
+            if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) // OnTriggerEnter
+                printf("Shape is entering trigger volume\n");
+
+            if (current.status & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) // OnTriggerStay
+                printf("Shape is still within trigger volume\n");
+
+            if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) // OnTriggerExit
+                printf("Shape is leaving trigger volume\n");
+        }
+    }
+    void EventCallBack::onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) {
+        printf("CALLBACK: onAdvance\n");
     }
 }
 
