@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Sceneinfo.h"
 
 #include "App/Editor/Events/LoadProjectEvents.h"
+
 namespace oo
 {
     class RuntimeController final
@@ -33,31 +34,30 @@ namespace oo
         ~RuntimeController() = default;
 
     private:
-        container_type m_loadpaths;
-        SceneManager& m_sceneManager;
-
-        std::weak_ptr<RuntimeScene> m_runtimeScene = {};
-
+        SceneManager& m_sceneManager;                                   // scene manager it is talking to
+        std::unordered_map<std::string, std::string> m_filepathLookup;  // lookup table for { name : filepath } from loaded paths
+        container_type m_loadpaths;                                     // all the paths that are loaded. uniquely identified by filepath
+        std::weak_ptr<RuntimeScene> m_runtimeScene = {};                // ptr to current runtime scene.
+        
         void OnLoadProjectEvent(LoadProjectEvent*);
-
     public:
         void SetLoadPaths(container_type&& loadPaths);
         container_type GetLoadPaths() const;
         void GenerateScenes();
         void RemoveScenes();
-        void ClearSceneLibrary() { m_loadpaths.clear(); }
+        void ClearSceneLibrary();
 
         bool HasScene(std::string_view sceneName) const;
-        bool HasScene(size_type index) const;
-
+        bool HasScene(size_type sceneIndex) const;
         void AddLoadPath(std::string_view sceneName, std::string_view loadpath);
         void RemoveLoadPath(std::string_view sceneName);
-        void Swap(std::string_view sceneName1, std::string_view sceneName2);
-        void Swap(size_type index1, size_type index2);
+        void SwapSceneOrder(std::string_view sceneName1, std::string_view sceneName2);
+        void SwapSceneOrder(size_type sceneIndex1, size_type sceneIndex2);
         void ChangeRuntimeScene(std::string_view sceneName);
-        void ChangeRuntimeScene(size_type index);
+        void ChangeRuntimeScene(size_type sceneIndex);
 
         std::weak_ptr<RuntimeScene> GetRuntimeScene() const;
+        void SetRuntimeScene(std::weak_ptr<RuntimeScene> newScene);
     };
 
 }
