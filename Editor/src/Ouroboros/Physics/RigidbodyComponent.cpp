@@ -234,9 +234,9 @@ namespace oo
         }
     }
 
-    UUID oo::RigidbodyComponent::GetUnderlyingUUID() const
+    oo::UUID oo::RigidbodyComponent::GetUnderlyingUUID() const
     {
-        return UUID{ std::uint64_t{object.id} };
+        return oo::UUID{ std::uint64_t{object.id} };
     }
 
 }

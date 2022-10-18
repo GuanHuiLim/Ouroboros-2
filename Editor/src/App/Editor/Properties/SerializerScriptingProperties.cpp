@@ -77,7 +77,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 		{
 			rapidjson::Value name;
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
-			UUID id = sfi.value.GetValue<UUID>();
+			oo::UUID id = sfi.value.GetValue<oo::UUID>();
 			//check if object is valid before saving.
 			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
 			if (go == nullptr)
@@ -119,7 +119,7 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 		});
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
-			UUID id = val.GetUint64();
+			oo::UUID id = val.GetUint64();
 			sfi.value.SetValue(id); 
 		});
 }
