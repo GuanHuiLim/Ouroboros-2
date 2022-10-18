@@ -14,7 +14,8 @@ variables:
   buildPlatform: 'x64'
   buildConfiguration: 'Release'
   appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
-  VULKAN_SDK: $(build.artifactStagingDirectory)/VulkanSDK
+  VULKAN_SDK: $(Build.SourcesDirectory)\VulkanSDK
+  VK_SDK_PATH: $(Build.SourcesDirectory)\VulkanSDK
   VULKAN_VERSION: 1.3.224.1
 
 steps:
@@ -24,12 +25,12 @@ steps:
 - task: CmdLine@2
   inputs:
     script: 'dir /a:d'
-- task: CmdLine@2
-  inputs:
-    script: 'setx VULKAN_SDK %CD%/VulkanSDK /m'
-- task: CmdLine@2
-  inputs:
-    script: 'setx VK_SDK_PATH %CD%/VulkanSDK /m'
+#- task: CmdLine@2
+#  inputs:
+#    script: 'setx VULKAN_SDK %CD%/VulkanSDK /m'
+#- task: CmdLine@2
+#  inputs:
+#    script: 'setx VK_SDK_PATH %CD%/VulkanSDK /m'
 - task: CmdLine@2
   inputs:
     script: 'set'
