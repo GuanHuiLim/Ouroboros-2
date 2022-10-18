@@ -36,6 +36,7 @@ namespace oo
             .property("Angular Velocity", &RigidbodyComponent::GetAngularVelocity, &RigidbodyComponent::SetAngularVelocity)
             .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Gravity Disabled", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
+            .property("Offset", &RigidbodyComponent::Offset)
             //.property_readonly("underlying shape", &RigidbodyComponent::collider_shape)
             //.property_readonly("dirty", &RigidbodyComponent::Dirty)
             /*.property("Kinematic", &RigidbodyComponent::Kinematic)
@@ -61,13 +62,13 @@ namespace oo
         return object.getMaterial(); 
     }
     
-    glm::vec3 oo::RigidbodyComponent::GetPositionInPhysicsWorld() const
+    vec3 oo::RigidbodyComponent::GetPositionInPhysicsWorld() const
     {
         auto res = object.getposition();
         return { res.x, res.y, res.z };
     }
 
-    glm::quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
+    quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
     {
         auto res = object.getOrientation();
         return { res.w, res.x, res.y, res.z,  };
@@ -92,10 +93,10 @@ namespace oo
         return object.getAngularDamping();
     }
 
-    glm::vec3 oo::RigidbodyComponent::GetAngularVelocity() const
+    vec3 oo::RigidbodyComponent::GetAngularVelocity() const
     {
         auto vel = object.getAngularVelocity();
-        return glm::vec3{ vel.x, vel.y, vel.z };
+        return vec3{ vel.x, vel.y, vel.z };
     }
 
     float oo::RigidbodyComponent::GetLinearDamping() const
@@ -103,10 +104,10 @@ namespace oo
         return object.getLinearDamping();
     }
 
-    glm::vec3 oo::RigidbodyComponent::GetLinearVelocity() const
+    vec3 oo::RigidbodyComponent::GetLinearVelocity() const
     {
         auto vel = object.getLinearVelocity();
-        return glm::vec3{ vel.x, vel.y, vel.z };
+        return vec3{ vel.x, vel.y, vel.z };
     }
 
     bool oo::RigidbodyComponent::IsGravityEnabled() const
@@ -139,7 +140,7 @@ namespace oo
         object.setMaterial(material); 
     }
 
-    void RigidbodyComponent::SetPosOrientation(glm::vec3 pos, glm::quat quat) 
+    void RigidbodyComponent::SetPosOrientation(vec3 pos, quat quat) 
     { 
         object.setPosOrientation({ pos.x, pos.y, pos.z }, { quat.x, quat.y, quat.z, quat.w }); 
     }
@@ -173,7 +174,7 @@ namespace oo
         object.setAngularDamping(static_cast<PxReal>(angularDamping));
     }
 
-    void RigidbodyComponent::SetAngularVelocity(glm::vec3 angularVelocity)
+    void RigidbodyComponent::SetAngularVelocity(vec3 angularVelocity)
     {
         object.setAngularVelocity(PxVec3{ angularVelocity.x, angularVelocity.y, angularVelocity.z });
     }
@@ -183,7 +184,7 @@ namespace oo
         object.setLinearDamping(static_cast<PxReal>(linearDamping));
     }
 
-    void RigidbodyComponent::SetLinearVelocity(glm::vec3 linearVelocity)
+    void RigidbodyComponent::SetLinearVelocity(vec3 linearVelocity)
     {
         object.setLinearVelocity(PxVec3{ linearVelocity.x, linearVelocity.y, linearVelocity.z });
     }
