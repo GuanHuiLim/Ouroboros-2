@@ -17,6 +17,7 @@
 
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Input/InputManager.h"
+#include "App/Editor/Properties/SerializerProperties.h"
 
 void Project::LoadProject(std::filesystem::path& config)
 {
@@ -67,6 +68,61 @@ void Project::LoadProject(std::filesystem::path& config)
 	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
 	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
 	s_AssetManager->LoadDirectoryAsync(hard_assetfolderpath, true);
+
+	//load input manager
+	{
+		std::filesystem::path inputfile = GetProjectFolder() / ("InputBindings");
+		std::ifstream ifs2(inputfile);
+		if (!ifs2)
+			return;
+		rapidjson::IStreamWrapper isw2(ifs2);
+		rapidjson::Document input_doc;
+		input_doc.ParseStream(isw2);
+		SerializerLoadProperties loadproperties;
+		auto obj = input_doc.GetObj();
+		auto& InputManager_Axis = oo::InputManager::GetAxes();
+		rttr::type t = rttr::type::get<oo::InputAxis>();
+		for (auto iter = obj.MemberBegin(); iter != obj.MemberEnd(); ++iter)
+		{
+			oo::InputAxis axis;
+			for (auto members = iter->value.MemberBegin(); members != iter->value.MemberEnd(); ++members)
+			{
+				rttr::property prop = t.get_property(members->name.GetString());
+				auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
+				if (types_ui_rttr == UI_RTTRType::types.end())
+				{
+					if (prop.get_type() = rttr::type::get<oo::InputAxis::Settings>())
+					{
+						auto arr = members->value.GetArray();
+						auto setting = axis.GetSettings();
+						setting.negativeButton = arr[0].GetUint();
+						setting.positiveButton = arr[1].GetUint();
+						setting.negativeAltButton = arr[2].GetUint();
+						setting.positiveAltButton = arr[3].GetUint();
+						setting.pressesRequired = arr[4].GetUint();
+						setting.maxGapTime = arr[5].GetFloat();
+						setting.holdDurationRequired = arr[6].GetFloat();
+						continue;
+					}
+					else
+					{
+						ASSERT_MSG(true, "type not supported");
+						continue;
+					}
+				}
+				auto loadprop_iter = loadproperties.m_load_commands.find(types_ui_rttr->second);
+				if (loadprop_iter == loadproperties.m_load_commands.end())
+				{
+					ASSERT_MSG(true, "type not supported");
+					continue;
+				}
+				rttr::variant var = prop.get_value(axis);
+				loadprop_iter->second(var, std::move(members->value));
+				prop.set_value(axis, var);
+			}
+		}
+		ifs2.close();
+	}
 }
 
 void Project::SaveProject()
@@ -121,6 +177,66 @@ void Project::SaveProject()
 		ofs.close();
 	}
 	ifs.close();
+
+	{
+		rapidjson::Document input_doc;
+
+		SerializerSaveProperties saveproperties;
+		
+		//auto obj = input_doc.GetObj();
+		auto& InputManager_Axis = oo::InputManager::GetAxes();
+		rttr::type t = rttr::type::get<oo::InputAxis>();
+		auto properties = t.get_properties();
+		for (auto& axes : InputManager_Axis)
+		{
+			rapidjson::Value values(rapidjson::kObjectType);
+			for (rttr::property prop : properties)
+			{
+				auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
+				if (types_ui_rttr == UI_RTTRType::types.end())
+				{
+					if (prop.get_type() = rttr::type::get<oo::InputAxis::Settings>())
+					{
+						rapidjson::Value setting(rapidjson::kArrayType);
+						const auto& axes_Setting = axes.GetSettings();
+						setting.PushBack(axes_Setting.negativeButton, input_doc.GetAllocator());
+						setting.PushBack(axes_Setting.positiveButton, input_doc.GetAllocator());
+						setting.PushBack(axes_Setting.negativeAltButton, input_doc.GetAllocator());
+						setting.PushBack(axes_Setting.positiveAltButton, input_doc.GetAllocator());
+						setting.PushBack(axes_Setting.pressesRequired, input_doc.GetAllocator());
+						setting.PushBack(axes_Setting.maxGapTime, input_doc.GetAllocator());
+						setting.PushBack(axes_Setting.holdDurationRequired, input_doc.GetAllocator());
+						
+						values.AddMember(rapidjson::Value(axes.GetName().c_str(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
+						continue;
+					}
+					else
+					{
+						ASSERT_MSG(true, "type not supported");
+						continue;
+					}
+				}
+				auto saveprop_iter = saveproperties.m_save_commands.find(types_ui_rttr->second);
+				if (saveprop_iter == saveproperties.m_save_commands.end())
+				{
+					ASSERT_MSG(true, "type not supported");
+					continue;
+				}
+				
+				saveprop_iter->second(input_doc, values, prop.get_value(axes), prop);
+				//values.AddMember(rapidjson::Value(prop.get_name().data(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
+			}
+			input_doc.AddMember(rapidjson::Value(axes.GetName().c_str(),input_doc.GetAllocator()), values, input_doc.GetAllocator());
+		}
+
+		std::filesystem::path inputfile = GetProjectFolder() / ("InputBindings");
+		std::ofstream ofs2(inputfile);
+		if (!ofs2)
+			return;
+		rapidjson::OStreamWrapper osw(ofs2);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+		input_doc.Accept(writer);
+	}
 }
 
 void Project::UpdateScriptingFiles()
