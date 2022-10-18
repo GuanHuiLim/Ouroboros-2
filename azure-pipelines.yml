@@ -25,7 +25,9 @@ resources:
 
 
 steps:
-- checkout: vulkan_sdk_repo
+- task: CmdLine@2
+  inputs:
+    script: 'git clone https://github.com/GuanHuiLim/VulkanSDK.git'
 - task: CmdLine@2
   inputs:
     script: 'set PATH=%VULKAN_SDK%;%CD%/VulkanSDK'
