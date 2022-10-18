@@ -54,15 +54,18 @@ namespace oo
 
         // Global gravity
         vec3 Gravity = { 0, -9.81f, 0 };
-
-        static constexpr std::uint64_t MaxIterations = 100;
-        static constexpr Timestep FixedDeltaTime = 1.0/100.0;                         // physics updates at 100 fps
-        static constexpr Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
-
+        
         // Layering Bitmask Determines collision
         static LayerMatrix PhysicsBitMask;
-
+        // Manupilating Fixed DT
+        static void SetFixedDeltaTime(Timestep NewFixedTime);
+        static Timestep GetFixedDeltaTime();
+    
     private:
+        inline static std::uint64_t MaxIterations = 100;
+        inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 100 fps
+        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
+
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsCollision();
         void UpdatePhysicsResolution(Timestep deltaTime);

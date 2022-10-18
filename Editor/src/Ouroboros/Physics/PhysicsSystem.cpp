@@ -70,7 +70,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
         m_accumulator += deltaTime;
-
+        
         //avoids spiral of death.
         if (m_accumulator > AccumulatorLimit)
             m_accumulator = AccumulatorLimit;
@@ -293,6 +293,17 @@ namespace oo
         });
 
         TRACY_PROFILE_SCOPE_END();
+    }
+
+    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime) 
+    { 
+        FixedDeltaTime = NewFixedTime; 
+        AccumulatorLimit = FixedDeltaTime * MaxIterations; 
+    }
+
+    PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()
+    {
+        return FixedDeltaTime; 
     }
 
     void PhysicsSystem::EditorCoreUpdate()

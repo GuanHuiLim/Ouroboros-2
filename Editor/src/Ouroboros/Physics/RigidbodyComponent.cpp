@@ -37,6 +37,7 @@ namespace oo
             .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Gravity Disabled", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
             .property("Offset", &RigidbodyComponent::Offset)
+            .property_readonly("Underlying UUID", &RigidbodyComponent::GetUnderlyingUUID)
             //.property_readonly("underlying shape", &RigidbodyComponent::collider_shape)
             //.property_readonly("dirty", &RigidbodyComponent::Dirty)
             /*.property("Kinematic", &RigidbodyComponent::Kinematic)
@@ -231,6 +232,11 @@ namespace oo
             object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocityChanged);
             break;
         }
+    }
+
+    UUID oo::RigidbodyComponent::GetUnderlyingUUID() const
+    {
+        return UUID{ std::uint64_t{object.id} };
     }
 
 }
