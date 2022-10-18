@@ -23,6 +23,9 @@ steps:
     script: 'git clone https://github.com/GuanHuiLim/VulkanSDK.git'
 - task: CmdLine@2
   inputs:
+    script: 'dir /a:d'
+- task: CmdLine@2
+  inputs:
     script: 'set PATH=%VULKAN_SDK%;%CD%/VulkanSDK'
 - task: CmdLine@2
   inputs:
