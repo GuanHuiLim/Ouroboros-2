@@ -67,27 +67,11 @@ namespace oo
         inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);
-        void UpdatePhysicsCollision();
         void UpdatePhysicsResolution(Timestep deltaTime);
-
-        void IntegrateForces(Timestep deltaTime);
-        void IntegratePositions(Timestep deltaTime);
-        void ResetForces();
-
-        void UpdateGlobalBounds();
-        void UpdateDynamicGlobalBounds();
-
-        void BroadPhase();
-        void NarrowPhase();
+        
         void UpdateCallbacks();
-        void ResolvePhysicsResolution();
         void PostUpdate();
 
-        void EditorCoreUpdate();
-
-#if PHYSICS_DEBUG_MSG && OO_DEBUG || PHYSICS_DEBUG_MSG && OO_RELEASE
-        std::uint64_t m_collisionChecks = 0, m_actualCollisions = 0;
-#endif  
         Scene* m_scene;
 
         //underlying physics world
@@ -107,6 +91,10 @@ namespace oo
 
         /*void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb);
         void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb);*/
+    
+        void InitializeRigidbody(RigidbodyComponent& rb);
+        void InitializeBoxCollider(RigidbodyComponent& rb);
+        void InitializeCapsuleCollider(RigidbodyComponent& rb);
     };
 
 
