@@ -30,6 +30,9 @@ steps:
 - task: CmdLine@2
   inputs:
     script: 'setx VK_SDK_PATH %CD%/VulkanSDK /m'
+- task: CmdLine@2
+  inputs:
+    script: 'set V'
 
 #- task: Bash@3
 #  inputs:
