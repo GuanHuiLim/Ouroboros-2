@@ -29,7 +29,7 @@ steps:
     script: 'setx VULKAN_SDK %CD%/VulkanSDK /m'
 - task: CmdLine@2
   inputs:
-    script: 'setx 'setx VK_SDK_PATH %CD%/VulkanSDK /m'
+    script: 'setx VK_SDK_PATH %CD%/VulkanSDK /m'
 
 #- task: Bash@3
 #  inputs:
