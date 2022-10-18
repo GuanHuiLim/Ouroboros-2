@@ -52,63 +52,17 @@ namespace myPhysx {
     class EventCallBack : public PxSimulationEventCallback {
 
     public:
-        void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override {
-            printf("CALLBACK: onConstraintBreak\n");
-        }
+        void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override;
 
-        void onWake(PxActor** actors, PxU32 count) override {
-            printf("CALLBACK: onWake\n");
-        }
+        void onWake(PxActor** actors, PxU32 count) override;
 
-        void onSleep(PxActor** actors, PxU32 count) override {
-            printf("CALLBACK: onSleep\n");
-        }
+        void onSleep(PxActor** actors, PxU32 count) override;
 
-        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) override {
-            printf("CALLBACK: onContact\n");
-            printf("PAIRS: %d\n", count);
+        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) override;
 
-            while (count--) {
+        void onTrigger(PxTriggerPair* pairs, PxU32 count) override;
 
-                const PxContactPair& current = *pairs++;
-
-                if (current.events & (PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_CCD))
-                    printf("Shape is entering trigger contact volume\n");
-
-                if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS)
-                    printf("Shape is still within trigger contact volume\n");
-
-                if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST)
-                    printf("Shape is leaving trigger contact volume\n");
-
-                //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
-                //    printf("Trigger-trigger overlap detected\n");
-            }
-
-        }
-
-        void onTrigger(PxTriggerPair* pairs, PxU32 count) override {
-            printf("CALLBACK: onTrigger\n");
-            printf("PAIRS: %d\n", count);
-
-            while (count--) {
-
-                const PxTriggerPair& current = *pairs++;
-
-                if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) // OnTriggerEnter
-                    printf("Shape is entering trigger volume\n");
-
-                if (current.status & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) // OnTriggerStay
-                    printf("Shape is still within trigger volume\n");
-
-                if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) // OnTriggerExit
-                    printf("Shape is leaving trigger volume\n");
-            }
-        }
-
-        void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override {
-            printf("CALLBACK: onAdvance\n");
-        }
+        void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
     };
 
     struct RigidDynamic {
