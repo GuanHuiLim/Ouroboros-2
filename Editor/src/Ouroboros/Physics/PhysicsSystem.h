@@ -50,6 +50,7 @@ namespace oo
         void Init(Scene* m_scene);
         void RuntimeUpdate(Timestep deltaTime);
         void EditorUpdate(Timestep deltaTime);
+        void RenderDebugColliders();
 
         // Global gravity
         vec3 Gravity = { 0, -9.81f, 0 };
@@ -78,7 +79,6 @@ namespace oo
         void UpdateCallbacks();
         void ResolvePhysicsResolution();
         void PostUpdate();
-        void DrawDebugColliders();
 
         void EditorCoreUpdate();
 

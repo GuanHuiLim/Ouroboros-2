@@ -141,6 +141,8 @@ namespace oo
         DebugDraw::DrawYGrid(gridSize, 1.0f, oGFX::Colors::RED);
 
         Scene::Render();
+        
+        GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
 
         //constexpr const char* const rendering = "Overall Rendering";
         //constexpr const char* const text_rendering = "Text Rendering";

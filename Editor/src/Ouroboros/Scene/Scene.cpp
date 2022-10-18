@@ -130,7 +130,6 @@ namespace oo
     void Scene::Render()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
-
         GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         

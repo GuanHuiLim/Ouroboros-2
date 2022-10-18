@@ -43,6 +43,6 @@ namespace oo
         //void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
 
         virtual void Run(Ecs::ECSWorld* world) override;
-        void UpdateCameras();
+        void RenderCameras();
     };
 }

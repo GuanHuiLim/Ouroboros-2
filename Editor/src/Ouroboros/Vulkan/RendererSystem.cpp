@@ -138,7 +138,7 @@ namespace oo
     }
 
     // additional function that runs during runtime scene only.
-    void MeshRendererSystem::UpdateCameras()
+    void MeshRendererSystem::RenderCameras()
     {
         // TODO: debug draw the camera's view in editormode
         //DebugDraw::AddLine();

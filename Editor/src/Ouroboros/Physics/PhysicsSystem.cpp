@@ -116,12 +116,6 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
-        // End of frame debug draw. Once per frame
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
-            DrawDebugColliders();
-            TRACY_PROFILE_SCOPE_END();
-        }
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -134,13 +128,6 @@ namespace oo
         // Update global bounds of all objects
         //UpdateGlobalBounds();
         
-        // End of frame debug draw. Once per frame
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
-            DrawDebugColliders();
-            TRACY_PROFILE_SCOPE_END();
-        }
-
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -269,8 +256,9 @@ namespace oo
     {
     }
 
-    void PhysicsSystem::DrawDebugColliders()
+    void PhysicsSystem::RenderDebugColliders()
     {
+        TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
         //TODO : Toggle to enable/disable debug drawing of bounds.
        
         //Updating box collider's bounds and debug drawing
@@ -303,6 +291,8 @@ namespace oo
             // draw bottom sphere
             DebugDraw::AddSphere({ pos - vec3{ 0, GlobalHalfExtents.y, 0}, GlobalHalfExtents.x }, oGFX::Colors::GREEN);
         });
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::EditorCoreUpdate()
