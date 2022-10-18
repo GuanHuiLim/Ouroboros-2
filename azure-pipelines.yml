@@ -26,10 +26,10 @@ steps:
     script: 'dir /a:d'
 - task: CmdLine@2
   inputs:
-    script: 'set PATH=%VULKAN_SDK%;%CD%/VulkanSDK'
+    script: 'setx /M PATH=%VULKAN_SDK%;%CD%/VulkanSDK'
 - task: CmdLine@2
   inputs:
-    script: 'set PATH=%VK_SDK_PATH%;%CD%/VulkanSDK'
+    script: 'setx /M PATH=%VK_SDK_PATH%;%CD%/VulkanSDK'
 
 #- task: Bash@3
 #  inputs:
