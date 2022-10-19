@@ -36,8 +36,8 @@
             }
         }
 
-        public static Vector3Int right { get { return new Vector3Int(1, 0, 0); } }
-        public static Vector3Int left { get { return new Vector3Int(-1, 0, 0); } }
+        public static Vector3Int right { get { return new Vector3Int(-1, 0, 0); } }
+        public static Vector3Int left { get { return new Vector3Int(1, 0, 0); } }
         public static Vector3Int down { get { return new Vector3Int(0, -1, 0); } }
         public static Vector3Int up { get { return new Vector3Int(0, 1, 0); } }
         public static Vector3Int one { get { return new Vector3Int(1, 1, 1); } }

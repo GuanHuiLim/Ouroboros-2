@@ -41,8 +41,8 @@
                 }
             }
         }
-        public static Vector3 right { get { return new Vector3(1.0f, 0.0f, 0.0f); } }
-        public static Vector3 left { get { return new Vector3(-1.0f, 0.0f, 0.0f); } }
+        public static Vector3 right { get { return new Vector3(-1.0f, 0.0f, 0.0f); } }
+        public static Vector3 left { get { return new Vector3(1.0f, 0.0f, 0.0f); } }
         public static Vector3 up { get { return new Vector3(0.0f, 1.0f, 0.0f); } }
         public static Vector3 down { get { return new Vector3(0.0f, -1.0f, 0.0f); } }
         public static Vector3 back { get { return new Vector3(0.0f, 0.0f, -1.0f); } }
