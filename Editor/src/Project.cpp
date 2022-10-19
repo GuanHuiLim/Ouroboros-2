@@ -49,8 +49,6 @@ void Project::LoadProject(std::filesystem::path& config)
     UpdateScriptingFiles();
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
 
-    // load input manager
-    oo::InputManager::LoadDefault();
 
 	//scenes to add to scene manager
 	oo::RuntimeController::container_type m_loadpaths;
@@ -74,15 +72,19 @@ void Project::LoadProject(std::filesystem::path& config)
 		std::filesystem::path inputfile = GetProjectFolder() / ("InputBindings");
 		std::ifstream ifs2(inputfile);
 		if (!ifs2)
+		{
+			// load input manager if there is nothing
+			oo::InputManager::LoadDefault();
 			return;
+		}
 		rapidjson::IStreamWrapper isw2(ifs2);
 		rapidjson::Document input_doc;
 		input_doc.ParseStream(isw2);
 		SerializerLoadProperties loadproperties;
-		auto obj = input_doc.GetObj();
+
 		auto& InputManager_Axis = oo::InputManager::GetAxes();
 		rttr::type t = rttr::type::get<oo::InputAxis>();
-		for (auto iter = obj.MemberBegin(); iter != obj.MemberEnd(); ++iter)
+		for (auto iter = input_doc.MemberBegin(); iter != input_doc.MemberEnd(); ++iter)
 		{
 			oo::InputAxis axis;
 			for (auto members = iter->value.MemberBegin(); members != iter->value.MemberEnd(); ++members)
@@ -91,10 +93,10 @@ void Project::LoadProject(std::filesystem::path& config)
 				auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
 				if (types_ui_rttr == UI_RTTRType::types.end())
 				{
-					if (prop.get_type() = rttr::type::get<oo::InputAxis::Settings>())
+					if (prop.get_type() == rttr::type::get<oo::InputAxis::Settings>())
 					{
 						auto arr = members->value.GetArray();
-						auto setting = axis.GetSettings();
+						oo::InputAxis::Settings setting;
 						setting.negativeButton = arr[0].GetUint();
 						setting.positiveButton = arr[1].GetUint();
 						setting.negativeAltButton = arr[2].GetUint();
@@ -102,6 +104,7 @@ void Project::LoadProject(std::filesystem::path& config)
 						setting.pressesRequired = arr[4].GetUint();
 						setting.maxGapTime = arr[5].GetFloat();
 						setting.holdDurationRequired = arr[6].GetFloat();
+						prop.set_value(axis, setting);
 						continue;
 					}
 					else
@@ -120,6 +123,7 @@ void Project::LoadProject(std::filesystem::path& config)
 				loadprop_iter->second(var, std::move(members->value));
 				prop.set_value(axis, var);
 			}
+			InputManager_Axis.push_back(axis);
 		}
 		ifs2.close();
 	}
@@ -180,7 +184,7 @@ void Project::SaveProject()
 
 	{
 		rapidjson::Document input_doc;
-
+		auto& doc_object = input_doc.SetObject();
 		SerializerSaveProperties saveproperties;
 		
 		//auto obj = input_doc.GetObj();
@@ -195,10 +199,10 @@ void Project::SaveProject()
 				auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
 				if (types_ui_rttr == UI_RTTRType::types.end())
 				{
-					if (prop.get_type() = rttr::type::get<oo::InputAxis::Settings>())
+					if (prop.get_type() == rttr::type::get<oo::InputAxis::Settings>())
 					{
 						rapidjson::Value setting(rapidjson::kArrayType);
-						const auto& axes_Setting = axes.GetSettings();
+						auto axes_Setting = prop.get_value(axes).get_value<oo::InputAxis::Settings>();
 						setting.PushBack(axes_Setting.negativeButton, input_doc.GetAllocator());
 						setting.PushBack(axes_Setting.positiveButton, input_doc.GetAllocator());
 						setting.PushBack(axes_Setting.negativeAltButton, input_doc.GetAllocator());
@@ -207,7 +211,7 @@ void Project::SaveProject()
 						setting.PushBack(axes_Setting.maxGapTime, input_doc.GetAllocator());
 						setting.PushBack(axes_Setting.holdDurationRequired, input_doc.GetAllocator());
 						
-						values.AddMember(rapidjson::Value(axes.GetName().c_str(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
+						values.AddMember(rapidjson::Value(prop.get_name().data(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
 						continue;
 					}
 					else
@@ -226,7 +230,7 @@ void Project::SaveProject()
 				saveprop_iter->second(input_doc, values, prop.get_value(axes), prop);
 				//values.AddMember(rapidjson::Value(prop.get_name().data(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
 			}
-			input_doc.AddMember(rapidjson::Value(axes.GetName().c_str(),input_doc.GetAllocator()), values, input_doc.GetAllocator());
+			doc_object.AddMember(rapidjson::Value(axes.GetName().c_str(),input_doc.GetAllocator()), values, input_doc.GetAllocator());
 		}
 
 		std::filesystem::path inputfile = GetProjectFolder() / ("InputBindings");
