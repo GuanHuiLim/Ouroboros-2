@@ -36,13 +36,18 @@ jobs:
        ref: spironan-patch-2
        # fetch-depth: 0
 
+    # - name: Install Vulkan SDK
+    #  uses: humbletim/setup-vulkan-sdk@v1.2.0
+    #  with:
+    #    vulkan-query-version: latest
+    #    vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Cross, SPIRV-Tools, SPIRV-Reflect, SPIRV-Headers
+    #    vulkan-use-cache: true
     - name: Install Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      uses: humbletim/install-vulkan-sdk@v1.1.1
       with:
-        vulkan-query-version: latest
-        vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Cross, SPIRV-Tools, SPIRV-Reflect, SPIRV-Headers
-        vulkan-use-cache: true
-    
+       version: latest
+       cache: true
+       
     - name: Generating Project
       run: scripts/Windows-GenerateProject.bat
       
