@@ -23,6 +23,8 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/RendererComponent.h";
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
+#include "Ouroboros/Physics/RigidbodyComponent.h"
+
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 
@@ -37,6 +39,8 @@ namespace oo
             ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
             ScriptManager::RegisterComponent<MeshRendererComponent>("Ouroboros", "MeshRenderer");
             ScriptManager::RegisterComponent<AudioSourceComponent>("Ouroboros", "AudioSource");
+
+            ScriptManager::RegisterComponent<RigidbodyComponent>("Ouroboros", "Rigidbody");
 
             ScriptManager::s_SceneManager = &sceneManager;
             EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)

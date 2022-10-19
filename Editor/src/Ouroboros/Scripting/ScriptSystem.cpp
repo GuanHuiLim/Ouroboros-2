@@ -31,6 +31,8 @@ namespace oo
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
         EventManager::Subscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
+
+        EventManager::Subscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
     }
 
     ScriptSystem::~ScriptSystem()
@@ -38,6 +40,8 @@ namespace oo
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
         EventManager::Unsubscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
+
+        EventManager::Unsubscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
 
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
@@ -415,5 +419,10 @@ namespace oo
                 fieldInfo.SetScriptReference(field, scriptObj);
             }
         }
+    }
+
+    void ScriptSystem::OnPhysicsTick(PhysicsTickEvent* e)
+    {
+        InvokeForAllEnabled("FixedUpdate");
     }
 }

@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObject.h"
 
+#include "Ouroboros/Physics/PhysicsSystem.h"
+
 namespace oo
 {
     // Scene specific script stuff, go to ScriptManager for global stuff that transfers between scenes
@@ -71,6 +73,8 @@ namespace oo
 
         void UpdateAllScriptFieldsWithInfo();
         void UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script);
+
+        void OnPhysicsTick(PhysicsTickEvent* e);
 
         Scene& scene;
         ScriptDatabase& scriptDatabase;
