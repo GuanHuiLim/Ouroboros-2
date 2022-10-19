@@ -51,6 +51,9 @@ namespace oo
         Uint8 m_uButtonStatesPrev[(size_t)ControllerButtonCode::MAX];
         float m_fAxisValues[(size_t)ControllerAxisCode::MAX];
 
+        // 16 bits are used for the complete controller range
+        static constexpr float CompleteControllerRange = 1 << 16;
+
         void Init()
         {
             m_prevMouseState = m_mouseState = m_mouseXPos = m_mouseYPos = 0;
@@ -411,10 +414,20 @@ namespace oo
 
         float GetControllerAxisValue(ControllerAxisCode iAxis)
         {
-            auto result = m_fAxisValues[(size_t)iAxis];
-            //Deadzone. can be improved.
-            if (result > -8000 && result < 8000) return 0.f;
-            return result;
+            float result = m_fAxisValues[(size_t)iAxis];
+            float converted = (result / CompleteControllerRange) * 2.f; // [-1 to 1]
+            
+            if (iAxis == ControllerAxisCode::LEFTY || iAxis == ControllerAxisCode::RIGHTY)
+                converted *= -1.f;
+            static constexpr float sigFig = 0.0001f;
+            if (std::abs(std::roundf(converted) - converted) < sigFig)
+                converted = std::roundf(converted);
+
+            //DeadZonePercent found in input.h
+            if (converted > -DeadZonePercent && converted < DeadZonePercent)
+                return 0.f;
+
+            return converted;
         }
 
 

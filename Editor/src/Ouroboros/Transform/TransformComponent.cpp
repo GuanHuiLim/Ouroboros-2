@@ -44,11 +44,13 @@ namespace oo
     TransformComponent::vec3 TransformComponent::GetEulerAngles()             const { return LocalEulerAngles; }
     TransformComponent::vec3 TransformComponent::GetScale()                   const { return LocalTransform.Scale; }
 
-    TransformComponent::vec3 TransformComponent::LocalRight()                 const { return LocalTransform.Right(); }
+    // Take note we negate here because of LH(underlying implementation) Conversion to RH(Vulkan)
+    TransformComponent::vec3 TransformComponent::LocalRight()                 const { return -LocalTransform.Right(); }
     TransformComponent::vec3 TransformComponent::LocalUp()                    const { return LocalTransform.Up(); }
     TransformComponent::vec3 TransformComponent::LocalForward()               const { return LocalTransform.Forward(); }
-                                                
-    TransformComponent::vec3 TransformComponent::GlobalRight()                const { return GlobalTransform.Right(); }
+    
+    // Take note we negate here because of LH(underlying implementation) Conversion to RH(Vulkan)                                            
+    TransformComponent::vec3 TransformComponent::GlobalRight()                const { return -GlobalTransform.Right(); }
     TransformComponent::vec3 TransformComponent::GlobalUp()                   const { return GlobalTransform.Up(); }
     TransformComponent::vec3 TransformComponent::GlobalForward()              const { return GlobalTransform.Forward(); }
                                                 

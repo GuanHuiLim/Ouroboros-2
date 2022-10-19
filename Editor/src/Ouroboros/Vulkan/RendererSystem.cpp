@@ -101,7 +101,21 @@ namespace oo
             auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
             graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
         });
-        
+
+        // Update Newly Duplicated Mesh
+        static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, DuplicatedComponent>();
+        world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        { 
+            meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+            //HARDCODED AS CUBE, TO BE REMOVED LATER
+            meshComp.model_handle = 0;
+            meshComp.meshInfo.submeshBits[0] = true;
+
+            //update graphics world side
+            auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
+            graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+        });
+
         static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent>();
         world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
         {
