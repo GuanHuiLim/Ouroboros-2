@@ -38,10 +38,10 @@ Technology is prohibited.
 #include <Ouroboros/Audio/AudioSourceComponent.h>
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
+#include <Ouroboros/ECS/DuplicatedComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
-#include <Ouroboros/Physics/PhysicsComponent.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 
@@ -50,6 +50,7 @@ Technology is prohibited.
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/RendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include <Ouroboros/Vulkan/CameraComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -128,18 +129,18 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
+	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 
-
-	DisplayComponent<oo::PhysicsComponent>(gameobject);
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
-	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
+	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
 
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
+	DisplayComponent<oo::CameraComponent>(gameobject);
 
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
@@ -165,11 +166,14 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
 
 		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
+		selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
+
 		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 
@@ -213,6 +217,8 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 		}
 		if (ImGui::Selectable(name.c_str(), false))
 		{
+            auto ss = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetWorld().Get_System<oo::ScriptSystem>();
+            ss->AddScript(go.GetInstanceID(), script.name_space.c_str(), script.name.c_str());
 			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
 			ImGui::PopStyleColor();
 			return true;
@@ -356,15 +362,32 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 
 void Inspector::DisplayScript(oo::GameObject& gameobject)
 {
+    auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+    auto ss = scene->GetWorld().Get_System<oo::ScriptSystem>();
+
 	static oo::ScriptFieldInfo pre_val;
 	static bool new_value = true;
 	auto& sc = gameobject.GetComponent<oo::ScriptComponent>();
 	for (auto& scriptInfo : sc.GetScriptInfoAll())
 	{
+		ImGui::PushID(scriptInfo.first.c_str());
 		bool opened = ImGui::TreeNodeEx(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		{
+			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+			if (ImGui::SmallButton("x"))
+			{
+                ss->RemoveScript(gameobject.GetInstanceID(), scriptInfo.second.classInfo.name_space.c_str(), scriptInfo.second.classInfo.name.c_str());
+				sc.RemoveScriptInfo(scriptInfo.second.classInfo);
+				ImGui::PopID();
+				return;
+			}
+		}
 		ImGui::Separator();
 		if (opened == false)
+		{
+			ImGui::PopID();
 			continue;
+		}
 		for (auto& sfi : scriptInfo.second.fieldMap)
 		{
 			bool edit = false;
@@ -398,5 +421,7 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 				new_value = true;
 			}
 		}
+		ImGui::PopID();
+		ImGui::Separator();
 	}
 }

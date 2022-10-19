@@ -38,6 +38,7 @@ Technology is prohibited.
 
 #include <Ouroboros/Prefab/PrefabSceneController.h>
 #include <SceneManagement/include/SceneManager.h>
+#include <Ouroboros/Transform/TransformSystem.h>
 
 #include "Ouroboros/Prefab/PrefabComponent.h"
 #include "Ouroboros/Scene/Scene.h"
@@ -74,12 +75,20 @@ public:
 	static UUID LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go,oo::Scene & scene);
 
 	static std::string SaveDeletedObject(std::shared_ptr<oo::GameObject> go,oo::Scene& scene);
+	static std::string SaveObjectsAsString(const std::vector<std::shared_ptr<oo::GameObject>>& go_list, oo::Scene& scene);
+
 	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
+	/*********************************************************************************//*!
+	\brief      Recreation of the object 
+	*//**********************************************************************************/
+	static std::vector<UUID> LoadObjectsFromString(std::string& data,UUID parentID, oo::Scene& scene);
 private:
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val,rapidjson::Document& doc);
 	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
+	static void SavePrefabObject_SubValues(rapidjson::Value& current, const rapidjson::Value& original);
+
 	template <typename Component>
 	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
 	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
@@ -96,8 +105,7 @@ private:
 	//scripts
 	static void SaveScript(oo::GameObject& go,rapidjson::Value& val,rapidjson::Document& doc);
 	static void LoadScript(oo::GameObject& go,rapidjson::Value&& val);
-protected://rpj wrappers
-	static void ResetDocument() noexcept;
+	static void RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::GameObject& go);
 protected://serialzation helpers
 	template <typename Component>
 	static void AddLoadComponent() noexcept;
@@ -111,6 +119,7 @@ private:
 	inline static SerializerLoadProperties m_LoadProperties;
 	inline static SerializerScriptingLoadProperties m_loadScriptProperties;
 	inline static constexpr int rapidjson_precision = 4;
+	inline static constexpr float rapidjson_epsilon = 0.0001f;
 };
 
 template<typename Component>
@@ -219,92 +228,67 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 	
 	rapidjson::Document document;
 	document.ParseStream(stream);
-
+	std::unordered_map<UUID, UUID> scripts_id_mapping;
+	std::vector<std::shared_ptr<oo::GameObject>> all_objects;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::shared_ptr<oo::GameObject> gameobj = scene->FindWithInstanceID(go.GetInstanceID());
+	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
 	parents.push(gameobj);
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
-		//gameobj->SetName(iter->name.GetString());
+		//map their old id to their current IDs
+		scripts_id_mapping.emplace(std::stoull(iter->name.GetString()), gameobj->GetInstanceID());
+		all_objects.push_back(gameobj);
 		gameobj->SetIsPrefab(true);
-		auto members = iter->value.MemberBegin();//get the order of hierarchy
-		auto membersEnd = iter->value.MemberEnd();
-		int order = members->value.GetInt();
 
-		{//when the order dont match the size it will keep poping until it matches
-		//then parent to it and adds itself
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		int order = members->value.GetInt();
+		{
+			//when the order dont match the size it will keep poping until it matches
+			//then parent to it and adds itself
 			while (order != parents.size())
 				parents.pop();
 
-			parents.top()->AddChild(*gameobj);
+			parents.top()->AddChild(*gameobj, true);
 			parents.push(gameobj);
 		}
 
-		++members;
-		{//another element that will store all the component hashes and create the apporiate archtype
-			// go->SetArchtype(vector<hashes>);
-		}
-		//processes the components		
-		LoadObject(*gameobj, members, membersEnd);
-		if (val.HasMember(iter->name))
-		{
-			auto& overide_component = val.FindMember(iter->name)->value;
-			auto overideBegin = overide_component.MemberBegin();
-			auto overideEnd = overide_component.MemberEnd();
-			LoadObject(*gameobj, overideBegin, overideEnd);
-		}
+		second_iter.emplace_back(gameobj);
 		++iter;
 		if (iter != document.MemberEnd())
 		{
 			gameobj = scene->CreateGameObjectImmediate();
 		}
+
+	}
+	
+	scene->GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(go, false);
+
+	int iteration = 0;
+	for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter, ++iteration)
+	{
+		auto child_object = second_iter[iteration];
+		auto members = iter->value.MemberBegin(); //get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+
+		++members;
+
+		//processes the components		
+		LoadObject(*child_object, members, membersEnd);
+		if (val.HasMember(iter->name))
+		{
+			auto& overide_component = val.FindMember(iter->name)->value;
+			auto overideBegin = overide_component.MemberBegin();
+			auto overideEnd = overide_component.MemberEnd();
+			LoadObject(*child_object, overideBegin, overideEnd);
+		}
 	}
 
-	//oo::PrefabComponent& component = go.GetComponent<oo::PrefabComponent>();
-	////hardcoding this for now
-	//component.prefab_filePath = val.FindMember("File Path")->value.GetString();
-	//
-	//std::ifstream ifs(component.prefab_filePath);
-	//if (ifs.peek() == std::ifstream::traits_type::eof())
-	//{
-	//	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
-	//	return;
-	//}
-	//
-	//std::shared_ptr<oo::Scene> scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	//rapidjson::IStreamWrapper isw(ifs);
-	//rapidjson::Document document;
-	//document.ParseStream(isw);
-
-	//std::stack<std::shared_ptr<oo::GameObject>> parents;
-	//auto gameobj = std::make_shared<oo::GameObject>(go);
-	//parents.push(gameobj);
-	//for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter)
-	//{
-	//	gameobj->SetName(iter->name.GetString());
-	//	auto members = iter->value.MemberBegin();//get the order of hierarchy
-	//	auto membersEnd = iter->value.MemberEnd();
-	//	int order = members->value.GetInt();
-
-	//	{//when the order dont match the size it will keep poping until it matches
-	//	//then parent to it and adds itself
-	//		while (order != parents.size())
-	//			parents.pop();
-
-	//		parents.top()->AddChild(*gameobj);
-	//		parents.push(gameobj);
-	//	}
-
-	//	++members;
-	//	{//another element that will store all the component hashes and create the apporiate archtype
-	//		// go->SetArchtype(vector<hashes>);
-	//	}
-	//	//processes the components		
-	//	LoadObject(*gameobj, members, membersEnd);
-	//	if (iter + 1 != document.MemberEnd())
-	//		gameobj = scene->CreateGameObjectImmediate();
-	//}
-	//ifs.close();
+	//remapping of scripts here.
+	for (auto go_ptr : all_objects)
+	{
+		RemapScripts(scripts_id_mapping, *go_ptr);
+	}
 }
 
 template<typename Component>

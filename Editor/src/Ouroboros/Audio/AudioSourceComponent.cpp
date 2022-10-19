@@ -45,7 +45,7 @@ namespace oo
         (metadata(UI_metadata::DRAG_SPEED, 0.01f));
     };
 
-    bool oo::AudioSourceComponent::IsPlaying() const
+    bool AudioSourceComponent::IsPlaying() const
     {
         if (!channel)
             return false;
@@ -54,7 +54,7 @@ namespace oo
         return result;
     }
 
-    float oo::AudioSourceComponent::GetPlaybackTime() const
+    float AudioSourceComponent::GetPlaybackTime() const
     {
         if (!channel)
             return 0;
@@ -63,35 +63,35 @@ namespace oo
         return static_cast<float>(result) / 1000;
     }
 
-    void oo::AudioSourceComponent::SetAudioClip(Asset a)
+    void AudioSourceComponent::SetAudioClip(Asset a)
     {
         audioClip = a;
     }
 
-    void oo::AudioSourceComponent::SetMuted(bool m)
+    void AudioSourceComponent::SetMuted(bool m)
     {
         muted = m;
         isDirty = true;
     }
 
-    void oo::AudioSourceComponent::SetPlayOnAwake(bool p)
+    void AudioSourceComponent::SetPlayOnAwake(bool p)
     {
         playOnAwake = p;
     }
 
-    void oo::AudioSourceComponent::SetLoop(bool l)
+    void AudioSourceComponent::SetLoop(bool l)
     {
         loop = l;
         isDirty = true;
     }
 
-    void oo::AudioSourceComponent::SetVolume(float v)
+    void AudioSourceComponent::SetVolume(float v)
     {
         volume = v;
         isDirty = true;
     }
 
-    void oo::AudioSourceComponent::SetPitch(float p)
+    void AudioSourceComponent::SetPitch(float p)
     {
         pitch = p;
         isDirty = true;

@@ -24,6 +24,7 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObject.h>
 
 #include <Ouroboros/EventSystem/EventManager.h>
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
@@ -38,6 +39,7 @@ Technology is prohibited.
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include <Ouroboros/Vulkan/CameraComponent.h>
 #include "Ouroboros/Audio/AudioListenerComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
@@ -66,7 +68,9 @@ void Serializer::Init()
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
 	AddLoadComponent<oo::LightComponent>();
+	AddLoadComponent<oo::CameraComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
+	AddLoadComponent<oo::CapsuleColliderComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
 	AddLoadComponent<oo::AudioListenerComponent>();
@@ -82,6 +86,14 @@ void Serializer::Init()
 
 void Serializer::SaveScene(oo::Scene& scene)
 {
+	oo::GetCurrentSceneStateEvent currentSceneEvent;
+	oo::EventManager::Broadcast<oo::GetCurrentSceneStateEvent>(&currentSceneEvent);
+	if (currentSceneEvent.state == oo::SCENE_STATE::RUNNING)
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Not allowed to save in Play Mode!");
+		return;
+	}
+
 	scenegraph sg = scene.GetGraph();
 
 	std::stack<scenenode::raw_pointer> s;
@@ -105,9 +117,9 @@ void Serializer::SaveScene(oo::Scene& scene)
 		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
 		writer.SetMaxDecimalPlaces(rapidjson_precision);
 		doc.Accept(writer);
-		ResetDocument();
 		ofs.close();
 	}
+	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 }
 
 void Serializer::LoadScene(oo::Scene& scene)
@@ -144,7 +156,6 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
 		writer.SetMaxDecimalPlaces(rapidjson_precision);
 		doc.Accept(writer);
-		ResetDocument();
 		ofs.close();
 	}
 	return newprefabPath;
@@ -171,7 +182,27 @@ std::string Serializer::SaveDeletedObject(std::shared_ptr<oo::GameObject> go, oo
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
 	std::string temp = buffer.GetString();
-	ResetDocument();
+	return temp;
+}
+
+std::string Serializer::SaveObjectsAsString(const std::vector<std::shared_ptr<oo::GameObject>>& go_list, oo::Scene& scene)
+{
+	std::stack<scenenode::raw_pointer> s;
+	std::stack<scenenode::handle_type> parents;
+	for (auto& go : go_list)
+	{
+		scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+		s.push(curr);
+	}
+	//parents.push((*go_list.begin())->GetSceneNode().lock()->get_handle());
+	rapidjson::Document doc;
+	doc.SetObject();
+	Saving(s, parents, scene, doc);
+	size_t count = 10;
+	rapidjson::StringBuffer buffer(0, count * 200);
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	doc.Accept(writer);
+	std::string temp = buffer.GetString();
 	return temp;
 }
 
@@ -186,6 +217,69 @@ UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& s
 	
 	auto firstObj = Loading(parent,scene,doc);
 	return firstObj;
+}
+
+std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID parentID, oo::Scene& scene)
+{
+	rapidjson::StringStream stream(data.c_str());
+	rapidjson::Document doc;
+	doc.ParseStream(stream);
+	std::vector<UUID> go_UUID;
+	if (doc.IsObject() == false)
+		return go_UUID;
+
+	auto starting = scene.FindWithInstanceID(parentID);
+
+	ASSERT_MSG(starting == nullptr, "parent not found");
+
+	UUID firstobj;
+	std::stack<std::shared_ptr<oo::GameObject>> parents;
+	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
+	parents.push(starting);
+	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
+	{
+		auto go = scene.CreateGameObjectImmediate();
+		go_UUID.push_back(go->GetInstanceID());
+
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
+
+		{//when the order dont match the size it will keep poping until it matches
+		//then parent to it and adds itself
+			while (order != parents.size())
+				parents.pop();
+
+			if (parents.size())
+				parents.top()->AddChild(*go, true);
+			else
+				starting->AddChild(*go, true);
+
+			parents.push(go);
+			if (iter == doc.MemberBegin())
+				firstobj = go->GetInstanceID();
+		}
+
+		second_iter.emplace_back(go);
+	}
+
+	scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*starting, false);
+
+	int iteration = 0;
+	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter, ++iteration)
+	{
+		auto go = second_iter[iteration];
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+		int order = members->value.GetInt();
+
+		++members;
+		//processes the components		
+		LoadObject(*go, members, membersEnd);
+	}
+
+	return go_UUID;
 }
 
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)
@@ -247,35 +341,45 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveComponent<oo::LightComponent>(go, val, doc);
+	SaveComponent<oo::CameraComponent>(go, val, doc);
 
 	SaveComponent<oo::AudioListenerComponent>(go, val, doc);
 	SaveComponent<oo::AudioSourceComponent>(go, val, doc);
-	SaveScript(go, val, doc);
 
 	SaveComponent<oo::RigidbodyComponent>(go, val, doc);
 	SaveComponent<oo::BoxColliderComponent>(go, val, doc);
+	SaveComponent<oo::CapsuleColliderComponent>(go, val, doc);
 	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
+
+	SaveScript(go, val, doc);// this is the last item
 }
 
 void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
 {
 	//save everything
 	SaveComponent<oo::PrefabComponent>(go, val, doc);
-	//SaveComponent<oo::GameObjectComponent>(go, val, doc);
-	//SaveComponent<oo::TransformComponent>(go, val, doc);
-	//SaveComponent<oo::MeshRendererComponent>(go, val, doc);
-	SaveScript(go, val, doc);
+	//SaveScript(go, val, doc);
 
 	auto rpj_prefabComponent = val.FindMember(rttr::type::get<oo::PrefabComponent>().get_name().data());
 
 	auto& prefabcomponent = go.GetComponent<oo::PrefabComponent>();
 	std::string& prefab_data = ImGuiManager::s_prefab_controller->RequestForPrefab((Project::GetPrefabFolder()/prefabcomponent.prefab_filePath).string());
 	rapidjson::Document prefab_doc;
+	
 	rapidjson::StringStream stream(prefab_data.c_str());
 	prefab_doc.ParseStream(stream);
 	//+1 to skip the first value
 	int child_counter = 0;
 	auto childrens = go.GetChildren(true);
+	std::unordered_map<UUID, UUID> all_mappedUUID;
+	{//script mapping
+		auto all_uuids = go.GetChildrenUUID(true);
+		int counter = 0;
+		for (auto iter_member = prefab_doc.MemberBegin(); iter_member != prefab_doc.MemberEnd(); ++iter_member,++counter)
+		{
+			all_mappedUUID.emplace(all_uuids[counter], std::stoull(iter_member->name.GetString()));
+		}
+	}
 	//per child
 	for (auto iter_member = prefab_doc.MemberBegin(); iter_member != prefab_doc.MemberEnd(); ++iter_member)
 	{
@@ -283,6 +387,38 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 		auto orignal_obj = iter_member->value.GetObj();
 		SaveObject(childrens[child_counter], child_value, doc);
 		std::vector<std::string> component_delete_list;
+		//super expensive check
+		{//scripts remapping if found to be similar
+			std::string componentName = rttr::type::get<oo::ScriptComponent>().get_name().data();
+			auto& current_scriptComponent = child_value.FindMember(componentName.c_str())->value;
+			auto& sc = childrens[child_counter].GetComponent<oo::ScriptComponent>();
+			for (auto& scriptInfo : sc.GetScriptInfoAll())
+			{
+				auto& current_scriptField = current_scriptComponent.FindMember(scriptInfo.first.c_str())->value;
+				
+				for (auto& sfi : scriptInfo.second.fieldMap)
+				{
+					switch (sfi.second.value.GetValueType())
+					{
+					case oo::ScriptValue::type_enum::GAMEOBJECT:
+					{
+						auto& current_sfi = current_scriptField.FindMember(sfi.first.c_str())->value;
+						UUID current_uuid_val = sfi.second.value.GetValue<UUID>();
+						auto iter = all_mappedUUID.find(current_uuid_val);
+						if (iter != all_mappedUUID.end())
+							current_sfi.SetUint64(iter->second.GetUUID());
+						else
+							current_sfi.SetUint64(-1);
+					}break;
+					case oo::ScriptValue::type_enum::FUNCTION:
+					{
+						//TODO
+					}break;
+					}
+				}
+			}
+		}
+		
 		//each component
 		for (auto iter_childcomponent = child_value.MemberBegin(); iter_childcomponent != child_value.MemberEnd(); ++iter_childcomponent)
 		{
@@ -293,28 +429,8 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 			auto& orignal_component = orignal_obj.FindMember(iter_childcomponent->name)->value;
 			auto& current_component = iter_childcomponent->value;
 			//each variable
-			std::vector<std::string> delete_list;
-			for (auto iter_childVariables = current_component.MemberBegin(); iter_childVariables != current_component.MemberEnd(); ++iter_childVariables)
-			{
-				std::string debug_stirng = iter_childVariables->name.GetString();
-				if (orignal_component.HasMember(iter_childVariables->name) == false)
-				{
-					continue;
-				}
-				auto member = orignal_component.FindMember(iter_childVariables->name);
-				if (member->value == iter_childVariables->value)
-				{
-					delete_list.push_back(iter_childVariables->name.GetString());
-				}
-			}
-			if (delete_list.size() == current_component.MemberCount())
-				current_component.RemoveAllMembers();
-			else
-			{
-				for (auto iters : delete_list)
-					current_component.RemoveMember(iters.c_str());
-			}
-			//remove the component
+			SavePrefabObject_SubValues(current_component, orignal_component);
+
 			//usually there will be a 100% match which will make child_value empty
 			if (current_component.MemberCount() == 0)
 			{
@@ -335,6 +451,45 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 	}
 	//default overwrite
 	return;
+}
+
+void Serializer::SavePrefabObject_SubValues(rapidjson::Value& current,const rapidjson::Value& original)
+{
+	std::vector<std::string> subObject_deletelist;
+
+	for (auto iter = current.MemberBegin(); iter != current.MemberEnd(); ++iter)
+	{
+		if (original.HasMember(iter->name) == false)
+		{
+			continue;
+		}
+		auto orignal_member = original.FindMember(iter->name);
+		if (iter->value.IsObject())
+		{
+			SavePrefabObject_SubValues(iter->value, orignal_member->value);
+			if (iter->value.MemberCount() == 0)
+				subObject_deletelist.push_back(iter->name.GetString());
+		}
+		else if (iter->value.IsFloat())
+		{
+			float a = orignal_member->value.GetFloat();
+			float b = iter->value.GetFloat();
+			if (std::abs(a - b) < rapidjson_epsilon)//prevent float values from constantly overwriting
+				subObject_deletelist.push_back(iter->name.GetString());
+		}
+		else if (iter->value == orignal_member->value)
+		{
+			subObject_deletelist.push_back(iter->name.GetString());
+		}
+	}
+
+	if (subObject_deletelist.size() == current.MemberCount())
+		current.RemoveAllMembers();
+	else
+	{
+		for (auto iters : subObject_deletelist)
+			current.RemoveMember(iters.c_str());
+	}
 }
 
 void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc)
@@ -395,8 +550,6 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 
 UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
 {
-	// TODO : This can be improved if required. Clean up please
-
 	UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
@@ -406,12 +559,11 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 		uint64_t id = std::stoull(iter->name.GetString());
 		auto go = scene.CreateGameObjectImmediate(id);
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
-		auto membersEnd = iter->value.MemberEnd();
 		int order = members->value.GetInt();
 
-
-		{//when the order dont match the size it will keep poping until it matches
-		//then parent to it and adds itself
+		{
+			//when the order dont match the size it will keep poping until it matches
+			//then parent to it and adds itself
 			while (order != parents.size())
 				parents.pop();
 
@@ -421,53 +573,24 @@ UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& sc
 				firstobj = go->GetInstanceID();
 		}
 
-
-		//++members;
-		//{//another element that will store all the component hashes and create the apporiate archtype
-		//	// go->SetArchtype(vector<hashes>);
-		//}
-		////processes the components		
-		//LoadObject(*go, members, membersEnd);
-
 		second_iter.emplace_back(go);
 	}
 
 	scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*starting, false);
 
-	//std::stack<std::shared_ptr<oo::GameObject>> parents;
-	//parents.push(starting);
 	int iteration = 0;
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter, ++iteration)
 	{
-		uint64_t id = std::stoull(iter->name.GetString());
 		auto go = second_iter[iteration];
-		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		auto members = iter->value.MemberBegin(); //get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
-		int order = members->value.GetInt();
 
 		++members;
+
 		//processes the components		
 		LoadObject(*go, members, membersEnd);
-
-		//scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*scene.GetRoot());
-
-		//{//when the order dont match the size it will keep poping until it matches
-		////then parent to it and adds itself
-		//	while (order != parents.size())
-		//		parents.pop();
-
-		//	parents.top()->AddChild(*go, true);
-		//	parents.push(go);
-		//	if (iter == doc.MemberBegin())
-		//		firstobj = go->GetInstanceID();
-		//}
-
-		{//another element that will store all the component hashes and create the apporiate archtype
-			// go->SetArchtype(vector<hashes>);
-		}
 	}
 
-	ResetDocument();//clear it after using
 	return firstobj;
 }
 
@@ -565,39 +688,60 @@ UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scen
 
 	rapidjson::Document document;
 	document.ParseStream(stream);
-
+	std::unordered_map<UUID, UUID> script_remappingObj;
+	std::vector<std::shared_ptr<oo::GameObject>> all_objects;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
-	auto gameobj = (go);
+	std::shared_ptr<oo::GameObject> gameobj = go;
+	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
 	parents.push(gameobj);
 	for (auto iter = document.MemberBegin(); iter != document.MemberEnd();)
 	{
-		//gameobj->SetName(iter->name.GetString());
+		//map their old id to their current IDs
+		script_remappingObj.emplace(std::stoull(iter->name.GetString()), gameobj->GetInstanceID());
+		all_objects.push_back(gameobj);
 		gameobj->SetIsPrefab(true);
-		auto members = iter->value.MemberBegin();//get the order of hierarchy
-		auto membersEnd = iter->value.MemberEnd();
-		int order = members->value.GetInt();
 
-		{//when the order dont match the size it will keep poping until it matches
-		//then parent to it and adds itself
+		auto members = iter->value.MemberBegin();//get the order of hierarchy
+		int order = members->value.GetInt();
+		{
+			//when the order dont match the size it will keep poping until it matches
+			//then parent to it and adds itself
 			while (order != parents.size())
 				parents.pop();
 
-			parents.top()->AddChild(*gameobj);
+			parents.top()->AddChild(*gameobj, true);
 			parents.push(gameobj);
 		}
 
-		++members;
-		{//another element that will store all the component hashes and create the apporiate archtype
-			// go->SetArchtype(vector<hashes>);
-		}
-		//processes the components		
-		LoadObject(*gameobj, members, membersEnd);
+		second_iter.emplace_back(gameobj);
 		++iter;
 		if (iter != document.MemberEnd())
 		{
 			gameobj = scene.CreateGameObjectImmediate();
 		}
+
 	}
+
+	scene.GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*go, false);
+
+	int iteration = 0;
+	for (auto iter = document.MemberBegin(); iter != document.MemberEnd(); ++iter, ++iteration)
+	{
+		auto child_object = second_iter[iteration];
+		auto members = iter->value.MemberBegin(); //get the order of hierarchy
+		auto membersEnd = iter->value.MemberEnd();
+
+		++members;
+
+		//processes the components		
+		LoadObject(*child_object, members, membersEnd);
+	}
+
+	for (auto obj : all_objects)
+	{
+		RemapScripts(script_remappingObj,*obj);
+	}
+
 	return firstobj;
 }
 
@@ -652,9 +796,46 @@ void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptCompone
 	}
 }
 
-void Serializer::ResetDocument() noexcept
+void Serializer::RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::GameObject& go)
 {
-	//rapidjson::Document d; // new temp document
-	//doc.Swap(d).SetObject(); // minimize and recreate allocator
+	oo::ScriptComponent& sc = go.GetComponent<oo::ScriptComponent>();
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto& scriptInfo : sc.GetScriptInfoAll())
+	{
+		for (auto& scriptFieldInfo : scriptInfo.second.fieldMap)
+		{
+			switch (scriptFieldInfo.second.value.GetValueType())
+			{
+			case oo::ScriptValue::type_enum::GAMEOBJECT:
+			{
+				UUID id = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<UUID>();
+				auto iter = scriptIds.find(id);
+				if (iter == scriptIds.end())
+				{
+					id = -1;
+				}
+				else
+					id = iter->second;
+				scriptFieldInfo.second.TrySetRuntimeValue(oo::ScriptValue{ id });
+				break;
+			}
+			case oo::ScriptValue::type_enum::FUNCTION:
+			{
+				auto function = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<oo::ScriptValue::function_type>();
+				function.m_objID;
+				auto iter = scriptIds.find(function.m_objID);
+				if (iter == scriptIds.end())
+				{
+					function = oo::ScriptValue::function_type();
+				}
+				else
+					function.m_objID = iter->second;
+				scriptFieldInfo.second.TrySetRuntimeValue(oo::ScriptValue{ function });
+				break;
+			}
+			}
+
+		}
+	}
 }
 

@@ -41,7 +41,7 @@ namespace oo
 
             // we collect all uuids first
             // we manually build query as we want deferred component 
-            static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, DeferredComponent>();
+            static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, DeferredComponent>();
             world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& deferredComp)
                 {
                     LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);

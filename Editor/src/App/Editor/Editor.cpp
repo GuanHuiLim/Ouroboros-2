@@ -29,7 +29,13 @@ Technology is prohibited.
 #include "App/Editor/Events/ImGuiRestartEvent.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "App/Editor/Events/OpenPromtEvent.h"
+#include "App/Editor/Events/CopyButtonEvent.h"
+#include "App/Editor/Events/PasteButtonEvent.h"
+#include "App/Editor/Events/DuplicateButtonEvent.h"
+
 #include "Ouroboros/Core/Events/FileDropEvent.h"
+
+
 static void FileDrop(oo::FileDropEvent* e)
 {
 	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf" };
@@ -118,7 +124,6 @@ void Editor::Update()
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 		Serializer::SaveScene(*(scene));
-		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 	}
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Z))
 	{
@@ -128,7 +133,17 @@ void Editor::Update()
 	{
 		oo::CommandStackManager::RedoCommand();
 	}
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_C))
+	{
+		CopyButtonEvent cbe;
+		oo::EventManager::Broadcast<CopyButtonEvent>(&cbe);
+	}
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_V))
+	{
+		PasteButtonEvent cbe;
+		oo::EventManager::Broadcast<PasteButtonEvent>(&cbe);
 
+	}
 }
 
 void Editor::MenuBar()
@@ -230,7 +245,6 @@ void PopupHelperWindow::CloseProjectPopup()
 				eventAfterPrompt.nextAction();
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 			Serializer::SaveScene(*(scene));
-			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -281,7 +295,6 @@ void PopupHelperWindow::OpenFilePopup()
 			//save the scene
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 			Serializer::SaveScene(*(scene));
-			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
 		}
 		ImGui::SameLine();
 		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();

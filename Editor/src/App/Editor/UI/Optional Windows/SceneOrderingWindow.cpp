@@ -75,7 +75,7 @@ void SceneOrderingWindow::Show()
 		}
 		if (ImGui::ArrowButton("up button", ImGuiDir_::ImGuiDir_Up))
 		{
-			runtimeController->Swap(counter, counter - 1);
+			runtimeController->SwapSceneOrder(counter, counter - 1);
 		}
 		if (up_enabled == false)
 		{
@@ -90,7 +90,7 @@ void SceneOrderingWindow::Show()
 		}
 		if (ImGui::ArrowButton("down button", ImGuiDir_::ImGuiDir_Down))
 		{
-			runtimeController->Swap(counter, counter + 1);
+			runtimeController->SwapSceneOrder(counter, counter + 1);
 		}
 		if (down_enabled == false)
 		{

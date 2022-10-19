@@ -187,7 +187,6 @@ namespace oo
         //m_window.m_width = w;
         //m_window.m_height = h;
 
-  
     }
 
     void VulkanContext::SwapBuffers()
@@ -213,7 +212,6 @@ namespace oo
     void VulkanContext::OnImGuiBegin()
     {
         ImGui_ImplVulkan_NewFrame();
-       
     }
 
     void VulkanContext::OnImGuiEnd()
@@ -298,13 +296,6 @@ namespace oo
 
         } // if prepare frame is true
 
-        ImGui::EndFrame();
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-        }
     }
 
     void VulkanContext::ResetImguiShutdown()
