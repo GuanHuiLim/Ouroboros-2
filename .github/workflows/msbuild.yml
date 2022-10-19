@@ -14,7 +14,9 @@ env:
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
   # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
   # BUILD_CONFIGURATION: Release
-
+  VULKAN_SDK: .\VulkanSDK 
+  VK_SDK_PATH: .\VulkanSDK
+  
 permissions:
   contents: read
 
@@ -27,13 +29,6 @@ jobs:
         platform: [Editor] # Editor, Executable
         
     steps:
-    - name: Install Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
-      with:
-        vulkan-query-version: latest
-        vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Cross, SPIRV-Tools, SPIRV-Reflect, SPIRV-Headers
-        vulkan-use-cache: true
-     
     - name: Checkout Commit
       uses: actions/checkout@v3
       with:
@@ -41,6 +36,13 @@ jobs:
        ref: spironan-patch-2
        # fetch-depth: 0
 
+    - name: Install Vulkan SDK
+      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      with:
+        vulkan-query-version: latest
+        vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Cross, SPIRV-Tools, SPIRV-Reflect, SPIRV-Headers
+        vulkan-use-cache: true
+    
     - name: Generating Project
       run: scripts/Windows-GenerateProject.bat
       
