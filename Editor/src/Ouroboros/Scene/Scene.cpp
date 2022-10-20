@@ -409,11 +409,11 @@ namespace oo
             curr = s.top();
             s.pop();
 
-            auto& new_parent = parent_stack.top();
+            scenenode::shared_pointer new_parent = parent_stack.top();
             parent_stack.pop();
 
             // iterate through original parent's childs
-            for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+            for (auto iter = curr->begin(); iter != curr->end(); ++iter)
             {
                 scenenode::shared_pointer child = *iter;
                 s.push(child.get());
@@ -425,7 +425,6 @@ namespace oo
                 auto new_child = dupObjectChild->GetSceneNode().lock();
                 new_parent->add_child(new_child);
                 parent_stack.push(new_child);
-
             }
         }
         
