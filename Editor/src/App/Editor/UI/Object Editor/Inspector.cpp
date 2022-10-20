@@ -48,7 +48,7 @@ Technology is prohibited.
 #include <Ouroboros/Scripting/ScriptComponent.h>
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
-#include <Ouroboros/Vulkan/RendererComponent.h>
+#include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/CameraComponent.h>
 

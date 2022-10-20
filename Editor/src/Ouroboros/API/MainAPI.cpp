@@ -22,3 +22,4 @@ Technology is prohibited.
 #include "SceneManagerAPI.h"
 #include "ScriptingAPI.h"
 #include "TransformAPI.h"
+#include "AudioSourceAPI.h"

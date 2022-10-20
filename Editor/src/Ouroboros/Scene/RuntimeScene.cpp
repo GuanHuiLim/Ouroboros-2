@@ -211,7 +211,7 @@ namespace oo
     void RuntimeScene::Render()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_rendering);
-        GetWorld().Get_System<MeshRendererSystem>()->RenderCameras();
+        GetWorld().Get_System<RendererSystem>()->RenderCameras();
         Scene::Render();
         GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
         TRACY_PROFILE_SCOPE_END();

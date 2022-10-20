@@ -82,7 +82,7 @@ namespace oo
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
             //rendering system initialization
-            m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
+            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
 
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
         }
@@ -130,7 +130,7 @@ namespace oo
     void Scene::Render()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_rendering, tracy::Color::Seashell3);
-        GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
+        GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
         TRACY_PROFILE_SCOPE_END();
@@ -409,11 +409,11 @@ namespace oo
             curr = s.top();
             s.pop();
 
-            auto& new_parent = parent_stack.top();
+            scenenode::shared_pointer new_parent = parent_stack.top();
             parent_stack.pop();
 
             // iterate through original parent's childs
-            for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+            for (auto iter = curr->begin(); iter != curr->end(); ++iter)
             {
                 scenenode::shared_pointer child = *iter;
                 s.push(child.get());
@@ -425,7 +425,6 @@ namespace oo
                 auto new_child = dupObjectChild->GetSceneNode().lock();
                 new_parent->add_child(new_child);
                 parent_stack.push(new_child);
-
             }
         }
         

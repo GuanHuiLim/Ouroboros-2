@@ -228,14 +228,15 @@ namespace myPhysx
         //phy_uuid::UUID UUID = phy_uuid::UUID{};
 
         PhysxObject obj;
-        obj.id = phy_uuid::UUID{};
-
+        obj.id = std::make_unique<phy_uuid::UUID>();
+        // This is important!
+        phy_uuid::UUID generated_uuid = *obj.id;
         // store the object
-        m_objects.emplace_back(obj);
-        all_objects.insert({ obj.id, m_objects.size() - 1 }); // add back the m_objects last element
-
+        m_objects.emplace_back(std::move(obj));
+        all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
+        
         // return the object i created
-        return PhysicsObject{ obj.id, this }; // a copy
+        return PhysicsObject{ generated_uuid, this }; // a copy
     }
 
     void PhysxWorld::removeInstance(PhysicsObject obj)
@@ -259,8 +260,11 @@ namespace myPhysx
 
         // check/find the id from the obj vector then if match 
         // remove from that vector then release
-        auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; });
+        // NOTE: DON't MIXUP ELEM ID and OBJ ID HERE, 2 different types.
+        auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == obj.id; });
+        
         //begin->destroy();
+        
         m_objects.erase(begin);
     }
 
@@ -295,14 +299,14 @@ namespace myPhysx
             // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
             if (type == rigid::rstatic) {
                 underlying_obj->rs.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
-                underlying_obj->rs.rigidStatic->userData = this;
-                printf("actl value %llu vs pointer value: %llu \n", id, reinterpret_cast<PhysicsObject*>(underlying_obj->rs.rigidStatic->userData)->id);
+                underlying_obj->rs.rigidStatic->userData = underlying_obj->id.get();
+                printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rs.rigidStatic->userData));
                 world->scene->addActor(*underlying_obj->rs.rigidStatic);
             }
             else if (type == rigid::rdynamic) {
                 underlying_obj->rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
-                underlying_obj->rd.rigidDynamic->userData = this;
-                printf("actl value %llu vs pointer value: %llu \n", id, reinterpret_cast<PhysicsObject*>(underlying_obj->rd.rigidDynamic->userData)->id);
+                underlying_obj->rd.rigidDynamic->userData = underlying_obj->id.get();
+                printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rd.rigidDynamic->userData));
                 world->scene->addActor(*underlying_obj->rd.rigidDynamic);
             }
         }
@@ -914,8 +918,8 @@ namespace myPhysx
 
         while (count--) {
 
-            auto trigger_id = reinterpret_cast<PhysicsObject*>(pairs->triggerActor->userData)->id;
-            auto other_id = reinterpret_cast<PhysicsObject*>(pairs->otherActor->userData)->id;
+            auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(pairs->triggerActor->userData);
+            auto other_id = *reinterpret_cast<phy_uuid::UUID*>(pairs->otherActor->userData);
             printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
 
             const PxTriggerPair& current = *pairs++;
