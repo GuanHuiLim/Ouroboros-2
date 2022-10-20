@@ -62,9 +62,4 @@ namespace oo
         RTTR_ENABLE();
     };
 
-    struct SkinMeshRendererComponent
-    {
-        Asset mesh_handle;
-    };
-
 }
