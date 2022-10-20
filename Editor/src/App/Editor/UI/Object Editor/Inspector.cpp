@@ -42,7 +42,6 @@ Technology is prohibited.
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
-#include <Ouroboros/Physics/PhysicsComponent.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 
@@ -131,8 +130,6 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 
-
-	DisplayComponent<oo::PhysicsComponent>(gameobject);
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
 	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
