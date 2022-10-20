@@ -161,7 +161,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		bool selected = false;
 		ImGui::BeginListBox("##AddComponents", { x,y });
 		ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f },true);
-		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+		//selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 
 		selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
@@ -177,7 +177,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 
-		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+		//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 
 		selected |= AddScriptsSelectable(gameobject);
 
