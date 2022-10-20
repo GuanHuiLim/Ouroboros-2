@@ -219,6 +219,42 @@ namespace Ouroboros
             return GCHandle.FromIntPtr(ptr).Target as T;
         }
 
+        [DllImport("__Internal")] private static extern object[] GetScriptsInChildren(UInt32 SceneID, UInt64 uuid, string name_space, string name, bool includeSelf);
+        [DllImport("__Internal")] private static extern object[] GetComponentsInChildrenFromScript(UInt32 SceneID, UInt64 uuid, string name_space, string name, bool includeSelf);
+
+        public Component[] GetComponentsInChildren(Type type, bool includeSelf = false)
+        {
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
+
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                return GetScriptsInChildren(scene, GetInstanceID(), name_space, type.Name, includeSelf) as Component[];
+            }
+            else
+            {
+                return GetComponentsInChildrenFromScript(scene, GetInstanceID(), name_space, type.Name, includeSelf) as Component[];
+            }
+        }
+
+        public T[] GetComponentsInChildren<T>(bool includeSelf = false) where T : Component
+        {
+            Type type = typeof(T);
+            string name_space = "";
+            if (type.Namespace != null)
+                name_space = type.Namespace;
+
+            if (type.IsSubclassOf(typeof(MonoBehaviour)))
+            {
+                return GetScriptsInChildren(scene, GetInstanceID(), name_space, type.Name, includeSelf) as T[];
+            }
+            else
+            {
+                return GetComponentsInChildrenFromScript(scene, GetInstanceID(), name_space, type.Name, includeSelf) as T[];
+            }
+        }
+
         [DllImport("__Internal")] private static extern void RemoveScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
         [DllImport("__Internal")] private static extern void RemoveComponentFromScript(UInt32 SceneID, UInt64 uuid, string name_space, string name);
 

@@ -45,6 +45,7 @@ namespace oo
 
     void RuntimeController::GenerateScenes()
     {
+        // loops through all loadpaths, create the neccesary scenes
         for (auto& scenePath : m_loadpaths)
         {
             m_sceneManager.CreateNewScene<RuntimeScene>(scenePath.SceneName, scenePath.LoadPath);
@@ -53,36 +54,40 @@ namespace oo
 
     void RuntimeController::RemoveScenes()
     {
-        for (auto& scenePath : m_loadpaths)
+        // cleans up all the loaded scenes by name.
+        for (auto& sceneInfo : m_loadpaths)
         {
-            m_sceneManager.RemoveScene(scenePath.SceneName);
+            m_sceneManager.RemoveScene(sceneInfo.SceneName);
         }
+    }
+
+    void RuntimeController::ClearSceneLibrary() 
+    { 
+        m_filepathLookup.clear();
+        m_loadpaths.clear(); 
     }
 
     bool RuntimeController::HasScene(std::string_view sceneName) const
     {
-        auto iter = std::find_if(m_loadpaths.cbegin(), m_loadpaths.cend(), [=](SceneInfo elem) 
-                    { 
-                        return elem.SceneName == sceneName; 
-                    });
-        return iter != m_loadpaths.cend();
+        return m_filepathLookup.contains(sceneName.data());
     }
 
-    bool RuntimeController::HasScene(size_type index) const
+    bool RuntimeController::HasScene(size_type sceneIndex) const
     {
-        return index >= 0 && index < m_loadpaths.size();
+        return sceneIndex > 0 && sceneIndex < m_loadpaths.size();
     }
 
     void RuntimeController::AddLoadPath(std::string_view sceneName, std::string_view loadpath)
     {
-        // make sure file path is unique.
-        if (std::find_if(m_loadpaths.cbegin(), m_loadpaths.cend(), [=](SceneInfo elem) { return elem.LoadPath == loadpath; }) == m_loadpaths.cend())
+        // ensure unique file path
+        if (std::find(m_loadpaths.cbegin(), m_loadpaths.cend(), loadpath) == m_loadpaths.cend())
         {
-            m_loadpaths.emplace_back(sceneName, loadpath/*, m_loadpaths.size()*/);
+            m_loadpaths.emplace_back(sceneName, loadpath);
+            m_filepathLookup.emplace(sceneName, loadpath);
         }
         else
         {
-            LOG_ERROR("Attempting to add an already loaded scene {0}", sceneName);
+            LOG_ERROR("Attempting to add a scene named \"{0}\" with an already existing file path location {1}", sceneName, loadpath);
         }
     }
 
@@ -90,47 +95,71 @@ namespace oo
     {
         auto iter = std::find_if(m_loadpaths.begin(), m_loadpaths.end(), [=](SceneInfo elem) { return elem.SceneName == sceneName; });
         if (iter != m_loadpaths.end())
+        {
             m_loadpaths.erase(iter);
+            ASSERT_MSG(HasScene(sceneName) == false, "This should never happen!");
+            m_filepathLookup.erase(sceneName.data());
+        }
     }
 
-    void RuntimeController::Swap(std::string_view sceneName1, std::string_view sceneName2)
+    void RuntimeController::SwapSceneOrder(std::string_view sceneName1, std::string_view sceneName2)
     {
         auto first = std::find_if(m_loadpaths.begin(), m_loadpaths.end(), [=](SceneInfo elem) { return elem.SceneName == sceneName1; });
         auto second = std::find_if(m_loadpaths.begin(), m_loadpaths.end(), [=](SceneInfo elem) { return elem.SceneName == sceneName2; });
         if (first != second)
+        {
             std::iter_swap(first, second);
+            LOG_INFO("Swapping scene order via name! \"{0}\" swapped with \"{1}\"", sceneName1, sceneName2);
+        }
+        // no need to change filelookup
     }
 
-    void RuntimeController::Swap(size_type index1, size_type index2)
+    void RuntimeController::SwapSceneOrder(size_type index1, size_type index2)
     {
         if (HasScene(index1) && HasScene(index2))
         {
             std::swap(m_loadpaths[index1], m_loadpaths[index2]);
+            LOG_INFO("Swapping scene order! Index {0} swapped with Index {1}", index1, index2);
+        }
+        else
+        {
+            LOG_INFO("Either Index is Invalid {0}, {1}! Failed attempting to swap runtime scene order .", index1, index2);
         }
     }
 
     void RuntimeController::ChangeRuntimeScene(std::string_view sceneName)
     {
         auto iter = std::find_if(m_loadpaths.begin(), m_loadpaths.end(), [=](SceneInfo elem) { return elem.SceneName == sceneName; });
-
         if (iter == m_loadpaths.end())
         {
-            LOG_WARN("Scene \"{0}\" was not not added to build thus it was loaded! Ensure you add it to the build via", sceneName);
+            LOG_WARN("Scene named \"{0}\" was not added to build thus it was not loaded! Ensure you add it to the runtime controller and the name is correct", sceneName);
             return;
         }
-        LOG_INFO("Changing to runtime scene \"{0}\"", sceneName);
+        LOG_INFO("Changing to runtime scene via name : \"{0}\" ", sceneName);
         m_sceneManager.ChangeScene(sceneName);
     }
 
-    void RuntimeController::ChangeRuntimeScene(size_type index)
+    void RuntimeController::ChangeRuntimeScene(size_type sceneIndex)
     {
-        if (index < 0 || index >= m_loadpaths.size())
+        if (HasScene(sceneIndex))
         {
-            LOG_WARN("Scene {0} was not not added to build thus it was loaded! Ensure you add it to the build via", index);
-            return;
+            LOG_INFO("Changing runtime scene to {1} via index {0} ", sceneIndex, m_loadpaths[sceneIndex].SceneName);
+            m_sceneManager.ChangeScene(m_loadpaths[sceneIndex].SceneName);
         }
-        LOG_INFO("Changing to runtime scene {0}", m_loadpaths[index].SceneName);
-        m_sceneManager.ChangeScene(m_loadpaths[index].SceneName);
+        else
+        {
+            LOG_INFO("Invalid index {0}! Failed attempting to change runtime scene.", sceneIndex);
+        }
+    }
+
+    std::weak_ptr<RuntimeScene> RuntimeController::GetRuntimeScene() const 
+    { 
+        return m_runtimeScene; 
+    }
+
+    void RuntimeController::SetRuntimeScene(std::weak_ptr<RuntimeScene> newScene)
+    {
+        m_runtimeScene = newScene;
     }
 
 }

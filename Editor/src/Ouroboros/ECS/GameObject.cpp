@@ -18,6 +18,7 @@ Technology is prohibited.
 //#include "Ouroboros/Transform/TransformSystem.h"
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
+#include "Ouroboros/ECS/DuplicatedComponent.h"
 
 #include "Ouroboros/Scripting/ScriptComponent.h"
 
@@ -46,6 +47,8 @@ namespace oo
     {
         UUID new_uuid {};
         SetupGo(new_uuid, m_entity);
+        // mark item as duplicated. duplicated items will be ignored for the first frame to get it properly set up
+        m_scene->GetWorld().add_component<oo::DuplicatedComponent>(m_entity);
     }
 
     GameObject::GameObject(UUID uuid, Scene& scene)
