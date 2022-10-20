@@ -82,7 +82,7 @@ namespace oo
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
             //rendering system initialization
-            m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
+            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
 
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
         }
@@ -130,7 +130,7 @@ namespace oo
     void Scene::Render()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_rendering, tracy::Color::Seashell3);
-        GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
+        GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
         TRACY_PROFILE_SCOPE_END();

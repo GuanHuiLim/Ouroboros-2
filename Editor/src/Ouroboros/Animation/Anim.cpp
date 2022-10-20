@@ -17,7 +17,7 @@ Technology is prohibited.
 #include "AnimationComponent.h"
 #include "AnimationSystem.h"
 #include "Archetypes_Ecs/src/A_Ecs.h"
-#include "Ouroboros/Vulkan/RendererComponent.h"
+#include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "Ouroboros/Core/Input.h"
 
 #include "assimp/scene.h"

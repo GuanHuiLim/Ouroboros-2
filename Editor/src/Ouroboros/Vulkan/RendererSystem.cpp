@@ -24,98 +24,79 @@ Technology is prohibited.
 
 namespace oo
 {
-    void oo::MeshRendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
+    void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
         assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
-
-        auto& comp = evnt->component;
-        comp.Light_ID = m_graphicsWorld->CreateLightInstance();
-
-        //update graphics world side to prevent wrong initial placement
+        auto& lightComp = evnt->component;
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
-        auto& graphics_object = m_graphicsWorld->GetLightInstance(comp.Light_ID);
-        graphics_object.position = glm::vec4{ transform_component.GetGlobalPosition(), 0.f };
+        InitializeLight(lightComp, transform_component);
     }
 
-    void oo::MeshRendererSystem::OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt)
+    void oo::RendererSystem::OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt)
     {
         auto& comp = evnt->component;
         m_graphicsWorld->DestroyLightInstance(comp.Light_ID);
     }
 
-    void oo::MeshRendererSystem::OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
+    void oo::RendererSystem::OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
 
-        auto& comp = evnt->component;
-        comp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
-        //HARDCODED AS CUBE, TO BE REMOVED LATER
-        comp.model_handle = 0;
-        comp.meshInfo.submeshBits[0] = true;
-        
-        //update graphics world side
+        auto& meshComp = evnt->component;
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
-        auto& graphics_object = m_graphicsWorld->GetObjectInstance(comp.graphicsWorld_ID);
-        graphics_object.localToWorld = transform_component.GlobalTransform;
-        
+        InitializeMesh(meshComp, transform_component);
+
+        //HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
+        meshComp.model_handle = 0;
+        meshComp.meshInfo.submeshBits[0] = true;
     }
 
-    void oo::MeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
+    void oo::RendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         auto& comp = evnt->component;
         m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
     }
 
-    oo::MeshRendererSystem::MeshRendererSystem(GraphicsWorld* graphicsWorld)
+    oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld)
+        : m_graphicsWorld { graphicsWorld }
     {
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
-
-        this->m_graphicsWorld = graphicsWorld;
     }
 
-    void MeshRendererSystem::Init()
+    void RendererSystem::Init()
     {
         // Mesh Renderer
-        m_world->SubscribeOnAddComponent<MeshRendererSystem, MeshRendererComponent>(
-            this, &MeshRendererSystem::OnMeshAssign);
+        m_world->SubscribeOnAddComponent<RendererSystem, MeshRendererComponent>(
+            this, &RendererSystem::OnMeshAssign);
 
-        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, MeshRendererComponent>(
-            this, &MeshRendererSystem::OnMeshRemove);
+        m_world->SubscribeOnRemoveComponent<RendererSystem, MeshRendererComponent>(
+            this, &RendererSystem::OnMeshRemove);
 
         //Lights
-        m_world->SubscribeOnAddComponent<MeshRendererSystem, LightComponent>(
-            this, &MeshRendererSystem::OnLightAssign);
+        m_world->SubscribeOnAddComponent<RendererSystem, LightComponent>(
+            this, &RendererSystem::OnLightAssign);
 
-        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, LightComponent>(
-            this, &MeshRendererSystem::OnLightRemove);
+        m_world->SubscribeOnRemoveComponent<RendererSystem, LightComponent>(
+            this, &RendererSystem::OnLightRemove);
     }
 
-    void oo::MeshRendererSystem::Run(Ecs::ECSWorld* world)
+    void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
         // Update Newly Duplicated Lights
         static Ecs::Query duplicated_lights_query = Ecs::make_raw_query<LightComponent, TransformComponent, DuplicatedComponent>();
         world->for_each(duplicated_lights_query, [&](LightComponent& lightComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
         {
-            lightComp.Light_ID = m_graphicsWorld->CreateLightInstance();
-            //update graphics world side to prevent wrong initial placement
-            auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
-            graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+            InitializeLight(lightComp, transformComp);
         });
 
         // Update Newly Duplicated Mesh
         static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, DuplicatedComponent>();
         world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
         { 
-            meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
-            //HARDCODED AS CUBE, TO BE REMOVED LATER
-            meshComp.model_handle = 0;
-            meshComp.meshInfo.submeshBits[0] = true;
-
-            //update graphics world side
-            auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
-            graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+            InitializeMesh(meshComp, transformComp);
         });
 
+        // update meshes
         static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent>();
         world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
         {
@@ -133,7 +114,6 @@ namespace oo
 
         // Update Lights
         static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-
         world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
         {
             auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
@@ -142,22 +122,19 @@ namespace oo
             graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
             graphics_light.color = lightComp.Color;
             graphics_light.radius = lightComp.Radius;
-            
-            // lighting debug draw
-            Sphere sphere;
-            sphere.center = vec3{ graphics_light.position }; 
-            sphere.radius = 0.1f;
-            DebugDraw::AddSphere(sphere, graphics_light.color);
         });
+
+        // draw debug stuff
+        RenderDebugDraws(world);
     }
 
     // additional function that runs during runtime scene only.
-    void MeshRendererSystem::RenderCameras()
+    void RendererSystem::RenderCameras()
     {
         // TODO: debug draw the camera's view in editormode
         //DebugDraw::AddLine();
         
-        // Update Camera
+        // Update Camera(s)
         // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
         
         auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
@@ -168,5 +145,38 @@ namespace oo
             camera.SetRotation(transformComp.GetGlobalRotationDeg());
         });
     }
+    
+    void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)
+    {
+        // Draw Debug Lights
+        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
+        world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+        {
+            auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+            // lighting debug draw
+            Sphere sphere;
+            sphere.center = vec3{ graphics_light.position };
+            sphere.radius = 0.1f;
+            DebugDraw::AddSphere(sphere, graphics_light.color);
+        });
+    }
+
+    void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp)
+    {
+        meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+
+        //update graphics world side
+        auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
+        graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+    }
+
+    void RendererSystem::InitializeLight(LightComponent& lightComp, TransformComponent& transformComp)
+    {
+        lightComp.Light_ID = m_graphicsWorld->CreateLightInstance();
+        //update graphics world side to prevent wrong initial placement
+        auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+        graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+    }
+
 }
 
