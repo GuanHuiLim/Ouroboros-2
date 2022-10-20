@@ -212,12 +212,12 @@ namespace oo
                     vec2_type vec = value.GetValue<vec2_type>();
                     float xValue = vec.x;
                     float yValue = vec.y;
-                    MonoClass* vecClass = ScriptEngine::GetClass("System.Numerics", "System.Numerics", "Vector2");
+                    MonoClass* vecClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Vector2");
                     MonoObject* monoVec = ScriptEngine::CreateObject(vecClass);
 
-                    MonoClassField* xField = mono_class_get_field_from_name(vecClass, "X");
+                    MonoClassField* xField = mono_class_get_field_from_name(vecClass, "x");
                     mono_field_set_value(monoVec, xField, &xValue);
-                    MonoClassField* yField = mono_class_get_field_from_name(vecClass, "Y");
+                    MonoClassField* yField = mono_class_get_field_from_name(vecClass, "y");
                     mono_field_set_value(monoVec, yField, &yValue);
 
                     mono_field_set_value(obj, field, mono_object_unbox(monoVec));
@@ -232,9 +232,9 @@ namespace oo
 
                     if (fieldObj != nullptr)
                     {
-                        MonoClassField* xField = mono_class_get_field_from_name(typeClass, "X");
+                        MonoClassField* xField = mono_class_get_field_from_name(typeClass, "x");
                         mono_field_get_value(fieldObj, xField, &x);
-                        MonoClassField* yField = mono_class_get_field_from_name(typeClass, "Y");
+                        MonoClassField* yField = mono_class_get_field_from_name(typeClass, "y");
                         mono_field_get_value(fieldObj, yField, &y);
                     }
                     return ScriptValue(vec2_type{ x, y });
@@ -246,9 +246,9 @@ namespace oo
                     if (object != nullptr)
                     {
                         MonoClass* objClass = mono_object_get_class(object);
-                        MonoClassField* xField = mono_class_get_field_from_name(objClass, "X");
+                        MonoClassField* xField = mono_class_get_field_from_name(objClass, "x");
                         mono_field_get_value(object, xField, &x);
-                        MonoClassField* yField = mono_class_get_field_from_name(objClass, "Y");
+                        MonoClassField* yField = mono_class_get_field_from_name(objClass, "y");
                         mono_field_get_value(object, yField, &y);
                     }
                     return ScriptValue(vec2_type{ x, y });
@@ -259,12 +259,12 @@ namespace oo
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
                     vec2_type vec2 = value.GetValue<vec2_type>();
-                    MonoClass* klass = ScriptEngine::GetClass("System.Numerics", "System.Numerics", "Vector2");
+                    MonoClass* klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Vector2");
                     MonoObject* entry = ScriptEngine::CreateObject(klass);
 
-                    MonoClassField* xField = mono_class_get_field_from_name(klass, "X");
+                    MonoClassField* xField = mono_class_get_field_from_name(klass, "x");
                     mono_field_set_value(entry, xField, &vec2.x);
-                    MonoClassField* yField = mono_class_get_field_from_name(klass, "Y");
+                    MonoClassField* yField = mono_class_get_field_from_name(klass, "y");
                     mono_field_set_value(entry, yField, &vec2.y);
 
                     void* args[1];
@@ -283,14 +283,14 @@ namespace oo
                     float xValue = vec.x;
                     float yValue = vec.y;
                     float zValue = vec.z;
-                    MonoClass* vecClass = ScriptEngine::GetClass("System.Numerics", "System.Numerics", "Vector3");
+                    MonoClass* vecClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Vector3");
                     MonoObject* monoVec = ScriptEngine::CreateObject(vecClass);
 
-                    MonoClassField* xField = mono_class_get_field_from_name(vecClass, "X");
+                    MonoClassField* xField = mono_class_get_field_from_name(vecClass, "x");
                     mono_field_set_value(monoVec, xField, &xValue);
-                    MonoClassField* yField = mono_class_get_field_from_name(vecClass, "Y");
+                    MonoClassField* yField = mono_class_get_field_from_name(vecClass, "y");
                     mono_field_set_value(monoVec, yField, &yValue);
-                    MonoClassField* zField = mono_class_get_field_from_name(vecClass, "Z");
+                    MonoClassField* zField = mono_class_get_field_from_name(vecClass, "z");
                     mono_field_set_value(monoVec, zField, &zValue);
 
                     mono_field_set_value(obj, field, mono_object_unbox(monoVec));
@@ -305,11 +305,11 @@ namespace oo
 
                     if (fieldObj != nullptr)
                     {
-                        MonoClassField* xField = mono_class_get_field_from_name(typeClass, "X");
+                        MonoClassField* xField = mono_class_get_field_from_name(typeClass, "x");
                         mono_field_get_value(fieldObj, xField, &x);
-                        MonoClassField* yField = mono_class_get_field_from_name(typeClass, "Y");
+                        MonoClassField* yField = mono_class_get_field_from_name(typeClass, "y");
                         mono_field_get_value(fieldObj, yField, &y);
-                        MonoClassField* zField = mono_class_get_field_from_name(typeClass, "Z");
+                        MonoClassField* zField = mono_class_get_field_from_name(typeClass, "z");
                         mono_field_get_value(fieldObj, zField, &z);
                     }
                     return ScriptValue(vec3_type{ x, y, z });
@@ -321,11 +321,11 @@ namespace oo
                     if (object != nullptr)
                     {
                         MonoClass* objClass = mono_object_get_class(object);
-                        MonoClassField* xField = mono_class_get_field_from_name(objClass, "X");
+                        MonoClassField* xField = mono_class_get_field_from_name(objClass, "x");
                         mono_field_get_value(object, xField, &x);
-                        MonoClassField* yField = mono_class_get_field_from_name(objClass, "Y");
+                        MonoClassField* yField = mono_class_get_field_from_name(objClass, "y");
                         mono_field_get_value(object, yField, &y);
-                        MonoClassField* zField = mono_class_get_field_from_name(objClass, "Z");
+                        MonoClassField* zField = mono_class_get_field_from_name(objClass, "z");
                         mono_field_get_value(object, zField, &z);
                     }
                     return ScriptValue(vec3_type{ x, y, z });
@@ -336,14 +336,14 @@ namespace oo
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
                     vec3_type vec3 = value.GetValue<vec3_type>();
-                    MonoClass* klass = ScriptEngine::GetClass("System.Numerics", "System.Numerics", "Vector3");
+                    MonoClass* klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Vector3");
                     MonoObject* entry = ScriptEngine::CreateObject(klass);
 
-                    MonoClassField* xField = mono_class_get_field_from_name(klass, "X");
+                    MonoClassField* xField = mono_class_get_field_from_name(klass, "x");
                     mono_field_set_value(entry, xField, &vec3.x);
-                    MonoClassField* yField = mono_class_get_field_from_name(klass, "Y");
+                    MonoClassField* yField = mono_class_get_field_from_name(klass, "y");
                     mono_field_set_value(entry, yField, &vec3.y);
-                    MonoClassField* zField = mono_class_get_field_from_name(klass, "Z");
+                    MonoClassField* zField = mono_class_get_field_from_name(klass, "z");
                     mono_field_set_value(entry, zField, &vec3.z);
 
                     void* args[1];
@@ -446,7 +446,7 @@ namespace oo
                 // SetFieldValue
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
-                    UUID entityID = value.GetValue<UUID>();
+                    oo::UUID entityID = value.GetValue<oo::UUID>();
                     std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> gameObject = scene->FindWithInstanceID(entityID);
                     if (gameObject == nullptr)
@@ -1115,9 +1115,9 @@ namespace oo
             MonoClass* typeClass = mono_type_get_class(type);
             if (ScriptEngine::CheckClassInheritance(typeClass, mono_get_enum_class())) // Enum
                 return type_enum::ENUM;
-            if (ScriptEngine::CheckClassInheritance(typeClass, "System.Numerics", "System.Numerics", "Vector2")) // Vector2
+            if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Vector2")) // Vector2
                 return type_enum::VECTOR2;
-            if (ScriptEngine::CheckClassInheritance(typeClass, "System.Numerics", "System.Numerics", "Vector3")) // Vector3
+            if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Vector3")) // Vector3
                 return type_enum::VECTOR3;
             //if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Colour")) // Colour
             //    return type_enum::COLOUR;

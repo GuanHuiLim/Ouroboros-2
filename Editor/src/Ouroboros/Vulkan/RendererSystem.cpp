@@ -19,6 +19,9 @@ Technology is prohibited.
 
 #include <OO_Vulkan/src/DebugDraw.h>
 
+#include "Ouroboros/Core/Application.h"
+#include "VulkanContext.h"
+
 namespace oo
 {
     void oo::MeshRendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
@@ -98,7 +101,20 @@ namespace oo
             auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
             graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
         });
-        
+
+        // Update Newly Duplicated Mesh
+        static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, DuplicatedComponent>();
+        world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        { 
+            meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+            //HARDCODED AS CUBE, TO BE REMOVED LATER
+            meshComp.model_handle = 0;
+            meshComp.meshInfo.submeshBits[0] = true;
+
+            //update graphics world side
+            auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
+            graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+        });
 
         static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent>();
         world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
@@ -112,7 +128,7 @@ namespace oo
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
-            });
+        });
 
 
         // Update Lights
@@ -133,7 +149,24 @@ namespace oo
             sphere.radius = 0.1f;
             DebugDraw::AddSphere(sphere, graphics_light.color);
         });
+    }
 
+    // additional function that runs during runtime scene only.
+    void MeshRendererSystem::RenderCameras()
+    {
+        // TODO: debug draw the camera's view in editormode
+        //DebugDraw::AddLine();
+        
+        // Update Camera
+        // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
+        
+        auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
+        m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+        {
+            camera.SetPosition(transformComp.GetGlobalPosition());
+            camera.SetRotation(transformComp.GetGlobalRotationDeg());
+        });
     }
 }
 

@@ -30,7 +30,7 @@ namespace oo
         bool IsPrefab = false;
         bool Active = true;
         bool ActiveInHierarchy = true;
-        UUID Id;
+        oo::UUID Id;
         std::string Name = "Default Name Long enough for no short string optimization";
         scenenode::weak_pointer Node = {};
 
@@ -38,14 +38,14 @@ namespace oo
         {
             OnEnableEvent(UUID id) : Id{ id } {}
 
-            UUID Id;
+            oo::UUID Id;
         };
 
         struct OnDisableEvent : public Event
         {
             OnDisableEvent(UUID id) : Id{ id } {}
 
-            UUID Id;
+            oo::UUID Id;
         };
 
         RTTR_ENABLE();

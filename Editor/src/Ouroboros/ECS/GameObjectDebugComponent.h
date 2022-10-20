@@ -35,9 +35,9 @@ namespace oo
     public:
         GameObject::Entity GetEntity() const;
         GameObject::Entity GetParentId() const;
-        UUID GetUUID() const;
-        UUID GetParentUUID() const;
-        std::vector<UUID> GetChildUUIDs() const;
+        oo::UUID GetUUID() const;
+        oo::UUID GetParentUUID() const;
+        std::vector<oo::UUID> GetChildUUIDs() const;
         std::size_t GetChildCount() const;
 
         RTTR_ENABLE();
