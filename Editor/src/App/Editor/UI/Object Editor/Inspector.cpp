@@ -171,23 +171,18 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::EndChild();
 		if (ImGui::BeginListBox("##AddComponents", { x,y }))
 		{
-			//if (ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f }, true))
-			//{
-				selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
-				//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
-				//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
-				selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
-				selected |= AddScriptsSelectable(gameobject);
-				
-			//	ImGui::EndChild();
-			//}
+			selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
+			//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
+			//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+			selected |= AddScriptsSelectable(gameobject);
 
 			ImGui::EndListBox();
 
