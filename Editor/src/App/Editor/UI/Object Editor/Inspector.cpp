@@ -152,48 +152,50 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
 {
 	float offset = (ImGui::GetContentRegionAvail().x - x) * 0.5f;
+	//LOG_CORE_INFO(ImGui::FindWindowByID(4029469480)->Name);
 	ImGui::Dummy({0,0});//for me to use sameline on
 	ImGui::SameLine(offset);
 	ImGui::PushID("AddC");
 	ImGui::BeginGroup();
 	m_AddComponentButton.SetSize({ x,50.0f });
 	m_AddComponentButton.UpdateToggle();
+	bool selected = false;
 	if (m_AddComponentButton.GetToggle())
 	{
-		bool selected = false;
-		ImGui::BeginListBox("##AddComponents", { x,y });
-		ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f },true);
-		selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
-
-		selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
-		//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
-		//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
-
-		selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
-		selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
-
-		selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
-
-		selected |= AddScriptsSelectable(gameobject);
-
-		ImGui::EndChild();
-
-		ImGui::PushItemWidth(-75.0f);
-		ImGui::InputText("Search", &m_filterComponents);
-		ImGui::PopItemWidth();
-
-		ImGui::EndListBox();
-		if (selected)
+		if (ImGui::BeginChild("##aclistboxchild", { x , 35.0f}, true))
 		{
-			m_AddComponentButton.SetToggle(false);
-			ImGui::EndGroup();
-			ImGui::PopID();
-			return;
+			ImGui::PushItemWidth(-75.0f);
+			ImGui::InputText("Search", &m_filterComponents);
+			ImGui::PopItemWidth();
 		}
+		ImGui::EndChild();
+		if (ImGui::BeginListBox("##AddComponents", { x,y }))
+		{
+			//if (ImGui::BeginChild("##aclistboxchild", { x - 10 ,y * 0.70f }, true))
+			//{
+				selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
+				//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
+				//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
+				selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+				selected |= AddScriptsSelectable(gameobject);
+				
+			//	ImGui::EndChild();
+			//}
+
+			ImGui::EndListBox();
+
+		}
+	}
+	if (selected)
+	{
+		m_AddComponentButton.SetToggle(false);
 	}
 	ImGui::EndGroup();
 	ImGui::PopID();
