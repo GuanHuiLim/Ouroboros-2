@@ -28,6 +28,7 @@ Technology is prohibited.
 #include <iostream>
 #include <vector>
 #include <map>
+#include <memory>
 //#include <glm/glm.hpp>
 
 #include "uuid.h"
@@ -118,7 +119,12 @@ namespace myPhysx {
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
 
+        // queue to store the collision pairs
+        std::vector<> m_collisionPairs;
     public:
+
+        // function to retrieve the queue data
+        // function to reset the queue data
 
         // SCENE
         PhysxWorld(PxVec3 gravity);
@@ -139,7 +145,7 @@ namespace myPhysx {
     // associated to each object in the physics world (me store)
     struct PhysxObject {
 
-        phy_uuid::UUID id = 0;
+        std::unique_ptr<phy_uuid::UUID> id = nullptr;
         phy_uuid::UUID matID = 0;
 
         // shape
