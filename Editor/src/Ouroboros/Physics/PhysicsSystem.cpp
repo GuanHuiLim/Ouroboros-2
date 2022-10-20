@@ -229,6 +229,15 @@ namespace oo
 
     void PhysicsSystem::UpdateCallbacks()
     {
+        //auto callback_queue = m_physicsWorld.getCallbackQueue();
+        //// loop through all callbacks
+        //while (!callbackQueue.empty())
+        //{
+        //    // we need to convert from physics uuid to gameobject uuid.
+        //    auto [firstItem, secondItem] = callbackQueue.top();
+        //    // publish the event
+        //    auto object1_uuid = m_physicsToGameObjectLookup[firstItem];
+        //}
     }
 
     void PhysicsSystem::PostUpdate()

@@ -23,6 +23,8 @@ Technology is prohibited.
 #include <Physics/Source/phy.h>
 
 #include <bitset>
+#include "Utility/UUID.h"
+
 namespace oo
 {
     struct Scene;
@@ -73,6 +75,9 @@ namespace oo
         void PostUpdate();
 
         Scene* m_scene;
+
+        // need a way to track physics uuids to gameobject uuids
+        std::map<phy_uuid::UUID, UUID> m_physicsToGameObjectLookup;
 
         //underlying physics world
         myPhysx::PhysxWorld m_physicsWorld;
