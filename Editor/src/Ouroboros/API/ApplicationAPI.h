@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Timer.h"
 
+#include "Project.h"
+
 #include "Ouroboros/Core/Log.h"
 
 namespace oo
@@ -106,6 +108,36 @@ namespace oo
     //{
     //    return static_cast<float>(PhysicsSystem::FixedDeltaTime);
     //}
+
+    /*-----------------------------------------------------------------------------*/
+    /* Asset Functions for C#                                                      */
+    /*-----------------------------------------------------------------------------*/
+    
+    SCRIPT_API AssetID Asset_LoadAssetAtPath(const char* path)
+    {
+        Asset asset = Project::GetAssetManager()->LoadPath(path);
+        return asset.GetID();
+    }
+
+    SCRIPT_API ScriptDatabase::IntPtr Asset_GetName(AssetID assetID)
+    {
+        Asset asset = Project::GetAssetManager()->Get(assetID);
+        if (asset.GetID() == Asset::ID_NULL)
+            ScriptEngine::ThrowNullException();
+
+        std::string const& name = asset.GetFilePath().filename().string();
+        MonoString* string = ScriptEngine::CreateString(name.c_str());
+        return mono_gchandle_new((MonoObject*)string, false);
+    }
+
+    SCRIPT_API unsigned int Asset_GetType(AssetID assetID)
+    {
+        Asset asset = Project::GetAssetManager()->Get(assetID);
+        if (asset.GetID() == Asset::ID_NULL)
+            ScriptEngine::ThrowNullException();
+
+        return static_cast<unsigned int>(asset.GetType());
+    }
 
     /*-----------------------------------------------------------------------------*/
     /* Debug Functions for C#                                                      */

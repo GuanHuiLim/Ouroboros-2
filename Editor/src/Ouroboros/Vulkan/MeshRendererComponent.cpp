@@ -29,11 +29,11 @@ namespace oo
         using namespace rttr;
         registration::class_<MeshRendererComponent>("Mesh Renderer")
         .property_readonly("Model Handle", &MeshRendererComponent::model_handle)
-        .property("Albedo", &MeshRendererComponent::albedo_handle)
+        .property("Albedo", &MeshRendererComponent::GetAlbedoMap, &MeshRendererComponent::SetAlbedoMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
         )
-        .property("Normal", &MeshRendererComponent::normal_handle)
+        .property("Normal", &MeshRendererComponent::GetNormalMap, &MeshRendererComponent::SetNormalMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
         )
@@ -43,8 +43,8 @@ namespace oo
         )
         .property("MeshInfo", &MeshRendererComponent::GetMeshInfo, &MeshRendererComponent::SetMeshInfo);
     }
-    
-    MeshInfo MeshRendererComponent::GetMeshInfo()
+
+        MeshInfo MeshRendererComponent::GetMeshInfo()
     {
         return meshInfo;
     }
@@ -93,14 +93,42 @@ namespace oo
             // meshInfo.submeshBits.reset();
             // meshInfo.submeshBits[0] = true;
         }
-        if (albedo_handle.IsValid())
+        /*if (albedo_handle.IsValid())
         {
             albedoID = albedo_handle.GetData<uint32_t>();
         }
         if (normal_handle.IsValid())
         {
             normalID = normal_handle.GetData<uint32_t>();
+        }*/
+    }
+
+    void oo::MeshRendererComponent::SetAlbedoMap(Asset albedoMap)
+    {
+        albedo_handle = albedoMap;
+        if (albedo_handle.IsValid())
+        {
+            albedoID = albedo_handle.GetData<uint32_t>();
         }
     }
-    
+
+    Asset oo::MeshRendererComponent::GetAlbedoMap() const
+    {
+        return albedo_handle;
+    }
+
+    void oo::MeshRendererComponent::SetNormalMap(Asset normalMap)
+    {
+        normal_handle = normalMap;
+        if (normal_handle.IsValid())
+        {
+            normalID = normal_handle.GetData<uint32_t>();
+        }
+    }
+
+    Asset oo::MeshRendererComponent::GetNormalMap() const
+    {
+        return normal_handle;
+    }
+
 }

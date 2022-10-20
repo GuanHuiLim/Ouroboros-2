@@ -14,12 +14,14 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
+#include "Ouroboros/Scripting/ScriptManager.h"
+
 /*-----------------------------------------------------------------------------*/
 /* C# Export Function Guide                                                    */
 /*-----------------------------------------------------------------------------*/
 // If you need to write your own export function, copy paste this, and replace any bracketed { stuff } accordingly
 /*
-SCRIPT_API { Return Type } { Function Name }(Entity instanceID, { Other Parameters })
+SCRIPT_API { Return Type } { Function Name }(Scene::ID_type sceneID, UUID uuid, { Other Parameters })
 {
 }
 */
@@ -27,12 +29,12 @@ SCRIPT_API { Return Type } { Function Name }(Entity instanceID, { Other Paramete
 // If you need to get a scene from an ID, or gameObject from scene, make use of
 // ScriptManager::GetScene
 // ScriptManager::GetObjectFromScene
-// They are special wrapper functions that will throw a C# null reference if the scene/GameObject does not exist 
+// They are special wrapper functions that will throw a C# null reference if the scene/GameObject does not exist
 
 // Even using helper macros, you'll need to write the C# code on your own. Just copy paste this in the corresponding C# class
 // Replace any bracketed { stuff } with the same name as the C++ code
 /*
-[DllImport("__Internal")] private static extern { Return Type } {Function Name}(int instanceID, { Other Parameters });
+[DllImport("__Internal")] private static extern { Return Type } { Function Name }(uint sceneID, ulong instanceID, { Other Parameters });
 */
 // Common types from C++ to C#
 /*
@@ -42,121 +44,62 @@ const char* -> string
 
 #define SCRIPT_API extern "C" __declspec(dllexport)
 
-#pragma region Vector3
+#pragma region General
 
-// C# DLLImport code for Getting Vector3
+// Check to make sure if specific macros are provided for a given type. If there are, use them instead of the general macros
+
+// C# DLLImport code for a simple function (replace text in { })
 /*
-[DllImport("__Internal")] private static extern void { Component }_{ Name }(int instanceID, out float x, out float y, out float z);
-*/
-// C# DLLImport code for Setting Vector3
-/*
-[DllImport("__Internal")] private static extern void{ Component }_{ Name }(int instanceID, float x, float y, float z);
+[DllImport("__Internal")] private static extern void { Component }_{ Function }(uint sceneID, ulong instanceID);
 */
 
-#define SCRIPT_API_VECTOR3_GET(Component, Name, Variable) \
-SCRIPT_API void Component##_##Name(Entity instanceID, float* x, float* y, float* z) \
+#define SCRIPT_API_FUNCTION(Component, Function) \
+SCRIPT_API void Component##_##Function(Scene::ID_type sceneID, UUID uuid) \
 { \
-    GameObject obj{ instanceID }; \
-    if (!GameObject::IsValid(obj)) \
-    { \
-        ScriptEngine::ThrowNullException(); \
-    } \
-    Component& component = obj.GetComponent<Component>(); \
-    oom::vec3 vector3 = component.Variable(); \
-    *x = vector3.x; \
-    *y = vector3.y; \
-    *z = vector3.z; \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    obj->GetComponent<Component>().Function(); \
 }
 
-#define SCRIPT_API_VECTOR3_SET(Component, Name, Variable) \
-SCRIPT_API void Component##_##Name(Entity instanceID, float x, float y, float z) \
-{ \
-    GameObject obj{ instanceID }; \
-    if (!GameObject::IsValid(obj)) \
-    { \
-        ScriptEngine::ThrowNullException(); \
-    } \
-    Component& component = obj.GetComponent<Component>(); \
-    component.Variable({ x, y, z }); \
-}
-
-#define SCRIPT_API_VECTOR3_SET_A(Component, Name, Variable, Additional) \
-SCRIPT_API void Component##_##Name(Entity instanceID, float x, float y, float z) \
-{ \
-    GameObject obj{ instanceID }; \
-    if (!GameObject::IsValid(obj)) \
-    { \
-        ScriptEngine::ThrowNullException(); \
-    } \
-    Component& component = obj.GetComponent<Component>(); \
-    component.Variable({ x, y, z }); \
-    Additional; \
-}
-
-#define SCRIPT_API_VECTOR3_GET_SET(Component, Name, GetVariable, SetVariable) \
-SCRIPT_API_VECTOR3_GET(Component, Get##Name, GetVariable) \
-SCRIPT_API_VECTOR3_SET(Component, Set##Name, SetVariable)
-
-#define SCRIPT_API_VECTOR3_GET_SET_A(Component, Name, GetVariable, SetVariable, Additional) \
-SCRIPT_API_VECTOR3_GET(Component, Get##Name, GetVariable) \
-SCRIPT_API_VECTOR3_SET_A(Component, Set##Name, SetVariable, Additional)
-
-#pragma endregion
-
-#pragma region float
-
-// C# DLLImport code for Getting float
+// C# DLLImport code for Getting a variable (replace text in { })
 /*
-[DllImport("__Internal")] private static extern float { Component }_{ Name }(int instanceID);
+[DllImport("__Internal")] private static extern { Type } { Component }_{ Name }(uint sceneID, ulong instanceID);
 */
-// C# DLLImport code for Setting float
+// C# DLLImport code for Setting a variable (replace text in { })
 /*
-[DllImport("__Internal")] private static extern void{ Component }_{ Name }(int instanceID, float value);
+[DllImport("__Internal")] private static extern void { Component }_{ Name }(uint sceneID, ulong instanceID, { Type } value);
 */
 
-#define SCRIPT_API_FLOAT_GET(Component, Name, Variable) \
-SCRIPT_API float Component##_##Name(Entity instanceID) \
+#define SCRIPT_API_GET(Component, Name, Type, GetFunction) \
+SCRIPT_API Type Component##_##Name(Scene::ID_type sceneID, UUID uuid) \
 { \
-    GameObject obj{ instanceID }; \
-    if (!GameObject::IsValid(obj)) \
-    { \
-        ScriptEngine::ThrowNullException(); \
-    } \
-    Component& component = obj.GetComponent<Component>(); \
-    return component.Variable(); \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    return component.GetFunction(); \
 }
 
-#define SCRIPT_API_FLOAT_SET(Component, Name, Variable) \
-SCRIPT_API void Component##_##Name(Entity instanceID, float value) \
+#define SCRIPT_API_SET(Component, Name, Type, SetFunction) \
+SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, Type value) \
 { \
-    GameObject obj{ instanceID }; \
-    if (!GameObject::IsValid(obj)) \
-    { \
-        ScriptEngine::ThrowNullException(); \
-    } \
-    Component& component = obj.GetComponent<Component>(); \
-    component.Variable(value); \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    component.SetFunction(value); \
 }
 
-#define SCRIPT_API_FLOAT_SET_A(Component, Name, Variable, Additional) \
-SCRIPT_API void Component##_##Name(Entity instanceID, float value) \
+#define SCRIPT_API_SET_A(Component, Name, Type, SetFunction, Additional) \
+SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, Type value) \
 { \
-    GameObject obj{ instanceID }; \
-    if (!GameObject::IsValid(obj)) \
-    { \
-        ScriptEngine::ThrowNullException(); \
-    } \
-    Component& component = obj.GetComponent<Component>(); \
-    component.Variable(value); \
-    Additional; \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    component.SetFunction(value); \
+    Additional \
 }
 
-#define SCRIPT_API_FLOAT_GET_SET(Component, Name, GetVariable, SetVariable) \
-SCRIPT_API_FLOAT_GET(Component, Get##Name, GetVariable) \
-SCRIPT_API_FLOAT_SET(Component, Set##Name, SetVariable)
+#define SCRIPT_API_GET_SET(Component, Name, Type, GetFunction, SetFunction) \
+SCRIPT_API_GET(Component, Get##Name, Type, GetFunction) \
+SCRIPT_API_SET(Component, Set##Name, Type, SetFunction)
 
-#define SCRIPT_API_FLOAT_GET_SET_A(Component, Name, GetVariable, SetVariable, Additional) \
-SCRIPT_API_FLOAT_GET(Component, Get##Name, GetVariable) \
-SCRIPT_API_FLOAT_SET(Component, Set##Name, SetVariable, Additional)
+#define SCRIPT_API_GET_SET_A(Component, Name, Type, GetFunction, SetFunction, Additional) \
+SCRIPT_API_GET(Component, Get##Name, GetFunction) \
+SCRIPT_API_SET(Component, Set##Name, SetFunction, Additional)
 
 #pragma endregion
