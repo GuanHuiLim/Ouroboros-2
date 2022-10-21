@@ -29,6 +29,7 @@ namespace oo
     using vec3 = glm::vec3;
     using mat2 = glm::mat2;
     using mat3 = glm::mat3;
+    using quat = glm::quat;
 
     class RigidbodyComponent;
     //class ColliderCore;
@@ -41,6 +42,7 @@ namespace oo
     struct ColliderBase;
     struct BoxColliderComponent;
     struct SphereColliderComponent;
+    struct CapsuleColliderComponent;
     //struct ConvexCollider;
 
     // Data Structures

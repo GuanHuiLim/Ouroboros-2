@@ -17,7 +17,7 @@ namespace oo
 class Script_ActionCommand :public ActionCommand
 {
 public:
-	Script_ActionCommand(const std::string& scriptInfo, const std::string& scriptFieldInfo, oo::ScriptValue pre_value, oo::ScriptValue post_value, UUID gameobjID)
+	Script_ActionCommand(const std::string& scriptInfo, const std::string& scriptFieldInfo, oo::ScriptValue pre_value, oo::ScriptValue post_value, oo::UUID gameobjID)
 		:SI_name{ scriptInfo }, SFI_name{ scriptFieldInfo }, pre_val{ pre_value }, post_val{ post_value }, gameobjectID{gameobjID}
 	{
 	};
@@ -59,7 +59,7 @@ private:
 	std::string SFI_name;
 	oo::ScriptValue pre_val;
 	oo::ScriptValue post_val;
-	UUID gameobjectID;
+	oo::UUID gameobjectID;
 };
 
 }

@@ -25,6 +25,7 @@ Technology is prohibited.
 //#include "Ouroboros/Vulkan/RendererSystem.h"
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Vulkan/RendererSystem.h"
 
 namespace oo
 {
@@ -47,7 +48,7 @@ namespace oo
             GetWorld().Add_System<InputSystem>()->Initialize();
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
 
-            GetWorld().Add_System<PhysicsSystem>()->Init();
+            GetWorld().Add_System<PhysicsSystem>()->Init(this);
 
             //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
@@ -210,7 +211,9 @@ namespace oo
     void RuntimeScene::Render()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_rendering);
+        GetWorld().Get_System<MeshRendererSystem>()->RenderCameras();
         Scene::Render();
+        GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
         TRACY_PROFILE_SCOPE_END();
         //constexpr const char* const text_rendering = "Text Rendering";
         {

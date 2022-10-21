@@ -38,7 +38,7 @@ namespace oo
         //Register All Systems
         {
             TRACY_PROFILE_SCOPE_N(editor_registration);
-            GetWorld().Add_System<oo::PhysicsSystem>()->Init();
+            GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
             //bool wantDebug = true;
 
             //TRACY_PROFILE_SCOPE_N(registration);
@@ -141,6 +141,8 @@ namespace oo
         DebugDraw::DrawYGrid(gridSize, 1.0f, oGFX::Colors::RED);
 
         Scene::Render();
+        
+        GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
 
         //constexpr const char* const rendering = "Overall Rendering";
         //constexpr const char* const text_rendering = "Text Rendering";

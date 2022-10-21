@@ -114,7 +114,7 @@ ScriptingProperties::ScriptingProperties()
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			auto data = v.TryGetRuntimeValue().GetValue<UUID>();
+			auto data = v.TryGetRuntimeValue().GetValue<oo::UUID>();
 			auto uuid = data.GetUUID();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			auto gameobject_ptr = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(data);
@@ -126,7 +126,7 @@ ScriptingProperties::ScriptingProperties()
 				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
 				if (payload)
 				{
-					data = *static_cast<UUID*>(payload->Data);
+					data = *static_cast<oo::UUID*>(payload->Data);
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
@@ -147,7 +147,7 @@ ScriptingProperties::ScriptingProperties()
 				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
 				if (payload)
 				{
-					data.m_objID = *static_cast<UUID*>(payload->Data);
+					data.m_objID = *static_cast<oo::UUID*>(payload->Data);
 					data.m_info.Reset();
 					editing = true;
 					edited = true;

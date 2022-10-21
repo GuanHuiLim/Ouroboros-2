@@ -39,6 +39,7 @@ Technology is prohibited.
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include <Ouroboros/Vulkan/CameraComponent.h>
 #include "Ouroboros/Audio/AudioListenerComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
@@ -67,7 +68,9 @@ void Serializer::Init()
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
 	AddLoadComponent<oo::LightComponent>();
+	AddLoadComponent<oo::CameraComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
+	AddLoadComponent<oo::CapsuleColliderComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
 	AddLoadComponent<oo::AudioListenerComponent>();
@@ -160,7 +163,7 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 	return newprefabPath;
 }
 
-UUID Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::GameObject> parent , oo::Scene& scene)
+oo::UUID Serializer::LoadPrefab(std::filesystem::path path, std::shared_ptr<oo::GameObject> parent , oo::Scene& scene)
 {
 	auto prefabID = CreatePrefab(parent, scene, path);
 	return prefabID;
@@ -205,7 +208,7 @@ std::string Serializer::SaveObjectsAsString(const std::vector<std::shared_ptr<oo
 	return temp;
 }
 
-UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene)
+oo::UUID Serializer::LoadDeleteObject(std::string& data, oo::UUID parentID, oo::Scene& scene)
 {
 	rapidjson::StringStream stream(data.c_str());
 	rapidjson::Document doc;
@@ -218,12 +221,12 @@ UUID Serializer::LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& s
 	return firstObj;
 }
 
-std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID parentID, oo::Scene& scene)
+std::vector<oo::UUID> Serializer::LoadObjectsFromString(std::string& data, oo::UUID parentID, oo::Scene& scene)
 {
 	rapidjson::StringStream stream(data.c_str());
 	rapidjson::Document doc;
 	doc.ParseStream(stream);
-	std::vector<UUID> go_UUID;
+	std::vector<oo::UUID> go_UUID;
 	if (doc.IsObject() == false)
 		return go_UUID;
 
@@ -231,7 +234,7 @@ std::vector<UUID> Serializer::LoadObjectsFromString(std::string& data, UUID pare
 
 	ASSERT_MSG(starting == nullptr, "parent not found");
 
-	UUID firstobj;
+	oo::UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
 	parents.push(starting);
@@ -341,12 +344,14 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveComponent<oo::LightComponent>(go, val, doc);
+	SaveComponent<oo::CameraComponent>(go, val, doc);
 
 	SaveComponent<oo::AudioListenerComponent>(go, val, doc);
 	SaveComponent<oo::AudioSourceComponent>(go, val, doc);
 
 	SaveComponent<oo::RigidbodyComponent>(go, val, doc);
 	SaveComponent<oo::BoxColliderComponent>(go, val, doc);
+	SaveComponent<oo::CapsuleColliderComponent>(go, val, doc);
 	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
 
 	SaveScript(go, val, doc);// this is the last item
@@ -369,7 +374,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 	//+1 to skip the first value
 	int child_counter = 0;
 	auto childrens = go.GetChildren(true);
-	std::unordered_map<UUID, UUID> all_mappedUUID;
+	std::unordered_map<oo::UUID, oo::UUID> all_mappedUUID;
 	{//script mapping
 		auto all_uuids = go.GetChildrenUUID(true);
 		int counter = 0;
@@ -401,7 +406,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 					case oo::ScriptValue::type_enum::GAMEOBJECT:
 					{
 						auto& current_sfi = current_scriptField.FindMember(sfi.first.c_str())->value;
-						UUID current_uuid_val = sfi.second.value.GetValue<UUID>();
+						oo::UUID current_uuid_val = sfi.second.value.GetValue<oo::UUID>();
 						auto iter = all_mappedUUID.find(current_uuid_val);
 						if (iter != all_mappedUUID.end())
 							current_sfi.SetUint64(iter->second.GetUUID());
@@ -546,11 +551,11 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 	val.AddMember(name, sub_component, doc.GetAllocator());
 }
 
-UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
+oo::UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
 {
 	// TODO : This can be improved if required. Clean up please
 
-	UUID firstobj;
+	oo::UUID firstobj;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::vector<std::shared_ptr<oo::GameObject>> second_iter;
 	parents.push(starting);
@@ -694,9 +699,9 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 	}
 }
 
-UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p)
+oo::UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p)
 {
-	UUID firstobj;
+	oo::UUID firstobj;
 	
 	auto go = scene.CreateGameObjectImmediate();
 	go->AddComponent<oo::PrefabComponent>();
@@ -719,7 +724,7 @@ UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scen
 	rapidjson::Document document;
 	document.ParseStream(stream);
 	//script remapping
-	std::unordered_map<UUID, UUID> script_remappingObj;
+	std::unordered_map<oo::UUID, oo::UUID> script_remappingObj;
 	std::vector<std::shared_ptr<oo::GameObject>> all_objects;
 	//normal stuff
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
@@ -815,7 +820,7 @@ void Serializer::LoadScript(oo::GameObject& go, rapidjson::Value&& scriptCompone
 	}
 }
 
-void Serializer::RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::GameObject& go)
+void Serializer::RemapScripts(std::unordered_map<oo::UUID, oo::UUID>& scriptIds, oo::GameObject& go)
 {
 	oo::ScriptComponent& sc = go.GetComponent<oo::ScriptComponent>();
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -827,7 +832,7 @@ void Serializer::RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::Gam
 			{
 			case oo::ScriptValue::type_enum::GAMEOBJECT:
 			{
-				UUID id = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<UUID>();
+				oo::UUID id = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<oo::UUID>();
 				auto iter = scriptIds.find(id);
 				if (iter == scriptIds.end())
 				{

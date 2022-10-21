@@ -29,7 +29,7 @@ void UI_RTTRType::Init()
 	types.emplace(rttr::type::get<unsigned>().get_id(), UItypes::UINT_TYPE);
 	types.emplace(rttr::type::get<float>().get_id(), UItypes::FLOAT_TYPE);
 	types.emplace(rttr::type::get<std::string>().get_id(), UItypes::STRING_TYPE);
-	types.emplace(rttr::type::get<UUID>().get_id(), UItypes::UUID_TYPE);
+	types.emplace(rttr::type::get<oo::UUID>().get_id(), UItypes::UUID_TYPE);
 	types.emplace(rttr::type::get<glm::vec2>().get_id(), UItypes::VEC2_TYPE);
 	types.emplace(rttr::type::get<glm::vec3>().get_id(), UItypes::VEC3_TYPE);
 	types.emplace(rttr::type::get<glm::vec4>().get_id(), UItypes::VEC4_TYPE);
