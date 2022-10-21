@@ -29,7 +29,7 @@ steps:
 - task: CmdLine@2
   inputs:
     script: 'git clone https://github.com/GuanHuiLim/VulkanSDK.git'
-  condition: VULKAN_INSTALLED
+  condition: ne(variables.VULKAN_INSTALLED, 'true')
 - task: CmdLine@2
   inputs:
     script: 'dir /a:d'
