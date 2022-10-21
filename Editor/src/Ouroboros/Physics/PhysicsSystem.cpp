@@ -361,8 +361,12 @@ namespace oo
 
     void PhysicsSystem::OnBoxColliderRemove(Ecs::ComponentEvent<BoxColliderComponent>* bc)
     {
-        auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
-        rb_comp.object.setShape(myPhysx::shape::none);
+        // need this safeguard to be sure. otherwise crash.
+        if (m_world->has_component<RigidbodyComponent>(bc->entityID))
+        {
+            auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
+            rb_comp.object.setShape(myPhysx::shape::none);
+        }
     }
 
     void PhysicsSystem::OnCapsuleColliderAdd(Ecs::ComponentEvent<CapsuleColliderComponent>* cc)
@@ -379,14 +383,19 @@ namespace oo
 
     void PhysicsSystem::OnCapsuleColliderRemove(Ecs::ComponentEvent<CapsuleColliderComponent>* cc)
     {
-        auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
-        rb_comp.object.setShape(myPhysx::shape::none);
+        // need this safeguard to be sure. otherwise crash.
+        if (m_world->has_component<RigidbodyComponent>(cc->entityID))
+        {
+            auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
+            rb_comp.object.setShape(myPhysx::shape::none);
+        }
     }
 
     void PhysicsSystem::InitializeRigidbody(RigidbodyComponent& rb)
     {
         rb.object = m_physicsWorld.createInstance();
-        rb.SetStatic(false);   // default to dynamic object.
+        rb.SetStatic(true); // default to static objects. Most things in the world should be static.
+        //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
         //default initialize material
         rb.object.setMaterial(PhysicsMaterial{});
     }

@@ -103,8 +103,8 @@ namespace oo
         void SetPosOrientation(vec3 pos, quat quat);
 
         void SetGravity(bool enable);
-        void EnableGravity();
-        void DisableGravity();
+        /*void EnableGravity();
+        void DisableGravity();*/
         
         void SetKinematic(bool kine);
         void SetMass(float mass);

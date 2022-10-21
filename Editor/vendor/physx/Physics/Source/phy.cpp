@@ -951,21 +951,21 @@ namespace myPhysx
             trigger state = trigger::none;
             const PxTriggerPair& current = *pairs++;
 
-            //auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
-            //auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
+            auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
+            auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
             //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
 
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
                 state = trigger::onTriggerEnter;
-                printf("Shape is entering trigger volume\n");
+                //printf("Shape is entering trigger volume\n");
             }
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) {// OnTriggerStay
                 state = trigger::onTriggerStay;
-                printf("Shape is still within trigger volume\n");
+                //printf("Shape is still within trigger volume\n");
             }
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
                 state = trigger::onTriggerExit;
-                printf("Shape is leaving trigger volume\n");
+                //printf("Shape is leaving trigger volume\n");
             }
 
             // Store all the ID of the actors that collided with trigger)
