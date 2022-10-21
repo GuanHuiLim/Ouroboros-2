@@ -322,13 +322,13 @@ namespace myPhysx
             if (type == rigid::rstatic) {
                 underlying_obj->rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
                 underlying_obj->rb.rigidStatic->userData = underlying_obj->id.get();
-                printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidStatic->userData));
+                //printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidStatic->userData));
                 world->scene->addActor(*underlying_obj->rb.rigidStatic);
             }
             else if (type == rigid::rdynamic) {
                 underlying_obj->rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
                 underlying_obj->rb.rigidDynamic->userData = underlying_obj->id.get();
-                printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
+                //printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
                 world->scene->addActor(*underlying_obj->rb.rigidDynamic);
             }
 
@@ -951,9 +951,9 @@ namespace myPhysx
             trigger state = trigger::none;
             const PxTriggerPair& current = *pairs++;
 
-            auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
-            auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
-            printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
+            //auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
+            //auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
+            //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
 
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
                 state = trigger::onTriggerEnter;
