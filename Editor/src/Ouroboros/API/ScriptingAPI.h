@@ -23,8 +23,8 @@ Technology is prohibited.
 namespace oo
 {
     /*-----------------------------------------------------------------------------*/
-        /* Script Functions for C#                                                     */
-        /*-----------------------------------------------------------------------------*/
+    /* Script Functions for C#                                                     */
+    /*-----------------------------------------------------------------------------*/
 
     SCRIPT_API ScriptDatabase::IntPtr AddScript(Scene::ID_type sceneID, oo::UUID uuid, const char* name_space, const char* name)
     {

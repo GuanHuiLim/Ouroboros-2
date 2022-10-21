@@ -3,7 +3,7 @@
 # Add steps that test and distribute an app, save build artifacts, and more:
 # https://aka.ms/yaml
 
-trigger:
+pr:
 - main
 
 pool:
@@ -14,13 +14,35 @@ variables:
   buildPlatform: 'x64'
   buildConfiguration: 'Release'
   appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
-  VULKAN_SDK: C:/VulkanSDK/1.2.148.0
-  VULKAN_VERSION: 1.2.148.0
-
+  VULKAN_SDK: $(Build.SourcesDirectory)\VulkanSDK
+  VK_SDK_PATH: $(Build.SourcesDirectory)\VulkanSDK
+  VULKAN_VERSION: 1.3.224.1
+  VULKAN_INSTALLED: 'false'
+  
 steps:
+- task: Cache@2
+  inputs:
+    key: 'VULKAN'
+    path: '$(VK_SDK_PATH)'
+    cacheHitVar: VULKAN_INSTALLED
+
 - task: CmdLine@2
   inputs:
-    script: 'curl -O https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe'
+    script: 'git clone https://github.com/GuanHuiLim/VulkanSDK.git'
+  condition: ne(variables.VULKAN_INSTALLED, 'true')
+- task: CmdLine@2
+  inputs:
+    script: 'dir /a:d'
+#- task: CmdLine@2
+#  inputs:
+#    script: 'setx VULKAN_SDK %CD%/VulkanSDK /m'
+#- task: CmdLine@2
+#  inputs:
+#    script: 'setx VK_SDK_PATH %CD%/VulkanSDK /m'
+- task: CmdLine@2
+  inputs:
+    script: 'set'
+
 #- task: Bash@3
 #  inputs:
 #    targetType: 'inline'
@@ -43,3 +65,18 @@ steps:
     msbuildArchitecture: 'x64'
     platform: 'Editor'
     configuration: 'Debug'
+
+- task: MSBuild@1
+  inputs:
+    solution: 'Ouroboros.sln'
+    maximumCpuCount: true
+    msbuildArchitecture: 'x64'
+    platform: 'Editor'
+    configuration: 'Release'
+- task: MSBuild@1
+  inputs:
+    solution: 'Ouroboros.sln'
+    maximumCpuCount: true
+    msbuildArchitecture: 'x64'
+    platform: 'Editor'
+    configuration: 'Production'

@@ -219,10 +219,9 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(ASSET_MANAGER_WATCH_FILES, tracy::Color::Aquamarine1);
 
         std::chrono::file_clock::time_point tLast = ev->time;
-        const std::filesystem::path DIR = std::filesystem::canonical(root);
-        if (std::filesystem::exists(DIR))
+        if (std::filesystem::exists(root))
         {
-            iterateDirectory(DIR, tLast);
+            iterateDirectory(std::filesystem::canonical(root), tLast);
         }
         lastReloadTime = std::chrono::file_clock::now();
 
