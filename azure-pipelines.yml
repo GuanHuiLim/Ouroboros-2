@@ -17,7 +17,7 @@ variables:
   VULKAN_SDK: $(Build.SourcesDirectory)\VulkanSDK
   VK_SDK_PATH: $(Build.SourcesDirectory)\VulkanSDK
   VULKAN_VERSION: 1.3.224.1
-  VULKAN_INSTALLED: false
+  VULKAN_INSTALLED: 'false'
   
 steps:
 - task: Cache@2
