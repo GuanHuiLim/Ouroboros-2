@@ -25,6 +25,20 @@ namespace oo
         std::string SceneName;
         std::string LoadPath;
 
-        SceneInfo(std::string_view name, std::string_view path/*, std::size_t index*/) : SceneName{ name }, LoadPath{ path }{}
+        SceneInfo(std::string_view name, std::string_view path) 
+            : SceneName{ name }
+            , LoadPath{ path }
+        {}
+
+        // Info is equivalent if they have the Same LoadPath.
+        bool operator==(SceneInfo const& other) const
+        {
+            return LoadPath == other.LoadPath;
+        }
+
+        bool operator==(std::string_view path) const
+        {
+            return LoadPath == path;
+        }
     };
 }

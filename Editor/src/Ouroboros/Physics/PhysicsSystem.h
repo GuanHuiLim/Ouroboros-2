@@ -25,6 +25,8 @@ Technology is prohibited.
 #include <bitset>
 namespace oo
 {
+    struct Scene;
+
     static constexpr std::size_t s_MaxLayerCount = 8;
     using LayerField    = std::bitset<s_MaxLayerCount>;
     using LayerMask     = LayerField;
@@ -45,7 +47,7 @@ namespace oo
         virtual ~PhysicsSystem() = default;
         virtual void Run(Ecs::ECSWorld*) override {};
 
-        void Init();
+        void Init(Scene* m_scene);
         void RuntimeUpdate(Timestep deltaTime);
         void EditorUpdate(Timestep deltaTime);
 
@@ -76,13 +78,17 @@ namespace oo
         void UpdateCallbacks();
         void ResolvePhysicsResolution();
         void PostUpdate();
+        void DrawDebugColliders();
+
+        void EditorCoreUpdate();
 
 #if PHYSICS_DEBUG_MSG && OO_DEBUG || PHYSICS_DEBUG_MSG && OO_RELEASE
         std::uint64_t m_collisionChecks = 0, m_actualCollisions = 0;
 #endif  
+        Scene* m_scene;
 
         //underlying physics world
-        PhysxWorld m_physicsWorld;
+        myPhysx::PhysxWorld m_physicsWorld;
 
         //time accumulator
         double m_accumulator;
@@ -90,11 +96,14 @@ namespace oo
         void OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
         void OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);
 
-        void OnBoxColliderAdd(Ecs::ComponentEvent<BoxColliderComponent>* rb);
-        void OnBoxColliderRemove(Ecs::ComponentEvent<BoxColliderComponent>* rb);
+        void OnBoxColliderAdd(Ecs::ComponentEvent<BoxColliderComponent>* bc);
+        void OnBoxColliderRemove(Ecs::ComponentEvent<BoxColliderComponent>* bc);
 
-        void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb);
-        void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb);
+        void OnCapsuleColliderAdd(Ecs::ComponentEvent<CapsuleColliderComponent>* cc);
+        void OnCapsuleColliderRemove(Ecs::ComponentEvent<CapsuleColliderComponent>* cc);
+
+        /*void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb);
+        void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb);*/
     };
 
 

@@ -17,6 +17,7 @@ Technology is prohibited.
 #include "pch.h"
 
 #include "RigidbodyComponent.h"
+#include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
 
 namespace oo
@@ -26,14 +27,25 @@ namespace oo
         using namespace rttr;
 
         registration::class_<RigidbodyComponent>("Rigidbody")
-            .property("Kinematic", &RigidbodyComponent::Kinematic)
+            //.property("type", &RigidbodyComponent::collider_type)
+            .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
+            .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
+            .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
+            .property("Velocity", &RigidbodyComponent::GetLinearVelocity, &RigidbodyComponent::SetLinearVelocity)
+            .property("Linear Damping", &RigidbodyComponent::GetLinearDamping, &RigidbodyComponent::SetLinearDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Angular Velocity", &RigidbodyComponent::GetAngularVelocity, &RigidbodyComponent::SetAngularVelocity)
+            .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Gravity Disabled", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
+            //.property_readonly("underlying shape", &RigidbodyComponent::collider_shape)
+            //.property_readonly("dirty", &RigidbodyComponent::Dirty)
+            /*.property("Kinematic", &RigidbodyComponent::Kinematic)
             .property("UseAutoMass", &RigidbodyComponent::UseAutoMass)
             .property("GravityScale", &RigidbodyComponent::GravityScale)
-            // .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
+            .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
             .property("PhysicsMaterial", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Linear Drag", &RigidbodyComponent::LinearDrag)
             .property("Angular Drag", &RigidbodyComponent::AngularDrag)
-            .property("DoNotRotate", &RigidbodyComponent::DoNotRotate)
+            .property("DoNotRotate", &RigidbodyComponent::DoNotRotate)*/
             ;
 
         registration::class_<PhysicsMaterial>("Physics Material")
@@ -41,129 +53,183 @@ namespace oo
             .property("Restitution", &PhysicsMaterial::Restitution)
             .property("DynamicFriction", &PhysicsMaterial::DynamicFriction)
             .property("StaticFriction", &PhysicsMaterial::StaticFriction);
+        
     }
 
+    PhysicsMaterial RigidbodyComponent::GetMaterial() const 
+    { 
+        return object.getMaterial(); 
+    }
+    
+    glm::vec3 oo::RigidbodyComponent::GetPositionInPhysicsWorld() const
+    {
+        auto res = object.getposition();
+        return { res.x, res.y, res.z };
+    }
+
+    glm::quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
+    {
+        auto res = object.getOrientation();
+        return { res.w, res.x, res.y, res.z,  };
+    }
+
+    void oo::RigidbodyComponent::SetStatic(bool result)
+    {
+        IsStaticObject = result;
+        if (IsStaticObject)
+            object.setRigidType(myPhysx::rigid::rstatic);
+        else
+            object.setRigidType(myPhysx::rigid::rdynamic);
+    }
+
+    float oo::RigidbodyComponent::GetMass() const
+    {
+        return object.getMass();
+    }
+
+    float oo::RigidbodyComponent::GetAngularDamping() const
+    {
+        return object.getAngularDamping();
+    }
+
+    glm::vec3 oo::RigidbodyComponent::GetAngularVelocity() const
+    {
+        auto vel = object.getAngularVelocity();
+        return glm::vec3{ vel.x, vel.y, vel.z };
+    }
+
+    float oo::RigidbodyComponent::GetLinearDamping() const
+    {
+        return object.getLinearDamping();
+    }
+
+    glm::vec3 oo::RigidbodyComponent::GetLinearVelocity() const
+    {
+        auto vel = object.getLinearVelocity();
+        return glm::vec3{ vel.x, vel.y, vel.z };
+    }
+
+    bool oo::RigidbodyComponent::IsGravityEnabled() const
+    {
+        return object.getGravity();
+    }
+
+    bool oo::RigidbodyComponent::IsGravityDisabled() const
+    {
+        return !IsGravityEnabled();
+    }
+
+    bool oo::RigidbodyComponent::IsStatic() const
+    {
+        return IsStaticObject;
+    }
+
+    bool oo::RigidbodyComponent::IsKinematic() const
+    {
+        return !IsStatic() && object.getKinematic();
+    }
+
+    bool oo::RigidbodyComponent::IsDynamic() const
+    {
+        return !IsStatic() && !object.getKinematic();
+    }
+
+    void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 
+    { 
+        object.setMaterial(material); 
+    }
+
+    void RigidbodyComponent::SetPosOrientation(glm::vec3 pos, glm::quat quat) 
+    { 
+        object.setPosOrientation({ pos.x, pos.y, pos.z }, { quat.x, quat.y, quat.z, quat.w }); 
+    }
+    
+    void oo::RigidbodyComponent::SetGravity(bool enable)
+    {
+        object.setGravity(enable);
+    }
+
+    void RigidbodyComponent::EnableGravity()
+    { 
+        object.setGravity(true);
+    }
+    
+    void RigidbodyComponent::DisableGravity()
+    {
+        object.setGravity(false);
+    }
+
+    void oo::RigidbodyComponent::SetKinematic(bool kine) { object.setKinematic(kine); }
+
+    // prob functions that dont really need
+
+    void RigidbodyComponent::SetMass(float mass)
+    {
+        object.setMass(static_cast<PxReal>(mass));
+    }
+
+    void RigidbodyComponent::SetAngularDamping(float angularDamping)
+    {
+        object.setAngularDamping(static_cast<PxReal>(angularDamping));
+    }
+
+    void RigidbodyComponent::SetAngularVelocity(glm::vec3 angularVelocity)
+    {
+        object.setAngularVelocity(PxVec3{ angularVelocity.x, angularVelocity.y, angularVelocity.z });
+    }
+
+    void RigidbodyComponent::SetLinearDamping(float linearDamping)
+    {
+        object.setLinearDamping(static_cast<PxReal>(linearDamping));
+    }
+
+    void RigidbodyComponent::SetLinearVelocity(glm::vec3 linearVelocity)
+    {
+        object.setLinearVelocity(PxVec3{ linearVelocity.x, linearVelocity.y, linearVelocity.z });
+    }
+
+    void oo::RigidbodyComponent::AddForce(vec3 force, ForceMode type)
+    {
+        switch (type)
+        {
+        case ForceMode::FORCE:
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocity);
+            break;
+
+        case ForceMode::ACCELERATION:
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::acceleration);
+            break;
         
-//    void RigidbodyComponent::SetInertia()
-//    {
-//        if (!HasComponent<ColliderCore>())
-//        {
-//            ResetInertia();
-//            return;
-//        }
-//
-//        // Set Moment of Inertia base on shape of object
-//        switch (GetComponent<ColliderCore>().GetNarrowPhaseCollider())
-//        {
-//        case ColliderType::BOX:
-//        {
-//            ENGINE_ASSERT_MSG(HasComponent<BoxCollider>(), "Box Collider Must exist at this point!");
-//            auto bounds = ColliderUtil::GetGlobalDimensions(GetComponent<BoxCollider>(), GetComponent<Transform3D>());
-//            m_data.Inertia = m_data.Mass * (bounds.x * bounds.x + bounds.y * bounds.y) / 12;
-//            m_data.InverseInertia = 1.0f / m_data.Inertia;
-//        }
-//        break;
-//        case ColliderType::CIRCLE:
-//        {
-//            ENGINE_ASSERT_MSG(HasComponent<SphereCollider>(), "Circle Collider Must exist at this point!");
-//            auto rad = GetComponent<SphereCollider>().Radius;
-//            m_data.Inertia = 0.5f * m_data.Mass * rad * rad;
-//            m_data.InverseInertia = 1.0f / m_data.Inertia;
-//        }
-//        break;
-//        case ColliderType::CONVEX:  // inertia currently not supported
-//        default:
-//        {
-//            ResetInertia();
-//        }
-//        break;
-//        }
-//    }
-//
-//
-//    void RigidbodyComponent::ApplyForce(vec2 force)
-//    {
-//        if (IsDynamic())
-//            m_force += force;
-//    }
-//
-//    void RigidbodyComponent::ApplyForceAtPosition(vec2 force, vec2 globalPosition)
-//    {
-//        if (IsDynamic())
-//        {
-//            m_force += force;
-//            m_torque += globalPosition.Cross(force);
-//
-//#if OO_PRODUCTION && PHYSICS_DEBUG_MSG
-//            LOG_ENGINE_INFO("Adding force{0}{1}", force.x, force.y);
-//            LOG_ENGINE_INFO("Adding torque{0}", (m_centerOfMass - globalPosition).Cross(force));
-//#endif
-//
-//#if !OO_PRODUCTION && PHYSICS_DRAW_FORCES
-//
-//            Renderer2D::DrawImmediateArrow(
-//                m_centerOfMass + globalPosition,
-//                m_centerOfMass + globalPosition + force,
-//                oom::vec4{ 0, 1, 1, 1 });
-//#endif
-//        }
-//    }
-//
-//    void RigidbodyComponent::ApplyImpulse(vec2 impulse)
-//    {
-//        if (IsDynamic())
-//            m_linearVelocity += impulse * m_data.InverseMass;
-//    }
-//
-//    void RigidbodyComponent::ApplyImpulseAtPosition(vec2 impulse, vec2 globalPosition)
-//    {
-//        if (IsDynamic())
-//        {
-//            m_linearVelocity += impulse * m_data.InverseMass;
-//            m_angularVelocity += globalPosition.Cross(impulse) * m_data.InverseInertia;
-//
-//#if OO_PRODUCTION && PHYSICS_DEBUG_MSG
-//            LOG_ENGINE_INFO("Adding impulse{0}{1}", impulse.x, impulse.y);
-//            LOG_ENGINE_INFO("Adding angular velocity{0}", (m_centerOfMass - globalPosition).Cross(impulse));
-//#endif
-//
-//#if !OO_PRODUCTION && PHYSICS_DRAW_FORCES
-//            Renderer2D::DrawImmediateArrow(
-//                m_centerOfMass + globalPosition,
-//                m_centerOfMass + globalPosition + impulse,
-//                oom::vec4{ 0, 1, 1, 1 });
-//#endif
-//        }
-//    }
-//
-//    void RigidbodyComponent::ApplyVelocity(vec2 velocity)
-//    {
-//        if (IsKinematic())
-//            m_linearVelocity += velocity;
-//    }
-//
-//    void RigidbodyComponent::SetMass(float newMass)
-//    {
-//        if (newMass < 0.f) throw "Mass cannot be lesser than 0!";
-//
-//        //ENGINE_ASSERT_MSG(newMass > 0.f, "Mass canont be lesser then 0!");
-//
-//        //sets both mass and inverse mass to 0
-//        m_data.Mass = 0.f;
-//        m_data.InverseMass = 0.f;
-//
-//        // Set Rotational Involvement to 0
-//        m_data.Inertia = 0.f;
-//        m_data.InverseInertia = 0.f;
-//
-//        if (newMass > 0.f)
-//        {
-//            m_data.Mass = newMass;
-//            m_data.InverseMass = 1.0f / m_data.Mass;
-//
-//            SetInertia();
-//        }
-//
-//    }
+        case ForceMode::IMPULSE:
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::explosive);
+            break;
+        
+        case ForceMode::VELOCITY_CHANGE:
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::conventional);
+            break;
+        }
+    }
+
+    void oo::RigidbodyComponent::AddTorque(vec3 force, ForceMode type)
+    {
+        switch (type)
+        {
+        case ForceMode::FORCE:
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocity);
+            break;
+
+        case ForceMode::ACCELERATION:
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::acceleration);
+            break;
+
+        case ForceMode::IMPULSE:
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::explosive);
+            break;
+
+        case ForceMode::VELOCITY_CHANGE:
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::conventional);
+            break;
+        }
+    }
 
 }

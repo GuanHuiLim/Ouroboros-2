@@ -31,7 +31,7 @@ namespace oo
 		uint32_t normalID = 0xFFFFFFFF;
 
 		//no need to serialize
-		uint32_t model_handle{0};
+		uint32_t model_handle{ 0 };
 		uint32_t graphicsWorld_ID{};
 
 		MeshInfo GetMeshInfo();
@@ -46,6 +46,12 @@ namespace oo
 		Asset GetMesh();
 		void SetMesh(Asset _asset);
 
+		void SetAlbedoMap(Asset albedoMap);
+		Asset GetAlbedoMap() const;
+
+		void SetNormalMap(Asset normalMap);
+		Asset GetNormalMap() const;
+
 		//std::vector<Material> materials;
 
 		//Lighting
@@ -59,8 +65,6 @@ namespace oo
 	struct SkinMeshRendererComponent
 	{
 		Asset mesh_handle;
-
-
 	};
 
 }

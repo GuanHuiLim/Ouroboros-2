@@ -1,11 +1,11 @@
 /************************************************************************************//*!
-\file           PhysicsComponent.h
+\file           CameraComponent.h
 \project        Ouroboros
-\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\author         Chua Teck Lee, c.tecklee, 390008420
 \par            email: c.tecklee\@digipen.edu
-\date           September 18, 2022
-\brief          Backend component to help link up with physX and perform actual 
-                instructions from the system
+\date           Sept 24, 2022
+\brief          Defines the data required to allow users to interface with the backend
+                camera from the graphics world
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -14,16 +14,13 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
+#include <glm/glm.hpp>
 #include <rttr/type>
-#include <Physics/Source/phy.h>
-
 namespace oo
 {
-    // invisible class
-    struct PhysicsComponent
+    class CameraComponent
     {
-        PhysicsObject object{};
-
+    public:
         RTTR_ENABLE();
     };
 }
