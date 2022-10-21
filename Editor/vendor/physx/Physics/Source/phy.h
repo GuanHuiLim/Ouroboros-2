@@ -28,6 +28,8 @@ Technology is prohibited.
 #include <iostream>
 #include <vector>
 #include <map>
+#include <queue>
+#include <deque>
 #include <memory>
 //#include <glm/glm.hpp>
 
@@ -49,6 +51,7 @@ namespace myPhysx {
     enum class rigid { none, rstatic, rdynamic };
     enum class shape { none, box, sphere, capsule, plane };
     enum class force { force, acceleration, impulse, velocityChanged };
+    enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit};
 
     class EventCallBack : public PxSimulationEventCallback {
 
@@ -66,13 +69,21 @@ namespace myPhysx {
         void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
     };
 
-    struct RigidDynamic {
+    struct ContactManifold {
 
-        PxRigidDynamic* rigidDynamic = nullptr;
+        // need for collsion callback
     };
 
-    struct RigidStatic {
+    struct TriggerManifold {
 
+        phy_uuid::UUID triggerID;
+        phy_uuid::UUID otherID;
+        trigger status;
+    };
+
+    struct RigidBody {
+
+        PxRigidDynamic* rigidDynamic = nullptr;
         PxRigidStatic* rigidStatic = nullptr;
     };
 
@@ -86,6 +97,8 @@ namespace myPhysx {
 
     // backend holds the overall info of the entire physics engine
     namespace physx_system {
+
+        static PhysxWorld* currentWorld;
 
         void init();
 
@@ -102,6 +115,8 @@ namespace myPhysx {
         bool isTrigger(const PxFilterData& data);
 
         bool isTriggerShape(PxShape* shape);
+
+        void provideCurrentWorld(PhysxWorld* world);
     };
 
     // describes a physics scene
@@ -119,12 +134,9 @@ namespace myPhysx {
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
 
-        // queue to store the collision pairs
-        std::vector<> m_collisionPairs;
-    public:
+        std::queue<TriggerManifold> m_collisionPairs; // queue to store the collision pairs
 
-        // function to retrieve the queue data
-        // function to reset the queue data
+    public:
 
         // SCENE
         PhysxWorld(PxVec3 gravity);
@@ -139,7 +151,10 @@ namespace myPhysx {
         PhysicsObject createInstance();
         void removeInstance(PhysicsObject obj);
 
-        //CHECKING QUERY
+        //TRIGGER
+        std::queue<TriggerManifold>* getTriggerData(); // function to retrieve the queue data
+        void clearTriggerData(); // function to reset the queue data
+
     };
 
     // associated to each object in the physics world (me store)
@@ -153,9 +168,7 @@ namespace myPhysx {
         shape shape = shape::none;
 
         // ensure at least static or dynamic is init
-        RigidStatic rs{};
-        RigidDynamic rd{};
-
+        RigidBody rb{};
         rigid rigidID = rigid::none;
 
         bool trigger = false;
