@@ -34,14 +34,6 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 namespace oo
 {
-    PhysicsSystem::PhysicsSystem()
-        : m_accumulator{0}
-        , Gravity { 0, -0.981f, 0 }
-        , m_physicsWorld{ PxVec3{Gravity.x, Gravity.y, Gravity.z} }
-    {
-        
-    }
-
     void PhysicsSystem::Init(Scene* scene)
     {
         m_scene = scene;
@@ -63,6 +55,8 @@ namespace oo
 
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, CapsuleColliderComponent>(
             this, &PhysicsSystem::OnCapsuleColliderRemove);
+
+        myPhysx::physx_system::provideCurrentWorld(&m_physicsWorld);
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -79,7 +73,7 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE_NC(physics_fixed_update, tracy::Color::PeachPuff1);
             PhysicsTickEvent e;
-            e.deltaTime = FixedDeltaTime;
+            e.DeltaTime = FixedDeltaTime;
             EventManager::Broadcast(&e);
 
             {
@@ -225,19 +219,47 @@ namespace oo
 
     void PhysicsSystem::UpdatePhysicsResolution(Timestep deltaTime)
     {
+        UpdateCallbacks();
     }
 
     void PhysicsSystem::UpdateCallbacks()
     {
-        //auto callback_queue = m_physicsWorld.getCallbackQueue();
-        //// loop through all callbacks
-        //while (!callbackQueue.empty())
-        //{
-        //    // we need to convert from physics uuid to gameobject uuid.
-        //    auto [firstItem, secondItem] = callbackQueue.top();
-        //    // publish the event
-        //    auto object1_uuid = m_physicsToGameObjectLookup[firstItem];
-        //}
+        auto trigger_queue = m_physicsWorld.getTriggerData();
+        while (!trigger_queue->empty())
+        {
+            myPhysx::TriggerManifold trigger_manifold = trigger_queue->front();
+            
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false, "This should never happen");
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false, "This should never happen");
+
+            // retrieve their gameobject id counterpart.
+            UUID trigger_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.triggerID);
+            UUID other_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.otherID);
+
+            //broadcast trigger event.
+            PhysicsTriggerEvent pte;
+            pte.TriggerID = trigger_go_id;
+            pte.OtherID = other_go_id;
+            switch (trigger_manifold.status)
+            {
+            case myPhysx::trigger::none:
+                pte.State = TriggerState::NONE;
+                break;
+            case myPhysx::trigger::onTriggerEnter:
+                pte.State = TriggerState::ENTER;
+                break;
+            case myPhysx::trigger::onTriggerStay:
+                pte.State = TriggerState::STAY;
+                break;
+            case myPhysx::trigger::onTriggerExit:
+                pte.State = TriggerState::EXIT;
+                break;
+            }
+            EventManager::Broadcast(&pte);
+
+            trigger_queue->pop();
+        }
+        m_physicsWorld.clearTriggerData();
     }
 
     void PhysicsSystem::PostUpdate()
@@ -298,10 +320,23 @@ namespace oo
     void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
         InitializeRigidbody(rb->component);
+        if (m_physicsToGameObjectLookup.contains(rb->component.object.id) == false)
+        {
+            auto goc = m_world->get_component<GameObjectComponent>(rb->entityID);
+            m_physicsToGameObjectLookup.insert({ rb->component.object.id, goc.Id });
+        }
     }
 
     void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
+        // Remove Data from lookup table
+        ASSERT_MSG(m_physicsToGameObjectLookup.contains(rb->component.object.id) == false, "This should never happen!");
+
+        if (m_physicsToGameObjectLookup.contains(rb->component.object.id))
+        {
+            m_physicsToGameObjectLookup.erase(rb->component.object.id);
+        }
+
         //Remove all other colliders as well
 
         if (m_world->has_component<BoxColliderComponent>(rb->entityID))

@@ -17,35 +17,28 @@ Technology is prohibited.
 
 #include <Archetypes_Ecs/src/A_Ecs.h>
 #include "Ouroboros/Physics/PhysicsFwd.h"
+#include "PhysicsEvents.h"
 #include "Ouroboros/Core/Timer.h"
 
-#include "Ouroboros/EventSystem/Event.h"
 #include <Physics/Source/phy.h>
 
 #include <bitset>
-#include "Utility/UUID.h"
 
 namespace oo
 {
-    struct Scene;
+    class Scene;
 
     static constexpr std::size_t s_MaxLayerCount = 8;
     using LayerField    = std::bitset<s_MaxLayerCount>;
     using LayerMask     = LayerField;
     using LayerMatrix   = std::unordered_map<LayerField, LayerMask>;
 
-    //physics tick event.
-    struct PhysicsTickEvent : public Event
-    {
-        double deltaTime;
-    };
-
     class PhysicsSystem final : public Ecs::System
     {
     public:
         using Timestep = double;
 
-        PhysicsSystem();
+        PhysicsSystem() = default;
         virtual ~PhysicsSystem() = default;
         virtual void Run(Ecs::ECSWorld*) override {};
 
@@ -74,16 +67,16 @@ namespace oo
         void UpdateCallbacks();
         void PostUpdate();
 
-        Scene* m_scene;
+        Scene* m_scene = nullptr;
 
         // need a way to track physics uuids to gameobject uuids
-        std::map<phy_uuid::UUID, UUID> m_physicsToGameObjectLookup;
+        std::map<phy_uuid::UUID, UUID> m_physicsToGameObjectLookup = {};
 
         //underlying physics world
-        myPhysx::PhysxWorld m_physicsWorld;
+        myPhysx::PhysxWorld m_physicsWorld{ { Gravity.x, Gravity.y, Gravity.z} };
 
         //time accumulator
-        double m_accumulator;
+        double m_accumulator = 0.0;
 
         void OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
         void OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);
