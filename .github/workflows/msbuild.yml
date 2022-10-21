@@ -1,10 +1,10 @@
 name: MSBuild
 
-on: [push] #testing code
+on: # [push] #testing code
  #push:
     #branches: [ "main" ]
-  #pull_request:
-    #branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 env:
   # Path to the solution file relative to the root of the project.
@@ -26,8 +26,8 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        configuration: [Debug] # Debug, Release, Production
-        platform: [Editor] # Editor, Executable
+        configuration: [ Debug, Release, Production ]
+        platform: [ Editor, Executable]
         
     steps:
     - name: Checkout Commit
