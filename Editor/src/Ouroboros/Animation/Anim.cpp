@@ -29,7 +29,7 @@ Technology is prohibited.
 #include <random>
 namespace oo::Anim::internal
 {
-	uint GetAnimationIndex(std::string const& name)
+	/*uint GetAnimationIndex(std::string const& name)
 	{
 		assert(Animation::name_to_index.contains(name));
 		return Animation::name_to_index[name];
@@ -38,7 +38,7 @@ namespace oo::Anim::internal
 	{
 		assert(Animation::ID_to_index.contains(id));
 		return Animation::ID_to_index[id];
-	}
+	}*/
 	NodeRef CreateNodeReference(Group& group, size_t id)
 	{
 		int index = 0;
@@ -684,7 +684,7 @@ namespace oo::Anim::internal
 
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
-		/*
+		
 		//if node already added to this group then just return it
 		for (auto& [key, node] : group.nodes)
 		{
@@ -702,34 +702,31 @@ namespace oo::Anim::internal
 		auto [iter, result] = group.nodes.insert(std::make_pair(key, std::move(node)));
 		assert(result == true); //insertion should occur, node should not be already existing!!
 		return &group.nodes[key];
-		*/
-		return nullptr;
+		
 	}
 
 	Group* AddGroupToTree(AnimationTree& tree, GroupInfo& info)
 	{
-		//info.tree = &tree;
-		//Group new_group{ info };
-		//size_t key = new_group.groupID;
-		////auto [iter, result] = tree.groups.insert(std::make_pair<size_t, Group>(key, new_group));
-		//auto [iter, result] = tree.groups.insert(std::pair<size_t, Group>(key, new_group));
-		//assert(result == true);
-		//auto& group = tree.groups[key];
-		////create the starting node
-		//NodeInfo n_info{
-		//	.name{ "Start Node" },
-		//	.animation_name{ Animation::empty_animation_name },
-		//	.speed{ 1.f },
-		//	.position{0.f,0.f,0.f},
-		//	.group{ internal::CreateGroupReference(tree,group.groupID)},
-		//	.nodeID{internal::generateUID() }
-		//};
-		//auto node = Anim::internal::AddNodeToGroup(group, n_info);
-		//assert(node);
-		//group.startNode = internal::CreateNodeReference(group, n_info.nodeID);
+		info.tree = &tree;
+		Group new_group{ info };
+		size_t key = new_group.groupID;
+		auto [iter, result] = tree.groups.emplace(key, std::move(new_group));
+		assert(result == true);
+		auto& group = tree.groups[key];
+		//create the starting node
+		NodeInfo n_info{
+			.name{ "Start Node" },
+			.animation_name{ Animation::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f},
+			.group{ internal::CreateGroupReference(tree,group.groupID)},
+			.nodeID{internal::generateUID() }
+		};
+		auto node = Anim::internal::AddNodeToGroup(group, n_info);
+		assert(node);
+		group.startNode = internal::CreateNodeReference(group, n_info.nodeID);
 
-		//return &group;
-		return nullptr;
+		return &group;
 	}
 
 	
@@ -1220,10 +1217,10 @@ namespace oo::Anim
 		, name{ info.name }
 		, node_ID{info.nodeID == internal::invalid_ID ? internal::generateUID() : info.nodeID }
 	{
-		assert(Animation::name_to_index.contains(info.animation_name));
+		assert(Animation::name_to_ID.contains(info.animation_name));
 		anim.anims = &(Animation::animation_storage);
 		anim.id = Animation::animation_storage[
-			Animation::name_to_index[info.animation_name]].animation_ID;
+			Animation::name_to_ID[info.animation_name]].animation_ID;
 		anim.Reload();
 	}
 
@@ -1263,10 +1260,10 @@ namespace oo::Anim
 	}
 	Group::Group(Group&& other)
 	{
-		name = std::move(other.name);
-		startNode = std::move(other.startNode);
-		tree = std::move(other.tree);
-		groupID = std::move(other.groupID);
+		name		= std::move(other.name);
+		startNode	= std::move(other.startNode);
+		tree		= std::move(other.tree);
+		groupID		= std::move(other.groupID);
 
 		nodes.merge(other.nodes);
 		links.merge(other.links);
@@ -1536,8 +1533,8 @@ namespace oo::Anim
 	}
 	Animation* Animation::AddAnimation(Animation& anim)
 	{
-		Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
-		Animation::name_to_index[anim.name] = static_cast<uint>(Animation::animation_storage.size());
+		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
+		Animation::name_to_ID[anim.name] = anim.animation_ID;
 		size_t key = anim.animation_ID;
 		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
 		assert(result == true);
