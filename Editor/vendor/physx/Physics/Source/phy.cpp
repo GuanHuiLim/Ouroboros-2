@@ -111,6 +111,12 @@ namespace myPhysx
             return false;
         }
 
+        void provideCurrentWorld(PhysxWorld* world) {
+
+            // retrieving the current world for me to access (get/set) neccessary data
+            currentWorld = world;
+        }
+
         void init() {
 
             createFoundation();
@@ -153,6 +159,7 @@ namespace myPhysx
         sceneDesc.gravity = grav; // PxVec3(0.0f, -9.81f, 0.0f);
         gravity = sceneDesc.gravity;
 
+        //PxInitExtensions(*physx_system::getPhysics(), myPVD.pvd__());
         mDispatcher = PxDefaultCpuDispatcherCreate(2);
 
         sceneDesc.cpuDispatcher = mDispatcher;
@@ -187,10 +194,10 @@ namespace myPhysx
             underlying_obj->m_shape->release();
 
             if (underlying_obj->rigidID == rigid::rstatic)
-                underlying_obj->rs.rigidStatic->release();
+                underlying_obj->rb.rigidStatic->release();
 
             else if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->release();
+                underlying_obj->rb.rigidDynamic->release();
         }
         */
 
@@ -202,6 +209,7 @@ namespace myPhysx
             mDispatcher = nullptr;
         }
 
+        //PxCloseExtensions();
     }
 
     void PhysxWorld::updateScene(float dt) {
@@ -228,14 +236,15 @@ namespace myPhysx
         //phy_uuid::UUID UUID = phy_uuid::UUID{};
 
         PhysxObject obj;
-        obj.id = phy_uuid::UUID{};
-
+        obj.id = std::make_unique<phy_uuid::UUID>();
+        // This is important!
+        phy_uuid::UUID generated_uuid = *obj.id;
         // store the object
-        m_objects.emplace_back(obj);
-        all_objects.insert({ obj.id, m_objects.size() - 1 }); // add back the m_objects last element
-
+        m_objects.emplace_back(std::move(obj));
+        all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
+        
         // return the object i created
-        return PhysicsObject{ obj.id, this }; // a copy
+        return PhysicsObject{ generated_uuid, this }; // a copy
     }
 
     void PhysxWorld::removeInstance(PhysicsObject obj)
@@ -248,10 +257,10 @@ namespace myPhysx
             PhysxObject* underlying_obj = &m_objects[all_objects.at(obj.id)];
 
             if (underlying_obj->rigidID == rigid::rstatic)
-                underlying_obj->rs.rigidStatic->release();
+                underlying_obj->rb.rigidStatic->release();
 
             else if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->release();
+                underlying_obj->rb.rigidDynamic->release();
 
             // release shape
             //underlying_obj->m_shape->release();
@@ -259,9 +268,26 @@ namespace myPhysx
 
         // check/find the id from the obj vector then if match 
         // remove from that vector then release
-        auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return elem.id == obj.id; });
+        // NOTE: DON't MIXUP ELEM ID and OBJ ID HERE, 2 different types.
+        auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == obj.id; });
+        
         //begin->destroy();
+        
         m_objects.erase(begin);
+    }
+
+    std::queue<TriggerManifold>* PhysxWorld::getTriggerData() {
+
+        return &m_collisionPairs;
+    }
+
+    void PhysxWorld::clearTriggerData() {
+
+        while (!m_collisionPairs.empty())
+            m_collisionPairs.pop();
+
+        //std::queue<TriggerManifold> empty;
+        //std::swap(m_collisionPairs, empty);
     }
 
 
@@ -277,8 +303,8 @@ namespace myPhysx
 
             //PhysxObject* underlying_obj = world->all_objects.at(id);
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            PxRigidStatic* rstat = underlying_obj->rs.rigidStatic;
-            PxRigidDynamic* rdyna = underlying_obj->rd.rigidDynamic;
+            PxRigidStatic* rstat = underlying_obj->rb.rigidStatic;
+            PxRigidDynamic* rdyna = underlying_obj->rb.rigidDynamic;
 
             underlying_obj->rigidID = type;
 
@@ -294,17 +320,25 @@ namespace myPhysx
             }
             // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
             if (type == rigid::rstatic) {
-                underlying_obj->rs.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
-                underlying_obj->rs.rigidStatic->userData = this;
-                printf("actl value %llu vs pointer value: %llu \n", id, reinterpret_cast<PhysicsObject*>(underlying_obj->rs.rigidStatic->userData)->id);
-                world->scene->addActor(*underlying_obj->rs.rigidStatic);
+                underlying_obj->rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
+                underlying_obj->rb.rigidStatic->userData = underlying_obj->id.get();
+                //printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidStatic->userData));
+                world->scene->addActor(*underlying_obj->rb.rigidStatic);
             }
             else if (type == rigid::rdynamic) {
-                underlying_obj->rd.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
-                underlying_obj->rd.rigidDynamic->userData = this;
-                printf("actl value %llu vs pointer value: %llu \n", id, reinterpret_cast<PhysicsObject*>(underlying_obj->rd.rigidDynamic->userData)->id);
-                world->scene->addActor(*underlying_obj->rd.rigidDynamic);
+                underlying_obj->rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
+                underlying_obj->rb.rigidDynamic->userData = underlying_obj->id.get();
+                //printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
+                world->scene->addActor(*underlying_obj->rb.rigidDynamic);
             }
+
+            // Check how many actors created in the scene
+            //PxActorTypeFlags desiredTypes = PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC;
+            //PxU32 count = world->scene->getNbActors(desiredTypes);
+            //PxActor** buffer = new PxActor * [count];
+            //
+            //PxU32 noo = world->scene->getActors(desiredTypes, buffer, count);
+            //printf("%d - actors\n\n", noo);
         }
     }
 
@@ -322,10 +356,10 @@ namespace myPhysx
 
                 // DETACH OLD SHAPE
                 if (underlying_obj->rigidID == rigid::rstatic)
-                    underlying_obj->rs.rigidStatic->detachShape(*underlying_obj->m_shape);
+                    underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
 
                 else if (underlying_obj->rigidID == rigid::rdynamic)
-                    underlying_obj->rd.rigidDynamic->detachShape(*underlying_obj->m_shape);
+                    underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
             }
 
             underlying_obj->shape = shape; // set new shape enum
@@ -349,13 +383,13 @@ namespace myPhysx
                 PxCapsuleGeometry temp_cap{ 0.5f, 1.f };
                 underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_cap, *material, true);
             }
-
+            
             // ATTACH THE SHAPE TO THE OBJECT
             if (underlying_obj->rigidID == rigid::rstatic)
-                underlying_obj->rs.rigidStatic->attachShape(*underlying_obj->m_shape);
+                underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
 
             else if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->attachShape(*underlying_obj->m_shape);
+                underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
 
             // later check where need to release shape
             //underlying_obj->m_shape->release();
@@ -371,10 +405,10 @@ namespace myPhysx
             if (underlying_obj->shape != shape::none) {
 
                 if (underlying_obj->rigidID == rigid::rstatic)
-                    underlying_obj->rs.rigidStatic->detachShape(*underlying_obj->m_shape);
+                    underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
 
                 else if (underlying_obj->rigidID == rigid::rdynamic)
-                    underlying_obj->rd.rigidDynamic->detachShape(*underlying_obj->m_shape);
+                    underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
 
                 underlying_obj->shape = shape::none; // set new shape enum
             }
@@ -391,7 +425,7 @@ namespace myPhysx
 
             if (underlying_obj->rigidID == rigid::rdynamic) {
 
-                underlying_obj->rd.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
+                underlying_obj->rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
 
                 underlying_obj->kinematic = kine;
             }
@@ -404,7 +438,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            underlying_obj->rd.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, grav);
+            underlying_obj->rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, grav);
 
             underlying_obj->gravity = grav;
         }
@@ -527,15 +561,15 @@ namespace myPhysx
 
             if (underlying_obj->rigidID == rigid::rstatic) {
 
-                return PxVec3{ underlying_obj->rs.rigidStatic->getGlobalPose().p.x,
-                               underlying_obj->rs.rigidStatic->getGlobalPose().p.y,
-                               underlying_obj->rs.rigidStatic->getGlobalPose().p.z };
+                return PxVec3{ underlying_obj->rb.rigidStatic->getGlobalPose().p.x,
+                               underlying_obj->rb.rigidStatic->getGlobalPose().p.y,
+                               underlying_obj->rb.rigidStatic->getGlobalPose().p.z };
             }
             else if (underlying_obj->rigidID == rigid::rdynamic) {
 
-                return PxVec3{ underlying_obj->rd.rigidDynamic->getGlobalPose().p.x,
-                               underlying_obj->rd.rigidDynamic->getGlobalPose().p.y,
-                               underlying_obj->rd.rigidDynamic->getGlobalPose().p.z };
+                return PxVec3{ underlying_obj->rb.rigidDynamic->getGlobalPose().p.x,
+                               underlying_obj->rb.rigidDynamic->getGlobalPose().p.y,
+                               underlying_obj->rb.rigidDynamic->getGlobalPose().p.z };
             }
 
         }
@@ -551,10 +585,10 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rstatic)
-                underlying_obj->rs.rigidStatic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
+                underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
 
             else if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
+                underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
         }
     }
 
@@ -565,10 +599,10 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rstatic)
-                return underlying_obj->rs.rigidStatic->getGlobalPose().q;
+                return underlying_obj->rb.rigidStatic->getGlobalPose().q;
 
             else if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->rd.rigidDynamic->getGlobalPose().q;
+                return underlying_obj->rb.rigidDynamic->getGlobalPose().q;
         }
 
         // default return.
@@ -582,7 +616,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->rd.rigidDynamic->getMass();
+                return underlying_obj->rb.rigidDynamic->getMass();
         }
 
         // default return.
@@ -596,7 +630,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->rd.rigidDynamic->getInvMass();
+                return underlying_obj->rb.rigidDynamic->getInvMass();
         }
 
         // default return.
@@ -610,7 +644,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->rd.rigidDynamic->getAngularDamping();
+                return underlying_obj->rb.rigidDynamic->getAngularDamping();
         }
 
         // default return.
@@ -624,7 +658,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->rd.rigidDynamic->getAngularVelocity();
+                return underlying_obj->rb.rigidDynamic->getAngularVelocity();
         }
 
         // default return.
@@ -638,7 +672,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->rd.rigidDynamic->getLinearDamping();
+                return underlying_obj->rb.rigidDynamic->getLinearDamping();
         }
 
         // default return.
@@ -652,7 +686,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->rd.rigidDynamic->getLinearVelocity();
+                return underlying_obj->rb.rigidDynamic->getLinearVelocity();
         }
 
         // default return.
@@ -707,7 +741,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->setMass(mass);
+                underlying_obj->rb.rigidDynamic->setMass(mass);
         }
     }
 
@@ -718,7 +752,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->setMassSpaceInertiaTensor(mass);
+                underlying_obj->rb.rigidDynamic->setMassSpaceInertiaTensor(mass);
         }
     }
 
@@ -729,7 +763,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->setAngularDamping(angularDamping);
+                underlying_obj->rb.rigidDynamic->setAngularDamping(angularDamping);
         }
     }
 
@@ -740,7 +774,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->setAngularVelocity(angularVelocity);
+                underlying_obj->rb.rigidDynamic->setAngularVelocity(angularVelocity);
         }
     }
 
@@ -751,7 +785,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->setLinearDamping(linearDamping);
+                underlying_obj->rb.rigidDynamic->setLinearDamping(linearDamping);
         }
     }
 
@@ -762,7 +796,7 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rd.rigidDynamic->setLinearVelocity(linearVelocity);
+                underlying_obj->rb.rigidDynamic->setLinearVelocity(linearVelocity);
         }
     }
 
@@ -776,19 +810,19 @@ namespace myPhysx
 
                 switch (type) {
                 case force::force:
-                    underlying_obj->rd.rigidDynamic->addForce(f_amount, PxForceMode::eFORCE);
+                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eFORCE);
                     break;
 
                 case force::impulse:
-                    underlying_obj->rd.rigidDynamic->addForce(f_amount, PxForceMode::eIMPULSE);
+                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eIMPULSE);
                     break;
 
                 case force::velocityChanged:
-                    underlying_obj->rd.rigidDynamic->addForce(f_amount, PxForceMode::eVELOCITY_CHANGE);
+                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eVELOCITY_CHANGE);
                     break;
 
                 case force::acceleration:
-                    underlying_obj->rd.rigidDynamic->addForce(f_amount, PxForceMode::eACCELERATION);
+                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eACCELERATION);
                     break;
 
                 default:
@@ -808,19 +842,19 @@ namespace myPhysx
 
                 switch (type) {
                 case force::force:
-                    underlying_obj->rd.rigidDynamic->addTorque(f_amount, PxForceMode::eFORCE);
+                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eFORCE);
                     break;
 
                 case force::impulse:
-                    underlying_obj->rd.rigidDynamic->addTorque(f_amount, PxForceMode::eIMPULSE);
+                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eIMPULSE);
                     break;
 
                 case force::velocityChanged:
-                    underlying_obj->rd.rigidDynamic->addTorque(f_amount, PxForceMode::eVELOCITY_CHANGE);
+                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eVELOCITY_CHANGE);
                     break;
 
                 case force::acceleration:
-                    underlying_obj->rd.rigidDynamic->addTorque(f_amount, PxForceMode::eACCELERATION);
+                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eACCELERATION);
                     break;
 
                 default:
@@ -914,20 +948,41 @@ namespace myPhysx
 
         while (count--) {
 
-            auto trigger_id = reinterpret_cast<PhysicsObject*>(pairs->triggerActor->userData)->id;
-            auto other_id = reinterpret_cast<PhysicsObject*>(pairs->otherActor->userData)->id;
-            printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
-
+            trigger state = trigger::none;
             const PxTriggerPair& current = *pairs++;
 
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) // OnTriggerEnter
-                printf("Shape is entering trigger volume\n");
+            auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
+            auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
+            //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
 
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) // OnTriggerStay
-                printf("Shape is still within trigger volume\n");
+            if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
+                state = trigger::onTriggerEnter;
+                //printf("Shape is entering trigger volume\n");
+            }
+            if (current.status & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) {// OnTriggerStay
+                state = trigger::onTriggerStay;
+                //printf("Shape is still within trigger volume\n");
+            }
+            if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
+                state = trigger::onTriggerExit;
+                //printf("Shape is leaving trigger volume\n");
+            }
 
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) // OnTriggerExit
-                printf("Shape is leaving trigger volume\n");
+            // Store all the ID of the actors that collided with trigger)
+            std::queue<TriggerManifold>* temp = physx_system::currentWorld->getTriggerData();
+
+            // Add in the TriggerManifold data into the queue
+            temp->emplace(TriggerManifold{ trigger_id, other_id, state });
+            
+            //int msize = temp->size();
+            //while(!temp->empty()) {
+            //
+            //    TriggerManifold val = temp->front();
+            //    std::cout << "TRI: " << val.triggerID << " OTH: " << val.otherID;
+            //    printf(" STATE: %d\n", val.status);
+            //    
+            //    temp->pop();
+            //}
         }
     }
     void EventCallBack::onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) {

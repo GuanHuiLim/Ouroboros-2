@@ -35,7 +35,7 @@ Technology is prohibited.
 #include "App/Editor/Events/LoadSceneEvent.h"
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
-#include <Ouroboros/Vulkan/RendererComponent.h>
+#include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>

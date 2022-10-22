@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include "RendererComponent.h"
+#include "MeshRendererComponent.h"
 #include "LightComponent.h"
 #include "CameraComponent.h"
 
@@ -24,13 +24,13 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformComponent.h"
 namespace oo
 {
-    class MeshRendererSystem : public Ecs::System
+    class RendererSystem : public Ecs::System
     {
     private:
         GraphicsWorld* m_graphicsWorld{nullptr};
         //Ecs::ECSWorld* m_world{nullptr};
     public:
-        MeshRendererSystem(GraphicsWorld* graphicsWorld);
+        RendererSystem(GraphicsWorld* graphicsWorld);
 
         void Init();
 
@@ -43,6 +43,11 @@ namespace oo
         //void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
 
         virtual void Run(Ecs::ECSWorld* world) override;
+        // Only runs in runtimescene.
         void RenderCameras();
+    private:
+        void RenderDebugDraws(Ecs::ECSWorld* world);
+        void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp);
+        void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
     };
 }

@@ -417,9 +417,12 @@ namespace oo
             float result = m_fAxisValues[(size_t)iAxis];
             float converted = (result / CompleteControllerRange) * 2.f; // [-1 to 1]
             
-            if (iAxis == ControllerAxisCode::LEFTY || iAxis == ControllerAxisCode::RIGHTY)
+            //if (iAxis == ControllerAxisCode::LEFTY || iAxis == ControllerAxisCode::RIGHTY)
+            if(iAxis < ControllerAxisCode::TRIGGERLEFT)
                 converted *= -1.f;
-            static constexpr float sigFig = 0.0001f;
+            
+            // rounding
+            static constexpr float sigFig = 0.01f;
             if (std::abs(std::roundf(converted) - converted) < sigFig)
                 converted = std::roundf(converted);
 

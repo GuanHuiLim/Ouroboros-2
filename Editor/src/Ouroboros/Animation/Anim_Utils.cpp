@@ -55,20 +55,19 @@ namespace oo::Anim::internal
 
 namespace oo::Anim
 {
-	std::unordered_map< std::string, uint> Animation::name_to_index{};
-	std::unordered_map< size_t, uint> Animation::ID_to_index{};
-	std::vector<Animation> Animation::animation_storage = []() {
+	std::unordered_map< std::string, size_t> Animation::name_to_ID{};
+	std::map<size_t, Animation> Animation::animation_storage = []() {
 		decltype(Animation::animation_storage) container{};
-		container.reserve(internal::expected_num_anims);
+		//container.reserve(internal::expected_num_anims);
 
 		//create empty animation
 		Animation empty_anim{};
 		empty_anim.name = Animation::empty_animation_name;
 
-		Animation::ID_to_index[empty_anim.animation_ID] = static_cast<uint>(container.size());
-		Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());
-
-		container.emplace_back(std::move(empty_anim));
+		Animation::name_to_ID[empty_anim.name] = empty_anim.animation_ID;
+		//Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());
+		auto key = empty_anim.animation_ID;
+		container.emplace(key, std::move(empty_anim));
 		return container;
 	}();
 
