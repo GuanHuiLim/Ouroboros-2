@@ -23,9 +23,17 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
+        registration::enumeration<LightType>("Light Type")
+        (
+            value("Point", LightType::POINT),
+            value("Directional", LightType::DIRECTIONAL)
+        );
+
         registration::class_<oo::LightComponent>("Light")
         .property("Color", &LightComponent::Color)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         .property("Radius", &LightComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        .property("Type", &LightComponent::LightType)
         .property_readonly("Lighting ID", &LightComponent::Light_ID);
+        
     }
 }

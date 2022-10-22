@@ -50,7 +50,7 @@ namespace oo
 
             GetWorld().Add_System<PhysicsSystem>()->Init(this);
 
-            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
+            GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
             GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
             //Register All Systems
@@ -211,8 +211,9 @@ namespace oo
     void RuntimeScene::Render()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_rendering);
+        GetWorld().Get_System<RendererSystem>()->RenderCameras();
         Scene::Render();
-        GetWorld().Get_System<MeshRendererSystem>()->UpdateCameras();
+        GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
         TRACY_PROFILE_SCOPE_END();
         //constexpr const char* const text_rendering = "Text Rendering";
         {

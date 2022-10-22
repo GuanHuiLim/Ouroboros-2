@@ -54,7 +54,8 @@ Technology is prohibited.
 
 //Tracy
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-
+//Optick
+#include <optick.h>
 // Scripting
 #include <Scripting/Scripting.h>
 
@@ -94,7 +95,7 @@ public:
     void OnUpdate() override
     {
         TRACY_PROFILE_SCOPE_N(editor_app_update);
-
+        OPTICK_FRAME("editor_app_update");
         m_imGuiAbstract->Begin();
 
         m_layerset.Update();

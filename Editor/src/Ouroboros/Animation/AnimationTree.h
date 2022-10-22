@@ -25,7 +25,7 @@ namespace oo::Anim
 	
 		std::string name{"Unnamed Animation Tree"};
 		//contains a collection of nodes and links between the nodes 
-		std::vector<Group> groups;
+		std::map<size_t, Group> groups;
 		//contains a collection of parameters to be checked with conditions
 		std::vector<Parameter> parameters;
 		std::unordered_map<size_t, uint> paramIDtoIndexMap;
