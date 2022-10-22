@@ -22,6 +22,8 @@ Technology is prohibited.
 #include <rttr/type>
 #include <Physics/Source/phy.h>
 
+#include "Utility/UUID.h"
+
 namespace oo
 {
     /*-----------------------------------------------------------------------------*/
@@ -76,18 +78,19 @@ namespace oo
     public:
         bool IsStaticObject = true;
         myPhysx::PhysicsObject object{};
+        vec3 Offset = { 0.0, 0.0, 0.0 };
 
         PhysicsMaterial GetMaterial() const;
-        glm::vec3 GetPositionInPhysicsWorld() const;
-        glm::quat GetOrientationInPhysicsWorld() const;
+        vec3 GetPositionInPhysicsWorld() const;
+        quat GetOrientationInPhysicsWorld() const;
 
         void SetStatic(bool result);
 
         float GetMass() const;
         float GetAngularDamping() const;
-        glm::vec3 GetAngularVelocity() const;
+        vec3 GetAngularVelocity() const;
         float GetLinearDamping() const;
-        glm::vec3 GetLinearVelocity() const;
+        vec3 GetLinearVelocity() const;
 
         bool IsGravityEnabled() const;
         bool IsGravityDisabled() const;
@@ -97,21 +100,23 @@ namespace oo
         bool IsDynamic() const;
 
         void SetMaterial(PhysicsMaterial material);
-        void SetPosOrientation(glm::vec3 pos, glm::quat quat);
+        void SetPosOrientation(vec3 pos, quat quat);
 
         void SetGravity(bool enable);
-        void EnableGravity();
-        void DisableGravity();
+        /*void EnableGravity();
+        void DisableGravity();*/
         
         void SetKinematic(bool kine);
         void SetMass(float mass);
         void SetAngularDamping(float angularDamping);
-        void SetAngularVelocity(glm::vec3 angularVelocity);
+        void SetAngularVelocity(vec3 angularVelocity);
         void SetLinearDamping(float linearDamping);
-        void SetLinearVelocity(glm::vec3 linearVelocity);
+        void SetLinearVelocity(vec3 linearVelocity);
 
         void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
         void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
+
+        oo::UUID GetUnderlyingUUID() const;
 
         RTTR_ENABLE();
     };

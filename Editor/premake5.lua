@@ -19,6 +19,9 @@ project "Editor"
     filter "files:vendor/**/**.c"
         flags { "NoPCH" }
     filter {}   -- resets the filter
+    
+    --enables OpenMP multiprocessing library
+    openmp "On"
 
     files
     {
@@ -61,9 +64,11 @@ project "Editor"
         "%{IncludeDir.scripting}",
 		
         "%{IncludeDir.fmod}",
-
+        "%{IncludeDir.discord}",
         --for tracy
         "%{IncludeDir.tracy}",
+		--for optick
+        "%{IncludeDir.optick}",
     }
 
     -- library diretories
@@ -78,6 +83,7 @@ project "Editor"
         -- "%{LibraryDir.physx}/Release",
         "%{LibraryDir.assimp}/Release",
         "%{LibraryDir.fmod}",
+        "%{LibraryDir.discord}",
     }
 
     -- linking External libraries 
@@ -118,7 +124,9 @@ project "Editor"
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
         --"symsrv",
-
+        
+        "Discord",
+        "discord_game_sdk_dll",
     }
     
     -- Editor Project Level Disable Warning 
@@ -185,6 +193,7 @@ project "Editor"
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			
             { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""}, 
+            {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production

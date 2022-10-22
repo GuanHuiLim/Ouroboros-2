@@ -82,7 +82,7 @@ namespace oo
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
 
             //rendering system initialization
-            m_ecsWorld->Add_System<oo::MeshRendererSystem>(m_graphicsWorld.get())->Init();
+            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
 
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
         }
@@ -129,9 +129,8 @@ namespace oo
     
     void Scene::Render()
     {
-        TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
-
-        GetWorld().Get_System<oo::MeshRendererSystem>()->Run(m_ecsWorld.get());
+        TRACY_PROFILE_SCOPE_NC(base_scene_rendering, tracy::Color::Seashell3);
+        GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
         TRACY_PROFILE_SCOPE_END();
@@ -275,7 +274,7 @@ namespace oo
         return m_name; 
     }
 
-    Scene::go_ptr Scene::CreateGameObjectDeferred(UUID uuid)
+    Scene::go_ptr Scene::CreateGameObjectDeferred(oo::UUID uuid)
     {
         LOG_INFO("Creating Deferred Game Object");
 
@@ -287,13 +286,13 @@ namespace oo
         return newObjectPtr;
     }
 
-    Scene::go_ptr Scene::CreateGameObjectImmediate(UUID uuid)
+    Scene::go_ptr Scene::CreateGameObjectImmediate(oo::UUID uuid)
     {
         Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(uuid, *this);
         return CreateGameObjectImmediate(newObjectPtr);
     }
 
-    Scene::go_ptr Scene::FindWithInstanceID(UUID uuid) const
+    Scene::go_ptr Scene::FindWithInstanceID(oo::UUID uuid) const
     {
         //LOG_INFO("Finding gameobject of instance ID {0}", uuid);
 
@@ -303,7 +302,7 @@ namespace oo
         return nullptr;
     }
 
-    bool Scene::IsValid(UUID uuid) const
+    bool Scene::IsValid(oo::UUID uuid) const
     {
         return m_lookupTable.contains(uuid);
     }
@@ -410,11 +409,11 @@ namespace oo
             curr = s.top();
             s.pop();
 
-            auto& new_parent = parent_stack.top();
+            scenenode::shared_pointer new_parent = parent_stack.top();
             parent_stack.pop();
 
             // iterate through original parent's childs
-            for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+            for (auto iter = curr->begin(); iter != curr->end(); ++iter)
             {
                 scenenode::shared_pointer child = *iter;
                 s.push(child.get());
@@ -426,7 +425,6 @@ namespace oo
                 auto new_child = dupObjectChild->GetSceneNode().lock();
                 new_parent->add_child(new_child);
                 parent_stack.push(new_child);
-
             }
         }
         
@@ -517,7 +515,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
     }
 
-    UUID Scene::GetInstanceID(GameObject const& go) const
+    oo::UUID Scene::GetInstanceID(GameObject const& go) const
     {
         return m_ecsWorld->get_component<GameObjectComponent>(go.GetEntity()).Id;
     }

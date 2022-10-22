@@ -19,10 +19,13 @@ Technology is prohibited.
 #include <functional>
 #include <imgui/imgui.h>
 #include "App/Editor/Events/LoadProjectEvents.h"
+#include "Ouroboros/Asset/Asset.h"
+
 class FileBrowser
 {
 public:
 	FileBrowser();
+	void InitAssets();
 	void SetDirectory(LoadProjectEvent* lpe);
 	void Show();
 	struct DirectoryInfo
@@ -60,6 +63,7 @@ public:
 private:
 	std::vector<DirectoryInfo> m_directoryList;
 	std::vector<DirectoryInfo*>m_selectedList;//possible use for multiselection
+	std::unordered_map<std::string, oo::Asset> m_Icons;
 	std::vector<std::filesystem::path> m_copybuffer;
 	std::filesystem::path m_currentpath = "";
 	std::string m_rootpath = "";
@@ -67,7 +71,6 @@ private:
 	std::string m_searchfilter;
 	int m_zoomlevel = m_zoomlevelMax;
 private://static
-	inline static std::unordered_map<std::string, std::string> s_Icons;
 
 	static constexpr int m_zoomlevelMax = 10;
 	static constexpr int m_zoomlevelMin = 5;

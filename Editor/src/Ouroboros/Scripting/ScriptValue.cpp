@@ -446,7 +446,7 @@ namespace oo
                 // SetFieldValue
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
-                    UUID entityID = value.GetValue<UUID>();
+                    oo::UUID entityID = value.GetValue<oo::UUID>();
                     std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> gameObject = scene->FindWithInstanceID(entityID);
                     if (gameObject == nullptr)

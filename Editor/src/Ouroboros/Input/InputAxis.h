@@ -16,7 +16,7 @@ Technology is prohibited.
 
 #include <limits>
 #include <string>
-
+#include <rttr/type>
 namespace oo
 {
     class InputAxis
@@ -83,7 +83,7 @@ namespace oo
                 return (pressesRequired <= 0 || pressCount >= pressesRequired) && (holdDurationRequired <= 0.0f || durationHeld >= holdDurationRequired);
             }
         };
-
+		RTTR_ENABLE();
     private:
         std::string name;
         // Keyboard & Mouse
@@ -100,20 +100,29 @@ namespace oo
 
         InputAxis(std::string name, InputType type, Settings const& settings, ControllerInputType controllerType, Settings const& controllerSettings);
 
-        inline std::string const& GetName() const { return name; }
-        inline void SetName(std::string const& newName) { name = newName; }
+        inline std::string GetName() const { return name; }
+        inline void SetName(std::string newName) { name = newName; }
 
         inline InputType const GetType() const { return type; }
         void SetType(InputType newType);
 
+		inline unsigned GetType_U() const { return unsigned(type); }
+		void SetType_U(unsigned newType);
+
+
 		inline ControllerInputType const GetControllerType() const { return controllerType; }
 		void SetControllerType(ControllerInputType newType);
 
+		inline unsigned GetControllerType_U() const { return (unsigned)controllerType; }
+		void SetControllerType_U(unsigned newType);
+
         inline Settings& GetSettings() { return settings; }
-        inline Settings const& GetSettings() const { return settings; }
+		void SetSettings(Settings& setting) { settings = setting; }
+        //inline Settings  GetSettings()  { return settings; }
 
         inline Settings& GetControllerSettings() { return controllerSettings; }
-        inline Settings const& GetControllerSettings() const { return controllerSettings; }
+		void SetControllerSettings(Settings& setting) { controllerSettings = setting; }
+        //inline Settings const GetControllerSettings()  { return controllerSettings; }
 
     public:
         class Tracker

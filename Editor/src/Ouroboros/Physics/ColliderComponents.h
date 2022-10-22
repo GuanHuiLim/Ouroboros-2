@@ -34,7 +34,7 @@ namespace oo
     struct ColliderBase 
     {
         bool IsTrigger = false;
-        vec3 Offset = { 0.0, 0.0, 0.0 };
+        //vec3 Offset = { 0.0, 0.0, 0.0 };
 
         ColliderType Collider;
 
