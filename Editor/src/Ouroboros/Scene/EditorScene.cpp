@@ -20,6 +20,9 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
 
+//optick
+#include "optick.h"
+
 namespace oo
 {
     EditorScene::EditorScene(std::string const& filepath)
@@ -32,7 +35,7 @@ namespace oo
     void EditorScene::Init()
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
-
+        OPTICK_EVENT();
         Scene::Init();
 
         //Register All Systems
@@ -76,6 +79,7 @@ namespace oo
     void EditorScene::Update()
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
+        OPTICK_EVENT();
 
         Scene::Update();
 

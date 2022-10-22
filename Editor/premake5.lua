@@ -64,6 +64,8 @@ project "Editor"
 
         --for tracy
         "%{IncludeDir.tracy}",
+		--for optick
+        "%{IncludeDir.optick}",
     }
 
     -- library diretories
