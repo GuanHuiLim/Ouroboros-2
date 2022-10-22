@@ -32,6 +32,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Input.h"
 EditorViewport::EditorViewport()
 {
+	ImGuizmo::AllowAxisFlip(false);
 }
 
 EditorViewport::~EditorViewport()

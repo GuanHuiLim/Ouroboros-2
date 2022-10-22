@@ -38,6 +38,9 @@ namespace oo
         void AddController(int index);
         void RemoveController(int index);
 
+        // % Percentage [0.0f to 1.0f]
+        static float DeadZonePercent = 0.5f;
+
         /*-----------------------------------------------------------------------------*/
         /* Interface Functions                                                         */
         /*-----------------------------------------------------------------------------*/

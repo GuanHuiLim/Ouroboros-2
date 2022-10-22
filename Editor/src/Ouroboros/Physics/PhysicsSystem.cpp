@@ -34,14 +34,6 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 namespace oo
 {
-    PhysicsSystem::PhysicsSystem()
-        : m_accumulator{0}
-        , Gravity { 0, -0.981f, 0 }
-        , m_physicsWorld{ PxVec3{Gravity.x, Gravity.y, Gravity.z} }
-    {
-        
-    }
-
     void PhysicsSystem::Init(Scene* scene)
     {
         m_scene = scene;
@@ -63,6 +55,8 @@ namespace oo
 
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, CapsuleColliderComponent>(
             this, &PhysicsSystem::OnCapsuleColliderRemove);
+
+        myPhysx::physx_system::provideCurrentWorld(&m_physicsWorld);
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -70,29 +64,17 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
         m_accumulator += deltaTime;
-
+        
         //avoids spiral of death.
         if (m_accumulator > AccumulatorLimit)
             m_accumulator = AccumulatorLimit;
 
-        // Update global bounds of all DYNAMIC objects
-        if (m_accumulator > FixedDeltaTime)
-            UpdateDynamicGlobalBounds();
-
         while (m_accumulator > FixedDeltaTime)
         {
             TRACY_PROFILE_SCOPE_NC(physics_fixed_update, tracy::Color::PeachPuff1);
-            //LOG_ENGINE_CRITICAL("Physics On Physics Tick Begin");
             PhysicsTickEvent e;
-            e.deltaTime = FixedDeltaTime;
+            e.DeltaTime = FixedDeltaTime;
             EventManager::Broadcast(&e);
-            //LOG_ENGINE_CRITICAL("Physics On Physics Tick End");
-
-            {
-                TRACY_PROFILE_SCOPE_NC(physics_collision, tracy::Color::PeachPuff2);
-                UpdatePhysicsCollision();
-                TRACY_PROFILE_SCOPE_END();
-            }
 
             {
                 TRACY_PROFILE_SCOPE_NC(physics_resolution, tracy::Color::PeachPuff3);
@@ -116,12 +98,6 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
-        // End of frame debug draw. Once per frame
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
-            DrawDebugColliders();
-            TRACY_PROFILE_SCOPE_END();
-        }
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -129,25 +105,81 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_update_editor, tracy::Color::PeachPuff);
 
-        EditorCoreUpdate();
+        // Update Duplicated Objects
+        {
+            static Ecs::Query duplicated_rb_query = Ecs::make_raw_query<RigidbodyComponent, TransformComponent, DuplicatedComponent>();
+            m_world->for_each(duplicated_rb_query, [&](RigidbodyComponent& rbComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+            {
+                InitializeRigidbody(rbComp);
+            });
+
+            static Ecs::Query duplicated_rb_with_box_query = Ecs::make_raw_query<RigidbodyComponent, BoxColliderComponent, TransformComponent, DuplicatedComponent>();
+            m_world->for_each(duplicated_rb_with_box_query, [&](RigidbodyComponent& rbComp, BoxColliderComponent& bcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+            {
+                InitializeBoxCollider(rbComp);
+            });
+
+            static Ecs::Query duplicated_rb_with_capsule_query = Ecs::make_raw_query<RigidbodyComponent, CapsuleColliderComponent, TransformComponent, DuplicatedComponent>();
+            m_world->for_each(duplicated_rb_with_capsule_query, [&](RigidbodyComponent& rbComp, CapsuleColliderComponent& ccComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+            {
+                InitializeCapsuleCollider(rbComp);
+            });
+        }
+
+
+        // Update physics World's objects position and Orientation
+        static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
+        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
+            {
+                auto pos = tf.GetGlobalPosition();
+                auto quat = tf.GetGlobalRotationQuat();
+                rb.SetPosOrientation(pos + rb.Offset, quat);
+            });
+
+        //Updating box collider's bounds and debug drawing
+        static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
+        m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, BoxColliderComponent& bc)
+            {
+                auto pos = tf.GetGlobalPosition();
+                auto scale = tf.GetGlobalScale();
+                auto quat = tf.GetGlobalRotationQuat();
+
+                // calculate global bounds and half extents
+                bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
+
+                // set box size
+                rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
+
+                // test and set trigger boolean
+                if (rb.object.getTrigger() != bc.IsTrigger)
+                    rb.object.setTriggerShape(bc.IsTrigger);
+            });
+
+        //Updating capsule collider's bounds and debug drawing
+        static Ecs::Query capsuleColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, CapsuleColliderComponent>();
+        m_world->for_each(capsuleColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, CapsuleColliderComponent& cc)
+            {
+                auto pos = tf.GetGlobalPosition();
+                auto scale = tf.GetGlobalScale();
+                auto quat = tf.GetGlobalRotationQuat();
+
+                // calculate global bounds of capsule
+                glm::vec3 GlobalHalfExtents = { cc.Radius * scale.x, cc.HalfHeight * scale.y, cc.Radius * scale.z };
+
+                // set box size
+                rb.object.setCapsuleProperty(GlobalHalfExtents.x * 2, GlobalHalfExtents.y * 2);
+            });
 
         // Update global bounds of all objects
         //UpdateGlobalBounds();
         
-        // End of frame debug draw. Once per frame
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
-            DrawDebugColliders();
-            TRACY_PROFILE_SCOPE_END();
-        }
-
         TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::UpdateDynamics(Timestep deltaTime)
     {
         //TODO: Should remove eventually (perhaps?)
-        EditorCoreUpdate();
+        EditorUpdate(deltaTime);
         
         // update the physics world using fixed dt.
         m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
@@ -158,7 +190,7 @@ namespace oo
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
         {
             auto pos = rb.GetPositionInPhysicsWorld();
-            tf.SetGlobalPosition(pos);
+            tf.SetGlobalPosition(pos - rb.Offset);
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
             tf.SetGlobalOrientation(orientation);
@@ -173,209 +205,138 @@ namespace oo
             auto scale = tf.GetGlobalScale();
             auto quat = tf.GetGlobalRotationQuat();
 
-            // calculate local scale
-            //bc.Bounds.min = (bc.Size * -0.5f) * scale;
-            //bc.Bounds.max = (bc.Size *  0.5f) * scale;
-
             // calculate global bounds and half extents
             bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
-            //bc.GlobalBounds = { bc.Bounds.min , bc.Bounds.max };
-            //auto halfExtents = (bc.GlobalBounds.max - bc.GlobalBounds.min) * 0.5f;
-            auto globalPos = pos + bc.Offset;
+            auto physicsPos = pos + rb.Offset;
 
+            // set box position and orientation
+            rb.object.setPosOrientation({ physicsPos.x, physicsPos.y, physicsPos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z });
             // set box size
             rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
-
-            //phy.object.setposition({ globalPos.x, globalPos.y, globalPos.z });
-            rb.object.setPosOrientation({ globalPos.x, globalPos.y, globalPos.z }, { quat.value.w, quat.value.x, quat.value.y, quat.value.z });
         });
 
-
-        // Update dynamics
-        IntegrateForces(deltaTime);
-        IntegratePositions(deltaTime);
-        ResetForces();
-
-        // Update global bounds of all DYNAMIC objects
-        UpdateDynamicGlobalBounds();
-    }
-
-    void PhysicsSystem::UpdatePhysicsCollision()
-    {
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_broadphase, tracy::Color::PeachPuff);
-
-            //Broadphase Collection & Culling
-            BroadPhase();
-
-            TRACY_PROFILE_SCOPE_END();
-        }
-
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_narrowphase, tracy::Color::PeachPuff1);
-
-            //NarrowPhase Stringest Test
-            NarrowPhase();
-
-            TRACY_PROFILE_SCOPE_END();
-        }
-
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_callbacks, tracy::Color::PeachPuff2);
-
-            //Update Callbacks
-            UpdateCallbacks();
-
-            TRACY_PROFILE_SCOPE_END();
-            //Generate Manifold : Rigidbody only. If trigger : 2 flags and set them
-            //_mm_rsqrt_ss
-        }
     }
 
     void PhysicsSystem::UpdatePhysicsResolution(Timestep deltaTime)
     {
-    }
-
-    void PhysicsSystem::IntegrateForces(Timestep deltaTime)
-    {
-    }
-
-    void PhysicsSystem::IntegratePositions(Timestep deltaTime)
-    {
-    }
-
-    void PhysicsSystem::ResetForces()
-    {
-    }
-
-    void PhysicsSystem::UpdateGlobalBounds()
-    {
-    }
-
-    void PhysicsSystem::UpdateDynamicGlobalBounds()
-    {
-    }
-
-    void PhysicsSystem::BroadPhase()
-    {
-    }
-
-    void PhysicsSystem::NarrowPhase()
-    {
+        UpdateCallbacks();
     }
 
     void PhysicsSystem::UpdateCallbacks()
     {
-    }
+        auto trigger_queue = m_physicsWorld.getTriggerData();
+        while (!trigger_queue->empty())
+        {
+            myPhysx::TriggerManifold trigger_manifold = trigger_queue->front();
+            
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false, "This should never happen");
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false, "This should never happen");
 
-    void PhysicsSystem::ResolvePhysicsResolution()
-    {
+            // retrieve their gameobject id counterpart.
+            UUID trigger_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.triggerID);
+            UUID other_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.otherID);
+
+            //broadcast trigger event.
+            PhysicsTriggerEvent pte;
+            pte.TriggerID = trigger_go_id;
+            pte.OtherID = other_go_id;
+            switch (trigger_manifold.status)
+            {
+            case myPhysx::trigger::none:
+                pte.State = TriggerState::NONE;
+                break;
+            case myPhysx::trigger::onTriggerEnter:
+                pte.State = TriggerState::ENTER;
+                break;
+            case myPhysx::trigger::onTriggerStay:
+                pte.State = TriggerState::STAY;
+                break;
+            case myPhysx::trigger::onTriggerExit:
+                pte.State = TriggerState::EXIT;
+                break;
+            }
+            EventManager::Broadcast(&pte);
+
+            trigger_queue->pop();
+        }
+        m_physicsWorld.clearTriggerData();
     }
 
     void PhysicsSystem::PostUpdate()
     {
     }
 
-    void PhysicsSystem::DrawDebugColliders()
+
+    void PhysicsSystem::RenderDebugColliders()
     {
+        TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
         //TODO : Toggle to enable/disable debug drawing of bounds.
        
         //Updating box collider's bounds and debug drawing
+        // Assumes every data is updated and no need for any calculations.
         static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
         m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, BoxColliderComponent& bc)
         {
-            auto pos = tf.GetGlobalPosition();
-            auto scale = tf.GetGlobalScale();
-            auto quat = tf.GetGlobalRotationQuat();
-
-            // calculate global bounds and half extents
-            bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
-            auto globalPos = pos + bc.Offset;
+            auto pos = rb.GetPositionInPhysicsWorld();
+            auto quat = rb.GetOrientationInPhysicsWorld();
 
             //Debug draw the bounds
-            DebugDraw::AddAABB({ globalPos + bc.GlobalHalfExtents  , globalPos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
+            DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing
         static Ecs::Query capsuleColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, CapsuleColliderComponent>();
         m_world->for_each(capsuleColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, CapsuleColliderComponent& cc)
         {
-            auto pos = tf.GetGlobalPosition();
+            auto pos = rb.GetPositionInPhysicsWorld();
             auto scale = tf.GetGlobalScale();
-            auto quat = tf.GetGlobalRotationQuat();
+            auto quat = rb.GetOrientationInPhysicsWorld();
 
             // calculate global bounds of capsule
             glm::vec3 GlobalHalfExtents = { cc.Radius * scale.x, cc.HalfHeight * scale.y, cc.Radius * scale.z };
-            //cc.HalfHeight + cc.Radius;
-            glm::vec3 globalPos = pos + cc.Offset;
 
             //Debug draw the bounds
-            DebugDraw::AddAABB({ globalPos + GlobalHalfExtents , globalPos - GlobalHalfExtents }, oGFX::Colors::GREEN);
+            DebugDraw::AddAABB({ pos + GlobalHalfExtents , pos - GlobalHalfExtents }, oGFX::Colors::GREEN);
             // draw top sphere
-            DebugDraw::AddSphere({ globalPos + vec3{ 0, GlobalHalfExtents.y, 0}, GlobalHalfExtents.x }, oGFX::Colors::GREEN);
+            DebugDraw::AddSphere({ pos + vec3{ 0, GlobalHalfExtents.y, 0}, GlobalHalfExtents.x }, oGFX::Colors::GREEN);
             // draw bottom sphere
-            DebugDraw::AddSphere({ globalPos - vec3{ 0, GlobalHalfExtents.y, 0}, GlobalHalfExtents.x }, oGFX::Colors::GREEN);
+            DebugDraw::AddSphere({ pos - vec3{ 0, GlobalHalfExtents.y, 0}, GlobalHalfExtents.x }, oGFX::Colors::GREEN);
         });
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
-    void PhysicsSystem::EditorCoreUpdate()
+    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime) 
+    { 
+        FixedDeltaTime = NewFixedTime; 
+        AccumulatorLimit = FixedDeltaTime * MaxIterations; 
+    }
+
+    PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()
     {
-        // Update physics World's objects position and Orientation
-        static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
-            {
-                auto pos = tf.GetGlobalPosition();
-                auto quat = tf.GetGlobalRotationQuat();
-                rb.SetPosOrientation(pos, quat);
-            });
-
-        //Updating box collider's bounds and debug drawing
-        static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
-        m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, BoxColliderComponent& bc)
-            {
-                auto pos = tf.GetGlobalPosition();
-                auto scale = tf.GetGlobalScale();
-                auto quat = tf.GetGlobalRotationQuat();
-
-                // calculate global bounds and half extents
-                bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
-                auto globalPos = pos + bc.Offset;
-
-                // set box size
-                rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
-            });
-
-        //Updating capsule collider's bounds and debug drawing
-        static Ecs::Query capsuleColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, CapsuleColliderComponent>();
-        m_world->for_each(capsuleColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, CapsuleColliderComponent& cc)
-            {
-                auto pos = tf.GetGlobalPosition();
-                auto scale = tf.GetGlobalScale();
-                auto quat = tf.GetGlobalRotationQuat();
-
-                // calculate global bounds of capsule
-                glm::vec3 GlobalHalfExtents = { cc.Radius * scale.x, cc.HalfHeight * scale.y, cc.Radius * scale.z };
-                //cc.HalfHeight + cc.Radius;
-                glm::vec3 globalPos = pos + cc.Offset;
-
-                // set box size
-                rb.object.setCapsuleProperty(GlobalHalfExtents.x * 2, GlobalHalfExtents.y * 2);
-            });
+        return FixedDeltaTime; 
     }
-
-
 
     void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
-        auto& rb_comp = m_world->get_component<RigidbodyComponent>(rb->entityID);
-        rb_comp.object = m_physicsWorld.createInstance();
-        rb_comp.SetStatic(false);   // default to dynamic object.
-        //default initialize material
-        rb_comp.object.setMaterial(PhysicsMaterial{});
+        InitializeRigidbody(rb->component);
+        if (m_physicsToGameObjectLookup.contains(rb->component.object.id) == false)
+        {
+            auto goc = m_world->get_component<GameObjectComponent>(rb->entityID);
+            m_physicsToGameObjectLookup.insert({ rb->component.object.id, goc.Id });
+        }
     }
 
     void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
+        // Remove Data from lookup table
+        ASSERT_MSG(m_physicsToGameObjectLookup.contains(rb->component.object.id) == false, "This should never happen!");
+
+        if (m_physicsToGameObjectLookup.contains(rb->component.object.id))
+        {
+            m_physicsToGameObjectLookup.erase(rb->component.object.id);
+        }
+
         //Remove all other colliders as well
 
         if (m_world->has_component<BoxColliderComponent>(rb->entityID))
@@ -395,15 +356,17 @@ namespace oo
         }
         
         auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
-
-        // create box
-        rb_comp.object.setShape(myPhysx::shape::box);
+        InitializeBoxCollider(rb_comp);
     }
 
     void PhysicsSystem::OnBoxColliderRemove(Ecs::ComponentEvent<BoxColliderComponent>* bc)
     {
-        auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
-        rb_comp.object.setShape(myPhysx::shape::none);
+        // need this safeguard to be sure. otherwise crash.
+        if (m_world->has_component<RigidbodyComponent>(bc->entityID))
+        {
+            auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
+            rb_comp.object.setShape(myPhysx::shape::none);
+        }
     }
 
     void PhysicsSystem::OnCapsuleColliderAdd(Ecs::ComponentEvent<CapsuleColliderComponent>* cc)
@@ -415,15 +378,38 @@ namespace oo
         }
 
         auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
-
-        // create box
-        rb_comp.object.setShape(myPhysx::shape::capsule);
+        InitializeCapsuleCollider(rb_comp);
     }
 
     void PhysicsSystem::OnCapsuleColliderRemove(Ecs::ComponentEvent<CapsuleColliderComponent>* cc)
     {
-        auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
-        rb_comp.object.setShape(myPhysx::shape::none);
+        // need this safeguard to be sure. otherwise crash.
+        if (m_world->has_component<RigidbodyComponent>(cc->entityID))
+        {
+            auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
+            rb_comp.object.setShape(myPhysx::shape::none);
+        }
+    }
+
+    void PhysicsSystem::InitializeRigidbody(RigidbodyComponent& rb)
+    {
+        rb.object = m_physicsWorld.createInstance();
+        rb.SetStatic(true); // default to static objects. Most things in the world should be static.
+        //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
+        //default initialize material
+        rb.object.setMaterial(PhysicsMaterial{});
+    }
+
+    void PhysicsSystem::InitializeBoxCollider(RigidbodyComponent& rb)
+    {
+        // create box
+        rb.object.setShape(myPhysx::shape::box);
+    }
+
+    void PhysicsSystem::InitializeCapsuleCollider(RigidbodyComponent& rb)
+    {
+        // create box
+        rb.object.setShape(myPhysx::shape::capsule);
     }
 
    /* void PhysicsSystem::OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb)

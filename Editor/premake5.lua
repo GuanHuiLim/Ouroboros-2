@@ -19,6 +19,9 @@ project "Editor"
     filter "files:vendor/**/**.c"
         flags { "NoPCH" }
     filter {}   -- resets the filter
+    
+    --enables OpenMP multiprocessing library
+    openmp "On"
 
     files
     {

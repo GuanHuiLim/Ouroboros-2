@@ -17,81 +17,66 @@ Technology is prohibited.
 
 #include <Archetypes_Ecs/src/A_Ecs.h>
 #include "Ouroboros/Physics/PhysicsFwd.h"
+#include "PhysicsEvents.h"
 #include "Ouroboros/Core/Timer.h"
 
-#include "Ouroboros/EventSystem/Event.h"
 #include <Physics/Source/phy.h>
 
 #include <bitset>
+
 namespace oo
 {
-    struct Scene;
+    class Scene;
 
     static constexpr std::size_t s_MaxLayerCount = 8;
     using LayerField    = std::bitset<s_MaxLayerCount>;
     using LayerMask     = LayerField;
     using LayerMatrix   = std::unordered_map<LayerField, LayerMask>;
 
-    //physics tick event.
-    struct PhysicsTickEvent : public Event
-    {
-        double deltaTime;
-    };
-
     class PhysicsSystem final : public Ecs::System
     {
     public:
         using Timestep = double;
 
-        PhysicsSystem();
+        PhysicsSystem() = default;
         virtual ~PhysicsSystem() = default;
         virtual void Run(Ecs::ECSWorld*) override {};
 
         void Init(Scene* m_scene);
         void RuntimeUpdate(Timestep deltaTime);
         void EditorUpdate(Timestep deltaTime);
+        void RenderDebugColliders();
 
         // Global gravity
         vec3 Gravity = { 0, -9.81f, 0 };
-
-        static constexpr std::uint64_t MaxIterations = 50;
-        static constexpr Timestep FixedDeltaTime = 1.0/100.0;                         // physics updates at 100 fps
-        static constexpr Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
-
+        
         // Layering Bitmask Determines collision
         static LayerMatrix PhysicsBitMask;
-
+        // Manupilating Fixed DT
+        static void SetFixedDeltaTime(Timestep NewFixedTime);
+        static Timestep GetFixedDeltaTime();
+    
     private:
+        inline static std::uint64_t MaxIterations = 100;
+        inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 100 fps
+        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
+
         void UpdateDynamics(Timestep deltaTime);
-        void UpdatePhysicsCollision();
         void UpdatePhysicsResolution(Timestep deltaTime);
-
-        void IntegrateForces(Timestep deltaTime);
-        void IntegratePositions(Timestep deltaTime);
-        void ResetForces();
-
-        void UpdateGlobalBounds();
-        void UpdateDynamicGlobalBounds();
-
-        void BroadPhase();
-        void NarrowPhase();
+        
         void UpdateCallbacks();
-        void ResolvePhysicsResolution();
         void PostUpdate();
-        void DrawDebugColliders();
 
-        void EditorCoreUpdate();
+        Scene* m_scene = nullptr;
 
-#if PHYSICS_DEBUG_MSG && OO_DEBUG || PHYSICS_DEBUG_MSG && OO_RELEASE
-        std::uint64_t m_collisionChecks = 0, m_actualCollisions = 0;
-#endif  
-        Scene* m_scene;
+        // need a way to track physics uuids to gameobject uuids
+        std::map<phy_uuid::UUID, UUID> m_physicsToGameObjectLookup = {};
 
         //underlying physics world
-        myPhysx::PhysxWorld m_physicsWorld;
+        myPhysx::PhysxWorld m_physicsWorld{ { Gravity.x, Gravity.y, Gravity.z} };
 
         //time accumulator
-        double m_accumulator;
+        double m_accumulator = 0.0;
 
         void OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
         void OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);
@@ -104,6 +89,10 @@ namespace oo
 
         /*void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb);
         void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb);*/
+    
+        void InitializeRigidbody(RigidbodyComponent& rb);
+        void InitializeBoxCollider(RigidbodyComponent& rb);
+        void InitializeCapsuleCollider(RigidbodyComponent& rb);
     };
 
 

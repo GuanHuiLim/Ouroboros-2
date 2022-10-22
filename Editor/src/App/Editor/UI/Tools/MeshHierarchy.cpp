@@ -29,7 +29,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "App/Editor/Utility/ImGuiManager.h"
-#include "Ouroboros/Vulkan/RendererComponent.h"
+#include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "SceneManagement/include/SceneManager.h"
 MeshHierarchy::MeshHierarchy()
 {
