@@ -142,6 +142,7 @@ private: //Member Functions
 
 	//Helper Functions
 	Pin* FindPin(ed::PinId id);
+	NodeInfo* FindNode(ed::PinId pinID);
 	NodeInfo* FindNode(ed::NodeId id);
 	NodeInfo* FindNode(oo::Anim::Node* _node);
 };

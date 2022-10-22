@@ -6,6 +6,18 @@
 
 #include "App/Editor/Utility/ImGuiManager.h"
 
+AnimatorControllerView::NodeInfo* AnimatorControllerView::FindNode(ed::PinId pinID)
+{
+    for (auto& node : m_nodes)
+    {
+        if (node.Input[0].id == pinID)
+            return &node;
+        else if (node.Output[0].id == pinID)
+            return &node;
+    }
+    return nullptr;
+}
+
 AnimatorControllerView::NodeInfo* AnimatorControllerView::FindNode(ed::NodeId id)
 {
     for (auto& node : m_nodes)
@@ -74,9 +86,13 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     if (m_firstFrame)
     {
         //initialize the node editor with data from animation tree
-        for (int i = 0; i < _animator->GetActualComponent().animTree->groups[0].nodes.size(); ++i)
+        auto& temp = _animator->GetActualComponent().animTree->groups;
+        for (auto it = temp.begin(); it != temp.end(); ++it)
         {
-            CreateNode(uniqueId, &(_animator->GetActualComponent().animTree->groups[0].nodes[i]));
+            for (auto it2 = it->second.nodes.begin(); it2 != it->second.nodes.end(); ++it2)
+            {
+                CreateNode(uniqueId, &it2->second);
+            }
         }
     }
 
@@ -113,18 +129,21 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
 
     if (m_firstFrame)
     {
-        for (int i = 0; i < _animator->GetActualComponent().animTree->groups[0].links.size(); ++i)
+        auto& temp = _animator->GetActualComponent().animTree->groups;
+        for (auto it = temp.begin(); it != temp.end(); ++it)
         {
-            NodeInfo* outputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].src.operator->());
-            NodeInfo* inputNode = FindNode(_animator->GetActualComponent().animTree->groups[0].links[i].dst.operator->());
+            for (auto it2 = it->second.links.begin(); it2 != it->second.links.end(); ++it2)
+            {
+                NodeInfo* outputNode = FindNode(it2->second.src.operator->());
+                NodeInfo* inputNode = FindNode(it2->second.dst.operator->());
 
-            ed::PinId inputPin = outputNode->Output[0].id;
-            ed::PinId outputPin = inputNode->Input[0].id;
+                ed::PinId inputPin = outputNode->Output[0].id;
+                ed::PinId outputPin = inputNode->Input[0].id;
 
-            //m_links.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin, &(_animator->groups[0].links[i])));
-            m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin));
-            m_links_.back().link = &(_animator->GetActualComponent().animTree->groups[0].links[i]);
-            ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
+                m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin));
+                m_links_.back().link = &(it2->second);
+                ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
+            }
         }
     }
 
@@ -157,12 +176,15 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 if (ed::AcceptNewItem())
                 {
                     // Since we accepted new link, lets add one to our list of links.
-                    for (int i = 0; i < _animator->GetActualComponent().animTree->groups[0].links.size(); ++i)
+                    auto& temp = _animator->GetActualComponent().animTree->groups;
+                    m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId });
+                    
+                    for (auto it = temp.begin(); it != temp.end(); ++it)
                     {
-                        m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId });
-                        m_links_.back().link = &(_animator->GetActualComponent().animTree->groups[0].links[i]);
-                        //m_links.push_back({ ed::LinkId(m_nextLinkId), inputPinId, outputPinId });
-                        //m_links.back().link = &(_animator->GetActualComponent().animTree->groups[0].links[i]);
+                        auto newLink = _animator->AddLink(it->second.name, 
+                                                          FindNode(inputPinId)->anim_node->name,
+                                                          FindNode(outputPinId)->anim_node->name);
+                        m_links_.back().link = newLink;
                     }
 
                     // Draw new link.
@@ -194,16 +216,23 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
         {
             //Need to find a way to store the oo::Anim::NodeInfo
             //Temporary Solution
-            oo::Anim::NodeInfo nodeInfo{
-                .name{"Node"},
-                .animation_name{oo::Anim::Animation::empty_animation_name},
-                .speed{1.f},
-                .position{0.f,0.f,0.f},
-            };
+            auto& temp = _animator->GetActualComponent().animTree->groups;
+            for (auto it = temp.begin(); it != temp.end(); ++it)
+            {
+                if (it == temp.begin())
+                {
+                    oo::Anim::NodeInfo nodeinfo{
+                        .name{ "New Node" },
+                        .animation_name{ oo::Anim::Animation::empty_animation_name },
+                        .speed{ 1.f },
+                        .position{0.f,0.f,0.f}
+                    };
 
-            auto node = _animator->AddNode(_animator->GetActualComponent().animTree->groups[0].name, nodeInfo);
-            
-            CreateNode(uniqueId, node);
+                    auto node = _animator->AddNode(it->second.name, nodeinfo);
+
+                    CreateNode(uniqueId, node);
+                }
+            }
         }
         ImGui::EndPopup();
     }
