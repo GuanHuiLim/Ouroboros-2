@@ -105,7 +105,7 @@ private:
 	//scripts
 	static void SaveScript(oo::GameObject& go,rapidjson::Value& val,rapidjson::Document& doc);
 	static void LoadScript(oo::GameObject& go,rapidjson::Value&& val);
-	static void RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::GameObject& go);
+	static void RemapScripts(std::unordered_map<oo::UUID, oo::UUID>& scriptIds, oo::GameObject& go);
 protected://serialzation helpers
 	template <typename Component>
 	static void AddLoadComponent() noexcept;
