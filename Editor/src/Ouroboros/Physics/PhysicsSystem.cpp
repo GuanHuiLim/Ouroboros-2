@@ -198,11 +198,21 @@ namespace oo
 
             auto pos = rb.GetPositionInPhysicsWorld();
             auto delta_position = pos - tf.GetGlobalPosition();
-            tf.Position() += delta_position;
+            tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
+
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
             auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
-            tf.SetOrientation({ tf.GetRotationQuat().value + delta_orientation });
+            
+            //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
+            //LOG_TRACE("global orientation {0},{1},{2},{3}", tf.GetGlobalRotationQuat().value.x, tf.GetGlobalRotationQuat().value.y, tf.GetGlobalRotationQuat().value.z, tf.GetGlobalRotationQuat().value.w);
+            //LOG_TRACE("delta orientation {0},{1},{2},{3}", delta_orientation.x, delta_orientation.y, delta_orientation.z, delta_orientation.w);
+            //LOG_TRACE("local orientation {0},{1},{2},{3}", tf.GetRotationQuat().value.x, tf.GetRotationQuat().value.y, tf.GetRotationQuat().value.z, tf.GetRotationQuat().value.w);
+           
+            tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
+            //tf.SetOrientation(orientation);
+
+            m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->FindWithInstanceID(goc.Id), true);
         });
 
         static Ecs::Query dynamicBoxColliderQuery = Ecs::make_query<TransformComponent, BoxColliderComponent, RigidbodyComponent>();
@@ -273,7 +283,7 @@ namespace oo
     void PhysicsSystem::PostUpdate()
     {
         // Update entire subtree once every Fixed update so physics changes are properly reflected.
-        m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->GetRoot(), false);
+        //m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->GetRoot(), false);
     }
 
 
