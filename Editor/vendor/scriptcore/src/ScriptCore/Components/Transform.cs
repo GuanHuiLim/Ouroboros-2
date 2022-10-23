@@ -36,6 +36,39 @@ namespace Ouroboros
             set { Transform3D_SetGlobalPosition(gameObject.scene, gameObject.GetInstanceID(), value.x, value.y, value.z); }
         }
 
+        [DllImport("__Internal")] private static extern void Transform3D_GetGlobalForward(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        public Vector3 forward
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetGlobalForward(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+        }
+
+        [DllImport("__Internal")] private static extern void Transform3D_GetGlobalLeft(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        public Vector3 left
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetGlobalLeft(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+        }
+
+        [DllImport("__Internal")] private static extern void Transform3D_GetGlobalUp(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        public Vector3 up
+        {
+            get
+            {
+                float x, y, z;
+                Transform3D_GetGlobalUp(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+        }
+
         [DllImport("__Internal")] private static extern void Transform3D_GetLocalEulerAngles(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
         [DllImport("__Internal")] private static extern void Transform3D_SetLocalEulerAngles(UInt32 sceneID, UInt64 instanceID, float x, float y, float z);
 

@@ -15,7 +15,6 @@ Technology is prohibited.
 #pragma once
 #include "Ouroboros/Scripting/ExportAPI.h"
 
-#include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Scripting/ScriptSystem.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/Transform/TransformSystem.h"
@@ -60,6 +59,36 @@ namespace oo
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
+    }
+
+    SCRIPT_API void Transform3D_GetGlobalForward(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GlobalForward();
+        *x = vec3.x;
+        *y = vec3.y;
+        *z = vec3.z;
+    }
+
+    SCRIPT_API void Transform3D_GetGlobalLeft(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GlobalRight();
+        *x = vec3.x;
+        *y = vec3.y;
+        *z = vec3.z;
+    }
+
+    SCRIPT_API void Transform3D_GetGlobalUp(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GlobalUp();
+        *x = vec3.x;
+        *y = vec3.y;
+        *z = vec3.z;
     }
 
     SCRIPT_API void Transform3D_GetLocalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)

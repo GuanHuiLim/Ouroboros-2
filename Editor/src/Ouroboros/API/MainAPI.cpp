@@ -25,3 +25,4 @@ Technology is prohibited.
 #include "AudioSourceAPI.h"
 
 #include "RigidbodyAPI.h"
+#include "CollidersAPI.h"
