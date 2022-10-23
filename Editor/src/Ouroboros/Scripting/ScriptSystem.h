@@ -22,7 +22,7 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObject.h"
 
-#include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Physics/PhysicsEvents.h"
 
 namespace oo
 {
@@ -37,10 +37,6 @@ namespace oo
         void SetUpObject(UUID uuid);
         bool StopPlay();
         bool IsPlaying();
-
-        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
-        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
-        void OnObjectDestroyed(GameObject::OnDestroy* e);
 
         void ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
         void RefreshScriptInfoAll();
@@ -74,7 +70,12 @@ namespace oo
         void UpdateAllScriptFieldsWithInfo();
         void UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script);
 
+        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
+        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
+        void OnObjectDestroyed(GameObject::OnDestroy* e);
+
         void OnPhysicsTick(PhysicsTickEvent* e);
+        void OnTriggerEvent(PhysicsTriggerEvent* e);
 
         Scene& scene;
         ScriptDatabase& scriptDatabase;

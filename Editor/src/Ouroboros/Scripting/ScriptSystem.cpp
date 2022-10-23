@@ -33,6 +33,7 @@ namespace oo
         EventManager::Subscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
 
         EventManager::Subscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
+        EventManager::Subscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
     }
 
     ScriptSystem::~ScriptSystem()
@@ -42,6 +43,7 @@ namespace oo
         EventManager::Unsubscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
 
         EventManager::Unsubscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
+        EventManager::Unsubscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
 
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
@@ -110,27 +112,6 @@ namespace oo
     bool ScriptSystem::IsPlaying()
     {
         return isPlaying;
-    }
-
-    void ScriptSystem::OnObjectEnabled(GameObjectComponent::OnEnableEvent* e)
-    {
-        if (scene.FindWithInstanceID(e->Id) == nullptr)
-            return;
-        InvokeForObject(e->Id, "OnEnable");
-    }
-    void ScriptSystem::OnObjectDisabled(GameObjectComponent::OnDisableEvent* e)
-    {
-        if (scene.FindWithInstanceID(e->Id) == nullptr)
-            return;
-        InvokeForObject(e->Id, "OnDisable");
-    }
-    void ScriptSystem::OnObjectDestroyed(GameObject::OnDestroy* e)
-    {
-        UUID uuid = e->go->GetInstanceID();
-        if (scene.FindWithInstanceID(uuid) == nullptr)
-            return;
-        scriptDatabase.Delete(uuid);
-        componentDatabase.Delete(uuid);
     }
 
     void ScriptSystem::ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
@@ -421,8 +402,81 @@ namespace oo
         }
     }
 
+    void ScriptSystem::OnObjectEnabled(GameObjectComponent::OnEnableEvent* e)
+    {
+        if (scene.FindWithInstanceID(e->Id) == nullptr)
+            return;
+        InvokeForObject(e->Id, "OnEnable");
+    }
+    void ScriptSystem::OnObjectDisabled(GameObjectComponent::OnDisableEvent* e)
+    {
+        if (scene.FindWithInstanceID(e->Id) == nullptr)
+            return;
+        InvokeForObject(e->Id, "OnDisable");
+    }
+    void ScriptSystem::OnObjectDestroyed(GameObject::OnDestroy* e)
+    {
+        UUID uuid = e->go->GetInstanceID();
+        if (scene.FindWithInstanceID(uuid) == nullptr)
+            return;
+        scriptDatabase.Delete(uuid);
+        componentDatabase.Delete(uuid);
+    }
+
     void ScriptSystem::OnPhysicsTick(PhysicsTickEvent* e)
     {
         InvokeForAllEnabled("FixedUpdate");
+    }
+
+    void ScriptSystem::OnTriggerEvent(PhysicsTriggerEvent* e)
+    {
+        MonoObject* obj = componentDatabase.TryRetrieveDerivedObject(e->TriggerID, "Ouroboros", "Collider");
+        MonoObject* other = componentDatabase.TryRetrieveDerivedObject(e->OtherID, "Ouroboros", "Collider");
+
+        void* objParams[1];
+        objParams[0] = other;
+        void* otherParams[1];
+        otherParams[0] = obj;
+
+        MonoMethod* method = nullptr;
+        switch (e->State)
+        {
+        case TriggerState::ENTER:
+        {
+            scriptDatabase.ForEachEnabled(e->TriggerID, [&objParams](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnTriggerEnter", objParams, 1);
+                });
+            scriptDatabase.ForEachEnabled(e->OtherID, [&otherParams](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnTriggerEnter", otherParams, 1);
+                });
+        }
+        break;
+        case TriggerState::STAY:
+        {
+            scriptDatabase.ForEachEnabled(e->TriggerID, [&objParams](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnTriggerStay", objParams, 1);
+                });
+            scriptDatabase.ForEachEnabled(e->OtherID, [&otherParams](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnTriggerStay", otherParams, 1);
+                });
+        }
+        break;
+        case TriggerState::EXIT:
+        {
+            scriptDatabase.ForEachEnabled(e->TriggerID, [&objParams](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnTriggerExit", objParams, 1);
+                });
+            scriptDatabase.ForEachEnabled(e->OtherID, [&otherParams](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnTriggerExit", otherParams, 1);
+                });
+        }
+        break;
+        }
     }
 }
