@@ -196,6 +196,10 @@ namespace oo
             // when calculating its final transform.
             // therefore we find the delta change and apply it to its local transform.
 
+            // we make this cheaper by only updating non-static objects.
+            if (rb.IsStaticObject) 
+                return;
+
             auto pos = rb.GetPositionInPhysicsWorld();
             auto delta_position = pos - tf.GetGlobalPosition();
             tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
