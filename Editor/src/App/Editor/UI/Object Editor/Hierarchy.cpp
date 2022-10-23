@@ -76,7 +76,15 @@ void Hierarchy::Show()
 
 	TRACY_PROFILE_SCOPE_END();
 }
-
+/**
+ * \param name - name of current node
+ * \param node - current node
+ * \param flags - treenodeflags
+ * \param swaping - is item in swapping mode
+ * \param rename - is item in rename mode
+ * \param no_Interaction - true if there is interaction , false if no interaction
+ * \return 
+ */
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
@@ -92,7 +100,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		if (ImGui::InputText("##rename", &source->Name(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
 			m_isRename = false;
 	}
-	if (ImGui::BeginDragDropTarget())
+	//nothing should parent over it if no_interaction == false
+	if (ImGui::BeginDragDropTarget() && no_Interaction == false)
 	{
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
 		if (payload)
@@ -101,6 +110,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 			auto source = scene->FindWithInstanceID(m_dragged);
 			auto targetparent = scene->FindWithInstanceID(node.get_handle());
 			targetparent->AddChild(*source, true);//s_selected
+
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -127,13 +137,13 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		m_isRename = false;
 	}
 
-	if (no_Interaction)
-		return open;
+	//if (no_Interaction)
+	//	return open;
 
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
-		UUID goID = node.get_handle();
-		ImGui::SetDragDropPayload(payload_name, &goID , sizeof(UUID));
+		oo::UUID goID = node.get_handle();
+		ImGui::SetDragDropPayload(payload_name, &goID , sizeof(oo::UUID));
 		m_isDragging = true;
 		m_dragged = handle;
 		m_dragged_parent = node.get_parent_handle();
@@ -141,7 +151,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		ImGui::EndDragDropSource();
 	}
 
-	if (swaping)
+	if (swaping && no_Interaction == false)
 		SwappingUI(node,true);
 	return open;
 }
@@ -211,7 +221,15 @@ void Hierarchy::NormalView()
 			{
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
-				scene->GetRoot()->AddChild(*source, true);//s_selected
+
+				if (source->HasComponent<oo::PrefabComponent>() == false && source->GetIsPrefab())
+				{
+					WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Break Prefab if you want to unparent childs");
+				}
+				else
+				{
+					scene->GetRoot()->AddChild(*source, true);//s_selected
+				}
 			}
 			payload = ImGui::AcceptDragDropPayload(".prefab"); //for creating prefab files
 			if (payload)
@@ -295,14 +313,14 @@ void Hierarchy::NormalView()
 		else
 			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
 
-		bool swapping = (curr->get_parent_handle() == m_dragged_parent) & m_isDragging;
-		if (swapping && found_dragging == false)//first encounter
+		auto source = scene->FindWithInstanceID(curr->get_handle());
+		bool swapping = ((curr->get_parent_handle() == m_dragged_parent) & m_isDragging) ;
+		if (swapping && found_dragging == false && source->GetIsPrefab() == false)//first encounter
 		{
 			SwappingUI(*curr, found_dragging);
 			swapping = true;
 			found_dragging = true;
 		}
-		auto source = scene->FindWithInstanceID(curr->get_handle());
 		std::string name = "";
 
 		if (source)

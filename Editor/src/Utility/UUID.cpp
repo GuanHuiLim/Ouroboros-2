@@ -24,11 +24,14 @@ Technology is prohibited.
 
 #include <random>
 
-static std::random_device s_RandomDevice;
-static std::mt19937_64 s_randomEngine(s_RandomDevice());
-static std::uniform_int_distribution<UUID::value_type> s_uniformDistribution;
-
-UUID::UUID()
-    : m_uuid{ s_uniformDistribution(s_randomEngine) }
+namespace oo
 {
+    static std::random_device s_RandomDevice;
+    static std::mt19937_64 s_randomEngine(s_RandomDevice());
+    static std::uniform_int_distribution<UUID::value_type> s_uniformDistribution;
+
+    UUID::UUID()
+        : m_uuid{ s_uniformDistribution(s_randomEngine) }
+    {
+    }
 }

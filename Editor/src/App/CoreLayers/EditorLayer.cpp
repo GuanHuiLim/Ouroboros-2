@@ -65,6 +65,6 @@ void EditorLayer::OnUpdate()
 		}
 		ImGui::EndMainMenuBar();
 	}
-
+	m_discord_helper.Update();
 	TRACY_PROFILE_SCOPE_END();
 }

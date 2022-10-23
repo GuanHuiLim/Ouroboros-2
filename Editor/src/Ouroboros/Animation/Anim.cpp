@@ -23,11 +23,13 @@ Technology is prohibited.
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
+#include "Project.h"
+#include "App/Editor/UI/Tools/MeshHierarchy.h"
 
 #include <random>
 namespace oo::Anim::internal
 {
-	uint GetAnimationIndex(std::string const& name)
+	/*uint GetAnimationIndex(std::string const& name)
 	{
 		assert(Animation::name_to_index.contains(name));
 		return Animation::name_to_index[name];
@@ -36,17 +38,17 @@ namespace oo::Anim::internal
 	{
 		assert(Animation::ID_to_index.contains(id));
 		return Animation::ID_to_index[id];
-	}
+	}*/
 	NodeRef CreateNodeReference(Group& group, size_t id)
 	{
 		int index = 0;
-		for (auto& node : group.nodes)
+		for (auto& [key,node] : group.nodes)
 		{
 			if (node.node_ID == id)
 			{
 				NodeRef ref{
 					.nodes{&group.nodes},
-					.index{index},
+					//.index{index},
 					.id{id}
 				};
 				return ref;
@@ -56,16 +58,16 @@ namespace oo::Anim::internal
 		assert(false);
 		return {};
 	}
-	NodeRef CreateNodeReference(std::vector<Node>& node_container, size_t id)
+	NodeRef CreateNodeReference(std::map<size_t, Node>& node_container, size_t id)
 	{
 		int index = 0;
-		for (auto& node : node_container)
+		for (auto& [key, node] : node_container)
 		{
 			if (node.node_ID == id)
 			{
 				NodeRef ref{
 					.nodes{&node_container},
-					.index{index},
+					//.index{index},
 					.id{id} 
 				};
 
@@ -79,13 +81,13 @@ namespace oo::Anim::internal
 	GroupRef CreateGroupReference(AnimationTree& tree, size_t id)
 	{
 		int index = 0;
-		for (auto& group : tree.groups)
+		for (auto& [key, group] : tree.groups)
 		{
 			if (group.groupID == id)
 			{
 				GroupRef ref{
 					.groups{&tree.groups},
-					.index{index},
+					//.index{index},
 					.id{id}
 				};
 
@@ -99,13 +101,13 @@ namespace oo::Anim::internal
 	LinkRef CreateLinkReference(Group& group, size_t id)
 	{
 		int index = 0;
-		for (auto& link : group.links)
+		for (auto& [key, link] : group.links)
 		{
 			if (link.linkID == id)
 			{
 				LinkRef ref{
 					.links{&group.links},
-					.index{index},
+					//.index{index},
 					.id{id}
 				};
 
@@ -569,7 +571,7 @@ namespace oo::Anim::internal
 
 	Group* RetrieveGroupFromTree(AnimationTree& tree, std::string const& groupName)
 	{
-		for (auto& group : tree.groups)
+		for (auto& [key, group] : tree.groups)
 		{
 			if (group.name == groupName)
 				return &group;
@@ -589,7 +591,7 @@ namespace oo::Anim::internal
 			return nullptr;
 		}
 
-		for (auto& node : group->nodes)
+		for (auto& [key,node] : group->nodes)
 		{
 			if (node.name == name)
 				return &node;
@@ -602,7 +604,7 @@ namespace oo::Anim::internal
 
 	Node* RetrieveNodeFromGroup(Group& group, std::string const& name)
 	{
-		for (auto& node : group.nodes)
+		for (auto& [key,node] : group.nodes)
 		{
 			if (node.name == name)
 				return &node;
@@ -615,7 +617,7 @@ namespace oo::Anim::internal
 	//same as RetrieveNodeFromGroup but without error messages and asserts
 	Node* TryRetrieveNodeFromGroup(Group& group, std::string const& name)
 	{
-		for (auto& node : group.nodes)
+		for (auto& [key,node] : group.nodes)
 		{
 			if (node.name == name)
 				return &node;
@@ -625,7 +627,7 @@ namespace oo::Anim::internal
 
 	Link* RetrieveLinkFromGroup(Group& group, std::string const&  linkName)
 	{
-		for (auto& link : group.links)
+		for (auto& [key,link] : group.links)
 		{
 			if (link.name == linkName)
 				return &link;
@@ -682,8 +684,9 @@ namespace oo::Anim::internal
 
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
+		
 		//if node already added to this group then just return it
-		for (auto& node : group.nodes)
+		for (auto& [key, node] : group.nodes)
 		{
 			if (node.name == info.name)
 			{
@@ -694,27 +697,22 @@ namespace oo::Anim::internal
 
 		//create the node and add it to this group
 		Node node{ info };
+		size_t key = node.node_ID;
 		//UpdateNodeTrackers(node);
-		auto& createdNode = group.nodes.emplace_back(std::move(node));
-
-
-		//reload node references in case any become invalid
-		/*group.startNode.Reload();
-		for (auto& link : group.links)
-		{
-			link.src.Reload();
-			link.dst.Reload();
-		}*/
-
-
-		return &createdNode;
+		auto [iter, result] = group.nodes.insert(std::make_pair(key, std::move(node)));
+		assert(result == true); //insertion should occur, node should not be already existing!!
+		return &group.nodes[key];
+		
 	}
 
 	Group* AddGroupToTree(AnimationTree& tree, GroupInfo& info)
 	{
 		info.tree = &tree;
 		Group new_group{ info };
-		auto& group = tree.groups.emplace_back(std::move(new_group));
+		size_t key = new_group.groupID;
+		auto [iter, result] = tree.groups.emplace(key, std::move(new_group));
+		assert(result == true);
+		auto& group = tree.groups[key];
 		//create the starting node
 		NodeInfo n_info{
 			.name{ "Start Node" },
@@ -840,8 +838,11 @@ namespace oo::Anim::internal
 		auto dst_ref = CreateNodeReference(group, dst_node->node_ID);
 		Link link{ src_ref , dst_ref };
 		link.name = src_node->name + " -> " + dst_node->name;
-
-		auto& createdLink = group.links.emplace_back(std::move(link));
+		size_t key = link.linkID;
+		//auto& createdLink = group.links.emplace_back(std::move(link));
+		auto [iter, result] = group.links.emplace(key, std::move(link));
+		assert(result); //link should be inserted!!
+		auto& createdLink = group.links[key];
 
 		src_node->outgoingLinks.emplace_back(CreateLinkReference(group, createdLink.linkID));
 
@@ -914,8 +915,8 @@ namespace oo::Anim::internal
 		//copy parameters
 		comp.tracker.parameters = comp.animTree->parameters;
 		//set current node to start node
-		assert(comp.animTree->groups.front().startNode);
-		AssignNodeToTracker(comp.tracker, comp.animTree->groups.front().startNode);
+		assert(comp.animTree->groups.begin()->second.startNode);
+		AssignNodeToTracker(comp.tracker, comp.animTree->groups.begin()->second.startNode);
 	}
 
 	void BindConditionsToParameters(AnimationTree& tree)
@@ -928,9 +929,9 @@ namespace oo::Anim::internal
 			++index;
 		}
 		//for all conditions
-		for (auto& group : tree.groups)
+		for (auto& [group_id, group] : tree.groups)
 		{
-		for (auto& link : group.links)
+		for (auto& [link_id, link] : group.links)
 		{
 			for (auto& condition : link.conditions)
 			{
@@ -947,9 +948,9 @@ namespace oo::Anim::internal
 
 	void BindNodesToAnimations(AnimationTree& tree)
 	{
-		for (auto& group : tree.groups)
+		for (auto& [group_id, group] : tree.groups)
 		{
-			for (auto& node : group.nodes)
+			for (auto& [node_id, node] : group.nodes)
 			{
 				node.anim.Reload();
 				UpdateNodeTrackers(node);
@@ -961,9 +962,9 @@ namespace oo::Anim::internal
 	void CalculateAnimationLength(AnimationTree& tree)
 	{
 		//for all nodes
-		for (auto& group : tree.groups)
+		for (auto& [group_id, group] : tree.groups)
 		{
-			for (auto& node : group.nodes)
+			for (auto& [node_id, node] : group.nodes)
 			{
 				auto& animation = node.GetAnimation();
 				float longest_time{ 0.f };
@@ -983,10 +984,10 @@ namespace oo::Anim::internal
 
 	void ReloadReferences(AnimationTree& tree)
 	{
-		for (auto& group : tree.groups)
+		for (auto& [group_id, group] : tree.groups)
 		{
 			group.startNode.Reload();
-			for (auto& node : group.nodes)
+			for (auto& [node_id, node] : group.nodes)
 			{
 				node.group.Reload();
 				for (auto& link : node.outgoingLinks)
@@ -1004,8 +1005,10 @@ namespace oo::Anim
 	-------------------------------*/
 	void NodeRef::Reload()
 	{
-		int currindex{0};
-		for (auto& node : *nodes)
+		assert(nodes);
+		assert((*nodes).contains(id));
+		/*int currindex{0};
+		for (auto& [node_id, node] : *nodes)
 		{
 			if (node.node_ID == id)
 			{
@@ -1017,19 +1020,23 @@ namespace oo::Anim
 
 		LOG_CORE_ERROR("Animation Node Reference Reload failed!!");
 		assert(false);
-		index = -1;
+		index = -1;*/
 	}
 	bool NodeRef::valid() const
 	{
-		return nodes && index >= 0 && index < nodes->size() &&
-			this->operator->()->node_ID == id;
+		/*return nodes && index >= 0 && index < nodes->size() &&
+			this->operator->()->node_ID == id;*/
+		assert(nodes);
+		return (*nodes).contains(id);
 	}
 	/*-------------------------------
 	GroupRef
 	-------------------------------*/
 	void GroupRef::Reload()
 	{
-		int currindex{ 0 };
+		assert(groups);
+		assert((*groups).contains(id));
+		/*int currindex{ 0 };
 		for (auto& group : *groups)
 		{
 			if (group.groupID == id)
@@ -1042,19 +1049,23 @@ namespace oo::Anim
 
 		LOG_CORE_ERROR("Animation Group Reference Reload failed!!");
 		assert(false);
-		index = -1;
+		index = -1;*/
 	}
 	bool GroupRef::valid() const
 	{
-		return groups && index >= 0 && index < groups->size() &&
-			this->operator->()->groupID == id;
+		/*return groups && index >= 0 && index < groups->size() &&
+			this->operator->()->groupID == id;*/
+		assert(groups);
+		return (*groups).contains(id);
 	}
 	/*-------------------------------
 	LinkRef
 	-------------------------------*/
 	void LinkRef::Reload()
 	{
-		int currindex{ 0 };
+		assert(links);
+		assert((*links).contains(id));
+		/*int currindex{ 0 };
 		for (auto& link : *links)
 		{
 			if (link.linkID == id)
@@ -1067,19 +1078,23 @@ namespace oo::Anim
 
 		LOG_CORE_ERROR("Animation Link Reference Reload failed!!");
 		assert(false);
-		index = -1;
+		index = -1;*/
 	}
 	bool LinkRef::valid() const
 	{
-		return links && index >= 0 && index < links->size() &&
-			this->operator->()->linkID == id;
+		/*return links && index >= 0 && index < links->size() &&
+			this->operator->()->linkID == id;*/
+		assert(links);
+		return (*links).contains(id);
 	}
 	/*-------------------------------
 	AnimRef
 	-------------------------------*/
 	void AnimRef::Reload()
 	{
-		int currindex{ 0 };
+		assert(anims);
+		assert((*anims).contains(id));
+		/*int currindex{ 0 };
 		for (auto& anim : *anims)
 		{
 			if (anim.animation_ID == id)
@@ -1092,12 +1107,13 @@ namespace oo::Anim
 
 		LOG_CORE_ERROR("Animation Reference Reload failed!!");
 		assert(false);
-		index = -1;
+		index = -1;*/
 	}
 	bool AnimRef::valid() const
 	{
-		return anims && index >= 0 && index < anims->size() &&
-			this->operator->()->animation_ID == id;
+		/*return anims && index >= 0 && index < anims->size() &&
+			this->operator->()->animation_ID == id;*/
+		return (*anims).contains(id);
 	}
 	/*-------------------------------
 	Parameter
@@ -1201,12 +1217,13 @@ namespace oo::Anim
 		, name{ info.name }
 		, node_ID{info.nodeID == internal::invalid_ID ? internal::generateUID() : info.nodeID }
 	{
-		assert(Animation::name_to_index.contains(info.animation_name));
+		assert(Animation::name_to_ID.contains(info.animation_name));
 		anim.anims = &(Animation::animation_storage);
 		anim.id = Animation::animation_storage[
-			Animation::name_to_index[info.animation_name]].animation_ID;
+			Animation::name_to_ID[info.animation_name]].animation_ID;
 		anim.Reload();
 	}
+
 
 	Animation& Node::GetAnimation()
 	{
@@ -1240,6 +1257,17 @@ namespace oo::Anim
 		//assert(info.tree);
 
 		
+	}
+	Group::Group(Group&& other)
+	{
+		name		= std::move(other.name);
+		startNode	= std::move(other.startNode);
+		tree		= std::move(other.tree);
+		groupID		= std::move(other.groupID);
+
+		nodes.merge(other.nodes);
+		links.merge(other.links);
+
 	}
 
 	/*-------------------------------
@@ -1292,8 +1320,48 @@ namespace oo::Anim
 	/*-------------------------------
 	Animation
 	-------------------------------*/
-	void Animation::LoadAnimationFromFBX(std::string const& filepath)
+	void Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
 	{
+		/*
+		static constexpr auto get_node_hierarchy = [](oGFX::Skeleton const* skeleton, 
+			std::string boneName, std::vector<int>& children_index) 
+		{
+			//skeleton should have nodes!!
+			assert(skeleton->m_boneNodes);
+			//find the node
+			std::stack<oGFX::BoneNode*> stack;
+			std::unordered_map<uint32_t, bool> visited{};
+			stack.push(skeleton->m_boneNodes);
+			visited[skeleton->m_boneNodes->m_BoneIndex] = false;
+			oGFX::BoneNode* targetbone{nullptr};
+			while (stack.empty() == false)
+			{
+				auto curr = stack.top();
+				stack.pop();
+
+				if (visited[curr->m_BoneIndex] == false)
+					visited[curr->m_BoneIndex] = true;
+
+				if (curr->mName == boneName)
+				{
+					targetbone = curr;
+					break;
+				}
+
+				for (auto child : curr->mChildren)
+				{
+					stack.push(child);
+					visited[child->m_BoneIndex] = false;
+				}
+			}
+			//we should have found the target bone by now
+			assert(targetbone);
+
+
+		};*/
+
+
+
 		Assimp::Importer importer;
 		uint flags = 0;
 		flags |= aiProcess_Triangulate;
@@ -1313,6 +1381,42 @@ namespace oo::Anim
 		}
 		assert(scene->HasAnimations());
 
+		//generate hierarchy map
+		std::unordered_map<std::string, std::vector<int>> bone_hierarchy_map{};
+		{
+			std::function<void(oGFX::BoneNode*)> traverse_recursive = [&](oGFX::BoneNode* node)
+			{
+				if (node->mChildren.empty())
+					return;
+
+				int idx = 0;
+				std::vector<int> children_index = bone_hierarchy_map[node->mName];
+				//add a new element
+				children_index.emplace_back(idx);
+				for (auto child : node->mChildren)
+				{
+					//child should not be null!!
+					assert(child);
+					//set it to the correct index
+					children_index.back() = idx;
+					//assign it to the map
+					bone_hierarchy_map[child->mName] = children_index;
+					//recurse
+					traverse_recursive(child);
+					//increment index
+					++idx;
+				}
+
+			};
+
+			auto current = resource->skeleton->m_boneNodes;
+			std::unordered_map< uint32_t, bool> visited{};
+			std::vector<int> children_idx{};
+			bone_hierarchy_map[current->mName] = children_idx;
+			traverse_recursive(current);
+		}
+
+
 		std::cout << "Animated scene\n";
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
@@ -1330,9 +1434,16 @@ namespace oo::Anim
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				std::vector<int> children_index{};
 				//TODO: get node hierarchy and append it to children_index
-					
+				oGFX::BoneNode* curr = resource->skeleton->m_boneNodes;
+				std::string boneName{ channel->mNodeName.C_Str() };
+				//guarding for safety
+				assert(resource->strToBone.contains(boneName));
+				auto boneindex = resource->strToBone[boneName];
+				//bone should exist in the skeleton!!
+				assert(bone_hierarchy_map.contains(boneName));
+				std::vector<int> children_index = bone_hierarchy_map[boneName];
+				//get_node_hierarchy(curr, boneindex, children_index);
 				/*--------
 				position
 				--------*/
@@ -1422,10 +1533,12 @@ namespace oo::Anim
 	}
 	Animation* Animation::AddAnimation(Animation& anim)
 	{
-		Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
-		Animation::name_to_index[anim.name] = static_cast<uint>(Animation::animation_storage.size());
-
-		auto& createdAnim = Animation::animation_storage.emplace_back(std::move(anim));
+		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
+		Animation::name_to_ID[anim.name] = anim.animation_ID;
+		size_t key = anim.animation_ID;
+		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
+		assert(result == true);
+		auto& createdAnim = Animation::animation_storage[key];
 
 		return &createdAnim;
 	}
@@ -1517,6 +1630,13 @@ namespace oo::Anim
 
 	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
 	{
+		//MeshHierarchy::
+
+		//auto animationfbx_fp = Project::GetAssetFolder().string();
+		//animationfbx_fp += "/AnimationTest_Character_IdleJumpAttack.fbx";
+		
+		//Animation::LoadAnimationFromFBX(animationfbx_fp,);
+
 		auto obj = scene->CreateGameObjectImmediate();
 		obj->AddComponent<MeshRendererComponent>();
 		auto& comp = obj->AddComponent<oo::AnimationComponent>();
@@ -1525,7 +1645,7 @@ namespace oo::Anim
 		//create the animation tree asset
 		auto tree = AnimationTree::Create("Test Animation Tree");
 		comp.SetAnimationTree("Test Animation Tree");
-		auto start_node = tree->groups.front().startNode;
+		auto start_node = tree->groups.begin()->second.startNode;
 
 		//add some test parameters to the animation tree
 		{
@@ -1553,7 +1673,7 @@ namespace oo::Anim
 		}
 
 		//add a node to the first group
-		auto& group = tree->groups.front();
+		auto& group = tree->groups.begin()->second;
 
 		NodeInfo nodeinfo{
 			.name{ "Test Node" },
