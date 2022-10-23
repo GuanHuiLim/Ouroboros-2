@@ -112,6 +112,61 @@ ScriptingProperties::ScriptingProperties()
 				ImGui::EndListBox();
 			}
 		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::LIST, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::list_type>();
+			int size = data.valueList.size();
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::DragInt(v.name.c_str(), &size);
+			ImGui::PopItemFlag();
+			ImGui::SetItemAllowOverlap();
+
+			float itemwidth = ImGui::CalcItemWidth();
+			ImGui::SameLine(12.0f);
+			if (ImGui::ArrowButton("##listenumleft", ImGuiDir_::ImGuiDir_Left))
+			{
+				if (--size < 0)
+					size = 0;
+				else
+				{
+					data.valueList.resize(size);
+					editing = true; edited = true;
+					v.TrySetRuntimeValue(oo::ScriptValue{ data });
+					return;
+				}
+			}
+			ImGui::SameLine(itemwidth - 12.0f);
+			if (ImGui::ArrowButton("##listenumright", ImGuiDir_::ImGuiDir_Right))
+			{
+				data.Push();
+				editing = true; edited = true;
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+				return;
+			}
+
+			auto iter = m_scriptUI.find(data.type);
+			int counter = 0;
+			for (auto& item_value : data.valueList)
+			{
+				++counter;
+				oo::ScriptFieldInfo val ("##tempname", item_value);
+				bool current_editing = false;
+				bool current_edited = false;
+				ImGui::PushID(counter);
+				iter->second(val, current_editing, current_edited);
+				ImGui::PopID();
+				if (current_editing)
+				{
+					editing = true;
+					item_value = val.value;
+					v.TrySetRuntimeValue(oo::ScriptValue{ data });
+				}
+				if (current_edited)
+				{
+					edited = true;
+				}
+			}
+		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::UUID>();

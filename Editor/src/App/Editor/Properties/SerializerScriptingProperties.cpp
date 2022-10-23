@@ -85,6 +85,24 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			rapidjson::Value data(id.GetUUID());
 			val.AddMember(name, data, doc.GetAllocator());
 		});
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::LIST, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+
+			rapidjson::Value arr(rapidjson::kArrayType);
+			auto& list_type = sfi.value.GetValue<oo::ScriptValue::list_type>();
+			auto iter = m_ScriptSave.find(list_type.type);
+			for (auto& item : list_type.valueList)
+			{
+				rapidjson::Value tempvalue(rapidjson::kObjectType);
+				oo::ScriptFieldInfo temp_sfi("", item);
+				iter->second(doc, tempvalue, temp_sfi);
+				//might be abit wasteful to just use it like this but its a easy and fast way to do it.
+				arr.PushBack(tempvalue.MemberBegin()->value,doc.GetAllocator());
+			}
+			val.AddMember(name, arr, doc.GetAllocator());
+		});
 }
 
 SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
@@ -121,5 +139,21 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 		{
 			oo::UUID id = val.GetUint64();
 			sfi.value.SetValue(id); 
+		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::LIST, [this](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+			auto &list_value = sfi.value.GetValue<oo::ScriptValue::list_type>();
+			auto iter = m_ScriptLoad.find(list_value.type);
+			auto arr = val.GetArray();
+			int counter = 0;
+			for(rapidjson::SizeType i = 0 ; i < arr.Size();++i)
+				list_value.Push();//create enough size for the item
+			std::string tempsfi_name = "name";
+			for (auto arr_iter = arr.begin(); arr_iter != arr.end(); ++arr_iter,++counter)
+			{
+				oo::ScriptFieldInfo sf(tempsfi_name, list_value.valueList[counter]);
+				iter->second(std::move(*arr_iter), sf);
+				list_value.valueList[counter] = (sf.value);
+			}
 		});
 }
