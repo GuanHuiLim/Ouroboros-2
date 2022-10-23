@@ -21,8 +21,10 @@ void oo::Delete_ActionCommand::Undo()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	if (scene == nullptr)
+	{
 		ASSERT_MSG(true, "scene not found???");
-	*(scene.get());
+	}
+
 	revivedObject = Serializer::LoadDeleteObject(data, parentID, *(scene.get()));
 }
 
