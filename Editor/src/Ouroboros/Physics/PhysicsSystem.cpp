@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/DeferredComponent.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
+#include "Ouroboros/Transform/TransformSystem.h"
 
 #include "OO_Vulkan/src/DebugDraw.h"
 #include "Ouroboros/ECS/ECS.h"
@@ -128,8 +129,8 @@ namespace oo
 
 
         // Update physics World's objects position and Orientation
-        static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
+        static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 auto pos = tf.GetGlobalPosition();
                 auto quat = tf.GetGlobalRotationQuat();
@@ -184,20 +185,27 @@ namespace oo
         // update the physics world using fixed dt.
         m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
 
-        static Ecs::Query rb_query = Ecs::make_query< TransformComponent, RigidbodyComponent>();
+        static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
         // set position and orientation
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
         {
+            // IMPORTANT NOTE!
+            // position retrieve is presumably global position in physics world.
+            // but we must remember to consider the scenegraph hierarchy 
+            // when calculating its final transform.
+            // therefore we find the delta change and apply it to its local transform.
+
             auto pos = rb.GetPositionInPhysicsWorld();
-            tf.SetGlobalPosition(pos - rb.Offset);
+            auto delta_position = pos - tf.GetGlobalPosition();
+            tf.Position() += delta_position;
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
-            tf.SetGlobalOrientation(orientation);
+            auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
+            tf.SetOrientation({ tf.GetRotationQuat().value + delta_orientation });
         });
 
         static Ecs::Query dynamicBoxColliderQuery = Ecs::make_query<TransformComponent, BoxColliderComponent, RigidbodyComponent>();
-
         //Updating Dynamic Box Collider Bounds
         m_world->for_each(dynamicBoxColliderQuery, [&](TransformComponent& tf, BoxColliderComponent& bc, RigidbodyComponent& rb)
         {
@@ -264,6 +272,8 @@ namespace oo
 
     void PhysicsSystem::PostUpdate()
     {
+        // Update entire subtree once every Fixed update so physics changes are properly reflected.
+        m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->GetRoot(), false);
     }
 
 

@@ -26,6 +26,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Transform/TransformSystem.h"
 
 namespace oo
 {
@@ -112,6 +113,12 @@ namespace oo
             GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
             TRACY_PROFILE_SCOPE_END();
         }
+
+        /*{
+            TRACY_PROFILE_SCOPE(physics_runtime_update);
+            GetWorld().Get_System<TransformSystem>()->Run(&GetWorld());
+            TRACY_PROFILE_SCOPE_END();
+        }*/
 
         {
             TRACY_PROFILE_SCOPE(animation_update);
