@@ -271,5 +271,28 @@ ScriptingProperties::ScriptingProperties()
 				return;
 			};
 		});
-
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::CLASS, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::class_type>();
+			
+			ImGui::Dummy({ 5.0f, 0 });
+			ImGui::SameLine();
+			ImGui::BeginGroup();
+			ImGui::Text(v.name.c_str());
+			for (auto& sfi : data.infoList)
+			{
+				auto iter = m_scriptUI.find(sfi.value.GetValueType());
+				if (iter != m_scriptUI.end())
+				{
+					bool editing_sub = false;
+					bool edited_sub = false;
+					iter->second(sfi, editing_sub, edited_sub);
+					editing |= editing_sub;
+					edited |= edited_sub;
+				}
+			}
+			ImGui::EndGroup();
+			if(editing)
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+		});
 }
