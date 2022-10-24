@@ -82,7 +82,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
 			if (go == nullptr)
 				id = -1;
-			rapidjson::Value data(id.GetUUID());
+			rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));
 			val.AddMember(name, data, doc.GetAllocator());
 		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::LIST, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
@@ -102,6 +102,23 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 				arr.PushBack(tempvalue.MemberBegin()->value,doc.GetAllocator());
 			}
 			val.AddMember(name, arr, doc.GetAllocator());
+		});
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::CLASS, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+
+			rapidjson::Value obj(rapidjson::kObjectType);
+			auto& class_data = sfi.value.GetValue<oo::ScriptValue::class_type>();
+			for (auto& item : class_data.infoList)
+			{
+				auto iter = m_ScriptSave.find(item.value.GetValueType());
+				if (iter != m_ScriptSave.end())
+				{
+					iter->second(doc,obj, item);
+				}
+			}
+			val.AddMember(name, obj, doc.GetAllocator());
 		});
 }
 
@@ -156,4 +173,18 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 				list_value.valueList[counter] = (sf.value);
 			}
 		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::CLASS, [this](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+			auto& class_data = sfi.value.GetValue<oo::ScriptValue::class_type>();
+			auto internal_data = val.GetObj();
+
+			int counter = 0;
+			for (auto class_values = internal_data.MemberBegin() ; class_values != internal_data.MemberEnd() ; ++class_values,++counter)
+			{
+				auto iter = m_ScriptLoad.find(class_data.infoList[counter].value.GetValueType());
+				if(iter != m_ScriptLoad.end())
+					iter->second(std::move(class_values->value), class_data.infoList[counter]);
+			}
+		});
+
 }
