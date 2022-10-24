@@ -291,7 +291,16 @@ namespace oo::Anim::internal
 		//	//set normalized timer
 		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
 		//}
+		
 
+		//find the correct gameobject
+		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
+		//traverse the hierarchy
+		for (auto& index : timeline.children_index)
+		{
+			auto children = go.GetDirectChilds();
+			go = children[index];
+		}
 		//if next keyframe within bounds increment index 
 		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
 		if (Withinbounds(updatedTimer, nextEvent.time))
@@ -303,7 +312,7 @@ namespace oo::Anim::internal
 			{
 				//get the instance
 				auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
-					info.tracker_info.entity, info.progressTracker.timeline->component_hash);
+					go.GetEntity(), info.progressTracker.timeline->component_hash);
 				auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
 				//set the value
 				info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
@@ -335,14 +344,6 @@ namespace oo::Anim::internal
 		/*--------------------------------
 		set related game object's data
 		--------------------------------*/
-		GameObject go_root{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
-		GameObject go{ go_root };
-		//traverse the hierarchy
-		for (auto& index : timeline.children_index)
-		{
-			auto children = go.GetDirectChilds();
-			go = children[index];
-		}
 		//get a ptr to the component
 		auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
 			go.GetEntity(), info.progressTracker.timeline->component_hash);
@@ -752,15 +753,54 @@ namespace oo::Anim::internal
 		if (existing_timeline != nullptr)
 			return existing_timeline;
 
+		Anim::TimelineInfo createInfo = info;
+
 		//detect gameobject hierarchy
 		{
-			oo::UUID curr = info.source_object;
-			
+			oo::UUID current = info.source_object.GetInstanceID();
+			oo::UUID target = info.target_object.GetInstanceID();
+			//if the target gameobject is not the root
+			if (current != target)
+			{
+				//generate hierarchy map
+				std::unordered_map<oo::UUID::value_type, std::vector<int>> uuid_hierarchy_map{};
+				{
+					std::function<void(oo::GameObject)> traverse_recursive = [&](oo::GameObject node)
+					{
+						if (node.HasChild() == false)
+							return;
+
+						int idx = 0;
+						std::vector<int> children_index = uuid_hierarchy_map[node.GetInstanceID()];
+						//add a new element
+						children_index.emplace_back(idx);
+						auto children = node.GetChildren();
+						for (auto child : children)
+						{
+							//set it to the correct index
+							children_index.back() = idx;
+							//assign it to the map
+							uuid_hierarchy_map[child.GetInstanceID()] = children_index;
+							//recurse
+							traverse_recursive(child);
+							//increment index
+							++idx;
+						}
+
+					};
+
+					std::vector<int> children_idx{};
+					uuid_hierarchy_map[current] = children_idx;
+					traverse_recursive(info.source_object);
+				}
+
+				createInfo.children_index = uuid_hierarchy_map[target];
+			}
 
 		}
 
 		//create the new timeline
-		Timeline timeline{ info };
+		Timeline timeline{ createInfo };
 		return &(animation.timelines.emplace_back(std::move(timeline)));
 	}
 
@@ -1182,6 +1222,12 @@ namespace oo::Anim
 	bool Condition::Satisfied(AnimationTracker& tracker)
 	{
 		return internal::ConditionSatisfied(*this, tracker);
+	}
+
+	std::string Condition::GetName(AnimationTree const& tree)
+	{
+		assert(parameterIndex < tree.parameters.size());
+		return tree.parameters[parameterIndex].name;
 	}
 
 	/*-------------------------------
@@ -1661,12 +1707,18 @@ namespace oo::Anim
 		auto& comp = obj->AddComponent<oo::AnimationComponent>();
 		comp.Set_Root_Entity(obj->GetEntity());
 
-		oo::UUID child_1_uuid;
+		oo::GameObject source = *(obj.get());
+		oo::GameObject target;
 		{
 			auto child_obj = scene->CreateGameObjectImmediate();
 			obj->AddChild(*(child_obj.get())); 
 			auto child_obj_2 = scene->CreateGameObjectImmediate();
 			obj->AddChild(*(child_obj_2.get()));
+
+			auto child_obj_1_3 = scene->CreateGameObjectImmediate();
+			obj->AddChild(*(child_obj_1_3.get()));
+
+			target = *(child_obj_1_3.get());
 		}
 
 		//create the animation tree asset
@@ -1735,7 +1787,9 @@ namespace oo::Anim
 		.type{Timeline::TYPE::PROPERTY},
 		.component_hash{Ecs::ECSWorld::get_component_hash<TransformComponent>()},
 		.rttr_property{rttr::type::get< TransformComponent>().get_property("Position")},
-		.timeline_name{"Test Timeline"}
+		.timeline_name{"Test Timeline"},
+		.target_object{target},
+		.source_object{source}
 		};
 		auto timeline = comp.AddTimeline(group.name, node->name, timeline_info);
 
