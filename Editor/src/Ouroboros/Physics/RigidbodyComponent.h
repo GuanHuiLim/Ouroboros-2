@@ -116,7 +116,7 @@ namespace oo
         void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
         void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
 
-        UUID GetUnderlyingUUID() const;
+        oo::UUID GetUnderlyingUUID() const;
 
         RTTR_ENABLE();
     };

@@ -17,9 +17,29 @@ Technology is prohibited.
 #include "InputAxis.h"
 
 #include <Ouroboros/Core/Input.h>
-
+#include <rttr/registration>
 namespace oo
 {
+	RTTR_REGISTRATION
+	{
+		using namespace rttr;
+	registration::class_<InputAxis::Settings>("Setting")
+		.property("Negative Btn", &InputAxis::Settings::negativeButton)
+		.property("Positive Btn", &InputAxis::Settings::positiveButton)
+		.property("Negative Alt Btn", &InputAxis::Settings::negativeAltButton)
+		.property("Positive Alt Btn", &InputAxis::Settings::positiveAltButton)
+		.property("Presses Required", &InputAxis::Settings::pressesRequired)
+		.property("Max Gap Time", &InputAxis::Settings::maxGapTime)
+		.property("Hold Duration Required", &InputAxis::Settings::holdDurationRequired);
+
+	registration::class_<InputAxis>("Input Axis")
+		.property("Name", &InputAxis::GetName, &InputAxis::SetName)
+		.property("Type", &InputAxis::GetType_U, &InputAxis::SetType_U)
+		.property("Settings", &InputAxis::GetSettings, &InputAxis::SetSettings)
+		.property("Controller Type", &InputAxis::GetControllerType_U, &InputAxis::SetControllerType_U)
+		.property("Controller Settings" , &InputAxis::GetControllerSettings, &InputAxis::SetControllerSettings);
+
+	}
     InputAxis::InputAxis()
         : name{ "Axis Name" }, type{ InputType::KeyboardButton }, settings{ }, controllerType{ ControllerInputType::Button }, controllerSettings{ }
     {
@@ -43,6 +63,19 @@ namespace oo
         settings.holdDurationRequired = 0.0f;
     }
 
+	void oo::InputAxis::SetType_U(unsigned newType)
+	{
+		type = (oo::InputAxis::InputType)newType;
+
+		settings.negativeButton = InputAxis::INPUTCODE_INVALID;
+		settings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
+		settings.positiveButton = InputAxis::INPUTCODE_INVALID;
+		settings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
+		settings.pressesRequired = 0;
+		settings.maxGapTime = 0.0f;
+		settings.holdDurationRequired = 0.0f;
+	}
+
     void InputAxis::SetControllerType(ControllerInputType newType)
     {
 		controllerType = newType;
@@ -55,6 +88,19 @@ namespace oo
         controllerSettings.maxGapTime = 0.0f;
         controllerSettings.holdDurationRequired = 0.0f;
     }
+
+	void oo::InputAxis::SetControllerType_U(unsigned newType)
+	{
+		controllerType = (oo::InputAxis::ControllerInputType)newType;
+
+		controllerSettings.negativeButton = InputAxis::INPUTCODE_INVALID;
+		controllerSettings.negativeAltButton = InputAxis::INPUTCODE_INVALID;
+		controllerSettings.positiveButton = InputAxis::INPUTCODE_INVALID;
+		controllerSettings.positiveAltButton = InputAxis::INPUTCODE_INVALID;
+		controllerSettings.pressesRequired = 0;
+		controllerSettings.maxGapTime = 0.0f;
+		controllerSettings.holdDurationRequired = 0.0f;
+	}
 
     InputAxis::Tracker::Tracker(InputAxis const& axis)
         : axis{ axis }, durationHeld{ 0.0f }, pressCount{ 0 }, pressGapTimeLeft{ 0.0f }, lastPressed{ InputAxis::INPUTCODE_INVALID }

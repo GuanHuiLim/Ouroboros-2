@@ -37,7 +37,7 @@ namespace oo
 
     // Create is a dummy type
     GameObject::GameObject(Scene& scene)
-        : GameObject{ UUID{}, scene }
+        : GameObject{ oo::UUID{}, scene }
     {
     }
 
@@ -45,13 +45,13 @@ namespace oo
         : m_scene{ &scene }
         , m_entity{ scene.GetWorld().duplicate_entity(target.m_entity) }
     {
-        UUID new_uuid {};
+        oo::UUID new_uuid {};
         SetupGo(new_uuid, m_entity);
         // mark item as duplicated. duplicated items will be ignored for the first frame to get it properly set up
         m_scene->GetWorld().add_component<oo::DuplicatedComponent>(m_entity);
     }
 
-    GameObject::GameObject(UUID uuid, Scene& scene)
+    GameObject::GameObject(oo::UUID uuid, Scene& scene)
         : m_scene { &scene }
         , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent, ScriptComponent>() }
     {
@@ -134,13 +134,13 @@ namespace oo
 
     Scene::go_ptr GameObject::TryGetParent() const
     {
-        UUID parent_uuid = GetParentUUID();
+        oo::UUID parent_uuid = GetParentUUID();
         return m_scene->FindWithInstanceID(parent_uuid);
     }
 
     GameObject GameObject::GetParent() const
     {
-        UUID parent_uuid = GetParentUUID();
+        oo::UUID parent_uuid = GetParentUUID();
         ASSERT_MSG(parent_uuid == scenenode::NOTFOUND, "this should never happen except for the root node");
         return *m_scene->FindWithInstanceID(parent_uuid);
     }
@@ -173,7 +173,7 @@ namespace oo
     //    Swap(*this, other);
     //}
 
-    UUID GameObject::GetParentUUID() const
+    oo::UUID GameObject::GetParentUUID() const
     {
         auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
@@ -181,23 +181,23 @@ namespace oo
         return scenenode->get_parent_handle();
     }
 
-    std::vector<UUID> GameObject::GetDirectChildsUUID(bool includeItself) const
+    std::vector<oo::UUID> GameObject::GetDirectChildsUUID(bool includeItself) const
     {
         auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
         auto container = scenenode->get_direct_child_handles(includeItself);
-        std::vector<UUID> result;
+        std::vector<oo::UUID> result;
         for (auto& elem : container)
             result.emplace_back(elem);
         return result;
     }
 
-    std::vector<UUID> GameObject::GetChildrenUUID(bool includeItself) const
+    std::vector<oo::UUID> GameObject::GetChildrenUUID(bool includeItself) const
     {
         auto scenenode = GetSceneNode().lock();
         ASSERT_MSG((scenenode == nullptr), "Invalid scenenode!");
         auto container = scenenode->get_all_child_handles(includeItself);
-        std::vector<UUID> result;
+        std::vector<oo::UUID> result;
         for (auto& elem : container)
             result.emplace_back(elem);
         return result;
@@ -233,7 +233,7 @@ namespace oo
         return GetComponent<GameObjectComponent>().Name; 
     }
 
-    UUID GameObject::GetInstanceID() const 
+    oo::UUID GameObject::GetInstanceID() const
     { 
         ASSERT_MSG(!HasComponent<GameObjectComponent>(), "Invalid ID");  
         return GetComponent<GameObjectComponent>().Id; 
@@ -294,7 +294,7 @@ namespace oo
         GetComponent<GameObjectComponent>().IsPrefab = isprefab;
     }
 
-    void GameObject::SetupGo(UUID uuid, Ecs::EntityID entt)
+    void GameObject::SetupGo(oo::UUID uuid, Ecs::EntityID entt)
     {
         // add debugging component
 #if not defined OO_PRODUCTION

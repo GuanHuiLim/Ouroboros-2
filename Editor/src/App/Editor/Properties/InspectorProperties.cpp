@@ -105,7 +105,7 @@ InspectorProperties::InspectorProperties()
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::UUID_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
-		auto value = v.get_value<UUID>().GetUUID();
+		auto value = v.get_value<oo::UUID>().GetUUID();
 		ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
 		ImGui::InputScalarN(name.c_str(), ImGuiDataType_::ImGuiDataType_U64, &value, 1); //read only
 		ImGui::PopItemFlag();

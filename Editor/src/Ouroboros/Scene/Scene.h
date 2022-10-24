@@ -68,8 +68,8 @@ namespace oo
         std::string GetFilePath() const;
         std::string GetSceneName() const;
 
-        go_ptr CreateGameObjectDeferred(UUID uuid = {});
-        go_ptr CreateGameObjectImmediate(UUID uuid = {});
+        go_ptr CreateGameObjectDeferred(oo::UUID uuid = {});
+        go_ptr CreateGameObjectImmediate(oo::UUID uuid = {});
         void DestroyGameObject(GameObject go);
         void DestroyGameObjectImmediate(GameObject go);
         
@@ -79,8 +79,8 @@ namespace oo
         // Attempts to search the lookup table with uuid.
         // returns the gameobject if it does
         // else returns nullptr.
-        go_ptr FindWithInstanceID(UUID uuid) const;
-        bool IsValid(UUID uuid) const;
+        go_ptr FindWithInstanceID(oo::UUID uuid) const;
+        bool IsValid(oo::UUID uuid) const;
         bool IsValid(GameObject go) const;
 
         /*
@@ -108,7 +108,7 @@ namespace oo
         // Old method [ keeping just to verify if something goes wrong one day ]
         //void RecusriveLinkScenegraph(GameObject original_parent_go, std::queue<Scene::go_ptr> new_objects);
 
-        UUID GetInstanceID(GameObject const& go) const;
+        oo::UUID GetInstanceID(GameObject const& go) const;
 
         // Variables
     private:
@@ -119,9 +119,9 @@ namespace oo
         //std::vector<std::pair<go_ptr, go_on_create_callback>> m_createList;
 
         // set of ids to Remove 
-        std::set<UUID> m_removeList;
+        std::set<oo::UUID> m_removeList;
         // one copy of a lookup table for all gameobjects.
-        std::map<UUID, std::shared_ptr<oo::GameObject>> m_lookupTable;
+        std::map<oo::UUID, std::shared_ptr<oo::GameObject>> m_lookupTable;
         // direct copy of all gameobjects in the scene
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 

@@ -60,7 +60,7 @@ void Toolbar::Show()
 		ImGui::BeginChild("ChildToolbar", { 0,0 });
 
 		TRACY_PROFILE_SCOPE_NC(ImageButton, tracy::Color::Blue);
-		auto data = m_iconsSaved["TranslateButton"].GetData<ImTextureID>();
+
 		if (ImGuiUtilities::ImageButton_ToolTip(1,"Gizmo Translate Mode",
 			m_iconsSaved["TranslateButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,

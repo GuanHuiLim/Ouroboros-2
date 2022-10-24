@@ -45,6 +45,8 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 IncludeDir["physx"]                 = AppVendor .. "/physx"
 IncludeDir["physx_foundation"]      = AppVendor .. "/physx/Physics/Physx/pxshared/include"
 
+IncludeDir["discord"]      = AppVendor .. "/discord/cpp"
+
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
 IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs"
@@ -69,6 +71,8 @@ LibraryDir["assimp"]     	= AppVendor .. "/vulkan/vendor/assimp/BINARIES/Win32/l
 -- LibraryDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader/lib"
 -- LibraryDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap/lib"
 -- LibraryDir["launcher"]      = AppVendor .. "launcher/Oroborous-Launcher/lib"
+LibraryDir["discord"]       = AppVendor .. "/discord/lib/x86_64"
+
 
 -- Paths to libraries that will be used
 Library                     = {}

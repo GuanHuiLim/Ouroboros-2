@@ -77,15 +77,21 @@ ScriptingProperties::ScriptingProperties()
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::enum_type>();
 			auto list = data.GetOptions();
+
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::InputText(data.name.c_str(), &list[data.index]);
+			ImGui::InputText(v.name.c_str(), &list[data.index]);
 			ImGui::PopItemFlag();
+			ImGui::SetItemAllowOverlap();
+			
 			static ImGuiID showList = 0;
 			ImGuiID currID = ImGui::GetItemID();
-			ImGui::SameLine();
-			if (ImGui::Button("Edit"))
+			ImGui::SameLine(ImGui::CalcItemWidth() - 12.0f);
+			if (ImGui::ArrowButton("Edit",ImGuiDir_::ImGuiDir_Down))
 			{
-				showList = currID;
+				if (showList != currID)
+					showList = currID;
+				else
+					showList = 0;
 				editing = true;
 			}
 			if (showList == currID)
@@ -108,7 +114,7 @@ ScriptingProperties::ScriptingProperties()
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			auto data = v.TryGetRuntimeValue().GetValue<UUID>();
+			auto data = v.TryGetRuntimeValue().GetValue<oo::UUID>();
 			auto uuid = data.GetUUID();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			auto gameobject_ptr = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(data);
@@ -120,7 +126,7 @@ ScriptingProperties::ScriptingProperties()
 				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
 				if (payload)
 				{
-					data = *static_cast<UUID*>(payload->Data);
+					data = *static_cast<oo::UUID*>(payload->Data);
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
@@ -141,7 +147,7 @@ ScriptingProperties::ScriptingProperties()
 				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
 				if (payload)
 				{
-					data.m_objID = *static_cast<UUID*>(payload->Data);
+					data.m_objID = *static_cast<oo::UUID*>(payload->Data);
 					data.m_info.Reset();
 					editing = true;
 					edited = true;

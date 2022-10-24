@@ -82,13 +82,13 @@ namespace oo
         return true;
     }
 
-    void ScriptSystem::SetUpObject(UUID uuid)
+    void ScriptSystem::SetUpObject(oo::UUID uuid)
     {
         std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
         ASSERT(gameObject == nullptr);
         SetUpObject(uuid, gameObject->GetComponent<ScriptComponent>());
     }
-    void ScriptSystem::SetUpObject(UUID uuid, ScriptComponent const& script)
+    void ScriptSystem::SetUpObject(oo::UUID uuid, ScriptComponent const& script)
     {
         componentDatabase.InstantiateObjectFull(uuid);
         // Add all scripts
@@ -254,7 +254,7 @@ namespace oo
         return componentDatabase.RetrieveGameObject(uuid);
     }
 
-    void ScriptSystem::InvokeForObject(UUID uuid, const char* functionName, int paramCount, void** params)
+    void ScriptSystem::InvokeForObject(oo::UUID uuid, const char* functionName, int paramCount, void** params)
     {
         if (!ScriptEngine::IsLoaded())
             return;
@@ -272,7 +272,7 @@ namespace oo
                 }
             });
     }
-    void ScriptSystem::InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount, void** params)
+    void ScriptSystem::InvokeForObjectEnabled(oo::UUID uuid, const char* functionName, int paramCount, void** params)
     {
         if (!ScriptEngine::IsLoaded())
             return;
@@ -387,7 +387,7 @@ namespace oo
                 UpdateScriptFieldsWithInfo(gameObject.Id, script);
             });
     }
-    void ScriptSystem::UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script)
+    void ScriptSystem::UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script)
     {
         for (auto& [scriptKey, scriptInfo] : script.GetScriptInfoAll())
         {

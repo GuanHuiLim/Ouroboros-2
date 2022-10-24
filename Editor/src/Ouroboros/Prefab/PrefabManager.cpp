@@ -34,3 +34,35 @@ void oo::PrefabManager::MakePrefab(std::shared_ptr<oo::GameObject> go)
 	for (auto childs : go->GetChildren(true))
 		childs.SetIsPrefab(true);
 }
+
+void oo::PrefabManager::BreakPrefab(std::shared_ptr<oo::GameObject> go)
+{
+	std::stack<scenenode::raw_pointer> hierarchy_nodes;
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	scenenode::shared_pointer temp = go->GetSceneNode().lock();
+	scenenode::raw_pointer curr = temp.get();
+	{
+		auto gameobject = scene->FindWithInstanceID(curr->get_handle());
+		gameobject->RemoveComponent<PrefabComponent>();
+		gameobject->SetIsPrefab(false);
+	}
+	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+	{
+		scenenode::shared_pointer child = *iter;
+		hierarchy_nodes.push(child.get());
+	}
+	while (!hierarchy_nodes.empty())
+	{
+		curr = hierarchy_nodes.top();
+		hierarchy_nodes.pop();
+		auto gameobject = scene->FindWithInstanceID(curr->get_handle());
+		if (gameobject->HasComponent<PrefabComponent>())
+			continue;
+		gameobject->SetIsPrefab(false);
+		for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+		{
+			scenenode::shared_pointer child = *iter;
+			hierarchy_nodes.push(child.get());
+		}
+	}
+}

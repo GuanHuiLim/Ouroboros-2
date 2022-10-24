@@ -72,16 +72,16 @@ public:
 	static void LoadScene(oo::Scene& scene);
 
 	static std::filesystem::path SavePrefab(std::shared_ptr<oo::GameObject> go, oo::Scene& scene);
-	static UUID LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go,oo::Scene & scene);
+	static oo::UUID LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go,oo::Scene & scene);
 
 	static std::string SaveDeletedObject(std::shared_ptr<oo::GameObject> go,oo::Scene& scene);
 	static std::string SaveObjectsAsString(const std::vector<std::shared_ptr<oo::GameObject>>& go_list, oo::Scene& scene);
 
-	static UUID LoadDeleteObject(std::string& data, UUID parentID, oo::Scene& scene);
+	static oo::UUID LoadDeleteObject(std::string& data, oo::UUID parentID, oo::Scene& scene);
 	/*********************************************************************************//*!
 	\brief      Recreation of the object 
 	*//**********************************************************************************/
-	static std::vector<UUID> LoadObjectsFromString(std::string& data,UUID parentID, oo::Scene& scene);
+	static std::vector<oo::UUID> LoadObjectsFromString(std::string& data, oo::UUID parentID, oo::Scene& scene);
 private:
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);
@@ -94,18 +94,18 @@ private:
 	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
 	static void SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
 	//loading
-	static UUID Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene,rapidjson::Document & doc);
+	static oo::UUID Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene,rapidjson::Document & doc);
 	static void LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter, rapidjson::Value::MemberIterator& end);
 	template <typename Component>
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
 	static void LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val);
 	static void LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val);
 	//creation
-	static UUID CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p);
+	static oo::UUID CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p);
 	//scripts
 	static void SaveScript(oo::GameObject& go,rapidjson::Value& val,rapidjson::Document& doc);
 	static void LoadScript(oo::GameObject& go,rapidjson::Value&& val);
-	static void RemapScripts(std::unordered_map<UUID, UUID>& scriptIds, oo::GameObject& go);
+	static void RemapScripts(std::unordered_map<oo::UUID, oo::UUID>& scriptIds, oo::GameObject& go);
 protected://serialzation helpers
 	template <typename Component>
 	static void AddLoadComponent() noexcept;
@@ -228,7 +228,7 @@ inline void Serializer::LoadComponent<oo::PrefabComponent>(oo::GameObject& go, r
 	
 	rapidjson::Document document;
 	document.ParseStream(stream);
-	std::unordered_map<UUID, UUID> scripts_id_mapping;
+	std::unordered_map<oo::UUID, oo::UUID> scripts_id_mapping;
 	std::vector<std::shared_ptr<oo::GameObject>> all_objects;
 	std::stack<std::shared_ptr<oo::GameObject>> parents;
 	std::shared_ptr<oo::GameObject> gameobj = scene->FindWithInstanceID(go.GetInstanceID());

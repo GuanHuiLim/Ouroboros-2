@@ -29,6 +29,8 @@ Technology is prohibited.
 #include "App/Editor/Events/ImGuiRestartEvent.h"
 #include "Ouroboros/Prefab/PrefabSceneController.h"
 
+// discord
+#include "App/Editor/DiscordHelper.h"
 class EditorLayer final : public oo::Layer
 {
 private:
@@ -36,7 +38,7 @@ private:
     bool m_editormode = false;
     oo::PrefabSceneController m_prefab_controller;
     ProjectTracker m_tracker;
-
+	DiscordHelper m_discord_helper;
 #if OO_EDITOR
     Editor m_editor;
 #endif
