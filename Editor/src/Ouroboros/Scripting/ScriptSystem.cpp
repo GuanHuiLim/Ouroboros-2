@@ -114,7 +114,7 @@ namespace oo
         return isPlaying;
     }
 
-    void ScriptSystem::ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
+    void ScriptSystem::ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
     {
         auto& scriptInfoMap = script.GetScriptInfoAll();
         auto search = scriptInfoMap.find(classInfo.ToString());

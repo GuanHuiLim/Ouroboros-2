@@ -38,7 +38,7 @@ namespace oo
         bool StopPlay();
         bool IsPlaying();
 
-        void ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
+        void ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
         void RefreshScriptInfoAll();
 
         ScriptDatabase::IntPtr AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
@@ -56,7 +56,7 @@ namespace oo
         ComponentDatabase::IntPtr GetGameObject(ComponentDatabase::UUID uuid);
 
         void InvokeForObject(oo::UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
-        void InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
+        void InvokeForObjectEnabled(oo::UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
 
         void InvokeForEach(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
         void InvokeForEachEnabled(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
