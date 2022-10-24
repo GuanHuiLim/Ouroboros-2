@@ -447,6 +447,11 @@ namespace oo
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
                     oo::UUID entityID = value.GetValue<oo::UUID>();
+                    if (entityID == 0)
+                    {
+                        mono_field_set_value(obj, field, nullptr);
+                        return;
+                    }
                     std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> gameObject = scene->FindWithInstanceID(entityID);
                     if (gameObject == nullptr)
@@ -507,19 +512,16 @@ namespace oo
 
                     MonoObject* entry = nullptr;
                     UUID entityID = value.GetValue<UUID>();
-                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
-                    std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
-                    if (obj != nullptr)
+                    if (entityID != 0)
                     {
-                        ComponentDatabase::IntPtr ptr = scene->GetWorld().Get_System<ScriptSystem>()->GetGameObject(entityID);
-                        entry = mono_gchandle_get_target(ptr);
-                        //Scripting* scripting = gameObject.TryGetComponent<Scripting>();
-                        //if (scripting != nullptr && scripting->GetGameObjectPtr() != 0)
-                        //{
-                        //    entry = mono_gchandle_get_target(scripting->GetGameObjectPtr());
-                        //}
+                        std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
+                        std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
+                        if (obj != nullptr)
+                        {
+                            ComponentDatabase::IntPtr ptr = scene->GetWorld().Get_System<ScriptSystem>()->GetGameObject(entityID);
+                            entry = mono_gchandle_get_target(ptr);
+                        }
                     }
-
                     void* args[1];
                     args[0] = entry;
                     mono_runtime_invoke(addMethod, list, args, NULL);
