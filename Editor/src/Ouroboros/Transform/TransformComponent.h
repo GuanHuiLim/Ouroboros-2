@@ -35,11 +35,11 @@ namespace oo
         vec3 GetEulerAngles()  const;
         vec3 GetScale()        const;
 
-        vec3 LocalRight()      const;
+        vec3 LocalLeft()       const;
         vec3 LocalUp()         const;
         vec3 LocalForward()    const;
 
-        vec3 GlobalRight()     const;
+        vec3 GlobalLeft()      const;
         vec3 GlobalUp()        const;
         vec3 GlobalForward()   const;
 

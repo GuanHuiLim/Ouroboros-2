@@ -20,9 +20,9 @@ class Camera
 private:
 	static constexpr float EPSILON{ 0.001f };
 
-	glm::vec3 m_forward{ 0.0f, 0.0f, -1.0f };
-	glm::vec3 m_up{ 0.0f,1.0f,0.0f };
-	glm::vec3 m_right{ 1.0f, 0.0f, 0.0f };
+	glm::vec3 m_forward{ 0.0f, 0.0f, 1.0f };
+	glm::vec3 m_up{ 0.0f, 1.0f, 0.0f };
+	glm::vec3 m_right{ -1.0f, 0.0f, 0.0f };
 
     float m_fovDegrees{ 60.0f };
 	float m_aspectRatio{ 1.0f };
@@ -30,14 +30,22 @@ private:
 	float m_znear{ 0.1f };
     float m_zfar{ 10000.0f };
 
-	void updateViewMatrix();
+	//void updateViewMatrix();
+	
+	void UpdateViewMatrixQuaternion();
+	/*void RotatePitch(float rads);
+	void RotateYaw(float rads);
+	//void RotateRoll(float rads);
+	void RotateAll(glm::vec3 deltaRads);*/
+
 public:
 	enum class CameraMovementType { lookat, firstperson };
 	enum class CameraProjectionType { perspective, orthographic };
 	CameraMovementType m_CameraMovementType{ CameraMovementType::lookat };
 	CameraProjectionType m_CameraProjectionType{ CameraProjectionType::perspective };
 
-	glm::vec3 m_rotation{};
+	glm::quat m_orientation{};
+	//glm::vec3 m_rotation{};
 	glm::vec3 m_position{};
 
 	glm::vec3 m_TargetPosition{ 0.0f, 0.0f, 0.0f };
@@ -75,7 +83,9 @@ public:
 
 	void SetPosition(glm::vec3 position);
 
-	void SetRotation(glm::vec3 rotation);
+	//void SetRotation(glm::vec3 rotation);
+	void SetRotation(glm::quat orientation);
+	//void SetRotation(glm::mat4 matrix);
 
 	void Rotate(glm::vec3 delta);
 

@@ -142,7 +142,15 @@ namespace oo
         m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
         {
             camera.SetPosition(transformComp.GetGlobalPosition());
-            camera.SetRotation(transformComp.GetGlobalRotationDeg());
+            camera.SetRotation(transformComp.GetGlobalRotationQuat());
+            
+            //camera.Translate(transformComp.GetGlobalTranslationDelta());
+            //auto delta = transformComp.GetGlobalRotationDelta();
+            //camera.Rotate(delta);
+            //LOG_TRACE("Global Rotation Delta {0},{1},{2}",delta.x, delta.y, delta.z);
+
+            //auto translation_delta = transformComp.GetGlobalTranslationDelta();
+            //LOG_TRACE("Global Translation Delta {0},{1},{2}", translation_delta.x, translation_delta.y, translation_delta.z);
         });
     }
     
