@@ -1638,9 +1638,18 @@ namespace oo::Anim
 		//Animation::LoadAnimationFromFBX(animationfbx_fp,);
 
 		auto obj = scene->CreateGameObjectImmediate();
+		obj->Name() = "AnimationTestObject";
 		obj->AddComponent<MeshRendererComponent>();
 		auto& comp = obj->AddComponent<oo::AnimationComponent>();
 		comp.Set_Root_Entity(obj->GetEntity());
+
+		oo::UUID child_1_uuid;
+		{
+			auto child_obj = scene->CreateGameObjectImmediate();
+			obj->AddChild(*(child_obj.get())); 
+			auto child_obj_2 = scene->CreateGameObjectImmediate();
+			obj->AddChild(*(child_obj_2.get()));
+		}
 
 		//create the animation tree asset
 		auto tree = AnimationTree::Create("Test Animation Tree");

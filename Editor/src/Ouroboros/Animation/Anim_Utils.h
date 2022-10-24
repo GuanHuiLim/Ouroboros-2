@@ -377,8 +377,12 @@ namespace oo::Anim
 		rttr::property rttr_property;
 		//property_name - optional
 		std::string property_name{};
-
+		//name of the timeline
 		std::string timeline_name{ "Unnamed Timeline" };
+		//uuid of the target gameobject to manipulate
+		oo::UUID target_object;
+		//uuid of the gameobject the AnimationComponent is attached to
+		oo::UUID source_object;
 
 		std::vector<int> children_index;
 	};
