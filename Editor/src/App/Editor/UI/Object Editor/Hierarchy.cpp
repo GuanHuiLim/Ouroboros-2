@@ -112,7 +112,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 			auto source = scene->FindWithInstanceID(m_dragged);
 			auto targetparent = scene->FindWithInstanceID(node.get_handle());
 			//action command before addchild
-			oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, targetparent->GetInstanceID()));
+			oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(source, targetparent->GetInstanceID()));
 			targetparent->AddChild(*source, true);//s_selected
 
 		}
@@ -186,6 +186,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 				//swap as younger sibling
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
+				oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, node.get_handle(), true));
 				source->GetSceneNode().lock()->move_to_after(node.shared_from_this());
 			}
 			else
@@ -193,6 +194,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 				//swap as oldest sibling(first object)
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
+				oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, node.get_handle(), false));
 				source->GetSceneNode().lock()->move_to(node.shared_from_this());
 			}
 
@@ -234,7 +236,7 @@ void Hierarchy::NormalView()
 				{
 					if (scene->GetRoot()->GetInstanceID() != source->GetParent().GetInstanceID())
 					{
-						oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, scene->GetRoot()->GetInstanceID()));
+						oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(source, scene->GetRoot()->GetInstanceID()));
 						scene->GetRoot()->AddChild(*source, true);//s_selected
 					}
 				}
@@ -580,7 +582,7 @@ void Hierarchy::CreateGameObjectImmediate()
 			return;
 		if (parent_object->GetIsPrefab())
 			return;
-		oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(go, parent_object->GetInstanceID()));
+		oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(go, parent_object->GetInstanceID()));
 		parent_object->AddChild(*go);
 		//parent item undo redo
 	}
