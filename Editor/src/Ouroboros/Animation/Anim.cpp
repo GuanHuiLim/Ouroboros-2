@@ -752,6 +752,13 @@ namespace oo::Anim::internal
 		if (existing_timeline != nullptr)
 			return existing_timeline;
 
+		//detect gameobject hierarchy
+		{
+			oo::UUID curr = info.source_object;
+			
+
+		}
+
 		//create the new timeline
 		Timeline timeline{ info };
 		return &(animation.timelines.emplace_back(std::move(timeline)));
@@ -919,6 +926,16 @@ namespace oo::Anim::internal
 		AssignNodeToTracker(comp.tracker, comp.animTree->groups.begin()->second.startNode);
 	}
 
+	void BindConditionToParameter(AnimationTree& tree, Condition& condition)
+	{
+		//set param index//set param index
+		assert(tree.paramIDtoIndexMap.contains(condition.paramID));
+		condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
+
+		//set condition comparison function
+		internal::AssignComparisonFunctionToCondition(condition);
+	}
+
 	void BindConditionsToParameters(AnimationTree& tree)
 	{
 		//assign all the parameter's index to the tree's ID to index mapping
@@ -935,12 +952,13 @@ namespace oo::Anim::internal
 		{
 			for (auto& condition : link.conditions)
 			{
-				//set param index
-				assert(tree.paramIDtoIndexMap.contains(condition.paramID));
-				condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
+				BindConditionToParameter(tree, condition);
+				////set param index
+				//assert(tree.paramIDtoIndexMap.contains(condition.paramID));
+				//condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
 
-				//set condition comparison function
-				internal::AssignComparisonFunctionToCondition(condition);
+				////set condition comparison function
+				//internal::AssignComparisonFunctionToCondition(condition);
 			}
 		}
 		}
@@ -1946,13 +1964,15 @@ namespace oo
 		}
 
 		info._param = parameter;
-		auto condition = oo::Anim::internal::AddConditionToLink(*tree, *link, info);
+		auto condition = Anim::internal::AddConditionToLink(*tree, *link, info);
 
 		if (condition == nullptr)
 		{
 			LOG_CORE_DEBUG_INFO("Condition cannot be added to Link {0}!!", linkName);
 			assert(false);
 		}
+
+		Anim::internal::BindConditionToParameter(*tree, *condition);
 
 		return condition;
 	}
