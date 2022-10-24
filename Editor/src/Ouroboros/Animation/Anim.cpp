@@ -26,6 +26,11 @@ Technology is prohibited.
 #include "Project.h"
 #include "App/Editor/UI/Tools/MeshHierarchy.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/prettywriter.h>
+
 #include <random>
 namespace oo::Anim::internal
 {
@@ -207,10 +212,9 @@ namespace oo::Anim::internal
 		return target < current;
 	}
 
-	void TriggerEvent(ScriptEvent& event)
+	void TriggerEvent(UpdateProgressTrackerInfo& info, ScriptEvent& event)
 	{
-		//TODO
-		assert(false);
+		event.script_function_info.Invoke(info.tracker_info.uuid);
 	}
 
 	KeyFrame::DataType GetInterpolatedValue(rttr::type rttr_type, KeyFrame::DataType prev, KeyFrame::DataType next, float percentage)
@@ -248,9 +252,10 @@ namespace oo::Anim::internal
 		//if next event not within bounds
 		if (Withinbounds(updatedTimer, nextEvent.time) == false) return;
 			
-		TriggerEvent(nextEvent);
+		TriggerEvent(info, nextEvent);
 		info.progressTracker.index++;
 
+		//TODO: if went past more than 1 event, trigger those as well
 	}
 
 	//void UpdateProperty_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
@@ -450,7 +455,10 @@ namespace oo::Anim::internal
 	void UpdateNodeTrackers(Node& node)
 	{
 		node.trackers.clear();
-		//TODO: script event tracker
+		//add script event tracker
+		{
+			auto progressTracker = ProgressTracker::Create(Timeline::TYPE::SCRIPT_EVENT);
+		}
 
 		//add timeline trackers
 		for (auto& timeline : node.GetAnimation().timelines)
@@ -557,8 +565,15 @@ namespace oo::Anim::internal
 		
 	}
 
+	void AssignAnimationTreeToComponent(IAnimationComponent& component)
+	{
+		component.animTree = &(AnimationTree::map[component.animTree_name]);
+	}
+
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
 	{
+		//name should not be empty!!
+		assert(name.empty() == false);
 		//retrieve tree
 		if (AnimationTree::map.contains(name) == false)
 		{
@@ -566,8 +581,8 @@ namespace oo::Anim::internal
 			assert(false);
 			return;
 		}
-
-		component.animTree = &(AnimationTree::map[name.c_str()]);
+		component.animTree_name = name;
+		AssignAnimationTreeToComponent(component);
 	}
 
 	Group* RetrieveGroupFromTree(AnimationTree& tree, std::string const& groupName)
@@ -869,6 +884,25 @@ namespace oo::Anim::internal
 		//insert
 		auto iterator = timeline.keyframes.begin() + index;
 		return &( *(timeline.keyframes.emplace(iterator, keyframe)) );
+	}
+
+	ScriptEvent* AddScriptEventToAnimation(Animation& animation, ScriptEvent const& scriptevent)
+	{
+		//check if valid script function here later
+
+		//find index to insert, by finding first keyframe that is further
+		size_t index = 0;
+		for (auto& event : animation.events)
+		{
+			if (event.time > scriptevent.time)
+			{
+				break;
+			}
+			++index;
+		}
+		//insert
+		auto iterator = animation.events.begin() + index;
+		return &(*(animation.events.emplace(iterator, scriptevent)));
 	}
 
 	//node->GetAnimation(), timelineName, type, datatype, keyframe
@@ -1498,7 +1532,6 @@ namespace oo::Anim
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				//TODO: get node hierarchy and append it to children_index
 				oGFX::BoneNode* curr = resource->skeleton->m_boneNodes;
 				std::string boneName{ channel->mNodeName.C_Str() };
 				//guarding for safety
@@ -1652,8 +1685,8 @@ namespace oo::Anim
 
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
-			
-			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,0.016f};
+			GameObject go{ entity , *scene };
+			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), 0.016f};
 			internal::UpdateTracker(info);
 			});
 
@@ -1825,7 +1858,37 @@ namespace oo::Anim
 		return obj;
 
 	}
+	void AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
+	{
+		//map should contain the animation tree
+		assert(AnimationTree::map.contains(name));
 
+		auto& tree = AnimationTree::map[name];
+		std::ofstream stream{ filepath ,std::ios::trunc };
+		if (!stream)
+		{
+			assert(false);
+			return;
+		}
+		
+		rapidjson::OStreamWrapper osw(stream);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+
+		writer.StartObject();
+		{
+			writer.Key("AnimationTreeName");
+			writer.String(tree.name.c_str(), static_cast<rapidjson::SizeType>(tree.name.size()));
+			/*------------------
+			PARAMETERS
+			------------------*/
+
+
+			/*------------------
+			GROUPS
+			------------------*/
+
+		}
+	}
 
 	/*-------------------------------
 	AnimationComponent
@@ -1852,7 +1915,13 @@ namespace oo
 	void AnimationComponent::SetAnimationTree(std::string const& name)
 	{
 		//animTree = _animTree;
+		actualComponent.Reset();
 		oo::Anim::internal::AssignAnimationTreeToComponent(actualComponent, name);
+	}
+
+	std::string AnimationComponent::GetAnimationTreeName()
+	{
+		return actualComponent.animTree_name;
 	}
 
 	void AnimationComponent::SetParameter(std::string const& name, Anim::Parameter::DataType value)
@@ -2125,7 +2194,7 @@ namespace oo
 		//group should exist
 		if (group == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add timeline!!", groupName);
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add keyframe!!", groupName);
 			assert(false);
 			return nullptr;
 		}
@@ -2133,7 +2202,7 @@ namespace oo
 		//node should exist
 		if (node == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add timeline!!", nodeName);
+			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add keyframe!!", nodeName);
 			assert(false);
 			return nullptr;
 		}
@@ -2157,6 +2226,43 @@ namespace oo
 		return created_keyframe;
 	}
 
+	Anim::ScriptEvent* AnimationComponent::AddScriptEvent(std::string const& groupName, std::string const nodeName,
+		std::string const& timelineName, Anim::ScriptEvent scriptevent)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return nullptr;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, groupName);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add script event!!", groupName);
+			assert(false);
+			return nullptr;
+		}
+		auto node = Anim::internal::RetrieveNodeFromGroup(*group, nodeName);
+		//node should exist
+		if (node == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add script event!!", nodeName);
+			assert(false);
+			return nullptr;
+		}
 
+		auto created_scriptevent = Anim::internal::AddScriptEventToAnimation(node->GetAnimation(), scriptevent);
+		if (created_scriptevent == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("couldn't add keyframe!!");
+			assert(false);
+			return nullptr;
+		}
+
+		return created_scriptevent;
+	}
 
 } //namespace oo

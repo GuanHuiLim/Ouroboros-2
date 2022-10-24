@@ -82,6 +82,7 @@ namespace oo::Anim
 			IAnimationComponent& comp;
 			AnimationTracker& tracker;
 			Ecs::EntityID entity;
+			oo::UUID uuid;
 			float dt;
 		};
 		//info for a single timeline's progress
