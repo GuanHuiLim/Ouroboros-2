@@ -117,11 +117,6 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
         ed::EndNode();
     }
 
-    // Submit Links
-    //for (auto& linkInfo : m_links)
-    //{
-    //    ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
-    //}
     for (auto& LinkInfo : m_links_)
     {
         ed::Link(LinkInfo.id, LinkInfo.inputID, LinkInfo.outputID);
@@ -176,16 +171,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 if (ed::AcceptNewItem())
                 {
                     // Since we accepted new link, lets add one to our list of links.
-                    auto& temp = _animator->GetActualComponent().animTree->groups;
-                    m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId });
-                    
-                    for (auto it = temp.begin(); it != temp.end(); ++it)
-                    {
-                        auto newLink = _animator->AddLink(it->second.name, 
-                                                          FindNode(inputPinId)->anim_node->name,
-                                                          FindNode(outputPinId)->anim_node->name);
-                        m_links_.back().link = newLink;
-                    }
+                    CreateLink(_animator, uniqueId, inputPinId, outputPinId);
 
                     // Draw new link.
                     ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
@@ -493,6 +479,20 @@ AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& unique
     BuildNode(&m_nodes.back());
 
     return &m_nodes.back();
+}
+
+AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(oo::AnimationComponent* _animator, int& uniqueId, ed::PinId inputPinId, ed::PinId outputPinId)
+{
+    auto& temp = _animator->GetActualComponent().animTree->groups;
+
+    for (auto it = temp.begin(); it != temp.end(); ++it)
+    {
+        auto newLink = _animator->AddLink(it->second.name,
+                                          FindNode(inputPinId)->anim_node->name,
+                                          FindNode(outputPinId)->anim_node->name);
+        m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId, newLink });
+    }
+    return &m_links_.back();
 }
 
 void AnimatorControllerView::OnDelete()

@@ -36,8 +36,6 @@ public:	//Default Functions
 	}
 	~AnimatorControllerView() 
 	{
-		//for (oo::Anim::NodeRef node : m_newNodes)
-		//	delete node;
 		ed::DestroyEditor(m_Context);
 	}
 
@@ -119,7 +117,6 @@ private: //Member Variables
 		{
 		}
 	};
-	//ImVector<LinkInfo> m_links;
 	std::vector<LinkInfo> m_links_;
 	std::vector<ed::LinkId> m_linksId;	//used for displaying onto animator link inspector
 
@@ -136,9 +133,8 @@ private: //Member Functions
 	void DisplayParameters();
 	void DisplayInspector();
 	NodeInfo* CreateNode(int& uniqueId, oo::Anim::Node* _anim_node);
-	LinkInfo* CreateLink(int& uniqueId, oo::Anim::Link* _anim_link);
+	LinkInfo* CreateLink(oo::AnimationComponent* _animator, int& uniqueId, ed::PinId inputPinId, ed::PinId outputPinId);
 	void OnDelete();
-	//void RightClickOptions(int& id);
 
 	//Helper Functions
 	Pin* FindPin(ed::PinId id);
