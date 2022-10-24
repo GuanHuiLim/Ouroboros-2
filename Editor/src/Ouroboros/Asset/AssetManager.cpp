@@ -218,12 +218,21 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(ASSET_MANAGER_WATCH_FILES, tracy::Color::Aquamarine1);
 
-        std::chrono::file_clock::time_point tLast = ev->time;
-        if (std::filesystem::exists(root))
+        try
         {
-            iterateDirectory(std::filesystem::canonical(root), tLast);
+            std::chrono::file_clock::time_point tLast = ev->time;
+            if (std::filesystem::exists(root))
+            {
+                iterateDirectory(std::filesystem::canonical(root), tLast);
+            }
+            lastReloadTime = std::chrono::file_clock::now();
         }
-        lastReloadTime = std::chrono::file_clock::now();
+        catch (...)
+        {
+            // do nothing
+            // sometimes the path becomes invalidated for unknown, inconsistent reasons
+            // so just doing this to abort the file hierarchy update if so
+        }
 
         TRACY_PROFILE_SCOPE_END();
     }
