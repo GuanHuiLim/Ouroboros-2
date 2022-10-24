@@ -39,15 +39,15 @@ oo::Ordering_ActionCommand::Ordering_ActionCommand(std::shared_ptr<oo::GameObjec
 	{
 		if (childs[i] == object)
 		{
-			if (i > 0)
+			if (i == 0)//younger
 			{
-				undo_move_to_after = false;
-				previous = childs[i - 1];
+				undo_move_to_after = true;
+				previous = childs[i+1];
 			}
 			else
 			{
-				undo_move_to_after = true;
-				previous = childs[i];
+				undo_move_to_after = false;
+				previous = childs[i-1];
 			}
 			break;
 		}
