@@ -44,11 +44,13 @@ Technology is prohibited.
 #include <Ouroboros/Core/KeyCode.h>
 #include <Ouroboros/ECS/GameObject.h>
 
+//action command
+#include <Ouroboros/Commands/CommandStackManager.h>
+#include <Ouroboros/Commands/Delete_ActionCommand.h>
+#include <Ouroboros/Commands/Ordering_ActionCommand.h>
 //events
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
-#include <Ouroboros/Commands/CommandStackManager.h>
-#include <Ouroboros/Commands/Delete_ActionCommand.h>
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
@@ -109,6 +111,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 			auto source = scene->FindWithInstanceID(m_dragged);
 			auto targetparent = scene->FindWithInstanceID(node.get_handle());
+			//action command before addchild
+			oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(source, targetparent->GetInstanceID()));
 			targetparent->AddChild(*source, true);//s_selected
 
 		}
@@ -182,6 +186,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 				//swap as younger sibling
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
+				oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, node.get_handle(), true));
 				source->GetSceneNode().lock()->move_to_after(node.shared_from_this());
 			}
 			else
@@ -189,6 +194,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 				//swap as oldest sibling(first object)
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
+				oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, node.get_handle(), false));
 				source->GetSceneNode().lock()->move_to(node.shared_from_this());
 			}
 
@@ -228,7 +234,11 @@ void Hierarchy::NormalView()
 				}
 				else
 				{
-					scene->GetRoot()->AddChild(*source, true);//s_selected
+					if (scene->GetRoot()->GetInstanceID() != source->GetParent().GetInstanceID())
+					{
+						oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(source, scene->GetRoot()->GetInstanceID()));
+						scene->GetRoot()->AddChild(*source, true);//s_selected
+					}
 				}
 			}
 			payload = ImGui::AcceptDragDropPayload(".prefab"); //for creating prefab files
@@ -237,7 +247,8 @@ void Hierarchy::NormalView()
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto go = scene->GetRoot();
 				std::filesystem::path prefabpath = *static_cast<std::filesystem::path*>(payload->Data);
-				Serializer::LoadPrefab(prefabpath,go,*scene);
+				oo::UUID prefab_obj = Serializer::LoadPrefab(prefabpath,go,*scene);
+				oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(scene->FindWithInstanceID(prefab_obj)));
 			}
 			payload = ImGui::AcceptDragDropPayload("MESH_HIERARCHY"); //for creating prefab files
 			if (payload)
@@ -517,7 +528,10 @@ void Hierarchy::RightClickOptions()
 				auto object = scene->FindWithInstanceID(go);
 				if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
 					continue;
-				object->Duplicate();
+				oo::GameObject new_object = object->Duplicate();
+				//need the scene::go_ptr
+				auto goptr = scene->FindWithInstanceID(new_object.GetInstanceID());
+				oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(goptr));
 			}
 		}
 		ImGui::EndPopup();
@@ -560,12 +574,17 @@ void Hierarchy::CreateGameObjectImmediate()
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
+	oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(go));
 	if (s_selected.size() == 1 && m_hovered == *(s_selected.begin()))
 	{
 		auto parent_object = scene->FindWithInstanceID(m_hovered);
+		if (parent_object == nullptr)
+			return;
 		if (parent_object->GetIsPrefab())
 			return;
+		oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(go, parent_object->GetInstanceID()));
 		parent_object->AddChild(*go);
+		//parent item undo redo
 	}
 }
 
@@ -599,6 +618,11 @@ void Hierarchy::PasteEvent(PasteButtonEvent* pbe)
 	if (data.empty() == false)
 	{
 		auto created_items = Serializer::LoadObjectsFromString(Hierarchy::s_clipboard, scene->GetRoot()->GetInstanceID(), *scene);
+		for (oo::UUID created_go : created_items)
+		{
+			auto created_go_ptr = scene->FindWithInstanceID(created_go);
+			oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(created_go_ptr));
+		}
 	}
 
 }

@@ -239,7 +239,6 @@ std::vector<oo::UUID> Serializer::LoadObjectsFromString(std::string& data, oo::U
 	for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter)
 	{
 		auto go = scene.CreateGameObjectImmediate();
-		go_UUID.push_back(go->GetInstanceID());
 
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
@@ -250,6 +249,9 @@ std::vector<oo::UUID> Serializer::LoadObjectsFromString(std::string& data, oo::U
 		//then parent to it and adds itself
 			while (order != parents.size())
 				parents.pop();
+
+			if(parents.size() == 0)//object parented to root
+				go_UUID.push_back(go->GetInstanceID());
 
 			if (parents.size())
 				parents.top()->AddChild(*go, true);

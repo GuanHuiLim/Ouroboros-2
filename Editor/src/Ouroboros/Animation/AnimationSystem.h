@@ -22,8 +22,8 @@ namespace oo::Anim
 {
 	class AnimationSystem : public Ecs::System
 	{
-		Ecs::ECSWorld* world{nullptr};
-		Scene* scene{nullptr};
+		Ecs::ECSWorld* world{ nullptr };
+		Scene* scene{ nullptr };
 		Scene::go_ptr test_obj{};
 	public:
 		//to be run before main gameplay loop
@@ -43,6 +43,8 @@ namespace oo::Anim
 		}
 
 		Scene::go_ptr CreateAnimationTestObject();
+
+		void SaveAnimationTree(std::string name, std::string filepath);
 	};
 
 

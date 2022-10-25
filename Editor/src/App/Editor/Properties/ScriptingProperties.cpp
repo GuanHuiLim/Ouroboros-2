@@ -79,13 +79,15 @@ ScriptingProperties::ScriptingProperties()
 			auto list = data.GetOptions();
 
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImVec2 cursorPos = ImGui::GetCursorPos();
 			ImGui::InputText(v.name.c_str(), &list[data.index]);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
 			
 			static ImGuiID showList = 0;
 			ImGuiID currID = ImGui::GetItemID();
-			ImGui::SameLine(ImGui::CalcItemWidth() - 12.0f);
+			ImGui::SetCursorPos(cursorPos);
+			ImGui::Dummy({ ImGui::CalcItemWidth() - ImGui::GetStyle().ItemSpacing.x * 2 - 12.0f  ,0 }); ImGui::SameLine();
 			if (ImGui::ArrowButton("Edit",ImGuiDir_::ImGuiDir_Down))
 			{
 				if (showList != currID)
@@ -112,10 +114,73 @@ ScriptingProperties::ScriptingProperties()
 				ImGui::EndListBox();
 			}
 		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::LIST, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::list_type>();
+			int size = data.valueList.size();
+			ImVec2 cursorPos = ImGui::GetCursorPos();
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::DragInt(v.name.c_str(), &size);
+			ImGui::PopItemFlag();
+			ImGui::SetItemAllowOverlap();
+
+			float itemwidth = ImGui::CalcItemWidth();
+			ImGui::SetCursorPos(cursorPos);
+			if (ImGui::ArrowButton("##listenumleft", ImGuiDir_::ImGuiDir_Left))
+			{
+				if (--size < 0)
+					size = 0;
+				else
+				{
+					data.valueList.resize(size);
+					editing = true; edited = true;
+					v.TrySetRuntimeValue(oo::ScriptValue{ data });
+					return;
+				}
+			}
+
+
+			ImGui::SetCursorPos(cursorPos);
+			ImGui::Dummy({ itemwidth - ImGui::GetStyle().ItemSpacing.x * 2 - 12.0f ,0 }); ImGui::SameLine();
+			if (ImGui::ArrowButton("##listenumright", ImGuiDir_::ImGuiDir_Right))
+			{
+				data.Push();
+				editing = true; edited = true;
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+				return;
+			}
+
+			auto iter = m_scriptUI.find(data.type);
+			int counter = 0;
+			for (auto& item_value : data.valueList)
+			{
+				++counter;
+				oo::ScriptFieldInfo val ("##tempname", item_value);
+				bool current_editing = false;
+				bool current_edited = false;
+				ImGui::PushID(counter);
+				iter->second(val, current_editing, current_edited);
+				ImGui::PopID();
+				if (current_editing)
+				{
+					editing = true;
+					item_value = val.value;
+					v.TrySetRuntimeValue(oo::ScriptValue{ data });
+				}
+				if (current_edited)
+				{
+					edited = true;
+				}
+			}
+			if (data.valueList.size())
+			{
+				ImGui::SameLine(0,5.0f);
+				ImGui::TextColored(ImVec4(1.0f,0,0,1.0f), "End of list");
+			}
+		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::UUID>();
-			auto uuid = data.GetUUID();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			auto gameobject_ptr = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(data);
 			std::string referenceObj = gameobject_ptr == nullptr ? "Invalid Object" : gameobject_ptr->Name();
@@ -216,5 +281,36 @@ ScriptingProperties::ScriptingProperties()
 				return;
 			};
 		});
-
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::CLASS, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::class_type>();
+			std::string name = "Class Type" + data.name_space + data.name +" "+ v.name;
+			
+			if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen))
+			{
+				ImGui::PushID(v.name.c_str());
+				ImGui::Dummy({5,0}); ImGui::SameLine();
+				ImGui::BeginGroup();
+				ImGui::Separator();
+				for (auto& sfi : data.infoList)
+				{
+					auto iter = m_scriptUI.find(sfi.value.GetValueType());
+					if (iter != m_scriptUI.end())
+					{
+						bool editing_sub = false;
+						bool edited_sub = false;
+						iter->second(sfi, editing_sub, edited_sub);
+						editing |= editing_sub;
+						edited |= edited_sub;
+					}
+				}
+				ImGui::Separator();
+				ImGui::Separator();
+				ImGui::EndGroup();
+				ImGui::PopID();
+			}
+			if(editing)
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+			
+		});
 }

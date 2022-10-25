@@ -18,4 +18,17 @@ namespace oo
 		std::string data;
 	};
 
+	class Create_ActionCommand :public ActionCommand
+	{
+	public:
+		Create_ActionCommand(std::shared_ptr<oo::GameObject> createdobj);
+		~Create_ActionCommand();
+
+		void Undo()override;
+		void Redo()override;
+	private:
+		oo::UUID parentID;
+		oo::UUID object;
+		std::string data;
+	};
 }
