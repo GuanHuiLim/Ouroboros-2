@@ -80,7 +80,7 @@ void Camera::UpdateViewMatrixQuaternion()
 	// we inverse because the orientation is the camera's transform. view = inverse(camera_transform)
 	auto view_orientation = orientation; //glm::inverse(orientation);
 
-	m_right = glm::rotate(view_orientation, glm::vec3{ -1, 0, 0 });
+	m_right = glm::rotate(view_orientation, glm::vec3{ 1, 0, 0 });
 	m_forward = glm::rotate(view_orientation, glm::vec3{ 0, 0, 1 });
 	//m_up = glm::rotate(view_orientation, glm::vec3{ 0, 1, 0 });
 	
@@ -255,30 +255,21 @@ void Camera::SetRotation(glm::quat orientation)
 {
 	this->m_orientation = orientation;
 	UpdateViewMatrixQuaternion();
+	m_rotation = glm::eulerAngles(orientation);
 }
 
 void Camera::Rotate(glm::vec3 delta)
 {
-	//bool before = (m_rotation.x < -89.f || m_rotation.x > 89.f);
-	//m_rotation += delta;
-	/*bool after = (m_rotation.x < -89.f || m_rotation.x > 89.f);
-	if (before != after)
-		m_rotation.z *= -1.f;*/
+	m_rotation += delta;
+	m_rotation.x = glm::clamp(m_rotation.x, -89.0f, 89.0f);	// clamp x value.
 
-	//delta.x = glm::clamp(delta.x, -89.0f, 89.0f);	// clamp x value.
+	auto rotation_rads		= glm::radians(m_rotation);
+	glm::quat qPitch		= glm::angleAxis(rotation_rads.x, glm::vec3(1, 0, 0));
+	glm::quat qYaw			= glm::angleAxis(rotation_rads.y, glm::vec3(0, 1, 0));
+	//glm::quat qRoll		= glm::angleAxis(glm::radians(delta.z), glm::vec3(0, 0, 1));
 
-	glm::quat qPitch	= glm::angleAxis(glm::radians(delta.x), glm::vec3(1, 0, 0));
-	glm::quat qYaw		= glm::angleAxis(glm::radians(delta.y), glm::vec3(0, 1, 0));
-	glm::quat qRoll		= glm::angleAxis(glm::radians(delta.z), glm::vec3(0, 0, 1));
-
-	m_orientation = glm::normalize(qPitch) * m_orientation;
-	m_orientation = glm::normalize(qYaw) * m_orientation;
-	m_orientation = glm::normalize(qRoll) * m_orientation;
-	//RotateAll(glm::radians(m_rotation));
+	m_orientation = glm::normalize(qYaw) * glm::normalize(qPitch) /** glm::normalize(qRoll) */ * glm::quat{ 0, 0, 0, 1 };
 	UpdateViewMatrixQuaternion();
-	
-	//this->m_rotation += delta;
-	//updateViewMatrix();
 }
 
 void Camera::SetTranslation(glm::vec3 translation)

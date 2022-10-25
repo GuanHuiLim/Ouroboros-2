@@ -212,13 +212,13 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(runtime_scene_late_update);
         Scene::LateUpdate();
+        GetWorld().Get_System<RendererSystem>()->UpdateCamerasRuntime();
         TRACY_PROFILE_SCOPE_END();
     }
 
     void RuntimeScene::Render()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_rendering);
-        GetWorld().Get_System<RendererSystem>()->RenderCameras();
         Scene::Render();
         GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
         TRACY_PROFILE_SCOPE_END();

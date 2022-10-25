@@ -21,6 +21,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Application.h"
 #include "VulkanContext.h"
+#include "Ouroboros/Core/Timer.h"
+#include "Ouroboros/Core/Application.h"
 
 namespace oo
 {
@@ -65,6 +67,10 @@ namespace oo
 
     void RendererSystem::Init()
     {
+        // set camera
+        auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+        m_cc.SetCamera(&camera);
+
         // Mesh Renderer
         m_world->SubscribeOnAddComponent<RendererSystem, MeshRendererComponent>(
             this, &RendererSystem::OnMeshAssign);
@@ -128,8 +134,13 @@ namespace oo
         RenderDebugDraws(world);
     }
 
+    void RendererSystem::UpdateCamerasEditorMode()
+    {
+        m_cc.Update(oo::timer::dt());
+    }
+
     // additional function that runs during runtime scene only.
-    void RendererSystem::RenderCameras()
+    void RendererSystem::UpdateCamerasRuntime()
     {
         // TODO: debug draw the camera's view in editormode
         //DebugDraw::AddLine();

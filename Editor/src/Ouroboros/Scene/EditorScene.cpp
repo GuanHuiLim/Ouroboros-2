@@ -19,7 +19,7 @@ Technology is prohibited.
 //#include "Editor.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
-
+#include "Ouroboros/Vulkan/RendererSystem.h"
 //optick
 #include "optick.h"
 
@@ -82,7 +82,6 @@ namespace oo
         OPTICK_EVENT();
 
         Scene::Update();
-
         GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
 
         {
@@ -131,6 +130,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
+        GetWorld().Get_System<RendererSystem>()->UpdateCamerasEditorMode();
         TRACY_PROFILE_SCOPE_END();
     }
 

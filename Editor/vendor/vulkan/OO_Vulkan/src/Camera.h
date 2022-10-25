@@ -22,7 +22,7 @@ private:
 
 	glm::vec3 m_forward{ 0.0f, 0.0f, 1.0f };
 	glm::vec3 m_up{ 0.0f, 1.0f, 0.0f };
-	glm::vec3 m_right{ -1.0f, 0.0f, 0.0f };
+	glm::vec3 m_right{ 1.0f, 0.0f, 0.0f };
 
     float m_fovDegrees{ 60.0f };
 	float m_aspectRatio{ 1.0f };
@@ -44,8 +44,8 @@ public:
 	CameraMovementType m_CameraMovementType{ CameraMovementType::lookat };
 	CameraProjectionType m_CameraProjectionType{ CameraProjectionType::perspective };
 
-	glm::quat m_orientation{};
-	//glm::vec3 m_rotation{};
+	glm::quat m_orientation{ 0, 0, 0, 1 };
+	glm::vec3 m_rotation{};
 	glm::vec3 m_position{};
 
 	glm::vec3 m_TargetPosition{ 0.0f, 0.0f, 0.0f };

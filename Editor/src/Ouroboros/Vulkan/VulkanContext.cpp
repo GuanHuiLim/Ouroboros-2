@@ -74,14 +74,14 @@ namespace oo
         vr = VulkanRenderer::get();
 
         auto& camera = vr->camera;
-        m_cc.SetCamera(&camera);
+        //m_cc.SetCamera(&camera);
 
         camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         camera.movementSpeed = 5.0f;
 
-        camera.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-        camera.SetRotationSpeed(0.5f);
-        camera.SetPosition(glm::vec3(0.0f, 2.0f, 4.0f));
+        //camera.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+        //camera.SetRotationSpeed(0.5f);
+        //camera.SetPosition(glm::vec3(0.0f, 2.0f, 4.0f));
         camera.SetAspectRatio((float)m_window.m_width / (float)m_window.m_height);
         
         
@@ -219,7 +219,7 @@ namespace oo
         // Vulkan will call internally
 
         // temporarily shift here for better structuring
-        m_cc.Update(oo::timer::dt());
+        //m_cc.Update(oo::timer::dt());
 
         if (vr->PrepareFrame() == true)        
         {
