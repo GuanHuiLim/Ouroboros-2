@@ -15,7 +15,8 @@ public:
     void SetCamera(Camera* camera) { m_Camera = camera; }
 
     void ShakeCamera();
-
+    
+    Camera* GetCamera() const { return m_Camera; }
 private:
 
     glm::vec3 m_LastFrameCameraShakeOffset{ 0.0f, 0.0f, 0.0f };

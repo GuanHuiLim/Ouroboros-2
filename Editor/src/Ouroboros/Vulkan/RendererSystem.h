@@ -36,6 +36,7 @@ namespace oo
         RendererSystem(GraphicsWorld* graphicsWorld);
 
         void Init();
+        
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
@@ -48,6 +49,7 @@ namespace oo
         virtual void Run(Ecs::ECSWorld* world) override;
         void UpdateCamerasEditorMode();
         void UpdateCamerasRuntime();
+        void SaveEditorCamera();
 
     private:
         void RenderDebugDraws(Ecs::ECSWorld* world);
@@ -56,5 +58,6 @@ namespace oo
     
     private:
         CameraController m_cc;
+        static Camera /*m_runtimeCamera,*/ m_editorCamera;
     };
 }

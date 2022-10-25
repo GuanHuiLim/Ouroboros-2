@@ -98,6 +98,9 @@ namespace oo
 
         // Update Systems
         {
+            //// nothing should run before this.
+            //m_ecsWorld->Get_System<oo::TransformSystem>()->StartOfFrame();
+
             m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
 
             m_ecsWorld->Get_System<oo::AudioSystem>()->Run(m_ecsWorld.get());
@@ -130,6 +133,7 @@ namespace oo
     void Scene::Render()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_rendering, tracy::Color::Seashell3);
+
         GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
@@ -227,6 +231,7 @@ namespace oo
 
         PRINT(m_name);
 
+        GetWorld().Get_System<oo::RendererSystem>()->SaveEditorCamera();
         EndOfFrameUpdate();
         m_lookupTable.clear();
         m_gameObjects.clear();

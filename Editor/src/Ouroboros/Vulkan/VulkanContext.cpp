@@ -71,18 +71,16 @@ namespace oo
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
 
+        // Setup Camera Internally, not used
         vr = VulkanRenderer::get();
-
         auto& camera = vr->camera;
         //m_cc.SetCamera(&camera);
-
         camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         camera.movementSpeed = 5.0f;
-
+        camera.SetAspectRatio((float)m_window.m_width / (float)m_window.m_height);
         //camera.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
         //camera.SetRotationSpeed(0.5f);
         //camera.SetPosition(glm::vec3(0.0f, 2.0f, 4.0f));
-        camera.SetAspectRatio((float)m_window.m_width / (float)m_window.m_height);
         
         
 
