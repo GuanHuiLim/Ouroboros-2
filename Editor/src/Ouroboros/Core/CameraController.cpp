@@ -21,7 +21,7 @@ void CameraController::Update(float dt)
     const glm::vec2 mousedelta{ deltax, deltay };
     const float wheelDelta{ static_cast<float>(oo::input::GetMouseY()) };
 
-    const glm::vec3 amountToRotate = glm::vec3{ -mousedelta.y * m_Camera->rotationSpeed, -mousedelta.x * m_Camera->rotationSpeed, 0.0f };
+    glm::vec3 amountToRotate = glm::vec3{ -mousedelta.y * m_Camera->rotationSpeed, -mousedelta.x * m_Camera->rotationSpeed, 0.0f };
     glm::vec3 amountToTranslate{ 0.0f, 0.0f, 0.0f };
 
     // Camera Movement
@@ -71,6 +71,29 @@ void CameraController::Update(float dt)
     // Camera Rotation
     if (oo::input::IsMouseButtonHeld(MOUSE_BUTTON_RIGHT))
     {
+        float post_increment_x = m_rotation.x + amountToRotate.x;
+        if (post_increment_x < -89.f)   // - 100
+        {
+            // clamp rotation to limit
+            m_rotation.x = -89.f; // -89
+            // reduce induced rotation to achieve said limit internally
+            amountToRotate.x = amountToRotate.x - m_rotation.x; // -100 - -89 = -11
+        }
+        else if (post_increment_x > 89.f) // 100
+        {
+            // clamp rotation to limit
+            m_rotation.x = 89.f; 
+            // reduce induced rotation to achieve said limit internally
+            amountToRotate.x = m_rotation.x - amountToRotate.x; // 100 - 89 = 11
+        }
+        else
+        {
+            // x is within -89.f to 89.f
+            m_rotation.x += amountToRotate.x;
+        }
+
+        /*m_rotation.y += amountToRotate.y;
+        m_rotation.z += amountToRotate.z;*/
         m_Camera->Rotate(amountToRotate);
         LOG_TRACE("Rotate Camera amount (degrees) {0},{1}", amountToRotate.x, amountToRotate.y);
     }
