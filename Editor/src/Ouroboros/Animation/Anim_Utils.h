@@ -82,6 +82,7 @@ namespace oo::Anim
 			IAnimationComponent& comp;
 			AnimationTracker& tracker;
 			Ecs::EntityID entity;
+			oo::UUID uuid;
 			float dt;
 		};
 		//info for a single timeline's progress
@@ -284,6 +285,7 @@ namespace oo::Anim
 
 		Condition(ConditionInfo const& info);
 		bool Satisfied(AnimationTracker& tracker);
+		std::string GetName(AnimationTree const& tree);
 	};
 
 	struct ConditionInfo
@@ -380,11 +382,11 @@ namespace oo::Anim
 		//name of the timeline
 		std::string timeline_name{ "Unnamed Timeline" };
 		//uuid of the target gameobject to manipulate
-		oo::UUID target_object;
+		oo::GameObject target_object;
 		//uuid of the gameobject the AnimationComponent is attached to
-		oo::UUID source_object;
-
-		std::vector<int> children_index;
+		oo::GameObject source_object;
+		//do not touch
+		std::vector<int> children_index{};
 	};
 	//tracks progress in 1 timeline
 	struct ProgressTracker

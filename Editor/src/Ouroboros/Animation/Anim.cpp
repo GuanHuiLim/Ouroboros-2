@@ -26,6 +26,11 @@ Technology is prohibited.
 #include "Project.h"
 #include "App/Editor/UI/Tools/MeshHierarchy.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/prettywriter.h>
+
 #include <random>
 namespace oo::Anim::internal
 {
@@ -207,10 +212,9 @@ namespace oo::Anim::internal
 		return target < current;
 	}
 
-	void TriggerEvent(ScriptEvent& event)
+	void TriggerEvent(UpdateProgressTrackerInfo& info, ScriptEvent& event)
 	{
-		//TODO
-		assert(false);
+		event.script_function_info.Invoke(info.tracker_info.uuid);
 	}
 
 	KeyFrame::DataType GetInterpolatedValue(rttr::type rttr_type, KeyFrame::DataType prev, KeyFrame::DataType next, float percentage)
@@ -248,9 +252,10 @@ namespace oo::Anim::internal
 		//if next event not within bounds
 		if (Withinbounds(updatedTimer, nextEvent.time) == false) return;
 			
-		TriggerEvent(nextEvent);
+		TriggerEvent(info, nextEvent);
 		info.progressTracker.index++;
 
+		//TODO: if went past more than 1 event, trigger those as well
 	}
 
 	//void UpdateProperty_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
@@ -291,7 +296,16 @@ namespace oo::Anim::internal
 		//	//set normalized timer
 		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
 		//}
+		
 
+		//find the correct gameobject
+		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
+		//traverse the hierarchy
+		for (auto& index : timeline.children_index)
+		{
+			auto children = go.GetDirectChilds();
+			go = children[index];
+		}
 		//if next keyframe within bounds increment index 
 		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
 		if (Withinbounds(updatedTimer, nextEvent.time))
@@ -303,7 +317,7 @@ namespace oo::Anim::internal
 			{
 				//get the instance
 				auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
-					info.tracker_info.entity, info.progressTracker.timeline->component_hash);
+					go.GetEntity(), info.progressTracker.timeline->component_hash);
 				auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
 				//set the value
 				info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
@@ -335,14 +349,6 @@ namespace oo::Anim::internal
 		/*--------------------------------
 		set related game object's data
 		--------------------------------*/
-		GameObject go_root{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
-		GameObject go{ go_root };
-		//traverse the hierarchy
-		for (auto& index : timeline.children_index)
-		{
-			auto children = go.GetDirectChilds();
-			go = children[index];
-		}
 		//get a ptr to the component
 		auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
 			go.GetEntity(), info.progressTracker.timeline->component_hash);
@@ -449,7 +455,10 @@ namespace oo::Anim::internal
 	void UpdateNodeTrackers(Node& node)
 	{
 		node.trackers.clear();
-		//TODO: script event tracker
+		//add script event tracker
+		{
+			auto progressTracker = ProgressTracker::Create(Timeline::TYPE::SCRIPT_EVENT);
+		}
 
 		//add timeline trackers
 		for (auto& timeline : node.GetAnimation().timelines)
@@ -556,8 +565,15 @@ namespace oo::Anim::internal
 		
 	}
 
+	void AssignAnimationTreeToComponent(IAnimationComponent& component)
+	{
+		component.animTree = &(AnimationTree::map[component.animTree_name]);
+	}
+
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
 	{
+		//name should not be empty!!
+		assert(name.empty() == false);
 		//retrieve tree
 		if (AnimationTree::map.contains(name) == false)
 		{
@@ -565,8 +581,8 @@ namespace oo::Anim::internal
 			assert(false);
 			return;
 		}
-
-		component.animTree = &(AnimationTree::map[name.c_str()]);
+		component.animTree_name = name;
+		AssignAnimationTreeToComponent(component);
 	}
 
 	Group* RetrieveGroupFromTree(AnimationTree& tree, std::string const& groupName)
@@ -752,8 +768,54 @@ namespace oo::Anim::internal
 		if (existing_timeline != nullptr)
 			return existing_timeline;
 
+		Anim::TimelineInfo createInfo = info;
+
+		//detect gameobject hierarchy
+		{
+			oo::UUID current = info.source_object.GetInstanceID();
+			oo::UUID target = info.target_object.GetInstanceID();
+			//if the target gameobject is not the root
+			if (current != target)
+			{
+				//generate hierarchy map
+				std::unordered_map<oo::UUID::value_type, std::vector<int>> uuid_hierarchy_map{};
+				{
+					std::function<void(oo::GameObject)> traverse_recursive = [&](oo::GameObject node)
+					{
+						if (node.HasChild() == false)
+							return;
+
+						int idx = 0;
+						std::vector<int> children_index = uuid_hierarchy_map[node.GetInstanceID()];
+						//add a new element
+						children_index.emplace_back(idx);
+						auto children = node.GetChildren();
+						for (auto child : children)
+						{
+							//set it to the correct index
+							children_index.back() = idx;
+							//assign it to the map
+							uuid_hierarchy_map[child.GetInstanceID()] = children_index;
+							//recurse
+							traverse_recursive(child);
+							//increment index
+							++idx;
+						}
+
+					};
+
+					std::vector<int> children_idx{};
+					uuid_hierarchy_map[current] = children_idx;
+					traverse_recursive(info.source_object);
+				}
+
+				createInfo.children_index = uuid_hierarchy_map[target];
+			}
+
+		}
+
 		//create the new timeline
-		Timeline timeline{ info };
+		Timeline timeline{ createInfo };
 		return &(animation.timelines.emplace_back(std::move(timeline)));
 	}
 
@@ -822,6 +884,25 @@ namespace oo::Anim::internal
 		//insert
 		auto iterator = timeline.keyframes.begin() + index;
 		return &( *(timeline.keyframes.emplace(iterator, keyframe)) );
+	}
+
+	ScriptEvent* AddScriptEventToAnimation(Animation& animation, ScriptEvent const& scriptevent)
+	{
+		//check if valid script function here later
+
+		//find index to insert, by finding first keyframe that is further
+		size_t index = 0;
+		for (auto& event : animation.events)
+		{
+			if (event.time > scriptevent.time)
+			{
+				break;
+			}
+			++index;
+		}
+		//insert
+		auto iterator = animation.events.begin() + index;
+		return &(*(animation.events.emplace(iterator, scriptevent)));
 	}
 
 	//node->GetAnimation(), timelineName, type, datatype, keyframe
@@ -919,6 +1000,16 @@ namespace oo::Anim::internal
 		AssignNodeToTracker(comp.tracker, comp.animTree->groups.begin()->second.startNode);
 	}
 
+	void BindConditionToParameter(AnimationTree& tree, Condition& condition)
+	{
+		//set param index//set param index
+		assert(tree.paramIDtoIndexMap.contains(condition.paramID));
+		condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
+
+		//set condition comparison function
+		internal::AssignComparisonFunctionToCondition(condition);
+	}
+
 	void BindConditionsToParameters(AnimationTree& tree)
 	{
 		//assign all the parameter's index to the tree's ID to index mapping
@@ -935,12 +1026,13 @@ namespace oo::Anim::internal
 		{
 			for (auto& condition : link.conditions)
 			{
-				//set param index
-				assert(tree.paramIDtoIndexMap.contains(condition.paramID));
-				condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
+				BindConditionToParameter(tree, condition);
+				////set param index
+				//assert(tree.paramIDtoIndexMap.contains(condition.paramID));
+				//condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
 
-				//set condition comparison function
-				internal::AssignComparisonFunctionToCondition(condition);
+				////set condition comparison function
+				//internal::AssignComparisonFunctionToCondition(condition);
 			}
 		}
 		}
@@ -1164,6 +1256,12 @@ namespace oo::Anim
 	bool Condition::Satisfied(AnimationTracker& tracker)
 	{
 		return internal::ConditionSatisfied(*this, tracker);
+	}
+
+	std::string Condition::GetName(AnimationTree const& tree)
+	{
+		assert(parameterIndex < tree.parameters.size());
+		return tree.parameters[parameterIndex].name;
 	}
 
 	/*-------------------------------
@@ -1434,7 +1532,6 @@ namespace oo::Anim
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				//TODO: get node hierarchy and append it to children_index
 				oGFX::BoneNode* curr = resource->skeleton->m_boneNodes;
 				std::string boneName{ channel->mNodeName.C_Str() };
 				//guarding for safety
@@ -1588,8 +1685,8 @@ namespace oo::Anim
 
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
-			
-			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,0.016f};
+			GameObject go{ entity , *scene };
+			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), 0.016f};
 			internal::UpdateTracker(info);
 			});
 
@@ -1643,12 +1740,18 @@ namespace oo::Anim
 		auto& comp = obj->AddComponent<oo::AnimationComponent>();
 		comp.Set_Root_Entity(obj->GetEntity());
 
-		oo::UUID child_1_uuid;
+		oo::GameObject source = *(obj.get());
+		oo::GameObject target;
 		{
 			auto child_obj = scene->CreateGameObjectImmediate();
 			obj->AddChild(*(child_obj.get())); 
 			auto child_obj_2 = scene->CreateGameObjectImmediate();
 			obj->AddChild(*(child_obj_2.get()));
+
+			auto child_obj_1_3 = scene->CreateGameObjectImmediate();
+			obj->AddChild(*(child_obj_1_3.get()));
+
+			target = *(child_obj_1_3.get());
 		}
 
 		//create the animation tree asset
@@ -1717,7 +1820,9 @@ namespace oo::Anim
 		.type{Timeline::TYPE::PROPERTY},
 		.component_hash{Ecs::ECSWorld::get_component_hash<TransformComponent>()},
 		.rttr_property{rttr::type::get< TransformComponent>().get_property("Position")},
-		.timeline_name{"Test Timeline"}
+		.timeline_name{"Test Timeline"},
+		.target_object{target},
+		.source_object{source}
 		};
 		auto timeline = comp.AddTimeline(group.name, node->name, timeline_info);
 
@@ -1753,7 +1858,37 @@ namespace oo::Anim
 		return obj;
 
 	}
+	void AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
+	{
+		//map should contain the animation tree
+		assert(AnimationTree::map.contains(name));
 
+		auto& tree = AnimationTree::map[name];
+		std::ofstream stream{ filepath ,std::ios::trunc };
+		if (!stream)
+		{
+			assert(false);
+			return;
+		}
+		
+		rapidjson::OStreamWrapper osw(stream);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+
+		writer.StartObject();
+		{
+			writer.Key("AnimationTreeName");
+			writer.String(tree.name.c_str(), static_cast<rapidjson::SizeType>(tree.name.size()));
+			/*------------------
+			PARAMETERS
+			------------------*/
+
+
+			/*------------------
+			GROUPS
+			------------------*/
+
+		}
+	}
 
 	/*-------------------------------
 	AnimationComponent
@@ -1780,7 +1915,13 @@ namespace oo
 	void AnimationComponent::SetAnimationTree(std::string const& name)
 	{
 		//animTree = _animTree;
+		actualComponent.Reset();
 		oo::Anim::internal::AssignAnimationTreeToComponent(actualComponent, name);
+	}
+
+	std::string AnimationComponent::GetAnimationTreeName()
+	{
+		return actualComponent.animTree_name;
 	}
 
 	void AnimationComponent::SetParameter(std::string const& name, Anim::Parameter::DataType value)
@@ -1946,13 +2087,15 @@ namespace oo
 		}
 
 		info._param = parameter;
-		auto condition = oo::Anim::internal::AddConditionToLink(*tree, *link, info);
+		auto condition = Anim::internal::AddConditionToLink(*tree, *link, info);
 
 		if (condition == nullptr)
 		{
 			LOG_CORE_DEBUG_INFO("Condition cannot be added to Link {0}!!", linkName);
 			assert(false);
 		}
+
+		Anim::internal::BindConditionToParameter(*tree, *condition);
 
 		return condition;
 	}
@@ -2051,7 +2194,7 @@ namespace oo
 		//group should exist
 		if (group == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add timeline!!", groupName);
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add keyframe!!", groupName);
 			assert(false);
 			return nullptr;
 		}
@@ -2059,7 +2202,7 @@ namespace oo
 		//node should exist
 		if (node == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add timeline!!", nodeName);
+			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add keyframe!!", nodeName);
 			assert(false);
 			return nullptr;
 		}
@@ -2083,6 +2226,43 @@ namespace oo
 		return created_keyframe;
 	}
 
+	Anim::ScriptEvent* AnimationComponent::AddScriptEvent(std::string const& groupName, std::string const nodeName,
+		std::string const& timelineName, Anim::ScriptEvent scriptevent)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return nullptr;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, groupName);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add script event!!", groupName);
+			assert(false);
+			return nullptr;
+		}
+		auto node = Anim::internal::RetrieveNodeFromGroup(*group, nodeName);
+		//node should exist
+		if (node == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add script event!!", nodeName);
+			assert(false);
+			return nullptr;
+		}
 
+		auto created_scriptevent = Anim::internal::AddScriptEventToAnimation(node->GetAnimation(), scriptevent);
+		if (created_scriptevent == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("couldn't add keyframe!!");
+			assert(false);
+			return nullptr;
+		}
+
+		return created_scriptevent;
+	}
 
 } //namespace oo

@@ -18,9 +18,16 @@ namespace oo::Anim
 	class IAnimationComponent
 	{
 	public:
+		std::string animTree_name{};
 		AnimationTree* animTree{ nullptr };
 		AnimationTracker tracker{};
 		Ecs::EntityID root_objectID{};
+
+		inline void Reset()
+		{
+			IAnimationComponent temp{};
+			*this = temp;
+		}
 	};
 }
 
@@ -31,11 +38,12 @@ namespace oo
 		friend class oo::Anim::AnimationSystem;
 		Anim::IAnimationComponent actualComponent;
 		//if using fbx animations this would be the root bone gameobject
-		Ecs::EntityID root_object; 
+		Ecs::EntityID root_object;
 	public:
 		Anim::IAnimationComponent& GetActualComponent();
 		void Set_Root_Entity(Ecs::EntityID entity);
 		void SetAnimationTree(std::string const& name);
+		std::string GetAnimationTreeName();
 		void SetParameter(std::string const& name, Anim::Parameter::DataType value);
 
 		Anim::AnimationTree* GetAnimationTree();
@@ -68,10 +76,10 @@ namespace oo
 		Anim::KeyFrame* AddKeyFrame(std::string const& groupName, std::string const nodeName, 
 			std::string const& timelineName, Anim::KeyFrame keyframe);
 
-		//Anim::ScriptEvent* AddScriptEvent(std::string const& groupName);
+		Anim::ScriptEvent* AddScriptEvent(std::string const& groupName, std::string const nodeName,
+			std::string const& timelineName, Anim::ScriptEvent scriptevent);
 
-
-		//TimelineInfo const& info
+		RTTR_ENABLE();
 	};
 }
 
