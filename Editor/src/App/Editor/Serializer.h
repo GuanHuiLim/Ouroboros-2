@@ -149,6 +149,14 @@ inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val,
 				rttr::variant component_variant = prop.get_value(component);
 				SaveNestedComponent(component_variant, v, prop,doc);
 			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant enum_data = prop.get_value(component);
+				int value = enum_data.get_value<int>();
+				//saves all enum data as int
+				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+				m_SaveProperties.m_save_commands.find(rttrType->second)->second(doc,v,value,prop);
+			}
 			continue;//not supported
 		}
 		auto sf = m_SaveProperties.m_save_commands.find(iter->second);
@@ -194,6 +202,15 @@ inline void Serializer::LoadComponent(oo::GameObject& go, rapidjson::Value&& val
 				rttr::variant variant = prop.get_value(component);
 				LoadNestedComponent(variant, iter->value);
 				prop.set_value(component, variant);
+			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant enum_data = prop.get_value(component);
+				
+				//saves all enum data as int
+				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+				m_LoadProperties.m_load_commands.find(rttrType->second)->second(enum_data, std::move(iter->value));
+				prop.set_value(component, enum_data);
 			}
 			continue;//not supported
 		}
