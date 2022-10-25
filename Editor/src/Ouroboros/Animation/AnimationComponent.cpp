@@ -12,6 +12,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
+#include "pch.h"
 #include "AnimationComponent.h"
 
 #include <rttr/registration>
