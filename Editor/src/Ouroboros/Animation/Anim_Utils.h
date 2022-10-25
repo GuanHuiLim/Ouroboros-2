@@ -42,7 +42,7 @@ namespace oo::Anim::internal
 
 namespace oo::Anim
 {
-	enum class ParamType
+	enum class ParamType : int
 	{
 		BOOL,
 		TRIGGER,
@@ -94,26 +94,9 @@ namespace oo::Anim
 			UpdateTrackerInfo& tracker_info;
 			ProgressTracker& progressTracker;
 		};
+
+		constexpr char  serialize_method_name[] = "Serialize";
 	}
-
-	struct NodeRef
-	{
-		std::map<size_t, Node>* nodes{ nullptr }; //reference to container of nodes
-		//int index{ -1 };	//node index
-		size_t id{ internal::invalid_ID }; //node's unique identifier
-
-		Node& operator*() const { return (*nodes)[id]; }
-		Node* operator->() const { return &((*nodes)[id]); }
-
-		operator bool() const {
-			return valid();
-		}
-
-		//recalculates the index by looking for the node in the nodes vector
-		void Reload();
-	private:
-		bool valid() const;
-	};
 
 	struct GroupRef
 	{
@@ -121,8 +104,9 @@ namespace oo::Anim
 		//int index{ -1 };	//group index
 		size_t id{ internal::invalid_ID }; //group's unique identifier
 
-		Group& operator*() const { return (*groups)[id]; }
-		Group* operator->() const { return &((*groups)[id]); }
+		GroupRef(std::map<size_t, Group>* _groups = nullptr, size_t _id = { internal::invalid_ID });
+		Group& operator*() const { return Retrieve(id); }
+		Group* operator->() const { return &Retrieve(id); }
 
 		operator bool() const {
 			return valid();
@@ -130,8 +114,34 @@ namespace oo::Anim
 
 		//recalculates the index by looking for the group in the groups vector
 		void Reload();
+		RTTR_ENABLE();
 	private:
+		Group& Retrieve(size_t id) const;
 		bool valid() const;
+	};
+
+	struct NodeRef
+	{
+		std::map<size_t, Node>* nodes{ nullptr }; //reference to container of nodes
+		//int index{ -1 };	//node index
+		size_t id{ internal::invalid_ID }; //node's unique identifier
+
+		NodeRef(std::map<size_t, Node>* _nodes = nullptr, size_t _id = { internal::invalid_ID });
+		Node& operator*() const { return Retrieve(id); }
+		Node* operator->() const { return &Retrieve(id); }
+
+		operator bool() const {
+			return valid();
+		}
+
+		//recalculates the index by looking for the node in the nodes vector
+		void Reload();
+		RTTR_ENABLE();
+	private:
+		Node& Retrieve(size_t id) const;
+		bool valid() const;
+
+		
 	};
 
 	struct LinkRef
@@ -140,8 +150,9 @@ namespace oo::Anim
 		//int index{ -1 };	//link index
 		size_t id{ internal::invalid_ID }; //link's unique identifier
 
-		Link& operator*() const { return (*links)[id]; }
-		Link* operator->() const { return &((*links)[id]); }
+		LinkRef(std::map<size_t, Link>* _links = nullptr, size_t _id = { internal::invalid_ID });
+		Link& operator*() const { return Retrieve(id); }
+		Link* operator->() const { return &Retrieve(id); }
 
 		operator bool() const {
 			return valid();
@@ -149,7 +160,9 @@ namespace oo::Anim
 
 		//recalculates the index by looking for the link in the links vector
 		void Reload();
+		RTTR_ENABLE();
 	private:
+		Link& Retrieve(size_t id) const;
 		bool valid() const;
 	};
 
@@ -168,162 +181,15 @@ namespace oo::Anim
 
 		//recalculates the index by looking for the animation in the animations vector
 		void Reload();
+		RTTR_ENABLE();
 	private:
 		bool valid() const;
 	};
 
-	struct Node
-	{
-		GroupRef group{};
-		std::string name{};
-		//animation asset loaded from file
-		Asset anim_asset{};
-		AnimRef anim{};
-		////used to get the animation's index
-		//size_t animation_ID{ internal::invalid_ID };
-		////index of the animation in the animation vector
-		//uint animation_index{ internal::invalid_index };
-		////Animation animation{};
-		float speed{ 1.f };
-		glm::vec3 position{};
-
-		size_t node_ID{ internal::invalid_ID };
-
-		//trackers to be given to the animation component 
-		//upon reaching this node
-		std::vector<ProgressTracker> trackers{};
-		//outgoing links to other nodes
-		std::vector<LinkRef> outgoingLinks{};
-
-		//Node(Group& _group, std::string const _name = "Unnamed Node");
-		Node() = default;
-		Node(NodeInfo& info);
-		//void SetAnimation(Asset asset);
-		//void SetAnimation(Asset asset);
-		Animation& GetAnimation();
-	};
-
-	struct NodeInfo
-	{
-		std::string name{ "Unnamed Node" };
-		std::string animation_name{};
-		float speed{ 1.f };
-		glm::vec3 position{ 0.f,0.f,0.f };
-
-		//dont fill this up
-		GroupRef group{};
-		size_t nodeID{ internal::invalid_ID };
-	};
-
 	
 
-	struct Group
-	{
-		std::string name{ "Unnamed Group" };
-		NodeRef startNode{};
-		//contains the nodes and their positions to be displayed in the editor
-		std::map<size_t, Node> nodes{};
-		std::map<size_t, Link> links{};
-		AnimationTree* tree{ nullptr };
-		size_t groupID{ internal::invalid_ID };	//unique identifier
-
-		//Group(std::string const _name = "Unnamed Group");
-		Group() = default;
-		Group(GroupInfo const& info);
-		Group(Group&& other);
-		//Group(Group const&) = default;
-	};
-	struct GroupInfo
-	{
-		std::string name{ "Unnamed Group" };
-		size_t groupID{ internal::invalid_ID };
-		AnimationTree* tree{nullptr};
-	};
 	
-
-	//variables that are defined within an AnimationTree that can be accessed and assigned values from scripts or editor
-	struct Parameter
-	{
-		using DataType = rttr::variant;
-		using SerializeFn = void(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>&, Parameter&);
-		using SerializeFnMap = std::unordered_map<P_TYPE,SerializeFn*>;
-
-		P_TYPE type{};
-		DataType value{};
-		size_t paramID{ internal::invalid_ID };
-		std::string name{"Unnamed Parameter"};
-		static SerializeFnMap serializeFn_map;
-
-		Parameter(ParameterInfo const& info);
-		void Set(DataType const& _value);
-	};
-
-	struct ParameterInfo
-	{
-		std::string name{ "Unnamed Parameter" };
-		P_TYPE type;
-		//optional initial value
-		Parameter::DataType value;
-	};
-
-	struct Condition
-	{
-		enum class CompareType
-		{
-			GREATER,
-			LESS,
-			EQUAL,
-			NOT_EQUAL
-		};
-		using DataType = rttr::variant;
-		using CompareFn = bool(DataType const&, DataType const&);
-		using CompareFnMap = std::unordered_map< P_TYPE, std::unordered_map<CompareType, CompareFn*>>;
-		
-		CompareType comparison_type;
-		P_TYPE type;
-		DataType value{};
-		//used to track the parameter's index in the animation tree's vector
-		size_t paramID{ internal::invalid_ID };
-		uint32_t parameterIndex{};
-		CompareFn* compareFn{ nullptr };
-		static CompareFnMap comparisonFn_map;
-
-
-		Condition(ConditionInfo const& info);
-		bool Satisfied(AnimationTracker& tracker);
-		std::string GetName(AnimationTree const& tree);
-	};
-
-	struct ConditionInfo
-	{
-		Condition::CompareType comparison{};
-		std::string parameter_name{};
-		//initial value, leave empty for default
-		Condition::DataType value{};
-		//dont fill this
-		size_t _paramID{ internal::invalid_ID };
-		//dont fill this
-		Parameter* _param{nullptr};
-	};
-
-	struct Link
-	{
-		NodeRef src;
-		NodeRef dst;
-
-		bool has_exit_time{ false };
-		float exit_time{ 0.f };
-		bool fixed_duration{ false };
-		float transition_duration{ 0.f };
-		float transition_offset{ 0.f };
-		std::string name{"Unnamed Link"};
-		std::vector<Condition> conditions{};
-		size_t linkID{ internal::invalid_ID };
-
-		Link() = default;
-		Link(NodeRef _src, NodeRef _dst);
-	};
-
+	
 	
 
 	struct KeyFrame

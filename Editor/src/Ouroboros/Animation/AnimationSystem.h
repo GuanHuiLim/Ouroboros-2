@@ -44,7 +44,7 @@ namespace oo::Anim
 
 		Scene::go_ptr CreateAnimationTestObject();
 
-		void SaveAnimationTree(std::string name, std::string filepath);
+		bool SaveAnimationTree(std::string name, std::string filepath);
 	};
 
 

@@ -33,6 +33,8 @@ namespace oo::Anim
 		//std::vector<Node> nodes;
 
 		static AnimationTree* Create(std::string const name = "Unnamed Animation Tree");
+	
+		RTTR_ENABLE();
 	};
 
 
