@@ -1876,12 +1876,21 @@ namespace oo::Anim
 
 		writer.StartObject();
 		{
-			writer.Key("AnimationTreeName");
+			writer.Key("AnimationTree");
 			writer.String(tree.name.c_str(), static_cast<rapidjson::SizeType>(tree.name.size()));
 			/*------------------
 			PARAMETERS
 			------------------*/
+			writer.Key("Parameters");
+			{
+				writer.StartArray();
+				for (auto& param : tree.parameters)
+				{
+					writer.String(param.name.c_str(), static_cast<rapidjson::SizeType>(param.name.size()));
+					Parameter::serializeFn_map[param.type](writer, param);
 
+				}
+			}
 
 			/*------------------
 			GROUPS
@@ -1912,7 +1921,7 @@ namespace oo
 		actualComponent.root_objectID = root_object = entity;
 	}
 
-	void AnimationComponent::SetAnimationTree(std::string const& name)
+	void AnimationComponent::SetAnimationTree(std::string name)
 	{
 		//animTree = _animTree;
 		actualComponent.Reset();

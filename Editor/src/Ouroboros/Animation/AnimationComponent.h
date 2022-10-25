@@ -42,7 +42,7 @@ namespace oo
 	public:
 		Anim::IAnimationComponent& GetActualComponent();
 		void Set_Root_Entity(Ecs::EntityID entity);
-		void SetAnimationTree(std::string const& name);
+		void SetAnimationTree(std::string name);
 		std::string GetAnimationTreeName();
 		void SetParameter(std::string const& name, Anim::Parameter::DataType value);
 

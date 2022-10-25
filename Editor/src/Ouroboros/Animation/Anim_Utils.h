@@ -24,6 +24,9 @@ Technology is prohibited.
 #include <rttr/type.h>
 #include <rttr/variant.h>
 #include <rttr/property.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/prettywriter.h>
 
 namespace oo::Anim::internal
 {
@@ -242,11 +245,14 @@ namespace oo::Anim
 	struct Parameter
 	{
 		using DataType = rttr::variant;
+		using SerializeFn = void(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>&, Parameter&);
+		using SerializeFnMap = std::unordered_map<P_TYPE,SerializeFn*>;
 
 		P_TYPE type{};
 		DataType value{};
 		size_t paramID{ internal::invalid_ID };
 		std::string name{"Unnamed Parameter"};
+		static SerializeFnMap serializeFn_map;
 
 		Parameter(ParameterInfo const& info);
 		void Set(DataType const& _value);
