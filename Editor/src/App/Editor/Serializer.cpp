@@ -415,7 +415,16 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 					}break;
 					case oo::ScriptValue::type_enum::FUNCTION:
 					{
-						//TODO
+						auto& current_sfi = current_scriptField.FindMember(sfi.first.c_str())->value;
+						auto arr = current_sfi.GetArray();
+						oo::UUID current_uuid_val = sfi.second.value.GetValue<oo::ScriptValue::function_type>().m_objID;
+						auto iter = all_mappedUUID.find(current_uuid_val);
+						if (iter != all_mappedUUID.end())
+							arr[0].SetUint64(iter->second.GetUUID());
+						else
+							arr[0].SetUint64(-1);
+
+						current_sfi = arr;//update the value
 					}break;
 					}
 				}
