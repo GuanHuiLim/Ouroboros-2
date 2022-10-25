@@ -21,6 +21,7 @@ Technology is prohibited.
 #include "UI/Tools/StyleEditor.h"
 #include "UI/Tools/WarningMessage.h"
 #include "UI/Tools/LoggingView.h"
+#include "UI/Tools/AnimatorControllerView.h"
 #include "UI/Tools/Toolbar.h"
 #include "UI/Tools/PenTool.h"
 #include "UI/Tools/InputManagerUI.h"
@@ -67,6 +68,7 @@ public:
 	WarningMessage m_warningMessage;
 	Toolbar m_toolbar;
 	LoggingView m_loggingView;
+	AnimatorControllerView m_animatorControllerView;
 	PenTool m_pentool;
 	InputManagerUI m_inputManager;
 	MeshHierarchy m_meshHierarchy;
