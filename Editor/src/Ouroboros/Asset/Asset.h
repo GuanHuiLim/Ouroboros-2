@@ -125,8 +125,6 @@ namespace oo
         Callback onAssetDestroy = [](AssetInfo&) {};
         std::vector<rttr::variant> data;
         Type type = Type::Text;
-
-    private:
         bool isDataLoaded = false;
     };
 
@@ -178,6 +176,7 @@ namespace oo
         [[nodiscard]] inline AI_GETTER(GetTimeLoaded, timeLoaded);
         [[nodiscard]] inline AI_GETTER(GetRawData, data);
         [[nodiscard]] inline AI_GETTER(GetType, type);
+        [[nodiscard]] inline AI_GETTER(IsDataLoaded, isDataLoaded);
 
 #undef AI_GETTER
 #undef AI_VALUE_OR_DEFAULT

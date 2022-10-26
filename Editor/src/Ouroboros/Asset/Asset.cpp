@@ -132,6 +132,7 @@ namespace oo
 
         // Mark as data loaded
         isDataLoaded = true;
+        timeLoaded = std::chrono::file_clock::now();
     }
 
     void AssetInfo::Unload()
