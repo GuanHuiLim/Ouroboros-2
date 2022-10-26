@@ -29,7 +29,7 @@ namespace oo
         registration::class_<RigidbodyComponent>("Rigidbody")
             //.property("type", &RigidbodyComponent::collider_type)
             .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
-            .property("IsTrigger", &RigidbodyComponent::IsTrigger)
+            .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
             .property("Disable Gravity", &RigidbodyComponent::IsGravityDisabled, &RigidbodyComponent::SetGravity)
             .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
@@ -135,6 +135,22 @@ namespace oo
     bool oo::RigidbodyComponent::IsDynamic() const
     {
         return !IsStatic() && !object.isKinematic();
+    }
+
+    bool oo::RigidbodyComponent::IsTrigger() const
+    {
+        return IsTriggerObject && object.isTrigger();
+    }
+
+    bool oo::RigidbodyComponent::IsCollider() const
+    {
+        return !IsTrigger();
+    }
+
+    void oo::RigidbodyComponent::SetTrigger(bool enable)
+    {
+        IsTriggerObject = enable;
+        object.setTriggerShape(IsTriggerObject);
     }
 
     void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 

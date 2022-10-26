@@ -75,6 +75,8 @@ namespace oo
         float Radius        = 0.5f;
         float HalfHeight    = 0.5f;
 
+        float GlobalRadius = 0.5f;
+        float GlobalHalfHeight = 0.5f;
         //RTTR_ENABLE(ColliderBase);
         RTTR_ENABLE();
     };
