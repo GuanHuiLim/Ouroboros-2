@@ -76,6 +76,7 @@ namespace oo
     class RigidbodyComponent final
     {
     public:
+        bool IsTrigger = false;
         bool IsStaticObject = true;
         myPhysx::PhysicsObject object{};
         vec3 Offset = { 0.0, 0.0, 0.0 };

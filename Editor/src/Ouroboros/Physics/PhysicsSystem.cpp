@@ -152,8 +152,8 @@ namespace oo
                 rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
 
                 // test and set trigger boolean
-                if (rb.object.isTrigger() != bc.IsTrigger)
-                    rb.object.setTriggerShape(bc.IsTrigger);
+                if (rb.object.isTrigger() != rb.IsTrigger)
+                    rb.object.setTriggerShape(rb.IsTrigger);
             });
 
         //Updating capsule collider's bounds and debug drawing
@@ -197,7 +197,7 @@ namespace oo
             // therefore we find the delta change and apply it to its local transform.
 
             // we make this cheaper by only updating non-static objects.
-            if (rb.IsStaticObject) 
+            if (rb.IsStaticObject || rb.IsTrigger) 
                 return;
 
             auto pos = rb.GetPositionInPhysicsWorld();
@@ -257,7 +257,7 @@ namespace oo
             // retrieve their gameobject id counterpart.
             UUID trigger_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.triggerID);
             UUID other_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.otherID);
-
+            
             //broadcast trigger event.
             PhysicsTriggerEvent pte;
             pte.TriggerID = trigger_go_id;
@@ -268,12 +268,15 @@ namespace oo
                 pte.State = TriggerState::NONE;
                 break;
             case myPhysx::trigger::onTriggerEnter:
+                LOG_TRACE("Trigger Enter Event! Trigger Name {0}, Other Name {1}", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = TriggerState::ENTER;
                 break;
             case myPhysx::trigger::onTriggerStay:
+                LOG_TRACE("Trigger Stay Event! Trigger Name {0}, Other Name {1}", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = TriggerState::STAY;
                 break;
             case myPhysx::trigger::onTriggerExit:
+                LOG_TRACE("Trigger Exit Event! Trigger Name {0}, Other Name {1}", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = TriggerState::EXIT;
                 break;
             }
