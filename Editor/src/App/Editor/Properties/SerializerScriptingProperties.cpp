@@ -85,6 +85,18 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));
 			val.AddMember(name, data, doc.GetAllocator());
 		});
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::COMPONENT, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+			oo::UUID id = sfi.value.GetValue<oo::ScriptValue::component_type>().m_objID;
+			//check if object is valid before saving.
+			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
+			if (go == nullptr)
+				id = -1;
+			rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));
+			val.AddMember(name, data, doc.GetAllocator());
+		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
 		{
 			rapidjson::Value name;
@@ -191,6 +203,11 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 		{
 			oo::UUID id = val.GetUint64();
 			sfi.value.SetValue(id); 
+		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::COMPONENT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+			oo::UUID id = val.GetUint64();
+			sfi.value.GetValue<oo::ScriptValue::component_type>().m_objID = id;
 		});
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
