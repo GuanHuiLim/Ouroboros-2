@@ -104,6 +104,8 @@ namespace oo
 
     AssetManager::~AssetManager()
     {
+        EventManager::Unsubscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
+        EventManager::Unsubscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
         store.clear();
     }
 
