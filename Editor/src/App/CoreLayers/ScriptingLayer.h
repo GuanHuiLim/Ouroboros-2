@@ -35,7 +35,7 @@ namespace oo
     {
     public:
 
-        ScriptingLayer(SceneManager const& sceneManager)
+        ScriptingLayer(SceneManager& sceneManager)
         {
             ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
             ScriptManager::RegisterComponent<MeshRendererComponent>("Ouroboros", "MeshRenderer");

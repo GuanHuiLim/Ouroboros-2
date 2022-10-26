@@ -11,5 +11,21 @@ namespace Ouroboros
         {
             return new Scene(SceneManager_GetActiveScene());
         }
+
+        [DllImport("__Internal")] private static extern bool SceneManager_LoadSceneByIndex(UInt32 sceneID);
+        public static bool LoadScene(Scene scene)
+        {
+            return SceneManager_LoadSceneByIndex(scene.GetID());
+        }
+        public static bool LoadScene(UInt32 sceneID)
+        {
+            return SceneManager_LoadSceneByIndex(sceneID);
+        }
+
+        [DllImport("__Internal")] private static extern bool SceneManager_LoadSceneByName(string sceneName);
+        public static bool LoadScene(string sceneName)
+        {
+            return SceneManager_LoadSceneByName(sceneName);
+        }
     }
 }

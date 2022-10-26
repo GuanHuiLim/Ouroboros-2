@@ -69,6 +69,12 @@ namespace Ouroboros
             }
         }
 
+        [DllImport("__Internal")] private static extern void Transform3D_LookAt(UInt32 sceneID, UInt64 uuid, float x, float y, float z);
+        public void LookAt(Vector3 dir)
+        {
+            Transform3D_LookAt(gameObject.scene, gameObject.GetInstanceID(), dir.x, dir.y, dir.z);
+        }
+
         [DllImport("__Internal")] private static extern void Transform3D_GetLocalEulerAngles(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
         [DllImport("__Internal")] private static extern void Transform3D_SetLocalEulerAngles(UInt32 sceneID, UInt64 instanceID, float x, float y, float z);
 
