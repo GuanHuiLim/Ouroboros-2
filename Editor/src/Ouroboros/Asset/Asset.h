@@ -96,6 +96,11 @@ namespace oo
         void Reload(AssetInfo::Type type);
 
         /// <summary>
+        /// Unloads the data in the asset.
+        /// </summary>
+        void Unload();
+
+        /// <summary>
         /// Writes the data from the asset into the file.
         /// </summary>
         void Overwrite();
@@ -120,6 +125,9 @@ namespace oo
         Callback onAssetDestroy = [](AssetInfo&) {};
         std::vector<rttr::variant> data;
         Type type = Type::Text;
+
+    private:
+        bool isDataLoaded = false;
     };
 
     /// <summary>
@@ -197,6 +205,11 @@ namespace oo
         void Reload(AssetInfo::Type type);
 
         /// <summary>
+        /// Unloads the data in the asset.
+        /// </summary>
+        void Unload();
+
+        /// <summary>
         /// Writes the data from the asset into the file.
         /// </summary>
         void Overwrite();
@@ -247,6 +260,8 @@ namespace oo
     template<typename T>
     inline T AssetInfo::GetData() const
     {
+        if (!isDataLoaded)
+            Reload();
         for (auto& d : data)
         {
             if constexpr (std::is_pointer<T>::value)

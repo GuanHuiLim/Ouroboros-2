@@ -73,9 +73,7 @@ namespace oo
 
     void AssetInfo::Reload(AssetInfo::Type t)
     {
-        // Call old asset destruction callback
-        if (onAssetDestroy)
-            onAssetDestroy(*this);
+        Unload();
 
         type = t;
         switch (type)
@@ -131,6 +129,19 @@ namespace oo
         // Call asset creation callback
         if (onAssetCreate)
             onAssetCreate(*this);
+
+        // Mark as data loaded
+        isDataLoaded = true;
+    }
+
+    void AssetInfo::Unload()
+    {
+        // Call old asset destruction callback
+        if (onAssetDestroy)
+            onAssetDestroy(*this);
+
+        // Mark as data unloaded
+        isDataLoaded = false;
     }
 
     void AssetInfo::Overwrite()
@@ -159,6 +170,15 @@ namespace oo
 
         if (auto sp = info.lock())
             sp->Reload(type);
+    }
+
+    void Asset::Unload()
+    {
+        if (!IsValid())
+            return;
+
+        if (auto sp = info.lock())
+            sp->Unload();
     }
 
     void Asset::Overwrite()
