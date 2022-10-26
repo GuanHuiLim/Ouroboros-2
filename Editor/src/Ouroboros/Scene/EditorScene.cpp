@@ -21,6 +21,7 @@ Technology is prohibited.
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
+#include "Ouroboros/Core/Application.h"
 
 //optick
 #include "optick.h"
@@ -38,6 +39,13 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
         OPTICK_EVENT();
+        
+        // Reset some global window related settings here ... might be a bit scuffed and needa shift elsewhere
+        {
+            // Unlock the mouse if it was locked in play mode
+            Application::Get().GetWindow().SetMouseLockState(false);
+        }
+
         Scene::Init();
 
         //Register All Systems
