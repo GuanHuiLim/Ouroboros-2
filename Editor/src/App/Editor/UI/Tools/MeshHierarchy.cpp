@@ -66,7 +66,11 @@ void MeshHierarchy::Show()
 
 	auto* node = modeldata->sceneInfo;
 	ImVec2 contentRegion = ImGui::GetContentRegionAvail();
-	ImGui::BeginChild("MeshChild", { contentRegion.x,contentRegion.y * 0.6f }, true);
+	if (ImGui::BeginChild("MeshChild", { contentRegion.x,contentRegion.y * 0.6f }, true) == false)
+	{
+		ImGui::EndChild();
+		return;
+	}
 
 	ImGuiTreeNodeFlags flags = (ImGuiTreeNodeFlags)node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen: ImGuiTreeNodeFlags_Bullet;
 	bool opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
