@@ -306,18 +306,22 @@ namespace myPhysx
             PxRigidStatic* rstat = underlying_obj->rb.rigidStatic;
             PxRigidDynamic* rdyna = underlying_obj->rb.rigidDynamic;
 
-            underlying_obj->rigidID = type;
-
             // CHECK IF HAVE RIGIDBODY CREATED OR NOT
             // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
             if (rstat) {
                 temp_trans = rstat->getGlobalPose();
                 world->scene->removeActor(*rstat);
+                underlying_obj->rb.rigidStatic = nullptr; // clear the current data
             }
             else if (rdyna) {
                 temp_trans = rdyna->getGlobalPose();
                 world->scene->removeActor(*rdyna);
+                underlying_obj->rb.rigidDynamic = nullptr;
             }
+
+            // ASSIGN TO THE NEW RIGID TYPE
+            underlying_obj->rigidID = type;
+
             // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
             if (type == rigid::rstatic) {
                 underlying_obj->rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
@@ -336,7 +340,7 @@ namespace myPhysx
             //PxActorTypeFlags desiredTypes = PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC;
             //PxU32 count = world->scene->getNbActors(desiredTypes);
             //PxActor** buffer = new PxActor * [count];
-            //
+            
             //PxU32 noo = world->scene->getActors(desiredTypes, buffer, count);
             //printf("%d - actors\n\n", noo);
         }
@@ -693,7 +697,7 @@ namespace myPhysx
         return PxVec3{};
     }
 
-    bool PhysicsObject::getTrigger() const {
+    bool PhysicsObject::isTrigger() const {
 
         if (world->all_objects.contains(id)) {
 
@@ -706,7 +710,7 @@ namespace myPhysx
         return false;
     }
 
-    bool PhysicsObject::getGravity() const {
+    bool PhysicsObject::useGravity() const {
 
         if (world->all_objects.contains(id)) {
 
@@ -720,7 +724,7 @@ namespace myPhysx
         return false;
     }
 
-    bool PhysicsObject::getKinematic() const {
+    bool PhysicsObject::isKinematic() const {
 
         if (world->all_objects.contains(id)) {
 
@@ -911,6 +915,9 @@ namespace myPhysx
         return mPVD;
     }
     
+/*-----------------------------------------------------------------------------*/
+/*                           EVENT CALLBACK                                    */
+/*-----------------------------------------------------------------------------*/
     void EventCallBack::onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) {
         printf("CALLBACK: onConstraintBreak\n");
     }
