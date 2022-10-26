@@ -75,7 +75,7 @@ namespace oo
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
-        TransformComponent::vec3 vec3 = component.GlobalRight();
+        TransformComponent::vec3 vec3 = component.GlobalLeft();
         *x = vec3.x;
         *y = vec3.y;
         *z = vec3.z;
