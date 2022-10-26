@@ -100,11 +100,6 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         /// <summary>
-        /// Enables the running of the file watcher.
-        /// </summary>
-        //static void GlobalStartRunning();
-
-        /// <summary>
         /// Retrieves an asset using its ID.
         /// </summary>
         /// <param name="snowflake">The ID of the asset.</param>
