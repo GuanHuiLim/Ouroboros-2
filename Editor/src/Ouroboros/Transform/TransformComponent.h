@@ -35,11 +35,11 @@ namespace oo
         vec3 GetEulerAngles()  const;
         vec3 GetScale()        const;
 
-        vec3 LocalRight()      const;
+        vec3 LocalLeft()       const;
         vec3 LocalUp()         const;
         vec3 LocalForward()    const;
 
-        vec3 GlobalRight()     const;
+        vec3 GlobalLeft()      const;
         vec3 GlobalUp()        const;
         vec3 GlobalForward()   const;
 
@@ -82,6 +82,12 @@ namespace oo
         void CalculateLocalTransform();
         void CalculateGlobalTransform();
 
+        /*vec3 GetLocalTranslationDelta() const { return LocalTranslationDelta; }
+        vec3 GetLocalRotationDelta() const { return quaternion::to_euler(LocalOrientationDelta); }
+
+        vec3 GetGlobalTranslationDelta() const { return GlobalTranslationDelta; }
+        vec3 GetGlobalRotationDelta() const { return quaternion::to_euler(GlobalOrientationDelta); }*/
+
         RTTR_ENABLE();
     public:
 
@@ -91,6 +97,16 @@ namespace oo
         bool LocalMatrixDirty = false;
         bool GlobalMatrixDirty = false;
         bool HasChangedThisFrame = false;
+
+        /*glm::vec3 PrevLocalPosition;
+        glm::quat PrevLocalOrientation;
+        glm::vec3 PrevGlobalPosition;
+        glm::quat PrevGlobalOrientation;
+
+        glm::vec3 LocalTranslationDelta;
+        glm::quat LocalOrientationDelta;
+        glm::vec3 GlobalTranslationDelta;
+        glm::quat GlobalOrientationDelta;*/
 
         glm::vec3 LocalEulerAngles;    // fake data.
     };

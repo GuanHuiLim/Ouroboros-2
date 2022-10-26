@@ -131,4 +131,20 @@ namespace oo::Anim
 
 		return map;
 	}();
+
+
+	Parameter::SerializeFnMap Parameter::serializeFn_map = 
+		[]() {
+		Parameter::SerializeFnMap map;
+		
+		map[P_TYPE::BOOL] =
+		[](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, Parameter& param)
+		{
+			writer.String("BOOL", static_cast<rapidjson::SizeType>(std::string("BOOL").size()));
+			writer.Bool(param.value.get_value<bool>());
+		};
+
+		return map;
+		}();
+
 }

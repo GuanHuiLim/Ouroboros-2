@@ -21,9 +21,22 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Application.h"
 #include "VulkanContext.h"
+#include "Ouroboros/Core/Timer.h"
+#include "Ouroboros/Core/Application.h"
+
+#include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/EventSystem/EventManager.h"
 
 namespace oo
 {
+    Camera RendererSystem::m_editorCamera = [&]()
+    {
+        Camera camera;
+        camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
+        camera.movementSpeed = 5.0f;
+        return camera;
+    }();
+
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
         assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
@@ -65,6 +78,21 @@ namespace oo
 
     void RendererSystem::Init()
     {
+        // setup cameras
+        auto [width, height] = Application::Get().GetWindow().GetSize();
+        // set camera
+        oo::GetCurrentSceneStateEvent e;
+        oo::EventManager::Broadcast(&e);
+        switch (e.state)
+        {
+        case oo::SCENE_STATE::EDITING:
+            m_editorCamera.SetAspectRatio((float)width / (float)height);
+            Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
+            break;
+        }
+        auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+        m_cc.SetCamera(&camera);
+
         // Mesh Renderer
         m_world->SubscribeOnAddComponent<RendererSystem, MeshRendererComponent>(
             this, &RendererSystem::OnMeshAssign);
@@ -78,6 +106,19 @@ namespace oo
 
         m_world->SubscribeOnRemoveComponent<RendererSystem, LightComponent>(
             this, &RendererSystem::OnLightRemove);
+    }
+
+    void RendererSystem::SaveEditorCamera()
+    {
+        // Save camera information back to appropriate place
+        oo::GetCurrentSceneStateEvent e;
+        oo::EventManager::Broadcast(&e);
+        switch (e.state)
+        {
+        case oo::SCENE_STATE::RUNNING:
+            m_editorCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+            break;
+        }
     }
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
@@ -128,8 +169,13 @@ namespace oo
         RenderDebugDraws(world);
     }
 
+    void RendererSystem::UpdateCamerasEditorMode()
+    {
+        m_cc.Update(oo::timer::dt());
+    }
+
     // additional function that runs during runtime scene only.
-    void RendererSystem::RenderCameras()
+    void RendererSystem::UpdateCamerasRuntime()
     {
         // TODO: debug draw the camera's view in editormode
         //DebugDraw::AddLine();
@@ -137,12 +183,12 @@ namespace oo
         // Update Camera(s)
         // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
         
-        auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+        Camera* camera = m_cc.GetCamera();
         static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
         m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
         {
-            camera.SetPosition(transformComp.GetGlobalPosition());
-            camera.SetRotation(transformComp.GetGlobalRotationDeg());
+            camera->SetPosition(transformComp.GetGlobalPosition());
+            camera->SetRotation(transformComp.GetGlobalRotationQuat());
         });
     }
     

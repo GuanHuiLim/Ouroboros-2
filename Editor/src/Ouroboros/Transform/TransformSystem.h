@@ -31,6 +31,9 @@ namespace oo
         virtual void Run(Ecs::ECSWorld* world) override;
         void UpdateSubTree(GameObject go, bool includeItself = true);
 
+        /*void StartOfFrame();
+        void EndOfFrame();*/
+
     private:
         void UpdateLocalTransforms();
         void UpdateTree(scenenode::shared_pointer node, bool updateRoot);
