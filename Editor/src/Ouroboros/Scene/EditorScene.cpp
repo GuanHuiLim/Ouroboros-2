@@ -47,7 +47,7 @@ namespace oo
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
             //bool wantDebug = true;
 
-            GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
+            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
             //TRACY_PROFILE_SCOPE_N(registration);
             /*GetWorld().RegisterSystem<PrefabComponentSystem>();
             GetWorld().RegisterSystem<EditorComponentSystem>();
