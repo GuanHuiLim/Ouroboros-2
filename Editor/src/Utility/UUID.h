@@ -22,13 +22,15 @@ Technology is prohibited.
 #pragma once
 
 #include <xhash>    // made hashing available
+#include <limits>   // numeric limits
+
 namespace oo
 {
-
     class UUID final
     {
     public:
         using value_type = std::uint64_t;
+        static constexpr value_type Invalid = std::numeric_limits<value_type>::max();
 
         UUID();
         UUID(UUID const& other) = default;
@@ -43,8 +45,10 @@ namespace oo
         value_type GetUUID() const { return m_uuid; }
 
     private:
-        value_type m_uuid;
+        value_type m_uuid = Invalid;
     };
+    
+
 }
 
 // hashing overload for UUID with std lib
