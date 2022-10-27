@@ -1966,6 +1966,20 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 			// Check if the number of weights is >4, just in case, since we dont support
 			if (!success)
 			{
+				//dump bone names
+				std::cout << "Dumping bones...\n";
+				std::cout << "Bone affected : " << currBone->mName.C_Str() << std::endl;
+				for (size_t i = 0; i < 4; i++)
+				{
+					for (auto&[key,val] :  fileData.strToBone)
+					{
+						if (val == vertex.boneIdx[i])
+						{
+							std::cout << "Bone affected : " << key << std::endl;
+							break;
+						}
+					}
+				}
 				// Vertex already has 4 bone weights assigned.
 				assert(false && "Bone weights >4 is not supported.");
 			}
