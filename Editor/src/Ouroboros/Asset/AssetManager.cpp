@@ -63,7 +63,7 @@ namespace oo
         if (!tree)
             tree = std::make_unique<AssetStore::Node>();
         AssetStore::Node* curr = tree.get();
-        for (std::filesystem::path part : path)
+        for (const std::filesystem::path& part : path)
         {
             if (part.empty())
                 break;
@@ -96,7 +96,7 @@ namespace oo
         std::stack<AssetStore::Node*> stack;
         strStack.push("");
         stack.push(curr);
-        for (std::filesystem::path part : path)
+        for (const std::filesystem::path& part : path)
         {
             std::string partStr = part.string();
             if (!curr->children.contains(partStr))
@@ -139,9 +139,8 @@ namespace oo
     {
         if (!tree)
             return false;
-        std::filesystem::path path = path;
         AssetStore::Node* curr = tree.get();
-        for (std::filesystem::path part : path)
+        for (const std::filesystem::path& part : path)
         {
             std::string partStr = part.string();
             if (!curr->children.contains(partStr))
