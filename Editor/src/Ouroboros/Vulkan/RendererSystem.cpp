@@ -153,6 +153,13 @@ namespace oo
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
+            
+            // update transform if this is the first frame of rendering
+            if (m_firstFrame)
+            {
+                actualObject.localToWorld = transformComp.GlobalTransform;
+                m_firstFrame = false;
+            }
         });
 
 
