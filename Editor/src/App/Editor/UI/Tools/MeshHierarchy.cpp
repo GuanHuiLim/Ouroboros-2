@@ -31,6 +31,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "SceneManagement/include/SceneManager.h"
+#include "Ouroboros/Vulkan/RendererComponent.h"
 MeshHierarchy::MeshHierarchy()
 {
 	oo::EventManager::Subscribe<MeshHierarchy, OpenFileEvent>(this, &MeshHierarchy::OpenFileCallBack);
@@ -134,11 +135,6 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 {
 	auto assetmanager = Project::GetAssetManager();
 	auto asset = assetmanager->Get(asset_id);
-	auto modeldata = asset.GetData<ModelFileResource*>();
-	if (modeldata->skeleton)
-	{
-		//load Skeleton
-	}
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	std::stack<Node*> node_list;
@@ -149,6 +145,15 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	gameobject->SetName(node->name);
 	node_parent.push_back({ node->parent ,gameobject });
 	scene->GetRoot()->AddChild(*gameobject,true);
+
+	auto modeldata = asset.GetData<ModelFileResource*>();
+	if (modeldata->skeleton)
+	{
+		//load Skeleton
+		auto skeleton = CreateSkeleton(modeldata->skeleton);
+		gameobject->AddChild(*skeleton);
+	}
+
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();
@@ -175,5 +180,60 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 		}
 		//ImGui::TreeNodeEx(node->name.c_str(),ImGuiTreeNodeFlags_DefaultOpen| ImGuiTreeNodeFlags_NoTreePushOnOpen);
 	}
+}
+
+std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(decltype(ModelFileResource::skeleton) skele)
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	skele->m_boneNodes;
+	std::stack<oGFX::BoneNode*> node_list;
+	node_list.push(skele->m_boneNodes);
+	std::vector<std::pair<std::shared_ptr<oo::GameObject>, oGFX::BoneNode*>> parentnode;
+	std::vector<std::pair<std::shared_ptr<oo::GameObject>, oGFX::BoneNode*>> all_nodes;
+	auto rootbone = scene->CreateGameObjectImmediate(); // for return
+	auto bone = rootbone;
+	oGFX::BoneNode* bonenode;
+	while (true)
+	{
+		bonenode = node_list.top();
+		node_list.pop();
+		
+		if (parentnode.size())
+		{
+			while (parentnode.back().second != bonenode->mpParent)
+				parentnode.pop_back();
+
+			parentnode.back().first->AddChild(*bone);
+		}
+
+		all_nodes.push_back(std::pair{ bone, bonenode });
+		if (bonenode->mChildren.size())
+		{
+			for (auto data : bonenode->mChildren)
+			{
+				node_list.push(data);
+			}
+			parentnode.push_back(std::pair{bone,bonenode});
+		}
+
+		if (node_list.empty() == false)
+		{
+			bone = scene->CreateGameObjectImmediate();
+		}
+		else
+			break;
+	}
+	for (auto& node : all_nodes)
+	{
+		auto* bone = node.second;
+		node.first->SetName(bone->mName);
+		auto& transform = node.first->EnsureComponent<oo::TransformComponent>();
+		transform.SetLocalTransform(bone->mModelSpaceGlobal);
+		auto& bonecomponent = node.first->EnsureComponent<oo::SkinMeshBoneComponent>();
+		bonecomponent.bone_name = bone->mName;
+		bonecomponent.gfxbones_index = bone->m_BoneIndex;
+	}
+
+	return rootbone;
 }
 

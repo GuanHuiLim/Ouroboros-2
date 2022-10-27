@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "SkinRendererSystem.h"
+#include <Ouroboros/Vulkan/MeshRendererComponent.h>
 
 namespace oo
 {
@@ -27,7 +28,7 @@ namespace oo
 			[&](SkinMeshBoneComponent& boneComp, TransformComponent& transformComp)
 			{
 				//do nothing if transform did not change
-				if (transformComp.HasChanged() == false) return;
+				if (transformComp.HasChangedThisFrame == false) return;
 
 
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(boneComp.graphicsWorld_ID);
@@ -40,7 +41,7 @@ namespace oo
 				//do nothing if transform did not change
 				auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
 
-				if (transformComp.HasChanged())
+				if (transformComp.HasChangedThisFrame)
 					actualObject.localToWorld = transformComp.GetGlobalMatrix();
 			});
 
