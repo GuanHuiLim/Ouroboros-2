@@ -39,6 +39,8 @@ namespace oo
             map.second.clear();
         }
         byType.clear();
+        tree.reset();
+        tree = nullptr;
     }
 
     AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const AssetInfo& info)
@@ -48,23 +50,74 @@ namespace oo
 
     AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, AssetInfoPtr ptr)
     {
+        // Insert into maps
         all.emplace(id, ptr);
         if (!ptr)
             return ptr;
         if (!byType.contains(ptr->type))
             byType.emplace(ptr->type, AssetInfoMap());
         byType.at(ptr->type).emplace(id, ptr);
+
+        // Insert into fs tree
+        std::filesystem::path path = ptr->contentPath;
+        if (!tree)
+            tree = std::make_unique<AssetStore::Node>();
+        AssetStore::Node* curr = tree.get();
+        for (std::filesystem::path part : path)
+        {
+            if (part.empty())
+                break;
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                curr->children.emplace(partStr, std::make_unique<AssetStore::Node>());
+            curr = curr->children.at(partStr).get();
+        }
+
         return ptr;
     }
 
     void AssetManager::AssetStore::erase(const AssetID& id)
     {
+        // Remove from maps
         if (!contains(id))
             return;
         auto sp = all.at(id);
         if (sp && byType.contains(sp->type))
             byType.at(sp->type).erase(id);
         all.erase(id);
+
+        // Remove from fs tree
+        if (!tree || !sp)
+            return;
+        std::filesystem::path path = sp->contentPath;
+        AssetStore::Node* root = tree.get();
+        AssetStore::Node* curr = root;
+        std::stack<std::string> strStack;
+        std::stack<AssetStore::Node*> stack;
+        strStack.push("");
+        stack.push(curr);
+        for (std::filesystem::path part : path)
+        {
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                break;
+            curr = curr->children.at(partStr).get();
+            strStack.push(partStr);
+            stack.push(curr);
+        }
+        curr = stack.top();
+        std::string str = strStack.top();
+        while (!strStack.empty() && !stack.empty() && curr != root)
+        {
+            if (!curr->children.empty())
+                break;
+            strStack.pop();
+            stack.pop();
+            curr = stack.top();
+            if (curr->children.contains(str))
+                curr->children.erase(str);
+            str = strStack.top();
+        }
     }
 
     std::shared_ptr<AssetInfo>& AssetManager::AssetStore::at(const AssetID& id)
@@ -80,6 +133,22 @@ namespace oo
     bool AssetManager::AssetStore::contains(const AssetID& id) const
     {
         return all.contains(id);
+    }
+
+    bool AssetManager::AssetStore::contains(const std::filesystem::path& path) const
+    {
+        if (!tree)
+            return false;
+        std::filesystem::path path = path;
+        AssetStore::Node* curr = tree.get();
+        for (std::filesystem::path part : path)
+        {
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                return false;
+            curr = curr->children.at(partStr).get();
+        }
+        return true;
     }
 
     AssetManager::AssetInfoMap& AssetManager::AssetStore::filter(const AssetInfo::Type& type)
@@ -370,5 +439,4 @@ namespace oo
         info->Reload();
         return Asset(store.emplace(info->id, info));
     }
-
 }

@@ -51,6 +51,11 @@ namespace oo
         using AssetInfoTypedMap = std::unordered_map<AssetInfo::Type, AssetInfoMap>;
         struct AssetStore
         {
+            struct Node
+            {
+                std::unordered_map<std::string, std::unique_ptr<Node>> children;
+            };
+
             bool empty() const;
             void clear();
             AssetInfoPtr emplace(const AssetID& id, const AssetInfo& info);
@@ -59,11 +64,13 @@ namespace oo
             AssetInfoPtr& at(const AssetID& id);
             const AssetInfoPtr& at(const AssetID& id) const;
             bool contains(const AssetID& id) const;
+            bool contains(const std::filesystem::path& path) const;
             AssetInfoMap& filter(const AssetInfo::Type& type);
             const AssetInfoMap& filter(const AssetInfo::Type& type)const;
 
             AssetInfoMap all;
             AssetInfoTypedMap byType;
+            std::unique_ptr<Node> tree;
         };
 
         /* --------------------------------------------------------------------------- */
