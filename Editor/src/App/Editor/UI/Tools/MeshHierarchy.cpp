@@ -134,8 +134,11 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 {
 	auto assetmanager = Project::GetAssetManager();
 	auto asset = assetmanager->Get(asset_id);
-	//auto modeldata = asset.GetData<ModelFileResource*>();
-	
+	auto modeldata = asset.GetData<ModelFileResource*>();
+	if (modeldata->skeleton)
+	{
+		//load Skeleton
+	}
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	std::stack<Node*> node_list;

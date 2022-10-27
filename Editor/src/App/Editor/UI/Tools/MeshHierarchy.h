@@ -30,5 +30,6 @@ public:
 	void Show();
 	static void CreateObject(Node* starting_node,oo::AssetID asset_id );
 private:
+	static void CreateSkeleton(decltype(ModelFileResource::skeleton)* skele);
 	oo::AssetID m_current_id = 0;
 };

@@ -34,7 +34,7 @@ Technology is prohibited.
 #include "App/Editor/Events/DuplicateButtonEvent.h"
 
 #include "Ouroboros/Core/Events/FileDropEvent.h"
-
+#include "Ouroboros/Core/Timer.h"
 
 static void FileDrop(oo::FileDropEvent* e)
 {
@@ -73,6 +73,12 @@ Editor::Editor()
 	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
 	oo::EventManager::Subscribe<oo::FileDropEvent>(&FileDrop);
+
+	AddSequence(TimedSequence([] {
+		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+		Serializer::SaveScene(*(scene));
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Auto Saved");
+		}, 240.0f));
 	
 	//object editors
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
@@ -167,6 +173,7 @@ void Editor::Update()
 			}
 		}
 	}
+	TimedUpdate();
 }
 
 void Editor::MenuBar()
@@ -210,6 +217,25 @@ void Editor::MenuBar()
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
+	}
+}
+
+void Editor::AddSequence(TimedSequence&& seq)
+{
+	m_timedseq.push_back(seq);
+}
+
+void Editor::TimedUpdate()
+{
+	float dt = oo::timer::dt();
+	for (auto& curr_seq : m_timedseq)
+	{
+		curr_seq.curr_duration -= dt;
+		if (curr_seq.curr_duration <= 0)
+		{
+			curr_seq.instruction();
+			curr_seq.curr_duration = curr_seq.max_duration;
+		}
 	}
 }
 
