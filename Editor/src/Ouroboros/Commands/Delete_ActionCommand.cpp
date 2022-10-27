@@ -21,8 +21,10 @@ void oo::Delete_ActionCommand::Undo()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	if (scene == nullptr)
+	{
 		ASSERT_MSG(true, "scene not found???");
-	*(scene.get());
+	}
+
 	revivedObject = Serializer::LoadDeleteObject(data, parentID, *(scene.get()));
 }
 
@@ -33,4 +35,36 @@ void oo::Delete_ActionCommand::Redo()
 	if (obj == nullptr)
 		ASSERT_MSG(true, "object not found");
 	scene->DestroyGameObject(*obj);
+}
+
+oo::Create_ActionCommand::Create_ActionCommand(std::shared_ptr<oo::GameObject> createdobj)
+	:parentID(createdobj->GetParentUUID()),object(createdobj->GetInstanceID())
+{
+	message = "Created Object :" + createdobj->Name();
+}
+oo::Create_ActionCommand::~Create_ActionCommand()
+{
+	message.clear();
+	data.clear();
+}
+
+void oo::Create_ActionCommand::Undo()
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	data = Serializer::SaveDeletedObject(scene->FindWithInstanceID(object), *scene);
+
+	auto obj = scene->FindWithInstanceID(object);
+	if (obj == nullptr)
+		ASSERT_MSG(true, "object not found");
+	scene->DestroyGameObject(*obj);
+}
+void oo::Create_ActionCommand::Redo()
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	if (scene == nullptr)
+	{
+		ASSERT_MSG(true, "scene not found???");
+	}
+
+	Serializer::LoadDeleteObject(data, parentID, *(scene));
 }

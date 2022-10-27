@@ -52,7 +52,10 @@ namespace oo
         // Reset all has changed to false regardless of their previous state.
         // Note: this should only occure once per frame. Otherwise wonky behaviour.
         static Ecs::Query query = Ecs::make_query<TransformComponent>();
-        world->for_each(query, [&](TransformComponent& tf) { tf.HasChangedThisFrame = false; });
+        world->for_each(query, [&](TransformComponent& tf) 
+        { 
+            tf.HasChangedThisFrame = false; 
+        });
 
         // TODO
         // update local transformations : can be parallelized.
@@ -62,6 +65,7 @@ namespace oo
         auto const& graph = m_scene->GetGraph();
         scenegraph::shared_pointer root_node = graph.get_root();
         UpdateTree(root_node, false);
+
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -75,6 +79,37 @@ namespace oo
         
         TRACY_PROFILE_SCOPE_END();
     }
+
+    //void TransformSystem::StartOfFrame()
+    //{
+    //    static Ecs::Query query = Ecs::make_query<TransformComponent>();
+    //    m_world->for_each(query, [&](TransformComponent& tf)
+    //        {
+    //            // set current frame data to be previous frame data
+    //            tf.PrevLocalPosition    = tf.LocalTransform.Position;
+    //            tf.PrevLocalOrientation = tf.LocalTransform.Orientation;
+    //            tf.PrevGlobalPosition   = tf.GlobalTransform.Position;
+    //            tf.PrevGlobalOrientation = tf.GlobalTransform.Orientation;
+    //            /*
+    //            tf.LocalTranslationDelta =  glm::vec3{};
+    //            tf.LocalOrientationDelta =  glm::quat{};
+    //            tf.GlobalTranslationDelta = glm::vec3{};
+    //            tf.GlobalOrientationDelta = glm::quat{};*/
+    //        });
+    //}
+
+    //void TransformSystem::EndOfFrame()
+    //{
+    //    static Ecs::Query query = Ecs::make_query<TransformComponent>();
+    //    m_world->for_each(query, [&](TransformComponent& tf)
+    //        {
+    //            // calculate deltas
+    //            tf.LocalTranslationDelta  = tf.LocalTransform.Position - tf.PrevLocalPosition;
+    //            tf.LocalOrientationDelta  = tf.LocalTransform.Orientation.value - tf.PrevLocalOrientation;
+    //            tf.GlobalTranslationDelta = tf.GlobalTransform.Position - tf.PrevGlobalPosition;
+    //            tf.GlobalOrientationDelta = tf.GlobalTransform.Orientation.value - tf.PrevGlobalOrientation;
+    //        });
+    //}
 
 
     void TransformSystem::UpdateLocalTransforms()

@@ -50,6 +50,7 @@ Technology is prohibited.
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
+#include <Ouroboros/Vulkan/CameraComponent.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
@@ -139,6 +140,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
+	DisplayComponent<oo::CameraComponent>(gameobject);
 
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
@@ -176,6 +178,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
@@ -248,6 +251,20 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 				bool set_edited = false;
 				bool end_edit = false;
 				DisplayArrayView(prop , prop_type, v, set_edited, end_edit);
+				if (end_edit)
+					endEdit = true;
+				if (set_edited == true)
+				{
+					edited = true;
+					prop.set_value(value, v);//set value to variant
+				}
+			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant v = prop.get_value(value);
+				bool set_edited = false;
+				bool end_edit = false;
+				DisplayEnumView(prop, value, set_edited, end_edit);
 				if (end_edit)
 					endEdit = true;
 				if (set_edited == true)
@@ -351,6 +368,50 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 	ImGui::EndGroup();
 	ImGui::PopID();
 	ImGui::Separator();
+}
+
+void Inspector::DisplayEnumView(rttr::property prop, rttr::variant& value, bool& edited, bool& endEdit)
+{
+	rttr::enumeration enumeration = prop.get_enumeration();
+	std::string current_enum = enumeration.value_to_name(value).data();
+
+	ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+	ImGui::InputText(prop.get_name().data(), &current_enum);
+	ImGui::PopItemFlag();
+	ImGui::SetItemAllowOverlap();
+
+	ImGui::SameLine(ImGui::CalcItemWidth() - 12.0f);
+	static ImGuiID open_id = 0;
+	ImGuiID curr_id = ImGui::GetItemID();
+	if (ImGui::ArrowButton("button", ImGuiDir_::ImGuiDir_Down))
+	{
+		if (open_id == curr_id)
+		{
+			open_id = 0;
+		}
+		else
+		{
+			edited = true;
+			open_id = curr_id;
+		}
+	}
+	if (open_id == curr_id)
+	{
+		if (ImGui::BeginListBox("#enums"))
+		{
+			for (auto val : enumeration.get_values())
+			{
+				if (ImGui::Selectable(enumeration.value_to_name(val).data()))
+				{
+					value.clear();
+					value = val;
+					open_id = 0;
+					endEdit = true;
+				}
+			}
+			ImGui::EndListBox();
+		}
+	}
 }
 
 void Inspector::DisplayScript(oo::GameObject& gameobject)

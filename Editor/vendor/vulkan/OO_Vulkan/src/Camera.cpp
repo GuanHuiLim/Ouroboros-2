@@ -16,38 +16,173 @@ Technology is prohibited.
 #include <algorithm> // std min
 
 
-void Camera::updateViewMatrix()
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat4x4.hpp>
+
+void Camera::UpdateViewMatrixQuaternion()
 {
-	m_rotation.x = glm::clamp(m_rotation.x, -89.0f, 89.0f);
+	//pitch (rot around x in radians), 
+	//yaw (rot around y in radians), 
+	//roll (rot around z in radians)
 
-	glm::mat4 rotM = glm::eulerAngleYXZ(glm::radians(m_rotation.y),glm::radians(m_rotation.x), glm::radians(m_rotation.z));
+	////FPS camera:  RotationX(pitch) * RotationY(yaw)
+	//glm::quat qPitch	= glm::angleAxis(glm::radians(m_rotation.x), glm::vec3(1, 0, 0));
+	//glm::quat qYaw	= glm::angleAxis(glm::radians(m_rotation.y), glm::vec3(0, 1, 0));
+	//glm::quat qRoll	= glm::angleAxis(glm::radians(m_rotation.z), glm::vec3(0, 0, 1));
+
+	////For a FPS camera we can omit roll
+	//glm::quat orientation = qPitch * qYaw;
+	//glm::quat orientation = m_orientation;
+
+	//orientation = glm::normalize(orientation);
+	//glm::mat4 rotate = glm::mat4_cast(orientation);
+
+	//glm::mat4 translate = glm::mat4(1.0f);
+	//translate = glm::translate(translate, -m_position);
+
+	//m_right		= glm::rotate(glm::inverse(orientation), glm::vec3{ 1, 0, 0 });
+	//m_forward	= glm::rotate(glm::inverse(orientation), glm::vec3{ 0, 0, -1 });
+	////m_up		= glm::rotate(orientation, glm::vec3{ 0, 1, 0 });
+
+	//glm::vec3 worldUp{ 0, 1, 0 };
+	////if(m_CameraMovementType == CameraMovementType::lookat)
+	////{
+	////	/*glm::vec3 fromTarget{ 0.0f, 0.0f, -m_TargetDistance };
+	////	fromTarget = glm::mat3(rotM) * fromTarget;
+	////	m_position = m_TargetPosition + fromTarget;
+	////	m_forward = glm::normalize(m_TargetPosition - m_position);
+	////	worldUp = glm::eulerAngleZ(glm::radians(m_rotation.z)) * glm::vec4(worldUp,0.0f);*/
+	////	//worldUp = glm::eulerAngleZ(orientation.z) * glm::vec4{worldUp, 0.0f};
+	////}
+	////else
+	////{
+	////	m_forward = rotate * glm::vec4{ 0.0f, 0.0f, 1.0f ,0.0f };
+	////	//m_forward = rotM * glm::vec4{ 0.0f, 0.0f, 1.0f ,0.0f };
+	////}
+	//
+	//// vulkan uses right-handed coordinate system.
+	//matrices.view = glm::lookAtRH(m_position, m_position + m_forward, worldUp);
+
+	//FPS camera:  RotationX(pitch) * RotationY(yaw)
+	//glm::quat qPitch = glm::angleAxis(glm::radians(m_rotation.x), glm::vec3(1, 0, 0));
+	//glm::quat qYaw = glm::angleAxis(glm::radians(m_rotation.y), glm::vec3(0, 1, 0));
+	//glm::quat qRoll	= glm::angleAxis(glm::radians(m_rotation.z), glm::vec3(0, 0, 1));
+
+	////For a FPS camera we can omit roll
+	glm::quat orientation = m_orientation; //qPitch * qYaw; // *qRoll;
+	orientation = glm::normalize(orientation);
+	glm::mat4 rotate = glm::mat4_cast(orientation);
+
+	// calculate translation matrix
+	glm::mat4 translate = glm::mat4(1.0f);
+	translate = glm::translate(translate, m_position);
+
+	// we inverse because the orientation is the camera's transform. view = inverse(camera_transform)
+	auto view_orientation = orientation; //glm::inverse(orientation);
+
+	m_right = glm::rotate(view_orientation, glm::vec3{ 1, 0, 0 });
+	m_forward = glm::rotate(view_orientation, glm::vec3{ 0, 0, 1 });
+	//m_up = glm::rotate(view_orientation, glm::vec3{ 0, 1, 0 });
 	
-	glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
-	if (m_CameraMovementType == CameraMovementType::lookat)
-	{
-		glm::vec3 fromTarget{ 0.0f,0.0f, -m_TargetDistance };
-		fromTarget = glm::mat3(rotM) * fromTarget;
-		m_position = m_TargetPosition + fromTarget;
-		m_forward = glm::normalize(m_TargetPosition - m_position);
-		worldUp = glm::eulerAngleZ(glm::radians(m_rotation.z)) * glm::vec4(worldUp,0.0f);
-	}
-	else
-	{
-		m_forward = rotM * glm::vec4{ 0.0f, 0.0f, 1.0f ,0.0f };
-	}
-		
-	m_right = glm::cross(worldUp,m_forward);
-	m_up = glm::cross(m_forward,m_right);
-
-	m_forward = glm::normalize(m_forward);
-	m_right = glm::normalize(m_right);
-	m_up = glm::normalize(m_up);
-
-	// Just use GLM... Tested by the whole world...
-	matrices.view = glm::lookAtRH(m_position, m_position + m_forward, worldUp);
-
+	matrices.view = glm::lookAt(m_position, m_position + m_forward, { 0, 1, 0}); // = glm::inverse(translate * rotate);
 	updated = true;
 }
+
+//void Camera::RotatePitch(float rads) // rotate around cams local X axis
+//{
+//	glm::quat qPitch = glm::angleAxis(rads, glm::vec3(1, 0, 0));
+//
+//	m_orientation = glm::normalize(qPitch) * m_orientation;
+//	glm::mat4 rotate = glm::mat4_cast(m_orientation);
+//
+//	glm::mat4 translate = glm::mat4(1.0f);
+//	translate = glm::translate(translate, -m_position);
+//
+//	//matrices.view = rotate * translate;
+//}
+//
+//void Camera::RotateYaw(float rads)
+//{
+//	glm::quat qYaw = glm::angleAxis(rads, glm::vec3(0, 1, 0));
+//
+//	m_orientation = glm::normalize(qYaw) * m_orientation;
+//	glm::mat4 rotate = glm::mat4_cast(m_orientation);
+//
+//	glm::mat4 translate = glm::mat4(1.0f);
+//	translate = glm::translate(translate, -m_position);
+//
+//	//matrices.view = rotate * translate;
+//}
+
+//void Camera::RotateRoll(float rads)
+//{
+//	glm::quat qRoll = glm::angleAxis(rads, glm::vec3(0, 0, 1));
+//
+//	m_orientation = glm::normalize(qRoll) * m_orientation;
+//	glm::mat4 rotate = glm::mat4_cast(m_orientation);
+//
+//	glm::mat4 translate = glm::mat4(1.0f);
+//	translate = glm::translate(translate, -m_position);
+//
+//	matrices.view = rotate * translate;
+//}
+
+//void Camera::RotateAll(glm::vec3 deltaRads)
+//{
+//	RotatePitch(deltaRads.x);
+//	RotateYaw(deltaRads.y);
+//	RotateRoll(deltaRads.z);
+//}
+
+//void Camera::Update(float deltaTimeSeconds)
+//{
+//	//FPS camera:  RotationX(pitch) * RotationY(yaw)
+//	glm::quat qPitch = glm::angleAxis(m_d_pitch, glm::vec3(1, 0, 0));
+//	glm::quat qYaw = glm::angleAxis(m_d_yaw, glm::vec3(0, 1, 0));
+//	glm::quat qRoll = glm::angleAxis(m_d_roll, glm::vec3(0, 0, 1));
+//
+//	//For a FPS camera we can omit roll
+//	glm::quat m_d_orientation = qPitch * qYaw;
+//	glm::quat delta = glm::mix(glm::quat(0, 0, 0, 0), m_d_orientation, deltaTimeSeconds);
+//	m_orientation = glm::normalize(delta) * m_orientation;
+//	glm::mat4 rotate = glm::mat4_cast(orientation);
+//
+//	glm::mat4 translate = glm::mat4(1.0f);
+//	translate = glm::translate(translate, -eye);
+//
+//	viewMatrix = rotate * translate;
+//}
+
+//void Camera::updateViewMatrix()
+//{
+//	m_rotation.x = glm::clamp(m_rotation.x, -89.0f, 89.0f);
+//	glm::mat4 rotM = glm::eulerAngleYXZ(glm::radians(m_rotation.y),glm::radians(m_rotation.x), glm::radians(m_rotation.z));
+//
+//	glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+//	if (m_CameraMovementType == CameraMovementType::lookat)
+//	{
+//		glm::vec3 fromTarget{ 0.0f, 0.0f, -m_TargetDistance };
+//		fromTarget = glm::mat3(rotM) * fromTarget;
+//		m_position = m_TargetPosition + fromTarget;
+//		m_forward = glm::normalize(m_TargetPosition - m_position);
+//		worldUp = glm::eulerAngleZ(glm::radians(m_rotation.z)) * glm::vec4(worldUp,0.0f);
+//	}
+//	else
+//	{
+//		m_forward = rotM * glm::vec4{ 0.0f, 0.0f, 1.0f ,0.0f };
+//	}
+//		
+//	m_right = glm::cross(worldUp,m_forward);
+//	m_up = glm::cross(m_forward,m_right);
+//
+//	m_forward = glm::normalize(m_forward);
+//	m_right = glm::normalize(m_right);
+//	m_up = glm::normalize(m_up);
+//
+//	// Just use GLM... Tested by the whole world...
+//	matrices.view = glm::lookAtRH(m_position, m_position + m_forward, worldUp);
+//	updated = true;
+//}
 
 void Camera::LookAt(const glm::vec3& pos, const glm::vec3& target, const glm::vec3& upVec)
 {
@@ -105,19 +240,36 @@ void Camera::LookFromAngle(float distance, const glm::vec3& target, float vertAn
 void Camera::SetPosition(glm::vec3 position)
 {
 	this->m_position = position;
-	updateViewMatrix();
+	UpdateViewMatrixQuaternion();
+
+	//updateViewMatrix();
 }
 
-void Camera::SetRotation(glm::vec3 rotation)
+//void Camera::SetRotation(glm::vec3 rotation)
+//{
+//	this->m_rotation = rotation;
+//	updateViewMatrix();
+//}
+
+void Camera::SetRotation(glm::quat orientation)
 {
-	this->m_rotation = rotation;
-	updateViewMatrix();
+	this->m_orientation = orientation;
+	UpdateViewMatrixQuaternion();
+	m_rotation = glm::eulerAngles(orientation);
 }
 
 void Camera::Rotate(glm::vec3 delta)
 {
-	this->m_rotation += delta;
-	updateViewMatrix();
+	m_rotation += delta;
+	m_rotation.x = glm::clamp(m_rotation.x, -89.0f, 89.0f);	// clamp x value.
+
+	auto rotation_rads		= glm::radians(m_rotation);
+	glm::quat qPitch		= glm::angleAxis(rotation_rads.x, glm::vec3(1, 0, 0));
+	glm::quat qYaw			= glm::angleAxis(rotation_rads.y, glm::vec3(0, 1, 0));
+	//glm::quat qRoll		= glm::angleAxis(glm::radians(delta.z), glm::vec3(0, 0, 1));
+
+	m_orientation = glm::normalize(qYaw) * glm::normalize(qPitch) /** glm::normalize(qRoll) */ * glm::quat{ 0, 0, 0, 1 };
+	UpdateViewMatrixQuaternion();
 }
 
 void Camera::SetTranslation(glm::vec3 translation)
@@ -130,7 +282,8 @@ void Camera::SetTranslation(glm::vec3 translation)
 	{
 		this->m_position = translation;
 	}
-	updateViewMatrix();
+	UpdateViewMatrixQuaternion();
+	//updateViewMatrix();
 }
 
 void Camera::Translate(glm::vec3 delta)
@@ -143,13 +296,15 @@ void Camera::Translate(glm::vec3 delta)
 	{
 		this->m_position += delta;
 	}
-	updateViewMatrix();
+	UpdateViewMatrixQuaternion();
+	//updateViewMatrix();
 }
 
 void Camera::ChangeTargetDistance(float delta)
 {
 	m_TargetDistance = std::max(1.0f, delta + m_TargetDistance);
-	updateViewMatrix();
+	UpdateViewMatrixQuaternion();
+	//updateViewMatrix();
 }
 
 bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
@@ -187,15 +342,20 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 		if (fabsf(axisRight.x) > deadZone)
 		{
 			float pos = (fabsf(axisRight.x) - deadZone) / range;
-			m_rotation.y += pos * ((axisRight.x < 0.0f) ? -1.0f : 1.0f) * rotSpeed;
+			//m_rotation.y += pos * ((axisRight.x < 0.0f) ? -1.0f : 1.0f) * rotSpeed;
+			//auto val = pos * ((axisRight.x < 0.0f) ? -1.0f : 1.0f) * rotSpeed;
+			//RotateYaw(glm::radians(val));
 			retVal = true;
 		}
 		if (fabsf(axisRight.y) > deadZone)
 		{
 			float pos = (fabsf(axisRight.y) - deadZone) / range;
-			m_rotation.x -= pos * ((axisRight.y < 0.0f) ? -1.0f : 1.0f) * rotSpeed;
+			//m_rotation.x -= pos * ((axisRight.y < 0.0f) ? -1.0f : 1.0f) * rotSpeed;
+			//auto val = -(pos * ((axisRight.y < 0.0f) ? -1.0f : 1.0f) * rotSpeed);
+			//RotateYaw(glm::radians(val));
 			retVal = true;
 		}
+		
 	}
 	else
 	{
@@ -204,7 +364,8 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 
 	if (retVal)
 	{
-		updateViewMatrix();
+		UpdateViewMatrixQuaternion();
+		//updateViewMatrix();
 	}
 
 	return retVal;
@@ -212,7 +373,6 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 
 void Camera::UpdateProjectionMatrix()
 {
-
 	if (m_aspectRatio != m_aspectRatio) return;
 
 	if (m_CameraProjectionType == CameraProjectionType::orthographic)
