@@ -150,12 +150,12 @@ void Editor::Update()
 		}
 		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_P))
 		{
-			if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_LeftShift))
+			if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftShift))
 			{
 				ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PAUSE);
 				oo::EventManager::Broadcast(&tbe);
 			}
-			else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_LeftAlt))
+			else if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftAlt))
 			{
 				ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::STOP);
 				oo::EventManager::Broadcast(&tbe);
