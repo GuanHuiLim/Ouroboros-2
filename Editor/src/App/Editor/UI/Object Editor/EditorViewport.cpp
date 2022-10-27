@@ -30,11 +30,13 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/Commands/CommandStackManager.h"
 #include "Ouroboros/Commands/Component_ActionCommand.h"
-
+#include "App/Editor/Events/GizmoOperationEvent.h"
+#include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Input.h"
 EditorViewport::EditorViewport()
 {
 	ImGuizmo::AllowAxisFlip(false);
+	
 }
 
 EditorViewport::~EditorViewport()
@@ -188,16 +190,22 @@ void EditorViewport::Show()
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
 	}
 }
