@@ -24,6 +24,9 @@ Technology is prohibited.
 #include <rttr/type.h>
 #include <rttr/variant.h>
 #include <rttr/property.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/prettywriter.h>
 
 namespace oo::Anim::internal
 {
@@ -82,6 +85,7 @@ namespace oo::Anim
 			IAnimationComponent& comp;
 			AnimationTracker& tracker;
 			Ecs::EntityID entity;
+			oo::UUID uuid;
 			float dt;
 		};
 		//info for a single timeline's progress
@@ -241,11 +245,14 @@ namespace oo::Anim
 	struct Parameter
 	{
 		using DataType = rttr::variant;
+		using SerializeFn = void(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>&, Parameter&);
+		using SerializeFnMap = std::unordered_map<P_TYPE,SerializeFn*>;
 
 		P_TYPE type{};
 		DataType value{};
 		size_t paramID{ internal::invalid_ID };
 		std::string name{"Unnamed Parameter"};
+		static SerializeFnMap serializeFn_map;
 
 		Parameter(ParameterInfo const& info);
 		void Set(DataType const& _value);
@@ -284,6 +291,7 @@ namespace oo::Anim
 
 		Condition(ConditionInfo const& info);
 		bool Satisfied(AnimationTracker& tracker);
+		std::string GetName(AnimationTree const& tree);
 	};
 
 	struct ConditionInfo
@@ -380,11 +388,11 @@ namespace oo::Anim
 		//name of the timeline
 		std::string timeline_name{ "Unnamed Timeline" };
 		//uuid of the target gameobject to manipulate
-		oo::UUID target_object;
+		oo::GameObject target_object;
 		//uuid of the gameobject the AnimationComponent is attached to
-		oo::UUID source_object;
-
-		std::vector<int> children_index;
+		oo::GameObject source_object;
+		//do not touch
+		std::vector<int> children_index{};
 	};
 	//tracks progress in 1 timeline
 	struct ProgressTracker
