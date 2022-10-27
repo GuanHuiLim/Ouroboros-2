@@ -53,20 +53,26 @@ namespace oo
         {
             struct Node
             {
-                std::unordered_map<std::string, std::unique_ptr<Node>> children;
+                std::map<std::string, std::unique_ptr<Node>> children;
             };
 
             bool empty() const;
             void clear();
-            AssetInfoPtr emplace(const AssetID& id, const AssetInfo& info);
-            AssetInfoPtr emplace(const AssetID& id, AssetInfoPtr ptr);
+            AssetInfoPtr emplace(const AssetID& id, const std::filesystem::path& relPath, const AssetInfo& info);
+            AssetInfoPtr emplace(const AssetID& id, const std::filesystem::path& relPath, AssetInfoPtr ptr);
             void erase(const AssetID& id);
             AssetInfoPtr& at(const AssetID& id);
             const AssetInfoPtr& at(const AssetID& id) const;
+            std::vector<std::filesystem::path> at(const std::filesystem::path& path) const;
             bool contains(const AssetID& id) const;
             bool contains(const std::filesystem::path& path) const;
             AssetInfoMap& filter(const AssetInfo::Type& type);
-            const AssetInfoMap& filter(const AssetInfo::Type& type)const;
+            const AssetInfoMap& filter(const AssetInfo::Type& type) const;
+
+#ifdef _DEBUG
+            void PrintTree();
+            void PrintSubTree(Node* n, int depth = 0);
+#endif
 
             AssetInfoMap all;
             AssetInfoTypedMap byType;
@@ -105,6 +111,23 @@ namespace oo
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
+
+#ifdef _DEBUG
+        void PrintTree()
+        {
+            store.PrintTree();
+        }
+
+        void PrintRoot()
+        {
+            if (!store.tree)
+                return;
+            for (auto it : store.at(""))
+            {
+                std::cout << it << '\n';
+            }
+        }
+#endif
 
         /// <summary>
         /// Retrieves an asset using its ID.

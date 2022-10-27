@@ -43,12 +43,12 @@ namespace oo
         tree = nullptr;
     }
 
-    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const AssetInfo& info)
+    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const std::filesystem::path& relPath, const AssetInfo& info)
     {
-        return emplace(id, std::make_shared<AssetInfo>(info));
+        return emplace(id, relPath, std::make_shared<AssetInfo>(info));
     }
 
-    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, AssetInfoPtr ptr)
+    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const std::filesystem::path& relPath, AssetInfoPtr ptr)
     {
         // Insert into maps
         all.emplace(id, ptr);
@@ -59,11 +59,10 @@ namespace oo
         byType.at(ptr->type).emplace(id, ptr);
 
         // Insert into fs tree
-        std::filesystem::path path = ptr->contentPath;
         if (!tree)
             tree = std::make_unique<AssetStore::Node>();
         AssetStore::Node* curr = tree.get();
-        for (const std::filesystem::path& part : path)
+        for (const std::filesystem::path& part : relPath)
         {
             if (part.empty())
                 break;
@@ -90,8 +89,7 @@ namespace oo
         if (!tree || !sp)
             return;
         std::filesystem::path path = sp->contentPath;
-        AssetStore::Node* root = tree.get();
-        AssetStore::Node* curr = root;
+        AssetStore::Node* curr = tree.get();
         std::stack<std::string> strStack;
         std::stack<AssetStore::Node*> stack;
         strStack.push("");
@@ -107,7 +105,7 @@ namespace oo
         }
         curr = stack.top();
         std::string str = strStack.top();
-        while (!strStack.empty() && !stack.empty() && curr != root)
+        while (!strStack.empty() && !stack.empty() && curr != tree.get())
         {
             if (!curr->children.empty())
                 break;
@@ -130,6 +128,24 @@ namespace oo
         return all.at(id);
     }
 
+    std::vector<std::filesystem::path> AssetManager::AssetStore::at(const std::filesystem::path& path) const
+    {
+        std::vector<std::filesystem::path> v;
+        AssetStore::Node* curr = tree.get();
+        for (const std::filesystem::path& part : path)
+        {
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                return {};
+            curr = curr->children.at(partStr).get();
+        }
+        std::transform(curr->children.begin(), curr->children.end(), std::back_inserter(v), [this](const decltype(*curr->children.begin())& e)
+        {
+            return e.first;
+        });
+        return v;
+    }
+
     bool AssetManager::AssetStore::contains(const AssetID& id) const
     {
         return all.contains(id);
@@ -149,6 +165,30 @@ namespace oo
         }
         return true;
     }
+
+#ifdef _DEBUG
+    void AssetManager::AssetStore::PrintTree()
+    {
+        if (!tree)
+            return;
+        PrintSubTree(tree.get(), 0);
+    }
+
+    void AssetManager::AssetStore::PrintSubTree(Node* n, int depth)
+    {
+        if (!n)
+            return;
+        for (auto it = n->children.begin(); it != n->children.end(); ++it)
+        {
+            for (int i = 0; i < depth; ++i)
+            {
+                std::cout << "  ";
+            }
+            std::cout << it->first << '\n';
+            PrintSubTree(it->second.get(), depth + 1);
+        }
+    }
+#endif
 
     AssetManager::AssetInfoMap& AssetManager::AssetStore::filter(const AssetInfo::Type& type)
     {
@@ -436,6 +476,6 @@ namespace oo
         info->metaPath = fp; info->metaPath += Asset::EXT_META;
         info->timeLoaded = std::chrono::file_clock::now();
         info->Reload();
-        return Asset(store.emplace(info->id, info));
+        return Asset(store.emplace(info->id, std::filesystem::relative(fp, root), info));
     }
 }
