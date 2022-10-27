@@ -259,8 +259,6 @@ namespace oo
     template<typename T>
     inline T AssetInfo::GetData() const
     {
-        if (!isDataLoaded)
-            Reload();
         for (auto& d : data)
         {
             if constexpr (std::is_pointer<T>::value)
