@@ -65,7 +65,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	//load assets here
 	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
 	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
-	s_AssetManager->LoadDirectoryAsync(hard_assetfolderpath, true);
+	s_AssetManager->GetOrLoadDirectoryAsync(hard_assetfolderpath, true);
 
 	//load input manager
 	{

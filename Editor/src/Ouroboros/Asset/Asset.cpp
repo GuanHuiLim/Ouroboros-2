@@ -51,8 +51,7 @@ namespace oo
 {
     AssetInfo::~AssetInfo()
     {
-        if (onAssetDestroy)
-            onAssetDestroy(*this);
+        Unload();
     }
 
     Snowflake AssetInfo::GenerateSnowflake()
@@ -60,15 +59,21 @@ namespace oo
         return ::GenerateSnowflake();
     }
 
-    void AssetInfo::Reload()
+    AssetInfo::Type AssetInfo::GetType() const
     {
         const auto FP_EXT = contentPath.extension();
         if (findIn(FP_EXT.string(), Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end()))
-            Reload(AssetInfo::Type::Texture);
+            return AssetInfo::Type::Texture;
         else if (findIn(FP_EXT.string(), Asset::EXTS_AUDIO.begin(), Asset::EXTS_AUDIO.end()))
-            Reload(AssetInfo::Type::Audio);
+            return AssetInfo::Type::Audio;
         else if (findIn(FP_EXT.string(), Asset::EXTS_MODEL.begin(), Asset::EXTS_MODEL.end()))
-            Reload(AssetInfo::Type::Model);
+            return AssetInfo::Type::Model;
+        return AssetInfo::Type::Text;
+    }
+
+    void AssetInfo::Reload()
+    {
+        Reload(GetType());
     }
 
     void AssetInfo::Reload(AssetInfo::Type t)
@@ -137,9 +142,15 @@ namespace oo
 
     void AssetInfo::Unload()
     {
+        if (!isDataLoaded)
+            return;
+
         // Call old asset destruction callback
         if (onAssetDestroy)
             onAssetDestroy(*this);
+
+        // Clear data
+        data.clear();
 
         // Mark as data unloaded
         isDataLoaded = false;

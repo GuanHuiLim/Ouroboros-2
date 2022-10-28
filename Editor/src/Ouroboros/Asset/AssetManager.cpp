@@ -24,8 +24,85 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Utility/IEqual.h"
 
+namespace
+{
+    bool isMetaPath(const std::filesystem::path& path)
+    {
+        return path.extension().string() == oo::Asset::EXT_META;
+    }
+}
 namespace oo
 {
+    AssetManager::AssetInfoFileTree::Node* AssetManager::AssetInfoFileTree::insert(const std::filesystem::path& path)
+    {
+        Node* curr = root.get();
+        for (const std::filesystem::path& part : path)
+        {
+            if (part.empty())
+                break;
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                curr->children.emplace(partStr, std::make_unique<AssetManager::AssetInfoFileTree::Node>(partStr));
+            curr = curr->children.at(partStr).get();
+        }
+        return curr;
+    }
+
+    void AssetManager::AssetInfoFileTree::erase(const std::filesystem::path& path)
+    {
+        Node* prev = nullptr;
+        Node* curr = root.get();
+        for (const std::filesystem::path& part : path)
+        {
+            if (part.empty())
+                break;
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                return;
+            prev = curr;
+            curr = curr->children.at(partStr).get();
+        }
+        if (prev)
+            prev->children.erase(curr->name);
+    }
+
+    AssetManager::AssetInfoFileTree::Node* AssetManager::AssetInfoFileTree::at(const std::filesystem::path& path)
+    {
+        Node* curr = root.get();
+        for (const std::filesystem::path& part : path)
+        {
+            if (part.empty())
+                break;
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                return nullptr;
+            curr = curr->children.at(partStr).get();
+        }
+        return curr;
+    }
+
+    const AssetManager::AssetInfoFileTree::Node* AssetManager::AssetInfoFileTree::at(const std::filesystem::path& path) const
+    {
+        Node* curr = root.get();
+        for (const std::filesystem::path& part : path)
+        {
+            if (part.empty())
+                break;
+            std::string partStr = part.string();
+            if (!curr->children.contains(partStr))
+                return nullptr;
+            curr = curr->children.at(partStr).get();
+        }
+        return curr;
+    }
+
+    bool AssetManager::AssetInfoFileTree::contains(const std::filesystem::path& path) const
+    {
+        return at(path);
+    }
+
+
+
     bool AssetManager::AssetStore::empty() const
     {
         return all.empty();
@@ -39,38 +116,23 @@ namespace oo
             map.second.clear();
         }
         byType.clear();
-        tree.reset();
-        tree = nullptr;
     }
 
-    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const std::filesystem::path& relPath, const AssetInfo& info)
+    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const AssetInfo& info)
     {
-        return emplace(id, relPath, std::make_shared<AssetInfo>(info));
+        return emplace(id, std::make_shared<AssetInfo>(info));
     }
 
-    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const std::filesystem::path& relPath, AssetInfoPtr ptr)
+    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, AssetInfoPtr ptr)
     {
         // Insert into maps
         all.emplace(id, ptr);
         if (!ptr)
             return ptr;
-        if (!byType.contains(ptr->type))
-            byType.emplace(ptr->type, AssetInfoMap());
         byType.at(ptr->type).emplace(id, ptr);
 
         // Insert into fs tree
-        if (!tree)
-            tree = std::make_unique<AssetStore::Node>();
-        AssetStore::Node* curr = tree.get();
-        for (const std::filesystem::path& part : relPath)
-        {
-            if (part.empty())
-                break;
-            std::string partStr = part.string();
-            if (!curr->children.contains(partStr))
-                curr->children.emplace(partStr, std::make_unique<AssetStore::Node>());
-            curr = curr->children.at(partStr).get();
-        }
+        tree.insert(ptr->contentPath)->id = id;
 
         return ptr;
     }
@@ -81,41 +143,12 @@ namespace oo
         if (!contains(id))
             return;
         auto sp = all.at(id);
-        if (sp && byType.contains(sp->type))
+        if (sp)
             byType.at(sp->type).erase(id);
         all.erase(id);
 
         // Remove from fs tree
-        if (!tree || !sp)
-            return;
-        std::filesystem::path path = sp->contentPath;
-        AssetStore::Node* curr = tree.get();
-        std::stack<std::string> strStack;
-        std::stack<AssetStore::Node*> stack;
-        strStack.push("");
-        stack.push(curr);
-        for (const std::filesystem::path& part : path)
-        {
-            std::string partStr = part.string();
-            if (!curr->children.contains(partStr))
-                break;
-            curr = curr->children.at(partStr).get();
-            strStack.push(partStr);
-            stack.push(curr);
-        }
-        curr = stack.top();
-        std::string str = strStack.top();
-        while (!strStack.empty() && !stack.empty() && curr != tree.get())
-        {
-            if (!curr->children.empty())
-                break;
-            strStack.pop();
-            stack.pop();
-            curr = stack.top();
-            if (curr->children.contains(str))
-                curr->children.erase(str);
-            str = strStack.top();
-        }
+        tree.erase(sp->contentPath);
     }
 
     std::shared_ptr<AssetInfo>& AssetManager::AssetStore::at(const AssetID& id)
@@ -128,22 +161,14 @@ namespace oo
         return all.at(id);
     }
 
-    std::vector<std::filesystem::path> AssetManager::AssetStore::at(const std::filesystem::path& path) const
+    AssetManager::AssetInfoFileTree::Node* AssetManager::AssetStore::at(const std::filesystem::path& path)
     {
-        std::vector<std::filesystem::path> v;
-        AssetStore::Node* curr = tree.get();
-        for (const std::filesystem::path& part : path)
-        {
-            std::string partStr = part.string();
-            if (!curr->children.contains(partStr))
-                return {};
-            curr = curr->children.at(partStr).get();
-        }
-        std::transform(curr->children.begin(), curr->children.end(), std::back_inserter(v), [this](const decltype(*curr->children.begin())& e)
-        {
-            return e.first;
-        });
-        return v;
+        return tree.at(path);
+    }
+
+    const AssetManager::AssetInfoFileTree::Node* AssetManager::AssetStore::at(const std::filesystem::path& path) const
+    {
+        return tree.at(path);
     }
 
     bool AssetManager::AssetStore::contains(const AssetID& id) const
@@ -153,47 +178,11 @@ namespace oo
 
     bool AssetManager::AssetStore::contains(const std::filesystem::path& path) const
     {
-        if (!tree)
-            return false;
-        AssetStore::Node* curr = tree.get();
-        for (const std::filesystem::path& part : path)
-        {
-            std::string partStr = part.string();
-            if (!curr->children.contains(partStr))
-                return false;
-            curr = curr->children.at(partStr).get();
-        }
-        return true;
+        return tree.contains(path);
     }
-
-#ifdef _DEBUG
-    void AssetManager::AssetStore::PrintTree()
-    {
-        if (!tree)
-            return;
-        PrintSubTree(tree.get(), 0);
-    }
-
-    void AssetManager::AssetStore::PrintSubTree(Node* n, int depth)
-    {
-        if (!n)
-            return;
-        for (auto it = n->children.begin(); it != n->children.end(); ++it)
-        {
-            for (int i = 0; i < depth; ++i)
-            {
-                std::cout << "  ";
-            }
-            std::cout << it->first << '\n';
-            PrintSubTree(it->second.get(), depth + 1);
-        }
-    }
-#endif
 
     AssetManager::AssetInfoMap& AssetManager::AssetStore::filter(const AssetInfo::Type& type)
     {
-        if (!byType.contains(type))
-            byType.at(type) = {};
         return byType.at(type);
     }
 
@@ -203,11 +192,14 @@ namespace oo
     }
 
 
+
     AssetManager::AssetManager(std::filesystem::path root)
         : root{ root }
     {
         EventManager::Subscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
         EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
+        for (int i = 0; i < static_cast<int>(AssetInfo::Type::_COUNT); ++i)
+            store.byType.emplace(static_cast<AssetInfo::Type>(i), AssetInfoMap());
     }
 
     AssetManager::~AssetManager()
@@ -230,63 +222,74 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::Get, this, id);
     }
 
-    std::vector<Asset> AssetManager::GetLoadedAssetsByType(AssetInfo::Type type) const
+    std::vector<Asset> AssetManager::GetAssetsByType(AssetInfo::Type type) const
     {
         std::vector<Asset> v;
         auto filtered = store.filter(type);
-        std::transform(filtered.begin(), filtered.end(), std::back_inserter(v), [this](const decltype(*filtered.begin())& e)
+        if (filtered.empty())
+            return v;
+        std::transform(filtered.begin(), filtered.end(), std::back_inserter(v), [this](const decltype(filtered)::value_type& e)
         {
             return Asset(e.second);
         });
         return v;
     }
 
-    Asset AssetManager::LoadPath(const std::filesystem::path& fp)
+    Asset AssetManager::GetOrLoadPath(const std::filesystem::path& fp)
     {
         const auto FP = root / fp;
 
         if (!std::filesystem::exists(FP))
             return Asset();
 
-        return getOrLoadAbsolute(FP);
+        return getLoadedAsset(FP);
     }
 
-    std::future<Asset> AssetManager::LoadPathAsync(const std::filesystem::path& fp)
+    std::future<Asset> AssetManager::GetOrLoadPathAsync(const std::filesystem::path& fp)
     {
-        return std::async(std::launch::async, &AssetManager::LoadPath, this, fp);
+        return std::async(std::launch::async, &AssetManager::GetOrLoadPath, this, fp);
     }
 
-    std::vector<Asset> AssetManager::LoadDirectory(const std::filesystem::path& path, bool recursive)
+    std::vector<Asset> AssetManager::GetOrLoadDirectory(const std::filesystem::path& path, bool recursive)
     {
         const auto PATH = root / path;
 
         if (!std::filesystem::exists(PATH) || !std::filesystem::is_directory(PATH))
             return {};
 
-        std::vector<Asset> v;
+        std::vector<std::filesystem::path> files;
         if (recursive)
         {
             for (auto& file : std::filesystem::recursive_directory_iterator(PATH))
             {
-                v.emplace_back(getOrLoadAbsolute(file.path()));
+                if (isMetaPath(file.path()))
+                    continue;
+                files.emplace_back(file);
             }
         }
         else
         {
             for (auto& file : std::filesystem::directory_iterator(PATH))
             {
-                v.emplace_back(getOrLoadAbsolute(file.path()));
+                if (isMetaPath(file.path()))
+                    continue;
+                files.emplace_back(file);
             }
+        }
+        std::vector<Asset> v;
+        for (auto& file : files)
+        {
+            v.emplace_back(getLoadedAsset(file));
         }
         return v;
     }
 
-    std::future<std::vector<Asset>> AssetManager::LoadDirectoryAsync(const std::filesystem::path& path, bool recursive)
+    std::future<std::vector<Asset>> AssetManager::GetOrLoadDirectoryAsync(const std::filesystem::path& path, bool recursive)
     {
-        return std::async(std::launch::async, &AssetManager::LoadDirectory, this, path, recursive);
+        return std::async(std::launch::async, &AssetManager::GetOrLoadDirectory, this, path, recursive);
     }
 
-    std::vector<Asset> AssetManager::LoadName(const std::filesystem::path& fn, bool caseSensitive)
+    std::vector<Asset> AssetManager::GetOrLoadName(const std::filesystem::path& fn, bool caseSensitive)
     {
         const std::filesystem::path DIR = std::filesystem::canonical(root);
 
@@ -296,7 +299,7 @@ namespace oo
             if ((caseSensitive && file.path().filename() == fn) ||
                 (!caseSensitive && iequal(file.path().filename().string(), fn.string())))
             {
-                v.emplace_back(getOrLoadAbsolute(file.path()));
+                v.emplace_back(getLoadedAsset(file.path()));
             }
         }
         return v;
@@ -304,45 +307,42 @@ namespace oo
 
     std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive)
     {
-        return std::async(std::launch::async, &AssetManager::LoadDirectory, this, fn, caseSensitive);
+        return std::async(std::launch::async, &AssetManager::GetOrLoadDirectory, this, fn, caseSensitive);
     }
 
-    void AssetManager::ReloadAssets()
+    void AssetManager::Scan()
     {
         FileWatchEvent fwe{ lastReloadTime };
         EventManager::Broadcast<FileWatchEvent>(&fwe);
     }
 
-    void AssetManager::ForceReloadAssets()
+    void AssetManager::ForceScan()
     {
         FileWatchEvent fwe{ std::chrono::file_clock::time_point() };
         EventManager::Broadcast<FileWatchEvent>(&fwe);
     }
 
+    void AssetManager::UnloadAllLmao()
+    {
+        for (auto& i : store.all)
+            i.second->Unload();
+    }
+
     void AssetManager::windowFocusHandler(WindowFocusEvent*)
     {
-        ReloadAssets();
+        Scan();
     }
 
     void AssetManager::watchFiles(FileWatchEvent* ev)
     {
         TRACY_PROFILE_SCOPE_NC(ASSET_MANAGER_WATCH_FILES, tracy::Color::Aquamarine1);
 
-        try
+        std::chrono::file_clock::time_point tLast = ev->time;
+        if (std::filesystem::exists(root))
         {
-            std::chrono::file_clock::time_point tLast = ev->time;
-            if (std::filesystem::exists(root))
-            {
-                iterateDirectory(std::filesystem::canonical(root), tLast);
-            }
-            lastReloadTime = std::chrono::file_clock::now();
+            iterateDirectory(root, tLast);
         }
-        catch (...)
-        {
-            // do nothing
-            // sometimes the path becomes invalidated for unknown, inconsistent reasons
-            // so just doing this to abort the file hierarchy update if so
-        }
+        lastReloadTime = std::chrono::file_clock::now();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -352,12 +352,30 @@ namespace oo
                                         const std::chrono::file_clock::time_point& t)
     {
         // Check if directory was updated recently
+        const std::filesystem::path DIR = std::filesystem::canonical(dir);
         const auto DIR_WRITE_TIME = std::filesystem::last_write_time(dir);
         if (tLast < DIR_WRITE_TIME && DIR_WRITE_TIME <= t)
         {
-            LOG_INFO("Iterating {0}", dir);
+            LOG_INFO("Iterating {0}", DIR);
 
-            for (auto& fp : std::filesystem::directory_iterator(dir))
+            auto node = store.at(DIR);
+            if (node)
+            {
+                for (const auto& asset : node->children)
+                {
+                    const std::filesystem::path FP = DIR / asset.second->name;
+
+                    // Check if file in tree no longer exists
+                    if (std::filesystem::exists(FP))
+                        continue;
+
+                    // Removed
+                    store.erase(asset.second->id);
+                    LOG_INFO("De-indexed asset {0}", FP.filename());
+                }
+            }
+
+            for (auto& fp : std::filesystem::directory_iterator(DIR))
             {
                 const std::filesystem::path FP = std::filesystem::canonical(fp.path());
 
@@ -365,41 +383,33 @@ namespace oo
                 if (std::filesystem::is_directory(FP))
                     iterateDirectory(FP, tLast, t);
 
-                // Check if file
-                if (!std::filesystem::is_regular_file(FP))
-                    continue;
-
                 // Check if not meta file
-                const std::filesystem::path FP_EXT = FP.extension();
-                if (FP_EXT == Asset::EXT_META)
+                if (isMetaPath(FP))
                     continue;
 
                 // Ensure meta file exists
                 auto fpMeta = FP;
                 fpMeta += Asset::EXT_META;
-                if (!std::filesystem::exists(fpMeta))
-                {
-                    ensureMeta(FP);
-                }
+                AssetMetaContent meta = ensureMeta(fpMeta);
+
+                // Check if file
+                if (!std::filesystem::is_regular_file(FP))
+                    continue;
 
                 // Read meta contents
-                AssetMetaContent meta;
-                std::ifstream ifs = std::ifstream(fpMeta);
-                BinaryIO::Read(ifs, meta);
                 const auto WRITE_TIME = std::filesystem::last_write_time(fp.path());
                 if (!store.contains(meta.id))
                 {
                     // Created
-                    LoadPath(FP);
-                    LOG_INFO("Load {0}", FP);
+                    GetOrLoadPath(FP);
                 }
-                else if (store.at(meta.id)->contentPath != FP)
-                {
-                    // Moved
-                    store.at(meta.id)->contentPath = FP;
-                    store.at(meta.id)->metaPath = fpMeta;
-                    LOG_INFO("Move {0}", FP);
-                }
+                //else if (store.at(meta.id)->contentPath != FP)
+                //{
+                //    // Moved
+                //    store.at(meta.id)->contentPath = FP;
+                //    store.at(meta.id)->metaPath = fpMeta;
+                //    LOG_INFO("Move {0}", FP);
+                //}
                 else if (tLast < WRITE_TIME && WRITE_TIME <= t)
                 {
                     // Modified
@@ -407,7 +417,7 @@ namespace oo
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->timeLoaded = t;
                     store.at(meta.id)->Reload();
-                    LOG_INFO("Modify {0}", FP);
+                    LOG_INFO("Modified asset {0}", FP.filename());
                 }
             }
         }
@@ -429,6 +439,7 @@ namespace oo
             meta.id = Asset::GenerateSnowflake();
             std::ofstream ofs = std::ofstream(fpMeta);
             BinaryIO::Write(ofs, meta);
+            LOG_INFO("Created meta {0}", fpMeta.filename());
         }
         else
         {
@@ -439,12 +450,12 @@ namespace oo
         return meta;
     }
 
-    Asset AssetManager::getOrLoadAbsolute(const std::filesystem::path& fp)
+    Asset AssetManager::getAsset(const std::filesystem::path& fp)
     {
         // Get file paths
         auto fpContent = fp;
         auto fpMeta = fpContent;
-        if (fpContent.extension() == Asset::EXT_META)
+        if (isMetaPath(fpContent))
         {
             fpContent.replace_extension();
         }
@@ -454,7 +465,7 @@ namespace oo
         }
         const auto FP_EXT = fpContent.extension();
 
-        // Get or load asset
+        // Get or index asset
         AssetMetaContent meta = ensureMeta(fpContent);
         if (store.contains(meta.id))
         {
@@ -463,19 +474,28 @@ namespace oo
         }
         else
         {
-            // Load asset
-            return loadAssetIntoStore(fpContent, meta.id);
+            // Index asset
+            return indexAsset(fpContent, meta.id);
         }
     }
 
-    Asset AssetManager::loadAssetIntoStore(std::filesystem::path fp, AssetID id)
+    Asset AssetManager::getLoadedAsset(const std::filesystem::path& fp)
+    {
+        Asset asset = getAsset(fp);
+        if (!asset.IsDataLoaded())
+            asset.Reload();
+        return asset;
+    }
+
+    Asset AssetManager::indexAsset(const std::filesystem::path& fp, AssetID id)
     {
         AssetInfoPtr info = std::make_shared<AssetInfo>();
         info->id = id;
-        info->contentPath = fp;
-        info->metaPath = fp; info->metaPath += Asset::EXT_META;
+        info->contentPath = std::filesystem::canonical(fp);
+        info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
         info->timeLoaded = std::chrono::file_clock::now();
-        info->Reload();
-        return Asset(store.emplace(info->id, std::filesystem::relative(fp, root), info));
+        info->type = info->GetType();
+        LOG_INFO("Indexed asset {0}", fp.filename());
+        return Asset(store.emplace(info->id, info));
     }
 }

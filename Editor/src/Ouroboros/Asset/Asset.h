@@ -60,6 +60,7 @@ namespace oo
             Font,
             Audio,
             Model,
+            _COUNT,
         };
 
         /* --------------------------------------------------------------------------- */
@@ -83,6 +84,12 @@ namespace oo
         /// </summary>
         /// <returns>The Snowflake ID.</returns>
         static Snowflake GenerateSnowflake();
+
+        /// <summary>
+        /// Retrieves the type of the asset.
+        /// </summary>
+        /// <returns>The type of the asset.</returns>
+        Type GetType() const;
 
         /// <summary>
         /// Reloads the data from the file into the asset.
@@ -215,6 +222,7 @@ namespace oo
 
         /// <summary>
         /// Retrieves the data stored by the asset of a given type.
+        /// Loads the data from the file if not loaded.
         /// </summary>
         /// <typeparam name="T">The type of data.</typeparam>
         /// <returns>The data.</returns>
@@ -282,7 +290,11 @@ namespace oo
     inline T Asset::GetData() const
     {
         if (auto sp = info.lock())
+        {
+            if (!IsDataLoaded())
+                sp->Reload();
             return sp->GetData<T>();
+        }
         return {};
     }
 
