@@ -32,6 +32,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "SceneManagement/include/SceneManager.h"
 #include "Ouroboros/Vulkan/RendererComponent.h"
+#include "Ouroboros/Transform/TransformSystem.h"
 MeshHierarchy::MeshHierarchy()
 {
 	oo::EventManager::Subscribe<MeshHierarchy, OpenFileEvent>(this, &MeshHierarchy::OpenFileCallBack);
@@ -223,17 +224,17 @@ std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(decltype(ModelFile
 		else
 			break;
 	}
+	scene->GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*rootbone, false);
 	for (auto& node : all_nodes)
 	{
-		auto* bone = node.second;
-		node.first->SetName(bone->mName);
+		auto* curr_bone = node.second;
+		node.first->SetName(curr_bone->mName);
 		auto& transform = node.first->EnsureComponent<oo::TransformComponent>();
-		transform.SetLocalTransform(bone->mModelSpaceGlobal);
+		transform.SetLocalTransform(curr_bone->mModelSpaceGlobal);
 		auto& bonecomponent = node.first->EnsureComponent<oo::SkinMeshBoneComponent>();
-		bonecomponent.bone_name = bone->mName;
-		bonecomponent.gfxbones_index = bone->m_BoneIndex;
+		bonecomponent.bone_name = curr_bone->mName;
+		bonecomponent.gfxbones_index = curr_bone->m_BoneIndex;
 	}
-
 	return rootbone;
 }
 
