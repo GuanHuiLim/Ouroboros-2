@@ -305,9 +305,15 @@ namespace oo
         return v;
     }
 
-    std::future<std::vector<Asset>> AssetManager::LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive)
+    std::future<std::vector<Asset>> AssetManager::GetOrLoadNameAsync(const std::filesystem::path& fn, bool caseSensitive)
     {
         return std::async(std::launch::async, &AssetManager::GetOrLoadDirectory, this, fn, caseSensitive);
+    }
+
+    void AssetManager::UnloadAll()
+    {
+        for (auto& i : store.all)
+            i.second->Unload();
     }
 
     void AssetManager::Scan()
@@ -320,12 +326,6 @@ namespace oo
     {
         FileWatchEvent fwe{ std::chrono::file_clock::time_point() };
         EventManager::Broadcast<FileWatchEvent>(&fwe);
-    }
-
-    void AssetManager::UnloadAllLmao()
-    {
-        for (auto& i : store.all)
-            i.second->Unload();
     }
 
     void AssetManager::windowFocusHandler(WindowFocusEvent*)

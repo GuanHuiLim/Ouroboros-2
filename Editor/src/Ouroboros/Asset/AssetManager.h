@@ -211,7 +211,12 @@ namespace oo
         /// <param name="fn">The file name.</param>
         /// <param name="caseSensitive">Whether the file name is case sensitive.</param>
         /// <returns>The assets matching the criteria.</returns>
-        std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive = true);
+        std::future<std::vector<Asset>> GetOrLoadNameAsync(const std::filesystem::path& fn, bool caseSensitive = true);
+
+        /// <summary>
+        /// Unloads all assets.
+        /// </summary>
+        void UnloadAll();
 
         /// <summary>
         /// Scans for updated assets.
@@ -222,8 +227,6 @@ namespace oo
         /// Scans all assets.
         /// </summary>
         void ForceScan();
-
-        void UnloadAllLmao();
 
     private:
         /* --------------------------------------------------------------------------- */
