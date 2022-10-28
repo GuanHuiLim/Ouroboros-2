@@ -51,7 +51,7 @@ void EditorLayer::OnUpdate()
 	}
 	if (Project::GetAssetManager() && ImGui::Button("unload all"))
 	{
-		Project::GetAssetManager()->UnloadAllLmao();
+		Project::GetAssetManager()->UnloadAll();
 	}
 
 	//top menu bar
