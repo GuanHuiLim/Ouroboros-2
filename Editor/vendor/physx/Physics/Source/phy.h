@@ -193,9 +193,9 @@ namespace myPhysx {
         PxReal getLinearDamping() const;
         PxVec3 getLinearVelocity() const;
 
-        bool getTrigger() const;
-        bool getGravity() const;
-        bool getKinematic() const;
+        bool isTrigger() const;
+        bool useGravity() const;
+        bool isKinematic() const;
 
         // SETTERS
         void setRigidType(rigid type);

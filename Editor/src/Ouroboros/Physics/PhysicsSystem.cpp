@@ -152,7 +152,7 @@ namespace oo
                 rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
 
                 // test and set trigger boolean
-                if (rb.object.getTrigger() != bc.IsTrigger)
+                if (rb.object.isTrigger() != bc.IsTrigger)
                     rb.object.setTriggerShape(bc.IsTrigger);
             });
 
