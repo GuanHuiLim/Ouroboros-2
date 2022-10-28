@@ -430,11 +430,32 @@ namespace oo
         showCursor ? SDL_ShowCursor(SDL_ENABLE) : SDL_ShowCursor(SDL_DISABLE);
     }
 
+    void WindowsWindow::SetCursorGlobalPosition(int x, int y)
+    {
+        int res = SDL_WarpMouseGlobal(x, y);
+        ASSERT(SDL_GetError() != 0);
+    }
+
+    void WindowsWindow::SetCursorPosition(int x, int y)
+    {
+        SDL_WarpMouseInWindow(m_window, x, y);
+    }
+
+    void WindowsWindow::SetMouseLockState(bool lock)
+    {
+        SDL_SetRelativeMouseMode((SDL_bool)lock);
+    }
+
     std::pair<int, int> WindowsWindow::GetWindowPos() const
     {
         int x, y;
         SDL_GetWindowPosition(m_window, &x, &y);
         return { x, y };
+    }
+
+    bool WindowsWindow::GetMouseCursorMode() const
+    {
+        return SDL_GetRelativeMouseMode();
     }
 
     bool WindowsWindow::IsVSync() const

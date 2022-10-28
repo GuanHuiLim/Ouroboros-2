@@ -118,7 +118,7 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsGravityDisabled() const
     {
-        return object.getGravity();
+        return object.useGravity();
     }
 
     bool oo::RigidbodyComponent::IsStatic() const
@@ -128,12 +128,12 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsKinematic() const
     {
-        return !IsStatic() && object.getKinematic();
+        return !IsStatic() && object.isKinematic();
     }
 
     bool oo::RigidbodyComponent::IsDynamic() const
     {
-        return !IsStatic() && !object.getKinematic();
+        return !IsStatic() && !object.isKinematic();
     }
 
     void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 

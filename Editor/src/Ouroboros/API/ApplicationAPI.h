@@ -46,7 +46,12 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     SCRIPT_API void Cursor_SetVisible(bool isVisible)
     {
-        reinterpret_cast<WindowsWindow&>(Application::Get().GetWindow()).ShowCursor(isVisible);
+        Application::Get().GetWindow().ShowCursor(isVisible);
+    }
+
+    SCRIPT_API void Cursor_SetLocked(bool isLocked)
+    {
+        Application::Get().GetWindow().SetMouseLockState(isLocked);
     }
 
     /*-----------------------------------------------------------------------------*/
