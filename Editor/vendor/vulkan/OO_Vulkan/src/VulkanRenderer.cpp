@@ -1622,7 +1622,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	flags |= aiProcess_CalcTangentSpace;
 	flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
 	flags |= aiProcess_FlipUVs;
-	//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
+	flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 	const aiScene *scene = importer.ReadFile(file,flags
 		//  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
 		//| aiProcess_LimitBoneWeights           // 4 weights for skin model max
@@ -1743,7 +1743,9 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 			LoadBoneInformation(*modelFile,*mdl.skeleton, *aimesh, mdl.skeleton->boneWeights, verticesCnt);
 		}
 		mdl.skeleton->m_boneNodes = new oGFX::BoneNode();
-		BuildSkeletonRecursive(*modelFile, *mdl.skeleton, scene->mRootNode, mdl.skeleton->m_boneNodes);
+		mdl.skeleton->m_boneNodes->mName = "RootNode";
+		BuildSkeletonRecursive(*modelFile, scene->mRootNode, mdl.skeleton->m_boneNodes);
+		
 		for (size_t i = 0; i < mdl.skeleton->boneWeights.size(); i++)
 		{
 			//auto& ref = mdl.skeleton->boneWeights[i];
@@ -1989,20 +1991,37 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 	vCnt += aimesh.mNumVertices;
 }
 
-void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, oGFX::Skeleton& skeleton, aiNode* ainode, oGFX::BoneNode* node)
+void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* parent, glm::mat4 parentXform)
 {
 	std::string node_name{ ainode->mName.data };
-	glm::mat4x4 node_transform = aiMat4_to_glm(ainode->mTransformation);
 
+	// TODO: quat ?
+	glm::mat4x4 node_transform = parentXform * aiMat4_to_glm(ainode->mTransformation);
+	oGFX::BoneNode* targetParent = parent;
 	std::string cName = node_name.substr(node_name.find_last_of("_") + 1);
+	oGFX::BoneNode* node = parent;
+
+	//std::cout << "Loading " << node_name << std::endl;
 
 	// Save the bone index
 	bool bIsBoneNode = false;
 	auto iter = fileData.strToBone.find(node_name);
 	if (iter != fileData.strToBone.end())
 	{
+		//std::cout << "Creating bone " << node_name << std::endl;
 		bIsBoneNode = true;
+		node = new oGFX::BoneNode;
+		node->mbIsBoneNode = true;
+		node->mName = node_name;
+		node->mpParent = targetParent;
+		node->mModelSpaceLocal = node_transform;
+		node->mModelSpaceGlobal= node_transform;
 		node->m_BoneIndex = iter->second;
+		if (targetParent)
+		{
+			targetParent->mChildren.push_back(node);
+		}
+		targetParent = node;
 	}
 
 	// Leaving this here to check the scale
@@ -2021,19 +2040,18 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, oGFX::S
 		}
 	}
 
-	// Copy information from assimp to our nodes.
-	node->mName = node_name;
-	node->mbIsBoneNode = bIsBoneNode;
-	// TODO: quat?
-	node->mModelSpaceLocal = aiMat4_to_glm(ainode->mTransformation);
-	node->mChildren.reserve(ainode->mNumChildren);
-
 	// Recursion through all children
 	for (size_t i = 0; i < ainode->mNumChildren; i++)
 	{
-		node->mChildren.push_back(new oGFX::BoneNode()); // Create the child node.
-		BuildSkeletonRecursive(fileData,skeleton, ainode->mChildren[i], node->mChildren[i]);
-		node->mChildren[i]->mpParent = node; // Link the child to the parent node.
+		if (bIsBoneNode)
+		{
+			// we have collapsed the transforms start for new local transform
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,glm::mat4(1.0f));
+		}
+		else
+		{
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,node_transform);
+		}
 	}
 }
 
