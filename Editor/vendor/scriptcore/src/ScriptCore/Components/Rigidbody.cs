@@ -4,6 +4,15 @@ namespace Ouroboros
 {
     public class Rigidbody : Component
     {
+        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetIsTrigger(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetIsTrigger(uint sceneID, ulong instanceID, bool value);
+
+        public bool isTrigger
+        {
+            get { return RigidbodyComponent_GetIsTrigger(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetIsTrigger(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
         [DllImport("__Internal")] private static extern void Rigidbody_GetVelocity(uint sceneID, ulong instanceID, out float x, out float y, out float z);
         [DllImport("__Internal")] private static extern void Rigidbody_SetVelocity(uint sceneID, ulong uuid, float x, float y, float z);
 
