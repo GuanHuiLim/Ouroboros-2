@@ -18,13 +18,25 @@ Technology is prohibited.
 #include "AnimationComponent.h"
 #include "AnimationTracker.h"
 #include "AnimationParameter.h"
+#include "AnimationTimeline.h"
+#include "AnimationKeyFrame.h"
 #include "AnimationInternal.h"
 
 #include "Ouroboros/Core/Input.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "Project.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+#include "App/Editor/UI/Tools/MeshHierarchy.h"
+#include <rapidjson/document.h>
+#include <rapidjson/reader.h>
+
+#define DEBUG_ANIMATION false
 namespace oo::Anim
 {
+	AnimationSystem::~AnimationSystem()
+	{
+		EventManager::Unsubscribe<AnimationSystem, OpenFileEvent>(this, &AnimationSystem::OpenFileCallback);
+	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
 		static Ecs::Query query = []() {
@@ -36,6 +48,8 @@ namespace oo::Anim
 		this->world = _world;
 		this->scene = _scene;
 
+		EventManager::Subscribe<AnimationSystem, OpenFileEvent>(this,&AnimationSystem::OpenFileCallback);
+
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
 			{
@@ -46,6 +60,8 @@ namespace oo::Anim
 
 			internal::InitializeTracker(animationComp.actualComponent);
 		});*/
+		auto asset_location = Project::GetAssetFolder().string();
+		LoadAssets(asset_location);
 	}
 	void AnimationSystem::Run(Ecs::ECSWorld* _world)
 	{
@@ -107,15 +123,8 @@ namespace oo::Anim
 		}
 	}
 
-	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
+	void AnimationSystem::TestObject()
 	{
-		//MeshHierarchy::
-
-		auto animationfbx_fp = Project::GetAssetFolder().string();
-		//animationfbx_fp += "/AnimationTest_Character_IdleJumpAttack.fbx";
-
-		//Animation::LoadAnimationFromFBX(animationfbx_fp,);
-
 		auto obj = scene->CreateGameObjectImmediate();
 		obj->Name() = "AnimationTestObject";
 		obj->AddComponent<MeshRendererComponent>();
@@ -211,26 +220,26 @@ namespace oo::Anim
 		//adding test keyframes
 		{
 			KeyFrame kf1{
-			.data{glm::vec3{0.f,0.f,0.f}},
-			.time{0.f}
+			glm::vec3{0.f,0.f,0.f},
+			0.f
 			};
 			auto Keyframe1 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf1);
 			assert(Keyframe1);
 			KeyFrame kf2{
-				.data{glm::vec3{10.f,0.f,0.f}},
-				.time{2.f}
+				glm::vec3{10.f,0.f,0.f},
+				2.f
 			};
 			auto Keyframe2 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf2);
 			assert(Keyframe2);
 			KeyFrame kf3{
-				.data{glm::vec3{10.f,10.f,0.f}},
-				.time{4.f}
+				glm::vec3{10.f,10.f,0.f},
+				4.f
 			};
 			auto Keyframe3 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf3);
 			assert(Keyframe3);
 			KeyFrame kf4{
-				.data{glm::vec3{0.f,10.f,0.f}},
-				.time{6.f}
+				glm::vec3{0.f,10.f,0.f},
+				6.f
 			};
 			auto Keyframe4 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf4);
 			assert(Keyframe4);
@@ -238,8 +247,28 @@ namespace oo::Anim
 
 		test_obj = obj;
 
+		auto animationfbx_fp = Project::GetAssetFolder().string();
 		SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");
-		return obj;
+
+		LoadAnimationTree(animationfbx_fp + "/Test_Animation_Tree.tree");
+	}
+
+	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
+	{
+		if constexpr (DEBUG_ANIMATION == false) return nullptr;
+
+		auto animationfbx_fp = Project::GetAssetFolder().string();
+		//animationfbx_fp += "/AnimationTest_Character_IdleJumpAttack.fbx";
+
+		//Animation::LoadAnimationFromFBX(animationfbx_fp,);
+		TestObject();
+		//SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");
+		//SaveAnimation(Animation::empty_animation_name, animationfbx_fp + "/test_animation.anim");
+		auto obj_children = scene->GetRoot()->GetChildren();
+		//auto bone_root = obj.GetChildren();
+
+		SaveAllAnimations(animationfbx_fp);
+		return nullptr;
 
 	}
 	bool AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
@@ -265,39 +294,103 @@ namespace oo::Anim
 		assert(writer.IsComplete());
 		stream.close();
 		return true;
-		//writer.StartObject();
-		//{
-		//	writer.Key("AnimationTree");
-		//	writer.String(tree.name.c_str(), static_cast<rapidjson::SizeType>(tree.name.size()));
-		//	/*------------------
-		//	PARAMETERS
-		//	------------------*/
-		//	writer.Key("Parameters");
-		//	{
-		//		writer.StartArray();
-		//		for (auto& param : tree.parameters)
-		//		{
-		//			writer.StartArray();
-		//			writer.String(param.name.c_str(), static_cast<rapidjson::SizeType>(param.name.size()));
-		//			Parameter::serializeFn_map.at(param.type)(writer, param);
-		//			writer.EndArray();
+	}
+	bool AnimationSystem::SaveAllAnimations(std::string filepath)
+	{
+		for (auto& [id, anim] : Animation::animation_storage)
+		{
+			auto result = AnimationSystem::SaveAnimation(anim, filepath + "/" + anim.name + ".anim");
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+	bool AnimationSystem::SaveAnimation(Animation& anim, std::string filepath)
+	{
+		std::ofstream stream{ filepath ,std::ios::trunc };
+		if (!stream)
+		{
+			assert(false);
+			return false;
+		}
 
-		//		}
-		//		writer.EndArray();
-		//	}
-		//	/*------------------
-		//	GROUPS
-		//	------------------*/
-		//	writer.Key("Groups");
-		//	{
-		//		writer.StartArray();
-		//		for (auto& [uid, group] : tree.groups)
-		//		{
-		//			Group::serializeFn(writer, group);
-		//		}
-		//		writer.EndArray();
-		//	}
-		//}
+		rapidjson::OStreamWrapper osw(stream);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+
+		//writer.Key("AnimationTree", static_cast<rapidjson::SizeType>(std::string("AnimationTree").size()));
+		auto serialize_fn = rttr::type::get<Animation>().get_method(internal::serialize_method_name);
+		serialize_fn.invoke({}, writer, anim);
+
+		assert(writer.IsComplete());
+		stream.close();
+		return true;
+	}
+	bool AnimationSystem::SaveAnimation(std::string name, std::string filepath)
+	{
+		//map should contain the animation tree
+		assert(Animation::name_to_ID.contains(name));
+		assert(Animation::animation_storage.contains(Animation::name_to_ID[name]));
+
+		auto& anim = Animation::animation_storage[Animation::name_to_ID[name]];
+		return SaveAnimation(anim, filepath);
 	}
 	
+	void AnimationSystem::OpenFileCallback(OpenFileEvent* evnt)
+	{
+		if (evnt->m_type != OpenFileEvent::FileType::FBX) return;
+
+		auto relativepath = std::filesystem::relative(evnt->m_filepath, Project::GetAssetFolder());
+		auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
+		auto resource = asset.GetData<ModelFileResource*>();
+
+		Animation::LoadAnimationFromFBX(evnt->m_filepath.string(), resource);
+	}
+
+	bool AnimationSystem::LoadAssets(std::string filepath)
+	{
+		std::filesystem::path path{ filepath };
+
+		for (auto& iter : path)
+		{
+			bool result = true;
+			if (iter.extension().string() == ".tree")
+			{
+				result = LoadAnimationTree(iter.string());
+			}
+			if (iter.extension().string() == ".anim")
+			{
+				result = LoadAnimation(iter.string());
+			}
+			if (result == false) return false;
+		}
+		return true;
+	}
+
+	bool AnimationSystem::LoadAnimationTree(std::string filepath)
+	{
+		std::ifstream ifs;
+		ifs.open(filepath);
+		if (!ifs.is_open())
+		{
+			LOG_CRITICAL("LoadAnimationTree cannot find the file");
+			assert(false);
+			return false;
+		}
+		rapidjson::IStreamWrapper isw(ifs);
+		rapidjson::Document doc;
+		doc.ParseStream(isw);
+
+		auto obj = doc.GetObj();
+		AnimationTree tree{};
+
+		auto load_fn = rttr::type::get< AnimationTree>().get_method(internal::load_method_name);
+		load_fn.invoke({}, obj, tree);
+
+
+		return true;
+	}
+	bool AnimationSystem::LoadAnimation(std::string filepath)
+	{
+		return false;
+	}
 }

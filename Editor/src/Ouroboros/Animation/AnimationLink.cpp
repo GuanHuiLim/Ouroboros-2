@@ -49,7 +49,7 @@ namespace oo::Anim::internal
 			//conditions
 			{
 				auto condition_serialize_fn = rttr::type::get<Condition>().get_method(internal::serialize_method_name);
-				writer.Key("Conditions: ", static_cast<rapidjson::SizeType>(std::string("Conditions: ").size()));
+				writer.Key("Conditions", static_cast<rapidjson::SizeType>(std::string("Conditions").size()));
 				writer.StartArray();
 					for (auto& condition : link.conditions)
 					{
@@ -60,6 +60,35 @@ namespace oo::Anim::internal
 			
 		}
 		writer.EndObject();
+	}
+
+	void LoadLink(rapidjson::GenericObject<false, rapidjson::Value>& object, Link& link)
+	{
+		rttr::instance obj{ link };
+		//properties
+		{
+			auto properties = rttr::type::get<Link>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+		//conditions
+		{
+			auto conditions = object.FindMember("Conditions")->value.GetArray();
+			auto load_fn = rttr::type::get<Condition>().get_method(internal::load_method_name);
+			for (auto& condition : conditions)
+			{
+				Condition new_condition{};
+				load_fn.invoke({}, condition, condition);
+
+				link.conditions.emplace_back(std::move(new_condition));
+			}
+		}
 	}
 }
 
@@ -76,7 +105,10 @@ namespace oo::Anim
 		.property("transition_offset", &Link::transition_offset)
 		.property("name", &Link::name)
 		.property("linkID", &Link::linkID)
+		.property("src", &Link::src)
+		.property("dst", &Link::dst)
 		.method(internal::serialize_method_name, &internal::SerializeLink)
+		.method(internal::load_method_name, &internal::LoadLink)
 		;
 	}
 

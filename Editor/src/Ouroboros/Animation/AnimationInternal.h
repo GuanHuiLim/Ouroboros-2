@@ -14,17 +14,28 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include "Anim_Utils.h"
+#include "AnimationKeyFrame.h"
 #include "AnimationParameter.h"
 
 #include "Utility/Hash.h"
+#include <rapidjson/document.h>
+#include <rapidjson/reader.h>
 
 namespace oo::Anim::internal
 {
 	//serialization
 	using SerializeFn = void(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>&, rttr::variant&);
+	extern std::unordered_map <StringHash::size_type, rttr::type> hash_to_rttrType;
 	extern std::unordered_map <rttr::type::type_id, StringHash::size_type> rttrType_to_hash;
 	extern std::unordered_map<rttr::type::type_id, SerializeFn*> serializeDataFn_map;
 	extern std::unordered_map<rttr::type::type_id, SerializeFn*> serializeRTTRVariantFn_map;
+
+	//loading
+	using LoadFn = rttr::variant(rapidjson::Value&);
+	extern std::unordered_map<rttr::type::type_id, LoadFn*> loadDataFn_map;
+	extern std::unordered_map<rttr::type::type_id, LoadFn*> loadRTTRVariantFn_map;
+	rttr::variant LoadRTTRVariant(rapidjson::Value& value);
+
 
 	NodeRef CreateNodeReference(Group& group, size_t id);
 	NodeRef CreateNodeReference(std::map<size_t, Node>& node_container, size_t id);
@@ -123,5 +134,5 @@ namespace oo::Anim::internal
 
 	void ReloadReferences(AnimationTree& tree);
 
-	
+	void ReAssignReferences(AnimationTree& tree);
 }

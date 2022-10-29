@@ -15,6 +15,7 @@ Technology is prohibited.
 #pragma once
 #include "Anim_Utils.h"
 #include "AnimationGroup.h"
+#include "AnimationTimeline.h"
 namespace oo::Anim
 {
 	struct Node
