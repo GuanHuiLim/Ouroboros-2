@@ -82,7 +82,8 @@ void Project::LoadProject(std::filesystem::path& config)
 		input_doc.ParseStream(isw2);
 		SerializerLoadProperties loadproperties;
 
-		auto& InputManager_Axis = oo::InputManager::GetAxes();
+        std::vector<oo::InputAxis> InputManager_Axis;
+		//auto& InputManager_Axis = oo::InputManager::GetAxes();
 		rttr::type t = rttr::type::get<oo::InputAxis>();
 		for (auto iter = input_doc.MemberBegin(); iter != input_doc.MemberEnd(); ++iter)
 		{
@@ -126,6 +127,7 @@ void Project::LoadProject(std::filesystem::path& config)
 			InputManager_Axis.push_back(axis);
 		}
 		ifs2.close();
+        oo::InputManager::Load(InputManager_Axis);
 	}
 }
 
