@@ -141,51 +141,107 @@ void Project::LoadInputs(const std::filesystem::path& loadpath)
 	input_doc.ParseStream(isw2);
 	SerializerLoadProperties loadproperties;
 
-	auto& InputManager_Axis = oo::InputManager::GetAxes();
-	rttr::type t = rttr::type::get<oo::InputAxis>();
-	for (auto iter = input_doc.MemberBegin(); iter != input_doc.MemberEnd(); ++iter)
-	{
-		oo::InputAxis axis;
-		for (auto members = iter->value.MemberBegin(); members != iter->value.MemberEnd(); ++members)
+        std::vector<oo::InputAxis> InputManager_Axis;
+		//auto& InputManager_Axis = oo::InputManager::GetAxes();
+		rttr::type t = rttr::type::get<oo::InputAxis>();
+		for (auto iter = input_doc.MemberBegin(); iter != input_doc.MemberEnd(); ++iter)
 		{
-			rttr::property prop = t.get_property(members->name.GetString());
-			auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
-			if (types_ui_rttr == UI_RTTRType::types.end())
+			oo::InputAxis axis;
+			for (auto members = iter->value.MemberBegin(); members != iter->value.MemberEnd(); ++members)
 			{
-				if (prop.get_type() == rttr::type::get<oo::InputAxis::Settings>())
+				rttr::property prop = t.get_property(members->name.GetString());
+				auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
+				if (types_ui_rttr == UI_RTTRType::types.end())
 				{
-					auto arr = members->value.GetArray();
-					oo::InputAxis::Settings setting;
-					setting.negativeButton = arr[0].GetUint();
-					setting.positiveButton = arr[1].GetUint();
-					setting.negativeAltButton = arr[2].GetUint();
-					setting.positiveAltButton = arr[3].GetUint();
-					setting.pressesRequired = arr[4].GetUint();
-					setting.maxGapTime = arr[5].GetFloat();
-					setting.holdDurationRequired = arr[6].GetFloat();
-					prop.set_value(axis, setting);
-					continue;
+					if (prop.get_type() == rttr::type::get<oo::InputAxis::Settings>())
+					{
+						auto arr = members->value.GetArray();
+						oo::InputAxis::Settings setting;
+						setting.negativeButton = arr[0].GetUint();
+						setting.positiveButton = arr[1].GetUint();
+						setting.negativeAltButton = arr[2].GetUint();
+						setting.positiveAltButton = arr[3].GetUint();
+						setting.pressesRequired = arr[4].GetUint();
+						setting.maxGapTime = arr[5].GetFloat();
+						setting.holdDurationRequired = arr[6].GetFloat();
+						prop.set_value(axis, setting);
+						continue;
+					}
+					else
+					{
+						ASSERT_MSG(true, "type not supported");
+						continue;
+					}
 				}
-				else
+				auto loadprop_iter = loadproperties.m_load_commands.find(types_ui_rttr->second);
+				if (loadprop_iter == loadproperties.m_load_commands.end())
 				{
 					ASSERT_MSG(true, "type not supported");
 					continue;
 				}
+				rttr::variant var = prop.get_value(axis);
+				loadprop_iter->second(var, std::move(members->value));
+				prop.set_value(axis, var);
 			}
-			auto loadprop_iter = loadproperties.m_load_commands.find(types_ui_rttr->second);
-			if (loadprop_iter == loadproperties.m_load_commands.end())
-			{
-				ASSERT_MSG(true, "type not supported");
-				continue;
-			}
-			rttr::variant var = prop.get_value(axis);
-			loadprop_iter->second(var, std::move(members->value));
-			prop.set_value(axis, var);
+			InputManager_Axis.push_back(axis);
 		}
-		InputManager_Axis.push_back(axis);
+		ifs2.close();
+        oo::InputManager::Load(InputManager_Axis);
 	}
-	ifs2.close();
 }
+
+void Project::SaveProject()
+{
+	std::ifstream ifs(s_configFile.string());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Config File is not valid!");
+		return;
+	}
+
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	auto prj_setting = doc.FindMember("Project Settings");
+	std::filesystem::path p = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetFilePath();
+	std::filesystem::path relative = p.lexically_relative(GetSceneFolder());
+	prj_setting->value.FindMember("StartScene")->value.SetString(relative.string().c_str(), static_cast<rapidjson::SizeType>(relative.string().size()), doc.GetAllocator());
+
+	auto scenes  = doc.FindMember("Scenes");
+	scenes->value.RemoveAllMembers();
+	//auto size = scenes->value.MemberCount();
+	auto* runtimecontroller = ImGuiManager::s_runtime_controller;
+	auto loadpaths = runtimecontroller->GetLoadPaths();
+	for(auto scene_info : loadpaths)
+	{
+		rapidjson::Value name(scene_info.SceneName.c_str(),doc.GetAllocator());
+		std::filesystem::path scene_loadpath = std::filesystem::relative(scene_info.LoadPath, GetSceneFolder());
+		rapidjson::Value data(scene_loadpath.string().c_str(),doc.GetAllocator());
+		scenes->value.AddMember(name, data, doc.GetAllocator());
+	}
+		//write your scenes
+	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
+
+	//get all scenes
+
+
+	////
+	
+	//attatch all members to doc to be serialized
+	//doc.AddMember("Project Settings", projectsetting, doc.GetAllocator());
+	//doc.AddMember("Scenes", scenes, doc.GetAllocator());
+
+	std::ofstream ofs(s_configFile);
+	if (ofs.good())
+	{
+		rapidjson::OStreamWrapper osw(ofs);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
+		writer.SetMaxDecimalPlaces(4);
+		doc.Accept(writer);
+		ofs.close();
+	}
+	ifs.close();
 
 void Project::SaveInputs(const std::filesystem::path& savepath)
 {

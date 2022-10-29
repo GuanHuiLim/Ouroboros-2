@@ -11,29 +11,36 @@ void CameraController::Update(float dt)
         return;
 
     // Poll input states
-    const bool left  = oo::input::IsKeyHeld(KEY_D);
-    const bool right = oo::input::IsKeyHeld(KEY_A);
-    const bool down  = oo::input::IsKeyHeld(KEY_W);
-    const bool up    = oo::input::IsKeyHeld(KEY_S);
+    const bool strafe_right = oo::input::IsKeyHeld(KEY_D);
+    const bool strafe_left  = oo::input::IsKeyHeld(KEY_A);
+    const bool forward      = oo::input::IsKeyHeld(KEY_W);
+    const bool backward     = oo::input::IsKeyHeld(KEY_S);
+    const bool strafe_up    = oo::input::IsKeyHeld(KEY_Z);
+    const bool strafe_down  = oo::input::IsKeyHeld(KEY_C);
     const auto [deltax, deltay] = oo::input::GetMouseDelta();
     const glm::vec2 mousedelta{ deltax, deltay };
     const float wheelDelta{ static_cast<float>(oo::input::GetMouseY()) };
-
-    const glm::vec3 amountToRotate = glm::vec3{ mousedelta.y * m_Camera->rotationSpeed, -mousedelta.x * m_Camera->rotationSpeed, 0.0f };
+    const glm::vec3 amountToRotate{ mousedelta.y * m_Camera->rotationSpeed , -mousedelta.x * m_Camera->rotationSpeed, 0};
     glm::vec3 amountToTranslate{ 0.0f, 0.0f, 0.0f };
 
     // Camera Movement
     if (m_Camera->m_CameraMovementType == Camera::CameraMovementType::firstperson)
     {
         const float moveSpeed = dt * m_Camera->movementSpeed;
-        if (up)
-            amountToTranslate -= m_Camera->GetFront() * moveSpeed;
-        if (down)
+        if (forward)
             amountToTranslate += m_Camera->GetFront() * moveSpeed;
-        if (left)
-            amountToTranslate -= m_Camera->GetRight() * moveSpeed;
-        if (right)
+        if (backward)
+            amountToTranslate -= m_Camera->GetFront() * moveSpeed;
+
+        if (strafe_right)
             amountToTranslate += m_Camera->GetRight() * moveSpeed;
+        if (strafe_left)
+            amountToTranslate -= m_Camera->GetRight() * moveSpeed;
+        
+        if (strafe_up)
+            amountToTranslate += m_Camera->GetUp() * moveSpeed;
+        if (strafe_down)
+            amountToTranslate -= m_Camera->GetUp() * moveSpeed;
     }
     
     // Simulate some very simple fucked up camera shake

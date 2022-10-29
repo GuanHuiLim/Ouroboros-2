@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/DeferredComponent.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
+#include "Ouroboros/Transform/TransformSystem.h"
 
 #include "OO_Vulkan/src/DebugDraw.h"
 #include "Ouroboros/ECS/ECS.h"
@@ -128,8 +129,8 @@ namespace oo
 
 
         // Update physics World's objects position and Orientation
-        static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
+        static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 auto pos = tf.GetGlobalPosition();
                 auto quat = tf.GetGlobalRotationQuat();
@@ -151,7 +152,7 @@ namespace oo
                 rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
 
                 // test and set trigger boolean
-                if (rb.object.getTrigger() != bc.IsTrigger)
+                if (rb.object.isTrigger() != bc.IsTrigger)
                     rb.object.setTriggerShape(bc.IsTrigger);
             });
 
@@ -184,20 +185,41 @@ namespace oo
         // update the physics world using fixed dt.
         m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
 
-        static Ecs::Query rb_query = Ecs::make_query< TransformComponent, RigidbodyComponent>();
+        static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
         // set position and orientation
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
         {
+            // IMPORTANT NOTE!
+            // position retrieve is presumably global position in physics world.
+            // but we must remember to consider the scenegraph hierarchy 
+            // when calculating its final transform.
+            // therefore we find the delta change and apply it to its local transform.
+
+            // we make this cheaper by only updating non-static objects.
+            if (rb.IsStaticObject) 
+                return;
+
             auto pos = rb.GetPositionInPhysicsWorld();
-            tf.SetGlobalPosition(pos - rb.Offset);
+            auto delta_position = pos - tf.GetGlobalPosition();
+            tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
+
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
-            tf.SetGlobalOrientation(orientation);
+            auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
+            
+            //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
+            //LOG_TRACE("global orientation {0},{1},{2},{3}", tf.GetGlobalRotationQuat().value.x, tf.GetGlobalRotationQuat().value.y, tf.GetGlobalRotationQuat().value.z, tf.GetGlobalRotationQuat().value.w);
+            //LOG_TRACE("delta orientation {0},{1},{2},{3}", delta_orientation.x, delta_orientation.y, delta_orientation.z, delta_orientation.w);
+            //LOG_TRACE("local orientation {0},{1},{2},{3}", tf.GetRotationQuat().value.x, tf.GetRotationQuat().value.y, tf.GetRotationQuat().value.z, tf.GetRotationQuat().value.w);
+           
+            tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
+            //tf.SetOrientation(orientation);
+
+            m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->FindWithInstanceID(goc.Id), true);
         });
 
         static Ecs::Query dynamicBoxColliderQuery = Ecs::make_query<TransformComponent, BoxColliderComponent, RigidbodyComponent>();
-
         //Updating Dynamic Box Collider Bounds
         m_world->for_each(dynamicBoxColliderQuery, [&](TransformComponent& tf, BoxColliderComponent& bc, RigidbodyComponent& rb)
         {
@@ -264,6 +286,8 @@ namespace oo
 
     void PhysicsSystem::PostUpdate()
     {
+        // Update entire subtree once every Fixed update so physics changes are properly reflected.
+        //m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->GetRoot(), false);
     }
 
 

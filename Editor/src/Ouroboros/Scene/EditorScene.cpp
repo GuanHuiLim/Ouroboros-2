@@ -19,7 +19,9 @@ Technology is prohibited.
 //#include "Editor.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Vulkan/RendererSystem.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
+#include "Ouroboros/Core/Application.h"
 
 //optick
 #include "optick.h"
@@ -37,6 +39,13 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
         OPTICK_EVENT();
+        
+        // Reset some global window related settings here ... might be a bit scuffed and needa shift elsewhere
+        {
+            // Unlock the mouse if it was locked in play mode
+            Application::Get().GetWindow().SetMouseLockState(false);
+        }
+
         Scene::Init();
 
         //Register All Systems
@@ -46,7 +55,7 @@ namespace oo
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
             //bool wantDebug = true;
 
-            GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
+            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
             //TRACY_PROFILE_SCOPE_N(registration);
             /*GetWorld().RegisterSystem<PrefabComponentSystem>();
             GetWorld().RegisterSystem<EditorComponentSystem>();
@@ -85,7 +94,6 @@ namespace oo
         OPTICK_EVENT();
 
         Scene::Update();
-
         GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
 
         {
@@ -134,6 +142,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
+        GetWorld().Get_System<RendererSystem>()->UpdateCamerasEditorMode();
         TRACY_PROFILE_SCOPE_END();
     }
 
