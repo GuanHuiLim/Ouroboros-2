@@ -139,10 +139,9 @@ namespace oo
                     rb.SetPosOrientation(pos + rb.Offset, quat);
                 }
 
-                // Could still be a more ECS viable way to do things.
-                //// test and set trigger boolean
-                //if (rb.object.isTrigger() != rb.IsTrigger)
-                //    rb.object.setTriggerShape(rb.IsTrigger);
+                // test and set trigger boolean based on serialize value
+                if (rb.object.isTrigger() != rb.IsTrigger)
+                    rb.object.setTriggerShape(rb.IsTrigger);
             });
 
         //Updating box collider's bounds 

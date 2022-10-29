@@ -76,10 +76,11 @@ namespace oo
     class RigidbodyComponent final
     {
     private:
-        bool IsTriggerObject = false;
         bool IsStaticObject = true;
 
     public:
+        bool IsTrigger = false;
+
         myPhysx::PhysicsObject object{};
         vec3 Offset = { 0.0, 0.0, 0.0 };
 
@@ -102,10 +103,10 @@ namespace oo
         bool IsKinematic() const;
         bool IsDynamic() const;
 
-        bool IsTrigger() const;
+        //bool IsTrigger() const;
         bool IsCollider() const;
         
-        void SetTrigger(bool enable);
+        //void SetTrigger(bool enable);
 
         void SetMaterial(PhysicsMaterial material);
         void SetPosOrientation(vec3 pos, quat quat);
