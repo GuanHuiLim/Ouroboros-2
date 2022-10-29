@@ -140,8 +140,8 @@ namespace oo
                 }
 
                 // test and set trigger boolean based on serialize value
-                if (rb.object.isTrigger() != rb.IsTrigger)
-                    rb.object.setTriggerShape(rb.IsTrigger);
+                if (rb.object.isTrigger() != rb.IsTrigger())
+                    rb.object.setTriggerShape(rb.IsTrigger());
             });
 
         //Updating box collider's bounds 
