@@ -132,7 +132,7 @@ namespace oo
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 // only update for transformthat have changed
-                if (tf.HasChangedThisFrame)
+                //if (tf.HasChangedThisFrame)
                 {
                     auto pos = tf.GetGlobalPosition();
                     auto quat = tf.GetGlobalRotationQuat();
