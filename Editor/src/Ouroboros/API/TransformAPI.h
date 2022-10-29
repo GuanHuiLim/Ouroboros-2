@@ -218,7 +218,7 @@ namespace oo
                 break;
             }
             if (!childFound)
-                return 0;
+                return ComponentDatabase::InvalidPtr;
 
             if (separator == std::string::npos)
                 break;
@@ -253,7 +253,7 @@ namespace oo
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         if (parentUUID == GameObject::ROOTID)
-            return 0;
+            return ComponentDatabase::InvalidPtr;
         return scene->GetWorld().Get_System<ScriptSystem>()->GetComponent(parentUUID, "Ouroboros", "Transform");
     }
 }

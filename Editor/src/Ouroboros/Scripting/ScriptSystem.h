@@ -49,6 +49,7 @@ namespace oo
 
         ComponentDatabase::IntPtr AddComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         ComponentDatabase::IntPtr GetComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
+        ComponentDatabase::IntPtr HasActualComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         void RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         void SetComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
         bool CheckComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name);

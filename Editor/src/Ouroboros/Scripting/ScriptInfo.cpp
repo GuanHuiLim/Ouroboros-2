@@ -71,7 +71,7 @@ namespace oo
             }
             else if (typeClass == ScriptEngine::GetClass("ScriptCore", "Ouroboros", "GameObject"))
             {
-                paramInfoList[i].value = static_cast<ScriptValue>(static_cast<oo::UUID>(0));
+                paramInfoList[i].value = static_cast<ScriptValue>(UUID::Invalid);
             }
             else
             {

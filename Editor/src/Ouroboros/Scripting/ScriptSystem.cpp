@@ -228,6 +228,10 @@ namespace oo
             return 0;
         return componentDatabase.TryRetrieveDerived(uuid, name_space, name);
     }
+    ComponentDatabase::IntPtr ScriptSystem::HasActualComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        return componentDatabase.HasComponent(uuid, name_space, name);
+    }
     void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
         if (!isPlaying)

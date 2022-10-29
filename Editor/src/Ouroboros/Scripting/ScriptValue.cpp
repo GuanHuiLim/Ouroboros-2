@@ -447,7 +447,7 @@ namespace oo
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
                     oo::UUID entityID = value.GetValue<oo::UUID>();
-                    if (entityID == 0)
+                    if (entityID == UUID::Invalid)
                     {
                         mono_field_set_value(obj, field, nullptr);
                         return;
@@ -460,7 +460,7 @@ namespace oo
                         return;
                     }
                     ComponentDatabase::IntPtr ptr = scene->GetWorld().Get_System<ScriptSystem>()->GetGameObject(entityID);
-                    if (ptr != 0)
+                    if (ptr != ComponentDatabase::InvalidPtr)
                     {
                         MonoObject* monoGameObject = mono_gchandle_get_target(ptr);
                         mono_field_set_value(obj, field, monoGameObject);
@@ -478,7 +478,7 @@ namespace oo
                     MonoObject* fieldValue;
                     mono_field_get_value(object, field, &fieldValue);
                     if (fieldValue == nullptr)
-                        return ScriptValue(static_cast<UUID>(0));
+                        return ScriptValue(UUID::Invalid);
 
                     MonoClassField* idField = mono_class_get_field_from_name(typeClass, "m_InstanceID");
                     UUID entityID;
@@ -486,14 +486,14 @@ namespace oo
                     std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
                     if (obj == nullptr)
-                        return ScriptValue(static_cast<UUID>(0));
+                        return ScriptValue(UUID::Invalid);
                     return ScriptValue(obj->GetInstanceID());
                 },
                 // GetObjectValue
                 [](MonoObject* object, ScriptValue const& refInfo)
                 {
                     if (object == nullptr)
-                        return ScriptValue(static_cast<UUID>(0));
+                        return ScriptValue(UUID::Invalid);
 
                     MonoClass* objClass = mono_object_get_class(object);
                     MonoClassField* idField = mono_class_get_field_from_name(objClass, "m_InstanceID");
@@ -502,7 +502,7 @@ namespace oo
                     std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
                     if (obj == nullptr)
-                        return ScriptValue(static_cast<UUID>(0));
+                        return ScriptValue(UUID::Invalid);
                     return ScriptValue(obj->GetInstanceID());
                 },
                 // AddToList
@@ -512,7 +512,7 @@ namespace oo
 
                     MonoObject* entry = nullptr;
                     UUID entityID = value.GetValue<UUID>();
-                    if (entityID != 0)
+                    if (entityID != UUID::Invalid)
                     {
                         std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                         std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(entityID);
@@ -537,14 +537,14 @@ namespace oo
                     ScriptValue::component_type component = value.GetValue<ScriptValue::component_type>();
                     std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     ScriptSystem* scriptSystem = scene->GetWorld().Get_System<ScriptSystem>();
-                    ScriptDatabase::IntPtr ptr = 0;
+                    ScriptDatabase::IntPtr ptr = ScriptDatabase::InvalidPtr;
                     if (component.m_isScript)
                         ptr = scriptSystem->GetScript(component.m_objID, component.m_namespace.c_str(), component.m_name.c_str());
                     else
                         ptr = scriptSystem->GetComponent(component.m_objID, component.m_namespace.c_str(), component.m_name.c_str());
 
                     MonoObject* monoComponent = nullptr;
-                    if (ptr != 0)
+                    if (ptr != ScriptDatabase::InvalidPtr)
                         monoComponent = mono_gchandle_get_target(ptr);
                     mono_field_set_value(obj, field, monoComponent);
                 },
@@ -553,7 +553,7 @@ namespace oo
                 {
                     MonoType* type = mono_field_get_type(field);
                     MonoClass* typeClass = mono_type_get_class(type);
-                    UUID uuid = 0;
+                    UUID uuid = UUID::Invalid;
                     MonoObject* fieldValue;
                     mono_field_get_value(object, field, &fieldValue);
                     if (fieldValue != nullptr)
@@ -579,7 +579,7 @@ namespace oo
                 [](MonoObject* object, ScriptValue const& refInfo)
                 {
                     MonoClass* objClass = mono_object_get_class(object);
-                    UUID uuid = 0;
+                    UUID uuid = UUID::Invalid;
                     if (object != nullptr)
                     {
                         MonoClassField* objField = mono_class_get_field_from_name(objClass, "m_GameObject");
@@ -607,13 +607,13 @@ namespace oo
                     ScriptValue::component_type component = value.GetValue<ScriptValue::component_type>();
                     std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
                     ScriptSystem* scriptSystem = scene->GetWorld().Get_System<ScriptSystem>();
-                    ScriptDatabase::IntPtr ptr = 0;
+                    ScriptDatabase::IntPtr ptr = ScriptDatabase::InvalidPtr;
                     if (component.m_isScript)
                         ptr = scriptSystem->GetScript(component.m_objID, component.m_namespace.c_str(), component.m_name.c_str());
                     else
                         ptr = scriptSystem->GetComponent(component.m_objID, component.m_namespace.c_str(), component.m_name.c_str());
                     MonoObject* entry = nullptr;
-                    if (ptr != 0)
+                    if (ptr != ScriptDatabase::InvalidPtr)
                         entry = mono_gchandle_get_target(ptr);
 
                     void* args[1];
@@ -1200,14 +1200,13 @@ namespace oo
     }
 
     /*-----------------------------------------------------------------------------*/
-    /* ScriptEnumValue                                                             */
+    /* enum_type                                                                   */
     /*-----------------------------------------------------------------------------*/
     ScriptValue::enum_type::enum_type(std::string const& namespace_, std::string const& name_, unsigned int i) : name_space{ namespace_ }, name{ name_ }, index{ i }
     {
         if (index >= GetOptions().size())
             index = 0;
     };
-
 
     std::vector<std::string> ScriptValue::enum_type::GetOptions() const
     {
@@ -1219,7 +1218,30 @@ namespace oo
     }
 
     /*-----------------------------------------------------------------------------*/
-    /* ScriptListValue                                                             */
+    /* component_type                                                              */
+    /*-----------------------------------------------------------------------------*/
+    bool ScriptValue::component_type::is_valid()
+    {
+        if (m_objID == UUID::Invalid || m_namespace.size() <= 0 || m_name.size() <= 0)
+            return false;
+
+        std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
+        std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(m_objID);
+        if (obj == nullptr)
+            return false;
+
+        if (m_isScript)
+        {
+            return obj->GetComponent<ScriptComponent>().GetScriptInfo(ScriptClassInfo{ m_namespace, m_name }) != nullptr;
+        }
+        else
+        {
+            return scene->GetWorld().Get_System<ScriptSystem>()->HasActualComponent(m_objID, m_namespace.c_str(), m_name.c_str());
+        }
+    }
+
+    /*-----------------------------------------------------------------------------*/
+    /* list_type                                                                   */
     /*-----------------------------------------------------------------------------*/
     void ScriptValue::list_type::Push()
     {
@@ -1252,7 +1274,7 @@ namespace oo
         //    valueList.emplace_back(oo::Colour{ 1, 1, 1, 1 });
         //    break;
         case ScriptValue::type_enum::GAMEOBJECT:
-            valueList.emplace_back(static_cast<UUID>(0));
+            valueList.emplace_back(UUID::Invalid);
             break;
         case ScriptValue::type_enum::COMPONENT:
         {
@@ -1262,7 +1284,7 @@ namespace oo
             valueList.emplace_back(
                 ScriptValue::component_type
                 {
-                    static_cast<UUID>(0),
+                    UUID::Invalid,
                     name_space,
                     name,
                     ScriptEngine::CheckClassInheritance(klass, "ScriptCore", "Ouroboros", "MonoBehaviour")
@@ -1364,7 +1386,7 @@ namespace oo
             case ScriptValue::type_enum::GAMEOBJECT:
             {
                 UUID paramUUID = paramList[i].value.GetValue<UUID>();
-                if (paramUUID == 0) // id not set
+                if (paramUUID == UUID::Invalid) // id not set
                 {
                     ptrList[i] = nullptr;
                     break;
@@ -1376,7 +1398,7 @@ namespace oo
                     break;
                 }
                 ComponentDatabase::IntPtr objPtr = scriptSystem->GetGameObject(paramUUID);
-                if (objPtr == 0) // C# object not found
+                if (objPtr == ComponentDatabase::InvalidPtr) // C# object not found
                 {
                     ptrList[i] = nullptr;
                     break;
