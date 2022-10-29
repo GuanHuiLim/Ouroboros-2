@@ -18,7 +18,8 @@ public:
 	EditorViewport();
 	~EditorViewport();
 	void Show();
-private:
+
 	int m_gizmoOperation = 7;
+private:
 	int m_gizmoMode = 1;	// IMGUIZMO::MODE::WORLD <- default
 };

@@ -49,6 +49,7 @@ Technology is prohibited.
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 #include <Ouroboros/Commands/Ordering_ActionCommand.h>
 //events
+#include <App/Editor/Events/OpenPromtEvent.h>
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 
@@ -208,6 +209,19 @@ const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
 }
+void Hierarchy::PreviewPrefab(const std::filesystem::path& p, const std::filesystem::path& currscene)
+{
+	PrefabSceneData data;
+	data.m_curr_sceneFilepath = currscene.string();
+	m_prefabsceneList.push_back(std::move(data));
+	OpenPromptEvent<OpenFileEvent> ope(OpenFileEvent(p), 0);
+	oo::EventManager::Broadcast(&ope);
+}
+void Hierarchy::PopBackPrefabStack()
+{
+	OpenPromptEvent<OpenFileEvent> ope(OpenFileEvent(m_prefabsceneList.back().m_curr_sceneFilepath), [this] {m_prefabsceneList.pop_back(); });
+	oo::EventManager::Broadcast(&ope);
+}
 void Hierarchy::NormalView()
 {
 	RightClickOptions();
@@ -259,14 +273,13 @@ void Hierarchy::NormalView()
 			ImGui::EndDragDropTarget();
 		}
 	}
-	if (m_previewPrefab)
+	//if empty then it shouldn't have been from a prefab scene
+	if (m_prefabsceneList.empty() == false)
 	{
 		ImGui::Separator();
 		if (ImGui::Button("Back"))
 		{
-			m_previewPrefab = false;
-			OpenFileEvent ofe(m_curr_sceneFilepath);
-			oo::EventManager::Broadcast(&ofe);
+			PopBackPrefabStack();
 		}	
 		ImGui::SameLine();
 		ImGui::Text("Prefab Editing");
@@ -404,11 +417,8 @@ void Hierarchy::NormalView()
 	}
 	if (open_prefab)
 	{
-		m_previewPrefab = true;
-		m_curr_sceneFilepath = scene->GetFilePath();
 		auto complete_path = Project::GetPrefabFolder() / prefabobj->GetComponent<oo::PrefabComponent>().prefab_filePath;
-		OpenFileEvent ofe(complete_path);
-		oo::EventManager::Broadcast(&ofe);
+		PreviewPrefab(complete_path,scene->GetFilePath());
 	}
 }
 void Hierarchy::FilteredView()

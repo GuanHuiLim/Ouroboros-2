@@ -28,11 +28,15 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
 #include "Ouroboros/Transform/TransformComponent.h"
-
+#include "Ouroboros/Commands/CommandStackManager.h"
+#include "Ouroboros/Commands/Component_ActionCommand.h"
+#include "App/Editor/Events/GizmoOperationEvent.h"
+#include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Input.h"
 EditorViewport::EditorViewport()
 {
 	ImGuizmo::AllowAxisFlip(false);
+	
 }
 
 EditorViewport::~EditorViewport()
@@ -122,9 +126,22 @@ void EditorViewport::Show()
 	ImGuizmo::SetDrawlist();
 
 	//ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
+	static rttr::variant before_edit;
 
 	if (ImGuizmo::Manipulate(view, projection, (ImGuizmo::OPERATION)m_gizmoOperation, (ImGuizmo::MODE)m_gizmoMode, glm::value_ptr(m_matrix)))
 	{
+		if (before_edit.is_valid() == false)
+		{
+			switch (m_gizmoOperation)
+			{
+			case ImGuizmo::OPERATION::TRANSLATE:
+				before_edit = transform.GetPosition();break;
+			case ImGuizmo::OPERATION::ROTATE:
+				before_edit = transform.GetRotationQuat();break;
+			case ImGuizmo::OPERATION::SCALE:
+				before_edit = transform.GetScale();break;
+			}
+		}
 		if (ImGuizmo::IsUsing())
 		{
 			glm::vec3 mScale = transform.GetGlobalScale();
@@ -137,25 +154,58 @@ void EditorViewport::Show()
 				glm::value_ptr(mScale));*/
 			
 			// If we can't trust imguizmo, we can still trust glm.
-			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
 
+			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
+			
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
 			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.
 		}
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)))
+	if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)&& before_edit.is_valid())
+	{
+		rttr::variant after_edit;
+		switch (m_gizmoOperation)
+		{
+		case ImGuizmo::OPERATION::TRANSLATE:
+		{
+			after_edit = transform.GetPosition();
+			rttr::property prop = transform.get_type().get_property("Position");
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::TransformComponent>(before_edit, after_edit, prop, gameobject->GetInstanceID()));
+		}break;
+		case ImGuizmo::OPERATION::ROTATE:
+		{
+			after_edit = transform.GetRotationQuat();
+			rttr::property prop = transform.get_type().get_property("Quaternion");
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::TransformComponent>(before_edit, after_edit, prop, gameobject->GetInstanceID()));
+		}break;
+		case ImGuizmo::OPERATION::SCALE:
+		{
+			after_edit = transform.GetScale();
+			rttr::property prop = transform.get_type().get_property("Scaling");
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::TransformComponent>(before_edit, after_edit, prop, gameobject->GetInstanceID()));
+		}break;
+		}
+		before_edit.clear();
+	}
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)))
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)))
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
 	}
 }
