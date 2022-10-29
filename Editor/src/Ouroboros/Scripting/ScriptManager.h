@@ -26,7 +26,7 @@ namespace oo
     class ScriptManager final
     {
     public:
-        static SceneManager const* s_SceneManager;
+        static SceneManager* s_SceneManager;
 
     private:
         static std::string s_BuildPath;

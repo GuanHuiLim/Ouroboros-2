@@ -23,3 +23,6 @@ Technology is prohibited.
 #include "ScriptingAPI.h"
 #include "TransformAPI.h"
 #include "AudioSourceAPI.h"
+
+#include "RigidbodyAPI.h"
+#include "CollidersAPI.h"

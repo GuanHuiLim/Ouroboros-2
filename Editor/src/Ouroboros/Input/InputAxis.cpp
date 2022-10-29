@@ -175,7 +175,7 @@ namespace oo
             case InputType::MouseMovement:
                 {
                     if (axis.GetName() == "Mouse X")
-                        value = static_cast<float>(input::GetMouseDelta().first);
+                        value = static_cast<float>(-input::GetMouseDelta().first);
                     else if (axis.GetName() == "Mouse Y")
                         value = static_cast<float>(input::GetMouseDelta().second);
                 }
@@ -301,7 +301,8 @@ namespace oo
             return 0.0f;
         input::ControllerAxisCode axisCode = static_cast<input::ControllerAxisCode>(inputCode);
         float value = input::GetControllerAxisValue(axisCode);
-        if (axisCode == input::ControllerAxisCode::LEFTY || axisCode == input::ControllerAxisCode::RIGHTY)
+        if (axisCode == input::ControllerAxisCode::LEFTY || axisCode == input::ControllerAxisCode::RIGHTY
+            || axisCode == input::ControllerAxisCode::LEFTX || axisCode == input::ControllerAxisCode::RIGHTX)
             value *= -1;
         if (value >= 0)
             return value / std::numeric_limits<short>().max();

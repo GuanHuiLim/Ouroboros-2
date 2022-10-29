@@ -147,10 +147,10 @@ namespace oo
                 InputAxis::InputType::KeyboardButton,
                 InputAxis::Settings
                 {
-                    static_cast<InputAxis::InputCode>(input::KeyCode::LEFT),
                     static_cast<InputAxis::InputCode>(input::KeyCode::RIGHT),
-                    static_cast<InputAxis::InputCode>(input::KeyCode::A),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::LEFT),
                     static_cast<InputAxis::InputCode>(input::KeyCode::D),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::A),
                     0U, 0.0f, 0.0f
                 },
                 InputAxis::ControllerInputType::Trigger_Joystick,

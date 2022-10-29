@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObject.h"
 
+#include "Ouroboros/Physics/PhysicsEvents.h"
+
 namespace oo
 {
     // Scene specific script stuff, go to ScriptManager for global stuff that transfers between scenes
@@ -35,10 +37,6 @@ namespace oo
         void SetUpObject(oo::UUID uuid);
         bool StopPlay();
         bool IsPlaying();
-
-        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
-        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
-        void OnObjectDestroyed(GameObject::OnDestroy* e);
 
         void ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
         void RefreshScriptInfoAll();
@@ -58,7 +56,7 @@ namespace oo
         ComponentDatabase::IntPtr GetGameObject(ComponentDatabase::UUID uuid);
 
         void InvokeForObject(oo::UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
-        void InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
+        void InvokeForObjectEnabled(oo::UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
 
         void InvokeForEach(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
         void InvokeForEachEnabled(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
@@ -71,6 +69,13 @@ namespace oo
 
         void UpdateAllScriptFieldsWithInfo();
         void UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script);
+
+        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
+        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
+        void OnObjectDestroyed(GameObject::OnDestroy* e);
+
+        void OnPhysicsTick(PhysicsTickEvent* e);
+        void OnTriggerEvent(PhysicsTriggerEvent* e);
 
         Scene& scene;
         ScriptDatabase& scriptDatabase;
