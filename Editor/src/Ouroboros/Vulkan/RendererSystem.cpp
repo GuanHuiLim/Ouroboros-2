@@ -27,6 +27,8 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventTypes.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
+#include "Ouroboros/Core/Input.h"
+
 namespace oo
 {
     Camera RendererSystem::m_editorCamera = [&]()
@@ -34,6 +36,7 @@ namespace oo
         Camera camera;
         camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         camera.movementSpeed = 5.0f;
+        camera.SetPosition({ 0, 2, 0 });
         return camera;
     }();
 
@@ -150,6 +153,13 @@ namespace oo
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
+            
+            // update transform if this is the first frame of rendering
+            if (m_firstFrame)
+            {
+                actualObject.localToWorld = transformComp.GlobalTransform;
+                m_firstFrame = false;
+            }
         });
 
 
@@ -177,19 +187,45 @@ namespace oo
     // additional function that runs during runtime scene only.
     void RendererSystem::UpdateCamerasRuntime()
     {
-        // TODO: debug draw the camera's view in editormode
-        //DebugDraw::AddLine();
-        
-        // Update Camera(s)
-        // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
-        
-        Camera* camera = m_cc.GetCamera();
-        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-        m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+        static bool use_editor_camera = false;
+        if (oo::input::IsKeyPressed(KEY_F8))
         {
-            camera->SetPosition(transformComp.GetGlobalPosition());
-            camera->SetRotation(transformComp.GetGlobalRotationQuat());
-        });
+            use_editor_camera = !use_editor_camera;
+
+            if (use_editor_camera)
+            {
+                Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
+                auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+                m_cc.SetCamera(&camera);
+            }
+            /*else
+            {
+                Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
+                auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+                m_cc.SetCamera(&camera);
+            }*/
+        }
+
+        if (use_editor_camera)
+        {
+            m_cc.Update(oo::timer::dt());
+        }
+        else // updating the camera conventionally.
+        {
+            // TODO: debug draw the camera's view in editormode
+            //DebugDraw::AddLine();
+
+            // Update Camera(s)
+            // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
+
+            Camera* camera = m_cc.GetCamera();
+            static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
+            m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+            {
+                camera->SetPosition(transformComp.GetGlobalPosition());
+                camera->SetRotation(transformComp.GetGlobalRotationQuat());
+            });
+        }
     }
     
     void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)

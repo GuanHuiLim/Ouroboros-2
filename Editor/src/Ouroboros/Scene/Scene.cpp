@@ -76,15 +76,11 @@ namespace oo
         {
             m_ecsWorld->Add_System<oo::DeferredSystem>(this);
             m_ecsWorld->Add_System<oo::DuplicatedSystem>(this);
-
             m_ecsWorld->Add_System<oo::TransformSystem>(this);
-
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
-
+            m_ecsWorld->Add_System<oo::AudioSystem>(this);
             //rendering system initialization
             m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
-
-            m_ecsWorld->Add_System<oo::AudioSystem>(this);
         }
 
         PRINT(m_name);
@@ -96,25 +92,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_update, tracy::Color::Seashell2);
 
-        // Update Systems
-        {
-            //// nothing should run before this.
-            //m_ecsWorld->Get_System<oo::TransformSystem>()->StartOfFrame();
-
-            m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
-
-            m_ecsWorld->Get_System<oo::AudioSystem>()->Run(m_ecsWorld.get());
-
-            //constexpr const char* const scripts_update = "Scripts Update";
-            //UNREFERENCED(scripts_update);
-            {
-                TRACY_PROFILE_SCOPE(scripts_update);
-                GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
-                TRACY_PROFILE_SCOPE_END();
-            }
-            // m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("Update");
-        }
-
         PRINT(m_name);
 
         TRACY_PROFILE_SCOPE_END();
@@ -124,7 +101,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
 
-        m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("LateUpdate");
         PRINT(m_name);
 
         TRACY_PROFILE_SCOPE_END();

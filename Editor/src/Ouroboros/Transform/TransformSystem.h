@@ -35,6 +35,7 @@ namespace oo
         void EndOfFrame();*/
 
     private:
+        void UpdateLocalTransform(TransformComponent& tf);
         void UpdateLocalTransforms();
         void UpdateTree(scenenode::shared_pointer node, bool updateRoot);
         void UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf);
