@@ -20,21 +20,12 @@ Technology is prohibited.
 
 #include <glm/glm.hpp>
 #include <rttr/type>
+#include <Physics/Source/phy.h>
+
+#include "Utility/UUID.h"
 
 namespace oo
 {
-    struct MassData final
-    {
-        double Mass = 10.0;
-        double InverseMass = 0.1;
-
-        //// for rotations
-        //double Inertia = 0.0;
-        //double InverseInertia = 0.0;
-
-        RTTR_ENABLE();
-    };
-
     /*-----------------------------------------------------------------------------*/
     /* Describes the supported variables that make up a material and how           */
     /* rigidbodies reacts when moving or collision.                                */
@@ -48,9 +39,35 @@ namespace oo
         double DynamicFriction  = 0.2;
         double StaticFriction   = 0.4;
 
+        PhysicsMaterial() = default;
+
+        PhysicsMaterial(myPhysx::Material const& mat)
+            : Restitution { mat.restitution }
+            , DynamicFriction { mat.dynamicFriction }
+            , StaticFriction { mat.staticFriction }
+        {
+        }
+        
+        operator myPhysx::Material()
+        {
+            return myPhysx::Material
+            { 
+                .staticFriction = static_cast<float>(StaticFriction), 
+                .dynamicFriction = static_cast<float>(DynamicFriction), 
+                .restitution = static_cast<float>(Restitution)
+            };
+        }
+
         RTTR_ENABLE();
     };
-
+    
+    enum class ForceMode
+    {
+        FORCE,
+        ACCELERATION,
+        IMPULSE,
+        VELOCITY_CHANGE,
+    };
 
     /*-----------------------------------------------------------------------------*/
     /* Describes and Enables Entites with this component attached to               */
@@ -58,72 +75,48 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     class RigidbodyComponent final
     {
-    private:
-        PhysicsMaterial m_material;
-        MassData m_data;
-
-        //vec2 m_linearVelocity;
-        //vec2 m_force;
-
-        //// Angular components : most components are float in 2D, vec3 in 3D
-        ////double m_orientation;
-        //double m_angularVelocity;
-        //double m_torque;
-
-        //// Used for interpolation
-        //vec3 m_prevPos;
-
-        ////Accumulated impulse
-        //vec2 m_accumulatedImpulse;
-
-        // Center of Mass
-        vec2 m_centerOfMass;
-    
     public:
-        /*-----------------------------------------------------------------------------*/
-        /* Public Adaptable Variables                                                  */
-        /*-----------------------------------------------------------------------------*/
-        bool Kinematic = false;
-        bool Interpolate = false;
-        bool UseAutoMass = true;
-        bool DoNotRotate = false;
-        double GravityScale = 1.0f;
-        double LinearDrag = 0.1f;
-        double AngularDrag = 0.1f;
-        vec2 CenterOfMassOffset = vec2{ 0 };
+        bool IsStaticObject = true;
+        myPhysx::PhysicsObject object{};
+        vec3 Offset = { 0.0, 0.0, 0.0 };
 
-        /*-----------------------------------------------------------------------------*/
-        /* Public Interface Functions                                                  */
-        /*-----------------------------------------------------------------------------*/
+        PhysicsMaterial GetMaterial() const;
+        vec3 GetPositionInPhysicsWorld() const;
+        quat GetOrientationInPhysicsWorld() const;
 
-        /*-----------------------------------------------------------------------------*/
-        /* Getter Functions                                                            */
-        /*-----------------------------------------------------------------------------*/
-        double GetMass()                const { return m_data.Mass; }
-        double GetInverseMass()         const { return m_data.InverseMass; }
-        /*double GetInertia()             const { return m_data.Inertia; }
-        double GetInverseInertia()      const { return m_data.InverseInertia; }*/
-        /*double GetAngularVelocity()     const { return m_angularVelocity; }
-        vec2 GetForce()                 const { return m_force; }
-        vec2 GetVelocity()              const { return m_linearVelocity; }*/
-        PhysicsMaterial GetMaterial()   const { return m_material; }
+        void SetStatic(bool result);
 
-        /*-----------------------------------------------------------------------------*/
-        /* Setter Functions                                                            */
-        /*-----------------------------------------------------------------------------*/
-        /*void SetVelocity(vec2 newVel) { m_linearVelocity = newVel; }
-        void SetForce(vec2 newForce) { m_force = newForce; }
-        void SetTorque(double newTorque) { m_torque = newTorque; }*/
-        void SetMaterial(PhysicsMaterial material) { m_material = material; }
+        float GetMass() const;
+        float GetAngularDamping() const;
+        vec3 GetAngularVelocity() const;
+        float GetLinearDamping() const;
+        vec3 GetLinearVelocity() const;
 
-        /*-----------------------------------------------------------------------------*/
-        /* Query Functions                                                             */
-        /*-----------------------------------------------------------------------------*/
-        //bool IsKinematic()  const { return Kinematic; }
-        //bool IsDynamic()    const { return !Kinematic; }
+        bool IsGravityEnabled() const;
+        bool IsGravityDisabled() const;
 
-        //void SetInertia();
-        //void ResetInertia() { m_data.Inertia = m_data.InverseInertia = 0.f; }
+        bool IsStatic() const;
+        bool IsKinematic() const;
+        bool IsDynamic() const;
+
+        void SetMaterial(PhysicsMaterial material);
+        void SetPosOrientation(vec3 pos, quat quat);
+
+        void SetGravity(bool enable);
+        /*void EnableGravity();
+        void DisableGravity();*/
+        
+        void SetKinematic(bool kine);
+        void SetMass(float mass);
+        void SetAngularDamping(float angularDamping);
+        void SetAngularVelocity(vec3 angularVelocity);
+        void SetLinearDamping(float linearDamping);
+        void SetLinearVelocity(vec3 linearVelocity);
+
+        void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
+        void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
+
+        oo::UUID GetUnderlyingUUID() const;
 
         RTTR_ENABLE();
     };

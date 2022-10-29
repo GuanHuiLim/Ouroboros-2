@@ -64,7 +64,7 @@ namespace oo
 
         // only done after ecs able to return dynamic objects
         std::string& Name()                         const;
-        UUID GetInstanceID()                        const;
+        oo::UUID GetInstanceID()                        const;
         scenenode::weak_pointer GetSceneNode()      const;
         bool GetIsPrefab()                          const;
         Entity GetEntity()                          const;
@@ -124,9 +124,9 @@ namespace oo
         std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
         std::vector<GameObject> GetChildren(bool includeItself = false) const;
         
-        UUID GetParentUUID() const;
-        std::vector<UUID> GetDirectChildsUUID(bool includeItself = false) const;
-        std::vector<UUID> GetChildrenUUID(bool includeItself = false) const;
+        oo::UUID GetParentUUID() const;
+        std::vector<oo::UUID> GetDirectChildsUUID(bool includeItself = false) const;
+        std::vector<oo::UUID> GetChildrenUUID(bool includeItself = false) const;
         
         bool HasChild() const;
         bool HasValidParent() const;

@@ -22,37 +22,45 @@ Technology is prohibited.
 #pragma once
 
 #include <xhash>    // made hashing available
+#include <limits>   // numeric limits
 
-class UUID final
+namespace oo
 {
-public:
-    using value_type = std::uint64_t;
+    class UUID final
+    {
+    public:
+        using value_type = std::uint64_t;
+        static constexpr value_type Invalid = std::numeric_limits<value_type>::max();
 
-    UUID();
-    UUID(UUID const& other) = default;
+        UUID();
+        UUID(UUID const& other) = default;
 
-    // Conversion constructor
-    UUID(value_type uuid) : m_uuid{ uuid } {};
+        // Conversion constructor
+        UUID(value_type uuid) : m_uuid{ uuid } {};
 
-    // implicit converseions to value type
-    operator value_type() { return m_uuid; }
-    operator const value_type() const { return m_uuid; }
+        // implicit converseions to value type
+        operator value_type() { return m_uuid; }
+        operator const value_type() const { return m_uuid; }
 
-    value_type GetUUID() const { return m_uuid; }
+        value_type GetUUID() const { return m_uuid; }
 
-private:
-    value_type m_uuid;
-};
+    private:
+        value_type m_uuid = Invalid;
+    };
+    
+
+}
 
 // hashing overload for UUID with std lib
 namespace std
 {
     template<>
-    struct hash<UUID>
+    struct hash<oo::UUID>
     {
-        std::size_t operator() (UUID const& uuid) const
+        std::size_t operator() (oo::UUID const& uuid) const
         {
             return hash<uint64_t>()((uint64_t)uuid);
         }
     };
 }
+

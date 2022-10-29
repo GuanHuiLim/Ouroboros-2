@@ -34,8 +34,8 @@ namespace oo
     
     GameObject::Entity GameObjectDebugComponent::GetEntity() const { return m_itself->GetEntity(); }
     GameObject::Entity GameObjectDebugComponent::GetParentId() const { return m_itself->GetParent().GetEntity(); }
-    UUID GameObjectDebugComponent::GetUUID() const { return m_itself->GetInstanceID(); }
-    UUID GameObjectDebugComponent::GetParentUUID() const { return m_itself->GetParentUUID(); }
-    std::vector<UUID> GameObjectDebugComponent::GetChildUUIDs() const { return m_itself->GetChildrenUUID(); }
+    oo::UUID GameObjectDebugComponent::GetUUID() const { return m_itself->GetInstanceID(); }
+    oo::UUID GameObjectDebugComponent::GetParentUUID() const { return m_itself->GetParentUUID(); }
+    std::vector<oo::UUID> GameObjectDebugComponent::GetChildUUIDs() const { return m_itself->GetChildrenUUID(); }
     std::size_t GameObjectDebugComponent::GetChildCount() const { return m_itself->GetChildren().size(); }
 }

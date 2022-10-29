@@ -44,18 +44,26 @@ Technology is prohibited.
 #include <Ouroboros/Core/KeyCode.h>
 #include <Ouroboros/ECS/GameObject.h>
 
+//action command
+#include <Ouroboros/Commands/CommandStackManager.h>
+#include <Ouroboros/Commands/Delete_ActionCommand.h>
+#include <Ouroboros/Commands/Ordering_ActionCommand.h>
 //events
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
-#include <Ouroboros/Commands/CommandStackManager.h>
-#include <Ouroboros/Commands/Delete_ActionCommand.h>
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+
+
+
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
 		{ ImColor(0.75f,0.2f,0.3f),ImColor(0.3f,0.75f,0.2f),ImColor(0.2f,0.3f,0.75f) },
 		ImVec2{0,0},0)
 {
+	oo::EventManager::Subscribe<CopyButtonEvent>(&CopyEvent);
+	oo::EventManager::Subscribe<PasteButtonEvent>(&PasteEvent);
+
 }
 
 void Hierarchy::Show()
@@ -70,7 +78,15 @@ void Hierarchy::Show()
 
 	TRACY_PROFILE_SCOPE_END();
 }
-
+/**
+ * \param name - name of current node
+ * \param node - current node
+ * \param flags - treenodeflags
+ * \param swaping - is item in swapping mode
+ * \param rename - is item in rename mode
+ * \param no_Interaction - true if there is interaction , false if no interaction
+ * \return 
+ */
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
@@ -86,7 +102,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		if (ImGui::InputText("##rename", &source->Name(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
 			m_isRename = false;
 	}
-	if (ImGui::BeginDragDropTarget())
+	//nothing should parent over it if no_interaction == false
+	if (ImGui::BeginDragDropTarget() && no_Interaction == false)
 	{
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_name);//just clear the payload from the eventsystem
 		if (payload)
@@ -94,7 +111,10 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 			auto source = scene->FindWithInstanceID(m_dragged);
 			auto targetparent = scene->FindWithInstanceID(node.get_handle());
+			//action command before addchild
+			oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(source, targetparent->GetInstanceID()));
 			targetparent->AddChild(*source, true);//s_selected
+
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -121,13 +141,13 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		m_isRename = false;
 	}
 
-	if (no_Interaction)
-		return open;
+	//if (no_Interaction)
+	//	return open;
 
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
-		UUID goID = node.get_handle();
-		ImGui::SetDragDropPayload(payload_name, &goID , sizeof(UUID));
+		oo::UUID goID = node.get_handle();
+		ImGui::SetDragDropPayload(payload_name, &goID , sizeof(oo::UUID));
 		m_isDragging = true;
 		m_dragged = handle;
 		m_dragged_parent = node.get_parent_handle();
@@ -135,7 +155,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		ImGui::EndDragDropSource();
 	}
 
-	if (swaping)
+	if (swaping && no_Interaction == false)
 		SwappingUI(node,true);
 	return open;
 }
@@ -166,6 +186,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 				//swap as younger sibling
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
+				oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, node.get_handle(), true));
 				source->GetSceneNode().lock()->move_to_after(node.shared_from_this());
 			}
 			else
@@ -173,6 +194,7 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 				//swap as oldest sibling(first object)
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
+				oo::CommandStackManager::AddCommand(new oo::Ordering_ActionCommand(source, node.get_handle(), false));
 				source->GetSceneNode().lock()->move_to(node.shared_from_this());
 			}
 
@@ -205,7 +227,19 @@ void Hierarchy::NormalView()
 			{
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto source = scene->FindWithInstanceID(m_dragged);
-				scene->GetRoot()->AddChild(*source, true);//s_selected
+
+				if (source->HasComponent<oo::PrefabComponent>() == false && source->GetIsPrefab())
+				{
+					WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Break Prefab if you want to unparent childs");
+				}
+				else
+				{
+					if (scene->GetRoot()->GetInstanceID() != source->GetParent().GetInstanceID())
+					{
+						oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(source, scene->GetRoot()->GetInstanceID()));
+						scene->GetRoot()->AddChild(*source, true);//s_selected
+					}
+				}
 			}
 			payload = ImGui::AcceptDragDropPayload(".prefab"); //for creating prefab files
 			if (payload)
@@ -213,7 +247,8 @@ void Hierarchy::NormalView()
 				auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 				auto go = scene->GetRoot();
 				std::filesystem::path prefabpath = *static_cast<std::filesystem::path*>(payload->Data);
-				Serializer::LoadPrefab(prefabpath,go,*scene);
+				oo::UUID prefab_obj = Serializer::LoadPrefab(prefabpath,go,*scene);
+				oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(scene->FindWithInstanceID(prefab_obj)));
 			}
 			payload = ImGui::AcceptDragDropPayload("MESH_HIERARCHY"); //for creating prefab files
 			if (payload)
@@ -289,14 +324,14 @@ void Hierarchy::NormalView()
 		else
 			flags = static_cast<ImGuiTreeNodeFlags_>(flags | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
 
-		bool swapping = (curr->get_parent_handle() == m_dragged_parent) & m_isDragging;
-		if (swapping && found_dragging == false)//first encounter
+		auto source = scene->FindWithInstanceID(curr->get_handle());
+		bool swapping = ((curr->get_parent_handle() == m_dragged_parent) & m_isDragging) ;
+		if (swapping && found_dragging == false && source->GetIsPrefab() == false)//first encounter
 		{
 			SwappingUI(*curr, found_dragging);
 			swapping = true;
 			found_dragging = true;
 		}
-		auto source = scene->FindWithInstanceID(curr->get_handle());
 		std::string name = "";
 
 		if (source)
@@ -493,7 +528,10 @@ void Hierarchy::RightClickOptions()
 				auto object = scene->FindWithInstanceID(go);
 				if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
 					continue;
-				object->Duplicate();
+				oo::GameObject new_object = object->Duplicate();
+				//need the scene::go_ptr
+				auto goptr = scene->FindWithInstanceID(new_object.GetInstanceID());
+				oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(goptr));
 			}
 		}
 		ImGui::EndPopup();
@@ -536,11 +574,59 @@ void Hierarchy::CreateGameObjectImmediate()
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
+	oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(go));
 	if (s_selected.size() == 1 && m_hovered == *(s_selected.begin()))
 	{
 		auto parent_object = scene->FindWithInstanceID(m_hovered);
+		if (parent_object == nullptr)
+			return;
 		if (parent_object->GetIsPrefab())
 			return;
+		oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(go, parent_object->GetInstanceID()));
 		parent_object->AddChild(*go);
+		//parent item undo redo
 	}
+}
+
+void Hierarchy::CopyEvent(CopyButtonEvent* cbe)
+{
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+	if (rect.Contains(ImGui::GetMousePos()) == false)
+		return;
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto list = Hierarchy::GetSelected();
+	if (list.empty() == false)
+	{
+		std::vector<oo::Scene::go_ptr> init_list;
+		for (auto id : list)
+		{
+			init_list.push_back(scene->FindWithInstanceID(id));
+		}
+		Hierarchy::s_clipboard = Serializer::SaveObjectsAsString(init_list, *scene).c_str();
+		ImGui::SetClipboardText(Hierarchy::s_clipboard.c_str());
+	}
+}
+
+void Hierarchy::PasteEvent(PasteButtonEvent* pbe)
+{
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+	if (rect.Contains(ImGui::GetMousePos()) == false)
+		return;
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	std::string data = ImGui::GetClipboardText();
+	if (data.empty() == false)
+	{
+		auto created_items = Serializer::LoadObjectsFromString(Hierarchy::s_clipboard, scene->GetRoot()->GetInstanceID(), *scene);
+		for (oo::UUID created_go : created_items)
+		{
+			auto created_go_ptr = scene->FindWithInstanceID(created_go);
+			oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(created_go_ptr));
+		}
+	}
+
+}
+
+void Hierarchy::DuplicateEvent(DuplicateButtonEvent* dbe)
+{
 }

@@ -14,6 +14,7 @@ Technology is prohibited.
 #pragma once
 //gameobject for getting component
 #include <Ouroboros/ECS/GameObject.h>
+#include <Ouroboros/Asset/Asset.h>
 //undo redo commands
 #include <Ouroboros/Commands/Component_ActionCommand.h>
 #include <Ouroboros/Commands/CommandStackManager.h>
@@ -54,10 +55,10 @@ private: //inspecting functions
 	template <typename Component>
 	void DisplayComponent(oo::GameObject& gameobject);
 	template <typename Component>
-	void SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, UUID id, bool edited, bool endEdit );
+	void SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, oo::UUID id, bool edited, bool endEdit );
 	void DisplayNestedComponent(rttr::property prop ,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
 	void DisplayArrayView(rttr::property prop,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
-
+	void DisplayEnumView(rttr::property prop, rttr::variant& value, bool& edited, bool& endEdit);
 	void DisplayScript(oo::GameObject& gameobject);
 
 private: //inspecting elements
@@ -66,7 +67,7 @@ private: //inspecting elements
 	bool m_showReadonly = false;
 };
 template<typename Component>
-inline void Inspector::SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, UUID id, bool edited, bool endEdit)
+inline void Inspector::SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, oo::UUID id, bool edited, bool endEdit)
 {
 	if (endEdit)
 	{
@@ -115,15 +116,23 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 	
 	auto& component = gameobject.GetComponent<Component>();
 	rttr::type type = component.get_type();
-	
 	bool open = ImGui::TreeNodeEx(type.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
-	ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
 	ImGui::PushID(type.get_name().data());
-	if (ImGui::SmallButton("x"))
 	{
-		gameobject.RemoveComponent<Component>();
-		ImGui::PopID();
-		return;
+		bool smallbtn = true;
+		rttr::variant metadata_removable = type.get_metadata(UI_metadata::NOT_REMOVABLE);
+		if (metadata_removable.is_valid())
+			smallbtn = false;
+		if (smallbtn)
+		{
+			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+			if (ImGui::SmallButton("x"))
+			{
+				gameobject.RemoveComponent<Component>();
+				ImGui::PopID();
+				return;
+			}
+		}
 	}
 	ImGui::PopID();
 
@@ -163,6 +172,15 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 				bool end_edit = false;
 				DisplayNestedComponent(prop ,prop_type, value, edited, end_edit);
 				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
+			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant value = prop.get_value(component);
+				bool edited = false;
+				bool end_edit = false;
+				DisplayEnumView(prop, value, edited, end_edit);
+				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
+
 			}
 			continue;
 		}

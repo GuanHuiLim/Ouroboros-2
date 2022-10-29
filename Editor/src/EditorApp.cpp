@@ -54,49 +54,38 @@ Technology is prohibited.
 
 //Tracy
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-
+//Optick
+#include <optick.h>
 // Scripting
 #include <Scripting/Scripting.h>
 
+// Should only let guan hui change these variables.
+static constexpr const char* const EditorVersionNumber = "2.00";
+static constexpr const char* const GameVersionNumber = "1.00";
 
 class EditorApp final : public oo::Application
 {
-private:
-    // main scene manager
-    SceneManager m_sceneManager;
-
-    //oo::AssetManager m_assetManager{ "./" };
-#ifndef OO_END_PRODUCT
-    std::shared_ptr<EditorLayer> m_editorLayer;
-#endif
-
 public:
     EditorApp(oo::CommandLineArgs args)
-        : Application{ "Ouroboros v2.0", args }
-        //, m_assetManager{oo::AssetManager("./assets")}
+        : Application{ std::string{"Ouroboros v"} + EditorVersionNumber, args }
+        , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
-        // Scripting Layer
-        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
-
-        //Debug Layers
+        //Debug Test Layers
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        //m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
 #ifdef OO_EDITOR
-        m_layerset.PushLayer(std::make_shared<MainDebugLayer>());
-        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());
+        //m_layerset.PushLayer(std::make_shared<MainDebugLayer>());     //menu to test various debug scenes
+        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());      //FPS display counter
 #endif
         // Main Layers
-        m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
+        // Scripting Layer
+        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
+        // Scene Layer [Have differing code for OO_EDITOR AND OO_EXECUTABLE]
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
-
-#ifndef OO_END_PRODUCT
+        // Editor Layer [Have differing code for OO_EDITOR AND OO_EXECUTABLE]
+        // have this for both executable version as well for easy debugging purposes.
         m_editorLayer = std::make_shared<EditorLayer>(m_sceneManager);
         m_layerset.PushLayer(m_editorLayer);
-#else   // only for the end product we do this instead
-        std::filesystem::path p("./Project/Config.json");
-        Project::LoadProject(p);
-#endif
-
-        m_imGuiAbstract = std::make_unique<oo::ImGuiAbstraction>();
 
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
@@ -106,20 +95,19 @@ public:
     void OnUpdate() override
     {
         TRACY_PROFILE_SCOPE_N(editor_app_update);
-
+        OPTICK_FRAME("editor_app_update");
         m_imGuiAbstract->Begin();
 
         m_layerset.Update();
 
         m_imGuiAbstract->End();
-
-#ifndef OO_END_PRODUCT
+        
+        // only present in the non-final version
         if (oo::input::IsKeyPressed(KEY_ESCAPE))
         {
             oo::WindowCloseEvent ununsed;
             CloseApp(&ununsed);
         }
-#endif
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -144,11 +132,53 @@ public:
     }
 
 private:
+    // main scene manager
+    SceneManager m_sceneManager;
+    std::shared_ptr<EditorLayer> m_editorLayer;
     oo::LayerSet m_layerset;
     std::unique_ptr<oo::ImGuiAbstraction> m_imGuiAbstract;
 };
 
+class EndProduct final : public oo::Application
+{
+public:
+    EndProduct(oo::CommandLineArgs args)
+        : Application{ std::string{"Minute v"} + GameVersionNumber, args }
+    {
+        //Debug Layers
+        // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+
+        // Main Layers
+        // Scripting Layer
+        m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
+        // Scene Layer
+        m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
+
+        // only for the end product we do this instead
+        std::filesystem::path p("./Project/Config.json");
+        Project::LoadProject(p);
+    }
+
+    void OnUpdate() override
+    {
+        TRACY_PROFILE_SCOPE_N(end_product_app_update);
+
+        m_layerset.Update();
+
+        TRACY_PROFILE_SCOPE_END();
+    }
+
+private:
+    // main scene manager
+    SceneManager m_sceneManager;
+    oo::LayerSet m_layerset;
+};
+
 oo::Application* oo::CreateApplication(oo::CommandLineArgs args)
 {
-    return new EditorApp{ args };
+#ifdef OO_END_PRODUCT
+    return new EndProduct{ args };
+#else // OO_EDITOR or OO_EXECUTABLE
+    return new EditorApp{ args }; 
+#endif
 }

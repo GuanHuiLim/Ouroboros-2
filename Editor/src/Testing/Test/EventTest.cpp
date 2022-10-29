@@ -26,24 +26,38 @@ Technology is prohibited.
 // Use with care.
 void RetrieveScene()
 {
-    oo::GetCurrentSceneEvent e;
-    oo::EventManager::Broadcast(&e);
+    oo::GetCurrentSceneEvent gcs;
+    oo::EventManager::Broadcast(&gcs);
 
-    if (e.IsEditor)
+    if (gcs.IsEditor)
     {
-        auto& editor_scn = e.CurrentEditorScene;
+        auto& editor_scn = gcs.CurrentEditorScene;
         UNREFERENCED(editor_scn);
     }
     else
     {
-        auto& runtime_scn = e.CurrentRuntimeScene; 
+        auto& runtime_scn = gcs.CurrentRuntimeScene;
         UNREFERENCED(runtime_scn);
     }
 
     // Retrieve General Scene [if its good enough]
-    auto& scn = e.CurrentScene;
+    auto& scn = gcs.CurrentScene;
 
     // Get ecs_world
     auto& ecs_world = scn->GetWorld();
     UNREFERENCED(ecs_world);
+
+    { // event found here #include <Ouroboros/EventSystem/EventTypes.h>
+        oo::GetCurrentSceneStateEvent e;
+        oo::EventManager::Broadcast(&e);
+        switch (e.state)
+        {
+        case oo::SCENE_STATE::EDITING:
+            std::cout << "Editing!" << std::endl;
+            break;
+        case oo::SCENE_STATE::RUNNING :
+            std::cout << "Running!" << std::endl;
+            break;
+        }
+    }
 }

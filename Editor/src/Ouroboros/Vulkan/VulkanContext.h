@@ -19,12 +19,7 @@ Technology is prohibited.
 #include "OO_Vulkan/src/VulkanRenderer.h"
 #include "OO_Vulkan/src/Window.h"
 
-// TODO: remove
-#include "Ouroboros/Core/CameraController.h"
-
-//#include "vk_engine.h"
 struct SDL_Window;
-
 
 namespace oo
 {
@@ -33,11 +28,11 @@ namespace oo
     class WindowMinimizeEvent;
     class WindowRestoredEvent;
 
-    class VulkanContext //: public GraphicsContext
+    class VulkanContext final //: public GraphicsContext
     {
     public:
         VulkanContext(SDL_Window* window);
-        virtual ~VulkanContext();
+        ~VulkanContext();
 
         void Init();
         void OnUpdateBegin();
@@ -60,13 +55,13 @@ namespace oo
         static VulkanRenderer* vr;
         static GraphicsWorld gw;
         static Window m_window;
-        CameraController m_cc;
 
         //TEMP ptrs
         std::unique_ptr<ModelFileResource> cubeMesh;
         std::unique_ptr<ModelFileResource> planeMesh;
 
         bool m_minimized = false;
+
     private:
         void OnWindowResize(WindowResizeEvent* e);
         void OnWindowMinimize(WindowMinimizeEvent* e);

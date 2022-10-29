@@ -28,6 +28,9 @@ Technology is prohibited.
 #include <iostream>
 #include <vector>
 #include <map>
+#include <queue>
+#include <deque>
+#include <memory>
 //#include <glm/glm.hpp>
 
 #include "uuid.h"
@@ -36,184 +39,218 @@ Technology is prohibited.
 
 using namespace physx;
 
-class Collision;
+namespace myPhysx {
 
-class PhysxWorld;
-class PVD;
-struct PhysxObject;
-struct PhysicsObject;
+    class Collision;
 
-enum class rigid { none, rstatic, rdynamic };
-enum class shape { none, box, sphere, capsule, plane };
+    class PhysxWorld;
+    class PVD;
+    struct PhysxObject;
+    struct PhysicsObject;
 
-/*
-class EventCallBack : public PxSimulationEventCallback {
+    enum class rigid { none, rstatic, rdynamic };
+    enum class shape { none, box, sphere, capsule, plane };
+    enum class force { force, acceleration, impulse, velocityChanged };
+    enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit};
 
-private:
+    class EventCallBack : public PxSimulationEventCallback {
 
-public:
-    void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override {
-        printf("CALLBACK: onConstraintBreak\n");
-    }
-    void onWake(PxActor** actors, PxU32 count) override {
-        printf("CALLBACK: onWake\n");
-    }
-    void onSleep(PxActor** actors, PxU32 count) override {
-        printf("CALLBACK: onSleep\n");
-    }
-    void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) override {
-        printf("CALLBACK: onContact\n");
-    }
-    void onTrigger(PxTriggerPair* pairs, PxU32 count) override {
-        printf("CALLBACK: onTrigger\n");
-    }
-    void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override {
-        printf("CALLBACK: onAdvance\n");
-    }
-};
-*/
+    public:
+        void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override;
 
-struct RigidDynamic {
+        void onWake(PxActor** actors, PxU32 count) override;
 
-    PxRigidDynamic* rigidDynamic = nullptr;
-};
+        void onSleep(PxActor** actors, PxU32 count) override;
 
-struct RigidStatic {
+        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) override;
 
-    PxRigidStatic* rigidStatic = nullptr;
+        void onTrigger(PxTriggerPair* pairs, PxU32 count) override;
 
-    /// other variables if needed
-};
+        void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
+    };
 
-// unprotected class
-struct Material {
+    struct ContactManifold {
 
-    PxReal staticFriction;
-    PxReal dynamicFriction;
-    PxReal restitution;
-};
+        // need for collsion callback
+    };
 
-// backend holds the overall info of the entire physics engine
-namespace physx_system {
+    struct TriggerManifold {
 
-    void init();
+        phy_uuid::UUID triggerID;
+        phy_uuid::UUID otherID;
+        trigger status;
+    };
 
-    void shutdown();
+    struct RigidBody {
 
-    PxFoundation* createFoundation();
+        PxRigidDynamic* rigidDynamic = nullptr;
+        PxRigidStatic* rigidStatic = nullptr;
+    };
 
-    PxPhysics* createPhysics();
+    // unprotected class
+    struct Material {
 
-    PxFoundation* getFoundation();
+        PxReal staticFriction;
+        PxReal dynamicFriction;
+        PxReal restitution;
+    };
 
-    PxPhysics* getPhysics();
-};
+    // backend holds the overall info of the entire physics engine
+    namespace physx_system {
 
-// describes a physics scene
-class PhysxWorld {
+        static PhysxWorld* currentWorld;
 
-private:
+        void init();
 
-    friend struct PhysicsObject;
+        void shutdown();
 
-    PxScene* scene = nullptr;
-    std::map<phy_uuid::UUID, PxMaterial*> mat;
-    PxVec3 gravity;
+        PxFoundation* createFoundation();
 
-    std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
+        PxPhysics* createPhysics();
 
-    std::vector<PhysxObject> m_objects; // to iterate through for setting the data
+        PxFoundation* getFoundation();
 
-public:
+        PxPhysics* getPhysics();
 
-    // SCENE
-    PhysxWorld(PxVec3 gravity);
-    ~PhysxWorld();
-    void updateScene(float dt);
+        bool isTrigger(const PxFilterData& data);
 
-    // GRAVITY
-    PxVec3 getGravity() const;
-    void setGravity(PxVec3 gra);
+        bool isTriggerShape(PxShape* shape);
 
-    // RIGIDBODY
-    PhysicsObject createInstance();
-    void removeInstance(PhysicsObject obj);
+        void provideCurrentWorld(PhysxWorld* world);
+    };
 
-    //CHECKING QUERY
-};
+    // describes a physics scene
+    class PhysxWorld {
 
-// associated to each object in the physics world (me store)
-struct PhysxObject {
+    private:
 
-    phy_uuid::UUID id = 0;
-    phy_uuid::UUID matID = 0;
+        friend struct PhysicsObject;
 
-    // shape
-    PxShape* m_shape = nullptr; // prob no need this
-    shape shape = shape::none;
+        PxScene* scene = nullptr;
+        std::map<phy_uuid::UUID, PxMaterial*> mat;
+        PxVec3 gravity;
 
-    // ensure at least static or dynamic is init
-    RigidStatic rs{};
-    RigidDynamic rd{};
+        std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
-    rigid rigidID = rigid::none;
+        std::vector<PhysxObject> m_objects; // to iterate through for setting the data
 
-    bool gravity = true;
-    bool kinematic = false;
-};
+        std::queue<TriggerManifold> m_collisionPairs; // queue to store the collision pairs
 
-struct PhysicsObject { // you store
+    public:
 
-    phy_uuid::UUID id;
-    PhysxWorld* world;
+        // SCENE
+        PhysxWorld(PxVec3 gravity);
+        ~PhysxWorld();
+        void updateScene(float dt);
 
-    // GETTERS
-    Material getMaterial() const;
-    PxVec3 getposition() const;
-    PxQuat getOrientation() const;
+        // GRAVITY
+        PxVec3 getWorldGravity() const;
+        void setWorldGravity(PxVec3 gra);
 
-    // SETTERS
-    void setRigidType(rigid type);
-    void setMaterial(Material material);
-    //void setposition(PxVec3 pos);
-    //void setOrientation(PxQuat quat);
-    void setPosOrientation(PxVec3 pos, PxQuat quat);
+        // RIGIDBODY
+        PhysicsObject createInstance();
+        void removeInstance(PhysicsObject obj);
 
-    void setGravity(bool gravity);
-    void setKinematic(bool kine);
+        //TRIGGER
+        std::queue<TriggerManifold>* getTriggerData(); // function to retrieve the queue data
+        void clearTriggerData(); // function to reset the queue data
 
-    // set default value for each type of shape & can change shape too
-    void setShape(shape shape);
+    };
 
-    // change each individual property based on its shape
-    void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
-    void setSphereProperty(float radius);
-    //void setPlaneProperty(float radius);
-    void setCapsuleProperty(float radius, float halfHeight);
+    // associated to each object in the physics world (me store)
+    struct PhysxObject {
 
-    // prob functions that dont really need
-    void setMass(PxReal mass);
-    void setAngularDamping(PxReal angularDamping);
-    void setAngularVelocity(PxVec3 angularVelocity);
-    void setLinearDamping(PxReal linearDamping);
-    void setLinearVelocity(PxVec3 linearVelocity);
-};
+        std::unique_ptr<phy_uuid::UUID> id = nullptr;
+        phy_uuid::UUID matID = 0;
+
+        // shape
+        PxShape* m_shape = nullptr; // prob no need this
+        shape shape = shape::none;
+
+        // ensure at least static or dynamic is init
+        RigidBody rb{};
+        rigid rigidID = rigid::none;
+
+        bool trigger = false;
+        bool gravity = true; // static should be false
+        bool kinematic = false;
+    };
+
+    struct PhysicsObject { // you store
+
+        phy_uuid::UUID id;
+        PhysxWorld* world;
+
+        // GETTERS
+        Material getMaterial() const;
+        PxVec3 getposition() const;
+        PxQuat getOrientation() const;
+
+        PxReal getMass() const;
+        PxReal getInvMass() const;
+        PxReal getAngularDamping() const;
+        PxVec3 getAngularVelocity() const;
+        PxReal getLinearDamping() const;
+        PxVec3 getLinearVelocity() const;
+
+        bool isTrigger() const;
+        bool useGravity() const;
+        bool isKinematic() const;
+
+        // SETTERS
+        void setRigidType(rigid type);
+        void setMaterial(Material material);
+        void setPosOrientation(PxVec3 pos, PxQuat quat);
+
+        void setMass(PxReal mass);
+        void setMassSpaceInertia(PxVec3 mass);
+        void setAngularDamping(PxReal angularDamping);
+        void setAngularVelocity(PxVec3 angularVelocity);
+        void setLinearDamping(PxReal linearDamping);
+        void setLinearVelocity(PxVec3 linearVelocity);
+
+        void disableGravity(bool gravity);
+        void enableKinematic(bool kine);
+
+        // TRIGGERS
+        void setTriggerShape(bool trigger);
+        
+        // FORCE
+        void addForce(PxVec3 f_amount, force f);
+        void addTorque(PxVec3 f_amount, force f);
+
+        // set default value for each type of shape & can change shape too
+        void setShape(shape shape);
+        void removeShape();
+
+        // change each individual property based on its shape
+        void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
+        void setSphereProperty(float radius);
+        void setCapsuleProperty(float radius, float halfHeight);
+        //void setPlaneProperty(float radius);
+
+    };
 
 
-// Physx visual degguer
-class PVD {
+    // Physx visual degguer
+    class PVD {
 
-private:
+    private:
 
-    PxPvd* mPVD;
+        PxPvd* mPVD;
 
-public:
+        PxPvdTransport* mTransport;
 
-    PxPvd* createPvd(PxFoundation* foundation, const char* ip);
+    public:
 
-    void setupPvd(PxScene* scene);
+        PxPvd* createPvd(PxFoundation* foundation, const char* ip);
 
-    PxPvd*& pvd__();
+        void setupPvd(PxScene* scene);
 
-    PxPvd* const& pvd__() const;
+        PxPvdTransport* getTransport();
+
+        PxPvd*& pvd__();
+
+        PxPvd* const& pvd__() const;
+    };
 };

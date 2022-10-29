@@ -39,6 +39,12 @@ SerializerSaveProperties::SerializerSaveProperties()
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		obj.AddMember(name, rapidjson::Value(variant.get_value<int>()), doc.GetAllocator());
 		});
+	m_save_commands.emplace(UI_RTTRType::UItypes::UINT_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
+		std::string temp = p.get_name().data();
+		rapidjson::Value name;
+		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+		obj.AddMember(name, rapidjson::Value(variant.get_value<unsigned>()), doc.GetAllocator());
+		});
 	m_save_commands.emplace(UI_RTTRType::UItypes::DOUBLE_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
@@ -72,6 +78,7 @@ SerializerSaveProperties::SerializerSaveProperties()
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		rapidjson::Value data(rapidjson::kArrayType);
 		auto vec = variant.get_value<glm::vec4>();
+		// IMPT NOTE: GLM vec4 Differs from glm Quat because its XYZW and Quats are WXYZ
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
 		data.PushBack(vec.z, doc.GetAllocator());
@@ -84,10 +91,11 @@ SerializerSaveProperties::SerializerSaveProperties()
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		rapidjson::Value data(rapidjson::kArrayType);
 		auto vec = variant.get_value<quaternion>().value;
+		// IMPT NOTE: GLM vec4 Differs from glm Quat because its XYZW and Quats are WXYZ
+		data.PushBack(vec.w, doc.GetAllocator());
 		data.PushBack(vec.x, doc.GetAllocator());
 		data.PushBack(vec.y, doc.GetAllocator());
 		data.PushBack(vec.z, doc.GetAllocator());
-		data.PushBack(vec.w, doc.GetAllocator());
 		obj.AddMember(name, data, doc.GetAllocator());
 		});
 	m_save_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
@@ -127,6 +135,7 @@ SerializerLoadProperties::SerializerLoadProperties()
 {
 	m_load_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetBool(); });
 	m_load_commands.emplace(UI_RTTRType::UItypes::INT_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetInt(); });
+	m_load_commands.emplace(UI_RTTRType::UItypes::UINT_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetUint(); });
 
 	m_load_commands.emplace(UI_RTTRType::UItypes::FLOAT_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetFloat(); });
 	m_load_commands.emplace(UI_RTTRType::UItypes::DOUBLE_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = val.GetDouble(); });
@@ -143,12 +152,27 @@ SerializerLoadProperties::SerializerLoadProperties()
 		});
 	m_load_commands.emplace(UI_RTTRType::UItypes::VEC4_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {
 		auto arr = val.GetArray();
-		glm::vec4 v(arr[0].GetFloat(), arr[1].GetFloat(),arr[2].GetFloat(),arr[3].GetFloat());
+		/*
+		* IMPT NOTE: GLM vec4 Differs from glm Quat because its XYZW and Quats are WXYZ
+		auto x = arr[0].GetFloat();
+		auto y = arr[1].GetFloat();
+		auto z = arr[2].GetFloat();
+		auto w = arr[3].GetFloat();
+		glm::vec4 v(x, y, z, w);*/
+		glm::vec4 v(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat(), arr[3].GetFloat());
 		var = v;
 		});
 	m_load_commands.emplace(UI_RTTRType::UItypes::QUAT_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {
 		auto arr = val.GetArray();
+		/*
+		* IMPT NOTE: GLM vec4 Differs from glm Quat because its XYZW and Quats are WXYZ
+		auto w = arr[0].GetFloat();
+		auto x = arr[1].GetFloat();
+		auto y = arr[2].GetFloat();
+		auto z = arr[3].GetFloat();
+		glm::quat v(w, x, y, z);*/
 		glm::quat v(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat(), arr[3].GetFloat());
+		// Double note : quaternion does xyzw.
 		var = quaternion(v);
 		});
 

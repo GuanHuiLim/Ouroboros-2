@@ -28,34 +28,39 @@ Technology is prohibited.
 #include "Project.h"
 #include "App/Editor/Events/ImGuiRestartEvent.h"
 #include "Ouroboros/Prefab/PrefabSceneController.h"
+
+// discord
+#include "App/Editor/DiscordHelper.h"
 class EditorLayer final : public oo::Layer
 {
 private:
     //order matters dont change it
-    bool m_demo = true;
     bool m_editormode = false;
-	oo::PrefabSceneController m_prefab_controller;
+    oo::PrefabSceneController m_prefab_controller;
     ProjectTracker m_tracker;
-
+	DiscordHelper m_discord_helper;
 #if OO_EDITOR
-	Editor m_editor;
+    Editor m_editor;
 #endif
-public://helpers
-	bool GetEditorMode()const { return m_editormode; }
-	void SetEditorMode(bool mode) { m_editormode = mode; };
+
+public:
+    //helpers
+    bool GetEditorMode()const { return m_editormode; }
+    void SetEditorMode(bool mode) { m_editormode = mode; };
+
 public:
     EditorLayer(SceneManager& m_sceneManager)
         : oo::Layer{ "EditorLayer" },
         m_tracker{ [this](std::filesystem::path& p) {Project::LoadProject(p); m_editormode = true; } },
-		m_prefab_controller{ m_sceneManager }
+        m_prefab_controller{ m_sceneManager }
     {
         LOG_INFO("Test Info");
         LOG_TRACE("Test Trace");
         LOG_WARN("Test Warn");
         LOG_ERROR("Test Error");
         LOG_CRITICAL("Test Critical");
-		ImGuiManager::s_scenemanager = &m_sceneManager;
-		ImGuiManager::s_prefab_controller = &m_prefab_controller;
+        ImGuiManager::s_scenemanager = &m_sceneManager;
+        ImGuiManager::s_prefab_controller = &m_prefab_controller;
     }
 
     virtual void OnAttach() override final;

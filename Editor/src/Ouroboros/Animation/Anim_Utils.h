@@ -24,6 +24,9 @@ Technology is prohibited.
 #include <rttr/type.h>
 #include <rttr/variant.h>
 #include <rttr/property.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/prettywriter.h>
 
 namespace oo::Anim::internal
 {
@@ -82,6 +85,7 @@ namespace oo::Anim
 			IAnimationComponent& comp;
 			AnimationTracker& tracker;
 			Ecs::EntityID entity;
+			oo::UUID uuid;
 			float dt;
 		};
 		//info for a single timeline's progress
@@ -94,12 +98,12 @@ namespace oo::Anim
 
 	struct NodeRef
 	{
-		std::vector<Node>* nodes{ nullptr }; //reference to vector of nodes
-		int index{ -1 };	//node index
+		std::map<size_t, Node>* nodes{ nullptr }; //reference to container of nodes
+		//int index{ -1 };	//node index
 		size_t id{ internal::invalid_ID }; //node's unique identifier
 
-		Node& operator*() const { return (*nodes)[index]; }
-		Node* operator->() const { return &((*nodes)[index]); }
+		Node& operator*() const { return (*nodes)[id]; }
+		Node* operator->() const { return &((*nodes)[id]); }
 
 		operator bool() const {
 			return valid();
@@ -113,12 +117,12 @@ namespace oo::Anim
 
 	struct GroupRef
 	{
-		std::vector<Group>* groups{ nullptr }; //reference to vector of groups
-		int index{ -1 };	//group index
+		std::map<size_t, Group>* groups{ nullptr }; //reference to container of groups
+		//int index{ -1 };	//group index
 		size_t id{ internal::invalid_ID }; //group's unique identifier
 
-		Group& operator*() const { return (*groups)[index]; }
-		Group* operator->() const { return &((*groups)[index]); }
+		Group& operator*() const { return (*groups)[id]; }
+		Group* operator->() const { return &((*groups)[id]); }
 
 		operator bool() const {
 			return valid();
@@ -132,12 +136,12 @@ namespace oo::Anim
 
 	struct LinkRef
 	{
-		std::vector<Link>* links{ nullptr }; //reference to vector of groups
-		int index{ -1 };	//link index
+		std::map<size_t, Link>* links{ nullptr }; //reference to container of groups
+		//int index{ -1 };	//link index
 		size_t id{ internal::invalid_ID }; //link's unique identifier
 
-		Link& operator*() const { return (*links)[index]; }
-		Link* operator->() const { return &((*links)[index]); }
+		Link& operator*() const { return (*links)[id]; }
+		Link* operator->() const { return &((*links)[id]); }
 
 		operator bool() const {
 			return valid();
@@ -151,12 +155,12 @@ namespace oo::Anim
 
 	struct AnimRef
 	{
-		std::vector<Animation>* anims{ nullptr }; //reference to vector of animations
-		int index{ -1 };	//animation index
+		std::map<size_t, Animation>* anims{ nullptr }; //reference to container of animations
+		//int index{ -1 };	//animation index
 		size_t id{ internal::invalid_ID }; //animation's unique identifier
 
-		Animation& operator*() const { return (*anims)[index]; }
-		Animation* operator->() const { return &((*anims)[index]); }
+		Animation& operator*() const { return (*anims)[id]; }
+		Animation* operator->() const { return &((*anims)[id]); }
 
 		operator bool() const {
 			return valid();
@@ -170,7 +174,7 @@ namespace oo::Anim
 
 	struct Node
 	{
-		GroupRef group;
+		GroupRef group{};
 		std::string name{};
 		//animation asset loaded from file
 		Asset anim_asset{};
@@ -192,6 +196,7 @@ namespace oo::Anim
 		std::vector<LinkRef> outgoingLinks{};
 
 		//Node(Group& _group, std::string const _name = "Unnamed Node");
+		Node() = default;
 		Node(NodeInfo& info);
 		//void SetAnimation(Asset asset);
 		//void SetAnimation(Asset asset);
@@ -215,15 +220,18 @@ namespace oo::Anim
 	struct Group
 	{
 		std::string name{ "Unnamed Group" };
-		NodeRef startNode;
+		NodeRef startNode{};
 		//contains the nodes and their positions to be displayed in the editor
-		std::vector<Node> nodes{};
-		std::vector<Link> links{};
+		std::map<size_t, Node> nodes{};
+		std::map<size_t, Link> links{};
 		AnimationTree* tree{ nullptr };
 		size_t groupID{ internal::invalid_ID };	//unique identifier
 
 		//Group(std::string const _name = "Unnamed Group");
+		Group() = default;
 		Group(GroupInfo const& info);
+		Group(Group&& other);
+		//Group(Group const&) = default;
 	};
 	struct GroupInfo
 	{
@@ -237,11 +245,14 @@ namespace oo::Anim
 	struct Parameter
 	{
 		using DataType = rttr::variant;
+		using SerializeFn = void(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>&, Parameter&);
+		using SerializeFnMap = std::unordered_map<P_TYPE,SerializeFn*>;
 
 		P_TYPE type{};
 		DataType value{};
 		size_t paramID{ internal::invalid_ID };
 		std::string name{"Unnamed Parameter"};
+		static SerializeFnMap serializeFn_map;
 
 		Parameter(ParameterInfo const& info);
 		void Set(DataType const& _value);
@@ -280,6 +291,7 @@ namespace oo::Anim
 
 		Condition(ConditionInfo const& info);
 		bool Satisfied(AnimationTracker& tracker);
+		std::string GetName(AnimationTree const& tree);
 	};
 
 	struct ConditionInfo
@@ -308,6 +320,7 @@ namespace oo::Anim
 		std::vector<Condition> conditions{};
 		size_t linkID{ internal::invalid_ID };
 
+		Link() = default;
 		Link(NodeRef _src, NodeRef _dst);
 	};
 
@@ -372,10 +385,14 @@ namespace oo::Anim
 		rttr::property rttr_property;
 		//property_name - optional
 		std::string property_name{};
-
+		//name of the timeline
 		std::string timeline_name{ "Unnamed Timeline" };
-
-		std::vector<int> children_index;
+		//uuid of the target gameobject to manipulate
+		oo::GameObject target_object;
+		//uuid of the gameobject the AnimationComponent is attached to
+		oo::GameObject source_object;
+		//do not touch
+		std::vector<int> children_index{};
 	};
 	//tracks progress in 1 timeline
 	struct ProgressTracker
@@ -394,9 +411,8 @@ namespace oo::Anim
 	struct Animation
 	{
 		static constexpr const char* empty_animation_name = "empty animation";
-		static std::unordered_map< std::string, uint> name_to_index;
-		static std::unordered_map< size_t, uint> ID_to_index;
-		static std::vector<Animation> animation_storage;
+		static std::unordered_map< std::string, size_t> name_to_ID;
+		static std::map<size_t, Animation> animation_storage;
 
 
 		std::string name{ "Unnamed Animation" };
@@ -411,7 +427,7 @@ namespace oo::Anim
 
 		size_t animation_ID{ internal::generateUID() };
 
-		static std::string LoadAnimationFromFBX(std::string const& filepath);
+		static void LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
 		static Animation* AddAnimation(Animation& anim);
 
 	};	

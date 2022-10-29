@@ -58,9 +58,10 @@ namespace oo
             LOG_WARN("ScriptSystem: No scripts found, ScriptSystem functions will not be run");
             return true;
         }
+        componentDatabase.Initialize();
         scriptDatabase.Initialize(executionOrder);
 
-        static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, ScriptComponent>();
+        static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, ScriptComponent>();
 
         isPlaying = true;
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
@@ -75,13 +76,13 @@ namespace oo
         return true;
     }
 
-    void ScriptSystem::SetUpObject(UUID uuid)
+    void ScriptSystem::SetUpObject(oo::UUID uuid)
     {
         std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
         ASSERT(gameObject == nullptr);
         SetUpObject(uuid, gameObject->GetComponent<ScriptComponent>());
     }
-    void ScriptSystem::SetUpObject(UUID uuid, ScriptComponent const& script)
+    void ScriptSystem::SetUpObject(oo::UUID uuid, ScriptComponent const& script)
     {
         componentDatabase.InstantiateObjectFull(uuid);
         // Add all scripts
@@ -121,14 +122,14 @@ namespace oo
     }
     void ScriptSystem::OnObjectDestroyed(GameObject::OnDestroy* e)
     {
-        UUID uuid = e->go->GetComponent<GameObjectComponent>().Id;
+        oo::UUID uuid = e->go->GetInstanceID();
         if (scene.FindWithInstanceID(uuid) == nullptr)
             return;
         scriptDatabase.Delete(uuid);
         componentDatabase.Delete(uuid);
     }
 
-    void ScriptSystem::ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
+    void ScriptSystem::ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
     {
         auto& scriptInfoMap = script.GetScriptInfoAll();
         auto search = scriptInfoMap.find(classInfo.ToString());
@@ -140,7 +141,7 @@ namespace oo
     }
     void ScriptSystem::RefreshScriptInfoAll()
     {
-        static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, ScriptComponent>();
+        static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, ScriptComponent>();
 
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
@@ -201,7 +202,7 @@ namespace oo
     {
         if (!isPlaying)
             return 0;
-        return scriptDatabase.TryRetrieve(uuid, name_space, name);
+        return scriptDatabase.TryRetrieveDerived(uuid, name_space, name);
     }
     void ScriptSystem::RemoveScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -217,10 +218,11 @@ namespace oo
         std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
         if (!gameObject->ActiveInHierarchy())
             return;
+        MonoObject* obj = scriptDatabase.RetrieveObject(uuid, name_space, name);
         if(isEnabled)
-            InvokeForObject(uuid, "OnEnable");
+            ScriptEngine::InvokeFunction(obj, "OnEnable");
         else
-            InvokeForObject(uuid, "OnDisable");
+            ScriptEngine::InvokeFunction(obj, "OnDisable");
     }
     bool ScriptSystem::CheckScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -239,7 +241,7 @@ namespace oo
     {
         if (!isPlaying)
             return 0;
-        return componentDatabase.TryRetrieve(uuid, name_space, name);
+        return componentDatabase.TryRetrieveDerived(uuid, name_space, name);
     }
     void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -267,7 +269,7 @@ namespace oo
         return componentDatabase.RetrieveGameObject(uuid);
     }
 
-    void ScriptSystem::InvokeForObject(UUID uuid, const char* functionName, int paramCount, void** params)
+    void ScriptSystem::InvokeForObject(oo::UUID uuid, const char* functionName, int paramCount, void** params)
     {
         if (!ScriptEngine::IsLoaded())
             return;
@@ -285,7 +287,7 @@ namespace oo
                 }
             });
     }
-    void ScriptSystem::InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount, void** params)
+    void ScriptSystem::InvokeForObjectEnabled(oo::UUID uuid, const char* functionName, int paramCount, void** params)
     {
         if (!ScriptEngine::IsLoaded())
             return;
@@ -392,7 +394,7 @@ namespace oo
 
     void ScriptSystem::UpdateAllScriptFieldsWithInfo()
     {
-        static Ecs::Query query = Ecs::make_query_including_deferred<GameObjectComponent, ScriptComponent>();
+        static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, ScriptComponent>();
         scene.GetWorld().for_each(query, [&](GameObjectComponent& gameObject, ScriptComponent& script)
             {
                 if (gameObject.Id == GameObject::ROOTID)
@@ -400,7 +402,7 @@ namespace oo
                 UpdateScriptFieldsWithInfo(gameObject.Id, script);
             });
     }
-    void ScriptSystem::UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script)
+    void ScriptSystem::UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script)
     {
         for (auto& [scriptKey, scriptInfo] : script.GetScriptInfoAll())
         {

@@ -15,8 +15,6 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-//#include "Ouroboros/Core/Window.h"
-
 #include <string>
 
 //forward declaration
@@ -37,7 +35,6 @@ namespace oo
     };
 
     //forward declaration
-    //class GraphicsContext;
     class VulkanContext;
 
     /********************************************************************************//*!
@@ -76,10 +73,11 @@ namespace oo
         unsigned int GetHeight() const { return m_data.Height; }
         std::pair<unsigned int, unsigned int> GetSize() const { return { m_data.Width, m_data.Height }; }
         std::pair<int, int> GetWindowPos() const;
+        bool GetMouseCursorMode() const;  // true implies locked.
 
         void* GetNativeWindow() const { return m_window; }
         //void* GetRenderingContext() const { return m_context; }
-        VulkanContext* GetVulkanContext() const { return m_context; }
+        VulkanContext* GetVulkanContext() const { return m_context.get(); }
 
         bool IsVSync() const;
         bool IsFullscreen() const;
@@ -92,6 +90,9 @@ namespace oo
         void SetTitle(const std::string& title);
         void SetFullScreen(bool fullscreen);
         void ShowCursor(bool show = true);
+        void SetCursorGlobalPosition(int x, int y);
+        void SetCursorPosition(int x, int y);
+        void SetMouseLockState(bool lock);  // function still reports delta
 
     private:
         void Init(const WindowProperties& properties);
@@ -99,19 +100,8 @@ namespace oo
 
     private:
         SDL_Window* m_window;
-        //GraphicsContext* m_context;
-        VulkanContext* m_context;
-
-    private:
-        struct WindowData
-        {
-            std::string Title = "Default Title";
-            unsigned int Width = 1600, Height = 900;
-            bool VSync = true;
-            bool FullScreen = false;
-        };
-
-        WindowData m_data;
+        std::unique_ptr<VulkanContext> m_context;
+        WindowProperties m_data;
         bool m_focused;
     };
 }

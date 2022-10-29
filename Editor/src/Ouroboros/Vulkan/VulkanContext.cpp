@@ -71,18 +71,16 @@ namespace oo
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
 
+        // Setup Camera Internally, not used
         vr = VulkanRenderer::get();
-
         auto& camera = vr->camera;
-        m_cc.SetCamera(&camera);
-
+        //m_cc.SetCamera(&camera);
         camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         camera.movementSpeed = 5.0f;
-
-        camera.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-        camera.SetRotationSpeed(0.5f);
-        camera.SetPosition(glm::vec3(0.0f, 2.0f, 4.0f));
         camera.SetAspectRatio((float)m_window.m_width / (float)m_window.m_height);
+        //camera.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+        //camera.SetRotationSpeed(0.5f);
+        //camera.SetPosition(glm::vec3(0.0f, 2.0f, 4.0f));
         
         
 
@@ -187,7 +185,6 @@ namespace oo
         //m_window.m_width = w;
         //m_window.m_height = h;
 
-  
     }
 
     void VulkanContext::SwapBuffers()
@@ -213,7 +210,6 @@ namespace oo
     void VulkanContext::OnImGuiBegin()
     {
         ImGui_ImplVulkan_NewFrame();
-       
     }
 
     void VulkanContext::OnImGuiEnd()
@@ -221,7 +217,7 @@ namespace oo
         // Vulkan will call internally
 
         // temporarily shift here for better structuring
-        m_cc.Update(oo::timer::dt());
+        //m_cc.Update(oo::timer::dt());
 
         if (vr->PrepareFrame() == true)        
         {
@@ -298,13 +294,6 @@ namespace oo
 
         } // if prepare frame is true
 
-        ImGui::EndFrame();
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-        }
     }
 
     void VulkanContext::ResetImguiShutdown()

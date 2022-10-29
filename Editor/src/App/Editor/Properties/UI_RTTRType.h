@@ -23,6 +23,7 @@ public:
 	enum class UItypes
 	{
 		BOOL_TYPE = 0,
+		UINT_TYPE,
 		INT_TYPE,
 		FLOAT_TYPE,
 		STRING_TYPE,

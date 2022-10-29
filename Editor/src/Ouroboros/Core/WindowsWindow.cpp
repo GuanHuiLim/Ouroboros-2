@@ -25,15 +25,11 @@ Technology is prohibited.
 //#include "Ouroboros/Core/Base.h"
 #include "Ouroboros/Core/Application.h"
 
-//#if defined(GRAPHICS_CONTEXT_VULKAN)
 #include "Ouroboros/Vulkan/VulkanContext.h"
-//#elif defined(GRAPHICS_CONTEXT_OPENGL)
-//#include "Ouroboros/Platform/OpenGL/OpenGLContext.h"
-//#endif
 
 #include "Ouroboros/Core/Input.h"
 
-//#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 //#include <imgui_impl_sdl.h>
 //#include <imgui.h>
@@ -53,47 +49,48 @@ namespace oo
     WindowsWindow::WindowsWindow(const WindowProperties& props)
         : m_focused{ true }
     {
-        //TRACY_PROFILE_SCOPE("windows constructor");
-
+        TRACY_PROFILE_SCOPE(windows_constructor);
+        
         Init(props);
 
-        //TRACY_PROFILE_SCOPE_END();
+        TRACY_PROFILE_SCOPE_END();
     }
 
     WindowsWindow::~WindowsWindow()
     {
-        //TRACY_PROFILE_SCOPE("windows shutdown");
+        TRACY_PROFILE_SCOPE(windows_shutdown);
 
         Shutdown();
         
-        //TRACY_PROFILE_SCOPE_END();
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void WindowsWindow::Init(const WindowProperties& properties)
     {
-        m_data.Title = properties.Title;
+        m_data = properties;
+        /*m_data.Title = properties.Title;
         m_data.Width = properties.Width;
         m_data.Height = properties.Height;
         m_data.VSync = properties.VSync;
-        m_data.FullScreen = properties.Fullscreen;
+        m_data.FullScreen = properties.Fullscreen;*/
 
         LOG_CORE_INFO("Creating Windows window using SDL: [{0} {1}x{2}]", properties.Title, properties.Width, properties.Height);
 
         // windows creation
         if (!s_SDLInitialized)
         {
-            //TRACY_PROFILE_SCOPE("SDL_INIT");
+            TRACY_PROFILE_SCOPE(SDL_INIT);
 
             int success = SDL_Init(SDL_INIT_VIDEO);
             //ASSERT_CUSTOM_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
             ASSERT_MSG((success != 0), std::string{ "Failed to initialize SDL " } + SDL_GetError());
             s_SDLInitialized = true;
-            //TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();
         }
 
         // controller initialization
         {
-            //TRACY_PROFILE_SCOPE("CONTROLLER_INIT");
+            TRACY_PROFILE_SCOPE(CONTROLLER_INIT);
 
             int success = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
             ASSERT_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
@@ -105,23 +102,29 @@ namespace oo
             // Ignore the controller events
             SDL_GameControllerEventState(SDL_IGNORE);
 
-            //TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();
         }
 
-        //ENGINE_PROFILE_SCOPE("SDL_CreateWindows");
 
         SDL_WindowFlags window_flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
         window_flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | window_flags);
 
-        if (m_data.FullScreen)
+        if (m_data.Fullscreen)
             window_flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_FULLSCREEN | window_flags);
+        
+        // Create windows
+        {
+            TRACY_PROFILE_SCOPE(SDL_CreateWindows);
 
-        m_window = SDL_CreateWindow(m_data.Title.c_str()
-            , SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED
-            , m_data.Width, m_data.Height
-            , window_flags);
+            m_window = SDL_CreateWindow(m_data.Title.c_str()
+                , SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED
+                , m_data.Width, m_data.Height
+                , window_flags);
 
-        ASSERT_MSG(m_window == nullptr, "Failed to create SDL Window: {0}", SDL_GetError());
+            ASSERT_MSG(m_window == nullptr, "Failed to create SDL Window: {0}", SDL_GetError());
+
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         {
     #ifdef OO_EDITOR
@@ -131,11 +134,13 @@ namespace oo
         }
 
         {
-//            TRACY_PROFILE_SCOPE("Create And Initialize Context");
+            TRACY_PROFILE_SCOPE(Create_Vulkan_Context);
+
             // create graphics context
-            m_context = new VulkanContext(m_window);
+            m_context = std::make_unique<VulkanContext>(m_window);
             m_context->Init();
-//            TRACY_PROFILE_SCOPE_END();
+
+            TRACY_PROFILE_SCOPE_END();
         }
 
         SDL_SetCursor(SDL_GetDefaultCursor());
@@ -147,22 +152,23 @@ namespace oo
 
     void WindowsWindow::Shutdown()
     {
-        //TRACY_PROFILE_SCOPE("Windows Shutdown");
+        TRACY_PROFILE_SCOPE(Windows_Shutdown);
 
         /* delete the current graphics context */
-        delete m_context;
+        //delete m_context;
+        m_context.reset();
 
         SDL_DestroyWindow(m_window);
         SDL_Quit();
 
-        //TRACY_PROFILE_SCOPE_END();
+        TRACY_PROFILE_SCOPE_END();
         
         LOG_CORE_INFO("Finished Windows Shutdown");
     }
 
     void WindowsWindow::ProcessEvents()
     {
-//        TRACY_PROFILE_SCOPE("Process Events");
+        TRACY_PROFILE_SCOPE(Process_Window_Events);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -377,17 +383,17 @@ namespace oo
             }
         }
 
-//        TRACY_PROFILE_SCOPE_END();
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void WindowsWindow::SwapBuffers()
     {
-        //TRACY_PROFILE_SCOPE("Swapping Buffers");
+        TRACY_PROFILE_SCOPE(Swapping_Buffers);
 
         // swap rendering buffers
         m_context->SwapBuffers();
 
-        //TRACY_PROFILE_SCOPE_END();
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void WindowsWindow::Maximize()
@@ -415,13 +421,29 @@ namespace oo
 
     void WindowsWindow::SetFullScreen(bool fullscreen)
     {
-        m_data.FullScreen = fullscreen;
+        m_data.Fullscreen = fullscreen;
         SDL_SetWindowFullscreen(m_window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);  // 0 means non full-screen
     }
 
     void WindowsWindow::ShowCursor(bool showCursor)
     {
         showCursor ? SDL_ShowCursor(SDL_ENABLE) : SDL_ShowCursor(SDL_DISABLE);
+    }
+
+    void WindowsWindow::SetCursorGlobalPosition(int x, int y)
+    {
+        int res = SDL_WarpMouseGlobal(x, y);
+        ASSERT(SDL_GetError() != 0);
+    }
+
+    void WindowsWindow::SetCursorPosition(int x, int y)
+    {
+        SDL_WarpMouseInWindow(m_window, x, y);
+    }
+
+    void WindowsWindow::SetMouseLockState(bool lock)
+    {
+        SDL_SetRelativeMouseMode((SDL_bool)lock);
     }
 
     std::pair<int, int> WindowsWindow::GetWindowPos() const
@@ -431,6 +453,11 @@ namespace oo
         return { x, y };
     }
 
+    bool WindowsWindow::GetMouseCursorMode() const
+    {
+        return SDL_GetRelativeMouseMode();
+    }
+
     bool WindowsWindow::IsVSync() const
     {
         return m_data.VSync;
@@ -438,7 +465,7 @@ namespace oo
 
     bool WindowsWindow::IsFullscreen() const
     {
-        return m_data.FullScreen;
+        return m_data.Fullscreen;
     }
 
     bool WindowsWindow::IsFocused() const
