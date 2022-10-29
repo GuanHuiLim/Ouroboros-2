@@ -148,6 +148,16 @@ namespace Ouroboros
             return (Transform)GCHandle.FromIntPtr(child).Target;
         }
 
+        [DllImport("__Internal")] private static extern IntPtr Transform_FindChild(UInt32 sceneID, UInt64 uuid, string childPath);
+
+        public Transform Find(string childPath)
+        {
+            IntPtr child = Transform_FindChild(gameObject.scene, gameObject.GetInstanceID(), childPath);
+            if (child == IntPtr.Zero)
+                return null;
+            return (Transform)GCHandle.FromIntPtr(child).Target;
+        }
+
         [DllImport("__Internal")] private static extern void Transform_SetParent(UInt32 sceneID, UInt64 uuid, UInt64 newParent, bool preserveTransforms);
         [DllImport("__Internal")] private static extern IntPtr Transform_GetParent(UInt32 sceneID, UInt64 uuid);
 

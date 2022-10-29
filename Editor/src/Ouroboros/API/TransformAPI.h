@@ -192,11 +192,42 @@ namespace oo
         {
             // Throw out of range exception?
             ScriptEngine::ThrowOutOfIndexException();
-            // return 0;
         }
         
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         return scene->GetWorld().Get_System<ScriptSystem>()->GetComponent(children[childIndex], "Ouroboros", "Transform");
+    }
+
+    SCRIPT_API ComponentDatabase::IntPtr Transform_FindChild(Scene::ID_type sceneID, oo::UUID uuid, const char* childPath)
+    {
+        GameObject obj = *(ScriptManager::GetObjectFromScene(sceneID, uuid));
+
+        std::string pathString{ childPath };
+        size_t curr = 0;
+        size_t separator = pathString.find_first_of('/', curr);
+        while (curr != std::string::npos)
+        {
+            std::string childName = pathString.substr(curr, separator - curr);
+            bool childFound = false;
+            for(GameObject child : obj.GetChildren())
+            {
+                if (child.Name() != childName)
+                    continue;
+                obj = child;
+                childFound = true;
+                break;
+            }
+            if (!childFound)
+                return 0;
+
+            if (separator == std::string::npos)
+                break;
+            curr = separator + 1;
+            separator = pathString.find_first_of('/', curr);
+        }
+
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        return scene->GetWorld().Get_System<ScriptSystem>()->GetComponent(obj.GetInstanceID(), "Ouroboros", "Transform");
     }
 
     SCRIPT_API void Transform_SetParent(Scene::ID_type sceneID, oo::UUID uuid, oo::UUID newParent, bool preserveTransforms)
