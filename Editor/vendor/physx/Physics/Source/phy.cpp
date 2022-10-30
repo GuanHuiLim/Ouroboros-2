@@ -303,10 +303,12 @@ namespace myPhysx
         // remove from that vector then release
         // NOTE: DON't MIXUP ELEM ID and OBJ ID HERE, 2 different types.
         auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == obj.id; });
+        // why does this even happen?
+        if(begin != m_objects.end())
+            m_objects.erase(begin);
         
         //begin->destroy();
         
-        m_objects.erase(begin);
     }
 
     /*
