@@ -34,6 +34,7 @@ private:
 	static int currentKeyFrame;
 	static float unitPerFrame;
 	static float currentTime;
+	static bool playAnim;
 
 	int minimalLegendLength = 196;
 	int lineStartOffset = 8;

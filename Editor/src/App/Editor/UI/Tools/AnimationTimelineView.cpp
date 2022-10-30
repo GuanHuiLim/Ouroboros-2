@@ -24,6 +24,7 @@ constexpr ImGuiID popUpOptionTimeline = 700;
 int AnimationTimelineView::currentKeyFrame;
 float AnimationTimelineView::unitPerFrame = 0.1f;
 float AnimationTimelineView::currentTime = 0.0f;
+bool AnimationTimelineView::playAnim = false;
 
 void AnimationTimelineView::Show()
 {
@@ -74,13 +75,60 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
     ImGui::BeginChildFrame(1, ImVec2(0, 0));
     {
         ImGuiStyle& style = ImGui::GetStyle();
-        //ImVec2 toolBarSize = DrawToolbar(_animator, OnToolbarPressed);
+
+        //Do Toolbar here
+        if (ImGui::Button("<<"))
+        {
+            currentKeyFrame = visibleStartingFrame;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("|<"))
+        {
+            currentKeyFrame -= 1;
+            if (currentKeyFrame <= 0)
+                currentKeyFrame = 0;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Play"))
+        {
+            playAnim = !playAnim;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(">|"))
+        {
+            currentKeyFrame += 1;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(">>"))
+        {
+            currentKeyFrame = visibleEndingFrame;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Add Keyframe"))
+        {
+
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Add Event"))
+        {
+
+        }
 
         static bool open = false;
         static std::string animName = "empty";
         auto& temp = _animator->GetActualComponent().animTree->groups;
-
-        //Do Toolbar here
 
         //To Get Which Node to Modify, Temporary Solution
         ImGui::PushItemWidth(160);
@@ -119,6 +167,11 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
         DrawTimeLine(animation, style.ItemSpacing.y, ImGui::GetItemRectSize().y);
     }
     ImGui::EndChildFrame();
+
+    if (playAnim)
+    {
+        currentKeyFrame++;
+    }
 }
 
 void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float headerYPadding, float headerHeight)
@@ -143,10 +196,10 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
         //set frame
         if (ImGui::IsItemHovered())
         {
-            auto hoveringFrame = GetFrameFromTimelinePos(ImGui::GetMousePos().x - timelineRegionMin.x) * unitPerFrame;
+            auto hoveringFrame = GetFrameFromTimelinePos(ImGui::GetMousePos().x - timelineRegionMin.x);
             ImGui::BeginTooltip();
-            size_t decimalPointPos = std::to_string(hoveringFrame).find_first_of(".");
-            std::string hoverFrameText = std::to_string(hoveringFrame).substr(0, decimalPointPos + 3);
+            size_t decimalPointPos = std::to_string(hoveringFrame * unitPerFrame).find_first_of(".");
+            std::string hoverFrameText = std::to_string(hoveringFrame * unitPerFrame).substr(0, decimalPointPos + 3);
             ImGui::Text(hoverFrameText.c_str());
             ImGui::EndTooltip();
 
