@@ -87,26 +87,26 @@ namespace oo
 
     ScriptValue ScriptFieldInfo::TryGetRuntimeValue()
     {
-        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+        if (scriptPtr == ScriptDatabase::InvalidPtr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
             return value;
-        return ScriptValue::GetFieldValue(script, scriptField, value);
+        return ScriptValue::GetFieldValue(mono_gchandle_get_target(scriptPtr), scriptField, value);
     }
 
     void ScriptFieldInfo::TrySetRuntimeValue(ScriptValue const& newValue)
     {
-        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+        if (scriptPtr == ScriptDatabase::InvalidPtr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
         {
             value = newValue;
         }
         else
         {
-            ScriptValue::SetFieldValue(script, scriptField, newValue);
+            ScriptValue::SetFieldValue(mono_gchandle_get_target(scriptPtr), scriptField, newValue);
         }
     }
 
-    void ScriptFieldInfo::SetScriptReference(MonoClassField* field, MonoObject* obj)
+    void ScriptFieldInfo::SetScriptReference(MonoClassField* field, ScriptDatabase::IntPtr objPtr)
     {
-        script = obj;
+        scriptPtr = objPtr;
         scriptField = field;
     }
 

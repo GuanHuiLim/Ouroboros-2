@@ -395,13 +395,14 @@ namespace oo
     {
         for (auto& [scriptKey, scriptInfo] : script.GetScriptInfoAll())
         {
-            MonoObject* scriptObj = scriptDatabase.RetrieveObject(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            ScriptDatabase::IntPtr script = scriptDatabase.Retrieve(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            MonoObject* scriptObj = mono_gchandle_get_target(script);
             MonoClass* scriptClass = ScriptEngine::GetClass("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
             for (auto& [fieldKey, fieldInfo] : scriptInfo.fieldMap)
             {
                 MonoClassField* field = mono_class_get_field_from_name(scriptClass, fieldInfo.name.c_str());
                 ScriptValue::SetFieldValue(scriptObj, field, fieldInfo.value);
-                fieldInfo.SetScriptReference(field, scriptObj);
+                fieldInfo.SetScriptReference(field, script);
             }
         }
     }
