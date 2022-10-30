@@ -21,6 +21,9 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 
 constexpr ImGuiID popUpOptionTimeline = 700;
+int AnimationTimelineView::currentKeyFrame;
+float AnimationTimelineView::unitPerFrame = 0.1f;
+float AnimationTimelineView::currentTime = 0.0f;
 
 void AnimationTimelineView::Show()
 {
@@ -46,14 +49,25 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
     ImGui::Text("Current:");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(48.0f);
+    ImGui::DragInt("##currentFrame", &currentKeyFrame, 1.0f, 0, 1000);
+    ImGui::SameLine();
 
-    if (animation != nullptr)
-    {
-        static int currentFrame = 0;
-        ImGui::DragInt("##currentFrame", &currentFrame, 1.0f, 0, 1000);
-        currentKeyFrame = currentFrame;
-        ImGui::SameLine();
-    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(48.0f);
+    ImGui::Text("Unit Per Frame:");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(48.0f);
+    ImGui::DragFloat("##unitperframe", &unitPerFrame, 0.01f, 0.0f, 1000.0f, "%.2f");
+    ImGui::SameLine();
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(48.0f);
+    ImGui::Text("Current Time:");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(48.0f);
+    currentTime = currentKeyFrame * unitPerFrame;
+    ImGui::InputFloat("##currentTime", &currentTime, 0.0f, 0.0f, "%.2f", ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
 
     ImGui::NewLine();
 
@@ -63,8 +77,6 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
         //ImVec2 toolBarSize = DrawToolbar(_animator, OnToolbarPressed);
 
         static bool open = false;
-        static int _animId = 0;
-        int _currAnimId = 0;
         static std::string animName = "empty";
         auto& temp = _animator->GetActualComponent().animTree->groups;
 
@@ -77,10 +89,9 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
         ImGui::SameLine();
         if (ImGui::ArrowButton("downbtn", ImGuiDir_Down))
         {
-            _animId = _currAnimId;
             open = !open;
         }
-        if (open && _currAnimId == _animId)
+        if (open)
         {
             if (ImGui::BeginListBox("##animation"))
             {
@@ -92,6 +103,7 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
                         {
                             animName = it2->second.name;
                             animation = &it2->second.GetAnimation();
+                            currentKeyFrame = 0;
                             open = !open;
                         }
                     }
@@ -102,8 +114,9 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
         ImGui::EndGroup();
         ImGui::PopItemWidth();
 
-        if(animation != nullptr)
-            DrawTimeLine(animation, style.ItemSpacing.y, ImGui::GetItemRectSize().y);
+        ImGui::SameLine();
+
+        DrawTimeLine(animation, style.ItemSpacing.y, ImGui::GetItemRectSize().y);
     }
     ImGui::EndChildFrame();
 }
@@ -130,9 +143,11 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
         //set frame
         if (ImGui::IsItemHovered())
         {
-            auto hoveringFrame = GetFrameFromTimelinePos(ImGui::GetMousePos().x - timelineRegionMin.x);
+            auto hoveringFrame = GetFrameFromTimelinePos(ImGui::GetMousePos().x - timelineRegionMin.x) * unitPerFrame;
             ImGui::BeginTooltip();
-            ImGui::Text(std::to_string(hoveringFrame).c_str());
+            size_t decimalPointPos = std::to_string(hoveringFrame).find_first_of(".");
+            std::string hoverFrameText = std::to_string(hoveringFrame).substr(0, decimalPointPos + 3);
+            ImGui::Text(hoverFrameText.c_str());
             ImGui::EndTooltip();
 
             if (ImGui::IsMouseDown(0))
@@ -175,7 +190,9 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
 
             if (frame % majorLinePerLines == 0)
             {
-                std::string numberString = std::to_string(frame);
+                std::string numberString = std::to_string(frame * unitPerFrame);
+                size_t decimalPos = numberString.find_first_of(".");
+                numberString = numberString.substr(0, decimalPos + 3);
                 float frameTextOffset = static_cast<float>(std::floor(ImGui::CalcTextSize(numberString.c_str()).x / 2));
 
                 drawList->AddText(ImVec2(lineStart.x - frameTextOffset, lineStart.y), IM_COL32_WHITE, numberString.c_str());

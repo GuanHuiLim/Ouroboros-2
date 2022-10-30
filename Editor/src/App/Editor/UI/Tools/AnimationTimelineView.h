@@ -31,7 +31,9 @@ private:
 	oo::AnimationComponent* animator = nullptr;
 	oo::Anim::Animation* animation = nullptr;
 	
-	int currentKeyFrame = 0;
+	static int currentKeyFrame;
+	static float unitPerFrame;
+	static float currentTime;
 
 	int minimalLegendLength = 196;
 	int lineStartOffset = 8;
@@ -45,8 +47,8 @@ private:
 	int currentFrame = 0;
 	int currentLegendWidth = 0;
 
-	int visibleStartingFrame = 0;
-	int visibleEndingFrame = 0;
+	float visibleStartingFrame = 0.0f;
+	float visibleEndingFrame = 0.0f;
 
 	float accumulatedPanningDeltaX = 0.0f;
 	bool isPanningTimeline = false;
