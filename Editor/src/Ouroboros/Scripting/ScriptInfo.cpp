@@ -251,7 +251,6 @@ namespace oo
 
         while (_class != nullptr && _class != monoBehaviour)
         {
-            std::string name{ mono_class_get_name(_class) };
             void* iter = NULL;
             MonoClassField* field = nullptr;
             while ((field = mono_class_get_fields(_class, &iter)) != nullptr)

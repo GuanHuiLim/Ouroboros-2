@@ -20,7 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ScriptSystem.h"
 
 #include "Ouroboros/Transform/TransformComponent.h"
-#include "Ouroboros/Vulkan/MeshRendererComponent.h";
+#include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
 #include "Ouroboros/Physics/RigidbodyComponent.h"
