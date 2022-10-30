@@ -342,7 +342,7 @@ namespace oo
                 pce.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::collision::onCollisionStay:
-                LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                //LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::collision::onCollisionExit:
