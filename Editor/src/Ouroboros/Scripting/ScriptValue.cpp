@@ -1210,9 +1210,9 @@ namespace oo
 
     std::vector<std::string> ScriptValue::enum_type::GetOptions() const
     {
-        MonoClass* klass = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
+        MonoClass* klass = ScriptEngine::TryGetClass("Scripting", name_space.c_str(), name.c_str());
         if (klass == nullptr)
-            klass = ScriptEngine::GetClass("ScriptCore", name_space.c_str(), name.c_str());
+            klass = ScriptEngine::TryGetClass("ScriptCore", name_space.c_str(), name.c_str());
         ASSERT(klass == nullptr);
         return ScriptEngine::GetEnumOptions(mono_class_get_type(klass));
     }
@@ -1278,9 +1278,9 @@ namespace oo
             break;
         case ScriptValue::type_enum::COMPONENT:
         {
-            MonoClass* klass = ScriptEngine::GetClass("ScriptCore", name_space.c_str(), name.c_str());
+            MonoClass* klass = ScriptEngine::TryGetClass("ScriptCore", name_space.c_str(), name.c_str());
             if (klass == nullptr)
-                klass = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
+                klass = ScriptEngine::TryGetClass("Scripting", name_space.c_str(), name.c_str());
             valueList.emplace_back(
                 ScriptValue::component_type
                 {
