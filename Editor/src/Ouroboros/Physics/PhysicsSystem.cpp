@@ -433,7 +433,6 @@ namespace oo
         {
             m_physicsToGameObjectLookup.erase(rb->component.object.id);
         }
-
         //Remove all other colliders as well
 
         if (m_world->has_component<BoxColliderComponent>(rb->entityID))
@@ -442,6 +441,10 @@ namespace oo
             m_world->remove_component<BoxColliderComponent>(rb->entityID);*/
         if(m_world->has_component<CapsuleColliderComponent>(rb->entityID))
             m_world->remove_component<CapsuleColliderComponent>(rb->entityID);
+
+        // finally we remove the physics object
+        m_physicsWorld.removeInstance(rb->component.object);
+
     }
 
     void PhysicsSystem::OnBoxColliderAdd(Ecs::ComponentEvent<BoxColliderComponent>* bc)
