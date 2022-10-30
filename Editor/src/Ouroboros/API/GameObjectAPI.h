@@ -22,6 +22,9 @@ Technology is prohibited.
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObject.h"
 
+#include "Project.h"
+#include "App/Editor/Serializer.h"
+
 namespace oo
 {
     SCRIPT_API uint64_t CreateEntity(uint32_t sceneID)
@@ -36,6 +39,17 @@ namespace oo
         scene->GetWorld().Get_System<ScriptSystem>()->InvokeForObject(uuid, "Awake");
         scene->GetWorld().Get_System<ScriptSystem>()->InvokeForObject(uuid, "Start");
         return uuid.GetUUID();
+    }
+
+    SCRIPT_API ComponentDatabase::IntPtr InstantiatePrefab(Scene::ID_type sceneID, const char* filePath, oo::UUID parentID)
+    {
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        std::shared_ptr<GameObject> parent = ScriptManager::GetObjectFromScene(sceneID, parentID);
+        UUID uuid = Serializer::LoadPrefab(Project::GetPrefabFolder().string() + "/" + filePath, parent, *scene);
+
+        ScriptSystem* ss = scene->GetWorld().Get_System<ScriptSystem>();
+        ss->SetUpObject(uuid);
+        return ss->GetGameObject(uuid);
     }
 
     //SCRIPT_API uint32_t InstantiateEntity(Entity src)
