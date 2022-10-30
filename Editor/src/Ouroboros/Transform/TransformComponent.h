@@ -78,6 +78,7 @@ namespace oo
 
         // Extra Functions
         void LookAt(vec3 target);
+        void GlobalLookAtDir(vec3 direction);
 
         void CalculateLocalTransform();
         void CalculateGlobalTransform();
