@@ -9,6 +9,8 @@ namespace oo
 {
     SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, IsTrigger, bool, IsTrigger, SetTrigger)
 
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, UseGravity, bool, IsGravityEnabled, SetGravity)
+
     SCRIPT_API void Rigidbody_GetVelocity(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
