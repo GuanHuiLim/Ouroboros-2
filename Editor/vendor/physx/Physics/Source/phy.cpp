@@ -310,7 +310,7 @@ namespace myPhysx
     }
 
     /*
-    void PhysxWorld::updateTriggerState() {qua
+    void PhysxWorld::updateTriggerState() {
 
         for (TriggerManifold& temp : m_triggerCollisionPairs) {
 
@@ -1008,7 +1008,7 @@ namespace myPhysx
             PxContactPairPoint contacts[bufferSize];
             PxU32 nbContacts = current.extractContacts(contacts, bufferSize);
             
-            std::queue<ContactPoint> tempCP = {};
+            std::vector<ContactPoint> tempCP = {};
             PxU8 contactCount = current.contactCount;
 
             for (PxU32 j = 0; j < nbContacts; j++) {
@@ -1018,7 +1018,7 @@ namespace myPhysx
                 PxVec3 impulse = contacts[j].impulse;
 
                 ContactPoint cp = { normal, point, impulse };
-                tempCP.emplace(cp);
+                tempCP.emplace_back(cp);
                 //printf("%d - NORMAL: %f - X, %f - Y, %f - Z\n", j, normal.x, normal.y, normal.z);
                 //printf("%d - POINT: %f - X, %f - Y, %f - Z\n", j, point.x, point.y, point.z);
                 //printf("%d - IMPUSLE: %f - X, %f - Y, %f - Z\n", j, impulse.x, impulse.y, impulse.z);
@@ -1039,7 +1039,7 @@ namespace myPhysx
                 printf("Shape is LEAVING CONTACT volume\n");
             }
 
-            // Store all the ID of the actors that collided with trigger)
+            // Store all the ID of the actors that collided
             std::queue<ContactManifold>* collision_data = physx_system::currentWorld->getCollisionData();
 
             // Add new ContactManifold data into the queue

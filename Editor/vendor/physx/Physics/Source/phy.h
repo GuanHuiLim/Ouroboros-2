@@ -85,7 +85,7 @@ namespace myPhysx {
 
         collision status = collision::none;
 
-        std::queue<ContactPoint> m_contactPoint;
+        std::vector<ContactPoint> m_contactPoint;
         PxU8 contactCount;
     };
 
