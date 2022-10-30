@@ -97,6 +97,12 @@ namespace oo
             AddScript(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
         }
     }
+    void ScriptSystem::UpdateObjectFieldsWithInfo(oo::UUID uuid)
+    {
+        std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
+        ASSERT(gameObject == nullptr);
+        UpdateScriptFieldsWithInfo(uuid, gameObject->GetComponent<ScriptComponent>());
+    }
 
     bool ScriptSystem::StopPlay()
     {

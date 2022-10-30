@@ -48,7 +48,30 @@ namespace oo
         UUID uuid = Serializer::LoadPrefab(Project::GetPrefabFolder().string() + "/" + filePath, parent, *scene);
 
         ScriptSystem* ss = scene->GetWorld().Get_System<ScriptSystem>();
-        ss->SetUpObject(uuid);
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        std::vector<UUID> children = obj->GetChildrenUUID(true);
+
+        // set up all C# stuff for all objects first, may be relied on in inspector variables, Awake and Start
+        for (UUID childUUID : children)
+        {
+            ss->SetUpObject(childUUID);
+        }
+        // update all C# inspector fields, may be relied on in Awake and Start
+        for (UUID childUUID : children)
+        {
+            ss->UpdateObjectFieldsWithInfo(childUUID);
+        }
+        // Invoke all Awake first, Start may rely on Awake running first
+        for (UUID childUUID : children)
+        {
+            ss->InvokeForObject(childUUID, "Awake");
+        }
+        // Invoke all Start last
+        for (UUID childUUID : children)
+        {
+            ss->InvokeForObject(childUUID, "Start");
+        }
+
         return ss->GetGameObject(uuid);
     }
 

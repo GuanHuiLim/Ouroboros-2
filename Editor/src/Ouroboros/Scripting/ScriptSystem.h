@@ -35,6 +35,7 @@ namespace oo
 
         bool StartPlay();
         void SetUpObject(oo::UUID uuid);
+        void UpdateObjectFieldsWithInfo(oo::UUID uuid);
         bool StopPlay();
         bool IsPlaying();
 
