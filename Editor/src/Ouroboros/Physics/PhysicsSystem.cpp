@@ -290,19 +290,19 @@ namespace oo
             switch (trigger_manifold.status)
             {
             case myPhysx::trigger::none:
-                pte.State = TriggerState::NONE;
+                pte.State = PhysicsEventState::NONE;
                 break;
             case myPhysx::trigger::onTriggerEnter:
-                LOG_TRACE("Trigger Enter Event! Trigger Name {0}, Other Name {1}", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
-                pte.State = TriggerState::ENTER;
+                LOG_TRACE("Trigger Enter Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
+                pte.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::trigger::onTriggerStay:
-                LOG_TRACE("Trigger Stay Event! Trigger Name {0}, Other Name {1}", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
-                pte.State = TriggerState::STAY;
+                LOG_TRACE("Trigger Stay Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
+                pte.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::trigger::onTriggerExit:
-                LOG_TRACE("Trigger Exit Event! Trigger Name {0}, Other Name {1}", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
-                pte.State = TriggerState::EXIT;
+                LOG_TRACE("Trigger Exit Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
+                pte.State = PhysicsEventState::EXIT;
                 break;
             }
             EventManager::Broadcast(&pte);
@@ -310,6 +310,51 @@ namespace oo
             trigger_queue->pop();
         }
         m_physicsWorld.clearTriggerData();
+
+
+        auto collision_queue = m_physicsWorld.getCollisionData();
+        while (!collision_queue->empty())
+        {
+            myPhysx::ContactManifold contact_manifold = collision_queue->front();
+
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false, "This should never happen");
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape2_ID) == false, "This should never happen");
+
+            // retrieve their gameobject id counterpart.
+            UUID collider1_go_id = m_physicsToGameObjectLookup.at(contact_manifold.shape1_ID);
+            UUID collider2_go_id = m_physicsToGameObjectLookup.at(contact_manifold.shape2_ID);
+            
+            //broadcast trigger event.
+            PhysicsCollisionEvent pce;
+            pce.Collider1 = collider1_go_id;
+            pce.Collider2 = collider2_go_id;
+            pce.ContactCount = contact_manifold.contactCount;
+            for(auto& elem : contact_manifold.m_contactPoint)
+                pce.ContactPoints.emplace_back(oo::ContactPoint{ {elem.normal.x,elem.normal.y, elem.normal.z} , {elem.point.x, elem.point.y, elem.point.z} , {elem.impulse.x, elem.impulse.y, elem.impulse.z} });
+
+            switch (contact_manifold.status)
+            {
+            case myPhysx::collision::none:
+                pce.State = PhysicsEventState::NONE;
+                break;
+            case myPhysx::collision::onCollisionEnter:
+                LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                pce.State = PhysicsEventState::ENTER;
+                break;
+            case myPhysx::collision::onCollisionStay:
+                LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                pce.State = PhysicsEventState::STAY;
+                break;
+            case myPhysx::collision::onCollisionExit:
+                LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                pce.State = PhysicsEventState::EXIT;
+                break;
+            }
+            EventManager::Broadcast(&pce);
+
+            collision_queue->pop();
+        }
+        m_physicsWorld.clearCollisionData();
     }
 
     void PhysicsSystem::PostUpdate()
@@ -417,7 +462,8 @@ namespace oo
         if (m_world->has_component<RigidbodyComponent>(bc->entityID))
         {
             auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
-            rb_comp.object.setShape(myPhysx::shape::none);
+            rb_comp.object.removeShape();
+            //rb_comp.object.setShape(myPhysx::shape::none);
         }
     }
 
@@ -439,7 +485,8 @@ namespace oo
         if (m_world->has_component<RigidbodyComponent>(cc->entityID))
         {
             auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
-            rb_comp.object.setShape(myPhysx::shape::none);
+            rb_comp.object.removeShape();
+            //rb_comp.object.setShape(myPhysx::shape::none);
         }
     }
 

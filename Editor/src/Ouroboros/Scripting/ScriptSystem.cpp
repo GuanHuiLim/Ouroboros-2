@@ -441,7 +441,7 @@ namespace oo
         MonoMethod* method = nullptr;
         switch (e->State)
         {
-        case TriggerState::ENTER:
+        case PhysicsEventState::ENTER:
         {
             scriptDatabase.ForEachEnabled(e->TriggerID, [&objParams](MonoObject* script)
                 {
@@ -453,7 +453,7 @@ namespace oo
                 });
         }
         break;
-        case TriggerState::STAY:
+        case PhysicsEventState::STAY:
         {
             scriptDatabase.ForEachEnabled(e->TriggerID, [&objParams](MonoObject* script)
                 {
@@ -465,7 +465,7 @@ namespace oo
                 });
         }
         break;
-        case TriggerState::EXIT:
+        case PhysicsEventState::EXIT:
         {
             scriptDatabase.ForEachEnabled(e->TriggerID, [&objParams](MonoObject* script)
                 {
