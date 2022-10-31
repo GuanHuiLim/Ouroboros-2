@@ -340,49 +340,33 @@ namespace oo
         std::chrono::file_clock::time_point tLast = ev->time;
         if (std::filesystem::exists(root))
         {
-            iterateDirectory(root, tLast);
+            iterateDirectoryAdditions(root, tLast);
+            iterateDirectoryOmissions(root, tLast);
         }
         lastReloadTime = std::chrono::file_clock::now();
 
         TRACY_PROFILE_SCOPE_END();
     }
 
-    void AssetManager::iterateDirectory(const std::filesystem::path& dir,
-                                        const std::chrono::file_clock::time_point& tLast,
-                                        const std::chrono::file_clock::time_point& t)
+    void AssetManager::iterateDirectoryAdditions(const std::filesystem::path& dir,
+                                                 const std::chrono::file_clock::time_point& tLast,
+                                                 const std::chrono::file_clock::time_point& t)
     {
-        // Check if directory was updated recently
         const std::filesystem::path DIR = std::filesystem::canonical(dir);
-        const auto DIR_WRITE_TIME = std::filesystem::last_write_time(dir);
-        if (tLast < DIR_WRITE_TIME && DIR_WRITE_TIME <= t)
+
+        // Iterate directory contents
+        for (auto& fp : std::filesystem::directory_iterator(DIR))
         {
-            LOG_INFO("Iterating {0}", DIR);
+            const std::filesystem::path FP = std::filesystem::canonical(fp.path());
 
-            auto node = store.at(DIR);
-            if (node)
+            // Recurse
+            if (std::filesystem::is_directory(FP))
+                iterateDirectoryAdditions(FP, tLast, t);
+
+            // Check if directory was updated recently
+            const auto DIR_WRITE_TIME = std::filesystem::last_write_time(DIR);
+            if (tLast < DIR_WRITE_TIME && DIR_WRITE_TIME <= t)
             {
-                for (const auto& asset : node->children)
-                {
-                    const std::filesystem::path FP = DIR / asset.second->name;
-
-                    // Check if file in tree no longer exists
-                    if (std::filesystem::exists(FP))
-                        continue;
-
-                    // Removed
-                    store.erase(asset.second->id);
-                    LOG_INFO("De-indexed asset {0}", FP.filename());
-                }
-            }
-
-            for (auto& fp : std::filesystem::directory_iterator(DIR))
-            {
-                const std::filesystem::path FP = std::filesystem::canonical(fp.path());
-
-                // Recurse
-                if (std::filesystem::is_directory(FP))
-                    iterateDirectory(FP, tLast, t);
-
                 // Check if not meta file
                 if (isMetaPath(FP))
                     continue;
@@ -401,15 +385,19 @@ namespace oo
                 if (!store.contains(meta.id))
                 {
                     // Created
-                    GetOrLoadPath(FP);
+                    getLoadedAsset(FP);
                 }
-                //else if (store.at(meta.id)->contentPath != FP)
-                //{
-                //    // Moved
-                //    store.at(meta.id)->contentPath = FP;
-                //    store.at(meta.id)->metaPath = fpMeta;
-                //    LOG_INFO("Move {0}", FP);
-                //}
+                else if (store.at(meta.id)->contentPath != FP)
+                {
+                    // Moved
+                    const auto FP_OLD = store.at(meta.id)->contentPath;
+                    store.tree.erase(FP_OLD);
+                    store.at(meta.id)->contentPath = FP;
+                    store.at(meta.id)->metaPath = fpMeta;
+                    store.at(meta.id)->Reload();
+                    store.tree.insert(FP);
+                    LOG_INFO("Move {0}", FP.filename());
+                }
                 else if (tLast < WRITE_TIME && WRITE_TIME <= t)
                 {
                     // Modified
@@ -418,6 +406,52 @@ namespace oo
                     store.at(meta.id)->timeLoaded = t;
                     store.at(meta.id)->Reload();
                     LOG_INFO("Modified asset {0}", FP.filename());
+                }
+            }
+        }
+    }
+
+    void AssetManager::iterateDirectoryOmissions(const std::filesystem::path& dir,
+                                                 const std::chrono::file_clock::time_point& tLast,
+                                                 const std::chrono::file_clock::time_point& t)
+    {
+        const std::filesystem::path DIR = std::filesystem::canonical(dir);
+
+        // Iterate directory contents
+        for (auto& fp : std::filesystem::directory_iterator(DIR))
+        {
+            const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+
+            // Recurse
+            if (std::filesystem::is_directory(FP))
+                iterateDirectoryOmissions(FP, tLast, t);
+
+            // Check if directory was updated recently
+            const auto DIR_WRITE_TIME = std::filesystem::last_write_time(DIR);
+            if (tLast < DIR_WRITE_TIME && DIR_WRITE_TIME <= t)
+            {
+                // Get tree node
+                std::vector<AssetID> toRemove;
+                auto node = store.at(DIR);
+                if (node)
+                {
+                    // Iterate tree node children
+                    for (const auto& asset : node->children)
+                    {
+                        const std::filesystem::path ASS_FP = DIR / asset.second->name; // haha ass
+
+                        // Check if file in tree no longer exists
+                        if (std::filesystem::exists(ASS_FP))
+                            continue;
+
+                        // Remove
+                        toRemove.emplace_back(asset.second->id);
+                        LOG_INFO("Un-indexed asset {0}", ASS_FP.filename());
+                    }
+                }
+                for (const auto& i : toRemove)
+                {
+                    store.erase(i);
                 }
             }
         }

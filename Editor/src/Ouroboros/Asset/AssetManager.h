@@ -254,14 +254,24 @@ namespace oo
         void watchFiles(FileWatchEvent* ev);
 
         /// <summary>
-        /// Iterates through a directory for changes in the filesystem.
+        /// Iterates through a directory for additions and modifications in the filesystem.
         /// </summary>
         /// <param name="dir">The directory to iterate.</param>
         /// <param name="lastTime">The last time at which an iteration was performed.</param>
         /// <param name="iterationTime">The time at which this iteration is performed.</param>
-        void iterateDirectory(const std::filesystem::path& dir,
-                              const std::chrono::file_clock::time_point& lastTime,
-                              const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
+        void iterateDirectoryAdditions(const std::filesystem::path& dir,
+                                       const std::chrono::file_clock::time_point& lastTime,
+                                       const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
+
+        /// <summary>
+        /// Iterates through a directory for omissions in the filesystem.
+        /// </summary>
+        /// <param name="dir">The directory to iterate.</param>
+        /// <param name="lastTime">The last time at which an iteration was performed.</param>
+        /// <param name="iterationTime">The time at which this iteration is performed.</param>
+        void iterateDirectoryOmissions(const std::filesystem::path& dir,
+                                       const std::chrono::file_clock::time_point& lastTime,
+                                       const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
 
         /// <summary>
         /// Ensures that a meta file for an asset exists
