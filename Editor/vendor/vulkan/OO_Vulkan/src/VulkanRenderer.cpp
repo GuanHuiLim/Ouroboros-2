@@ -1613,8 +1613,8 @@ bool VulkanRenderer::ResizeSwapchain()
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
 	// new model loader
-	
 	Assimp::Importer importer;
+	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
 	uint flags = 0;
 	flags |= aiProcess_Triangulate;
 	flags |= aiProcess_GenSmoothNormals;
@@ -1622,7 +1622,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	flags |= aiProcess_CalcTangentSpace;
 	flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
 	flags |= aiProcess_FlipUVs;
-	flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
+	//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 	const aiScene *scene = importer.ReadFile(file,flags
 		//  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
 		//| aiProcess_LimitBoneWeights           // 4 weights for skin model max
@@ -1964,26 +1964,68 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 					break;
 				}
 			}
+#define NORMALIZE_BONE_WEIGHTS
 
 			// Check if the number of weights is >4, just in case, since we dont support
 			if (!success)
 			{
 				//dump bone names
 				std::cout << "Dumping bones...\n";
-				std::cout << "Bone affected : " << currBone->mName.C_Str() << std::endl;
+				std::cout << "Bone affected : " << currBone->mName.C_Str() << ",\t" << weight<< std::endl;
+				float sum{};
 				for (size_t i = 0; i < 4; i++)
 				{
 					for (auto&[key,val] :  fileData.strToBone)
 					{
 						if (val == vertex.boneIdx[i])
 						{
-							std::cout << "Bone affected : " << key << std::endl;
+							std::cout << "Bone affected : " << key << ",\t"<<vertex.boneWeights[i] << std::endl;
 							break;
 						}
 					}
+					sum += vertex.boneWeights[i];
 				}
+				
+#ifdef NORMALIZE_BONE_WEIGHTS
+
+				uint32_t minBone = boneIndex;
+				float minW = weight;
+				for (size_t i = 0; i < 4; i++)
+				{
+					if (minW < vertex.boneWeights[i])
+					{
+						std::swap(vertex.boneWeights[i], minW);
+						std::swap(vertex.boneIdx[i], minBone);
+					}
+				}
+				sum = 0.0f;
+				for (size_t i = 0; i < 4; i++)
+				{
+					sum += vertex.boneWeights[i];
+				}
+				for (size_t i = 0; i < 4; i++)
+				{
+					vertex.boneWeights[i]*= (1.0f/sum);
+				}
+				sum = 0.0f;
+				for (auto&[key,val] :  fileData.strToBone)
+				{
+					if (val == minBone)
+					{
+						std::cout << "Discarded weight: [" << key<<","<< minW << "]" << std::endl;
+						break;
+					}
+				}
+				for (size_t i = 0; i < 4; i++)
+				{
+					sum += vertex.boneWeights[i];
+				}
+				std::cout << "Final sum : [" << sum<< "]"<<std::endl;
+
+#else
 				// Vertex already has 4 bone weights assigned.
 				assert(false && "Bone weights >4 is not supported.");
+#endif // NORMALIZE_BONE_WEIGHTS
 			}
 		}
 
@@ -1991,7 +2033,7 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 	vCnt += aimesh.mNumVertices;
 }
 
-void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* parent, glm::mat4 parentXform)
+void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* parent, glm::mat4 parentXform,std::string prefix)
 {
 	std::string node_name{ ainode->mName.data };
 
@@ -2008,7 +2050,8 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode*
 	auto iter = fileData.strToBone.find(node_name);
 	if (iter != fileData.strToBone.end())
 	{
-		//std::cout << "Creating bone " << node_name << std::endl;
+		std::cout <<prefix<< "Creating bone " << node_name << std::endl;
+		prefix += '\t';
 		bIsBoneNode = true;
 		node = new oGFX::BoneNode;
 		node->mbIsBoneNode = true;
@@ -2046,11 +2089,11 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode*
 		if (bIsBoneNode)
 		{
 			// we have collapsed the transforms start for new local transform
-			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,glm::mat4(1.0f));
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,glm::mat4(1.0f),prefix);
 		}
 		else
 		{
-			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,node_transform);
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,node_transform,prefix);
 		}
 	}
 }
