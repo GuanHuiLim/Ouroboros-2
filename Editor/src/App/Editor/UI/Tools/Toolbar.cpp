@@ -42,15 +42,15 @@ Technology is prohibited.
 
 void Toolbar::InitAssets()
 {
-	m_iconsSaved.emplace("TranslateButton", *ImGuiManager::s_editorAssetManager.LoadName("TranslateButton.png").begin());
-	m_iconsSaved.emplace("RotateButton", *ImGuiManager::s_editorAssetManager.LoadName("RotateButton.png").begin());
-	m_iconsSaved.emplace("ScaleButton", *ImGuiManager::s_editorAssetManager.LoadName("ScaleButton.png").begin());
-	m_iconsSaved.emplace("PlayButton", *ImGuiManager::s_editorAssetManager.LoadName("PlayButton.png").begin());
-	m_iconsSaved.emplace("PauseButton", *ImGuiManager::s_editorAssetManager.LoadName("PauseButton.png").begin());
-	m_iconsSaved.emplace("StopButton", *ImGuiManager::s_editorAssetManager.LoadName("StopButton.png").begin());
-	m_iconsSaved.emplace("LockButton", *ImGuiManager::s_editorAssetManager.LoadName("LockButton.png").begin());
-	m_iconsSaved.emplace("ListIcon", *ImGuiManager::s_editorAssetManager.LoadName("ListIcon.png").begin());
-	m_iconsSaved.emplace("GridIcon", *ImGuiManager::s_editorAssetManager.LoadName("GridIcon.png").begin());
+	m_iconsSaved.emplace("TranslateButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("TranslateButton.png").begin());
+	m_iconsSaved.emplace("RotateButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("RotateButton.png").begin());
+	m_iconsSaved.emplace("ScaleButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("ScaleButton.png").begin());
+	m_iconsSaved.emplace("PlayButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("PlayButton.png").begin());
+	m_iconsSaved.emplace("PauseButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("PauseButton.png").begin());
+	m_iconsSaved.emplace("StopButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("StopButton.png").begin());
+	m_iconsSaved.emplace("LockButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("LockButton.png").begin());
+	m_iconsSaved.emplace("ListIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("ListIcon.png").begin());
+	m_iconsSaved.emplace("GridIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("GridIcon.png").begin());
 	oo::EventManager::Subscribe<Toolbar,ChangeGizmoEvent>(this, &Toolbar::OnGizmoChange);
 }
 void Toolbar::Show()

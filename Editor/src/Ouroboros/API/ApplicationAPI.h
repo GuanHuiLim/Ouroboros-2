@@ -117,7 +117,7 @@ namespace oo
     
     SCRIPT_API AssetID Asset_LoadAssetAtPath(const char* path)
     {
-        Asset asset = Project::GetAssetManager()->LoadPath(path);
+        Asset asset = Project::GetAssetManager()->GetOrLoadPath(path);
         return asset.GetID();
     }
 
