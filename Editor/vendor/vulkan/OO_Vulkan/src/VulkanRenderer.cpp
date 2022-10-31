@@ -1969,30 +1969,15 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 			// Check if the number of weights is >4, just in case, since we dont support
 			if (!success)
 			{
-				//dump bone names
-				std::cout << "Dumping bones...\n";
-				std::cout << "Bone affected : " << currBone->mName.C_Str() << ",\t" << weight<< std::endl;
-				float sum{};
-				for (size_t i = 0; i < 4; i++)
-				{
-					for (auto&[key,val] :  fileData.strToBone)
-					{
-						if (val == vertex.boneIdx[i])
-						{
-							std::cout << "Bone affected : " << key << ",\t"<<vertex.boneWeights[i] << std::endl;
-							break;
-						}
-					}
-					sum += vertex.boneWeights[i];
-				}
 				
+				
+				float sum;
 #ifdef NORMALIZE_BONE_WEIGHTS
-
 				uint32_t minBone = boneIndex;
 				float minW = weight;
 				for (size_t i = 0; i < 4; i++)
 				{
-					if (minW < vertex.boneWeights[i])
+					if (vertex.boneWeights[i] < minW)
 					{
 						std::swap(vertex.boneWeights[i], minW);
 						std::swap(vertex.boneIdx[i], minBone);
@@ -2012,7 +1997,7 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 				{
 					if (val == minBone)
 					{
-						std::cout << "Discarded weight: [" << key<<","<< minW << "]" << std::endl;
+						std::cout << "Discarded weight: [" << key<<",\t"<< minW << "]" << std::endl;
 						break;
 					}
 				}
@@ -2020,9 +2005,23 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 				{
 					sum += vertex.boneWeights[i];
 				}
-				std::cout << "Final sum : [" << sum<< "]"<<std::endl;
+				//std::cout << "Final sum : [" << sum<< "]"<<std::endl;
 
 #else
+				//dump bone names
+				std::cout << "Dumping bones...\n";
+				std::cout << "Bone affected : " << currBone->mName.C_Str() << ",\t" << weight<< std::endl;
+				for (size_t i = 0; i < 4; i++)
+				{
+					for (auto&[key,val] :  fileData.strToBone)
+					{
+						if (val == vertex.boneIdx[i])
+						{
+							std::cout << "Bone affected : " << key << ",\t"<<vertex.boneWeights[i] << std::endl;
+							break;
+						}
+					}
+				}				
 				// Vertex already has 4 bone weights assigned.
 				assert(false && "Bone weights >4 is not supported.");
 #endif // NORMALIZE_BONE_WEIGHTS
