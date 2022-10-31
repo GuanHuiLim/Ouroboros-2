@@ -34,6 +34,7 @@ namespace oo
 
         EventManager::Subscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
         EventManager::Subscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
+        EventManager::Subscribe<ScriptSystem, PhysicsCollisionEvent>(this, &ScriptSystem::OnCollisionEvent);
     }
 
     ScriptSystem::~ScriptSystem()
@@ -44,6 +45,7 @@ namespace oo
 
         EventManager::Unsubscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
         EventManager::Unsubscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
+        EventManager::Unsubscribe<ScriptSystem, PhysicsCollisionEvent>(this, &ScriptSystem::OnCollisionEvent);
 
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
@@ -96,6 +98,12 @@ namespace oo
         {
             AddScript(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
         }
+    }
+    void ScriptSystem::UpdateObjectFieldsWithInfo(oo::UUID uuid)
+    {
+        std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
+        ASSERT(gameObject == nullptr);
+        UpdateScriptFieldsWithInfo(uuid, gameObject->GetComponent<ScriptComponent>());
     }
 
     bool ScriptSystem::StopPlay()
@@ -227,6 +235,10 @@ namespace oo
         if (!isPlaying)
             return 0;
         return componentDatabase.TryRetrieveDerived(uuid, name_space, name);
+    }
+    ComponentDatabase::IntPtr ScriptSystem::HasActualComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        return componentDatabase.HasComponent(uuid, name_space, name);
     }
     void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -391,13 +403,14 @@ namespace oo
     {
         for (auto& [scriptKey, scriptInfo] : script.GetScriptInfoAll())
         {
-            MonoObject* scriptObj = scriptDatabase.RetrieveObject(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            ScriptDatabase::IntPtr scriptPtr = scriptDatabase.Retrieve(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            MonoObject* scriptObj = mono_gchandle_get_target(scriptPtr);
             MonoClass* scriptClass = ScriptEngine::GetClass("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
             for (auto& [fieldKey, fieldInfo] : scriptInfo.fieldMap)
             {
                 MonoClassField* field = mono_class_get_field_from_name(scriptClass, fieldInfo.name.c_str());
                 ScriptValue::SetFieldValue(scriptObj, field, fieldInfo.value);
-                fieldInfo.SetScriptReference(field, scriptObj);
+                fieldInfo.SetScriptReference(field, scriptPtr);
             }
         }
     }
@@ -438,7 +451,6 @@ namespace oo
         void* otherParams[1];
         otherParams[0] = obj;
 
-        MonoMethod* method = nullptr;
         switch (e->State)
         {
         case PhysicsEventState::ENTER:
@@ -474,6 +486,104 @@ namespace oo
             scriptDatabase.ForEachEnabled(e->OtherID, [&otherParams](MonoObject* script)
                 {
                     ScriptEngine::InvokeFunction(script, "OnTriggerExit", otherParams, 1);
+                });
+        }
+        break;
+        }
+    }
+
+    void ScriptSystem::OnCollisionEvent(PhysicsCollisionEvent* e)
+    {
+        struct TempContactPoint
+        {
+            ScriptValue::vec3_type normal;
+            ScriptValue::vec3_type point;
+            ScriptValue::vec3_type impulse;
+        };
+
+        MonoClass* dataClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Collision");
+        MonoClassField* field = nullptr;
+
+        MonoClass* contactPointClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "ContactPoint");
+        MonoArray* arr = ScriptEngine::CreateArray(contactPointClass, e->ContactCount);
+        TempContactPoint temp;
+        for (size_t i = 0; i < e->ContactCount; ++i)
+        {
+            temp.normal = ScriptValue::vec3_type{ e->ContactPoints[i].Normal.x, e->ContactPoints[i].Normal.y, e->ContactPoints[i].Normal.z };
+            temp.point = ScriptValue::vec3_type{ e->ContactPoints[i].Point.x, e->ContactPoints[i].Point.y, e->ContactPoints[i].Point.z };
+            temp.impulse = ScriptValue::vec3_type{ e->ContactPoints[i].Impulse.x, e->ContactPoints[i].Impulse.y, e->ContactPoints[i].Impulse.z };
+            mono_array_set(arr, TempContactPoint, i, temp);
+        }
+
+        // Collision Data for Collider1
+
+        MonoObject* collisionData1 = ScriptEngine::CreateObject(dataClass);
+
+        field = mono_class_get_field_from_name(dataClass, "m_gameObject");
+        mono_field_set_value(collisionData1, field, componentDatabase.TryRetrieveGameObjectObject(e->Collider1));
+        field = mono_class_get_field_from_name(dataClass, "m_rigidbody");
+        mono_field_set_value(collisionData1, field, componentDatabase.TryRetrieveDerivedObject(e->Collider1, "Ouroboros", "Rigidbody"));
+        field = mono_class_get_field_from_name(dataClass, "m_collider");
+        mono_field_set_value(collisionData1, field, componentDatabase.TryRetrieveDerivedObject(e->Collider1, "Ouroboros", "Collider"));
+
+        field = mono_class_get_field_from_name(dataClass, "m_contacts");
+        mono_field_set_value(collisionData1, field, arr);
+
+        // Collision Data for Collider2
+
+        MonoObject* collisionData2 = ScriptEngine::CreateObject(dataClass);
+
+        field = mono_class_get_field_from_name(dataClass, "m_gameObject");
+        mono_field_set_value(collisionData2, field, componentDatabase.TryRetrieveGameObjectObject(e->Collider2));
+        field = mono_class_get_field_from_name(dataClass, "m_rigidbody");
+        mono_field_set_value(collisionData2, field, componentDatabase.TryRetrieveDerivedObject(e->Collider2, "Ouroboros", "Rigidbody"));
+        field = mono_class_get_field_from_name(dataClass, "m_collider");
+        mono_field_set_value(collisionData2, field, componentDatabase.TryRetrieveDerivedObject(e->Collider2, "Ouroboros", "Collider"));
+
+        field = mono_class_get_field_from_name(dataClass, "m_contacts");
+        mono_field_set_value(collisionData2, field, arr);
+
+        void* params1[1];
+        params1[0] = collisionData1;
+
+        void* params2[1];
+        params2[0] = collisionData2;
+
+        switch (e->State)
+        {
+        case PhysicsEventState::ENTER:
+        {
+            scriptDatabase.ForEachEnabled(e->Collider1, [&params2](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnCollisionEnter", params2, 1);
+                });
+            scriptDatabase.ForEachEnabled(e->Collider2, [&params1](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnCollisionEnter", params1, 1);
+                });
+        }
+        break;
+        case PhysicsEventState::STAY:
+        {
+            scriptDatabase.ForEachEnabled(e->Collider1, [&params2](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnCollisionStay", params2, 1);
+                });
+            scriptDatabase.ForEachEnabled(e->Collider2, [&params1](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnCollisionStay", params1, 1);
+                });
+        }
+        break;
+        case PhysicsEventState::EXIT:
+        {
+            scriptDatabase.ForEachEnabled(e->Collider1, [&params2](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnCollisionExit", params2, 1);
+                });
+            scriptDatabase.ForEachEnabled(e->Collider2, [&params1](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnCollisionExit", params1, 1);
                 });
         }
         break;

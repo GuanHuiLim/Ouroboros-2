@@ -131,7 +131,7 @@ SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, Type value
 SCRIPT_API_GET_FUNC(Component, Get##Name, Type, GetFunction) \
 SCRIPT_API_SET_FUNC(Component, Set##Name, Type, SetFunction)
 
-#define SCRIPT_API_GET_SET_A(Component, Name, Type, GetFunction, SetFunction, Additional) \
+#define SCRIPT_API_GET_SET_FUNC_A(Component, Name, Type, GetFunction, SetFunction, Additional) \
 SCRIPT_API_GET_FUNC(Component, Get##Name, Type, GetFunction) \
 SCRIPT_API_SET_FUNC_A(Component, Set##Name, Type, SetFunction, Additional)
 

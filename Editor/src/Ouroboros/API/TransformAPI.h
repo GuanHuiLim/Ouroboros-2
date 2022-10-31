@@ -71,6 +71,13 @@ namespace oo
         *z = vec3.z;
     }
 
+    SCRIPT_API void Transform3D_SetGlobalForward(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        component.GlobalLookAtDir({ x, y, z });
+    }
+
     SCRIPT_API void Transform3D_GetGlobalLeft(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
@@ -218,7 +225,7 @@ namespace oo
                 break;
             }
             if (!childFound)
-                return 0;
+                return ComponentDatabase::InvalidPtr;
 
             if (separator == std::string::npos)
                 break;
@@ -253,7 +260,7 @@ namespace oo
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         if (parentUUID == GameObject::ROOTID)
-            return 0;
+            return ComponentDatabase::InvalidPtr;
         return scene->GetWorld().Get_System<ScriptSystem>()->GetComponent(parentUUID, "Ouroboros", "Transform");
     }
 }

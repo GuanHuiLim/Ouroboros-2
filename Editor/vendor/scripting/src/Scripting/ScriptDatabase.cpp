@@ -91,7 +91,7 @@ namespace oo
     {
         Instance* instance = TryGetInstance(id, name_space, name);
         if (instance == nullptr)
-            return 0;
+            return InvalidPtr;
         return instance->handle;
     }
 
@@ -100,7 +100,7 @@ namespace oo
         Index baseIndex = GetInstancePoolIndex(name_space, name);
         Instance* instance = TryGetInstanceDerived(id, baseIndex);
         if (instance == nullptr)
-            return 0;
+            return InvalidPtr;
         return instance->handle;
     }
 

@@ -1,5 +1,8 @@
-﻿namespace Ouroboros
+﻿using System.Runtime.InteropServices;
+
+namespace Ouroboros
 {
+    [StructLayout(LayoutKind.Sequential)]
     public struct Vector3
     {
         public float x;

@@ -37,6 +37,7 @@ namespace Ouroboros
         }
 
         [DllImport("__Internal")] private static extern void Transform3D_GetGlobalForward(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void Transform3D_SetGlobalForward(UInt32 sceneID, UInt64 uuid, float x, float y, float z);
         public Vector3 forward
         {
             get
@@ -45,6 +46,7 @@ namespace Ouroboros
                 Transform3D_GetGlobalForward(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
                 return new Vector3(x, y, z);
             }
+            set { Transform3D_SetGlobalForward(gameObject.scene, gameObject.GetInstanceID(), value.x, value.y, value.z); }
         }
 
         [DllImport("__Internal")] private static extern void Transform3D_GetGlobalLeft(UInt32 sceneID, UInt64 instanceID, out float x, out float y, out float z);
