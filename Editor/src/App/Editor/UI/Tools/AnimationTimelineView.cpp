@@ -36,7 +36,7 @@ void AnimationTimelineView::Show()
 
     auto gameObject = scene->FindWithInstanceID(*selected_items.begin());
 
-    if (gameObject->HasComponent<oo::AnimationComponent>() == false)
+    if (gameObject == nullptr || gameObject->HasComponent<oo::AnimationComponent>() == false)
         return;
 
     animator = &gameObject.get()->GetComponent<oo::AnimationComponent>();
@@ -77,94 +77,80 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
         ImGuiStyle& style = ImGui::GetStyle();
 
         //Do Toolbar here
-        if (ImGui::Button("<<"))
-        {
-            currentKeyFrame = visibleStartingFrame;
-        }
+        DrawToolbar();
+        
+        DrawNodeSelector(_animator);
 
-        ImGui::SameLine();
-
-        if (ImGui::Button("|<"))
-        {
-            currentKeyFrame -= 1;
-            if (currentKeyFrame <= 0)
-                currentKeyFrame = 0;
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Play"))
-        {
-            playAnim = !playAnim;
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button(">|"))
-        {
-            currentKeyFrame += 1;
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button(">>"))
-        {
-            currentKeyFrame = visibleEndingFrame;
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Add Keyframe"))
-        {
-
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Add Event"))
-        {
-
-        }
-
-        static bool open = false;
-        static std::string animName = "empty";
-        auto& temp = _animator->GetActualComponent().animTree->groups;
-
-        //To Get Which Node to Modify, Temporary Solution
-        ImGui::PushItemWidth(160);
-        ImGui::BeginGroup();
-        ImGui::InputText("##animationstuff", &animName, ImGuiInputTextFlags_ReadOnly);
-        ImGui::SameLine();
-        if (ImGui::ArrowButton("downbtn", ImGuiDir_Down))
-        {
-            open = !open;
-        }
-        if (open)
-        {
-            if (ImGui::BeginListBox("##animation"))
-            {
-                for (auto it = temp.begin(); it != temp.end(); ++it)
-                {
-                    for (auto it2 = it->second.nodes.begin(); it2 != it->second.nodes.end(); ++it2)
-                    {
-                        if (ImGui::Selectable(it2->second.name.c_str()))
-                        {
-                            animName = it2->second.name;
-                            animation = &it2->second.GetAnimation();
-                            currentKeyFrame = 0;
-                            open = !open;
-                        }
-                    }
-                }
-            }
-            ImGui::EndListBox();
-        }
-        ImGui::EndGroup();
-        ImGui::PopItemWidth();
+        DrawTimelineSelector(animation);
 
         ImGui::SameLine();
 
         DrawTimeLine(animation, style.ItemSpacing.y, ImGui::GetItemRectSize().y);
+
+        ImGui::BeginChild("##content", ImVec2(0, 0), false);
+        {
+            //Add Property Button
+            //Draw Keyframes
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
+            ImGui::Columns(2, "##legend", false);
+            ImGui::SetColumnWidth(0, ImGui::CalcTextSize("Timeline ").x + 160);
+
+            ImGui::NextColumn();
+
+            //Draw Key Frames
+            if (timeline != nullptr)
+            {
+                for (int i = 0; i < timeline->keyframes.size(); ++i)
+                {
+                    for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
+                    {
+                        if ((j * unitPerFrame) == timeline->keyframes[i].time)
+                        {
+                            DrawKeyFrame(j, IM_COL32( 211,211,211,255 ));
+                        }
+                    }
+                }
+            }
+
+            ImGui::NextColumn();
+
+            //Properties GUI
+            if (timeline != nullptr)
+            {
+                bool open = ImGui::TreeNodeEx("Position", ImGuiTreeNodeFlags_DefaultOpen);
+
+                if (open)
+                {
+                    for (int i = 0; i < timeline->keyframes.size(); ++i)
+                    {
+                        if (currentTime == timeline->keyframes[i].time)
+                        {
+                            if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
+                            {
+                                ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::vec3>().x);
+                                ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::vec3>().y);
+                                ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::vec3>().z);
+                            }
+                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
+                            {
+                                ImGui::DragFloat("W", &timeline->keyframes[i].data.get_value<glm::quat>().w);
+                                ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::quat>().x);
+                                ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::quat>().y);
+                                ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::quat>().z);
+                            }
+                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
+                            {
+                                ImGui::Checkbox("", &timeline->keyframes[i].data.get_value<bool>());
+                            }
+                        }
+                    }
+
+                    ImGui::TreePop();
+                }
+            }
+
+            ImGui::EndChild();
+        }
     }
     ImGui::EndChildFrame();
 
@@ -174,10 +160,147 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
     }
 }
 
+void AnimationTimelineView::DrawToolbar()
+{
+    if (ImGui::Button("<<"))
+    {
+        currentKeyFrame = visibleStartingFrame;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("|<"))
+    {
+        currentKeyFrame -= 1;
+        if (currentKeyFrame <= 0)
+            currentKeyFrame = 0;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Play"))
+    {
+        playAnim = !playAnim;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button(">|"))
+    {
+        currentKeyFrame += 1;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button(">>"))
+    {
+        currentKeyFrame = visibleEndingFrame;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Add Keyframe"))
+    {
+
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Add Event"))
+    {
+
+    }
+}
+
+void AnimationTimelineView::DrawNodeSelector(oo::AnimationComponent* _animator)
+{
+    static bool animopen = false;
+    static std::string animName = "empty";
+    auto& temp = _animator->GetActualComponent().animTree->groups;
+
+    //To Get Which Node to Modify, Temporary Solution
+    ImGui::PushItemWidth(160);
+    ImGui::BeginGroup();
+    ImGui::Text("Node");
+    ImGui::SameLine(64.0f);
+    ImGui::InputText("##animationstuff", &animName, ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
+    if (ImGui::ArrowButton("animdownbtn", ImGuiDir_Down))
+    {
+        animopen = !animopen;
+    }
+    if (animopen)
+    {
+        if (ImGui::BeginListBox("##animation"))
+        {
+            for (auto it = temp.begin(); it != temp.end(); ++it)
+            {
+                for (auto it2 = it->second.nodes.begin(); it2 != it->second.nodes.end(); ++it2)
+                {
+                    if (ImGui::Selectable(it2->second.name.c_str()))
+                    {
+                        animName = it2->second.name;
+                        animation = &it2->second.GetAnimation();
+                        currentKeyFrame = 0;
+                        animopen = !animopen;
+                    }
+                }
+            }
+        }
+        ImGui::EndListBox();
+    }
+    ImGui::EndGroup();
+    ImGui::PopItemWidth();
+}
+
+void AnimationTimelineView::DrawTimelineSelector(oo::Anim::Animation* _animation)
+{
+    static bool timelineopen = false;
+    static std::string timelineName = "empty";
+    ImGui::PushItemWidth(160);
+    ImGui::BeginGroup();
+    ImGui::Text("Timeline");
+    ImGui::SameLine();
+    ImGui::InputText("##timelinestuff", &timelineName, ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
+    if (ImGui::ArrowButton("timelinedownbtn", ImGuiDir_Down))
+    {
+        timelineopen = !timelineopen;
+    }
+    if (timelineopen)
+    {
+        if (ImGui::BeginListBox("##timeline"))
+        {
+            if (_animation != nullptr)
+            {
+                for (int i = 0; i < _animation->timelines.size(); ++i)
+                {
+                    if (ImGui::Selectable(_animation->timelines[i].name.c_str()))
+                    {
+                        timelineName = _animation->timelines[i].name;
+                        timeline = &_animation->timelines[i];
+                        timelineopen = !timelineopen;
+                    }
+                }
+            }
+            else
+            {
+                if (ImGui::Selectable("empty"))
+                {
+                    timelineopen = !timelineopen;
+                }
+            }
+        }
+        ImGui::EndListBox();
+    }
+    ImGui::EndGroup();
+    ImGui::PopItemWidth();
+}
+
 void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float headerYPadding, float headerHeight)
 {
     auto drawList = ImGui::GetWindowDrawList();
-    auto style = ImGui::GetStyle();
+    const auto& style = ImGui::GetStyle();
     auto contentRegion = ImGui::GetContentRegionAvail();
     auto headerSize = ImVec2(0, 0);
     headerSize.x = contentRegion.x - (style.ScrollbarSize);
@@ -293,6 +416,20 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
     }
 }
 
+void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, ImU32 colour)
+{
+    ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+    float keyFrameSize = 7.0f;
+    int halfKeyFrameSize = static_cast<int>(std::floor(keyFrameSize / 2));
+
+    cursorPos.x += GetTimelinePosFromFrame(_currentKeyFrame) + (halfKeyFrameSize + 22);
+    cursorPos.y -= 2;
+
+    ImVec2 size = ImVec2(keyFrameSize, keyFrameSize + 4);
+
+    ImGui::GetWindowDrawList()->AddRectFilled(cursorPos, ImVec2(cursorPos.x + size.x, cursorPos.y + size.y), colour);
+}
+
 int AnimationTimelineView::GetFrameFromTimelinePos(float pos)
 {
     return static_cast<int>(std::floor((pos - lineStartOffset) / pixelsPerFrame + 0.5f)) + visibleStartingFrame;
@@ -302,3 +439,5 @@ float AnimationTimelineView::GetTimelinePosFromFrame(int frame)
 {
     return (frame - visibleStartingFrame) * pixelsPerFrame + lineStartOffset;
 }
+
+

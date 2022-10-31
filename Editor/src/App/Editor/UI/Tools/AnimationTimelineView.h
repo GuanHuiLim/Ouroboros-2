@@ -30,6 +30,7 @@ public:
 private:
 	oo::AnimationComponent* animator = nullptr;
 	oo::Anim::Animation* animation = nullptr;
+	oo::Anim::Timeline* timeline = nullptr;
 	
 	static int currentKeyFrame;
 	static float unitPerFrame;
@@ -55,8 +56,11 @@ private:
 	bool isPanningTimeline = false;
 
 	void DisplayAnimationTimeline(oo::AnimationComponent* _animator);
+	void DrawToolbar();
+	void DrawNodeSelector(oo::AnimationComponent* _animator);
+	void DrawTimelineSelector(oo::Anim::Animation* _animation);
 	void DrawTimeLine(oo::Anim::Animation* _animation, float headerYPadding, float headerHeight = 24.0f);
-	void DrawToolbar(oo::Anim::Animation* _animation, oo::Anim::ProgressTracker::UpdateFn callback);
+	void DrawKeyFrame(int _currentKeyFrame, ImU32 colour);
 
 	int GetFrameFromTimelinePos(float pos);
 	float GetTimelinePosFromFrame(int frame);
