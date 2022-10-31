@@ -300,13 +300,6 @@ namespace oo
         if (inputCode == InputAxis::INPUTCODE_INVALID)
             return 0.0f;
         input::ControllerAxisCode axisCode = static_cast<input::ControllerAxisCode>(inputCode);
-        float value = input::GetControllerAxisValue(axisCode);
-        if (axisCode == input::ControllerAxisCode::LEFTY || axisCode == input::ControllerAxisCode::RIGHTY
-            || axisCode == input::ControllerAxisCode::LEFTX || axisCode == input::ControllerAxisCode::RIGHTX)
-            value *= -1;
-        if (value >= 0)
-            return value / std::numeric_limits<short>().max();
-        else
-            return -value / std::numeric_limits<short>().min();
+        return input::GetControllerAxisValue(axisCode);
     }
 }
