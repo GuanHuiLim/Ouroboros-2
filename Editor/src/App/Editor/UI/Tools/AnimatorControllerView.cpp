@@ -46,7 +46,7 @@ void AnimatorControllerView::Show()
 
     auto gameobject = scene->FindWithInstanceID(*selected_items.begin());
 
-    if (gameobject->HasComponent<oo::AnimationComponent>() == false)
+    if (gameobject == nullptr || gameobject->HasComponent<oo::AnimationComponent>() == false)
         return;
 
     animator = &gameobject.get()->GetComponent<oo::AnimationComponent>();
