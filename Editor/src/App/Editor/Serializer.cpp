@@ -413,9 +413,28 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 						else
 							current_sfi.SetUint64(-1);
 					}break;
+					case oo::ScriptValue::type_enum::COMPONENT:
+					{
+						auto& current_sfi = current_scriptField.FindMember(sfi.first.c_str())->value;
+						oo::ScriptValue::component_type cpt_t = sfi.second.value.GetValue<oo::ScriptValue::component_type>();
+						auto iter = all_mappedUUID.find(cpt_t.m_objID);
+						if (iter != all_mappedUUID.end())
+							current_sfi.SetUint64(iter->second.GetUUID());
+						else
+							current_sfi.SetUint64(-1);
+					}break;
 					case oo::ScriptValue::type_enum::FUNCTION:
 					{
-						//TODO
+						auto& current_sfi = current_scriptField.FindMember(sfi.first.c_str())->value;
+						auto arr = current_sfi.GetArray();
+						oo::UUID current_uuid_val = sfi.second.value.GetValue<oo::ScriptValue::function_type>().m_objID;
+						auto iter = all_mappedUUID.find(current_uuid_val);
+						if (iter != all_mappedUUID.end())
+							arr[0].SetUint64(iter->second.GetUUID());
+						else
+							arr[0].SetUint64(-1);
+
+						current_sfi = arr;//update the value
 					}break;
 					}
 				}
@@ -828,7 +847,6 @@ void Serializer::RemapScripts(std::unordered_map<oo::UUID, oo::UUID>& scriptIds,
 			case oo::ScriptValue::type_enum::FUNCTION:
 			{
 				auto function = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<oo::ScriptValue::function_type>();
-				function.m_objID;
 				auto iter = scriptIds.find(function.m_objID);
 				if (iter == scriptIds.end())
 				{
@@ -837,6 +855,19 @@ void Serializer::RemapScripts(std::unordered_map<oo::UUID, oo::UUID>& scriptIds,
 				else
 					function.m_objID = iter->second;
 				scriptFieldInfo.second.TrySetRuntimeValue(oo::ScriptValue{ function });
+				break;
+			}
+			case oo::ScriptValue::type_enum::COMPONENT:
+			{
+				auto component = scriptFieldInfo.second.TryGetRuntimeValue().GetValue<oo::ScriptValue::component_type>();
+				auto iter = scriptIds.find(component.m_objID);
+				if (iter == scriptIds.end())
+				{
+					component = oo::ScriptValue::component_type();
+				}
+				else
+					component.m_objID = iter->second;
+				scriptFieldInfo.second.TrySetRuntimeValue(oo::ScriptValue{ component });
 				break;
 			}
 			}

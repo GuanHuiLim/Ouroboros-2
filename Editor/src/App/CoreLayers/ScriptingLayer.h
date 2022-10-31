@@ -23,6 +23,9 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/MeshRendererComponent.h";
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
+#include "Ouroboros/Physics/RigidbodyComponent.h"
+#include "Ouroboros/Physics/ColliderComponents.h"
+
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 
@@ -32,11 +35,14 @@ namespace oo
     {
     public:
 
-        ScriptingLayer(SceneManager const& sceneManager)
+        ScriptingLayer(SceneManager& sceneManager)
         {
             ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
             ScriptManager::RegisterComponent<MeshRendererComponent>("Ouroboros", "MeshRenderer");
             ScriptManager::RegisterComponent<AudioSourceComponent>("Ouroboros", "AudioSource");
+
+            ScriptManager::RegisterComponent<RigidbodyComponent>("Ouroboros", "Rigidbody");
+            ScriptManager::RegisterComponent<BoxColliderComponent>("Ouroboros", "BoxCollider");
 
             ScriptManager::s_SceneManager = &sceneManager;
             EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)

@@ -199,6 +199,28 @@ ScriptingProperties::ScriptingProperties()
 				ImGui::EndDragDropTarget();
 			}
 		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::COMPONENT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::component_type>();
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			auto gameobject_ptr = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(data.m_objID);
+			std::string referenceObj = gameobject_ptr == nullptr ? "Invalid "+ data.m_name : gameobject_ptr->Name();
+			std::string intput_txt_name = data.m_name + " " + v.name;
+			ImGui::InputText(intput_txt_name.c_str(), &referenceObj, ImGuiInputTextFlags_ReadOnly);
+			ImGui::PopItemFlag();
+			if (ImGui::BeginDragDropTarget())
+			{
+				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
+				if (payload)
+				{
+					data.m_objID = *static_cast<oo::UUID*>(payload->Data);
+					editing = true;
+					edited = true;
+					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+				}
+				ImGui::EndDragDropTarget();
+			}
+		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::function_type>();

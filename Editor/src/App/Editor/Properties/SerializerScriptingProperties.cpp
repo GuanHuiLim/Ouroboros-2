@@ -85,6 +85,53 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));
 			val.AddMember(name, data, doc.GetAllocator());
 		});
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::COMPONENT, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+			oo::UUID id = sfi.value.GetValue<oo::ScriptValue::component_type>().m_objID;
+			//check if object is valid before saving.
+			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
+			if (go == nullptr)
+				id = -1;
+			rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));
+			val.AddMember(name, data, doc.GetAllocator());
+		});
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+			auto function = sfi.value.GetValue<oo::ScriptValue::function_type>();
+			auto id = function.m_objID;
+			//check if object is valid before saving.
+			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
+			if (go == nullptr)
+				id = -1;
+
+			rapidjson::Value data(rapidjson::kArrayType);
+			data.PushBack(static_cast<uint64_t>((id.GetUUID())), doc.GetAllocator());
+			data.PushBack(rapidjson::Value(function.m_info.classNamespace.c_str(),doc.GetAllocator()), doc.GetAllocator());
+			data.PushBack(rapidjson::Value(function.m_info.className.c_str(),doc.GetAllocator()), doc.GetAllocator());
+			data.PushBack(rapidjson::Value(function.m_info.functionName.c_str(), doc.GetAllocator()), doc.GetAllocator());
+			data.PushBack(function.m_info.paramList.empty(), doc.GetAllocator());
+			if (function.m_info.paramList.size())
+			{
+				auto &sfi = function.m_info.paramList[0];
+				data.PushBack(static_cast<uint64_t>(sfi.value.GetValueType()), doc.GetAllocator());
+				//creates a temporary object to go through the saving process
+				//while it can be more effecient it's a tiny cost and shouldn't be too slow.
+				rapidjson::Value tempObj(rapidjson::kObjectType);
+				auto iter = m_ScriptSave.find(sfi.value.GetValueType());
+				if (iter == m_ScriptSave.end())
+				{
+					ASSERT_MSG(true, "type not supported?");
+				}
+				iter->second(doc, tempObj,sfi);
+				data.PushBack(tempObj.MemberBegin()->value, doc.GetAllocator());
+			}
+
+			val.AddMember(name, data, doc.GetAllocator());
+		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::LIST, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
 		{
 			rapidjson::Value name;
@@ -157,6 +204,56 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 			oo::UUID id = val.GetUint64();
 			sfi.value.SetValue(id); 
 		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::COMPONENT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+			oo::UUID id = val.GetUint64();
+			sfi.value.GetValue<oo::ScriptValue::component_type>().m_objID = id;
+		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+			oo::UUID id = val.GetUint64();
+			sfi.value.SetValue(id);
+		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+
+			/*********************************************************************************//*
+			data.PushBack(static_cast<uint64_t>((id.GetUUID())), doc.GetAllocator());
+			data.PushBack(rapidjson::Value(function.m_info.classNamespace.c_str(),doc.GetAllocator()), doc.GetAllocator());
+			data.PushBack(rapidjson::Value(function.m_info.className.c_str(),doc.GetAllocator()), doc.GetAllocator());
+			data.PushBack(rapidjson::Value(function.m_info.functionName.c_str(), doc.GetAllocator()), doc.GetAllocator());
+			data.PushBack(function.m_info.paramList.empty(), doc.GetAllocator());
+			*//**********************************************************************************/
+			
+			oo::ScriptValue::function_type function_value = sfi.value.GetValue<oo::ScriptValue::function_type>();
+			auto arr = val.GetArray();
+			function_value.m_objID = arr[0].GetUint64();
+
+			function_value.m_info.classNamespace = arr[1].GetString();
+			function_value.m_info.className = arr[2].GetString();
+			
+			oo::ScriptClassInfo classInfo{ function_value.m_info.classNamespace, function_value.m_info.className };
+			std::string function_name = arr[3].GetString();
+			if (function_name.empty())
+				return;
+			bool data = arr[4].GetBool();
+			//!data because the item count is only 0 - 1 if data == true -> empty
+			function_value.m_info = classInfo.GetFunctionInfo(function_name, !data);
+			if (data == false)//if true means list is empty
+			{
+				uint64_t svalue_type = arr[5].GetUint64();
+				auto iter = m_ScriptLoad.find(static_cast<oo::ScriptValue::type_enum>(svalue_type));
+				if(iter == m_ScriptLoad.end())
+				{
+					ASSERT_MSG(true, "Why failed?");
+				}
+
+				iter->second(std::move(arr[6]), function_value.m_info.paramList[0]);
+
+			}
+			sfi.value.SetValue(function_value);
+		});
+
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::LIST, [this](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
 			auto &list_value = sfi.value.GetValue<oo::ScriptValue::list_type>();

@@ -71,7 +71,7 @@ namespace oo
             throw std::exception("ScriptEngine Load Exception: failed to load assembly");
 
         MonoImage* scripting = mono_assembly_get_image(assembly);
-        libraryMap.insert(std::pair<const char*, MonoImage*>{ "Scripting", mono_assembly_get_image(assembly) });
+        libraryMap.insert(std::pair<const char*, MonoImage*>{ "Scripting", scripting });
 
         // get ScriptCore Image
         MonoTableInfo const* tableInfo = mono_image_get_table_info(scripting, MONO_TABLE_ASSEMBLYREF);

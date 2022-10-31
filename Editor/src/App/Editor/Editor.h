@@ -78,8 +78,19 @@ public:
 	SceneOrderingWindow m_sceneOderingWindow;
 public:
 	PopupHelperWindow helper;
+	struct TimedSequence
+	{
+		TimedSequence(std::function<void()>ins, float _duration):
+			max_duration{ _duration },
+			curr_duration{ _duration },
+			instruction{ ins } {};
+		std::function<void(void)> instruction;
+		const float max_duration = 0;
+		float curr_duration = 0;
+	};
+	void AddSequence(TimedSequence&& seq);
 private:
-
-
+	std::vector<TimedSequence> m_timedseq;
+	void TimedUpdate();
 };
 

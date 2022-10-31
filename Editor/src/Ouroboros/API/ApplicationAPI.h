@@ -21,6 +21,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/WindowsWindow.h"
 
 #include "Ouroboros/Core/Timer.h"
+#include "Ouroboros/Physics/PhysicsSystem.h"
 
 #include "Project.h"
 
@@ -82,37 +83,33 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     SCRIPT_API float Time_GetTimeScale()
     {
-        // return static_cast<float>(Timestep::TimeScale);
         return timer::get_timescale();
     }
 
     SCRIPT_API void Time_SetTimeScale(float timeScale)
     {
-        // Timestep::TimeScale = timeScale;
         timer::set_timescale(timeScale);
     }
 
     SCRIPT_API float Time_GetDeltaTime()
     {
-        // return Timestep::DeltaTime();
         return timer::dt();
     }
 
     SCRIPT_API float Time_GetUnscaledDeltaTime()
     {
-        // return Timestep::UnscaledTime();
         return timer::unscaled_dt();
     }
 
-    //SCRIPT_API float Time_GetFixedDeltaTime()
-    //{
-    //    return static_cast<float>(PhysicsSystem::FixedDeltaTime * Timestep::TimeScale);
-    //}
+    SCRIPT_API float Time_GetFixedDeltaTime()
+    {
+        return static_cast<float>(PhysicsSystem::GetFixedDeltaTime());
+    }
 
-    //SCRIPT_API float Time_GetFixedUnscaledDeltaTime()
-    //{
-    //    return static_cast<float>(PhysicsSystem::FixedDeltaTime);
-    //}
+    SCRIPT_API void Time_SetFixedDeltaTime(float value)
+    {
+        return PhysicsSystem::SetFixedDeltaTime(value);
+    }
 
     /*-----------------------------------------------------------------------------*/
     /* Asset Functions for C#                                                      */

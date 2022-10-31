@@ -42,6 +42,15 @@ namespace oo
         return ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetID();
     }
 
+    SCRIPT_API bool SceneManager_LoadSceneByIndex(Scene::ID_type sceneID)
+    {
+        return ScriptManager::s_SceneManager->ChangeScene(sceneID);
+    }
+    SCRIPT_API bool SceneManager_LoadSceneByName(const char* sceneName)
+    {
+        return ScriptManager::s_SceneManager->ChangeScene(sceneName);
+    }
+
     /*-----------------------------------------------------------------------------*/
     /* C# Scene                                                                    */
     /*-----------------------------------------------------------------------------*/
