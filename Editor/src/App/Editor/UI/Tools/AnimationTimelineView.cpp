@@ -46,6 +46,37 @@ void AnimationTimelineView::Show()
 
 void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _animator)
 {
+    DrawTimeLineInfo();
+
+    ImGui::NewLine();
+
+    ImGui::BeginChildFrame(1, ImVec2(0, 0));
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        //Do Toolbar here
+        DrawToolbar();
+        
+        DrawNodeSelector(_animator);
+
+        DrawTimelineSelector(animation);
+
+        ImGui::SameLine();
+
+        DrawTimeLine(animation, style.ItemSpacing.y, ImGui::GetItemRectSize().y);
+
+        DrawTimeLineContent();
+    }
+    ImGui::EndChildFrame();
+
+    if (playAnim)
+    {
+        currentKeyFrame++;
+    }
+}
+
+void AnimationTimelineView::DrawTimeLineInfo()
+{
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Current:");
     ImGui::SameLine();
@@ -69,131 +100,6 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
     currentTime = currentKeyFrame * unitPerFrame;
     ImGui::InputFloat("##currentTime", &currentTime, 0.0f, 0.0f, "%.2f", ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
     ImGui::SameLine();
-
-    ImGui::NewLine();
-
-    ImGui::BeginChildFrame(1, ImVec2(0, 0));
-    {
-        ImGuiStyle& style = ImGui::GetStyle();
-
-        //Do Toolbar here
-        DrawToolbar();
-        
-        DrawNodeSelector(_animator);
-
-        DrawTimelineSelector(animation);
-
-        ImGui::SameLine();
-
-        DrawTimeLine(animation, style.ItemSpacing.y, ImGui::GetItemRectSize().y);
-
-        ImGui::BeginChild("##content", ImVec2(0, 0), false);
-        {
-            //Add Property Button
-            //Draw Keyframes
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
-            ImGui::Columns(2, "##legend", false);
-            ImGui::SetColumnWidth(0, ImGui::CalcTextSize("Timeline ").x + 160);
-
-            ImGui::NextColumn();
-
-            //Draw Key Frames
-            if (timeline != nullptr)
-            {
-                for (int i = 0; i < timeline->keyframes.size(); ++i)
-                {
-                    for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
-                    {
-                        if ((j * unitPerFrame) == timeline->keyframes[i].time)
-                        {
-                            DrawKeyFrame(j, IM_COL32( 211,211,211,255 ));
-                        }
-                    }
-                }
-            }
-
-            ImGui::NextColumn();
-
-            //Properties GUI
-            if (timeline != nullptr)
-            {
-                bool open = ImGui::TreeNodeEx("Position", ImGuiTreeNodeFlags_DefaultOpen);
-
-                if (open)
-                {
-                    for (int i = 0; i < timeline->keyframes.size(); ++i)
-                    {
-                        if (currentTime == timeline->keyframes[i].time)
-                        {
-                            if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
-                            {
-                                ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::vec3>().x);
-                                ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::vec3>().y);
-                                ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::vec3>().z);
-                            }
-                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
-                            {
-                                ImGui::DragFloat("W", &timeline->keyframes[i].data.get_value<glm::quat>().w);
-                                ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::quat>().x);
-                                ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::quat>().y);
-                                ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::quat>().z);
-                            }
-                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
-                            {
-                                ImGui::Checkbox("", &timeline->keyframes[i].data.get_value<bool>());
-                            }
-                        }
-                    }
-
-                    ImGui::NextColumn();
-                    for (int i = 0; i < timeline->keyframes.size(); ++i)
-                    {
-                        for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
-                        {
-                            if ((j * unitPerFrame) == timeline->keyframes[i].time)
-                            {
-                                if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
-                                {
-                                    ImGui::SetCursorPosY(25);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                    ImGui::SetCursorPosY(48);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                    ImGui::SetCursorPosY(71);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                }
-                                else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
-                                {
-                                    ImGui::SetCursorPosY(25);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                    ImGui::SetCursorPosY(48);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                    ImGui::SetCursorPosY(71);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                    ImGui::SetCursorPosY(94);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                }
-                                else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
-                                {
-                                    ImGui::SetCursorPosY(25);
-                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                }
-                            }
-                        }
-                    }
-
-                    ImGui::TreePop();
-                }
-            }
-
-            ImGui::EndChild();
-        }
-    }
-    ImGui::EndChildFrame();
-
-    if (playAnim)
-    {
-        currentKeyFrame++;
-    }
 }
 
 void AnimationTimelineView::DrawToolbar()
@@ -462,6 +368,110 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
         ImVec2 size = ImVec2(lineStartOffset + 8, timelineRegionMin.y + contentRegion.y + style.ItemSpacing.y * 2);
 
         drawList->AddRectFilledMultiColor(start, ImVec2(start.x + size.x, start.y + size.y), 0xFF000000, 0u, 0u, 0xFF000000);
+    }
+}
+
+void AnimationTimelineView::DrawTimeLineContent()
+{
+    ImGui::BeginChild("##content", ImVec2(0, 0), false);
+    {
+        //Add Property Button
+        //Draw Keyframes
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
+        ImGui::Columns(2, "##legend", false);
+        ImGui::SetColumnWidth(0, ImGui::CalcTextSize("Timeline ").x + 160);
+
+        ImGui::NextColumn();
+
+        //Draw Key Frames
+        if (timeline != nullptr)
+        {
+            for (int i = 0; i < timeline->keyframes.size(); ++i)
+            {
+                for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
+                {
+                    if ((j * unitPerFrame) == timeline->keyframes[i].time)
+                    {
+                        DrawKeyFrame(j, IM_COL32(211, 211, 211, 255));
+                    }
+                }
+            }
+        }
+
+        ImGui::NextColumn();
+
+        //Properties GUI
+        if (timeline != nullptr)
+        {
+            bool open = ImGui::TreeNodeEx("Position", ImGuiTreeNodeFlags_DefaultOpen);
+
+            if (open)
+            {
+                for (int i = 0; i < timeline->keyframes.size(); ++i)
+                {
+                    if (currentTime == timeline->keyframes[i].time)
+                    {
+                        if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
+                        {
+                            ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::vec3>().x);
+                            ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::vec3>().y);
+                            ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::vec3>().z);
+                        }
+                        else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
+                        {
+                            ImGui::DragFloat("W", &timeline->keyframes[i].data.get_value<glm::quat>().w);
+                            ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::quat>().x);
+                            ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::quat>().y);
+                            ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::quat>().z);
+                        }
+                        else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
+                        {
+                            ImGui::Checkbox("", &timeline->keyframes[i].data.get_value<bool>());
+                        }
+                    }
+                }
+
+                ImGui::NextColumn();
+                for (int i = 0; i < timeline->keyframes.size(); ++i)
+                {
+                    for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
+                    {
+                        if ((j * unitPerFrame) == timeline->keyframes[i].time)
+                        {
+                            if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
+                            {
+                                ImGui::SetCursorPosY(25);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                ImGui::SetCursorPosY(48);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                ImGui::SetCursorPosY(71);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            }
+                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
+                            {
+                                ImGui::SetCursorPosY(25);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                ImGui::SetCursorPosY(48);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                ImGui::SetCursorPosY(71);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                ImGui::SetCursorPosY(94);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            }
+                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
+                            {
+                                ImGui::SetCursorPosY(25);
+                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            }
+                        }
+                    }
+                }
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::EndChild();
     }
 }
 
