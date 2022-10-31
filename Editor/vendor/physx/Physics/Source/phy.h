@@ -95,6 +95,8 @@ namespace myPhysx {
         phy_uuid::UUID otherID;
 
         trigger status = trigger::none;
+        bool passingAway = false;
+
         //bool isStaying = false;
     };
 

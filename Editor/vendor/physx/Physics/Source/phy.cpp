@@ -280,9 +280,7 @@ namespace myPhysx
         return PhysicsObject{ generated_uuid, this }; // a copy
     }
 
-    void PhysxWorld::removeInstance(PhysicsObject obj)
-    {
-        // check what need to release 
+    void PhysxWorld::removeInstance(PhysicsObject obj) {
 
         // release rigidstatic or rigiddynamic
         if (all_objects.contains(obj.id)) {
@@ -297,30 +295,45 @@ namespace myPhysx
 
             // release shape
             //underlying_obj->m_shape->release();
+            
+            all_objects.erase(obj.id);
         }
 
         // check/find the id from the obj vector then if match 
         // remove from that vector then release
         // NOTE: DON't MIXUP ELEM ID and OBJ ID HERE, 2 different types.
         auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == obj.id; });
-        // why does this even happen?
-        if(begin != m_objects.end())
-            m_objects.erase(begin);
         
-        //begin->destroy();
+        //if(begin != m_objects.end())
+        //    m_objects.erase(begin);
         
+        m_objects.erase(begin);
     }
 
     /*
     void PhysxWorld::updateTriggerState() {
 
-        for (TriggerManifold& temp : m_triggerCollisionPairs) {
+        //for (TriggerManifold& temp : m_triggerCollisionPairs) {
+        //
+        //    if (temp.isStaying) {
+        //        temp.status = trigger::onTriggerStay;
+        //        printf("Shape is still within trigger volume\n");
+        //    }
+        //}
 
-            if (temp.isStaying) {
-                temp.status = trigger::onTriggerStay;
-                printf("Shape is still within trigger volume\n");
-            }
+        std::queue<TriggerManifold> temp;
+
+        while(!m_triggerCollisionPairs.empty()) {
+
+            TriggerManifold val = m_triggerCollisionPairs.front();
+
+            if (all_objects.contains(val.triggerID) && all_objects.contains(val.otherID))
+                temp.emplace(val);
+
+            m_triggerCollisionPairs.pop();
         }
+
+        m_triggerCollisionPairs = temp;
     }
     */
 
