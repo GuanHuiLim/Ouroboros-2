@@ -127,11 +127,8 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
                         {
                             if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
                             {
-                                float y1 = ImGui::GetCursorPosY();
                                 ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::vec3>().x);
-                                float y2 = ImGui::GetCursorPosY();
                                 ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::vec3>().y);
-                                float y3 = ImGui::GetCursorPosY();
                                 ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::vec3>().z);
                             }
                             else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
@@ -259,7 +256,7 @@ void AnimationTimelineView::DrawToolbar()
 
     if (ImGui::Button("Add Event"))
     {
-
+        //Creates an event, basically drawing a new keyframe at that currentTime
     }
 }
 
