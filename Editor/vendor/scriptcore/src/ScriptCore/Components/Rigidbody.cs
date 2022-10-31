@@ -13,6 +13,15 @@ namespace Ouroboros
             set { RigidbodyComponent_SetIsTrigger(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
+        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetUseGravity(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetUseGravity(uint sceneID, ulong instanceID, bool value);
+
+        public bool useGravity
+        {
+            get { return RigidbodyComponent_GetUseGravity(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetUseGravity(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
         [DllImport("__Internal")] private static extern void Rigidbody_GetVelocity(uint sceneID, ulong instanceID, out float x, out float y, out float z);
         [DllImport("__Internal")] private static extern void Rigidbody_SetVelocity(uint sceneID, ulong uuid, float x, float y, float z);
 

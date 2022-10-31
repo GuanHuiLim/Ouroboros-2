@@ -97,6 +97,12 @@ namespace oo
             AddScript(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
         }
     }
+    void ScriptSystem::UpdateObjectFieldsWithInfo(oo::UUID uuid)
+    {
+        std::shared_ptr<GameObject> gameObject = scene.FindWithInstanceID(uuid);
+        ASSERT(gameObject == nullptr);
+        UpdateScriptFieldsWithInfo(uuid, gameObject->GetComponent<ScriptComponent>());
+    }
 
     bool ScriptSystem::StopPlay()
     {
@@ -227,6 +233,10 @@ namespace oo
         if (!isPlaying)
             return 0;
         return componentDatabase.TryRetrieveDerived(uuid, name_space, name);
+    }
+    ComponentDatabase::IntPtr ScriptSystem::HasActualComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
+    {
+        return componentDatabase.HasComponent(uuid, name_space, name);
     }
     void ScriptSystem::RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
     {
@@ -391,13 +401,14 @@ namespace oo
     {
         for (auto& [scriptKey, scriptInfo] : script.GetScriptInfoAll())
         {
-            MonoObject* scriptObj = scriptDatabase.RetrieveObject(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            ScriptDatabase::IntPtr scriptPtr = scriptDatabase.Retrieve(uuid, scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
+            MonoObject* scriptObj = mono_gchandle_get_target(scriptPtr);
             MonoClass* scriptClass = ScriptEngine::GetClass("Scripting", scriptInfo.classInfo.name_space.c_str(), scriptInfo.classInfo.name.c_str());
             for (auto& [fieldKey, fieldInfo] : scriptInfo.fieldMap)
             {
                 MonoClassField* field = mono_class_get_field_from_name(scriptClass, fieldInfo.name.c_str());
                 ScriptValue::SetFieldValue(scriptObj, field, fieldInfo.value);
-                fieldInfo.SetScriptReference(field, scriptObj);
+                fieldInfo.SetScriptReference(field, scriptPtr);
             }
         }
     }
@@ -438,7 +449,6 @@ namespace oo
         void* otherParams[1];
         otherParams[0] = obj;
 
-        MonoMethod* method = nullptr;
         switch (e->State)
         {
         case PhysicsEventState::ENTER:
