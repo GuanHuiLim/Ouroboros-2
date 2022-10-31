@@ -24,10 +24,10 @@ void ImGuiManager::InitAssetsAll()
 {
 	//will change to using filesystem later.
 	//currently not all assets are required
-	s_editorAssetManager.LoadDirectory("Log Icons");
-	s_editorAssetManager.LoadDirectory("Generic Button Icons");
-	s_editorAssetManager.LoadDirectory("Component Icons");
-	s_editorAssetManager.LoadDirectory("File Icons");
+	s_editorAssetManager.GetOrLoadDirectory("Log Icons");
+	s_editorAssetManager.GetOrLoadDirectory("Generic Button Icons");
+	s_editorAssetManager.GetOrLoadDirectory("Component Icons");
+	s_editorAssetManager.GetOrLoadDirectory("File Icons");
 	//ImGuiManager::s_editorAssetManager.LoadName("FolderIcon.png");
 	//ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png");
 }

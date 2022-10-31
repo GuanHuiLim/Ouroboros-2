@@ -165,16 +165,16 @@ namespace oo
         GlobalTransform.SetTransform(target_global_matrix);
     }
 
-    void oo::TransformComponent::LookAt(vec3 target)
+    /*void oo::TransformComponent::LookAt(vec3 target)
     {
         LocalMatrixDirty = true;
         LocalTransform.LookAt(target);
-    }
+    }*/
 
-    void oo::TransformComponent::GlobalLookAtDir(vec3 target_global)
+    void oo::TransformComponent::LookAt(vec3 normalized_direction)
     {
         GlobalMatrixDirty = true;
-        GlobalTransform.GlobalLookAtDir(target_global);
+        GlobalTransform.LookAt(normalized_direction);
     }
 
     void TransformComponent::CalculateLocalTransform()
