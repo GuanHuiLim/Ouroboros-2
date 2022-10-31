@@ -45,6 +45,15 @@ void EditorLayer::OnUpdate()
 	    m_editor.Update();
 #endif
 
+	if (Project::GetAssetManager() && ImGui::Button("print tree"))
+	{
+		Project::GetAssetManager()->PrintTree();
+	}
+	if (Project::GetAssetManager() && ImGui::Button("unload all"))
+	{
+		Project::GetAssetManager()->UnloadAll();
+	}
+
 	//top menu bar
 	//Editor::MenuBar();
 	if (ImGui::BeginMainMenuBar())
