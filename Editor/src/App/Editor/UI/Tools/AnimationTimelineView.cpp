@@ -54,7 +54,6 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
-        //Do Toolbar here
         DrawToolbar();
         
         DrawNodeSelector(_animator);
@@ -163,6 +162,29 @@ void AnimationTimelineView::DrawToolbar()
     if (ImGui::Button("Add Event"))
     {
         //Creates an event, basically drawing a new keyframe at that currentTime
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Delete KeyFrame"))
+    {
+        if (timeline != nullptr)
+        {
+            for (int i = 0; i < timeline->keyframes.size(); ++i)
+            {
+                if (currentTime == timeline->keyframes[i].time)
+                {
+                    timeline->keyframes.erase(timeline->keyframes.begin() + i);
+                }
+            }
+        }
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Delete Event"))
+    {
+        //delete event
     }
 }
 
