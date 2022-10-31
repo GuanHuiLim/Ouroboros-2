@@ -29,6 +29,7 @@ public:
 
 private:
 	oo::AnimationComponent* animator = nullptr;
+	oo::Anim::Node* node = nullptr;
 	oo::Anim::Animation* animation = nullptr;
 	oo::Anim::Timeline* timeline = nullptr;
 	

@@ -127,8 +127,11 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
                         {
                             if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
                             {
+                                float y1 = ImGui::GetCursorPosY();
                                 ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::vec3>().x);
+                                float y2 = ImGui::GetCursorPosY();
                                 ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::vec3>().y);
+                                float y3 = ImGui::GetCursorPosY();
                                 ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::vec3>().z);
                             }
                             else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
@@ -141,6 +144,42 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
                             else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
                             {
                                 ImGui::Checkbox("", &timeline->keyframes[i].data.get_value<bool>());
+                            }
+                        }
+                    }
+
+                    ImGui::NextColumn();
+                    for (int i = 0; i < timeline->keyframes.size(); ++i)
+                    {
+                        for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
+                        {
+                            if ((j * unitPerFrame) == timeline->keyframes[i].time)
+                            {
+                                if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::vec3>())
+                                {
+                                    ImGui::SetCursorPosY(25);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                    ImGui::SetCursorPosY(48);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                    ImGui::SetCursorPosY(71);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                }
+                                else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
+                                {
+                                    ImGui::SetCursorPosY(25);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                    ImGui::SetCursorPosY(48);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                    ImGui::SetCursorPosY(71);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                    ImGui::SetCursorPosY(94);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                }
+                                else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
+                                {
+                                    ImGui::SetCursorPosY(25);
+                                    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                                }
                             }
                         }
                     }
@@ -201,7 +240,19 @@ void AnimationTimelineView::DrawToolbar()
 
     if (ImGui::Button("Add Keyframe"))
     {
+        //provide a drop down of the type of keyframe to make
 
+        if (timeline != nullptr)
+        {
+            oo::Anim::KeyFrame newkf{
+            .data{glm::vec3{0.f,0.f,0.f}},
+            .time{currentTime}
+            };
+
+            auto& temp = animator->GetActualComponent().animTree->groups;
+            auto newKeyFrame = animator->AddKeyFrame(temp.begin()->second.name, node->name, timeline->name, newkf);
+            assert(newKeyFrame);
+        }
     }
 
     ImGui::SameLine();
@@ -240,7 +291,8 @@ void AnimationTimelineView::DrawNodeSelector(oo::AnimationComponent* _animator)
                     if (ImGui::Selectable(it2->second.name.c_str()))
                     {
                         animName = it2->second.name;
-                        animation = &it2->second.GetAnimation();
+                        node = &it2->second;
+                        animation = &node->GetAnimation();
                         currentKeyFrame = 0;
                         animopen = !animopen;
                     }
