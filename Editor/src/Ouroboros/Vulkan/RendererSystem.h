@@ -25,6 +25,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/CameraController.h"
 
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
 namespace oo
 {
     class RendererSystem : public Ecs::System
@@ -36,7 +37,15 @@ namespace oo
         RendererSystem(GraphicsWorld* graphicsWorld);
 
         void Init();
-        
+
+        virtual void Run(Ecs::ECSWorld* world) override;
+
+        void UpdateCamerasEditorMode();
+        void UpdateCamerasRuntime();
+        void SaveEditorCamera();
+
+    private:
+        void OnScreenResize(WindowResizeEvent* e);
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
@@ -44,14 +53,6 @@ namespace oo
         void OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
         void OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
 
-        //void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
-
-        virtual void Run(Ecs::ECSWorld* world) override;
-        void UpdateCamerasEditorMode();
-        void UpdateCamerasRuntime();
-        void SaveEditorCamera();
-
-    private:
         void RenderDebugDraws(Ecs::ECSWorld* world);
         void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);

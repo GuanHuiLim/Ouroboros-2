@@ -28,7 +28,6 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Core/Input.h"
-
 namespace oo
 {
     Camera RendererSystem::m_editorCamera = [&]()
@@ -40,6 +39,15 @@ namespace oo
         camera.Rotate({ 45, 180, 0 });
         return camera;
     }();
+
+    void RendererSystem::OnScreenResize(WindowResizeEvent* e)
+    {
+        auto w = e->GetHeight();
+        auto h = e->GetWidth();
+        auto ar = w / h;
+        m_editorCamera.SetAspectRatio(ar);
+        m_runtimeCamera.SetAspectRatio(ar);
+    }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
@@ -125,6 +133,8 @@ namespace oo
 
         m_world->SubscribeOnRemoveComponent<RendererSystem, LightComponent>(
             this, &RendererSystem::OnLightRemove);
+
+        EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
     }
 
     void RendererSystem::SaveEditorCamera()
