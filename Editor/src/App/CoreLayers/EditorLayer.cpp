@@ -45,10 +45,13 @@ void EditorLayer::OnUpdate()
 	    m_editor.Update();
 #endif
 
+#ifdef OO_DEBUG
 	if (Project::GetAssetManager() && ImGui::Button("print tree"))
 	{
 		Project::GetAssetManager()->PrintTree();
 	}
+#endif
+
 	if (Project::GetAssetManager() && ImGui::Button("unload all"))
 	{
 		Project::GetAssetManager()->UnloadAll();
