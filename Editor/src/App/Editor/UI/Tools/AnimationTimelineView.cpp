@@ -59,8 +59,6 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
         
         DrawNodeSelector(_animator);
 
-        DrawTimelineSelector(animation);
-
         ImGui::SameLine();
 
         DrawTimeLine(animation, style.ItemSpacing.y, ImGui::GetItemRectSize().y);
@@ -71,6 +69,11 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
 
     if (playAnim)
     {
+        for (int i = 0; i < animation->timelines.size(); ++i)
+        {
+            if (currentKeyFrame == animation->timelines[i].keyframes[animation->timelines[i].keyframes.size() - 1].time / unitPerFrame)
+                currentKeyFrame = 0;
+        }
         currentKeyFrame++;
     }
 }
@@ -239,50 +242,6 @@ void AnimationTimelineView::DrawNodeSelector(oo::AnimationComponent* _animator)
                         currentKeyFrame = 0;
                         animopen = !animopen;
                     }
-                }
-            }
-        }
-        ImGui::EndListBox();
-    }
-    ImGui::EndGroup();
-    ImGui::PopItemWidth();
-}
-
-void AnimationTimelineView::DrawTimelineSelector(oo::Anim::Animation* _animation)
-{
-    static bool timelineopen = false;
-    static std::string timelineName = "empty";
-    ImGui::PushItemWidth(160);
-    ImGui::BeginGroup();
-    ImGui::Text("Timeline");
-    ImGui::SameLine();
-    ImGui::InputText("##timelinestuff", &timelineName, ImGuiInputTextFlags_ReadOnly);
-    ImGui::SameLine();
-    if (ImGui::ArrowButton("timelinedownbtn", ImGuiDir_Down))
-    {
-        timelineopen = !timelineopen;
-    }
-    if (timelineopen)
-    {
-        if (ImGui::BeginListBox("##timeline"))
-        {
-            if (_animation != nullptr)
-            {
-                for (int i = 0; i < _animation->timelines.size(); ++i)
-                {
-                    if (ImGui::Selectable(_animation->timelines[i].name.c_str()))
-                    {
-                        timelineName = _animation->timelines[i].name;
-                        timeline = &_animation->timelines[i];
-                        timelineopen = !timelineopen;
-                    }
-                }
-            }
-            else
-            {
-                if (ImGui::Selectable("empty"))
-                {
-                    timelineopen = !timelineopen;
                 }
             }
         }
@@ -481,12 +440,9 @@ void AnimationTimelineView::DrawTimeLineContent()
                                 ImGui::DragFloat("X", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().x);
                                 ImGui::DragFloat("Y", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().y);
                                 ImGui::DragFloat("Z", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().z);
-                                ImGui::DragInt("Time", &currentKeyFrame);
 
-                                animation->timelines[i].keyframes[j].time = currentTime;
-
-                                animation->timelines[i].rttr_property.set_value(animation->timelines[i].rttr_property,
-                                    animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
+                                animation->timelines[i].rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
+                                                                                animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
                             }
                         }
                     }

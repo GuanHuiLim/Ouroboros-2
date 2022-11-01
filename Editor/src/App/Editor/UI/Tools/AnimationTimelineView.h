@@ -64,7 +64,6 @@ private:
 	void DrawTimeLineInfo();
 	void DrawToolbar();
 	void DrawNodeSelector(oo::AnimationComponent* _animator);
-	void DrawTimelineSelector(oo::Anim::Animation* _animation);
 	void DrawTimeLine(oo::Anim::Animation* _animation, float headerYPadding, float headerHeight = 24.0f);
 	void DrawTimeLineContent();
 	void DrawKeyFrame(int _currentKeyFrame, ImU32 colour);
