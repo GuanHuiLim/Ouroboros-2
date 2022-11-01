@@ -19,16 +19,21 @@ Technology is prohibited.
 #include "AnimationNode.h"
 #include "AnimationLink.h"
 #include "AnimationCondition.h"
+#include "AnimationTimeline.h"
+#include "Animation.h"
 #include "AnimationTree.h"
 #include "AnimationTracker.h"
 #include "AnimationSystem.h"
 #include "AnimationComponent.h"
 
+std::unordered_map <StringHash::size_type, rttr::type> oo::Anim::internal::hash_to_rttrType{};
 std::unordered_map <rttr::type::type_id, StringHash::size_type> oo::Anim::internal::rttrType_to_hash = []()
 {
 	std::unordered_map <rttr::type::type_id, StringHash::size_type> map;
 	auto add = [&]( rttr::type type, std::string const str) {
-		map[type.get_id()] = StringHash::GenerateFNV1aHash(str);
+		auto hash = StringHash::GenerateFNV1aHash(str);
+		map[type.get_id()] = hash;
+		oo::Anim::internal::hash_to_rttrType.emplace(hash, type);
 	};
 
 	add(rttr::type::get<bool>(), "bool");
@@ -36,6 +41,8 @@ std::unordered_map <rttr::type::type_id, StringHash::size_type> oo::Anim::intern
 	add(rttr::type::get<int>(), "int");
 	add(rttr::type::get<size_t>(), "size_t");
 	add(rttr::type::get<std::string>(), "std::string");
+	add(rttr::type::get<glm::vec3>(), "glm::vec3");
+	add(rttr::type::get<glm::quat>(), "glm::quat");
 
 	return map;
 }();
@@ -44,6 +51,7 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 {
 	std::unordered_map<rttr::type::type_id, SerializeFn*> map;
 
+	//built in types
 	map[rttr::type::get<bool>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -64,6 +72,36 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 	{
 		writer.Uint64(val.get_value<size_t>());
 	};
+
+	//rttr types
+	map[rttr::type::get<rttr::variant>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto name = val.get_type().get_name();
+		assert(serializeRTTRVariantFn_map.contains(val.get_type().get_id()));
+		serializeRTTRVariantFn_map[val.get_type().get_id()](writer, val);
+	};
+	map[rttr::type::get<rttr::type>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto& type = val.get_value<rttr::type>();
+		writer.String(type.get_name().data(), static_cast<rapidjson::SizeType>(type.get_name().size()));
+	};
+	map[rttr::type::get<rttr::property>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto& prop = val.get_value<rttr::property>();
+		writer.StartObject();
+		writer.Key("Type", static_cast<rapidjson::SizeType>(std::string("Type").size()));
+		rttr::variant type = prop.get_type();
+		oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<rttr::type>().get_id())(writer, type);
+
+		writer.Key("Property", static_cast<rapidjson::SizeType>(std::string("Property").size()));
+		writer.String(prop.get_name().data(), static_cast<rapidjson::SizeType>(prop.get_name().size()));
+		writer.EndObject();
+	};
+
+	//complex types
 	map[rttr::type::get<glm::vec3>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -71,34 +109,56 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		writer.StartObject();
 		{
 			writer.Key("X", static_cast<rapidjson::SizeType>(std::string("X").size()));
-			rttr::variant val = vec.x;
-			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, val);
+			rttr::variant x = vec.x;
+			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, x);
 		}
 		{
 			writer.Key("Y", static_cast<rapidjson::SizeType>(std::string("Y").size()));
-			rttr::variant val = vec.y;
-			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, val);
+			rttr::variant y = vec.y;
+			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, y);
 		}
 		{
 			writer.Key("Z", static_cast<rapidjson::SizeType>(std::string("Z").size()));
-			rttr::variant val = vec.z;
-			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, val);
+			rttr::variant z = vec.z;
+			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, z);
 		}
 		writer.EndObject();
 	};
+
+	map[rttr::type::get<glm::quat>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto& quaternion = val.get_value<glm::quat>();
+		writer.StartObject();
+		{
+			writer.Key("X", static_cast<rapidjson::SizeType>(std::string("X").size()));
+			rttr::variant x = quaternion.x;
+			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, x);
+		}
+		{
+			writer.Key("Y", static_cast<rapidjson::SizeType>(std::string("Y").size()));
+			rttr::variant y = quaternion.y;
+			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, y);
+		}
+		{
+			writer.Key("Z", static_cast<rapidjson::SizeType>(std::string("Z").size()));
+			rttr::variant z = quaternion.z;
+			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, z);
+		}
+		{
+			writer.Key("W", static_cast<rapidjson::SizeType>(std::string("W").size()));
+			rttr::variant w = quaternion.w;
+			oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<float>().get_id())(writer, w);
+		}
+		writer.EndObject();
+	};
+
 	map[rttr::type::get<std::string>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
 		auto& str = val.get_value<std::string>();
 		writer.String(str.c_str(), static_cast<rapidjson::SizeType>(str.size()));
 	};
-	map[rttr::type::get<rttr::variant>().get_id()]
-		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
-	{
-		//auto var = val.get_value<rttr::variant>();
-		auto temp = val.get_type().get_name();
-		serializeRTTRVariantFn_map[val.get_type().get_id()](writer, val);
-	}; 
 	map[rttr::type::get<Condition::CompareType>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -111,6 +171,37 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		auto str = rttr::type::get <oo::Anim::P_TYPE>().get_enumeration().value_to_name(val);
 		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
 	};
+	map[rttr::type::get<oo::Anim::Timeline::TYPE>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto str = rttr::type::get <oo::Anim::Timeline::TYPE>().get_enumeration().value_to_name(val);
+		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
+	};
+	map[rttr::type::get<oo::Anim::Timeline::DATATYPE>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto str = rttr::type::get <oo::Anim::Timeline::DATATYPE>().get_enumeration().value_to_name(val);
+		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
+	};
+	map[rttr::type::get<oo::ScriptValue::function_info>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto& scriptinfo = val.get_value< oo::ScriptValue::function_info>();
+		writer.StartObject();
+		writer.Key("classNamespace", static_cast<rapidjson::SizeType>(std::string("classNamespace").size()));
+		writer.String(scriptinfo.classNamespace.c_str(), static_cast<rapidjson::SizeType>(scriptinfo.classNamespace.size()));
+
+		writer.Key("className", static_cast<rapidjson::SizeType>(std::string("className").size()));
+		writer.String(scriptinfo.className.c_str(), static_cast<rapidjson::SizeType>(scriptinfo.className.size()));
+
+		writer.Key("functionName", static_cast<rapidjson::SizeType>(std::string("functionName").size()));
+		writer.String(scriptinfo.functionName.c_str(), static_cast<rapidjson::SizeType>(scriptinfo.functionName.size()));
+
+		//TODO: set up rttr registration for ScriptValue::function_info so I dont have to deal with this
+		//writer.Key("paramList", static_cast<rapidjson::SizeType>(std::string("paramList").size()));
+		writer.EndObject();
+	};
+	//references
 	map[rttr::type::get<GroupRef>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -193,9 +284,260 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		writer.String(str.c_str(), static_cast<rapidjson::SizeType>(str.size()));
 		writer.EndObject();
 	};
+
+	map[rttr::type::get<glm::vec3>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		writer.StartObject();
+		writer.Key("Type Hash", static_cast<rapidjson::SizeType>(std::string("Type Hash").size()));
+		writer.Uint64(static_cast<uint64_t>(rttrType_to_hash[rttr::type::get<glm::vec3>().get_id()]));
+		writer.Key("Value", static_cast<rapidjson::SizeType>(std::string("Value").size()));
+		internal::serializeDataFn_map.at(val.get_type().get_id())(writer, val);
+		writer.EndObject();
+	};
+
+	map[rttr::type::get<glm::quat>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		writer.StartObject();
+		writer.Key("Type Hash", static_cast<rapidjson::SizeType>(std::string("Type Hash").size()));
+		writer.Uint64(static_cast<uint64_t>(rttrType_to_hash[rttr::type::get<glm::vec3>().get_id()]));
+		writer.Key("Value", static_cast<rapidjson::SizeType>(std::string("Value").size()));
+		internal::serializeDataFn_map.at(val.get_type().get_id())(writer, val);
+		writer.EndObject();
+	};
 	return map;
 }();
 
+std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::internal::loadDataFn_map = []()
+{
+	std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> map;
+	/*------------------------
+	built in types
+	------------------------*/
+	map[rttr::type::get<bool>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		return rttr::variant{ value.GetBool() };
+	};
+	map[rttr::type::get<float>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		return rttr::variant{ value.GetFloat() };
+	};
+	map[rttr::type::get<int>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		return rttr::variant{ value.GetInt() };
+	};
+	map[rttr::type::get<size_t>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		return rttr::variant{ value.GetUint64() };
+	};
+	map[rttr::type::get<std::string>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		return rttr::variant{ std::string{value.GetString()} };
+	};
+	/*------------------------
+	rttr types
+	------------------------*/
+	map[rttr::type::get<rttr::variant>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto rttr_obj = value.GetObj();
+
+		return rttr::variant{ oo::Anim::internal::LoadRTTRVariant(rttr_obj)};
+	};
+	map[rttr::type::get<rttr::type>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		 std::string str = value.GetString();
+
+		return rttr::variant{ rttr::type::get_by_name(str) };
+	};
+	map[rttr::type::get<rttr::property>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto obj = value.GetObj(); 
+		auto var = oo::Anim::internal::loadDataFn_map.at(rttr::type::get<rttr::type>().get_id())(obj.FindMember("Type")->value).get_value<rttr::type>();
+		auto prop = var.get_property(obj.FindMember("Property")->value.GetString());
+		return rttr::variant{ prop };
+	};
+	/*------------------------
+	complex types
+	------------------------*/
+	map[rttr::type::get<glm::vec3>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		glm::vec3 vec{};
+		auto vec_obj = value.GetObj();
+		vec.x = vec_obj.FindMember("X")->value.GetFloat();
+		vec.y = vec_obj.FindMember("Y")->value.GetFloat();
+		vec.z = vec_obj.FindMember("Z")->value.GetFloat();
+
+		return rttr::variant{ vec };
+	};
+
+	map[rttr::type::get<glm::quat>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		glm::quat quaternion{};
+		auto vec_obj = value.GetObj();
+		quaternion.x = vec_obj.FindMember("X")->value.GetFloat();
+		quaternion.y = vec_obj.FindMember("Y")->value.GetFloat();
+		quaternion.z = vec_obj.FindMember("Z")->value.GetFloat();
+		quaternion.w = vec_obj.FindMember("W")->value.GetFloat();
+
+		return rttr::variant{ quaternion };
+	};
+
+	map[rttr::type::get<Condition::CompareType>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto enum_value = rttr::type::get <Condition::CompareType>().get_enumeration().name_to_value(value.GetString());
+		return rttr::variant{ enum_value };
+	};
+
+	map[rttr::type::get<oo::Anim::P_TYPE>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto enum_value = rttr::type::get <oo::Anim::P_TYPE>().get_enumeration().name_to_value(value.GetString());
+		return rttr::variant{ enum_value };
+	};
+
+	map[rttr::type::get<oo::Anim::Timeline::TYPE>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto enum_value = rttr::type::get <oo::Anim::Timeline::TYPE>().get_enumeration().name_to_value(value.GetString());
+		return rttr::variant{ enum_value };
+	};
+
+	map[rttr::type::get<oo::Anim::Timeline::DATATYPE>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto enum_value = rttr::type::get <oo::Anim::Timeline::DATATYPE>().get_enumeration().name_to_value(value.GetString());
+		return rttr::variant{ enum_value };
+	};
+
+	map[rttr::type::get<oo::ScriptValue::function_info>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		oo::ScriptValue::function_info info{};
+		auto obj = value.GetObj();
+		info.classNamespace = obj.FindMember("classNamespace")->value.GetString();
+		info.className = obj.FindMember("className")->value.GetString();
+		info.functionName = obj.FindMember("functionName")->value.GetString();
+		return rttr::variant{ info };
+	};
+	/*------------------------
+	references
+	------------------------*/
+	map[rttr::type::get<GroupRef>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		GroupRef ref;
+		auto load_fn = rttr::type::get<GroupRef>().get_method(internal::load_method_name);
+		load_fn.invoke({}, value, ref);
+		return rttr::variant{ ref };
+	};
+
+	map[rttr::type::get<NodeRef>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		NodeRef ref;
+		auto load_fn = rttr::type::get<NodeRef>().get_method(internal::load_method_name);
+		load_fn.invoke({}, value, ref);
+		return rttr::variant{ ref };
+	};
+
+	map[rttr::type::get<LinkRef>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		LinkRef ref;
+		auto load_fn = rttr::type::get<LinkRef>().get_method(internal::load_method_name);
+		load_fn.invoke({}, value, ref);
+		return rttr::variant{ ref };
+	};
+
+	map[rttr::type::get<AnimRef>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		AnimRef ref;
+		auto load_fn = rttr::type::get<AnimRef>().get_method(internal::load_method_name);
+		load_fn.invoke({}, value, ref);
+		return rttr::variant{ ref };
+	};
+	return map;
+}();
+
+
+std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::internal::loadRTTRVariantFn_map = []()
+{
+	std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> map;
+
+	map[rttr::type::get<bool>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto val = value.GetBool();
+		return rttr::variant{ val };
+	};
+
+	map[rttr::type::get<float>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto val = value.GetFloat();
+		return rttr::variant{ val };
+	};
+
+	map[rttr::type::get<int>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto val = value.GetInt();
+		return rttr::variant{ val };
+	};
+
+	map[rttr::type::get<size_t>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto val = static_cast<size_t>(value.GetUint64());
+		return rttr::variant{ val };
+	};
+
+	map[rttr::type::get<std::string>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto val = std::string{ value.GetString() };
+		return rttr::variant{ val };
+	};
+
+	map[rttr::type::get<glm::vec3>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		assert(oo::Anim::internal::loadDataFn_map.contains(rttr::type::get<glm::vec3>().get_id()));
+		return rttr::variant{ oo::Anim::internal::loadDataFn_map.at(rttr::type::get<glm::vec3>().get_id())(value)};
+	};
+
+	map[rttr::type::get<glm::quat>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		assert(oo::Anim::internal::loadDataFn_map.contains(rttr::type::get<glm::quat>().get_id()));
+		return rttr::variant{ oo::Anim::internal::loadDataFn_map.at(rttr::type::get<glm::quat>().get_id())(value) };
+	};
+
+	return map;
+}();
+
+rttr::variant oo::Anim::internal::LoadRTTRVariant(rapidjson::Value& value)
+{
+	auto hash = static_cast<StringHash::size_type>(value.FindMember("Type Hash")->value.GetUint64());
+	assert(oo::Anim::internal::hash_to_rttrType.contains(hash));
+	auto& type = oo::Anim::internal::hash_to_rttrType.at(hash);
+	auto& rttr_value = value.FindMember("value")->value;
+	assert(oo::Anim::internal::loadRTTRVariantFn_map.contains(type.get_id()));
+	return oo::Anim::internal::loadRTTRVariantFn_map.at(type.get_id())(rttr_value);
+};
 namespace oo::Anim::internal
 {
 	
@@ -939,6 +1281,7 @@ namespace oo::Anim::internal
 		Anim::TimelineInfo createInfo = info;
 
 		//detect gameobject hierarchy
+		if (info.hierarchy_provided == false)
 		{
 			oo::UUID current = info.source_object.GetInstanceID();
 			oo::UUID target = info.target_object.GetInstanceID();
@@ -1003,6 +1346,12 @@ namespace oo::Anim::internal
 
 	bool KeyframeMatchesTimeline(Timeline& timeline, KeyFrame const& keyframe)
 	{
+		if (timeline.rttr_type == rttr::type::get<TransformComponent::quat>())
+		{
+			return timeline.rttr_type == keyframe.data.get_type() ||
+				keyframe.data.get_type() == rttr::type::get<glm::quat>();
+		}
+
 		return timeline.rttr_type == keyframe.data.get_type();
 		/*switch (timeline.datatype)
 		{
@@ -1252,6 +1601,31 @@ namespace oo::Anim::internal
 				node.group.Reload();
 				for (auto& link : node.outgoingLinks)
 					link.Reload();
+			}
+			for (auto& [link_id, link] : group.links)
+			{
+				link.src.Reload();
+				link.dst.Reload();
+			}
+		}
+	}
+
+	void ReAssignReferences(AnimationTree& tree)
+	{
+		for (auto& [group_id, group] : tree.groups)
+		{
+			group.startNode.nodes = &group.nodes;
+			for (auto& [node_id, node] : group.nodes)
+			{
+				node.group.groups = &tree.groups;
+				for (auto& link : node.outgoingLinks)
+					link.links = &group.links;
+			}
+
+			for (auto& [link_id, link] : group.links)
+			{
+				link.src.nodes = &group.nodes;
+				link.dst.nodes = &group.nodes;
 			}
 		}
 	}

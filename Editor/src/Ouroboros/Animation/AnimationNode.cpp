@@ -14,6 +14,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "AnimationNode.h"
+#include "Animation.h"
 #include "AnimationInternal.h"
 
 #include <rttr/registration>
@@ -46,6 +47,36 @@ namespace oo::Anim::internal
 		}
 		writer.EndObject();
 	}
+
+	void LoadNode(rapidjson::GenericObject<false, rapidjson::Value>& object, Node& node)
+	{
+		rttr::instance obj{ node };
+		//properties
+		{
+			auto properties = rttr::type::get<Node>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+		//outgoing links
+		{
+			auto outgoingLinks = object.FindMember("Outgoing Links")->value.GetArray();
+			auto load_fn = rttr::type::get<LinkRef>().get_method(internal::load_method_name);
+			assert(load_fn);
+			for (auto& link : outgoingLinks)
+			{
+				LinkRef new_linkref{}; 
+				load_fn.invoke({}, link, new_linkref);
+
+				node.outgoingLinks.emplace_back(std::move(new_linkref));
+			}
+		}
+	}
 }
 namespace oo::Anim
 {
@@ -60,6 +91,7 @@ namespace oo::Anim
 			.property("position", &Node::position)
 			.property("node_ID", &Node::node_ID)
 			.method(internal::serialize_method_name, &internal::SerializeNode)
+			.method(internal::load_method_name, &internal::LoadNode)
 			;
 	}
 

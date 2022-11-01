@@ -96,6 +96,7 @@ namespace oo::Anim
 		};
 
 		constexpr char  serialize_method_name[] = "Serialize";
+		constexpr char  load_method_name[] = "Load";
 	}
 
 	struct GroupRef
@@ -172,8 +173,8 @@ namespace oo::Anim
 		//int index{ -1 };	//animation index
 		size_t id{ internal::invalid_ID }; //animation's unique identifier
 
-		Animation& operator*() const { return (*anims)[id]; }
-		Animation* operator->() const { return &((*anims)[id]); }
+		Animation& operator*() const { return Retrieve(id); }
+		Animation* operator->() const { return &Retrieve(id); }
 
 		operator bool() const {
 			return valid();
@@ -183,123 +184,15 @@ namespace oo::Anim
 		void Reload();
 		RTTR_ENABLE();
 	private:
+		Animation& Retrieve(size_t id) const;
 		bool valid() const;
 	};
 
-	
-
-	
-	
-	
-
-	struct KeyFrame
-	{
-		//position & scale vec3, rotation quat
-		//using DataType = std::variant<glm::vec3,glm::quat,bool>;
-		using DataType = rttr::variant;
-		//vector3 variable HERE
-		DataType data;
-		float time{ 0.f };
-	};
-
-	struct ScriptEvent
-	{
-		//scriptevent handle or something variable HERE
-		oo::ScriptValue::function_info script_function_info{};
-		float time{0.f};
-	};
-
-	//stores a collection of Keyframes that edit a specific value in a component
-	struct Timeline
-	{
-		enum class TYPE : int
-		{
-			PROPERTY,
-			FBX_ANIM,
-			SCRIPT_EVENT
-		};
-
-		enum class DATATYPE
-		{
-			VEC3,
-			QUAT,
-			BOOL,
-		};
-		std::string name{"Unnamed Timeline"};
-		//what kind of timeline is it for, script events, or property, or fbx animation
-		const TYPE type{};
-		const DATATYPE datatype{};
-		std::vector<int> children_index;
-		std::vector<KeyFrame> keyframes;
-		//function pointer to get the component
-		Ecs::GetCompFn* get_componentFn{nullptr};
-		rttr::type rttr_type;
-		rttr::property rttr_property;
-		size_t component_hash;
-
-		//Timeline(TYPE _type, DATATYPE _datatype, std::string const _name = "Unnamed Timeline");
-		Timeline(TimelineInfo const& info);
-	};
-
-	struct TimelineInfo
-	{
-		//type of animation, PROPERTY - user created, FBX_ANIM - loading from fbx file
-		Timeline::TYPE type;
-		//component hash of the ecs component that the timeline affects
-		size_t component_hash;
-		//property to set for the component
-		rttr::property rttr_property;
-		//property_name - optional
-		std::string property_name{};
-		//name of the timeline
-		std::string timeline_name{ "Unnamed Timeline" };
-		//uuid of the target gameobject to manipulate
-		oo::GameObject target_object;
-		//uuid of the gameobject the AnimationComponent is attached to
-		oo::GameObject source_object;
-		//do not touch
-		std::vector<int> children_index{};
-	};
-	//tracks progress in 1 timeline
-	struct ProgressTracker
-	{
-		using UpdateFn = void(*)(internal::UpdateProgressTrackerInfo&, float);
-
-		Timeline::TYPE type{};
-		size_t index{ 0ul };	//last index of whatever keyframe we were at
-		UpdateFn updatefunction{ nullptr };
-		Timeline* timeline{nullptr};
-
-		ProgressTracker(const Timeline::TYPE _type);
-		static ProgressTracker Create(Timeline::TYPE type);
-	};
-
-	struct Animation
-	{
-		static constexpr const char* empty_animation_name = "empty animation";
-		static std::unordered_map< std::string, size_t> name_to_ID;
-		static std::map<size_t, Animation> animation_storage;
-
-
-		std::string name{ "Unnamed Animation" };
-
-		std::vector<ScriptEvent> events{};
-
-		std::vector<Timeline> timelines{};
-
-		bool looping{ false };
-		
-		float animation_length{0.f};
-
-		size_t animation_ID{ internal::generateUID() };
-
-		static void LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
-		static Animation* AddAnimation(Animation& anim);
-
-	};	
 
 	
 
+	
+	
 	
 }
 

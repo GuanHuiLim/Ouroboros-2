@@ -27,6 +27,7 @@ namespace oo::Anim
 		size_t paramID{ internal::invalid_ID };
 		std::string name{ "Unnamed Parameter" };
 
+		Parameter() = default;
 		Parameter(ParameterInfo const& info);
 		void Set(DataType const& _value);
 

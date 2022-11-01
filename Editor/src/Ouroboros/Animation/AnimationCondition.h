@@ -39,7 +39,7 @@ namespace oo::Anim
 		CompareFn* compareFn{ nullptr };
 		static CompareFnMap const comparisonFn_map;
 
-
+		Condition() = default;
 		Condition(ConditionInfo const& info);
 		bool Satisfied(AnimationTracker& tracker);
 		std::string GetName(AnimationTree const& tree);
