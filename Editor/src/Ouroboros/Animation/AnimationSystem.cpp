@@ -36,6 +36,7 @@ namespace oo::Anim
 	AnimationSystem::~AnimationSystem()
 	{
 		EventManager::Unsubscribe<AnimationSystem, OpenFileEvent>(this, &AnimationSystem::OpenFileCallback);
+		EventManager::Unsubscribe<AnimationSystem, CloseProjectEvent>(this, &AnimationSystem::CloseProjectCallback);
 	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
@@ -49,6 +50,7 @@ namespace oo::Anim
 		this->scene = _scene;
 
 		EventManager::Subscribe<AnimationSystem, OpenFileEvent>(this,&AnimationSystem::OpenFileCallback);
+		EventManager::Subscribe<AnimationSystem, CloseProjectEvent>(this,&AnimationSystem::CloseProjectCallback);
 
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
@@ -250,18 +252,18 @@ namespace oo::Anim
 		auto animationfbx_fp = Project::GetAssetFolder().string();
 
 		//searialization test for animation tree
-		SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");		 
-		LoadAnimationTree(animationfbx_fp + "/Test_Animation_Tree.tree");
+		//SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");		 
+		//LoadAnimationTree(animationfbx_fp + "/Test_Animation_Tree.tree");
 
 
 		//serialization test for animation
-		{
+		/*{
 			auto anim_name = node->GetAnimation().name;
 			auto filepath = animationfbx_fp + "/" + anim_name + ".anim";
 			SaveAnimation(node->GetAnimation(), filepath);
 			LoadAnimation(filepath);
 
-		}
+		}*/
 
 	}
 
@@ -270,25 +272,15 @@ namespace oo::Anim
 		if constexpr (DEBUG_ANIMATION == false) return nullptr;
 
 		auto animationfbx_fp = Project::GetAssetFolder().string();
-		//animationfbx_fp += "/AnimationTest_Character_IdleJumpAttack.fbx";
-
-		//Animation::LoadAnimationFromFBX(animationfbx_fp,);
 		TestObject();
-		//SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");
-		//SaveAnimation(Animation::empty_animation_name, animationfbx_fp + "/test_animation.anim");
 		auto obj_children = scene->GetRoot()->GetChildren();
-		//auto bone_root = obj.GetChildren();
 
-		//SaveAllAnimations(animationfbx_fp);
+
 		return nullptr;
-
 	}
-	bool AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
-	{
-		//map should contain the animation tree
-		assert(AnimationTree::map.contains(name));
 
-		auto& tree = AnimationTree::map[name];
+	bool AnimationSystem::SaveAnimationTree(AnimationTree& tree, std::string filepath)
+	{
 		std::ofstream stream{ filepath ,std::ios::trunc };
 		if (!stream)
 		{
@@ -307,6 +299,16 @@ namespace oo::Anim
 		stream.close();
 		return true;
 	}
+
+	bool AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
+	{
+
+		//map should contain the animation tree
+		assert(AnimationTree::map.contains(name));
+		auto& tree = AnimationTree::map[name];
+
+		return SaveAnimationTree(tree, filepath);
+	}
 	bool AnimationSystem::SaveAllAnimations(std::string filepath)
 	{
 		for (auto& [id, anim] : Animation::animation_storage)
@@ -317,6 +319,18 @@ namespace oo::Anim
 		}
 		return true;
 	}
+
+	bool AnimationSystem::SaveAllAnimationTree(std::string filepath)
+	{
+		for (auto& [name, tree] : AnimationTree::map)
+		{
+			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
 	bool AnimationSystem::SaveAnimation(Animation& anim, std::string filepath)
 	{
 		std::ofstream stream{ filepath ,std::ios::trunc };
@@ -356,6 +370,14 @@ namespace oo::Anim
 		auto resource = asset.GetData<ModelFileResource*>();
 
 		Animation::LoadAnimationFromFBX(evnt->m_filepath.string(), resource);
+	}
+
+	void AnimationSystem::CloseProjectCallback(CloseProjectEvent* evnt)
+	{
+		auto asset_folder = Project::GetAssetFolder().string();
+		SaveAllAnimations(asset_folder);
+		SaveAllAnimationTree(asset_folder);
+
 	}
 
 	bool AnimationSystem::LoadAssets(std::string filepath)

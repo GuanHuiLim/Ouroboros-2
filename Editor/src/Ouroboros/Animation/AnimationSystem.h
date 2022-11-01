@@ -19,6 +19,7 @@ Technology is prohibited.
 #include "Archetypes_Ecs/src/Wrapper.h"
 #include "Archetypes_Ecs/src/System.h"
 #include "App/Editor/Events/OpenFileEvent.h"
+#include "App/Editor/Events/LoadProjectEvents.h"
 namespace oo::Anim
 {
 	class AnimationSystem : public Ecs::System
@@ -50,14 +51,17 @@ namespace oo::Anim
 		bool SaveAnimationTree(std::string name, std::string filepath);
 		bool SaveAnimation(std::string name, std::string filepath);
 		bool SaveAllAnimations(std::string filepath);
+		bool SaveAllAnimationTree(std::string filepath);
 		bool LoadAnimationTree(std::string filepath);
 		bool LoadAnimation(std::string filepath);
 		bool LoadAssets(std::string filepath);
 		void OpenFileCallback(OpenFileEvent* evnt);
+		void CloseProjectCallback(CloseProjectEvent* evnt);
 
 		static Animation* AddAnimation(std::string const& name);
 	private:
 		bool SaveAnimation(Animation& anim, std::string filepath);
+		bool SaveAnimationTree(AnimationTree& tree, std::string filepath);
 		void TestObject();
 	};
 
