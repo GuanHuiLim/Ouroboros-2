@@ -303,8 +303,11 @@ namespace myPhysx
 
             // UPDATE THE INDEX AFTER DELETING
             for (auto i = all_objects.begin(); i != all_objects.end(); i++) {
-                if(i->second > current_index) 
-                    i->second -= i->second;
+
+                if (i->second > current_index) {
+                    int current = i->second;
+                    i->second = current - 1;
+                }
             }
 
             // CHECK ON TRIGGER 
@@ -698,10 +701,10 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rstatic)
-                underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
+                underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ pos, quat });
 
             else if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
+                underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ pos, quat });
         }
     }
 
