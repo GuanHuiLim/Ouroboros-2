@@ -21,6 +21,7 @@ Technology is prohibited.
 #include "App/Editor/Events/CopyButtonEvent.h"
 #include "App/Editor/Events/PasteButtonEvent.h"
 #include "App/Editor/Events/DuplicateButtonEvent.h"
+#include <Ouroboros/ECS/GameObject.h>
 class Hierarchy
 {
 public:
@@ -44,7 +45,7 @@ protected:
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-	void CreateGameObjectImmediate();
+	std::shared_ptr<oo::GameObject> CreateGameObjectImmediate();
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
 	static constexpr const unsigned int Popup_ID = 100000;
