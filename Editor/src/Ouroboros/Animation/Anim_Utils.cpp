@@ -357,6 +357,12 @@ namespace oo::Anim
 	/*-------------------------------
 	AnimRef
 	-------------------------------*/
+	AnimRef::AnimRef(std::map<size_t, Animation>* _anims, size_t _id )
+		: anims{_anims}
+		, id{_id}
+	{
+
+	}
 	void AnimRef::Reload()
 	{
 		assert(anims);

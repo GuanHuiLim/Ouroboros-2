@@ -79,7 +79,7 @@ namespace oo
 		Anim::ScriptEvent* AddScriptEvent(std::string const& groupName, std::string const nodeName,
 			std::string const& timelineName, Anim::ScriptEvent scriptevent);
 
-		//void SetNodeAnimation();
+		Anim::Animation* SetNodeAnimation(Anim::SetNodeAnimInfo const& info);
 		RTTR_ENABLE();
 	};
 }

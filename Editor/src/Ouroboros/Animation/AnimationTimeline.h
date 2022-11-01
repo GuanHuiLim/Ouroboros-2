@@ -35,16 +35,17 @@ namespace oo::Anim
 		};
 		std::string name{ "Unnamed Timeline" };
 		//what kind of timeline is it for, script events, or property, or fbx animation
-		const TYPE type{};
-		const DATATYPE datatype{};
-		std::vector<int> children_index;
-		std::vector<KeyFrame> keyframes;
+		TYPE type{};
+		DATATYPE datatype{};
+		std::vector<int> children_index{};
+		std::vector<KeyFrame> keyframes{};
 		//function pointer to get the component
 		Ecs::GetCompFn* get_componentFn{ nullptr };
-		rttr::type rttr_type;
-		rttr::property rttr_property;
-		size_t component_hash;
+		rttr::type rttr_type{ rttr::type::get<InvalidType>()};
+		rttr::property rttr_property { rttr::type::get<InvalidType>().get_property("no property")};
+		size_t component_hash{};
 
+		Timeline() = default;
 		//Timeline(TYPE _type, DATATYPE _datatype, std::string const _name = "Unnamed Timeline");
 		Timeline(TimelineInfo const& info);
 		RTTR_ENABLE();
@@ -53,9 +54,9 @@ namespace oo::Anim
 	struct TimelineInfo
 	{
 		//type of animation, PROPERTY - user created, FBX_ANIM - loading from fbx file
-		Timeline::TYPE type;
+		Timeline::TYPE type{};
 		//component hash of the ecs component that the timeline affects
-		size_t component_hash;
+		size_t component_hash{};
 		//property to set for the component
 		rttr::property rttr_property;
 		//property_name - optional
@@ -63,9 +64,9 @@ namespace oo::Anim
 		//name of the timeline
 		std::string timeline_name{ "Unnamed Timeline" };
 		//uuid of the target gameobject to manipulate
-		oo::GameObject target_object;
+		oo::GameObject target_object{};
 		//uuid of the gameobject the AnimationComponent is attached to
-		oo::GameObject source_object;
+		oo::GameObject source_object{};
 		//do not touch
 		std::vector<int> children_index{};
 

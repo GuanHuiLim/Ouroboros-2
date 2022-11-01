@@ -131,4 +131,11 @@ namespace oo::Anim
 
 		return &(AnimationTree::map[name]);
 	}
+
+	AnimationTree* AnimationTree::Add(AnimationTree&& tree)
+	{
+		auto name = tree.name;
+		AnimationTree::map.emplace(name, std::move(tree));
+		return &(AnimationTree::map[name]);
+	}
 }

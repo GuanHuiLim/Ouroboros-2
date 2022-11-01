@@ -56,7 +56,7 @@ namespace oo::Anim::internal
 			//timelines
 			{
 				auto serialize_fn = rttr::type::get<Timeline>().get_method(internal::serialize_method_name);
-				writer.Key("script events", static_cast<rapidjson::SizeType>(std::string("script events").size()));
+				writer.Key("timelines", static_cast<rapidjson::SizeType>(std::string("timelines").size()));
 				writer.StartArray();
 				for (auto& timeline : anim.timelines)
 				{
@@ -66,6 +66,49 @@ namespace oo::Anim::internal
 			}
 		}
 		writer.EndObject();
+	}
+
+	void LoadAnimation(rapidjson::GenericObject<false, rapidjson::Value>& object, Animation& anim)
+	{
+		rttr::instance obj{ anim };
+		//properties
+		{
+			auto properties = rttr::type::get<Animation>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+		//script events
+		{
+			auto script_events = object.FindMember("script events")->value.GetArray();
+			auto load_fn = rttr::type::get<ScriptEvent>().get_method(internal::load_method_name);
+			assert(load_fn);
+			for (auto& evnt : script_events)
+			{
+				ScriptEvent new_evnt{};
+				auto result = load_fn.invoke({}, evnt.GetObj(), new_evnt);
+				assert(result.is_valid());
+				anim.events.emplace_back(std::move(new_evnt));
+			}
+		}
+		//timelines
+		{
+			auto timelines = object.FindMember("timelines")->value.GetArray();
+			auto load_fn = rttr::type::get<Timeline>().get_method(internal::load_method_name);
+			assert(load_fn);
+			for (auto& timeline : timelines)
+			{
+				Timeline new_timeline{};
+				auto result = load_fn.invoke({}, timeline.GetObj(), new_timeline);
+				assert(result.is_valid());
+				anim.timelines.emplace_back(std::move(new_timeline));
+			}
+		}
 	}
 }
 
@@ -80,6 +123,7 @@ namespace oo::Anim
 		.property("animation_length", &Animation::animation_length)
 		.property("animation_ID", &Animation::animation_ID)
 		.method(internal::serialize_method_name, &internal::SerializeAnimation)
+		.method(internal::load_method_name, &internal::LoadAnimation)
 		;
 	}
 
@@ -287,13 +331,13 @@ namespace oo::Anim
 				std::cout << "Loaded: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
 			}
 
-			auto createdAnim = Animation::AddAnimation(anim);
+			auto createdAnim = Animation::AddAnimation(std::move(anim));
 			assert(createdAnim);
 		}
 		//std::cout << std::endl;
 
 	}
-	Animation* Animation::AddAnimation(Animation& anim)
+	Animation* Animation::AddAnimation(Animation&& anim)
 	{
 		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
 		Animation::name_to_ID[anim.name] = anim.animation_ID;

@@ -60,6 +60,45 @@ namespace oo::Anim::internal
 		}
 		writer.EndObject();
 	}
+
+	void LoadTimeline(rapidjson::GenericObject<false, rapidjson::Value>& object, Timeline& timeline)
+	{
+		rttr::instance obj{ timeline };
+		//properties
+		{
+			auto properties = rttr::type::get<Timeline>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+		//children_index
+		{
+			auto children_index = object.FindMember("children_index")->value.GetArray();
+			auto load_fn = rttr::type::get<LinkRef>().get_method(internal::load_method_name);
+			assert(load_fn);
+			for (auto& child : children_index)
+			{
+				timeline.children_index.emplace_back(std::move(child.GetInt()));
+			}
+		}
+		//children_index
+		{
+			auto keyframes = object.FindMember("keyframes")->value.GetArray();
+			auto load_fn = rttr::type::get<KeyFrame>().get_method(internal::load_method_name);
+			assert(load_fn);
+			for (auto& kf : keyframes)
+			{
+				KeyFrame new_kf{};
+				load_fn.invoke({}, kf.GetObj(), new_kf);
+				timeline.keyframes.emplace_back(std::move(new_kf));
+			}
+		}
+	}
 }
 
 namespace oo::Anim
@@ -88,6 +127,7 @@ namespace oo::Anim
 			.property("rttr_property", &Timeline::rttr_property)
 			.property("component_hash", &Timeline::component_hash)
 			.method(internal::serialize_method_name, &internal::SerializeTimeline)
+			.method(internal::load_method_name, &internal::LoadTimeline)
 			;
 	}
 

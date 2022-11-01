@@ -23,9 +23,10 @@ namespace oo::Anim
 		//using DataType = std::variant<glm::vec3,glm::quat,bool>;
 		using DataType = rttr::variant;
 		//vector3 variable HERE
-		DataType data;
-		float time{ 0.f };
+		DataType data{ int{0} };
+		float time{ -1.f };
 
+		KeyFrame() = default;
 		KeyFrame(DataType _data, float _time);
 		RTTR_ENABLE();
 	};

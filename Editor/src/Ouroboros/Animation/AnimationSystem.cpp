@@ -148,7 +148,7 @@ namespace oo::Anim
 		//create the animation tree asset
 		auto tree = AnimationTree::Create("Test Animation Tree");
 		comp.SetAnimationTree("Test Animation Tree");
-		auto start_node = tree->groups.begin()->second.startNode;
+		auto& start_node = tree->groups.begin()->second.startNode;
 
 		//add some test parameters to the animation tree
 		{
@@ -194,7 +194,7 @@ namespace oo::Anim
 		assert(link);
 		link->has_exit_time = false;
 		link->exit_time = 1.5f;
-		auto linkName = link->name;
+		auto& linkName = link->name;
 
 
 		//add a condition to parameter
@@ -248,9 +248,21 @@ namespace oo::Anim
 		test_obj = obj;
 
 		auto animationfbx_fp = Project::GetAssetFolder().string();
-		SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");
 
+		//searialization test for animation tree
+		SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");		 
 		LoadAnimationTree(animationfbx_fp + "/Test_Animation_Tree.tree");
+
+
+		//serialization test for animation
+		{
+			auto anim_name = node->GetAnimation().name;
+			auto filepath = animationfbx_fp + "/" + anim_name + ".anim";
+			SaveAnimation(node->GetAnimation(), filepath);
+			LoadAnimation(filepath);
+
+		}
+
 	}
 
 	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
@@ -267,7 +279,7 @@ namespace oo::Anim
 		auto obj_children = scene->GetRoot()->GetChildren();
 		//auto bone_root = obj.GetChildren();
 
-		SaveAllAnimations(animationfbx_fp);
+		//SaveAllAnimations(animationfbx_fp);
 		return nullptr;
 
 	}
@@ -387,10 +399,36 @@ namespace oo::Anim
 		load_fn.invoke({}, obj, tree);
 
 
+		AnimationTree::Add(std::move(tree));
 		return true;
 	}
 	bool AnimationSystem::LoadAnimation(std::string filepath)
 	{
+		std::ifstream ifs;
+		ifs.open(filepath);
+		if (!ifs.is_open())
+		{
+			LOG_CRITICAL("LoadAnimationTree cannot find the file");
+			assert(false);
+			return false;
+		}
+		rapidjson::IStreamWrapper isw(ifs);
+		rapidjson::Document doc;
+		doc.ParseStream(isw);
+		
+		Animation anim{};
+		auto obj = doc.GetObj();
+		auto load_fn = rttr::type::get< Animation>().get_method(internal::load_method_name);
+		load_fn.invoke({}, obj, anim);
+
+		//TODO: uncomment when ready
+		Animation::AddAnimation(std::move(anim));
+
 		return false;
+	}
+
+	Animation* AnimationSystem::AddAnimation(std::string const& name)
+	{		
+		return internal::AddAnimationToStorage(name);
 	}
 }

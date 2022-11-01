@@ -55,6 +55,7 @@ namespace oo::Anim
 		bool LoadAssets(std::string filepath);
 		void OpenFileCallback(OpenFileEvent* evnt);
 
+		static Animation* AddAnimation(std::string const& name);
 	private:
 		bool SaveAnimation(Animation& anim, std::string filepath);
 		void TestObject();

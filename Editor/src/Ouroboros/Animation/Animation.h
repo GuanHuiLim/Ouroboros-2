@@ -21,6 +21,8 @@ namespace oo::Anim
 {
 	struct Animation
 	{
+		friend class AnimationSystem;
+
 		static constexpr const char* empty_animation_name = "empty animation";
 		static std::unordered_map< std::string, size_t> name_to_ID;
 		static std::map<size_t, Animation> animation_storage;
@@ -39,9 +41,11 @@ namespace oo::Anim
 		size_t animation_ID{ internal::generateUID() };
 
 		static void LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
-		static Animation* AddAnimation(Animation& anim);
 
 		RTTR_ENABLE();
+
+	private:
+		static Animation* AddAnimation(Animation&& anim);
 	};
 
 

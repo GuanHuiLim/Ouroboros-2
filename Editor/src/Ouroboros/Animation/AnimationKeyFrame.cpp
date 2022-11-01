@@ -43,6 +43,23 @@ namespace oo::Anim::internal
 		writer.EndObject();
 	}
 
+	void LoadKeyframe(rapidjson::GenericObject<false, rapidjson::Value>& object, KeyFrame& kf)
+	{
+		rttr::instance obj{ kf };
+		//properties
+		{
+			auto properties = rttr::type::get<KeyFrame>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+	}
+
 	void SerializeScriptEvent(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, ScriptEvent& event)
 	{
 		writer.StartObject();
@@ -61,6 +78,23 @@ namespace oo::Anim::internal
 		}
 		writer.EndObject();
 	}
+
+	void LoadScriptEvent(rapidjson::GenericObject<false, rapidjson::Value>& object, ScriptEvent& event)
+	{
+		rttr::instance obj{ event };
+		//properties
+		{
+			auto properties = rttr::type::get<ScriptEvent>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+	}
 }
 
 namespace oo::Anim
@@ -72,11 +106,13 @@ namespace oo::Anim
 			.property("data", &KeyFrame::data)
 			.property("time", &KeyFrame::time)
 			.method(internal::serialize_method_name, &internal::SerializeKeyframe)
+			.method(internal::load_method_name, &internal::LoadKeyframe)
 			;
 		registration::class_<ScriptEvent>("Animation ScriptEvent")
 			.property("script_function_info", &ScriptEvent::script_function_info)
 			.property("time", &ScriptEvent::time)
 			.method(internal::serialize_method_name, &internal::SerializeScriptEvent)
+			.method(internal::load_method_name, &internal::LoadScriptEvent)
 			;
 
 	}

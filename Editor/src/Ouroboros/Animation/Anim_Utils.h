@@ -52,6 +52,7 @@ namespace oo::Anim
 	using P_TYPE = ParamType;
 	//using ParameterValueType = std::variant<bool, int, float>;
 
+	struct InvalidType {};
 	//variables that are defined within an AnimationTree that can be accessed and assigned values from scripts or editor
 	struct Parameter;	
 	struct ParameterInfo;	//information to create a parameter
@@ -173,6 +174,7 @@ namespace oo::Anim
 		//int index{ -1 };	//animation index
 		size_t id{ internal::invalid_ID }; //animation's unique identifier
 
+		AnimRef(std::map<size_t, Animation>* _anims = nullptr, size_t _id = { internal::invalid_ID });
 		Animation& operator*() const { return Retrieve(id); }
 		Animation* operator->() const { return &Retrieve(id); }
 
@@ -191,8 +193,18 @@ namespace oo::Anim
 
 	
 
-	
-	
+	/*------------
+	Info structs
+	------------*/
+	struct SetNodeAnimInfo
+	{
+		// name to identify target group
+		std::string group_name;
+		// name to identify target node
+		std::string node_name;
+		// name to identify target animation
+		std::string anim_name;
+	};
 	
 }
 

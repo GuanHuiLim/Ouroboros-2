@@ -41,6 +41,7 @@ namespace oo::Anim::internal
 	NodeRef CreateNodeReference(std::map<size_t, Node>& node_container, size_t id);
 	GroupRef CreateGroupReference(AnimationTree& tree, size_t id);
 	LinkRef CreateLinkReference(Group& group, size_t id);
+	AnimRef CreateAnimationReference(size_t id);
 
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type);
 	Parameter::DataType ConditionDefaultValue(P_TYPE const type);
@@ -96,6 +97,7 @@ namespace oo::Anim::internal
 	Timeline* RetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
 	Timeline* TryRetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
 	Parameter* RetrieveParameterFromComponent(IAnimationComponent& comp, std::string const& paramName);
+	Animation* RetrieveAnimation(std::string const& anim_name);
 	
 	
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info);
@@ -117,6 +119,8 @@ namespace oo::Anim::internal
 
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info);
 
+	Animation* AddAnimationToNode(Node& node, Animation& anim);
+
 	void LoadFBX(std::string const& filepath, Animation* anim);
 
 
@@ -135,4 +139,6 @@ namespace oo::Anim::internal
 	void ReloadReferences(AnimationTree& tree);
 
 	void ReAssignReferences(AnimationTree& tree);
+
+	Animation* AddAnimationToStorage(std::string const& name);
 }

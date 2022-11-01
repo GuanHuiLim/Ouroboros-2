@@ -346,6 +346,7 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 	map[rttr::type::get<rttr::variant>().get_id()]
 		= [](rapidjson::Value& value)
 	{
+		assert(value.IsObject());
 		auto rttr_obj = value.GetObj();
 
 		return rttr::variant{ oo::Anim::internal::LoadRTTRVariant(rttr_obj)};
@@ -534,7 +535,7 @@ rttr::variant oo::Anim::internal::LoadRTTRVariant(rapidjson::Value& value)
 	auto hash = static_cast<StringHash::size_type>(value.FindMember("Type Hash")->value.GetUint64());
 	assert(oo::Anim::internal::hash_to_rttrType.contains(hash));
 	auto& type = oo::Anim::internal::hash_to_rttrType.at(hash);
-	auto& rttr_value = value.FindMember("value")->value;
+	auto& rttr_value = value.FindMember("Value")->value;
 	assert(oo::Anim::internal::loadRTTRVariantFn_map.contains(type.get_id()));
 	return oo::Anim::internal::loadRTTRVariantFn_map.at(type.get_id())(rttr_value);
 };
@@ -634,6 +635,11 @@ namespace oo::Anim::internal
 		return {};
 	}
 
+	AnimRef CreateAnimationReference(size_t id)
+	{
+		AnimRef ref{ &(Animation::animation_storage), id };
+		return ref;
+	}
 
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type)
 	{
@@ -1208,6 +1214,15 @@ namespace oo::Anim::internal
 		return nullptr;
 	}
 
+	Animation* RetrieveAnimation(std::string const& anim_name)
+	{
+		assert(Animation::name_to_ID.contains(anim_name));
+		auto id = Animation::name_to_ID[anim_name];
+		assert(Animation::animation_storage.contains(id));
+		return &(Animation::animation_storage[id]);
+
+	}
+
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
 
@@ -1468,6 +1483,13 @@ namespace oo::Anim::internal
 		return &createdCondition;
 	}
 
+	Animation* AddAnimationToNode(Node& node, Animation& anim)
+	{
+		node.anim = CreateAnimationReference(anim.animation_ID);
+
+		return &anim;
+	}
+
 	void LoadFBX(std::string const& filepath, Animation* anim)
 	{
 		//Assimp::Importer importer;
@@ -1628,5 +1650,32 @@ namespace oo::Anim::internal
 				link.dst.nodes = &group.nodes;
 			}
 		}
+	}
+
+	Animation* AddAnimationToStorage(std::string const& name)
+	{
+		Animation anim{};
+		anim.name = name;
+
+		auto key = anim.animation_ID;
+		Animation::name_to_ID[name] = key;
+		if (Animation::animation_storage.contains(key))
+		{
+			LOG_INFO("Replaced {0} animation", name);
+		}
+		else
+		{
+			LOG_INFO("Added {0} animation", name);
+		}
+
+		auto result = Animation::animation_storage.insert_or_assign(key, std::move(anim));
+		assert(result.second);
+		if (result.second == false)
+		{
+			LOG_CORE_ERROR("Error adding {0} animation!!", name);
+			return nullptr;
+		}
+
+		return &(Animation::animation_storage[key]);
 	}
 }
