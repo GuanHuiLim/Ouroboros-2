@@ -57,6 +57,36 @@ namespace oo
 		parameter->value = value;
 	}
 
+
+	void AnimationComponent::SetParameterByID(size_t id, Anim::Parameter::DataType value)
+	{
+		auto parameter = oo::Anim::internal::RetrieveParameterFromComponent(actualComponent, id);
+		assert(parameter);
+		assert(value.get_type() == parameter->value.get_type());
+		parameter->value = value;
+	}
+
+
+	void AnimationComponent::SetParameterByIndex(uint index, Anim::Parameter::DataType value)
+	{
+		auto parameter = oo::Anim::internal::RetrieveParameterFromComponentByIndex(actualComponent, index);
+		assert(parameter);
+		assert(value.get_type() == parameter->value.get_type());
+		parameter->value = value;
+	}
+
+	size_t AnimationComponent::GetParameterID(std::string const& name)
+	{
+		auto parameter = oo::Anim::internal::RetrieveParameterFromComponent(actualComponent, name);
+		assert(parameter);
+		return parameter->paramID;
+	}
+
+	uint AnimationComponent::GetParameterIndex(std::string const& name)
+	{
+		return oo::Anim::internal::GetParameterIndex(actualComponent, name);
+	}
+
 	Anim::AnimationTree* AnimationComponent::GetAnimationTree()
 	{
 		return actualComponent.animTree;

@@ -1214,6 +1214,25 @@ namespace oo::Anim::internal
 		return nullptr;
 	}
 
+	Parameter* RetrieveParameterFromComponent(IAnimationComponent& comp, size_t id)
+	{
+		for (auto& param : comp.tracker.parameters)
+		{
+			if (param.paramID == id)
+			{
+				return &param;
+			}
+		}
+		return nullptr;
+	}
+	
+
+	Parameter* RetrieveParameterFromComponentByIndex(IAnimationComponent& comp, uint index)
+	{
+		assert(index < comp.tracker.parameters.size());
+		return &(comp.tracker.parameters[index]);
+	}
+
 	Animation* RetrieveAnimation(std::string const& anim_name)
 	{
 		assert(Animation::name_to_ID.contains(anim_name));
@@ -1677,5 +1696,22 @@ namespace oo::Anim::internal
 		}
 
 		return &(Animation::animation_storage[key]);
+	}
+
+
+	uint GetParameterIndex(IAnimationComponent& comp, std::string const& paramName)
+	{
+		uint index = 0;
+		for (auto& param : comp.tracker.parameters)
+		{
+			if (param.name == paramName)
+			{
+				return index;
+			}
+			++index;
+		}
+		assert(false);
+		LOG_CRITICAL("GetParameterIndex cannot find parameter {0}!!!", paramName);
+		return std::numeric_limits<uint>().max();
 	}
 }

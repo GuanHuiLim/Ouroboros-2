@@ -97,6 +97,8 @@ namespace oo::Anim::internal
 	Timeline* RetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
 	Timeline* TryRetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
 	Parameter* RetrieveParameterFromComponent(IAnimationComponent& comp, std::string const& paramName);
+	Parameter* RetrieveParameterFromComponent(IAnimationComponent& comp, size_t id);
+	Parameter* RetrieveParameterFromComponentByIndex(IAnimationComponent& comp, uint index);
 	Animation* RetrieveAnimation(std::string const& anim_name);
 	
 	
@@ -141,4 +143,7 @@ namespace oo::Anim::internal
 	void ReAssignReferences(AnimationTree& tree);
 
 	Animation* AddAnimationToStorage(std::string const& name);
+
+	//parameters
+	uint GetParameterIndex(IAnimationComponent& comp, std::string const& paramName);
 }

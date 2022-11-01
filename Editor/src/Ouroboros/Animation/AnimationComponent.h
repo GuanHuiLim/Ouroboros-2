@@ -45,6 +45,11 @@ namespace oo
 		void SetAnimationTree(std::string name);
 		std::string GetAnimationTreeName();
 		void SetParameter(std::string const& name, Anim::Parameter::DataType value);
+		void SetParameterByID(size_t id, Anim::Parameter::DataType value);
+		void SetParameterByIndex(uint index, Anim::Parameter::DataType value);
+
+		size_t GetParameterID(std::string const& name);
+		uint GetParameterIndex(std::string const& name);
 
 		Anim::AnimationTree* GetAnimationTree();
 		Anim::AnimationTracker& GetTracker();
