@@ -108,12 +108,14 @@ void GBufferRenderPass::Draw()
 	rhi::CommandList cmd{ cmdlist };
 	cmd.SetDefaultViewportAndScissor();
 
+	uint32_t dynamicOffset = vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), vr.m_device.properties.limits.minUniformBufferOffsetAlignment);
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 		std::array<VkDescriptorSet, 3>{
-			vr.descriptorSet_gpuscene,
+		vr.descriptorSet_gpuscene,
 			vr.descriptorSets_uniform[swapchainIdx],
 			vr.descriptorSet_bindless,
-	}
+	},
+		1, & dynamicOffset
 	);
 
 	cmd.BindPSO(pso_GBufferDefault);

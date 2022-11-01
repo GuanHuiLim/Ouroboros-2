@@ -71,8 +71,8 @@ void DebugDrawRenderpass::Draw()
 
 	VkFramebuffer fb;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&vr.m_swapchain.swapChainImages[swapchainIdx])
-		.BindImage(&depthAtt)
+		.BindImage(&vr.currWorld->renderTargets[vr.renderIteration])
+		.BindImage(&vr.currWorld->depthTargets[vr.renderIteration])
 		.Build(fb,debugRenderpass);
 
 	renderPassBeginInfo.framebuffer = fb;
@@ -87,13 +87,15 @@ void DebugDrawRenderpass::Draw()
 	{
 		cmd.SetDefaultViewportAndScissor();
 
+		uint32_t dynamicOffset = vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), vr.m_device.properties.limits.minUniformBufferOffsetAlignment);
 		cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 			std::array<VkDescriptorSet, 3>
 			{
 				vr.descriptorSet_gpuscene,
 				vr.descriptorSets_uniform[swapchainIdx],
 				vr.descriptorSet_bindless
-			}
+			},
+			1, &dynamicOffset
 		);
 
 		cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU.getBufferPtr());

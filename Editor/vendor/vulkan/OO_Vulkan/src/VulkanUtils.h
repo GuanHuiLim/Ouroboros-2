@@ -249,6 +249,19 @@ namespace oGFX
 				VkImageLayout newImageLayout,
 				VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 				VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+			void insertImageMemoryBarrier(
+				VkCommandBuffer cmdbuffer,
+				VkImage image,
+				VkAccessFlags srcAccessMask,
+				VkAccessFlags dstAccessMask,
+				VkImageLayout oldImageLayout,
+				VkImageLayout newImageLayout,
+				VkPipelineStageFlags srcStageMask,
+				VkPipelineStageFlags dstStageMask,
+				VkImageSubresourceRange subresourceRange);
+
+			size_t UniformBufferPaddedSize(size_t size, size_t bufferMinAlignment);
 		}
 
 		namespace inits

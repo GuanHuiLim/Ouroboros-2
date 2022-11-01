@@ -47,7 +47,10 @@ void CommandList::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint
 	::DrawIndexedIndirect(m_VkCommandBuffer, buffer, offset, drawCount, stride);
 }
 
-void CommandList::BindDescriptorSet(VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount /*= 1*/, const uint32_t* pDynamicOffsets /*= nullptr */)
+void CommandList::BindDescriptorSet(VkPipelineLayout layout,
+	uint32_t firstSet, uint32_t descriptorSetCount,
+	const VkDescriptorSet* pDescriptorSets,
+	uint32_t dynamicOffsetCount /*= 1*/, const uint32_t* pDynamicOffsets /*= nullptr */)
 {
 	m_pipeLayout = layout;
 
