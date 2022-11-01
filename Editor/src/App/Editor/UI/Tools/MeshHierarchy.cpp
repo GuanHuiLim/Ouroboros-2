@@ -75,7 +75,7 @@ void MeshHierarchy::Show()
 	}
 
 	ImGuiTreeNodeFlags flags = (ImGuiTreeNodeFlags)node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen: ImGuiTreeNodeFlags_Bullet;
-	bool opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+	bool opened = ImGui::TreeNodeEx(node->name.c_str(), flags | ImGuiTreeNodeFlags_OpenOnArrow);
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
 		ImGui::SetDragDropPayload("MESH_HIERARCHY", &node, sizeof(Node**));
@@ -83,6 +83,7 @@ void MeshHierarchy::Show()
 	}
 	if (opened == false)
 	{
+		ImGui::EndChild();
 		return;
 	}
 	std::stack<Node*> node_list;
@@ -101,7 +102,7 @@ void MeshHierarchy::Show()
 				ImGui::TreePop();
 			}
 			flags = node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Bullet;
-			opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+			opened = ImGui::TreeNodeEx(node->name.c_str(), flags| ImGuiTreeNodeFlags_OpenOnArrow);
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload))
 			{
 				MeshHierarchyDragDropData data;

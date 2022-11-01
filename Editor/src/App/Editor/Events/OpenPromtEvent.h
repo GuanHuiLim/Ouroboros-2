@@ -24,12 +24,13 @@ public:
 	{
 		DestructiveEvent nextEvent;
 		std::function<void()> nextAction;
+		bool launchEventDesipteNo = true;
 	};
 	/**
 	 * _event - will trigger if yes is pressed
 	 * actionAfterPrompt - will trigger as long a button is pressed
 	 */
-	OpenPromptEvent(DestructiveEvent _event, std::function<void()> actionAfterPrompt) :nextAction{ _event,actionAfterPrompt} {};
+	OpenPromptEvent(DestructiveEvent _event, std::function<void()> actionAfterPrompt,bool launchDesipteNo = true) :nextAction{ _event,actionAfterPrompt,launchDesipteNo } {};
 	~OpenPromptEvent() {};
 	OpenPromptAction nextAction;
 };
