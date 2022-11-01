@@ -65,6 +65,7 @@ project "Editor"
 		
         "%{IncludeDir.fmod}",
         "%{IncludeDir.discord}",
+		"%{IncludeDir.slikenet}",
         --for tracy
         "%{IncludeDir.tracy}",
 		--for optick
@@ -84,6 +85,7 @@ project "Editor"
         "%{LibraryDir.assimp}/Release",
         "%{LibraryDir.fmod}",
         "%{LibraryDir.discord}",
+		"%{LibraryDir.slikenet}",
     }
 
     -- linking External libraries 
@@ -241,6 +243,7 @@ project "Editor"
         {
             "rttr_core_d",
             "fmodL_vc",
+			"SLikeNet_LibStatic_Debug_x64",
         }
     
     filter "configurations:Release"
@@ -263,6 +266,7 @@ project "Editor"
         {
             "rttr_core",
             "fmod_vc",
+			"SLikeNet_LibStatic_Release_x64",
         }
         
     filter "configurations:Production"
