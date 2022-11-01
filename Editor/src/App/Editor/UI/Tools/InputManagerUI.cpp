@@ -88,9 +88,17 @@ void InputManagerUI::Show()
 		if (ImGui::DragFloat("Max Gap Time", &maxGapTime, 0.1f))
 			input.GetSettings().maxGapTime = maxGapTime;
 
-		float holdDurationRequired = input.GetSettings().holdDurationRequired;
-		if (ImGui::DragFloat("Hold Duration Required", &holdDurationRequired, 0.1f))
-			input.GetSettings().holdDurationRequired = holdDurationRequired;
+        float holdDurationRequired = input.GetSettings().holdDurationRequired;
+        if (ImGui::DragFloat("Hold Duration Required", &holdDurationRequired, 0.1f))
+            input.GetSettings().holdDurationRequired = holdDurationRequired;
+
+		bool invert = input.GetSettings().invert;
+		if (ImGui::Checkbox("Invert", &invert))
+			input.GetSettings().invert = invert;
+
+        bool onPressOnly = input.GetSettings().onPressOnly;
+        if (ImGui::Checkbox("OnPress Only", &onPressOnly))
+            input.GetSettings().onPressOnly = onPressOnly;
 
 		ImGui::Text("Controller Settings");
 		//__________________________CONTROLLER______________________//
@@ -133,6 +141,14 @@ void InputManagerUI::Show()
 		float controllerholdDurationRequired = input.GetControllerSettings().holdDurationRequired;
 		if (ImGui::DragFloat("Hold Duration Required Controller", &controllerholdDurationRequired, 0.1f))
 			input.GetControllerSettings().holdDurationRequired = controllerholdDurationRequired;
+
+        bool controllerInvert = input.GetControllerSettings().invert;
+        if (ImGui::Checkbox("Invert Controller", &controllerInvert))
+            input.GetControllerSettings().invert = controllerInvert;
+
+        bool controllerOnPressOnly = input.GetControllerSettings().onPressOnly;
+        if (ImGui::Checkbox("OnPress Only Controller", &controllerOnPressOnly))
+            input.GetControllerSettings().onPressOnly = controllerOnPressOnly;
 
 		ImGui::PopID();
 		ImGui::Separator();

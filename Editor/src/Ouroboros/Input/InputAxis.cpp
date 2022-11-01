@@ -30,7 +30,9 @@ namespace oo
 		.property("Positive Alt Btn", &InputAxis::Settings::positiveAltButton)
 		.property("Presses Required", &InputAxis::Settings::pressesRequired)
 		.property("Max Gap Time", &InputAxis::Settings::maxGapTime)
-		.property("Hold Duration Required", &InputAxis::Settings::holdDurationRequired);
+		.property("Hold Duration Required", &InputAxis::Settings::holdDurationRequired)
+        .property("Invert Value", &InputAxis::Settings::invert)
+        .property("On Press Only", &InputAxis::Settings::onPressOnly);
 
 	registration::class_<InputAxis>("Input Axis")
 		.property("Name", &InputAxis::GetName, &InputAxis::SetName)
@@ -182,12 +184,24 @@ namespace oo
                 break;
             default:
                 {
-                    if (IsInputCodeHeld(axis.type, axis.settings.positiveButton) || IsInputCodeHeld(axis.type, axis.settings.positiveAltButton))
-                        value += 1.0f;
-                    if (IsInputCodeHeld(axis.type, axis.settings.negativeButton) || IsInputCodeHeld(axis.type, axis.settings.negativeAltButton))
-                        value += -1.0f;
+                    if (axis.settings.onPressOnly)
+                    {
+                        if (IsInputCodePressed(axis.type, axis.settings.positiveButton) || IsInputCodePressed(axis.type, axis.settings.positiveAltButton))
+                            value += 1.0f;
+                        if (IsInputCodePressed(axis.type, axis.settings.negativeButton) || IsInputCodePressed(axis.type, axis.settings.negativeAltButton))
+                            value += -1.0f;
+                    }
+                    else
+                    {
+                        if (IsInputCodeHeld(axis.type, axis.settings.positiveButton) || IsInputCodeHeld(axis.type, axis.settings.positiveAltButton))
+                            value += 1.0f;
+                        if (IsInputCodeHeld(axis.type, axis.settings.negativeButton) || IsInputCodeHeld(axis.type, axis.settings.negativeAltButton))
+                            value += -1.0f;
+                    }
                 }
             }
+            if (axis.settings.invert)
+                value *= -1;
         }
         if (axis.controllerSettings.ConditionsMet(pressCount, durationHeld))
         {
@@ -209,13 +223,25 @@ namespace oo
                 break;
             case ControllerInputType::Button:
                 {
-                    if (IsControllerInputCodeHeld(axis.controllerSettings.positiveButton) || IsControllerInputCodeHeld(axis.controllerSettings.positiveAltButton))
-                        controllerValue += 1.0f;
-                    if (IsControllerInputCodeHeld(axis.controllerSettings.negativeButton) || IsControllerInputCodeHeld(axis.controllerSettings.negativeAltButton))
-                        controllerValue += -1.0f;
+                    if(axis.controllerSettings.onPressOnly)
+                    {
+                        if (IsControllerInputCodePressed(axis.controllerSettings.positiveButton) || IsControllerInputCodePressed(axis.controllerSettings.positiveAltButton))
+                            controllerValue += 1.0f;
+                        if (IsControllerInputCodePressed(axis.controllerSettings.negativeButton) || IsControllerInputCodePressed(axis.controllerSettings.negativeAltButton))
+                            controllerValue += -1.0f;
+                    }
+                    else
+                    {
+                        if (IsControllerInputCodeHeld(axis.controllerSettings.positiveButton) || IsControllerInputCodeHeld(axis.controllerSettings.positiveAltButton))
+                            controllerValue += 1.0f;
+                        if (IsControllerInputCodeHeld(axis.controllerSettings.negativeButton) || IsControllerInputCodeHeld(axis.controllerSettings.negativeAltButton))
+                            controllerValue += -1.0f;
+                    }
                 }
                 break;
             }
+            if (axis.controllerSettings.invert)
+                controllerValue *= -1;
             if (std::fabsf(controllerValue) > std::fabsf(value))
                 value = controllerValue;
         }
