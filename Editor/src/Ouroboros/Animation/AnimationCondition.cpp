@@ -104,6 +104,23 @@ namespace oo::Anim::internal
 		}
 		writer.EndObject();
 	}
+
+	void LoadCondition(rapidjson::GenericObject<false, rapidjson::Value>& object, Condition& condition)
+	{
+		rttr::instance obj{ condition };
+		//properties
+		{
+			auto properties = rttr::type::get<Condition>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+	}
 }
 namespace oo::Anim
 {
@@ -123,6 +140,7 @@ namespace oo::Anim
 			.property("type", &Condition::type)
 			.property("value" , &Condition::value)
 			.method(internal::serialize_method_name, &internal::SerializeCondition)
+			.method(internal::load_method_name, &internal::LoadCondition)
 			;
 	}
 

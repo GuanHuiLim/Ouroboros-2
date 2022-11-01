@@ -75,7 +75,10 @@ namespace oo
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
-        component.GlobalLookAtDir({ x, y, z });
+        component.LookAt({ x, y, z });
+
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_GetGlobalLeft(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
@@ -113,6 +116,9 @@ namespace oo
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
         component.LookAt({ x, y, z });
+
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
     SCRIPT_API void Transform3D_SetLocalEulerAngles(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)

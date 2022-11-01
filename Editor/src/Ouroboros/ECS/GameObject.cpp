@@ -19,6 +19,7 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
 #include "Ouroboros/ECS/DuplicatedComponent.h"
+#include "Ouroboros/ECS/GameObjectDisabledComponent.h"
 
 #include "Ouroboros/Scripting/ScriptComponent.h"
 
@@ -317,6 +318,9 @@ namespace oo
                 GameObjectComponent::OnDisableEvent onDisableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onDisableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
+
+                // let's remove gameobject disabled component (since its now active)
+                RemoveComponent<GameObjectDisabledComponent>();
             }
             else
             {
@@ -324,6 +328,9 @@ namespace oo
                 GameObjectComponent::OnEnableEvent onEnableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onEnableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
+
+                // let's add gameobject disabled component (since its now inactive)
+                EnsureComponent<GameObjectDisabledComponent>();
             }
             
             comp.ActiveInHierarchy = active;

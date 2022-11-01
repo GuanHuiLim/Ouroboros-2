@@ -139,7 +139,7 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsTrigger() const
     {
-        return IsTriggerObject && object.isTrigger();
+        return IsTriggerObject;//&& object.isTrigger();
     }
 
     bool oo::RigidbodyComponent::IsCollider() const
@@ -150,7 +150,7 @@ namespace oo
     void oo::RigidbodyComponent::SetTrigger(bool enable)
     {
         IsTriggerObject = enable;
-        object.setTriggerShape(IsTriggerObject);
+        //object.setTriggerShape(IsTriggerObject);
     }
 
     void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 

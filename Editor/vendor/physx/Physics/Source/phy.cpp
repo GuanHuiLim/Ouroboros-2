@@ -26,7 +26,6 @@ static myPhysx::EventCallBack mEventCallback;
 
 myPhysx::PVD myPVD;
 
-
 /* release sequence
 actor might / not release
 scene (might release all the actor)
@@ -72,7 +71,7 @@ namespace myPhysx
 
         PxPhysics* createPhysics() {
 
-            mToleranceScale.length = 100;        // typical length of an object
+            mToleranceScale.length = 1;        // typical length of an object
             mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
 
             //if (PVD_DEBUGGER)
@@ -115,6 +114,40 @@ namespace myPhysx
 
             // retrieving the current world for me to access (get/set) neccessary data
             currentWorld = world;
+        }
+
+        PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+                                                PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+                                                PxPairFlags& pairFlags, const void* /*constantBlock*/,
+                                                PxU32 /*constantBlockSize*/) {
+
+            //let triggers through
+            if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1)) {
+            
+                pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
+                return PxFilterFlag::eDEFAULT;
+            }
+            
+            // generate contacts for all that were not filtered above
+            pairFlags = PxPairFlag::eNOTIFY_CONTACT_POINTS | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eCONTACT_DEFAULT;
+
+            // trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa.
+            if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1)) {
+                pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST
+                           | PxPairFlag::eNOTIFY_CONTACT_POINTS;
+            }
+            
+            return PxFilterFlag::eDEFAULT;
+
+        }
+
+        void setupFiltering(PxShape* shape) {
+            
+            PxFilterData filterData;
+            filterData.word0 = 1; //filterGroup; // word0 = own ID
+            filterData.word1 = 1; //filterMask;  // word1 = ID mask to filter pairs that trigger a contact callback;
+           
+            shape->setSimulationFilterData(filterData);
         }
 
         void init() {
@@ -171,7 +204,7 @@ namespace myPhysx
         sceneDesc.staticKineFilteringMode = PxPairFilteringMode::eKEEP;
 
         sceneDesc.simulationEventCallback = &mEventCallback;
-        //sceneDesc.filterShader = contactReportFilterShader;
+        sceneDesc.filterShader = physx_system::contactReportFilterShader;
 
         scene = physx_system::getPhysics()->createScene(sceneDesc);
     }
@@ -247,9 +280,7 @@ namespace myPhysx
         return PhysicsObject{ generated_uuid, this }; // a copy
     }
 
-    void PhysxWorld::removeInstance(PhysicsObject obj)
-    {
-        // check what need to release 
+    void PhysxWorld::removeInstance(PhysicsObject obj) {
 
         // release rigidstatic or rigiddynamic
         if (all_objects.contains(obj.id)) {
@@ -264,6 +295,8 @@ namespace myPhysx
 
             // release shape
             //underlying_obj->m_shape->release();
+            
+            all_objects.erase(obj.id);
         }
 
         // check/find the id from the obj vector then if match 
@@ -271,25 +304,65 @@ namespace myPhysx
         // NOTE: DON't MIXUP ELEM ID and OBJ ID HERE, 2 different types.
         auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == obj.id; });
         
-        //begin->destroy();
+        //if(begin != m_objects.end())
+        //    m_objects.erase(begin);
         
         m_objects.erase(begin);
     }
 
+    /*
+    void PhysxWorld::updateTriggerState() {
+
+        //for (TriggerManifold& temp : m_triggerCollisionPairs) {
+        //
+        //    if (temp.isStaying) {
+        //        temp.status = trigger::onTriggerStay;
+        //        printf("Shape is still within trigger volume\n");
+        //    }
+        //}
+
+        std::queue<TriggerManifold> temp;
+
+        while(!m_triggerCollisionPairs.empty()) {
+
+            TriggerManifold val = m_triggerCollisionPairs.front();
+
+            if (all_objects.contains(val.triggerID) && all_objects.contains(val.otherID))
+                temp.emplace(val);
+
+            m_triggerCollisionPairs.pop();
+        }
+
+        m_triggerCollisionPairs = temp;
+    }
+    */
+
     std::queue<TriggerManifold>* PhysxWorld::getTriggerData() {
 
-        return &m_collisionPairs;
+        //updateTriggerState();
+
+        return &m_triggerCollisionPairs;
     }
 
     void PhysxWorld::clearTriggerData() {
 
-        while (!m_collisionPairs.empty())
-            m_collisionPairs.pop();
+        while (!m_triggerCollisionPairs.empty())
+            m_triggerCollisionPairs.pop();
 
         //std::queue<TriggerManifold> empty;
-        //std::swap(m_collisionPairs, empty);
+        //std::swap(m_triggerCollisionPairs, empty);
     }
 
+    std::queue<ContactManifold>* PhysxWorld::getCollisionData() {
+
+        return &m_collisionPairs;
+    }
+
+    void PhysxWorld::clearCollisionData() {
+
+        while (!m_collisionPairs.empty())
+            m_collisionPairs.pop();
+    }
 
 /*-----------------------------------------------------------------------------*/
 /*                               PhysicsObject                                 */
@@ -326,13 +399,13 @@ namespace myPhysx
             if (type == rigid::rstatic) {
                 underlying_obj->rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
                 underlying_obj->rb.rigidStatic->userData = underlying_obj->id.get();
-                //printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidStatic->userData));
+                //printf("STAT: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidStatic->userData));
                 world->scene->addActor(*underlying_obj->rb.rigidStatic);
             }
             else if (type == rigid::rdynamic) {
                 underlying_obj->rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
                 underlying_obj->rb.rigidDynamic->userData = underlying_obj->id.get();
-                //printf("actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
+                //hprintf("DYNA: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
                 world->scene->addActor(*underlying_obj->rb.rigidDynamic);
             }
 
@@ -397,6 +470,8 @@ namespace myPhysx
 
             // later check where need to release shape
             //underlying_obj->m_shape->release();
+
+            physx_system::setupFiltering(underlying_obj->m_shape);
         }
     }
 
@@ -601,6 +676,8 @@ namespace myPhysx
         if (world->all_objects.contains(id)) {
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+            
+            //underlying_obj->rb.rigidStatic->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, true);
 
             if (underlying_obj->rigidID == rigid::rstatic)
                 return underlying_obj->rb.rigidStatic->getGlobalPose().q;
@@ -928,21 +1005,60 @@ namespace myPhysx
         printf("CALLBACK: onSleep\n");
     }
     void EventCallBack::onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) {
-        printf("CALLBACK: onContact\n");
+        printf("CALLBACK: onContact -- ");
         printf("PAIRS: %d\n", count);
 
         while (count--) {
 
+            collision state = collision::none;
             const PxContactPair& current = *pairs++;
 
-            if (current.events & (PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_CCD))
-                printf("Shape is entering trigger contact volume\n");
+            auto shape1_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[0]->getActor()->userData);
+            auto shape2_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[1]->getActor()->userData);
+            //printf("shape1 actor %llu, shape2 actor %llu \n", shape1_id, shape2_id);
 
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS)
-                printf("Shape is still within trigger contact volume\n");
+            //current.shapes[0]->getGeometryType() // PxGeometryType::eBOX;
+            
+            const PxU32 bufferSize = 64;
+            PxContactPairPoint contacts[bufferSize];
+            PxU32 nbContacts = current.extractContacts(contacts, bufferSize);
+            
+            std::vector<ContactPoint> tempCP = {};
+            PxU8 contactCount = current.contactCount;
 
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST)
-                printf("Shape is leaving trigger contact volume\n");
+            for (PxU32 j = 0; j < nbContacts; j++) {
+
+                PxVec3 normal = contacts[j].normal;
+                PxVec3 point = contacts[j].position;
+                PxVec3 impulse = contacts[j].impulse;
+
+                ContactPoint cp = { normal, point, impulse };
+                tempCP.emplace_back(cp);
+                //printf("%d - NORMAL: %f - X, %f - Y, %f - Z\n", j, normal.x, normal.y, normal.z);
+                //printf("%d - POINT: %f - X, %f - Y, %f - Z\n", j, point.x, point.y, point.z);
+                //printf("%d - IMPUSLE: %f - X, %f - Y, %f - Z\n", j, impulse.x, impulse.y, impulse.z);
+            }
+
+            if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
+                state = collision::onCollisionEnter;
+                printf("Shape is ENTERING CONTACT volume\n");
+            }
+
+            if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
+                state = collision::onCollisionStay;
+                printf("Shape is STAYING CONTACT volume\n");
+            }
+
+            if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
+                state = collision::onCollisionExit;
+                printf("Shape is LEAVING CONTACT volume\n");
+            }
+
+            // Store all the ID of the actors that collided
+            std::queue<ContactManifold>* collision_data = physx_system::currentWorld->getCollisionData();
+
+            // Add new ContactManifold data into the queue
+            collision_data->emplace(ContactManifold{ shape1_id, shape2_id, state, tempCP, contactCount });
 
             //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
             //    printf("Trigger-trigger overlap detected\n");
@@ -950,11 +1066,12 @@ namespace myPhysx
 
     }
     void EventCallBack::onTrigger(PxTriggerPair* pairs, PxU32 count) {
-        printf("CALLBACK: onTrigger\n");
+        printf("CALLBACK: onTrigger -- ");
         printf("PAIRS: %d\n", count);
 
         while (count--) {
 
+            //bool stayTrigger = false;
             trigger state = trigger::none;
             const PxTriggerPair& current = *pairs++;
 
@@ -963,24 +1080,22 @@ namespace myPhysx
             //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
 
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
+                //stayTrigger = true;
                 state = trigger::onTriggerEnter;
-                //printf("Shape is entering trigger volume\n");
-            }
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) {// OnTriggerStay
-                state = trigger::onTriggerStay;
-                //printf("Shape is still within trigger volume\n");
+                printf("Shape is ENTERING TRIGGER volume\n");
             }
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
+                //stayTrigger = false;
                 state = trigger::onTriggerExit;
-                //printf("Shape is leaving trigger volume\n");
+                printf("Shape is LEAVING TRIGGER volume\n");
             }
 
             // Store all the ID of the actors that collided with trigger)
-            std::queue<TriggerManifold>* temp = physx_system::currentWorld->getTriggerData();
+            std::queue<TriggerManifold>* trigger_data = physx_system::currentWorld->getTriggerData();
 
-            // Add in the TriggerManifold data into the queue
-            temp->emplace(TriggerManifold{ trigger_id, other_id, state });
-            
+            // Add new TriggerManifold data into the queue
+            trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
+
             //int msize = temp->size();
             //while(!temp->empty()) {
             //
@@ -996,4 +1111,3 @@ namespace myPhysx
         printf("CALLBACK: onAdvance\n");
     }
 }
-

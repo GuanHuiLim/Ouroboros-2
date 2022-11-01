@@ -18,6 +18,7 @@ Technology is prohibited.
 
 #include "Archetypes_Ecs/src/Wrapper.h"
 #include "Archetypes_Ecs/src/System.h"
+#include "App/Editor/Events/OpenFileEvent.h"
 namespace oo::Anim
 {
 	class AnimationSystem : public Ecs::System
@@ -26,6 +27,8 @@ namespace oo::Anim
 		Scene* scene{ nullptr };
 		Scene::go_ptr test_obj{};
 	public:
+		AnimationSystem() = default;
+		~AnimationSystem();
 		//to be run before main gameplay loop
 		void Init(Ecs::ECSWorld* world, Scene* scene);
 		//to be run before main gameplay loop and after objects are created
@@ -45,6 +48,16 @@ namespace oo::Anim
 		Scene::go_ptr CreateAnimationTestObject();
 
 		bool SaveAnimationTree(std::string name, std::string filepath);
+		bool SaveAnimation(std::string name, std::string filepath);
+		bool SaveAllAnimations(std::string filepath);
+		bool LoadAnimationTree(std::string filepath);
+		bool LoadAnimation(std::string filepath);
+		bool LoadAssets(std::string filepath);
+		void OpenFileCallback(OpenFileEvent* evnt);
+
+	private:
+		bool SaveAnimation(Animation& anim, std::string filepath);
+		void TestObject();
 	};
 
 

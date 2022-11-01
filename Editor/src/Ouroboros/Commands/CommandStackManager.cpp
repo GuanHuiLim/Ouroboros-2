@@ -2,18 +2,17 @@
 #include "CommandStackManager.h"
 
 #include "App/Editor/UI/Tools/WarningMessage.h"
-#include "App/Editor/Events/OpenFileEvent.h"
+#include "App/Editor/Events/LoadSceneEvent.h"
 
 #include <Ouroboros/Core/Assert.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 void oo::CommandStackManager::InitEvents()
 {
-	EventManager::Subscribe<OpenFileEvent>(
-		[](OpenFileEvent* ofe)
+	EventManager::Subscribe<LoadSceneEvent>(
+		[](LoadSceneEvent* lse)
 		{
 			//events that trigger a scene change
-			if (ofe->m_type == OpenFileEvent::FileType::SCENE || ofe->m_type == OpenFileEvent::FileType::PREFAB)
-				CommandStackManager::ClearCommandBuffer();
+			CommandStackManager::ClearCommandBuffer();
 		}
 	);
 }
