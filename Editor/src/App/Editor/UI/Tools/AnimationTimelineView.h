@@ -28,6 +28,7 @@ public:
 	void Show();
 
 private:
+	oo::Scene::go_ptr go;
 	oo::AnimationComponent* animator = nullptr;
 	oo::Anim::Node* node = nullptr;
 	oo::Anim::Animation* animation = nullptr;
@@ -56,7 +57,10 @@ private:
 	float accumulatedPanningDeltaX = 0.0f;
 	bool isPanningTimeline = false;
 
+	bool displayEventInspector = true;
+
 	void DisplayAnimationTimeline(oo::AnimationComponent* _animator);
+	void DisplayEventInspector(oo::Anim::Animation* _animation);
 	void DrawTimeLineInfo();
 	void DrawToolbar();
 	void DrawNodeSelector(oo::AnimationComponent* _animator);

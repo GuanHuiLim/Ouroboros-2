@@ -39,7 +39,8 @@ void AnimationTimelineView::Show()
     if (gameObject == nullptr || gameObject->HasComponent<oo::AnimationComponent>() == false)
         return;
 
-    animator = &gameObject.get()->GetComponent<oo::AnimationComponent>();
+    go = gameObject;
+    animator = &go.get()->GetComponent<oo::AnimationComponent>();
 
     DisplayAnimationTimeline(animator);
 }
@@ -162,6 +163,15 @@ void AnimationTimelineView::DrawToolbar()
     if (ImGui::Button("Add Event"))
     {
         //Creates an event, basically drawing a new keyframe at that currentTime
+        if (animation != nullptr)
+        {
+            oo::Anim::ScriptEvent newEvent{
+                .script_function_info{},
+                .time{currentTime}
+            };
+
+            animation->events.push_back(newEvent);
+        }
     }
 
     ImGui::SameLine();
@@ -185,6 +195,14 @@ void AnimationTimelineView::DrawToolbar()
     if (ImGui::Button("Delete Event"))
     {
         //delete event
+        if (animation != nullptr)
+        {
+            for (int i = 0; i < animation->events.size(); ++i)
+            {
+                if (currentTime == animation->events[i].time)
+                    animation->events.erase(animation->events.begin() + i);
+            }
+        }
     }
 }
 
@@ -420,13 +438,27 @@ void AnimationTimelineView::DrawTimeLineContent()
             }
         }
 
+        if (animation != nullptr)
+        {
+            for (int i = 0; i < animation->events.size(); ++i)
+            {
+                for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
+                {
+                    if ((j * unitPerFrame) == animation->events[i].time)
+                    {
+                        DrawKeyFrame(j, IM_COL32(211, 211, 0, 255));
+                    }
+                }
+            }
+        }
+
         ImGui::NextColumn();
 
         //Properties GUI
         if (timeline != nullptr)
         {
             bool open = ImGui::TreeNodeEx("Position", ImGuiTreeNodeFlags_DefaultOpen);
-
+            
             if (open)
             {
                 for (int i = 0; i < timeline->keyframes.size(); ++i)
@@ -439,17 +471,17 @@ void AnimationTimelineView::DrawTimeLineContent()
                             ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::vec3>().y);
                             ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::vec3>().z);
                         }
-                        else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
-                        {
-                            ImGui::DragFloat("W", &timeline->keyframes[i].data.get_value<glm::quat>().w);
-                            ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::quat>().x);
-                            ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::quat>().y);
-                            ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::quat>().z);
-                        }
-                        else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
-                        {
-                            ImGui::Checkbox("", &timeline->keyframes[i].data.get_value<bool>());
-                        }
+                        //else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
+                        //{
+                        //    ImGui::DragFloat("W", &timeline->keyframes[i].data.get_value<glm::quat>().w);
+                        //    ImGui::DragFloat("X", &timeline->keyframes[i].data.get_value<glm::quat>().x);
+                        //    ImGui::DragFloat("Y", &timeline->keyframes[i].data.get_value<glm::quat>().y);
+                        //    ImGui::DragFloat("Z", &timeline->keyframes[i].data.get_value<glm::quat>().z);
+                        //}
+                        //else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
+                        //{
+                        //    ImGui::Checkbox("Bool", &timeline->keyframes[i].data.get_value<bool>());
+                        //}
                     }
                 }
 
@@ -469,31 +501,52 @@ void AnimationTimelineView::DrawTimeLineContent()
                                 ImGui::SetCursorPosY(71);
                                 DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
                             }
-                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
-                            {
-                                ImGui::SetCursorPosY(25);
-                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                ImGui::SetCursorPosY(48);
-                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                ImGui::SetCursorPosY(71);
-                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                                ImGui::SetCursorPosY(94);
-                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                            }
-                            else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
-                            {
-                                ImGui::SetCursorPosY(25);
-                                DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
-                            }
+                            //else if (timeline->keyframes[i].data.get_type() == rttr::type::get<glm::quat>())
+                            //{
+                            //    ImGui::SetCursorPosY(25);
+                            //    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            //    ImGui::SetCursorPosY(48);
+                            //    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            //    ImGui::SetCursorPosY(71);
+                            //    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            //    ImGui::SetCursorPosY(94);
+                            //    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            //}
+                            //else if (timeline->keyframes[i].data.get_type() == rttr::type::get<bool>())
+                            //{
+                            //    ImGui::SetCursorPosY(25);
+                            //    DrawKeyFrame(j, IM_COL32(0, 211, 0, 255));
+                            //}
                         }
                     }
                 }
-
                 ImGui::TreePop();
             }
+            ImGui::NewLine();
+            ImGui::Separator();
         }
 
         ImGui::EndChild();
+    }
+    DisplayEventInspector(animation);
+
+}
+
+void AnimationTimelineView::DisplayEventInspector(oo::Anim::Animation* _animation)
+{
+    if (animation != nullptr)
+    {
+        if (ImGui::Begin("Animation Event Inspector", &displayEventInspector))
+        {
+            for (int i = 0; i < animation->events.size(); ++i)
+            {
+                if (currentTime == animation->events[i].time)
+                {
+                    ImGui::Text("Invoke: ");
+                }
+            }
+            ImGui::End();
+        }
     }
 }
 
