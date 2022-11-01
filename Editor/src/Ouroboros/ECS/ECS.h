@@ -17,6 +17,7 @@ Technology is prohibited.
 #include <Archetypes_ECS/src/A_Ecs.h>
 #include "DeferredComponent.h"
 #include "DuplicatedComponent.h"
+#include "GameObjectDisabledComponent.h"
 
 namespace Ecs
 {
@@ -27,7 +28,7 @@ namespace Ecs
         return [&]()
         {
             Ecs::Query query;
-            query.with<T...>().exclude<oo::DeferredComponent, oo::DuplicatedComponent>().build();
+            query.with<T...>().exclude<oo::DeferredComponent, oo::DuplicatedComponent, oo::GameObjectDisabledComponent>().build();
             return query;
         }();
     }
