@@ -68,9 +68,6 @@ static void FileDrop(oo::FileDropEvent* e)
 }
 Editor::Editor()
 {
-	UI_RTTRType::Init();
-	Serializer::Init();//runs the init function
-	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
 	oo::EventManager::Subscribe<oo::FileDropEvent>(&FileDrop);
 
