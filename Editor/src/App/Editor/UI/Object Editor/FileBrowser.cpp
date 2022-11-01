@@ -44,16 +44,16 @@ FileBrowser::FileBrowser()
 
 void FileBrowser::InitAssets()
 {
-	m_Icons[".png"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PNGIcon.png");
-	m_Icons[".obj"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/OBJFileIcon.png");
-	m_Icons[".mp3"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/MP3FileIcon.png");
-	m_Icons[".prefab"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PrefabIcon.png");
-	m_Icons[".scn"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/SceneIcon.png");
-	m_Icons[".anim"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimationClipIcon.png");
-	m_Icons[".controller"]	= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimatorIcon.png");
-	m_Icons[".cs"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/CSFileIcon.png");
-	m_Icons["generic"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/GenericFileIcon.png");
-	m_Icons["folder"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/FolderIcon.png");
+	m_Icons[".png"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/PNGIcon.png");
+	m_Icons[".obj"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/OBJFileIcon.png");
+	m_Icons[".mp3"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/MP3FileIcon.png");
+	m_Icons[".prefab"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/PrefabIcon.png");
+	m_Icons[".scn"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/SceneIcon.png");
+	m_Icons[".anim"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/AnimationClipIcon.png");
+	m_Icons[".controller"]	= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/AnimatorIcon.png");
+	m_Icons[".cs"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/CSFileIcon.png");
+	m_Icons["generic"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/GenericFileIcon.png");
+	m_Icons["folder"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/FolderIcon.png");
 }
 
 inline void FileBrowser::SetDirectory(LoadProjectEvent* lpe)
