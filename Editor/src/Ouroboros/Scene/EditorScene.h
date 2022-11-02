@@ -20,7 +20,7 @@ namespace oo
     class EditorScene final : public Scene
     {
     public:
-        explicit EditorScene(std::string const& filepath);
+        explicit EditorScene(std::string const& name, std::string const& filepath);
 
         virtual void Init() override final;
         virtual void Update() override final;

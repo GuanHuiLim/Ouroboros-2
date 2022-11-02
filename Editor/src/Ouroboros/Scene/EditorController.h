@@ -65,8 +65,10 @@ namespace oo
         void OnOpenFileEvent(OpenFileEvent* openFileEvent);
         void OnRuntimeSceneChange(Scene::OnInitEvent*);
 
-        std::weak_ptr<EditorScene> m_editorScene = {};
+        std::shared_ptr<EditorScene> m_editorScene = {};
         
+        std::string m_editorSceneName;
+        std::string m_editorSceneNameAtRuntime;
         bool m_temporaryAdd = false;
 
         SCENE_STATE& m_activeState;

@@ -30,8 +30,8 @@ Technology is prohibited.
 
 namespace oo
 {
-    EditorScene::EditorScene(std::string const& filepath)
-        : Scene{ "Editor Scene" }
+    EditorScene::EditorScene(std::string const& name, std::string const& filepath)
+        : Scene{ name }
     {
         if (!filepath.empty())
             SetFilePath(filepath);

@@ -55,7 +55,9 @@ namespace oo
         // loops through all loadpaths, create the neccesary scenes
         for (auto& scenePath : m_loadpaths)
         {
-            m_sceneManager.CreateNewScene<RuntimeScene>(scenePath.SceneName, scenePath.LoadPath);
+            // scenes are uniquely identified by their names
+            auto[result, key, weak_ptr] = m_sceneManager.CreateNewScene<RuntimeScene>(scenePath.SceneName, scenePath.LoadPath);
+            ASSERT_MSG(result == false, "new scene is not created as the name is already in use!");
         }
     }
 
