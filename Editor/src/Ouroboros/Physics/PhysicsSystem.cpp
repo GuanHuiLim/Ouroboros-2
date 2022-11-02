@@ -366,6 +366,9 @@ namespace oo
 
     void PhysicsSystem::RenderDebugColliders()
     {
+        if (DrawDebug == false)
+            return;
+
         TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
         //TODO : Toggle to enable/disable debug drawing of bounds.
        
