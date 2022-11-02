@@ -285,6 +285,8 @@ namespace myPhysx
         // release rigidstatic or rigiddynamic
         if (all_objects.contains(obj.id)) {
 
+            int current_index = all_objects.at(obj.id);
+
             PhysxObject* underlying_obj = &m_objects[all_objects.at(obj.id)];
 
             if (underlying_obj->rigidID == rigid::rstatic)
@@ -295,23 +297,50 @@ namespace myPhysx
 
             // release shape
             //underlying_obj->m_shape->release();
-            
-            all_objects.erase(obj.id);
-        }
 
-        // check/find the id from the obj vector then if match 
-        // remove from that vector then release
-        // NOTE: DON't MIXUP ELEM ID and OBJ ID HERE, 2 different types.
-        auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == obj.id; });
-        
-        //if(begin != m_objects.end())
-        //    m_objects.erase(begin);
-        
-        m_objects.erase(begin);
+            all_objects.erase(obj.id);
+            //all_objects.erase(*underlying_obj->id.get());
+
+            // UPDATE THE INDEX AFTER DELETING
+            for (auto i = all_objects.begin(); i != all_objects.end(); i++) {
+
+                if (i->second > current_index) {
+                    int current = i->second;
+                    i->second = current - 1;
+                }
+            }
+
+            // CHECK ON TRIGGER 
+            //updateTriggerState(obj.id);
+
+            // check/find the id from the obj vector then if match 
+            // remove from that vector then release
+            // NOTE: DON't MIXUP ELEM ID and OBJ ID HERE, 2 different types.
+            auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == obj.id; });
+            //auto begin = std::find_if(m_objects.begin(), m_objects.end(), [&](auto&& elem) { return *elem.id == *underlying_obj->id.get(); });
+
+            //if(begin != m_objects.end())
+            //    m_objects.erase(begin);
+
+            m_objects.erase(begin);
+        }
     }
 
-    /*
-    void PhysxWorld::updateTriggerState() {
+    void PhysxWorld::updateTriggerState(phy_uuid::UUID id) {
+
+        std::queue<TriggerManifold>* temp = &m_triggerCollisionPairs;
+
+        while (!m_triggerCollisionPairs.empty()) {
+
+            TriggerManifold val = m_triggerCollisionPairs.front();
+
+            if (val.triggerID == id || val.otherID == id)
+                temp->emplace(val.triggerID, val.otherID, trigger::onTriggerExit, true);
+
+            m_triggerCollisionPairs.pop();
+        }
+
+        m_triggerCollisionPairs = *temp;
 
         //for (TriggerManifold& temp : m_triggerCollisionPairs) {
         //
@@ -321,21 +350,25 @@ namespace myPhysx
         //    }
         //}
 
-        std::queue<TriggerManifold> temp;
-
-        while(!m_triggerCollisionPairs.empty()) {
-
-            TriggerManifold val = m_triggerCollisionPairs.front();
-
-            if (all_objects.contains(val.triggerID) && all_objects.contains(val.otherID))
-                temp.emplace(val);
-
-            m_triggerCollisionPairs.pop();
-        }
-
-        m_triggerCollisionPairs = temp;
+       //std::queue<TriggerManifold> temp;
+       //
+       //while(!m_triggerCollisionPairs.empty()) {
+       //
+       //    TriggerManifold val = m_triggerCollisionPairs.front();
+       //
+       //    if (all_objects.contains(val.triggerID) && all_objects.contains(val.otherID))
+       //        temp.emplace(val);
+       //
+       //    m_triggerCollisionPairs.pop();
+       //}
+       //
+       //m_triggerCollisionPairs = temp;
     }
-    */
+    
+    std::map<phy_uuid::UUID, int>* PhysxWorld::getAllObject() {
+
+        return &all_objects;
+    }
 
     std::queue<TriggerManifold>* PhysxWorld::getTriggerData() {
 
@@ -489,6 +522,7 @@ namespace myPhysx
                 else if (underlying_obj->rigidID == rigid::rdynamic)
                     underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
 
+                underlying_obj->m_shape = nullptr;
                 underlying_obj->shape = shape::none; // set new shape enum
             }
 
@@ -661,13 +695,16 @@ namespace myPhysx
 
         if (world->all_objects.contains(id)) {
 
+            //printf("M_OBJ SIZE: %d\n", world->m_objects.size());
+            //printf("M_OBJ ID: %d\n", world->all_objects.at(id));
+
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->rigidID == rigid::rstatic)
-                underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
+                underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ pos, quat });
 
             else if (underlying_obj->rigidID == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ PxVec3(pos.x, pos.y, pos.z), quat });
+                underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ pos, quat });
         }
     }
 
@@ -1087,6 +1124,7 @@ namespace myPhysx
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
                 //stayTrigger = false;
                 state = trigger::onTriggerExit;
+                //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
                 printf("Shape is LEAVING TRIGGER volume\n");
             }
 
@@ -1095,6 +1133,19 @@ namespace myPhysx
 
             // Add new TriggerManifold data into the queue
             trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
+
+            //// Check object exist
+            //std::map<phy_uuid::UUID, int>* all_object = physx_system::currentWorld->getAllObject();
+            //
+            //if (all_object->contains(trigger_id) && all_object->contains(other_id)) {
+            //
+            //    // Add new TriggerManifold data into the queue
+            //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
+            //}
+            //
+            //if (!all_object->contains(trigger_id) || !all_object->contains(other_id))
+            //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, trigger::onTriggerExit, true });
+
 
             //int msize = temp->size();
             //while(!temp->empty()) {

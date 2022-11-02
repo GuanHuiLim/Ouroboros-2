@@ -179,8 +179,11 @@ namespace myPhysx {
         PhysicsObject createInstance();
         void removeInstance(PhysicsObject obj);
 
+        // MAP OF OBJECTS
+        std::map<phy_uuid::UUID, int>* getAllObject();
+
         // TRIGGER
-        //void updateTriggerState(); // function to update objects for OnTriggerStay
+        void updateTriggerState(phy_uuid::UUID id); // function to update objects for OnTriggerStay
         std::queue<TriggerManifold>* getTriggerData(); // function to retrieve the trigger queue data
         void clearTriggerData(); // function to reset the trigger queue data
 
