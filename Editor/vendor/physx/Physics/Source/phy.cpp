@@ -156,7 +156,7 @@ namespace myPhysx
 
             if constexpr (use_debugger) {
                 printf("DEBUGGER ON\n");
-                myPVD.createPvd(getFoundation(), "192.168.2.32");
+                myPVD.createPvd(getFoundation(), "192.168.157.213");
             }
             else {
                 printf("DEBUGGER OFF\n");
@@ -407,6 +407,8 @@ namespace myPhysx
         // CHECK GOT THE INSTANCE CREATED OR NOT
         if (world->all_objects.contains(id)) {
 
+            bool changingType = false;
+
             //PhysxObject* underlying_obj = world->all_objects.at(id);
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
             PxRigidStatic* rstat = underlying_obj->rb.rigidStatic;
@@ -415,11 +417,13 @@ namespace myPhysx
             // CHECK IF HAVE RIGIDBODY CREATED OR NOT
             // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
             if (rstat) {
+                changingType = true;
                 temp_trans = rstat->getGlobalPose();
                 world->scene->removeActor(*rstat);
                 underlying_obj->rb.rigidStatic = nullptr; // clear the current data
             }
             else if (rdyna) {
+                changingType = true;
                 temp_trans = rdyna->getGlobalPose();
                 world->scene->removeActor(*rdyna);
                 underlying_obj->rb.rigidDynamic = nullptr;
@@ -442,6 +446,29 @@ namespace myPhysx
                 world->scene->addActor(*underlying_obj->rb.rigidDynamic);
             }
 
+            // CHECK WHETHER IS CHANGING OF RIGID TYPE
+            if (changingType) {
+
+                // ATTACH THE NEW SHAPE
+                if (underlying_obj->m_shape) {
+
+                    //printf("SHAPE TYPE: %d", underlying_obj->shape);
+                    
+                    // ATTACH THE NEW SHAPE BASED THE SHAPE TYPE
+                    if (underlying_obj->shape == shape::box) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().box());
+
+                    else if (underlying_obj->shape == shape::sphere) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().sphere());
+
+                    else if (underlying_obj->shape == shape::plane) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().plane());
+
+                    else if (underlying_obj->shape == shape::capsule) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().capsule());
+                }
+            }
+
             // Check how many actors created in the scene
             //PxActorTypeFlags desiredTypes = PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC;
             //PxU32 count = world->scene->getNbActors(desiredTypes);
@@ -449,6 +476,27 @@ namespace myPhysx
             
             //PxU32 noo = world->scene->getActors(desiredTypes, buffer, count);
             //printf("%d - actors\n\n", noo);
+        }
+    }
+
+    template<typename Type>
+    void PhysicsObject::reAttachShape(rigid rigidType, Type data) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+            PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
+
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(data, *material, true);
+
+            // ATTACH THE SHAPE TO THE OBJECT
+            if (rigidType == rigid::rstatic)
+                underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+
+            else if (rigidType == rigid::rdynamic)
+                underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+
+            physx_system::setupFiltering(underlying_obj->m_shape);
         }
     }
 
