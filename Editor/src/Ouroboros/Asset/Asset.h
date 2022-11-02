@@ -72,6 +72,7 @@ namespace oo
             Audio,
             Model,
             Animation,
+            AnimationTree,
             _COUNT,
         };
 
@@ -172,6 +173,7 @@ namespace oo
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
         static constexpr ExtensionList<1> EXTS_ANIMATION = { ".anim" };
+        static constexpr ExtensionList<1> EXTS_ANIMATION_TREE = { ".tree" };
         static constexpr ExtensionList<1> EXTS_MODEL = { ".fbx" };
 
         /* --------------------------------------------------------------------------- */
