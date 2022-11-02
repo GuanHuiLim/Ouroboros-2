@@ -99,7 +99,7 @@ namespace oo
         {
         case oo::SCENE_STATE::EDITING:
             m_editorCamera.SetAspectRatio((float)width / (float)height);
-            Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
+            m_graphicsWorld->cameras[0] = m_editorCamera;
             break;
         case oo::SCENE_STATE::RUNNING:
 
@@ -114,10 +114,10 @@ namespace oo
                 return camera;
             }();
 
-            Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_runtimeCamera;
+            m_graphicsWorld->cameras[0] = m_runtimeCamera;
             break;
         }
-        auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+        auto& camera = m_graphicsWorld->cameras[0];
         m_cc.SetCamera(&camera);
 
         // Mesh Renderer
@@ -145,7 +145,7 @@ namespace oo
         switch (e.state)
         {
         case oo::SCENE_STATE::RUNNING:
-            m_editorCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+            m_editorCamera = m_graphicsWorld->cameras[0];
             break;
         }
         //m_editorCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
@@ -221,14 +221,14 @@ namespace oo
 
             if (using_editor_camera)
             {
-                m_runtimeCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
-                Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
+                m_runtimeCamera = m_graphicsWorld->cameras[0];
+                m_graphicsWorld->cameras[0] = m_editorCamera;
             }
             else
             {
-                Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_runtimeCamera;
+                m_graphicsWorld->cameras[0] = m_runtimeCamera;
             }
-            m_cc.SetCamera(&Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera);
+            m_cc.SetCamera(&m_graphicsWorld->cameras[0]);
         }
 
         if (!using_editor_camera)
