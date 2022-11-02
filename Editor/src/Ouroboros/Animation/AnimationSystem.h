@@ -52,8 +52,8 @@ namespace oo::Anim
 		static bool SaveAnimation(std::string name, std::string filepath);
 		static bool SaveAllAnimations(std::string filepath);
 		static bool SaveAllAnimationTree(std::string filepath);
-		static bool LoadAnimationTree(std::string filepath);
-		static bool LoadAnimation(std::string filepath);
+		static AnimationTree* LoadAnimationTree(std::string filepath);
+		static Animation* LoadAnimation(std::string filepath);
 		static bool LoadAssets(std::string filepath);
 		static void OpenFileCallback(OpenFileEvent* evnt);
 		static void CloseProjectCallback(CloseProjectEvent* evnt);
