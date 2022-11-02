@@ -229,7 +229,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
 
                     auto node = _animator->AddNode(it->second.name, nodeinfo);
 
-                    CreateNode(uniqueId, node);
+                    CreateNode(uniqueId, node.operator->());
                 }
             }
         }
@@ -714,7 +714,7 @@ AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(oo::Animati
         auto newLink = _animator->AddLink(it->second.name,
                                           FindNode(inputPinId)->anim_node->name,
                                           FindNode(outputPinId)->anim_node->name);
-        m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId, newLink });
+        m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId, newLink.operator->() });
     }
     return &m_links_.back();
 }

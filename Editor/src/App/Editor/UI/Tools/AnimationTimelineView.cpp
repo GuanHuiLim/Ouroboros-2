@@ -471,7 +471,24 @@ void AnimationTimelineView::DrawTimeLineContent()
 
             if (ImGui::BeginPopup("##addtimeline"))
             {
+                if (ImGui::MenuItem("Add Example Timeline"))
+                {
+                    auto& temp = animator->GetActualComponent().animTree->groups;
 
+                    for (auto it = temp.begin(); it != temp.end(); ++it)
+                    {
+                        oo::Anim::TimelineInfo exampleTimeline{
+                        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+                        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+                        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
+                        .timeline_name{"Example Timeline"},
+                        .target_object{*(go.get())},
+                        .source_object{*(go.get())}
+                        };
+                        auto exampleTL = animator->AddTimeline(it->second.name, node->name, exampleTimeline);
+                        timeline = exampleTL;
+                    }
+                }
                 ImGui::EndPopup();
             }
         }
