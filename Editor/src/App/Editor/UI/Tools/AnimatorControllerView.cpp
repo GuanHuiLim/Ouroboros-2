@@ -97,7 +97,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
 
     if (!_animator->GetActualComponent().animTree)
     {
-        //auto tree = oo::Anim::AnimationTree::Create("Animation Tree");
+        auto tree = oo::Anim::AnimationTree::Create("Test Animation Tree");
         _animator->SetAnimationTree("Test Animation Tree");
         //auto& start_node = tree->groups.begin()->second.startNode;
     }
@@ -481,7 +481,7 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Separator();
                 ImGui::Text("Animation");
                 ImGui::SameLine(textsize.x * 12);
-                ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 256);
+                //ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 256);
                 ImGui::Text("Speed");
                 ImGui::SameLine(textsize.x * 12);
                 ImGui::InputFloat("##speed", &id->anim_node->speed);
