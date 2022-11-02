@@ -72,7 +72,7 @@ namespace oo
         SDL_Vulkan_GetInstanceExtensions(m_windowHandle, &extensions_count, &extensions[0]);
 
         //// Setup Camera Internally, not used
-        //vr = VulkanRenderer::get();
+        vr = VulkanRenderer::get();
         //auto& camera = vr->camera;
         ////m_cc.SetCamera(&camera);
         //camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
