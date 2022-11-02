@@ -72,7 +72,7 @@ namespace oo
 		//Anim::Animation* AddAnimation(std::string const& groupName, std::string const& nodeName, std::string const name = { "Unnamed Animation" });
 
 		//add timeline to animation
-		Anim::Timeline* AddTimeline(std::string const& groupName, std::string const& nodeName, Anim::TimelineInfo const& info);
+		Anim::TimelineRef AddTimeline(std::string const& groupName, std::string const& nodeName, Anim::TimelineInfo const& info);
 
 		/*Anim::Timeline* AddTimeline(std::string const& groupName, std::string const& nodeName,
 			std::string const& timelineName, Anim::Timeline::TYPE type, Anim::Timeline::DATATYPE datatype);*/

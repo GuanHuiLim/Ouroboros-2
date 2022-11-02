@@ -73,6 +73,7 @@ namespace oo::Anim::internal
 		static std::uniform_int_distribution<size_t> distrib{ 0 };
 		return distrib(mt);
 	};
+	
 }
 
 namespace oo::Anim
@@ -391,4 +392,17 @@ namespace oo::Anim
 	{
 		return (*anims).at(id);
 	}
+
+	/*-------------------------------
+	TimelineRef
+	-------------------------------*/
+	Timeline& oo::Anim::TimelineRef::Retrieve() const
+	{
+		return anim->timelines[index];
+	}
+	bool oo::Anim::TimelineRef::valid() const
+	{
+		return index >= 0 && index < static_cast<int>(anim->timelines.size());
+	}
+
 }

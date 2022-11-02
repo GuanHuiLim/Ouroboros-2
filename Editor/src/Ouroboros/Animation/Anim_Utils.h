@@ -190,7 +190,20 @@ namespace oo::Anim
 		bool valid() const;
 	};
 
+	struct TimelineRef
+	{
+		AnimRef anim{};
+		int index{-1};
 
+		Timeline& operator*() const { return Retrieve(); }
+		Timeline* operator->() const { return &Retrieve(); }
+		operator bool() const {
+			return valid();
+		}
+	private:
+		Timeline& Retrieve() const;
+		bool valid() const;
+	};
 	
 
 	/*------------
