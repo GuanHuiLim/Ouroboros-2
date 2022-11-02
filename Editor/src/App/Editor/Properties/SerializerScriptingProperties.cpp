@@ -82,7 +82,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
 			if (go == nullptr)
 				id = -1;
-			rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));
+			rapidjson::Value data(static_cast<int64_t>((id.GetUUID())));
 			val.AddMember(name, data, doc.GetAllocator());
 		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::COMPONENT, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
@@ -94,7 +94,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
 			if (go == nullptr)
 				id = -1;
-			rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));
+			rapidjson::Value data(static_cast<int64_t>((id.GetUUID())));//save as int64
 			val.AddMember(name, data, doc.GetAllocator());
 		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
@@ -116,17 +116,17 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			data.PushBack(function.m_info.paramList.empty(), doc.GetAllocator());
 			if (function.m_info.paramList.size())
 			{
-				auto &sfi = function.m_info.paramList[0];
-				data.PushBack(static_cast<uint64_t>(sfi.value.GetValueType()), doc.GetAllocator());
+				auto &function_sfi = function.m_info.paramList[0];
+				data.PushBack(static_cast<int64_t>(function_sfi.value.GetValueType()), doc.GetAllocator());
 				//creates a temporary object to go through the saving process
 				//while it can be more effecient it's a tiny cost and shouldn't be too slow.
 				rapidjson::Value tempObj(rapidjson::kObjectType);
-				auto iter = m_ScriptSave.find(sfi.value.GetValueType());
+				auto iter = m_ScriptSave.find(function_sfi.value.GetValueType());
 				if (iter == m_ScriptSave.end())
 				{
 					ASSERT_MSG(true, "type not supported?");
 				}
-				iter->second(doc, tempObj,sfi);
+				iter->second(doc, tempObj, function_sfi);
 				data.PushBack(tempObj.MemberBegin()->value, doc.GetAllocator());
 			}
 
