@@ -129,6 +129,24 @@ namespace oo
                 };
                 break;
             }
+            case AssetInfo::Type::Animation:
+            {
+                // Load animation
+                onAssetCreate = [](AssetInfo& self)
+                {
+                    // do some loading
+                    /* auto myData = LoadDataFromSomewhere(); */
+
+                    // write data to store into the asset
+                    self.data.emplace_back(/* myData */);
+                };
+                onAssetDestroy = [](AssetInfo& self)
+                {
+                    // unload data
+                    /* UnloadDataFromSomewhere(self.GetData<MyDataType>()); */
+                };
+                break;
+            }
         }
 
         // Call asset creation callback
