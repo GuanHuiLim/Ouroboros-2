@@ -35,8 +35,8 @@ namespace oo::Anim
 {
 	AnimationSystem::~AnimationSystem()
 	{
-		EventManager::Unsubscribe<AnimationSystem, OpenFileEvent>(this, &AnimationSystem::OpenFileCallback);
-		EventManager::Unsubscribe<AnimationSystem, CloseProjectEvent>(this, &AnimationSystem::CloseProjectCallback);
+		EventManager::Unsubscribe<OpenFileEvent>(&AnimationSystem::OpenFileCallback);
+		EventManager::Unsubscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
@@ -49,8 +49,8 @@ namespace oo::Anim
 		this->world = _world;
 		this->scene = _scene;
 
-		EventManager::Subscribe<AnimationSystem, OpenFileEvent>(this,&AnimationSystem::OpenFileCallback);
-		EventManager::Subscribe<AnimationSystem, CloseProjectEvent>(this,&AnimationSystem::CloseProjectCallback);
+		EventManager::Subscribe<OpenFileEvent>(&AnimationSystem::OpenFileCallback);
+		EventManager::Subscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
@@ -389,21 +389,21 @@ namespace oo::Anim
 
 		for (auto& iter : path)
 		{
-			bool result = true;
 			if (iter.extension().string() == ".tree")
 			{
-				result = LoadAnimationTree(iter.string());
+				auto result = LoadAnimationTree(iter.string());
+				if (result == nullptr) return false;
 			}
 			if (iter.extension().string() == ".anim")
 			{
-				result = LoadAnimation(iter.string());
+				auto result = LoadAnimation(iter.string());
+				if (result == nullptr) return false;
 			}
-			if (result == false) return false;
 		}
 		return true;
 	}
 
-	bool AnimationSystem::LoadAnimationTree(std::string filepath)
+	AnimationTree* AnimationSystem::LoadAnimationTree(std::string filepath)
 	{
 		std::ifstream ifs;
 		ifs.open(filepath);
@@ -411,7 +411,7 @@ namespace oo::Anim
 		{
 			LOG_CRITICAL("LoadAnimationTree cannot find the file");
 			assert(false);
-			return false;
+			return nullptr;
 		}
 		rapidjson::IStreamWrapper isw(ifs);
 		rapidjson::Document doc;
@@ -424,10 +424,9 @@ namespace oo::Anim
 		load_fn.invoke({}, obj, tree);
 
 
-		AnimationTree::Add(std::move(tree));
-		return true;
+		return AnimationTree::Add(std::move(tree));
 	}
-	bool AnimationSystem::LoadAnimation(std::string filepath)
+	Animation* AnimationSystem::LoadAnimation(std::string filepath)
 	{
 		std::ifstream ifs;
 		ifs.open(filepath);
@@ -435,7 +434,7 @@ namespace oo::Anim
 		{
 			LOG_CRITICAL("LoadAnimationTree cannot find the file");
 			assert(false);
-			return false;
+			return nullptr;
 		}
 		rapidjson::IStreamWrapper isw(ifs);
 		rapidjson::Document doc;
@@ -446,14 +445,17 @@ namespace oo::Anim
 		auto load_fn = rttr::type::get< Animation>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, anim);
 
-		//TODO: uncomment when ready
-		Animation::AddAnimation(std::move(anim));
 
-		return false;
+		return Animation::AddAnimation(std::move(anim));
+
 	}
 
 	Animation* AnimationSystem::AddAnimation(std::string const& name)
 	{		
 		return internal::AddAnimationToStorage(name);
+	}
+	AnimationTree* AnimationSystem::CreateAnimationTree(std::string const& name)
+	{
+		return AnimationTree::Create("Test Animation Tree");
 	}
 }
