@@ -528,7 +528,7 @@ namespace SLNet
 		inline BitSize_t GetReadOffset( void ) const {return readOffset;}
 
 		/// \brief Sets the read bit index
-		void SetReadOffset(const BitSize_t newReadOffset);
+		void SetReadOffset( const BitSize_t newReadOffset ) {readOffset=newReadOffset;}
 
 		/// \brief Returns the number of bits left in the stream that haven't been read
 		inline BitSize_t GetNumberOfUnreadBits( void ) const { return readOffset > numberOfBitsUsed ? 0 : numberOfBitsUsed - readOffset; }
@@ -611,7 +611,7 @@ namespace SLNet
 		/// can also be used to force coalesced bitstreams to start on byte
 		/// boundaries so so WriteAlignedBits and ReadAlignedBits both
 		/// calculate the same offset when aligning.
-		void AlignReadToByteBoundary(void);
+		inline void AlignReadToByteBoundary( void ) {readOffset += 8 - ( (( readOffset - 1 ) & 7 ) + 1 );}
 
 		/// \brief Read \a numberOfBitsToRead bits to the output source.
 		/// \details alignBitsToRight should be set to true to convert internal

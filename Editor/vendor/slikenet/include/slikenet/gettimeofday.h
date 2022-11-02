@@ -6,17 +6,13 @@
  *  RakNet License.txt file in the licenses directory of this source tree. An additional grant 
  *  of patent rights can be found in the RakNet Patents.txt file in the same directory.
  *
- *  Modified work: Copyright (c) 2019, SLikeSoft UG (haftungsbeschränkt)
- *
- *  This source code was modified by SLikeSoft. Modifications are licensed under the MIT-style
- *  license found in the license.txt file in the root directory of this source tree.
  */
  
 #ifndef __GET_TIME_OF_DAY_H
 #define __GET_TIME_OF_DAY_H
 
 #if defined(_WIN32) && !defined(__GNUC__)  &&!defined(__GCCXML__)
-#include <time.h>
+#include < time.h >
 struct timezone
 {
   int  tz_minuteswest; /* minutes W of Greenwich */

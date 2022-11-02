@@ -6,7 +6,7 @@ This code is public domain (no copyright).
 You can do whatever you want with it.
 *****************************************************************************/
 /*
- *  Modified work: Copyright (c) 2016-2020, SLikeSoft UG (haftungsbeschränkt)
+ *  Modified work: Copyright (c) 2016, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code was modified by SLikeSoft. Modifications in this file are put under the public domain.
  *  Alternatively you are permitted to license the modifications under the MIT license, if you so desire. The
@@ -67,7 +67,7 @@ static int _kbhit(void)
 	FD_ZERO(&read_handles);
 	FD_SET(0, &read_handles);
 	timeout.tv_sec = timeout.tv_usec = 0;
-	status = select(0 + 1, &read_handles, nullptr, nullptr, &timeout);
+	status = select(0 + 1, &read_handles, NULL, NULL, &timeout);
 	if(status < 0)
 	{
 		printf("select() failed in _kbhit()\n");

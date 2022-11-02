@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2019, SLikeSoft UG (haftungsbeschränkt)
+ *  Copyright (c) 2016, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code is licensed under the MIT-style license found in the
  *  license.txt file in the root directory of this source tree.
@@ -62,12 +62,12 @@ template<size_t BufferSize> errno_t strerror_s(char(&buffer)[BufferSize], int er
 	return strerror_s(buffer, BufferSize, errnum);
 }
 
-template<size_t BufferSize> errno_t strncat_s(char (&strDest)[BufferSize], const char *strSource, size_t count)
+template<size_t BufferSize> errno_t strncat_s(char(&strDest)[BufferSize], const char *strSource, size_t count)
 {
 	return strncat_s(strDest, BufferSize, strSource, count);
 }
 
-template<size_t BufferSize> errno_t strncpy_s(char (&strDest)[BufferSize], const char *strSource, size_t count)
+template<size_t BufferSize> errno_t strncpy_s(char(&strDest)[BufferSize], const char *strSource, size_t count)
 {
 	return strncpy_s(strDest, BufferSize, strSource, count);
 }

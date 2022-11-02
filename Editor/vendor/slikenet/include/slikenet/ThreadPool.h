@@ -201,13 +201,6 @@ protected:
 #include <unistd.h>
 #endif
 
-// #med - consider simplifying this and use a simple macro?
-// disable false-positive warnings 4701/4703 about inputData not being initialized (which it isn't in the case it's used)
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4701) // potentially uninitialized local variable
-#pragma warning(disable:4703) // potentially uninitialized local pointer
-#endif
 template <class ThreadInputType, class ThreadOutputType>
 RAK_THREAD_DECLARATION(WorkerThread)
 /*
@@ -310,10 +303,6 @@ void* WorkerThread( void* arguments )
 	return 0;
 
 }
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
 template <class InputType, class OutputType>
 ThreadPool<InputType, OutputType>::ThreadPool()
 {

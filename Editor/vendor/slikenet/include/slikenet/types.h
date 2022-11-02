@@ -7,7 +7,7 @@
  *  of patent rights can be found in the RakNet Patents.txt file in the same directory.
  *
  *
- *  Modified work: Copyright (c) 2016-2019, SLikeSoft UG (haftungsbeschränkt)
+ *  Modified work: Copyright (c) 2016-2018, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code was modified by SLikeSoft. Modifications are licensed under the MIT-style
  *  license found in the license.txt file in the root directory of this source tree.
@@ -16,8 +16,14 @@
 /// \file
 /// \brief Types used by RakNet, most of which involve user code.
 ///
+
+
 #ifndef __NETWORK_TYPES_H
 #define __NETWORK_TYPES_H
+
+
+
+
 
 #include "defines.h"
 #include "NativeTypes.h"
@@ -26,6 +32,10 @@
 #include "WindowsIncludes.h"
 #include "XBox360Includes.h"
 #include "SocketIncludes.h"
+
+
+
+
 
 namespace SLNet {
 /// Forward declarations
@@ -148,12 +158,20 @@ struct RAK_DLL_EXPORT SocketDescriptor
 	char hostAddress[32];
 
 	/// IP version: For IPV4, use AF_INET (default). For IPV6, use AF_INET6. To autoselect, use AF_UNSPEC.
-	/// IPV6 is the newer internet protocol. Instead of addresses such as natpunch.slikesoft.com, you may have an address such as fe80::7c:31f7:fec4:27de%14.
+	/// IPV6 is the newer internet protocol. Instead of addresses such as natpunch.jenkinssoftware.com, you may have an address such as fe80::7c:31f7:fec4:27de%14.
 	/// Encoding takes 16 bytes instead of 4, so IPV6 is less efficient for bandwidth.
 	/// On the positive side, NAT Punchthrough is not needed and should not be used with IPV6 because there are enough addresses that routers do not need to create address mappings.
 	/// RakPeer::Startup() will fail if this IP version is not supported.
 	/// \pre RAKNET_SUPPORT_IPV6 must be set to 1 in RakNetDefines.h for AF_INET6
 	short socketFamily;
+
+
+
+
+
+
+
+
 
 	unsigned short remotePortRakNetWasStartedOn_PS3_PSP2;
 
@@ -181,6 +199,15 @@ struct RAK_DLL_EXPORT SystemAddress
 	SystemAddress(const char *str);
 	SystemAddress(const char *str, unsigned short port);
 
+
+
+
+
+
+
+
+
+
 	/// SystemAddress, with RAKNET_SUPPORT_IPV6 defined, holds both an sockaddr_in6 and a sockaddr_in
 	union// In6OrIn4
 	{
@@ -199,7 +226,7 @@ struct RAK_DLL_EXPORT SystemAddress
 	static int size(void);
 
 	/// Hash the system address
-	static unsigned long ToInteger(const SystemAddress &sa);
+	static unsigned long ToInteger( const SystemAddress &sa );
 
 	/// Return the IP version, either IPV4 or IPV6
 	/// \return Either 4 or 6
@@ -338,8 +365,8 @@ struct RAK_DLL_EXPORT RakNetGUID
 //	0xFFFFFFFF, 0xFFFF
 //};
 #ifndef SWIG
-extern const SystemAddress UNASSIGNED_SYSTEM_ADDRESS;
-extern const RakNetGUID UNASSIGNED_RAKNET_GUID;
+const SystemAddress UNASSIGNED_SYSTEM_ADDRESS;
+const RakNetGUID UNASSIGNED_RAKNET_GUID((uint64_t)-1);
 #endif
 //{
 //	{0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF}

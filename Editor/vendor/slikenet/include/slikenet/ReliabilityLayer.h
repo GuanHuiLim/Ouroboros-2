@@ -7,7 +7,7 @@
  *  of patent rights can be found in the RakNet Patents.txt file in the same directory.
  *
  *
- *  Modified work: Copyright (c) 2016-2018, SLikeSoft UG (haftungsbeschränkt)
+ *  Modified work: Copyright (c) 2016-2017, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code was modified by SLikeSoft. Modifications are licensed under the MIT-style
  *  license found in the license.txt file in the root directory of this source tree.
@@ -65,47 +65,12 @@ class PluginInterface2;
 class RakNetRandom;
 typedef uint64_t reliabilityHeapWeightType;
 
-// #med - consider a more suitable name for the class / maybe even make an internal class to SplitPacketChannel?
-class SplitPacketSort
-{
-	// member variables
-private:
-	InternalPacket **m_data;
-	size_t m_allocationSize;
-	unsigned int m_addedPacketsCount;
-	SplitPacketIdType m_packetId;
-
-	// construction/destruction
-public:
-	SplitPacketSort();
-	~SplitPacketSort();
-
-	// initialization
-public:
-	void Preallocate(InternalPacket *internalPacket, const char *file, unsigned int line);
-
-	// accessors
-public:
-	bool AllPacketsAdded() const;
-	size_t GetAllocSize() const;
-	unsigned int GetNumAddedPackets() const;
-	SplitPacketIdType GetPacketId() const;
-
-	// operators
-public:
-	InternalPacket*& operator[](size_t index);
-
-	// container operations
-public:
-	bool Add(InternalPacket *internalPacket);
-};
-
 // int SplitPacketIndexComp( SplitPacketIndexType const &key, InternalPacket* const &data );
 struct SplitPacketChannel//<SplitPacketChannel>
 {
 	CCTimeType lastUpdateTime;
 
-	SplitPacketSort splitPacketList;
+	DataStructures::List<InternalPacket*> splitPacketList;
 
 #if PREALLOCATE_LARGE_MESSAGES==1
 	InternalPacket *returnedPacket;
@@ -165,12 +130,12 @@ public:
 	~ReliabilityLayer();
 
 	/// Resets the layer for reuse
-	void Reset(bool resetVariables, int mtuSize, bool _useSecurity);
+	void Reset( bool resetVariables, int MTUSize, bool _useSecurity );
 
 	/// Set the time, in MS, to use before considering ourselves disconnected after not being able to deliver a reliable packet
 	/// Default time is 10,000 or 10 seconds in release and 30,000 or 30 seconds in debug.
 	/// \param[in] time Time, in MS
-	void SetTimeoutTime(SLNet::TimeMS time);
+	void SetTimeoutTime(SLNet::TimeMS time );
 
 	/// Returns the value passed to SetTimeoutTime. or the default if it was never called
 	/// \param[out] the value passed to SetTimeoutTime
@@ -182,11 +147,11 @@ public:
 	/// \param[in] length The length of the socket data
 	/// \param[in] systemAddress The player that this data is from
 	/// \param[in] messageHandlerList A list of registered plugins
-	/// \param[in] mtuSize maximum datagram size
+	/// \param[in] MTUSize maximum datagram size
 	/// \retval true Success
 	/// \retval false Modified packet
 	bool HandleSocketReceiveFromConnectedPlayer(
-		const char *buffer, unsigned int length, SystemAddress &systemAddress, DataStructures::List<PluginInterface2*> &messageHandlerList, int mtuSize,
+		const char *buffer, unsigned int length, SystemAddress &systemAddress, DataStructures::List<PluginInterface2*> &messageHandlerList, int MTUSize,
 		RakNetSocket2 *s, RakNetRandom *rnr, CCTimeType timeRead, BitStream &updateBitStream);
 
 	/// This allocates bytes and writes a user-level message to those bytes.
@@ -217,15 +182,7 @@ public:
 	void Update( RakNetSocket2 *s, SystemAddress &systemAddress, int MTUSize, CCTimeType time,
 		unsigned bitsPerSecondLimit,
 		DataStructures::List<PluginInterface2*> &messageHandlerList,
-		RakNetRandom *rnr, BitStream &updateBitStream );
-
-	// #med 0.2.0 - review whether we'd rather have this defined as a private method and declare RakPeer a friend of ReliabilityLayer
-	/// @since 0.2.0: added
-	/// Same as \see Update() except that outstanding ACKs are ensured to be sent.
-	void UpdateAndForceACKs( RakNetSocket2 *s, SystemAddress &systemAddress, int MTUSize, CCTimeType time,
-		unsigned bitsPerSecondLimit,
-		DataStructures::List<PluginInterface2*> &messageHandlerList,
-		RakNetRandom *rnr, BitStream &updateBitStream );
+		RakNetRandom *rnr, BitStream &updateBitStream);
 	
 	/// Were you ever unable to deliver a packet despite retries?
 	/// \return true means the connection has been lost.  Otherwise not.
@@ -357,10 +314,6 @@ private:
 	// Make it so we don't do resends within a minimum threshold of time
 	void UpdateNextActionTime(void);
 
-	void UpdateInternal( RakNetSocket2 *s, SystemAddress &systemAddress, int MTUSize, CCTimeType time,
-		unsigned bitsPerSecondLimit,
-		DataStructures::List<PluginInterface2*> &messageHandlerList,
-		RakNetRandom *rnr, BitStream &updateBitStream, bool forceSendACKs );
 
 	/// Does this packet number represent a packet that was skipped (out of order?)
 	//unsigned int IsReceivedPacketHole(unsigned int input, SLNet::TimeMS currentTime) const;

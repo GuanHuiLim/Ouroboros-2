@@ -7,7 +7,7 @@
  *  of patent rights can be found in the RakNet Patents.txt file in the same directory.
  *
  *
- *  Modified work: Copyright (c) 2017-2019, SLikeSoft UG (haftungsbeschränkt)
+ *  Modified work: Copyright (c) 2017, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code was modified by SLikeSoft. Modifications are licensed under the MIT-style
  *  license found in the license.txt file in the root directory of this source tree.
@@ -67,16 +67,16 @@ public:
 	/// \param[in] languageID An identifier for the language / string table to generate the tree for.  English is automatically created with ID 0 in the constructor.
 	void GenerateTreeFromStrings( unsigned char *input, unsigned inputLength, uint8_t languageId );
 	
- 	/// Writes input to output, compressed.  Takes care of the null-terminator for you.
+ 	/// Writes input to output, compressed.  Takes care of the null terminator for you.
 	/// \param[in] input Pointer to an ASCII string
 	/// \param[in] maxCharsToWrite The max number of bytes to write of \a input.  Use 0 to mean no limit.
 	/// \param[out] output The bitstream to write the compressed string to
 	/// \param[in] languageID Which language to use
 	void EncodeString( const char *input, int maxCharsToWrite, SLNet::BitStream *output, uint8_t languageId=0 );
 	
-	/// Writes input to output, uncompressed.  Takes care of the null-terminator for you.
+	/// Writes input to output, uncompressed.  Takes care of the null terminator for you.
 	/// \param[out] output A block of bytes to receive the output
-	/// \param[in] maxCharsToWrite Size, in bytes, of \a output .  A null-terminator will always be appended to the output string.  If the maxCharsToWrite is not large enough, the string will be truncated.
+	/// \param[in] maxCharsToWrite Size, in bytes, of \a output .  A NULL terminator will always be appended to the output string.  If the maxCharsToWrite is not large enough, the string will be truncated.
 	/// \param[in] input The bitstream containing the compressed string
 	/// \param[in] languageID Which language to use
 	bool DecodeString( char *output, int maxCharsToWrite, SLNet::BitStream *input, uint8_t languageId=0 );

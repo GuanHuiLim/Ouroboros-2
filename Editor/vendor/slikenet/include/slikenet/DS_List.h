@@ -7,7 +7,7 @@
  *  of patent rights can be found in the RakNet Patents.txt file in the same directory.
  *
  *
- *  Modified work: Copyright (c) 2017-2018, SLikeSoft UG (haftungsbeschränkt)
+ *  Modified work: Copyright (c) 2017, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code was modified by SLikeSoft. Modifications are licensed under the MIT-style
  *  license found in the license.txt file in the root directory of this source tree.
@@ -247,7 +247,12 @@ namespace DataStructures
 	template <class list_type>
 	void List<list_type>::Insert( const list_type &input, const unsigned int position, const char *file, unsigned int line )
 	{
-		RakAssert( position <= list_size );
+#ifdef _DEBUG
+		if (position>list_size)
+		{
+			RakAssert( position <= list_size );
+		}
+#endif
 
 		// Reallocate list if necessary
 		if ( list_size == allocation_size )

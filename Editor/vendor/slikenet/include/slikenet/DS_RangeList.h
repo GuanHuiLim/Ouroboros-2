@@ -66,7 +66,7 @@ namespace DataStructures
 		SLNet::BitSize_t Serialize(SLNet::BitStream *in, SLNet::BitSize_t maxBits, bool clearSerialized);
 		bool Deserialize(SLNet::BitStream *out);
 
-		DataStructures::OrderedList<range_type, RangeNode<range_type>, RangeNodeComp<range_type>> ranges;
+		DataStructures::OrderedList<range_type, RangeNode<range_type> , RangeNodeComp<range_type> > ranges;
 
 		// internal helpers
 	private:
@@ -83,21 +83,20 @@ namespace DataStructures
 		unsigned i;
 		countWritten=0;
 		bitsWritten=0;
-		for (i=0; i < ranges.Size(); i++) {
-			// #med - review this calculation --- shouldn't this be +8 rather than +1 due to minEqualsMax being 1 byte?
-			if ((int)sizeof(unsigned short)*8+bitsWritten+(int)sizeof(range_type)*8*2+1>maxBits) {
+		for (i=0; i < ranges.Size(); i++)
+		{
+			if ((int)sizeof(unsigned short)*8+bitsWritten+(int)sizeof(range_type)*8*2+1>maxBits)
 				break;
-			}
 			unsigned char minEqualsMax;
-			if (ranges[i].minIndex==ranges[i].maxIndex) {
+			if (ranges[i].minIndex==ranges[i].maxIndex)
 				minEqualsMax=1;
-			} else {
+			else
 				minEqualsMax=0;
-			}
-			tempBS.Write(minEqualsMax); // Use one byte, instead of one bit, for speed, as this is done a lot
+			tempBS.Write(minEqualsMax); // Use one byte, intead of one bit, for speed, as this is done a lot
 			tempBS.Write(ranges[i].minIndex);
 			bitsWritten+=sizeof(range_type)*8+8;
-			if (ranges[i].minIndex!=ranges[i].maxIndex) {
+			if (ranges[i].minIndex!=ranges[i].maxIndex)
+			{
 				tempBS.Write(ranges[i].maxIndex);
 				bitsWritten+=sizeof(range_type)*8;
 			}
@@ -112,9 +111,11 @@ namespace DataStructures
 		in->Write(&tempBS, tempBS.GetNumberOfBitsUsed());
 	//	RAKNET_DEBUG_PRINTF("%i %i \n", tempBS.GetNumberOfBitsUsed(),in->GetNumberOfBitsUsed());
 
-		if (clearSerialized && countWritten) {
+		if (clearSerialized && countWritten)
+		{
 			unsigned rangeSize=ranges.Size();
-			for (i=0; i < rangeSize-countWritten; i++) {
+			for (i=0; i < rangeSize-countWritten; i++)
+			{
 				ranges[i]=ranges[i+countWritten];
 			}
 			ranges.RemoveFromEnd(countWritten);
@@ -122,7 +123,6 @@ namespace DataStructures
 
 		return bitsWritten;
 	}
-
 	template <class range_type>
 	bool RangeList<range_type>::Deserialize(SLNet::BitStream *out)
 	{
@@ -132,6 +132,7 @@ namespace DataStructures
 		if (!out->Read(count)) {
 			return false;
 		}
+		unsigned short i;
 		range_type absMin;
 		range_type min, max;
 
@@ -144,7 +145,7 @@ namespace DataStructures
 		}
 		ranges.InsertAtEnd(RangeNode<range_type>(min, max), _FILE_AND_LINE_);
 
-		for (unsigned short i = 1; i < count; i++) {
+		for (i = 1; i < count; i++) {
 			absMin = max;
 
 			if (!DeserializeSingleRange(out, min, max)) {
@@ -198,7 +199,8 @@ namespace DataStructures
 	template <class range_type>
 	void RangeList<range_type>::Insert(range_type index)
 	{
-		if (ranges.Size()==0) {
+		if (ranges.Size()==0)
+		{
 			ranges.Insert(index, RangeNode<range_type>(index, index), true, _FILE_AND_LINE_);
 			return;
 		}
@@ -209,14 +211,16 @@ namespace DataStructures
 			return; // index already covered by a range entry - do not create a duplicated entry
 		}
 
-		// index > maxIndex on entire range list
-		if (insertionIndex==ranges.Size()) {
-			if (index == ranges[insertionIndex-1].maxIndex+(range_type)1) {
+		if (insertionIndex==ranges.Size())
+		{
+			if (index == ranges[insertionIndex-1].maxIndex+(range_type)1)
 				ranges[insertionIndex-1].maxIndex++;
-			} else if (index > ranges[insertionIndex-1].maxIndex+(range_type)1) {
+			else if (index > ranges[insertionIndex-1].maxIndex+(range_type)1)
+			{
 				// Insert at end
 				ranges.Insert(index, RangeNode<range_type>(index, index), true, _FILE_AND_LINE_);
 			}
+
 			return;
 		}
 
@@ -227,10 +231,10 @@ namespace DataStructures
 		{
 			// Insert here
 			ranges.InsertAtIndex(RangeNode<range_type>(index, index), insertionIndex, _FILE_AND_LINE_);
+
 			return;
 		}
-
-		if (index == ranges[insertionIndex].minIndex-(range_type)1)
+		else if (index == ranges[insertionIndex].minIndex-(range_type)1)
 		{
 			// Decrease minIndex and join left
 			ranges[insertionIndex].minIndex--;
@@ -239,6 +243,7 @@ namespace DataStructures
 				ranges[insertionIndex-1].maxIndex=ranges[insertionIndex].maxIndex;
 				ranges.RemoveAtIndex(insertionIndex);
 			}
+
 			return;
 		}
 
@@ -251,6 +256,8 @@ namespace DataStructures
 				ranges[insertionIndex+1].minIndex=ranges[insertionIndex].minIndex;
 				ranges.RemoveAtIndex(insertionIndex);
 			}
+
+			return;
 		}
 	}
 
@@ -278,10 +285,9 @@ namespace DataStructures
 	template <class range_type>
 	unsigned RangeList<range_type>::RangeSum(void) const
 	{
-		unsigned sum = 0, i;
-		for (i = 0; i < ranges.Size(); i++) {
-			sum += ranges[i].maxIndex-ranges[i].minIndex + 1;
-		}
+		unsigned sum=0,i;
+		for (i=0; i < ranges.Size(); i++)
+			sum+=ranges[i].maxIndex-ranges[i].minIndex+1;
         return sum;
 	}
 

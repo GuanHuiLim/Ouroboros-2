@@ -7,7 +7,7 @@
  *  of patent rights can be found in the RakNet Patents.txt file in the same directory.
  *
  *
- *  Modified work: Copyright (c) 2017-2019, SLikeSoft UG (haftungsbeschränkt)
+ *  Modified work: Copyright (c) 2017, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code was modified by SLikeSoft. Modifications are licensed under the MIT-style
  *  license found in the license.txt file in the root directory of this source tree.
@@ -69,17 +69,17 @@ namespace SLNet
 		/// \param[in] copyString true to make a copy of the passed string (takes more memory), false to not do so (if your string is in static memory).
 		void AddString(const char *str, bool copyString);
 
-		/// Writes input to output, compressed.  Takes care of the null-terminator for you.
+		/// Writes input to output, compressed.  Takes care of the null terminator for you.
 		/// Relies on the StringCompressor class, which is automatically reference counted in the constructor and destructor in RakPeer.  You can call the reference counting functions yourself if you wish too.
 		/// \param[in] input Pointer to an ASCII string
 		/// \param[in] maxCharsToWrite The size of \a input 
 		/// \param[out] output The bitstream to write the compressed string to
 		void EncodeString( const char *input, int maxCharsToWrite, SLNet::BitStream *output );
 
-		/// Writes input to output, uncompressed.  Takes care of the null-terminator for you.
+		/// Writes input to output, uncompressed.  Takes care of the null terminator for you.
 		/// Relies on the StringCompressor class, which is automatically reference counted in the constructor and destructor in RakPeer.  You can call the reference counting functions yourself if you wish too.
 		/// \param[out] output A block of bytes to receive the output
-		/// \param[in] maxCharsToWrite Size, in bytes, of \a output .  A null-terminator will always be appended to the output string.  If the maxCharsToWrite is not large enough, the string will be truncated.
+		/// \param[in] maxCharsToWrite Size, in bytes, of \a output .  A NULL terminator will always be appended to the output string.  If the maxCharsToWrite is not large enough, the string will be truncated.
 		/// \param[in] input The bitstream containing the compressed string
 		bool DecodeString( char *output, int maxCharsToWrite, SLNet::BitStream *input );
 
@@ -94,7 +94,7 @@ namespace SLNet
 
 	protected:
 		/// Called when you mess up and send a string using this class that was not registered with AddString
-		/// \param[in] maxCharsToWrite Size, in bytes, of \a output .  A null-terminator will always be appended to the output string.  If the maxCharsToWrite is not large enough, the string will be truncated.
+		/// \param[in] maxCharsToWrite Size, in bytes, of \a output .  A NULL terminator will always be appended to the output string.  If the maxCharsToWrite is not large enough, the string will be truncated.
 		void LogStringNotFound(const char *strName);
 
 		/// Singleton instance

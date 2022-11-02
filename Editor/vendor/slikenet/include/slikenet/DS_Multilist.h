@@ -604,15 +604,7 @@ namespace DataStructures
 			data[trueWriteIndex]=d;
 		}
 
-		// #med - use different approach here (template specialization?)
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4127) // conditional expression is constant
-#endif
-		if (_MultilistType != ML_ORDERED_LIST)
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+		if (_MultilistType!=ML_ORDERED_LIST)
 			sortState=ML_UNSORTED;
 	}
 

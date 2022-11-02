@@ -7,7 +7,7 @@
  *  of patent rights can be found in the RakNet Patents.txt file in the same directory.
  *
  *
- *  Modified work: Copyright (c) 2016-2019, SLikeSoft UG (haftungsbeschränkt)
+ *  Modified work: Copyright (c) 2016-2017, SLikeSoft UG (haftungsbeschränkt)
  *
  *  This source code was modified by SLikeSoft. Modifications are licensed under the MIT-style
  *  license found in the license.txt file in the root directory of this source tree.
@@ -22,7 +22,11 @@
 #include <stdio.h>
 #include "stdarg.h"
 
+
 #ifdef _WIN32
+
+
+
 #include "WindowsIncludes.h"
 #endif
 
@@ -156,9 +160,9 @@ public:
 	/// Erase characters out of the string at index for count
 	void Erase(unsigned int index, unsigned int count);
 
-	/// Set the first instance of c with a null-terminator
+	/// Set the first instance of c with a NULL terminator
 	void TerminateAtFirstCharacter(char c);
-	/// Set the last instance of c with a null-terminator
+	/// Set the last instance of c with a NULL terminator
 	void TerminateAtLastCharacter(char c);
 
 	void StartAfterFirstCharacter(char c);
@@ -350,5 +354,6 @@ protected:
 }
 
 const SLNet::RakString RAK_DLL_EXPORT operator+(const SLNet::RakString &lhs, const SLNet::RakString &rhs);
+
 
 #endif
