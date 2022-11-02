@@ -129,7 +129,16 @@ namespace oo
                 {
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
-                    self.data.emplace_back(std::shared_ptr<ModelFileResource>(vr->LoadModelFromFile(self.contentPath.string())));
+                    auto sp = std::shared_ptr<ModelFileResource>(vr->LoadModelFromFile(self.contentPath.string()));
+                    self.data.emplace_back(sp);
+
+                    auto anims = Anim::Animation::LoadAnimationFromFBX(self.contentPath.string(), sp.get());
+                    auto v = std::vector<std::string>();
+                    for (auto& anim : anims)
+                    {
+                        v.emplace_back(anim->name);
+                    }
+                    self.data.emplace_back(v);
                 };
                 onAssetDestroy = [](AssetInfo& self) {};
                 break;

@@ -150,7 +150,7 @@ namespace oo::Anim
 		//to do later
 	}
 
-	void Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
+	std::vector<Animation*> Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
 	{
 
 
@@ -171,7 +171,7 @@ namespace oo::Anim
 			//return {}; // Dont explode...
 			//throw std::runtime_error("Failed to load model! (" + file + ")");
 		}
-		if (scene->HasAnimations() == false) return;
+		if (scene->HasAnimations() == false) return {};
 
 		PrintNodeHierarchy(scene);
 
@@ -182,7 +182,7 @@ namespace oo::Anim
 			std::function<void(oGFX::BoneNode*)> traverse_recursive = [&](oGFX::BoneNode* node)
 			{
 				if (node->mChildren.empty())
-					return;
+					return {};
 
 				int idx = 0;
 				std::vector<int> children_index = bone_hierarchy_map[node->mName];
@@ -222,6 +222,7 @@ namespace oo::Anim
 
 
 		std::cout << "Animated scene\n";
+		std::vector<Animation*> anims;
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
 			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
@@ -333,6 +334,7 @@ namespace oo::Anim
 			}
 
 			auto createdAnim = Animation::AddAnimation(std::move(anim));
+			anims.emplace_back(createdAnim);
 			assert(createdAnim);
 		}
 		//std::cout << std::endl;
