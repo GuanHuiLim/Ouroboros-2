@@ -25,6 +25,7 @@ int AnimationTimelineView::currentKeyFrame;
 float AnimationTimelineView::unitPerFrame = 0.1f;
 float AnimationTimelineView::currentTime = 0.0f;
 bool AnimationTimelineView::playAnim = false;
+bool AnimationTimelineView::opentimeline = false;
 
 void AnimationTimelineView::Show()
 {
@@ -109,7 +110,7 @@ void AnimationTimelineView::DrawToolbar()
 {
     if (ImGui::Button("<<"))
     {
-        currentKeyFrame = visibleStartingFrame;
+        currentKeyFrame = static_cast<int>(visibleStartingFrame);
     }
 
     ImGui::SameLine();
@@ -139,7 +140,7 @@ void AnimationTimelineView::DrawToolbar()
 
     if (ImGui::Button(">>"))
     {
-        currentKeyFrame = visibleEndingFrame;
+        currentKeyFrame = static_cast<int>(visibleEndingFrame);
     }
 
     ImGui::SameLine();
@@ -148,16 +149,19 @@ void AnimationTimelineView::DrawToolbar()
     {
         //provide a drop down of the type of keyframe to make
 
-        if (timeline != nullptr)
+        if (animation != nullptr)
         {
-            oo::Anim::KeyFrame newkf{
-            .data{glm::vec3{0.f,0.f,0.f}},
-            .time{currentTime}
-            };
+            for (int i = 0; i < animation->timelines.size(); ++i)
+            {
+                oo::Anim::KeyFrame newkf{
+                .data{glm::vec3{0.f,0.f,0.f}},
+                .time{currentTime}
+                };
 
-            auto& temp = animator->GetActualComponent().animTree->groups;
-            auto newKeyFrame = animator->AddKeyFrame(temp.begin()->second.name, node->name, timeline->name, newkf);
-            assert(newKeyFrame);
+                auto& temp = animator->GetActualComponent().animTree->groups;
+                auto newKeyFrame = animator->AddKeyFrame(temp.begin()->second.name, node->name, animation->timelines[i].name, newkf);
+                assert(newKeyFrame);
+            }
         }
     }
 
@@ -181,13 +185,16 @@ void AnimationTimelineView::DrawToolbar()
 
     if (ImGui::Button("Delete KeyFrame"))
     {
-        if (timeline != nullptr)
+        if (animation != nullptr)
         {
-            for (int i = 0; i < timeline->keyframes.size(); ++i)
+            for (int i = 0; i < animation->timelines.size(); ++i)
             {
-                if (currentTime == timeline->keyframes[i].time)
+                for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
                 {
-                    timeline->keyframes.erase(timeline->keyframes.begin() + i);
+                    if (currentTime == animation->timelines[i].keyframes[j].time)
+                    {
+                        animation->timelines[i].keyframes.erase(animation->timelines[i].keyframes.begin() + j);
+                    }
                 }
             }
         }
@@ -260,7 +267,7 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
     headerSize.x = contentRegion.x - (style.ScrollbarSize);
     headerSize.y = headerHeight + headerYPadding;
 
-    visibleEndingFrame = GetFrameFromTimelinePos(headerSize.x);
+    visibleEndingFrame = static_cast<float>(GetFrameFromTimelinePos(headerSize.x));
 
     timelineRegionMin = ImGui::GetCursorScreenPos();
     timelineRegionMax = ImVec2(timelineRegionMin.x + headerSize.x, timelineRegionMin.y + headerSize.y);
@@ -310,10 +317,10 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
         }
 
         //draw all timeline lines
-        int frames = visibleEndingFrame - visibleStartingFrame;
+        int frames = static_cast<int>(visibleEndingFrame - visibleStartingFrame);
         for (int f = 0; f < frames; ++f)
         {
-            int frame = f + visibleStartingFrame;
+            int frame = f + static_cast<int>(visibleStartingFrame);
             auto lineStart = timelineRegionMin;
             lineStart.x += lineStartOffset + f * pixelsPerFrame;
             auto lineEnd = ImVec2(lineStart.x, lineStart.y + headerSize.y);
@@ -350,7 +357,7 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
 
             drawList->AddLine(frameLineStart, frameLineEnd, IM_COL32(255, 192, 203, 255));
 
-            auto radius = 5;
+            float radius = 5.0f;
             frameLineStart.y += radius;
             drawList->AddCircleFilled(frameLineStart, radius, IM_COL32(255, 192, 203, 255));
         }
@@ -364,7 +371,7 @@ void AnimationTimelineView::DrawTimeLine(oo::Anim::Animation* _animation, float 
     if (isPanningTimeline)
     {
         ImVec2 start = ImVec2(timelineRegionMin.x, timelineRegionMin.y - style.WindowPadding.y);
-        ImVec2 size = ImVec2(lineStartOffset + 8, timelineRegionMin.y + contentRegion.y + style.ItemSpacing.y * 2);
+        ImVec2 size = ImVec2(static_cast<float>(lineStartOffset + 8), timelineRegionMin.y + contentRegion.y + style.ItemSpacing.y * 2);
 
         drawList->AddRectFilledMultiColor(start, ImVec2(start.x + size.x, start.y + size.y), 0xFF000000, 0u, 0u, 0xFF000000);
     }
@@ -389,10 +396,12 @@ void AnimationTimelineView::DrawTimeLineContent()
             {
                 for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
                 {
-                    for (int k = visibleStartingFrame; k < visibleEndingFrame; ++k)
+                    for (int k = static_cast<int>(visibleStartingFrame); k < static_cast<int>(visibleEndingFrame); ++k)
                     {
-                        if((k * unitPerFrame) == animation->timelines[i].keyframes[j].time)
+                        if ((k * unitPerFrame) == animation->timelines[i].keyframes[j].time)
+                        {
                             DrawKeyFrame(k, IM_COL32(211, 211, 211, 255));
+                        }
                     }
                 }
             }
@@ -400,7 +409,7 @@ void AnimationTimelineView::DrawTimeLineContent()
             //Draw Event
             for (int i = 0; i < animation->events.size(); ++i)
             {
-                for (int j = visibleStartingFrame; j < visibleEndingFrame; ++j)
+                for (int j = static_cast<int>(visibleStartingFrame); j < static_cast<int>(visibleEndingFrame); ++j)
                 {
                     if ((j * unitPerFrame) == animation->events[i].time)
                     {
@@ -421,15 +430,17 @@ void AnimationTimelineView::DrawTimeLineContent()
                 if (ImGui::SmallButton("X"))
                 {
                     //used for deleting animation timelines
-                    //animation->timelines.erase(animation->timelines.begin() + i);
+                    
+                    animation->timelines.erase(animation->timelines.cbegin() + i);
                 }
 
                 ImGui::SameLine();
 
-                bool open = ImGui::TreeNodeEx(animation->timelines[i].name.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+                opentimeline = ImGui::TreeNodeEx(animation->timelines[i].name.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
             
-                if (open)
+                if (opentimeline)
                 {
+                    timeline = &animation->timelines[i];
                     for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
                     {
                         if (animation->timelines[i].datatype == oo::Anim::Timeline::DATATYPE::VEC3)
@@ -451,22 +462,26 @@ void AnimationTimelineView::DrawTimeLineContent()
             }
             ImGui::NewLine();
             ImGui::Separator();
-            ImGui::NewLine();
 
             if (ImGui::Button("Add Timeline"))
             {
-                //get childIndex
-                //create Properties based on those
+                //create popup that shows the transform and gameObject child hierarchy
+                ImGui::OpenPopup("##addtimeline");
+            }
 
+            if (ImGui::BeginPopup("##addtimeline"))
+            {
+
+                ImGui::EndPopup();
             }
         }
 
         ImGui::EndChild();
     }
-    DisplayEventInspector(animation);
+    DisplayInspector();
 }
 
-void AnimationTimelineView::DisplayEventInspector(oo::Anim::Animation* _animation)
+void AnimationTimelineView::DisplayInspector()
 {
     if (animation != nullptr)
     {
@@ -479,6 +494,18 @@ void AnimationTimelineView::DisplayEventInspector(oo::Anim::Animation* _animatio
                     ImGui::Text("Invoke: ");
                 }
             }
+            ImGui::End();
+        }
+
+    }
+
+    if (timeline != nullptr)
+    {
+        if (ImGui::Begin("Animation Timeline Inspector", &opentimeline))
+        {
+            ImGui::Text("Name: ");
+            ImGui::SameLine();
+            ImGui::InputText("##timelineName", &timeline->name);
             ImGui::End();
         }
     }
@@ -500,7 +527,7 @@ void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, ImU32 colour)
 
 int AnimationTimelineView::GetFrameFromTimelinePos(float pos)
 {
-    return static_cast<int>(std::floor((pos - lineStartOffset) / pixelsPerFrame + 0.5f)) + visibleStartingFrame;
+    return static_cast<int>(std::floor((pos - lineStartOffset) / pixelsPerFrame + 0.5f)) + static_cast<int>(visibleStartingFrame);
 }
 
 float AnimationTimelineView::GetTimelinePosFromFrame(int frame)

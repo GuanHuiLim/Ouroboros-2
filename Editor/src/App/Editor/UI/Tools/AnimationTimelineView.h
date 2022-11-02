@@ -38,6 +38,7 @@ private:
 	static float unitPerFrame;
 	static float currentTime;
 	static bool playAnim;
+	static bool opentimeline;
 
 	int minimalLegendLength = 196;
 	int lineStartOffset = 8;
@@ -60,7 +61,7 @@ private:
 	bool displayEventInspector = true;
 
 	void DisplayAnimationTimeline(oo::AnimationComponent* _animator);
-	void DisplayEventInspector(oo::Anim::Animation* _animation);
+	void DisplayInspector();
 	void DrawTimeLineInfo();
 	void DrawToolbar();
 	void DrawNodeSelector(oo::AnimationComponent* _animator);
