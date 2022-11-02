@@ -18,6 +18,8 @@ Technology is prohibited.
 #include "AnimationInternal.h"
 
 #include <rttr/registration>
+#include <rapidjson/document.h>
+
 namespace oo::Anim::internal
 {
 	void SerializeGroup(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, Group& group)
@@ -46,7 +48,7 @@ namespace oo::Anim::internal
 					serialize_fn.invoke({}, writer, node);
 			}
 			writer.EndArray();
-			//link
+			//links
 			writer.Key("Links", static_cast<rapidjson::SizeType>(std::string("Links").size()));
 			writer.StartArray();
 			{
@@ -57,6 +59,47 @@ namespace oo::Anim::internal
 			writer.EndArray();
 		}
 		writer.EndObject();
+	}
+
+	void LoadGroup(rapidjson::GenericObject<false, rapidjson::Value>& object, Group& group)
+	{
+		rttr::instance obj{ group };
+		//properties
+		{
+			auto properties = rttr::type::get<Group>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+		//nodes
+		{
+			auto nodes = object.FindMember("Nodes")->value.GetArray();
+			auto load_fn = rttr::type::get<Node>().get_method(internal::load_method_name);
+			for (auto& node : nodes)
+			{
+				Node new_node{};
+				load_fn.invoke({}, node.GetObj(), new_node);
+
+				group.nodes.emplace(new_node.node_ID, std::move(new_node));
+			}
+		}
+		//links
+		{
+			auto links = object.FindMember("Links")->value.GetArray();
+			auto load_fn = rttr::type::get<Link>().get_method(internal::load_method_name);
+			for (auto& link : links)
+			{
+				Link new_link{};
+				load_fn.invoke({}, link.GetObj(), new_link);
+
+				group.links.emplace(new_link.linkID, std::move(new_link));
+			}
+		}
 	}
 }
 namespace oo::Anim
@@ -69,6 +112,7 @@ namespace oo::Anim
 			.property("startNode", &Group::startNode)
 			.property("groupID", &Group::groupID)
 			.method(internal::serialize_method_name, &internal::SerializeGroup)
+			.method(internal::load_method_name, &internal::LoadGroup)
 			;
 	}
 

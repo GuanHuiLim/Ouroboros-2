@@ -18,13 +18,26 @@ Technology is prohibited.
 #include "AnimationComponent.h"
 #include "AnimationTracker.h"
 #include "AnimationParameter.h"
+#include "AnimationTimeline.h"
+#include "AnimationKeyFrame.h"
 #include "AnimationInternal.h"
 
 #include "Ouroboros/Core/Input.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "Project.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+#include "App/Editor/UI/Tools/MeshHierarchy.h"
+#include <rapidjson/document.h>
+#include <rapidjson/reader.h>
+
+#define DEBUG_ANIMATION false
 namespace oo::Anim
 {
+	AnimationSystem::~AnimationSystem()
+	{
+		EventManager::Unsubscribe<AnimationSystem, OpenFileEvent>(this, &AnimationSystem::OpenFileCallback);
+		EventManager::Unsubscribe<AnimationSystem, CloseProjectEvent>(this, &AnimationSystem::CloseProjectCallback);
+	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
 		static Ecs::Query query = []() {
@@ -36,6 +49,9 @@ namespace oo::Anim
 		this->world = _world;
 		this->scene = _scene;
 
+		EventManager::Subscribe<AnimationSystem, OpenFileEvent>(this,&AnimationSystem::OpenFileCallback);
+		EventManager::Subscribe<AnimationSystem, CloseProjectEvent>(this,&AnimationSystem::CloseProjectCallback);
+
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
 			{
@@ -46,6 +62,8 @@ namespace oo::Anim
 
 			internal::InitializeTracker(animationComp.actualComponent);
 		});*/
+		auto asset_location = Project::GetAssetFolder().string();
+		LoadAssets(asset_location);
 	}
 	void AnimationSystem::Run(Ecs::ECSWorld* _world)
 	{
@@ -107,15 +125,8 @@ namespace oo::Anim
 		}
 	}
 
-	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
+	void AnimationSystem::TestObject()
 	{
-		//MeshHierarchy::
-
-		auto animationfbx_fp = Project::GetAssetFolder().string();
-		//animationfbx_fp += "/AnimationTest_Character_IdleJumpAttack.fbx";
-
-		//Animation::LoadAnimationFromFBX(animationfbx_fp,);
-
 		auto obj = scene->CreateGameObjectImmediate();
 		obj->Name() = "AnimationTestObject";
 		obj->AddComponent<MeshRendererComponent>();
@@ -139,7 +150,7 @@ namespace oo::Anim
 		//create the animation tree asset
 		auto tree = AnimationTree::Create("Test Animation Tree");
 		comp.SetAnimationTree("Test Animation Tree");
-		auto start_node = tree->groups.begin()->second.startNode;
+		auto& start_node = tree->groups.begin()->second.startNode;
 
 		//add some test parameters to the animation tree
 		{
@@ -185,7 +196,7 @@ namespace oo::Anim
 		assert(link);
 		link->has_exit_time = false;
 		link->exit_time = 1.5f;
-		auto linkName = link->name;
+		auto& linkName = link->name;
 
 
 		//add a condition to parameter
@@ -211,26 +222,26 @@ namespace oo::Anim
 		//adding test keyframes
 		{
 			KeyFrame kf1{
-			.data{glm::vec3{0.f,0.f,0.f}},
-			.time{0.f}
+			glm::vec3{0.f,0.f,0.f},
+			0.f
 			};
 			auto Keyframe1 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf1);
 			assert(Keyframe1);
 			KeyFrame kf2{
-				.data{glm::vec3{10.f,0.f,0.f}},
-				.time{2.f}
+				glm::vec3{10.f,0.f,0.f},
+				2.f
 			};
 			auto Keyframe2 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf2);
 			assert(Keyframe2);
 			KeyFrame kf3{
-				.data{glm::vec3{10.f,10.f,0.f}},
-				.time{4.f}
+				glm::vec3{10.f,10.f,0.f},
+				4.f
 			};
 			auto Keyframe3 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf3);
 			assert(Keyframe3);
 			KeyFrame kf4{
-				.data{glm::vec3{0.f,10.f,0.f}},
-				.time{6.f}
+				glm::vec3{0.f,10.f,0.f},
+				6.f
 			};
 			auto Keyframe4 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf4);
 			assert(Keyframe4);
@@ -238,16 +249,38 @@ namespace oo::Anim
 
 		test_obj = obj;
 
-		SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");
-		return obj;
+		auto animationfbx_fp = Project::GetAssetFolder().string();
+
+		//searialization test for animation tree
+		//SaveAnimationTree("Test Animation Tree", animationfbx_fp + "/Test_Animation_Tree.tree");		 
+		//LoadAnimationTree(animationfbx_fp + "/Test_Animation_Tree.tree");
+
+
+		//serialization test for animation
+		/*{
+			auto anim_name = node->GetAnimation().name;
+			auto filepath = animationfbx_fp + "/" + anim_name + ".anim";
+			SaveAnimation(node->GetAnimation(), filepath);
+			LoadAnimation(filepath);
+
+		}*/
 
 	}
-	bool AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
-	{
-		//map should contain the animation tree
-		assert(AnimationTree::map.contains(name));
 
-		auto& tree = AnimationTree::map[name];
+	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
+	{
+		if constexpr (DEBUG_ANIMATION == false) return nullptr;
+
+		auto animationfbx_fp = Project::GetAssetFolder().string();
+		TestObject();
+		auto obj_children = scene->GetRoot()->GetChildren();
+
+
+		return nullptr;
+	}
+
+	bool AnimationSystem::SaveAnimationTree(AnimationTree& tree, std::string filepath)
+	{
 		std::ofstream stream{ filepath ,std::ios::trunc };
 		if (!stream)
 		{
@@ -265,39 +298,159 @@ namespace oo::Anim
 		assert(writer.IsComplete());
 		stream.close();
 		return true;
-		//writer.StartObject();
-		//{
-		//	writer.Key("AnimationTree");
-		//	writer.String(tree.name.c_str(), static_cast<rapidjson::SizeType>(tree.name.size()));
-		//	/*------------------
-		//	PARAMETERS
-		//	------------------*/
-		//	writer.Key("Parameters");
-		//	{
-		//		writer.StartArray();
-		//		for (auto& param : tree.parameters)
-		//		{
-		//			writer.StartArray();
-		//			writer.String(param.name.c_str(), static_cast<rapidjson::SizeType>(param.name.size()));
-		//			Parameter::serializeFn_map.at(param.type)(writer, param);
-		//			writer.EndArray();
+	}
 
-		//		}
-		//		writer.EndArray();
-		//	}
-		//	/*------------------
-		//	GROUPS
-		//	------------------*/
-		//	writer.Key("Groups");
-		//	{
-		//		writer.StartArray();
-		//		for (auto& [uid, group] : tree.groups)
-		//		{
-		//			Group::serializeFn(writer, group);
-		//		}
-		//		writer.EndArray();
-		//	}
-		//}
+	bool AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
+	{
+
+		//map should contain the animation tree
+		assert(AnimationTree::map.contains(name));
+		auto& tree = AnimationTree::map[name];
+
+		return SaveAnimationTree(tree, filepath);
+	}
+	bool AnimationSystem::SaveAllAnimations(std::string filepath)
+	{
+		for (auto& [id, anim] : Animation::animation_storage)
+		{
+			auto result = AnimationSystem::SaveAnimation(anim, filepath + "/" + anim.name + ".anim");
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
+	bool AnimationSystem::SaveAllAnimationTree(std::string filepath)
+	{
+		for (auto& [name, tree] : AnimationTree::map)
+		{
+			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
+	bool AnimationSystem::SaveAnimation(Animation& anim, std::string filepath)
+	{
+		std::ofstream stream{ filepath ,std::ios::trunc };
+		if (!stream)
+		{
+			assert(false);
+			return false;
+		}
+
+		rapidjson::OStreamWrapper osw(stream);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+
+		//writer.Key("AnimationTree", static_cast<rapidjson::SizeType>(std::string("AnimationTree").size()));
+		auto serialize_fn = rttr::type::get<Animation>().get_method(internal::serialize_method_name);
+		serialize_fn.invoke({}, writer, anim);
+
+		assert(writer.IsComplete());
+		stream.close();
+		return true;
+	}
+	bool AnimationSystem::SaveAnimation(std::string name, std::string filepath)
+	{
+		//map should contain the animation tree
+		assert(Animation::name_to_ID.contains(name));
+		assert(Animation::animation_storage.contains(Animation::name_to_ID[name]));
+
+		auto& anim = Animation::animation_storage[Animation::name_to_ID[name]];
+		return SaveAnimation(anim, filepath);
 	}
 	
+	void AnimationSystem::OpenFileCallback(OpenFileEvent* evnt)
+	{
+		if (evnt->m_type != OpenFileEvent::FileType::FBX) return;
+
+		auto relativepath = std::filesystem::relative(evnt->m_filepath, Project::GetAssetFolder());
+		auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
+		auto resource = asset.GetData<ModelFileResource*>();
+
+		Animation::LoadAnimationFromFBX(evnt->m_filepath.string(), resource);
+	}
+
+	void AnimationSystem::CloseProjectCallback(CloseProjectEvent* evnt)
+	{
+		auto asset_folder = Project::GetAssetFolder().string();
+		SaveAllAnimations(asset_folder);
+		SaveAllAnimationTree(asset_folder);
+
+	}
+
+	bool AnimationSystem::LoadAssets(std::string filepath)
+	{
+		std::filesystem::path path{ filepath };
+
+		for (auto& iter : path)
+		{
+			bool result = true;
+			if (iter.extension().string() == ".tree")
+			{
+				result = LoadAnimationTree(iter.string());
+			}
+			if (iter.extension().string() == ".anim")
+			{
+				result = LoadAnimation(iter.string());
+			}
+			if (result == false) return false;
+		}
+		return true;
+	}
+
+	bool AnimationSystem::LoadAnimationTree(std::string filepath)
+	{
+		std::ifstream ifs;
+		ifs.open(filepath);
+		if (!ifs.is_open())
+		{
+			LOG_CRITICAL("LoadAnimationTree cannot find the file");
+			assert(false);
+			return false;
+		}
+		rapidjson::IStreamWrapper isw(ifs);
+		rapidjson::Document doc;
+		doc.ParseStream(isw);
+
+		auto obj = doc.GetObj();
+		AnimationTree tree{};
+
+		auto load_fn = rttr::type::get< AnimationTree>().get_method(internal::load_method_name);
+		load_fn.invoke({}, obj, tree);
+
+
+		AnimationTree::Add(std::move(tree));
+		return true;
+	}
+	bool AnimationSystem::LoadAnimation(std::string filepath)
+	{
+		std::ifstream ifs;
+		ifs.open(filepath);
+		if (!ifs.is_open())
+		{
+			LOG_CRITICAL("LoadAnimationTree cannot find the file");
+			assert(false);
+			return false;
+		}
+		rapidjson::IStreamWrapper isw(ifs);
+		rapidjson::Document doc;
+		doc.ParseStream(isw);
+		
+		Animation anim{};
+		auto obj = doc.GetObj();
+		auto load_fn = rttr::type::get< Animation>().get_method(internal::load_method_name);
+		load_fn.invoke({}, obj, anim);
+
+		//TODO: uncomment when ready
+		Animation::AddAnimation(std::move(anim));
+
+		return false;
+	}
+
+	Animation* AnimationSystem::AddAnimation(std::string const& name)
+	{		
+		return internal::AddAnimationToStorage(name);
+	}
 }

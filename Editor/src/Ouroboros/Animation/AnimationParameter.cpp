@@ -39,6 +39,24 @@ namespace oo::Anim::internal
 		}
 		writer.EndObject();
 	}
+
+	void LoadParameter(rapidjson::GenericObject<false, rapidjson::Value>& object, Parameter& param)
+	{
+		rttr::instance obj{ param };
+		//properties
+		{
+			auto properties = rttr::type::get<Parameter>().get_properties();
+			for (auto& prop : properties)
+			{
+				auto& value = object.FindMember(prop.get_name().data())->value;
+
+				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
+				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
+				prop.set_value(obj, val);
+			}
+		}
+
+	}
 }
 namespace oo::Anim
 {
@@ -51,6 +69,7 @@ namespace oo::Anim
 			.property("paramID", &Parameter::paramID)
 			.property("name", &Parameter::name)
 			.method(internal::serialize_method_name, &internal::SerializeParameter)
+			.method(internal::load_method_name, &internal::LoadParameter)
 			;
 	}
 	Parameter::Parameter(ParameterInfo const& info) :

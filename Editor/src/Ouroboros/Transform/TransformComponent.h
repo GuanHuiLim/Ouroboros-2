@@ -77,7 +77,8 @@ namespace oo
         void SetGlobalTransform(mat4 target_global_matrix);
 
         // Extra Functions
-        void LookAt(vec3 target);
+        //void LookAt(vec3 target);
+        void LookAt(vec3 normalized_direction);
 
         void CalculateLocalTransform();
         void CalculateGlobalTransform();

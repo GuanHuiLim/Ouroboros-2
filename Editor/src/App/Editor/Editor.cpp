@@ -68,9 +68,6 @@ static void FileDrop(oo::FileDropEvent* e)
 }
 Editor::Editor()
 {
-	UI_RTTRType::Init();
-	Serializer::Init();//runs the init function
-	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
 	oo::EventManager::Subscribe<oo::FileDropEvent>(&FileDrop);
 
@@ -297,11 +294,12 @@ void PopupHelperWindow::CloseProjectPopup()
 		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
 		if (ImGui::Button("Yes", { buttonsizeX,0 }))
 		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+
 			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
 			if (eventAfterPrompt.nextAction)
 				eventAfterPrompt.nextAction();
-			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-			Serializer::SaveScene(*(scene));
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -309,6 +307,7 @@ void PopupHelperWindow::CloseProjectPopup()
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0, 0, 1.0f));
 		if (ImGui::Button("No", { buttonsizeX,0 }))
 		{
+			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
 			if (eventAfterPrompt.nextAction)
 				eventAfterPrompt.nextAction();
 			ImGui::CloseCurrentPopup();
@@ -359,7 +358,8 @@ void PopupHelperWindow::OpenFilePopup()
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0, 0, 1.0f));
 		if (ImGui::Button("No", { buttonsizeX,0 }))
 		{
-			if (eventAfterPrompt_ofe.nextAction)
+			oo::EventManager::Broadcast(&eventAfterPrompt_ofe.nextEvent);
+			if (eventAfterPrompt_ofe.nextAction && eventAfterPrompt_ofe.launchEventDesipteNo)
 				eventAfterPrompt_ofe.nextAction();
 			ImGui::CloseCurrentPopup();
 		}

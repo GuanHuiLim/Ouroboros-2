@@ -37,6 +37,8 @@ namespace oo
         using Callback = std::function<void(MonoObject* object)>;
         using ObjectCheck = std::function<bool(UUID)>;
 
+        static constexpr IntPtr InvalidPtr = 0;
+
     private:
         using Index = size_t;
         static constexpr Index INDEX_NOTFOUND = std::numeric_limits<Index>::max();
@@ -72,7 +74,7 @@ namespace oo
         inline MonoObject* TryRetrieveObject(UUID id, const char* name_space, const char* name)
         {
             IntPtr ptr = TryRetrieve(id, name_space, name);
-            if (ptr == 0)
+            if (ptr == InvalidPtr)
                 return nullptr;
             return mono_gchandle_get_target(ptr);
         }
@@ -80,7 +82,7 @@ namespace oo
         inline MonoObject* TryRetrieveDerivedObject(UUID id, const char* name_space, const char* name)
         {
             IntPtr ptr = TryRetrieveDerived(id, name_space, name);
-            if (ptr == 0)
+            if (ptr == InvalidPtr)
                 return nullptr;
             return mono_gchandle_get_target(ptr);
         }

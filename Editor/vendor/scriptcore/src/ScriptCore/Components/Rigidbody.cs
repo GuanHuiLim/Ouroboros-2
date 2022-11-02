@@ -4,6 +4,15 @@ namespace Ouroboros
 {
     public class Rigidbody : Component
     {
+        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetIsStatic(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetIsStatic(uint sceneID, ulong instanceID, bool value);
+
+        public bool isStatic
+        {
+            get { return RigidbodyComponent_GetIsStatic(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetIsStatic(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
         [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetIsTrigger(uint sceneID, ulong instanceID);
         [DllImport("__Internal")] private static extern void RigidbodyComponent_SetIsTrigger(uint sceneID, ulong instanceID, bool value);
 
@@ -11,6 +20,15 @@ namespace Ouroboros
         {
             get { return RigidbodyComponent_GetIsTrigger(gameObject.scene, gameObject.GetInstanceID()); }
             set { RigidbodyComponent_SetIsTrigger(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetGravityDisabled(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetGravityDisabled(uint sceneID, ulong instanceID, bool value);
+
+        public bool gravityDisabled
+        {
+            get { return RigidbodyComponent_GetGravityDisabled(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetGravityDisabled(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
         [DllImport("__Internal")] private static extern void Rigidbody_GetVelocity(uint sceneID, ulong instanceID, out float x, out float y, out float z);

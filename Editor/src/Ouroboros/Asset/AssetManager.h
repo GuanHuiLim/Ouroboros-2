@@ -136,7 +136,7 @@ namespace oo
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
-#ifdef _DEBUG
+#ifdef OO_DEBUG
         void PrintTree()
         {
             store.tree.print();

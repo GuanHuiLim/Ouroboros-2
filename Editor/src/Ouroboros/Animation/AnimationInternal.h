@@ -14,22 +14,34 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include "Anim_Utils.h"
+#include "AnimationKeyFrame.h"
 #include "AnimationParameter.h"
 
 #include "Utility/Hash.h"
+#include <rapidjson/document.h>
+#include <rapidjson/reader.h>
 
 namespace oo::Anim::internal
 {
 	//serialization
 	using SerializeFn = void(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>&, rttr::variant&);
+	extern std::unordered_map <StringHash::size_type, rttr::type> hash_to_rttrType;
 	extern std::unordered_map <rttr::type::type_id, StringHash::size_type> rttrType_to_hash;
 	extern std::unordered_map<rttr::type::type_id, SerializeFn*> serializeDataFn_map;
 	extern std::unordered_map<rttr::type::type_id, SerializeFn*> serializeRTTRVariantFn_map;
+
+	//loading
+	using LoadFn = rttr::variant(rapidjson::Value&);
+	extern std::unordered_map<rttr::type::type_id, LoadFn*> loadDataFn_map;
+	extern std::unordered_map<rttr::type::type_id, LoadFn*> loadRTTRVariantFn_map;
+	rttr::variant LoadRTTRVariant(rapidjson::Value& value);
+
 
 	NodeRef CreateNodeReference(Group& group, size_t id);
 	NodeRef CreateNodeReference(std::map<size_t, Node>& node_container, size_t id);
 	GroupRef CreateGroupReference(AnimationTree& tree, size_t id);
 	LinkRef CreateLinkReference(Group& group, size_t id);
+	AnimRef CreateAnimationReference(size_t id);
 
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type);
 	Parameter::DataType ConditionDefaultValue(P_TYPE const type);
@@ -85,6 +97,9 @@ namespace oo::Anim::internal
 	Timeline* RetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
 	Timeline* TryRetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
 	Parameter* RetrieveParameterFromComponent(IAnimationComponent& comp, std::string const& paramName);
+	Parameter* RetrieveParameterFromComponent(IAnimationComponent& comp, size_t id);
+	Parameter* RetrieveParameterFromComponentByIndex(IAnimationComponent& comp, uint index);
+	Animation* RetrieveAnimation(std::string const& anim_name);
 	
 	
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info);
@@ -106,6 +121,8 @@ namespace oo::Anim::internal
 
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info);
 
+	Animation* AddAnimationToNode(Node& node, Animation& anim);
+
 	void LoadFBX(std::string const& filepath, Animation* anim);
 
 
@@ -123,5 +140,10 @@ namespace oo::Anim::internal
 
 	void ReloadReferences(AnimationTree& tree);
 
-	
+	void ReAssignReferences(AnimationTree& tree);
+
+	Animation* AddAnimationToStorage(std::string const& name);
+
+	//parameters
+	uint GetParameterIndex(IAnimationComponent& comp, std::string const& paramName);
 }

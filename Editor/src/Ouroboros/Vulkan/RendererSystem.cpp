@@ -28,7 +28,6 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Core/Input.h"
-
 namespace oo
 {
     Camera RendererSystem::m_editorCamera = [&]()
@@ -36,9 +35,19 @@ namespace oo
         Camera camera;
         camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         camera.movementSpeed = 5.0f;
-        camera.SetPosition({ 0, 2, 0 });
+        camera.SetPosition({ 0, 8, 8 });
+        camera.Rotate({ 45, 180, 0 });
         return camera;
     }();
+
+    void RendererSystem::OnScreenResize(WindowResizeEvent* e)
+    {
+        auto w = e->GetHeight();
+        auto h = e->GetWidth();
+        auto ar = w / h;
+        m_editorCamera.SetAspectRatio(ar);
+        m_runtimeCamera.SetAspectRatio(ar);
+    }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
@@ -92,6 +101,21 @@ namespace oo
             m_editorCamera.SetAspectRatio((float)width / (float)height);
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
             break;
+        case oo::SCENE_STATE::RUNNING:
+
+            m_runtimeCamera = [&]()
+            {
+                Camera camera;
+                camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
+                camera.SetAspectRatio((float)width / (float)height);
+                camera.movementSpeed = 5.0f;
+                //camera.SetPosition({ 0, 8, 8 });
+                //camera.Rotate({ 45, 180, 0 });
+                return camera;
+            }();
+
+            Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_runtimeCamera;
+            break;
         }
         auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
         m_cc.SetCamera(&camera);
@@ -109,6 +133,8 @@ namespace oo
 
         m_world->SubscribeOnRemoveComponent<RendererSystem, LightComponent>(
             this, &RendererSystem::OnLightRemove);
+
+        EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
     }
 
     void RendererSystem::SaveEditorCamera()
@@ -122,6 +148,7 @@ namespace oo
             m_editorCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
             break;
         }
+        //m_editorCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
     }
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
@@ -187,30 +214,24 @@ namespace oo
     // additional function that runs during runtime scene only.
     void RendererSystem::UpdateCamerasRuntime()
     {
-        static bool use_editor_camera = false;
+        static bool using_editor_camera = false;
         if (oo::input::IsKeyPressed(KEY_F8))
         {
-            use_editor_camera = !use_editor_camera;
+            using_editor_camera = !using_editor_camera;
 
-            if (use_editor_camera)
+            if (using_editor_camera)
             {
+                m_runtimeCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
                 Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
-                auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
-                m_cc.SetCamera(&camera);
             }
-            /*else
+            else
             {
-                Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_editorCamera;
-                auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
-                m_cc.SetCamera(&camera);
-            }*/
+                Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera = m_runtimeCamera;
+            }
+            m_cc.SetCamera(&Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera);
         }
 
-        if (use_editor_camera)
-        {
-            m_cc.Update(oo::timer::dt());
-        }
-        else // updating the camera conventionally.
+        if (!using_editor_camera)
         {
             // TODO: debug draw the camera's view in editormode
             //DebugDraw::AddLine();
@@ -226,6 +247,8 @@ namespace oo
                 camera->SetRotation(transformComp.GetGlobalRotationQuat());
             });
         }
+
+        m_cc.Update(oo::timer::dt(), using_editor_camera);
     }
     
     void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)

@@ -164,6 +164,8 @@ void Project::LoadInputs(const std::filesystem::path& loadpath)
 					setting.pressesRequired = arr[4].GetUint();
 					setting.maxGapTime = arr[5].GetFloat();
 					setting.holdDurationRequired = arr[6].GetFloat();
+                    setting.invert = arr[7].GetBool();
+                    setting.onPressOnly = arr[8].GetBool();
 					prop.set_value(axis, setting);
 					continue;
 				}
@@ -220,6 +222,8 @@ void Project::SaveInputs(const std::filesystem::path& savepath)
 					setting.PushBack(axes_Setting.pressesRequired, input_doc.GetAllocator());
 					setting.PushBack(axes_Setting.maxGapTime, input_doc.GetAllocator());
 					setting.PushBack(axes_Setting.holdDurationRequired, input_doc.GetAllocator());
+                    setting.PushBack(axes_Setting.invert, input_doc.GetAllocator());
+                    setting.PushBack(axes_Setting.onPressOnly, input_doc.GetAllocator());
 
 					values.AddMember(rapidjson::Value(prop.get_name().data(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
 					continue;

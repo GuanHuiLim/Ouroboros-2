@@ -16,9 +16,13 @@ Technology is prohibited.
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "AnimationNode.h"
 #include "AnimationCondition.h"
+#include "Animation.h"
+#include "AnimationKeyFrame.h"
 
 #include <rttr/instance.h>
 #include <rttr/registration>
+
+#include <rapidjson/document.h>
 
 RTTR_REGISTRATION
 {
@@ -31,6 +35,8 @@ RTTR_REGISTRATION
 		value("FLOAT", oo::Anim::P_TYPE::FLOAT)
 	)
 	;
+
+	
 }
 namespace oo::Anim::internal
 {
@@ -71,21 +77,6 @@ namespace oo::Anim::internal
 
 namespace oo::Anim
 {
-	std::unordered_map< std::string, size_t> Animation::name_to_ID{};
-	std::map<size_t, Animation> Animation::animation_storage = []() {
-		decltype(Animation::animation_storage) container{};
-		//container.reserve(internal::expected_num_anims);
-
-		//create empty animation
-		Animation empty_anim{};
-		empty_anim.name = Animation::empty_animation_name;
-
-		Animation::name_to_ID[empty_anim.name] = empty_anim.animation_ID;
-		//Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());
-		auto key = empty_anim.animation_ID;
-		container.emplace(key, std::move(empty_anim));
-		return container;
-	}();
 
 	
 
@@ -129,16 +120,23 @@ namespace oo::Anim
 
 namespace oo::Anim
 {
+	/*------------------------
+	serialize
+	------------------------*/
 	void SerializeGroupRef(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, GroupRef& ref)
 	{
 		writer.StartObject();
 		if (ref)
-			writer.Key(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		{
+			writer.Key("GroupRef", static_cast<rapidjson::SizeType>(std::string("GroupRef").size()));
+			writer.String(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		}
 		else
 		{
 			LOG_CORE_DEBUG_CRITICAL("Group reference {0} invalid when serializing!!", ref.id);
 			assert(false);
 		}
+		writer.Key("ID", static_cast<rapidjson::SizeType>(std::string("ID").size()));
 		writer.Uint64(ref.id);
 		writer.EndObject();
 	}
@@ -146,12 +144,16 @@ namespace oo::Anim
 	{
 		writer.StartObject();
 		if (ref)
-			writer.Key(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		{
+			writer.Key("NodeRef", static_cast<rapidjson::SizeType>(std::string("NodeRef").size()));
+			writer.String(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		}
 		else
 		{
 			LOG_CORE_DEBUG_CRITICAL("Node reference {0} invalid when serializing!!", ref.id);
 			assert(false);
 		}
+		writer.Key("ID", static_cast<rapidjson::SizeType>(std::string("ID").size()));
 		writer.Uint64(ref.id);
 		writer.EndObject();
 	}
@@ -159,12 +161,16 @@ namespace oo::Anim
 	{
 		writer.StartObject();
 		if (ref)
-			writer.Key(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		{
+			writer.Key("LinkRef", static_cast<rapidjson::SizeType>(std::string("LinkRef").size()));
+			writer.String(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		}
 		else
 		{
-			LOG_CORE_DEBUG_CRITICAL("Node reference {0} invalid when serializing!!", ref.id);
+			LOG_CORE_DEBUG_CRITICAL("Link reference {0} invalid when serializing!!", ref.id);
 			assert(false);
 		}
+		writer.Key("ID", static_cast<rapidjson::SizeType>(std::string("ID").size()));
 		writer.Uint64(ref.id);
 		writer.EndObject();
 	}
@@ -172,14 +178,42 @@ namespace oo::Anim
 	{
 		writer.StartObject();
 		if (ref)
-			writer.Key(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		{
+			writer.Key("AnimRef", static_cast<rapidjson::SizeType>(std::string("AnimRef").size()));
+			writer.String(ref->name.c_str(), static_cast<rapidjson::SizeType>(ref->name.size()));
+		}
 		else
 		{
-			LOG_CORE_DEBUG_CRITICAL("Node reference {0} invalid when serializing!!", ref.id);
+			LOG_CORE_DEBUG_CRITICAL("Anim reference {0} invalid when serializing!!", ref.id);
 			assert(false);
 		}
+		writer.Key("ID", static_cast<rapidjson::SizeType>(std::string("ID").size()));
 		writer.Uint64(ref.id);
 		writer.EndObject();
+	}
+	/*------------------------
+	load
+	------------------------*/
+	void LoadGroupRef(rapidjson::Value& value, GroupRef& ref)
+	{
+		auto obj = value.GetObj();
+		ref.id = obj.FindMember("ID")->value.GetUint64();
+	}
+	void LoadNodeRef(rapidjson::Value& value, NodeRef& ref)
+	{
+		auto obj = value.GetObj();
+		ref.id = obj.FindMember("ID")->value.GetUint64();
+	}
+	void LoadLinkRef(rapidjson::Value& value, LinkRef& ref)
+	{
+		auto obj = value.GetObj();
+		auto test = obj.FindMember("ID")->value.GetUint64();
+		ref.id = obj.FindMember("ID")->value.GetUint64();
+	}
+	void LoadAnimRef(rapidjson::Value& value, AnimRef& ref)
+	{
+		auto obj = value.GetObj();
+		ref.id = obj.FindMember("ID")->value.GetUint64(); 
 	}
 	RTTR_REGISTRATION
 	{
@@ -187,18 +221,22 @@ namespace oo::Anim
 		registration::class_<GroupRef>("Animation Group Reference")
 			.property("ID", &GroupRef::id)
 			.method(internal::serialize_method_name,&SerializeGroupRef)
+			.method(internal::load_method_name,&LoadGroupRef)
 			;
 		registration::class_<NodeRef>("Animation Node Reference")
 			.property("ID", &NodeRef::id)
 			.method(internal::serialize_method_name, &SerializeNodeRef)
+			.method(internal::load_method_name, &LoadNodeRef)
 			;
 		registration::class_<LinkRef>("Animation Link Reference")
 			.property("ID", &LinkRef::id)
 			.method(internal::serialize_method_name, &SerializeLinkRef)
+			.method(internal::load_method_name, &LoadLinkRef)
 			;
 		registration::class_<AnimRef>("Animation Anim Reference")
 			.property("ID", &AnimRef::id)
 			.method(internal::serialize_method_name, &SerializeAnimRef)
+			.method(internal::load_method_name, &LoadAnimRef)
 			;
 	};
 	GroupRef::GroupRef(std::map<size_t, Group>* _groups, size_t _id) :
@@ -319,6 +357,12 @@ namespace oo::Anim
 	/*-------------------------------
 	AnimRef
 	-------------------------------*/
+	AnimRef::AnimRef(std::map<size_t, Animation>* _anims, size_t _id )
+		: anims{_anims}
+		, id{_id}
+	{
+
+	}
 	void AnimRef::Reload()
 	{
 		assert(anims);
@@ -343,5 +387,9 @@ namespace oo::Anim
 		/*return anims && index >= 0 && index < anims->size() &&
 			this->operator->()->animation_ID == id;*/
 		return (*anims).contains(id);
+	}
+	Animation& AnimRef::Retrieve(size_t id) const
+	{
+		return (*anims).at(id);
 	}
 }

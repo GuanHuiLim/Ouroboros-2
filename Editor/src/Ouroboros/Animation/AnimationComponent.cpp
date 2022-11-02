@@ -57,6 +57,36 @@ namespace oo
 		parameter->value = value;
 	}
 
+
+	void AnimationComponent::SetParameterByID(size_t id, Anim::Parameter::DataType value)
+	{
+		auto parameter = oo::Anim::internal::RetrieveParameterFromComponent(actualComponent, id);
+		assert(parameter);
+		assert(value.get_type() == parameter->value.get_type());
+		parameter->value = value;
+	}
+
+
+	void AnimationComponent::SetParameterByIndex(uint index, Anim::Parameter::DataType value)
+	{
+		auto parameter = oo::Anim::internal::RetrieveParameterFromComponentByIndex(actualComponent, index);
+		assert(parameter);
+		assert(value.get_type() == parameter->value.get_type());
+		parameter->value = value;
+	}
+
+	size_t AnimationComponent::GetParameterID(std::string const& name)
+	{
+		auto parameter = oo::Anim::internal::RetrieveParameterFromComponent(actualComponent, name);
+		assert(parameter);
+		return parameter->paramID;
+	}
+
+	uint AnimationComponent::GetParameterIndex(std::string const& name)
+	{
+		return oo::Anim::internal::GetParameterIndex(actualComponent, name);
+	}
+
 	Anim::AnimationTree* AnimationComponent::GetAnimationTree()
 	{
 		return actualComponent.animTree;
@@ -388,6 +418,52 @@ namespace oo
 		}
 
 		return created_scriptevent;
+	}
+
+	Anim::Animation* AnimationComponent::SetNodeAnimation(Anim::SetNodeAnimInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return nullptr;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.group_name);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add animation to node!!", info.group_name);
+			assert(false);
+			return nullptr;
+		}
+		auto node = Anim::internal::RetrieveNodeFromGroup(*group, info.node_name);
+		//node should exist
+		if (node == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add animation to node!!", info.node_name);
+			assert(false);
+			return nullptr;
+		}
+
+		auto anim = Anim::internal::RetrieveAnimation(info.anim_name);
+		//animation should exist
+		if (anim == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} animation not found, cannot add animation to node!!", info.anim_name);
+			assert(false);
+			return nullptr;
+		}
+
+		auto result = Anim::internal::AddAnimationToNode(*node, *anim);
+		if (result == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("error, cannot add animation to node!!");
+			assert(false);
+			return nullptr;
+		}
+		return result;
 	}
 }
 
