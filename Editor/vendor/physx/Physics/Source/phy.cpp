@@ -1080,16 +1080,16 @@ namespace myPhysx
 /*-----------------------------------------------------------------------------*/
 /*                           EVENT CALLBACK                                    */
 /*-----------------------------------------------------------------------------*/
-    void EventCallBack::onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) {
+    void EventCallBack::onConstraintBreak(PxConstraintInfo* /*constraints*/, PxU32 /*count*/) {
         printf("CALLBACK: onConstraintBreak\n");
     }
-    void EventCallBack::onWake(PxActor** actors, PxU32 count) {
+    void EventCallBack::onWake(PxActor** /*actors*/, PxU32 /*count*/) {
         printf("CALLBACK: onWake\n");
     }
-    void EventCallBack::onSleep(PxActor** actors, PxU32 count) {
+    void EventCallBack::onSleep(PxActor** /*actors*/, PxU32 /*count*/) {
         printf("CALLBACK: onSleep\n");
     }
-    void EventCallBack::onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) {
+    void EventCallBack::onContact(const PxContactPairHeader& /*pairHeader*/, const PxContactPair* pairs, PxU32 count) {
         printf("CALLBACK: onContact -- ");
         printf("PAIRS: %d\n", count);
 
@@ -1206,7 +1206,7 @@ namespace myPhysx
             //}
         }
     }
-    void EventCallBack::onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) {
+    void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
         printf("CALLBACK: onAdvance\n");
     }
 }
