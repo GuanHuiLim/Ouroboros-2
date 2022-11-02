@@ -155,11 +155,11 @@ namespace myPhysx
             createFoundation();
 
             if constexpr (use_debugger) {
-                printf("DEBUGGER ON\n");
+                //printf("DEBUGGER ON\n");
                 myPVD.createPvd(getFoundation(), "192.168.157.213");
             }
             else {
-                printf("DEBUGGER OFF\n");
+                //printf("DEBUGGER OFF\n");
             }
 
             createPhysics();
@@ -1081,17 +1081,17 @@ namespace myPhysx
 /*                           EVENT CALLBACK                                    */
 /*-----------------------------------------------------------------------------*/
     void EventCallBack::onConstraintBreak(PxConstraintInfo* /*constraints*/, PxU32 /*count*/) {
-        printf("CALLBACK: onConstraintBreak\n");
+        //printf("CALLBACK: onConstraintBreak\n");
     }
     void EventCallBack::onWake(PxActor** /*actors*/, PxU32 /*count*/) {
-        printf("CALLBACK: onWake\n");
+        //printf("CALLBACK: onWake\n");
     }
     void EventCallBack::onSleep(PxActor** /*actors*/, PxU32 /*count*/) {
-        printf("CALLBACK: onSleep\n");
+        //printf("CALLBACK: onSleep\n");
     }
     void EventCallBack::onContact(const PxContactPairHeader& /*pairHeader*/, const PxContactPair* pairs, PxU32 count) {
-        printf("CALLBACK: onContact -- ");
-        printf("PAIRS: %d\n", count);
+        //printf("CALLBACK: onContact -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1126,17 +1126,17 @@ namespace myPhysx
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
                 state = collision::onCollisionEnter;
-                printf("Shape is ENTERING CONTACT volume\n");
+                //printf("Shape is ENTERING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
                 state = collision::onCollisionStay;
-                printf("Shape is STAYING CONTACT volume\n");
+                //printf("Shape is STAYING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
                 state = collision::onCollisionExit;
-                printf("Shape is LEAVING CONTACT volume\n");
+                //printf("Shape is LEAVING CONTACT volume\n");
             }
 
             // Store all the ID of the actors that collided
@@ -1151,8 +1151,8 @@ namespace myPhysx
 
     }
     void EventCallBack::onTrigger(PxTriggerPair* pairs, PxU32 count) {
-        printf("CALLBACK: onTrigger -- ");
-        printf("PAIRS: %d\n", count);
+        //printf("CALLBACK: onTrigger -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1167,13 +1167,13 @@ namespace myPhysx
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
                 //stayTrigger = true;
                 state = trigger::onTriggerEnter;
-                printf("Shape is ENTERING TRIGGER volume\n");
+                //printf("Shape is ENTERING TRIGGER volume\n");
             }
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
                 //stayTrigger = false;
                 state = trigger::onTriggerExit;
                 //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
-                printf("Shape is LEAVING TRIGGER volume\n");
+                //printf("Shape is LEAVING TRIGGER volume\n");
             }
 
             // Store all the ID of the actors that collided with trigger)
@@ -1207,6 +1207,6 @@ namespace myPhysx
         }
     }
     void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
-        printf("CALLBACK: onAdvance\n");
+        //printf("CALLBACK: onAdvance\n");
     }
 }
