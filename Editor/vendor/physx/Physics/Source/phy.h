@@ -35,7 +35,7 @@ Technology is prohibited.
 
 #include "uuid.h"
 
-#define PVD_DEBUGGER false
+//#define PVD_DEBUGGER false
 
 using namespace physx;
 
@@ -52,7 +52,9 @@ namespace myPhysx {
     enum class shape { none, box, sphere, capsule, plane };
     enum class force { force, acceleration, impulse, velocityChanged };
     enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit};
-
+    enum class collision { none, onCollisionEnter, onCollisionStay, onCollisionExit};
+    
+    
     class EventCallBack : public PxSimulationEventCallback {
 
     public:
@@ -69,16 +71,33 @@ namespace myPhysx {
         void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
     };
 
+    struct ContactPoint {
+
+        PxVec3 normal;
+        PxVec3 point;
+        PxVec3 impulse;
+    };
+
     struct ContactManifold {
 
-        // need for collsion callback
+        phy_uuid::UUID shape1_ID;
+        phy_uuid::UUID shape2_ID;
+
+        collision status = collision::none;
+
+        std::vector<ContactPoint> m_contactPoint;
+        PxU8 contactCount;
     };
 
     struct TriggerManifold {
 
         phy_uuid::UUID triggerID;
         phy_uuid::UUID otherID;
-        trigger status;
+
+        trigger status = trigger::none;
+        bool passingAway = false;
+
+        //bool isStaying = false;
     };
 
     struct RigidBody {
@@ -117,6 +136,13 @@ namespace myPhysx {
         bool isTriggerShape(PxShape* shape);
 
         void provideCurrentWorld(PhysxWorld* world);
+        
+        PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+                                                PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+                                                PxPairFlags& pairFlags, const void* constantBlock,
+                                                PxU32 constantBlockSize);
+
+        void setupFiltering(PxShape* shape);
     };
 
     // describes a physics scene
@@ -133,8 +159,10 @@ namespace myPhysx {
         std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
+        
+        std::queue<TriggerManifold> m_triggerCollisionPairs; // queue to store the trigger collision pairs
 
-        std::queue<TriggerManifold> m_collisionPairs; // queue to store the collision pairs
+        std::queue<ContactManifold> m_collisionPairs; // queue to store the collision pairs
 
     public:
 
@@ -151,9 +179,17 @@ namespace myPhysx {
         PhysicsObject createInstance();
         void removeInstance(PhysicsObject obj);
 
-        //TRIGGER
-        std::queue<TriggerManifold>* getTriggerData(); // function to retrieve the queue data
-        void clearTriggerData(); // function to reset the queue data
+        // MAP OF OBJECTS
+        std::map<phy_uuid::UUID, int>* getAllObject();
+
+        // TRIGGER
+        void updateTriggerState(phy_uuid::UUID id); // function to update objects for OnTriggerStay
+        std::queue<TriggerManifold>* getTriggerData(); // function to retrieve the trigger queue data
+        void clearTriggerData(); // function to reset the trigger queue data
+
+        // COLLISION
+        std::queue<ContactManifold>* getCollisionData(); // function to retrieve the collision queue data
+        void clearCollisionData(); // function to reset the collision queue data
 
     };
 

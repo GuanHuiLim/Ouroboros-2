@@ -45,6 +45,18 @@ void EditorLayer::OnUpdate()
 	    m_editor.Update();
 #endif
 
+#ifdef OO_DEBUG
+	if (Project::GetAssetManager() && ImGui::Button("print tree"))
+	{
+		Project::GetAssetManager()->PrintTree();
+	}
+#endif
+
+	if (Project::GetAssetManager() && ImGui::Button("unload all"))
+	{
+		Project::GetAssetManager()->UnloadAll();
+	}
+
 	//top menu bar
 	//Editor::MenuBar();
 	if (ImGui::BeginMainMenuBar())
@@ -65,6 +77,10 @@ void EditorLayer::OnUpdate()
 		}
 		ImGui::EndMainMenuBar();
 	}
-	m_discord_helper.Update();
+#ifdef OO_EDITOR
+	m_editor.AddSequence(Editor::TimedSequence([this] {
+			m_discord_helper.Update();
+		}, 2.0f));
+#endif
 	TRACY_PROFILE_SCOPE_END();
 }

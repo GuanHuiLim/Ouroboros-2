@@ -36,6 +36,7 @@ Technology is prohibited.
 #include "App/CoreLayers/SceneLayer.h"
 #include "App/Corelayers/EditorLayer.h"
 #include "App/CoreLayers/ScriptingLayer.h"
+#include "App/CoreLayers/CoreLinkingLayer.h"
 
 // External includes
 #include <imgui/imgui.h>
@@ -82,6 +83,8 @@ public:
         m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
         // Scene Layer [Have differing code for OO_EDITOR AND OO_EXECUTABLE]
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
+        // Link core important setup regardless of editor or final build
+        m_layerset.PushLayer(std::make_shared<oo::CoreLinkingLayer>());
         // Editor Layer [Have differing code for OO_EDITOR AND OO_EXECUTABLE]
         // have this for both executable version as well for easy debugging purposes.
         m_editorLayer = std::make_shared<EditorLayer>(m_sceneManager);
@@ -153,6 +156,8 @@ public:
         m_layerset.PushLayer(std::make_shared<oo::ScriptingLayer>(m_sceneManager));
         // Scene Layer
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
+        // Link core important setup regardless of editor or final build
+        m_layerset.PushLayer(std::make_shared<oo::CoreLinkingLayer>());
 
         // only for the end product we do this instead
         std::filesystem::path p("./Project/Config.json");

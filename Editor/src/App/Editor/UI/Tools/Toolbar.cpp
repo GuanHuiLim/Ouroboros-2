@@ -38,19 +38,20 @@ Technology is prohibited.
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
+#include <App/Editor/Events/GizmoOperationEvent.h>
 
 void Toolbar::InitAssets()
 {
-	m_iconsSaved.emplace("TranslateButton", *ImGuiManager::s_editorAssetManager.LoadName("TranslateButton.png").begin());
-	m_iconsSaved.emplace("RotateButton", *ImGuiManager::s_editorAssetManager.LoadName("RotateButton.png").begin());
-	m_iconsSaved.emplace("ScaleButton", *ImGuiManager::s_editorAssetManager.LoadName("ScaleButton.png").begin());
-	m_iconsSaved.emplace("PlayButton", *ImGuiManager::s_editorAssetManager.LoadName("PlayButton.png").begin());
-	m_iconsSaved.emplace("PauseButton", *ImGuiManager::s_editorAssetManager.LoadName("PauseButton.png").begin());
-	m_iconsSaved.emplace("StopButton", *ImGuiManager::s_editorAssetManager.LoadName("StopButton.png").begin());
-	m_iconsSaved.emplace("LockButton", *ImGuiManager::s_editorAssetManager.LoadName("LockButton.png").begin());
-	m_iconsSaved.emplace("ListIcon", *ImGuiManager::s_editorAssetManager.LoadName("ListIcon.png").begin());
-	m_iconsSaved.emplace("GridIcon", *ImGuiManager::s_editorAssetManager.LoadName("GridIcon.png").begin());
-
+	m_iconsSaved.emplace("TranslateButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("TranslateButton.png").begin());
+	m_iconsSaved.emplace("RotateButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("RotateButton.png").begin());
+	m_iconsSaved.emplace("ScaleButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("ScaleButton.png").begin());
+	m_iconsSaved.emplace("PlayButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("PlayButton.png").begin());
+	m_iconsSaved.emplace("PauseButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("PauseButton.png").begin());
+	m_iconsSaved.emplace("StopButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("StopButton.png").begin());
+	m_iconsSaved.emplace("LockButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("LockButton.png").begin());
+	m_iconsSaved.emplace("ListIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("ListIcon.png").begin());
+	m_iconsSaved.emplace("GridIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("GridIcon.png").begin());
+	oo::EventManager::Subscribe<Toolbar,ChangeGizmoEvent>(this, &Toolbar::OnGizmoChange);
 }
 void Toolbar::Show()
 {
@@ -64,7 +65,7 @@ void Toolbar::Show()
 		if (ImGuiUtilities::ImageButton_ToolTip(1,"Gizmo Translate Mode",
 			m_iconsSaved["TranslateButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
-			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::TRANSLATE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
+			(currGizmoOperation == 7) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::TRANSFORM);
 			oo::EventManager::Broadcast(&tbe);
@@ -76,7 +77,7 @@ void Toolbar::Show()
 		if (ImGuiUtilities::ImageButton_ToolTip(2,"Gizmo Rotate Mode", 
 			m_iconsSaved["RotateButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
-			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::ROTATE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
+			(currGizmoOperation == 120) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::ROTATE);
 			oo::EventManager::Broadcast(&tbe);
@@ -86,7 +87,7 @@ void Toolbar::Show()
 		if (ImGuiUtilities::ImageButton_ToolTip(3, "Gizmo Scale Mode",
 			m_iconsSaved["ScaleButton"].GetData<ImTextureID>(),
 			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
-			(/*EditorViewport::GetOperation() == ImGuizmo::OPERATION::SCALE*/1) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
+			(currGizmoOperation == 896) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::SCALE);
 			oo::EventManager::Broadcast(&tbe);
@@ -188,4 +189,9 @@ void Toolbar::Show()
 	else
 		ImGui::SetWindowSize(window,{ 500,100 });
 
+}
+
+void Toolbar::OnGizmoChange(ChangeGizmoEvent* e)
+{
+	currGizmoOperation = e->targetOperation;
 }

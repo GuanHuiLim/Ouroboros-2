@@ -31,6 +31,8 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "SceneManagement/include/SceneManager.h"
+#include "Ouroboros/Vulkan/RendererComponent.h"
+#include "Ouroboros/Transform/TransformSystem.h"
 MeshHierarchy::MeshHierarchy()
 {
 	oo::EventManager::Subscribe<MeshHierarchy, OpenFileEvent>(this, &MeshHierarchy::OpenFileCallBack);
@@ -46,7 +48,7 @@ void MeshHierarchy::OpenFileCallBack(OpenFileEvent* e)
 	{
 		ImGuiManager::GetItem("Mesh Hierarchy").m_enabled = true;
 		auto relativepath = std::filesystem::relative(e->m_filepath, Project::GetAssetFolder());
-		auto asset = Project::GetAssetManager()->LoadPath(relativepath);
+		auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
 		m_current_id = asset.GetID();
 		//asset = Project::GetAssetManager()->Get(m_current_id);
 		//auto path = asset.GetFilePath();
@@ -66,10 +68,14 @@ void MeshHierarchy::Show()
 
 	auto* node = modeldata->sceneInfo;
 	ImVec2 contentRegion = ImGui::GetContentRegionAvail();
-	ImGui::BeginChild("MeshChild", { contentRegion.x,contentRegion.y * 0.6f }, true);
+	if (ImGui::BeginChild("MeshChild", { contentRegion.x,contentRegion.y * 0.6f }, true) == false)
+	{
+		ImGui::EndChild();
+		return;
+	}
 
 	ImGuiTreeNodeFlags flags = (ImGuiTreeNodeFlags)node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen: ImGuiTreeNodeFlags_Bullet;
-	bool opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+	bool opened = ImGui::TreeNodeEx(node->name.c_str(), flags | ImGuiTreeNodeFlags_OpenOnArrow);
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload))
 	{
 		ImGui::SetDragDropPayload("MESH_HIERARCHY", &node, sizeof(Node**));
@@ -77,6 +83,7 @@ void MeshHierarchy::Show()
 	}
 	if (opened == false)
 	{
+		ImGui::EndChild();
 		return;
 	}
 	std::stack<Node*> node_list;
@@ -95,7 +102,7 @@ void MeshHierarchy::Show()
 				ImGui::TreePop();
 			}
 			flags = node->children.size() ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Bullet;
-			opened = ImGui::TreeNodeEx(node->name.c_str(), flags);
+			opened = ImGui::TreeNodeEx(node->name.c_str(), flags| ImGuiTreeNodeFlags_OpenOnArrow);
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAutoExpirePayload))
 			{
 				MeshHierarchyDragDropData data;
@@ -130,8 +137,6 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 {
 	auto assetmanager = Project::GetAssetManager();
 	auto asset = assetmanager->Get(asset_id);
-	//auto modeldata = asset.GetData<ModelFileResource*>();
-	
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	std::stack<Node*> node_list;
@@ -142,6 +147,15 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	gameobject->SetName(node->name);
 	node_parent.push_back({ node->parent ,gameobject });
 	scene->GetRoot()->AddChild(*gameobject,true);
+
+	auto modeldata = asset.GetData<ModelFileResource*>();
+	if (modeldata->skeleton)
+	{
+		//load Skeleton
+		auto skeleton = CreateSkeleton(modeldata->skeleton);
+		gameobject->AddChild(*skeleton);
+	}
+
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();
@@ -168,5 +182,60 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 		}
 		//ImGui::TreeNodeEx(node->name.c_str(),ImGuiTreeNodeFlags_DefaultOpen| ImGuiTreeNodeFlags_NoTreePushOnOpen);
 	}
+}
+
+std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(decltype(ModelFileResource::skeleton) skele)
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	skele->m_boneNodes;
+	std::stack<oGFX::BoneNode*> node_list;
+	node_list.push(skele->m_boneNodes);
+	std::vector<std::pair<std::shared_ptr<oo::GameObject>, oGFX::BoneNode*>> parentnode;
+	std::vector<std::pair<std::shared_ptr<oo::GameObject>, oGFX::BoneNode*>> all_nodes;
+	auto rootbone = scene->CreateGameObjectImmediate(); // for return
+	auto bone = rootbone;
+	oGFX::BoneNode* bonenode;
+	while (true)
+	{
+		bonenode = node_list.top();
+		node_list.pop();
+		
+		if (parentnode.size())
+		{
+			while (parentnode.back().second != bonenode->mpParent)
+				parentnode.pop_back();
+
+			parentnode.back().first->AddChild(*bone);
+		}
+
+		all_nodes.push_back(std::pair{ bone, bonenode });
+		if (bonenode->mChildren.size())
+		{
+			for (auto data : bonenode->mChildren)
+			{
+				node_list.push(data);
+			}
+			parentnode.push_back(std::pair{bone,bonenode});
+		}
+
+		if (node_list.empty() == false)
+		{
+			bone = scene->CreateGameObjectImmediate();
+		}
+		else
+			break;
+	}
+	scene->GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*rootbone, false);
+	for (auto& node : all_nodes)
+	{
+		auto* curr_bone = node.second;
+		node.first->SetName(curr_bone->mName);
+		auto& transform = node.first->EnsureComponent<oo::TransformComponent>();
+		transform.SetLocalTransform(curr_bone->mModelSpaceGlobal);
+		auto& bonecomponent = node.first->EnsureComponent<oo::SkinMeshBoneComponent>();
+		bonecomponent.bone_name = curr_bone->mName;
+		bonecomponent.gfxbones_index = curr_bone->m_BoneIndex;
+	}
+	return rootbone;
 }
 

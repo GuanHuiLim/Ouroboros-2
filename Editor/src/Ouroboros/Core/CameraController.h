@@ -9,7 +9,7 @@ class CameraController
 public:
 
     // Per tick update
-    void Update(float dt);
+    void Update(float dt, bool update_controls = true);
 
     // Sets a camera to control
     void SetCamera(Camera* camera) { m_Camera = camera; }

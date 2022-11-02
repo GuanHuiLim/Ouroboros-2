@@ -11,6 +11,9 @@ public:
 public:
 	static std::shared_ptr<oo::AssetManager> GetAssetManager() { return s_AssetManager; };
 	
+	static void LoadInputs(const std::filesystem::path& loadpath);
+	static void SaveInputs(const std::filesystem::path& savepath);
+
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
 	static std::filesystem::path GetAssetFolder() { return s_projectFolder.string() + s_assetFolder.string(); };

@@ -49,11 +49,18 @@ Technology is prohibited.
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 #include <Ouroboros/Commands/Ordering_ActionCommand.h>
 //events
+#include <App/Editor/Events/OpenPromtEvent.h>
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 
+#include <Ouroboros/Physics/RigidbodyComponent.h>
+#include <Ouroboros/Physics/ColliderComponents.h>
+//#include <Ouroboros/Vulkan/RendererComponent.h>
+#include <Ouroboros/Vulkan/LightComponent.h>
+#include <Ouroboros/Vulkan/MeshRendererComponent.h>
+#include <Ouroboros/Vulkan/CameraComponent.h>
 
 
 Hierarchy::Hierarchy()
@@ -208,6 +215,19 @@ const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
 }
+void Hierarchy::PreviewPrefab(const std::filesystem::path& p, const std::filesystem::path& currscene)
+{
+	PrefabSceneData data;
+	data.m_curr_sceneFilepath = currscene.string();
+	m_prefabsceneList.push_back(std::move(data));
+	OpenPromptEvent<OpenFileEvent> ope(OpenFileEvent(p), 0);
+	oo::EventManager::Broadcast(&ope);
+}
+void Hierarchy::PopBackPrefabStack()
+{
+	OpenPromptEvent<OpenFileEvent> ope(OpenFileEvent(m_prefabsceneList.back().m_curr_sceneFilepath), [this] {m_prefabsceneList.pop_back(); });
+	oo::EventManager::Broadcast(&ope);
+}
 void Hierarchy::NormalView()
 {
 	RightClickOptions();
@@ -259,14 +279,13 @@ void Hierarchy::NormalView()
 			ImGui::EndDragDropTarget();
 		}
 	}
-	if (m_previewPrefab)
+	//if empty then it shouldn't have been from a prefab scene
+	if (m_prefabsceneList.empty() == false)
 	{
 		ImGui::Separator();
 		if (ImGui::Button("Back"))
 		{
-			m_previewPrefab = false;
-			OpenFileEvent ofe(m_curr_sceneFilepath);
-			oo::EventManager::Broadcast(&ofe);
+			PopBackPrefabStack();
 		}	
 		ImGui::SameLine();
 		ImGui::Text("Prefab Editing");
@@ -342,7 +361,7 @@ void Hierarchy::NormalView()
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
 			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
-			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
 			{
 				open_prefab = true;
 				prefabobj = source;
@@ -404,11 +423,8 @@ void Hierarchy::NormalView()
 	}
 	if (open_prefab)
 	{
-		m_previewPrefab = true;
-		m_curr_sceneFilepath = scene->GetFilePath();
 		auto complete_path = Project::GetPrefabFolder() / prefabobj->GetComponent<oo::PrefabComponent>().prefab_filePath;
-		OpenFileEvent ofe(complete_path);
-		oo::EventManager::Broadcast(&ofe);
+		PreviewPrefab(complete_path,scene->GetFilePath());
 	}
 }
 void Hierarchy::FilteredView()
@@ -504,6 +520,24 @@ void Hierarchy::RightClickOptions()
 			}
 			if(ImGui::MenuItem("Box"))
 			{
+				auto go = CreateGameObjectImmediate();
+				go->SetName("Box");
+				go->EnsureComponent<oo::MeshRendererComponent>();
+				go->EnsureComponent<oo::BoxColliderComponent>();
+			}
+			if (ImGui::MenuItem("Light"))
+			{
+				auto go = CreateGameObjectImmediate();
+				go->SetName("Light");
+				go->EnsureComponent<oo::LightComponent>();
+			}
+			if (ImGui::MenuItem("Camera"))
+			{
+				auto go = CreateGameObjectImmediate();
+				go->SetName("Camera");
+				go->EnsureComponent<oo::CameraComponent>();
+				// for now lets add a mesh to let us know where our camera is
+				go->EnsureComponent<oo::MeshRendererComponent>();
 			}
 			ImGui::EndMenu();
 		}
@@ -569,7 +603,7 @@ void Hierarchy::Filter_ByScript()
 {
 }
 
-void Hierarchy::CreateGameObjectImmediate()
+std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto go = scene->CreateGameObjectImmediate();
@@ -579,13 +613,14 @@ void Hierarchy::CreateGameObjectImmediate()
 	{
 		auto parent_object = scene->FindWithInstanceID(m_hovered);
 		if (parent_object == nullptr)
-			return;
+			return go;
 		if (parent_object->GetIsPrefab())
-			return;
+			return go;
 		oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(go, parent_object->GetInstanceID()));
 		parent_object->AddChild(*go);
 		//parent item undo redo
 	}
+	return go;
 }
 
 void Hierarchy::CopyEvent(CopyButtonEvent* cbe)

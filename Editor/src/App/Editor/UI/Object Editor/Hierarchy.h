@@ -21,12 +21,16 @@ Technology is prohibited.
 #include "App/Editor/Events/CopyButtonEvent.h"
 #include "App/Editor/Events/PasteButtonEvent.h"
 #include "App/Editor/Events/DuplicateButtonEvent.h"
+#include <Ouroboros/ECS/GameObject.h>
 class Hierarchy
 {
 public:
 	Hierarchy();
 	void Show();
 	static const std::set<scenenode::handle_type>& GetSelected();
+
+	void PreviewPrefab(const std::filesystem::path& p,const std::filesystem::path& currscene);
+	void PopBackPrefabStack();
 protected:
 	void NormalView();
 	void FilteredView();
@@ -41,7 +45,7 @@ protected:
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-	void CreateGameObjectImmediate();
+	std::shared_ptr<oo::GameObject> CreateGameObjectImmediate();
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
 	static constexpr const unsigned int Popup_ID = 100000;
@@ -59,7 +63,6 @@ private:
 	};
 	ColorButton m_colorButton;
 	std::vector<scenenode::handle_type> m_filterList;
-	std::string m_curr_sceneFilepath = "";
 	std::string m_filter = "";
 	FilterTypes m_filterTypes = FilterTypes::Name;
 	scenenode::handle_type m_hovered = (scenenode::handle_type)-100;
@@ -68,7 +71,11 @@ private:
 	scenenode::handle_type m_dragged_parent = (scenenode::handle_type)-100;
 	bool m_isDragging = false;
 	bool m_isRename = false;
-	bool m_previewPrefab = false;
+	struct PrefabSceneData
+	{
+		std::string m_curr_sceneFilepath = "";
+	};
+	std::vector<PrefabSceneData> m_prefabsceneList;
 	//static
 	inline static std::set<scenenode::handle_type> s_selected;
 };

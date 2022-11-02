@@ -1613,14 +1613,15 @@ bool VulkanRenderer::ResizeSwapchain()
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
 	// new model loader
-	
 	Assimp::Importer importer;
+	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
 	uint flags = 0;
 	flags |= aiProcess_Triangulate;
 	flags |= aiProcess_GenSmoothNormals;
 	flags |= aiProcess_ImproveCacheLocality;
 	flags |= aiProcess_CalcTangentSpace;
 	flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
+	flags |= aiProcess_FlipUVs;
 	//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 	const aiScene *scene = importer.ReadFile(file,flags
 		//  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
@@ -1742,7 +1743,9 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 			LoadBoneInformation(*modelFile,*mdl.skeleton, *aimesh, mdl.skeleton->boneWeights, verticesCnt);
 		}
 		mdl.skeleton->m_boneNodes = new oGFX::BoneNode();
-		BuildSkeletonRecursive(*modelFile, *mdl.skeleton, scene->mRootNode, mdl.skeleton->m_boneNodes);
+		mdl.skeleton->m_boneNodes->mName = "RootNode";
+		BuildSkeletonRecursive(*modelFile, scene->mRootNode, mdl.skeleton->m_boneNodes);
+		
 		for (size_t i = 0; i < mdl.skeleton->boneWeights.size(); i++)
 		{
 			//auto& ref = mdl.skeleton->boneWeights[i];
@@ -1961,12 +1964,67 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 					break;
 				}
 			}
+#define NORMALIZE_BONE_WEIGHTS
 
 			// Check if the number of weights is >4, just in case, since we dont support
 			if (!success)
 			{
+				
+				
+				float sum;
+#ifdef NORMALIZE_BONE_WEIGHTS
+				uint32_t minBone = boneIndex;
+				float minW = weight;
+				for (size_t i = 0; i < 4; i++)
+				{
+					if (vertex.boneWeights[i] < minW)
+					{
+						std::swap(vertex.boneWeights[i], minW);
+						std::swap(vertex.boneIdx[i], minBone);
+					}
+				}
+				sum = 0.0f;
+				for (size_t i = 0; i < 4; i++)
+				{
+					sum += vertex.boneWeights[i];
+				}
+				for (size_t i = 0; i < 4; i++)
+				{
+					vertex.boneWeights[i]*= (1.0f/sum);
+				}
+				sum = 0.0f;
+				for (auto&[key,val] :  fileData.strToBone)
+				{
+					if (val == minBone)
+					{
+						std::cout << "Discarded weight: [" << key<<",\t"<< minW << "]" << std::endl;
+						break;
+					}
+				}
+				for (size_t i = 0; i < 4; i++)
+				{
+					sum += vertex.boneWeights[i];
+				}
+				//std::cout << "Final sum : [" << sum<< "]"<<std::endl;
+
+#else
+				//dump bone names
+				std::cout << "Dumping bones...\n";
+				std::cout << "Bone affected : " << currBone->mName.C_Str() << ",\t" << weight<< std::endl;
+				for (size_t i = 0; i < 4; i++)
+				{
+					for (auto&[key,val] :  fileData.strToBone)
+					{
+						if (val == vertex.boneIdx[i])
+						{
+							std::cout << "Bone affected : " << key << ",\t"<<vertex.boneWeights[i] << std::endl;
+							break;
+						}
+					}
+				}				
 				// Vertex already has 4 bone weights assigned.
 				assert(false && "Bone weights >4 is not supported.");
+#endif // NORMALIZE_BONE_WEIGHTS
 			}
 		}
 
@@ -1974,20 +2032,38 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 	vCnt += aimesh.mNumVertices;
 }
 
-void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, oGFX::Skeleton& skeleton, aiNode* ainode, oGFX::BoneNode* node)
+void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* parent, glm::mat4 parentXform,std::string prefix)
 {
 	std::string node_name{ ainode->mName.data };
-	glm::mat4x4 node_transform = aiMat4_to_glm(ainode->mTransformation);
 
+	// TODO: quat ?
+	glm::mat4x4 node_transform = parentXform * aiMat4_to_glm(ainode->mTransformation);
+	oGFX::BoneNode* targetParent = parent;
 	std::string cName = node_name.substr(node_name.find_last_of("_") + 1);
+	oGFX::BoneNode* node = parent;
+
+	//std::cout << "Loading " << node_name << std::endl;
 
 	// Save the bone index
 	bool bIsBoneNode = false;
 	auto iter = fileData.strToBone.find(node_name);
 	if (iter != fileData.strToBone.end())
 	{
+		std::cout <<prefix<< "Creating bone " << node_name << std::endl;
+		prefix += '\t';
 		bIsBoneNode = true;
+		node = new oGFX::BoneNode;
+		node->mbIsBoneNode = true;
+		node->mName = node_name;
+		node->mpParent = targetParent;
+		node->mModelSpaceLocal = node_transform;
+		node->mModelSpaceGlobal= node_transform;
 		node->m_BoneIndex = iter->second;
+		if (targetParent)
+		{
+			targetParent->mChildren.push_back(node);
+		}
+		targetParent = node;
 	}
 
 	// Leaving this here to check the scale
@@ -2006,19 +2082,18 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, oGFX::S
 		}
 	}
 
-	// Copy information from assimp to our nodes.
-	node->mName = node_name;
-	node->mbIsBoneNode = bIsBoneNode;
-	// TODO: quat?
-	node->mModelSpaceLocal = aiMat4_to_glm(ainode->mTransformation);
-	node->mChildren.reserve(ainode->mNumChildren);
-
 	// Recursion through all children
 	for (size_t i = 0; i < ainode->mNumChildren; i++)
 	{
-		node->mChildren.push_back(new oGFX::BoneNode()); // Create the child node.
-		BuildSkeletonRecursive(fileData,skeleton, ainode->mChildren[i], node->mChildren[i]);
-		node->mChildren[i]->mpParent = node; // Link the child to the parent node.
+		if (bIsBoneNode)
+		{
+			// we have collapsed the transforms start for new local transform
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,glm::mat4(1.0f),prefix);
+		}
+		else
+		{
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,node_transform,prefix);
+		}
 	}
 }
 

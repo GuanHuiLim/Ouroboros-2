@@ -21,6 +21,8 @@ Technology is prohibited.
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
+#include "Ouroboros/Transform/TransformSystem.h"
+#include "Ouroboros/Audio/AudioSystem.h"
 #include "Ouroboros/Core/Application.h"
 
 //optick
@@ -93,7 +95,8 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
         OPTICK_EVENT();
 
-        Scene::Update();
+        GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
+        GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
         GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
 
         {
