@@ -1680,6 +1680,7 @@ namespace oo::Anim::internal
 				node.group.groups = &tree.groups;
 				for (auto& link : node.outgoingLinks)
 					link.links = &group.links;
+				node.anim.anims = &(Animation::animation_storage);
 			}
 
 			for (auto& [link_id, link] : group.links)
