@@ -51,6 +51,7 @@ namespace oo
         vec3 Gravity = { 0, -9.81f, 0 };
         
         inline static bool DrawDebug = true;
+        inline static bool DebugMessges = true;
 
         // Layering Bitmask Determines collision
         static LayerMatrix PhysicsBitMask;

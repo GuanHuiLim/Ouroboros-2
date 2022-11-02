@@ -217,9 +217,13 @@ void Editor::MenuBar()
 		}
 		if (ImGui::BeginMenu("Debugging"))
 		{
-			if (ImGui::MenuItem("Enable Debug Draw", 0, oo::PhysicsSystem::DrawDebug))
+			if (ImGui::MenuItem("Physics Debug Draw", 0, oo::PhysicsSystem::DrawDebug))
 			{
 				oo::PhysicsSystem::DrawDebug = !oo::PhysicsSystem::DrawDebug;
+			}
+			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessges))
+			{
+				oo::PhysicsSystem::DebugMessges = !oo::PhysicsSystem::DebugMessges;
 			}
 			ImGui::EndMenu();
 		}
