@@ -261,7 +261,7 @@ namespace oo
 		return condition;
 	}
 
-	Anim::Timeline* AnimationComponent::AddTimeline(std::string const& groupName, std::string const& nodeName,
+	Anim::TimelineRef AnimationComponent::AddTimeline(std::string const& groupName, std::string const& nodeName,
 		Anim::TimelineInfo const& info)
 	{
 		auto tree = GetAnimationTree();
@@ -270,7 +270,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		auto group = Anim::internal::RetrieveGroupFromTree(*tree, groupName);
 		//group should exist
@@ -278,7 +278,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add timeline!!", groupName);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		auto node = Anim::internal::RetrieveNodeFromGroup(*group, nodeName);
 		//node should exist
@@ -286,7 +286,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add timeline!!", nodeName);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 
 		//auto timeline = Anim::internal::AddTimelineToAnimation(node->GetAnimation(), timelineName, type, datatype);
@@ -296,12 +296,12 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("failed to add {0} timeline!!", info.timeline_name);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		//update the node's trackers to reflect the new timeline
 		Anim::internal::UpdateNodeTrackers(*node);
 
-		return timeline;
+		return Anim::internal::CreateTimelineReference(Anim::internal::CreateAnimationReference(node->GetAnimation().animation_ID), timeline->name);
 	}
 
 	//Anim::Timeline* AnimationComponent::AddTimeline(std::string const& groupName, std::string const& nodeName,
