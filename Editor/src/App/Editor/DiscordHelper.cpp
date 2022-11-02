@@ -4,7 +4,7 @@
 DiscordHelper::DiscordHelper()
 {
 	discord::Core* core{};
-	auto response = discord::Core::Create(clientid, DiscordCreateFlags_NoRequireDiscord, &core);
+	discord::Core::Create(clientid, DiscordCreateFlags_NoRequireDiscord, &core);
 	state.core.reset(core);
 	if (!state.core)
 	{
