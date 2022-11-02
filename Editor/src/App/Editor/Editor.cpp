@@ -35,6 +35,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Events/FileDropEvent.h"
 #include "Ouroboros/Core/Timer.h"
+#include <Ouroboros/Physics/PhysicsSystem.h>
 
 static void FileDrop(oo::FileDropEvent* e)
 {
@@ -211,6 +212,14 @@ void Editor::MenuBar()
 			if (ImGui::MenuItem("Renderer Debugger", 0, ImGuiManager::GetItem("Renderer Debugger").m_enabled))
 			{
 				ImGuiManager::GetItem("Renderer Debugger").m_enabled = !ImGuiManager::GetItem("Renderer Debugger").m_enabled;
+			}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Debugging"))
+		{
+			if (ImGui::MenuItem("Enable Debug Draw", 0, oo::PhysicsSystem::DrawDebug))
+			{
+				oo::PhysicsSystem::DrawDebug = !oo::PhysicsSystem::DrawDebug;
 			}
 			ImGui::EndMenu();
 		}
