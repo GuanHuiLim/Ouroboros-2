@@ -497,7 +497,7 @@ void AnimationTimelineView::DrawTimeLineContent()
                         .source_object{*(go.get())}
                         };
                         auto exampleTL = animator->AddTimeline(it->second.name, node->name, exampleTimeline);
-                        timeline = exampleTL;
+                        timeline = exampleTL.operator->();
                     }
                     ++currentTimeLineCount;
                 }

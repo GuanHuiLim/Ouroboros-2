@@ -97,9 +97,9 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
 
     if (!_animator->GetActualComponent().animTree)
     {
-        auto tree = oo::Anim::AnimationTree::Create("Animation Tree");
-        _animator->SetAnimationTree("Animation Tree");
-        auto& start_node = tree->groups.begin()->second.startNode;
+        //auto tree = oo::Anim::AnimationTree::Create("Animation Tree");
+        _animator->SetAnimationTree("Test Animation Tree");
+        //auto& start_node = tree->groups.begin()->second.startNode;
     }
 
     //Handle for everytime i press a new animatortree
@@ -364,35 +364,38 @@ void AnimatorControllerView::DisplayParameters()
                 ImGui::PushItemWidth(-1);
                 if (!animator->GetActualComponent().animTree->parameters.empty())
                 {
-                    switch (animator->GetActualComponent().animTree->parameters[i].type)
+                    if (i > 2)
                     {
-                        case oo::Anim::P_TYPE::BOOL:
+                        switch (animator->GetActualComponent().animTree->parameters[i].type)
                         {
-                            bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
-                            if (ImGui::Checkbox("##bool", &temp))
-                                animator->GetActualComponent().animTree->parameters[i].value = temp;
-                            break;
-                        }
-                        case oo::Anim::P_TYPE::TRIGGER:
-                        {
-                            bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
-                            if (ImGui::Checkbox("##trigger", &temp))
-                                animator->GetActualComponent().animTree->parameters[i].value = temp;
-                            break;
-                        }
-                        case oo::Anim::P_TYPE::INT:
-                        {
-                            int temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<int>();
-                            if (ImGui::DragInt("##trigger", &temp))
-                                animator->GetActualComponent().animTree->parameters[i].value = temp;
-                            break;
-                        }
-                        case oo::Anim::P_TYPE::FLOAT:
-                        {
-                            float temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<float>();
-                            if (ImGui::DragFloat("##trigger", &temp))
-                                animator->GetActualComponent().animTree->parameters[i].value = temp;
-                            break;
+                            case oo::Anim::P_TYPE::BOOL:
+                            {
+                                bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
+                                if (ImGui::Checkbox("##bool", &temp))
+                                    animator->GetActualComponent().animTree->parameters[i].value = temp;
+                                break;
+                            }
+                            case oo::Anim::P_TYPE::TRIGGER:
+                            {
+                                bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
+                                if (ImGui::Checkbox("##trigger", &temp))
+                                    animator->GetActualComponent().animTree->parameters[i].value = temp;
+                                break;
+                            }
+                            case oo::Anim::P_TYPE::INT:
+                            {
+                                int temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<int>();
+                                if (ImGui::DragInt("##trigger", &temp))
+                                    animator->GetActualComponent().animTree->parameters[i].value = temp;
+                                break;
+                            }
+                            case oo::Anim::P_TYPE::FLOAT:
+                            {
+                                float temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<float>();
+                                if (ImGui::DragFloat("##trigger", &temp))
+                                    animator->GetActualComponent().animTree->parameters[i].value = temp;
+                                break;
+                            }
                         }
                     }
                 }
