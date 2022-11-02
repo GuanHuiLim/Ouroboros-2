@@ -40,7 +40,7 @@ namespace oo::Anim
 
 		size_t animation_ID{ internal::generateUID() };
 
-		static void LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
+		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
 
 		RTTR_ENABLE();
 
