@@ -70,12 +70,11 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
 
     if (playAnim)
     {
-        for (int i = 0; i < animation->timelines.size(); ++i)
+        if (animation != nullptr)
         {
-            if (currentKeyFrame == animation->timelines[i].keyframes[animation->timelines[i].keyframes.size() - 1].time / unitPerFrame)
-                currentKeyFrame = 0;
+            //TODO: Loop Animation Keyframe
+            currentKeyFrame++;
         }
-        currentKeyFrame++;
     }
 }
 
@@ -156,8 +155,11 @@ void AnimationTimelineView::DrawToolbar()
                 oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(glm::vec3{ 0.f,0.f,0.f }, currentTime);
 
                 auto& temp = animator->GetActualComponent().animTree->groups;
-                auto newKeyFrame = animator->AddKeyFrame(temp.begin()->second.name, node->name, animation->timelines[i].name, newkf);
-                assert(newKeyFrame);
+                for (auto it = temp.begin(); it != temp.end(); ++it)
+                {
+                    auto newKeyFrame = animator->AddKeyFrame(it->second.name, node->name, animation->timelines[i].name, newkf);
+                    assert(newKeyFrame);
+                }
             }
         }
     }
@@ -234,17 +236,20 @@ void AnimationTimelineView::DrawNodeSelector(oo::AnimationComponent* _animator)
     {
         if (ImGui::BeginListBox("##animation"))
         {
-            for (auto it = temp.begin(); it != temp.end(); ++it)
+            if (_animator->GetActualComponent().animTree != nullptr)
             {
-                for (auto it2 = it->second.nodes.begin(); it2 != it->second.nodes.end(); ++it2)
+                for (auto it = temp.begin(); it != temp.end(); ++it)
                 {
-                    if (ImGui::Selectable(it2->second.name.c_str()))
+                    for (auto it2 = it->second.nodes.begin(); it2 != it->second.nodes.end(); ++it2)
                     {
-                        animName = it2->second.name;
-                        node = &it2->second;
-                        animation = &node->GetAnimation();
-                        currentKeyFrame = 0;
-                        animopen = !animopen;
+                        if (ImGui::Selectable(it2->second.name.c_str()))
+                        {
+                            animName = it2->second.name;
+                            node = &it2->second;
+                            animation = &node->GetAnimation();
+                            currentKeyFrame = 0;
+                            animopen = !animopen;
+                        }
                     }
                 }
             }
@@ -380,6 +385,7 @@ void AnimationTimelineView::DrawTimeLineContent()
     {
         //Add Property Button
         //Draw Keyframes
+        static int currentTimeLineCount = 0;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
         ImGui::Columns(2, "##legend", false);
         ImGui::SetColumnWidth(0, ImGui::CalcTextSize("Timeline ").x + 160);
@@ -424,11 +430,12 @@ void AnimationTimelineView::DrawTimeLineContent()
             //do for multiple timeline
             for (int i = 0; i < animation->timelines.size(); ++i)
             {
+                ImGui::PushID(i);
+                bool requestDelete = false;
                 if (ImGui::SmallButton("X"))
                 {
                     //used for deleting animation timelines
-                    
-                    animation->timelines.erase(animation->timelines.cbegin() + i);
+                    requestDelete = true;
                 }
 
                 ImGui::SameLine();
@@ -452,13 +459,17 @@ void AnimationTimelineView::DrawTimeLineContent()
                                     ImGui::DragFloat("Z", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().z);
 
                                     animation->timelines[i].rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
-                                        animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
+                                                                                    animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
                                 }
                             }
                         }
                         ImGui::TreePop();
                     }
                 }
+                if(requestDelete)
+                    animation->timelines.erase(animation->timelines.begin() + i);
+
+                ImGui::PopID();
             }
             ImGui::NewLine();
             ImGui::Separator();
@@ -481,13 +492,14 @@ void AnimationTimelineView::DrawTimeLineContent()
                         .type{oo::Anim::Timeline::TYPE::PROPERTY},
                         .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
                         .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
-                        .timeline_name{"Example Timeline"},
+                        .timeline_name{"Example Timeline " + std::to_string(currentTimeLineCount)},
                         .target_object{*(go.get())},
                         .source_object{*(go.get())}
                         };
                         auto exampleTL = animator->AddTimeline(it->second.name, node->name, exampleTimeline);
                         timeline = exampleTL;
                     }
+                    ++currentTimeLineCount;
                 }
                 ImGui::EndPopup();
             }
