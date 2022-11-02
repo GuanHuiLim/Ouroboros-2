@@ -182,7 +182,7 @@ namespace oo::Anim
 			std::function<void(oGFX::BoneNode*)> traverse_recursive = [&](oGFX::BoneNode* node)
 			{
 				if (node->mChildren.empty())
-					return {};
+					return;
 
 				int idx = 0;
 				std::vector<int> children_index = bone_hierarchy_map[node->mName];
