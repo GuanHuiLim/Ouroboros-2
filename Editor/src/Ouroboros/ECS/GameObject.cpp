@@ -319,8 +319,6 @@ namespace oo
                 oo::EventManager::Broadcast(&onDisableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
 
-                // let's remove gameobject disabled component (since its now active)
-                RemoveComponent<GameObjectDisabledComponent>();
             }
             else
             {
@@ -328,9 +326,6 @@ namespace oo
                 GameObjectComponent::OnEnableEvent onEnableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onEnableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
-
-                // let's add gameobject disabled component (since its now inactive)
-                EnsureComponent<GameObjectDisabledComponent>();
             }
             
             comp.ActiveInHierarchy = active;
@@ -344,6 +339,17 @@ namespace oo
 
         // Set this object's active state in hierarchy
         SetHierarchyActive(parent.GetComponent<GameObjectComponent>(), hierarchyActive);
+
+        if (parent.ActiveInHierarchy())
+        {
+            // let's remove gameobject disabled component (since its now active)
+            parent.TryRemoveComponent<GameObjectDisabledComponent>();
+        }
+        else
+        {
+            // let's add gameobject disabled component (since its now inactive)
+            parent.EnsureComponent<GameObjectDisabledComponent>();
+        }
 
         // Set active In Hierarchy for children to be
         for (auto& child : parent.GetDirectChilds())
