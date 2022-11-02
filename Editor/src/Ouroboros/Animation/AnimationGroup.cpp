@@ -34,8 +34,7 @@ namespace oo::Anim::internal
 				{
 					writer.Key(prop.get_name().data(), static_cast<rapidjson::SizeType>(prop.get_name().size()));
 					rttr::variant val{ prop.get_value(obj) };
-					auto temp = prop.get_type().get_id();
-					bool r = internal::serializeDataFn_map.contains(temp);
+					assert(internal::serializeDataFn_map.contains(prop.get_type().get_id()));
 					internal::serializeDataFn_map.at(prop.get_type().get_id())(writer, val);
 				}
 			}

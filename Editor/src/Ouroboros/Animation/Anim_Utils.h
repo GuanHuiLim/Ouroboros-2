@@ -107,8 +107,8 @@ namespace oo::Anim
 		size_t id{ internal::invalid_ID }; //group's unique identifier
 
 		GroupRef(std::map<size_t, Group>* _groups = nullptr, size_t _id = { internal::invalid_ID });
-		Group& operator*() const { return Retrieve(id); }
-		Group* operator->() const { return &Retrieve(id); }
+		Group& operator*() const { return Retrieve(); }
+		Group* operator->() const { return &Retrieve(); }
 
 		operator bool() const {
 			return valid();
@@ -118,7 +118,7 @@ namespace oo::Anim
 		void Reload();
 		RTTR_ENABLE();
 	private:
-		Group& Retrieve(size_t id) const;
+		Group& Retrieve() const;
 		bool valid() const;
 	};
 
@@ -129,8 +129,8 @@ namespace oo::Anim
 		size_t id{ internal::invalid_ID }; //node's unique identifier
 
 		NodeRef(std::map<size_t, Node>* _nodes = nullptr, size_t _id = { internal::invalid_ID });
-		Node& operator*() const { return Retrieve(id); }
-		Node* operator->() const { return &Retrieve(id); }
+		Node& operator*() const { return Retrieve(); }
+		Node* operator->() const { return &Retrieve(); }
 
 		operator bool() const {
 			return valid();
@@ -140,7 +140,7 @@ namespace oo::Anim
 		void Reload();
 		RTTR_ENABLE();
 	private:
-		Node& Retrieve(size_t id) const;
+		Node& Retrieve() const;
 		bool valid() const;
 
 		
@@ -153,8 +153,8 @@ namespace oo::Anim
 		size_t id{ internal::invalid_ID }; //link's unique identifier
 
 		LinkRef(std::map<size_t, Link>* _links = nullptr, size_t _id = { internal::invalid_ID });
-		Link& operator*() const { return Retrieve(id); }
-		Link* operator->() const { return &Retrieve(id); }
+		Link& operator*() const { return Retrieve(); }
+		Link* operator->() const { return &Retrieve(); }
 
 		operator bool() const {
 			return valid();
@@ -164,7 +164,7 @@ namespace oo::Anim
 		void Reload();
 		RTTR_ENABLE();
 	private:
-		Link& Retrieve(size_t id) const;
+		Link& Retrieve() const;
 		bool valid() const;
 	};
 
@@ -175,8 +175,8 @@ namespace oo::Anim
 		size_t id{ internal::invalid_ID }; //animation's unique identifier
 
 		AnimRef(std::map<size_t, Animation>* _anims = nullptr, size_t _id = { internal::invalid_ID });
-		Animation& operator*() const { return Retrieve(id); }
-		Animation* operator->() const { return &Retrieve(id); }
+		Animation& operator*() const { return Retrieve(); }
+		Animation* operator->() const { return &Retrieve(); }
 
 		operator bool() const {
 			return valid();
@@ -186,7 +186,7 @@ namespace oo::Anim
 		void Reload();
 		RTTR_ENABLE();
 	private:
-		Animation& Retrieve(size_t id) const;
+		Animation& Retrieve() const;
 		bool valid() const;
 	};
 
