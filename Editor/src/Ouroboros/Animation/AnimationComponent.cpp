@@ -96,26 +96,31 @@ namespace oo
 		return actualComponent.tracker;
 	}
 
-	Anim::Group* AnimationComponent::GetGroup(std::string const& name)
+	Anim::GroupRef AnimationComponent::GetGroup(std::string const& name)
 	{
-		if (GetAnimationTree() == nullptr)
+		auto tree = GetAnimationTree();
+		if (tree == nullptr)
 		{
 			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
 			assert(false);
-			return nullptr;
+			return {};
 		}
 
-		auto group = oo::Anim::internal::RetrieveGroupFromTree(*GetAnimationTree(), name);
+		auto group = oo::Anim::internal::RetrieveGroupFromTree(*tree, name);
 
 		if (group == nullptr)
+		{
 			LOG_CORE_DEBUG_INFO("Cannot find {0} group!!", name, GetAnimationTree()->name);
+			assert(false);
+			return {};
+		}
 
-		return group;
+		return oo::Anim::internal::CreateGroupReference(*tree, group->groupID);
 	}
 
 
 
-	Anim::Node* AnimationComponent::AddNode(std::string const& groupName, Anim::NodeInfo& info)
+	Anim::NodeRef AnimationComponent::AddNode(std::string const& groupName, Anim::NodeInfo& info)
 	{
 		auto tree = GetAnimationTree();
 		//tree should exist
@@ -123,7 +128,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		auto group = Anim::internal::RetrieveGroupFromTree(*tree, groupName);
 		//group should exist
@@ -131,7 +136,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add node!!", groupName);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		info.group = Anim::internal::CreateGroupReference(*tree, group->groupID);
 		auto node = Anim::internal::AddNodeToGroup(*group, info);
@@ -140,12 +145,12 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("Adding {0} node to {1} animation tree failed!!", info.name, GetAnimationTree()->name);
 			assert(false);
-			return nullptr;
+			return {};
 		}
-		return node;
+		return oo::Anim::internal::CreateNodeReference(*group,node->node_ID);
 	}
 
-	Anim::Link* AnimationComponent::AddLink(std::string const& groupName, std::string const& src, std::string const& dst)
+	Anim::LinkRef AnimationComponent::AddLink(std::string const& groupName, std::string const& src, std::string const& dst)
 	{
 		auto tree = GetAnimationTree();
 		//tree should exist
@@ -153,7 +158,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		auto group = Anim::internal::RetrieveGroupFromTree(*tree, groupName);
 		//group should exist
@@ -161,7 +166,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add link!!", groupName);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 
 		auto src_node = Anim::internal::RetrieveNodeFromGroup(*group, src);
@@ -172,7 +177,7 @@ namespace oo
 			LOG_CORE_DEBUG_INFO("Link from {0} node to {1} cannot be added!!", src, dst);
 			LOG_CORE_DEBUG_INFO("{0} node does not exist!!", ((src_node) ? dst : src));
 			assert(false);
-			return nullptr;
+			return {};
 		}
 
 		auto link = Anim::internal::AddLinkBetweenNodes(*group, src, dst);
@@ -181,9 +186,10 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("Link from {0} node to {1} cannot be added!!", src, dst);
 			assert(false);
+			return {};
 		}
 
-		return link;
+		return oo::Anim::internal::CreateLinkReference(*group,link->linkID);
 	}
 
 	Anim::Parameter* AnimationComponent::AddParameter(Anim::ParameterInfo const& info)
@@ -420,7 +426,7 @@ namespace oo
 		return created_scriptevent;
 	}
 
-	Anim::Animation* AnimationComponent::SetNodeAnimation(Anim::SetNodeAnimInfo const& info)
+	Anim::AnimRef AnimationComponent::SetNodeAnimation(Anim::SetNodeAnimInfo const& info)
 	{
 		auto tree = GetAnimationTree();
 		//tree should exist
@@ -428,7 +434,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.group_name);
 		//group should exist
@@ -436,7 +442,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} group not found, cannot add animation to node!!", info.group_name);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 		auto node = Anim::internal::RetrieveNodeFromGroup(*group, info.node_name);
 		//node should exist
@@ -444,7 +450,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add animation to node!!", info.node_name);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 
 		auto anim = Anim::internal::RetrieveAnimation(info.anim_name);
@@ -453,7 +459,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} animation not found, cannot add animation to node!!", info.anim_name);
 			assert(false);
-			return nullptr;
+			return {};
 		}
 
 		auto result = Anim::internal::AddAnimationToNode(*node, *anim);
@@ -461,9 +467,9 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("error, cannot add animation to node!!");
 			assert(false);
-			return nullptr;
+			return {};
 		}
-		return result;
+		return oo::Anim::internal::CreateAnimationReference(result->animation_ID);
 	}
 }
 

@@ -53,15 +53,15 @@ namespace oo
 
 		Anim::AnimationTree* GetAnimationTree();
 		Anim::AnimationTracker& GetTracker();
-		Anim::Group* GetGroup(std::string const& name);
+		Anim::GroupRef GetGroup(std::string const& name);
 
 		//adds a node to the group in the animation tree attached to this component
 		//returns nullptr if no animation tree
-		Anim::Node* AddNode(std::string const& groupName, Anim::NodeInfo& info);
+		Anim::NodeRef AddNode(std::string const& groupName, Anim::NodeInfo& info);
 		
 		//adds a link between two nodes
 		//returns nullptr if link was not added due to error(src or dst not found)
-		Anim::Link* AddLink(std::string const& groupName, std::string const& src, std::string const& dst);
+		Anim::LinkRef AddLink(std::string const& groupName, std::string const& src, std::string const& dst);
 		
 		
 		Anim::Parameter* AddParameter(Anim::ParameterInfo const& info);
@@ -84,7 +84,7 @@ namespace oo
 		Anim::ScriptEvent* AddScriptEvent(std::string const& groupName, std::string const nodeName,
 			std::string const& timelineName, Anim::ScriptEvent scriptevent);
 
-		Anim::Animation* SetNodeAnimation(Anim::SetNodeAnimInfo const& info);
+		Anim::AnimRef SetNodeAnimation(Anim::SetNodeAnimInfo const& info);
 		RTTR_ENABLE();
 	};
 }

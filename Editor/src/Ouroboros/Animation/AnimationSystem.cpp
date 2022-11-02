@@ -271,12 +271,15 @@ namespace oo::Anim
 	{
 		if constexpr (DEBUG_ANIMATION == false) return nullptr;
 
-		auto animationfbx_fp = Project::GetAssetFolder().string();
-		TestObject();
-		auto obj_children = scene->GetRoot()->GetChildren();
+		else
+		{
+			auto animationfbx_fp = Project::GetAssetFolder().string();
+			TestObject();
+			auto obj_children = scene->GetRoot()->GetChildren();
 
 
-		return nullptr;
+			return nullptr;
+		}
 	}
 
 	bool AnimationSystem::SaveAnimationTree(AnimationTree& tree, std::string filepath)
