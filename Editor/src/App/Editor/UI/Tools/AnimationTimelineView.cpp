@@ -153,10 +153,7 @@ void AnimationTimelineView::DrawToolbar()
         {
             for (int i = 0; i < animation->timelines.size(); ++i)
             {
-                oo::Anim::KeyFrame newkf{
-                .data{glm::vec3{0.f,0.f,0.f}},
-                .time{currentTime}
-                };
+                oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(glm::vec3{ 0.f,0.f,0.f }, currentTime);
 
                 auto& temp = animator->GetActualComponent().animTree->groups;
                 auto newKeyFrame = animator->AddKeyFrame(temp.begin()->second.name, node->name, animation->timelines[i].name, newkf);
@@ -172,10 +169,10 @@ void AnimationTimelineView::DrawToolbar()
         //Creates an event, basically drawing a new keyframe at that currentTime
         if (animation != nullptr)
         {
-            oo::Anim::ScriptEvent newEvent{
-                .script_function_info{},
-                .time{currentTime}
-            };
+            oo::Anim::ScriptEvent newEvent = oo::Anim::ScriptEvent();
+
+            newEvent.script_function_info = oo::ScriptValue::function_info() ;
+            newEvent.time = currentTime;
 
             animation->events.push_back(newEvent);
         }
@@ -436,28 +433,31 @@ void AnimationTimelineView::DrawTimeLineContent()
 
                 ImGui::SameLine();
 
-                opentimeline = ImGui::TreeNodeEx(animation->timelines[i].name.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-            
-                if (opentimeline)
+                if (!animation->timelines.empty())
                 {
-                    timeline = &animation->timelines[i];
-                    for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
-                    {
-                        if (animation->timelines[i].datatype == oo::Anim::Timeline::DATATYPE::VEC3)
-                        {
-                            if (currentTime == animation->timelines[i].keyframes[j].time)
-                            {
-                                //draw the property editor
-                                ImGui::DragFloat("X", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().x);
-                                ImGui::DragFloat("Y", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().y);
-                                ImGui::DragFloat("Z", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().z);
+                    opentimeline = ImGui::TreeNodeEx(animation->timelines[i].name.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
 
-                                animation->timelines[i].rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
-                                                                                animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
+                    if (opentimeline)
+                    {
+                        timeline = &animation->timelines[i];
+                        for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
+                        {
+                            if (animation->timelines[i].datatype == oo::Anim::Timeline::DATATYPE::VEC3)
+                            {
+                                if (currentTime == animation->timelines[i].keyframes[j].time)
+                                {
+                                    //draw the property editor
+                                    ImGui::DragFloat("X", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().x);
+                                    ImGui::DragFloat("Y", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().y);
+                                    ImGui::DragFloat("Z", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().z);
+
+                                    animation->timelines[i].rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
+                                        animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
+                                }
                             }
                         }
+                        ImGui::TreePop();
                     }
-                    ImGui::TreePop();
                 }
             }
             ImGui::NewLine();

@@ -30,7 +30,7 @@ Technology is prohibited.
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
 
-#define DEBUG_ANIMATION false
+#define DEBUG_ANIMATION true
 namespace oo::Anim
 {
 	AnimationSystem::~AnimationSystem()
