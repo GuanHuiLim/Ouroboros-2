@@ -50,6 +50,8 @@ namespace oo
         // Global gravity
         vec3 Gravity = { 0, -9.81f, 0 };
         
+        inline static bool DrawDebug = true;
+
         // Layering Bitmask Determines collision
         static LayerMatrix PhysicsBitMask;
         // Manupilating Fixed DT

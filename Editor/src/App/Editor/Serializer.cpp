@@ -98,7 +98,8 @@ void Serializer::SaveScene(oo::Scene& scene)
 
 	std::stack<scenenode::raw_pointer> s;
 	std::stack<scenenode::handle_type> parents;
-	scenenode::raw_pointer curr = sg.get_root().get();
+	auto getroot_ptr = sg.get_root();
+	scenenode::raw_pointer curr = getroot_ptr.get();
 
 	parents.push(curr->get_handle());
 	for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
@@ -141,7 +142,8 @@ std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go 
 {
 	std::stack<scenenode::raw_pointer> s;
 	std::stack<scenenode::handle_type> parents;
-	scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+	auto getscenenodeptr = (*go).GetSceneNode().lock();
+	scenenode::raw_pointer curr = getscenenodeptr.get();
 	parents.push(curr->get_handle());
 	s.push(curr);
 	rapidjson::Document doc;
@@ -171,7 +173,8 @@ std::string Serializer::SaveDeletedObject(std::shared_ptr<oo::GameObject> go, oo
 {
 	std::stack<scenenode::raw_pointer> s;
 	std::stack<scenenode::handle_type> parents;
-	scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+	auto gogetscenenodeptr = (*go).GetSceneNode().lock();
+	scenenode::raw_pointer curr = gogetscenenodeptr.get();
 	parents.push(curr->get_handle());
 	s.push(curr);
 	rapidjson::Document doc;
@@ -191,7 +194,8 @@ std::string Serializer::SaveObjectsAsString(const std::vector<std::shared_ptr<oo
 	std::stack<scenenode::handle_type> parents;
 	for (auto& go : go_list)
 	{
-		scenenode::raw_pointer curr = (*go).GetSceneNode().lock().get();
+		auto gogetscenenodeptr = (*go).GetSceneNode().lock();
+		scenenode::raw_pointer curr = gogetscenenodeptr.get();
 		s.push(curr);
 	}
 	//parents.push((*go_list.begin())->GetSceneNode().lock()->get_handle());
@@ -274,7 +278,7 @@ std::vector<oo::UUID> Serializer::LoadObjectsFromString(std::string& data, oo::U
 		auto go = second_iter[iteration];
 		auto members = iter->value.MemberBegin();//get the order of hierarchy
 		auto membersEnd = iter->value.MemberEnd();
-		int order = members->value.GetInt();
+		//int order = members->value.GetInt();
 
 		++members;
 		//processes the components		
@@ -411,7 +415,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 						if (iter != all_mappedUUID.end())
 							current_sfi.SetUint64(iter->second.GetUUID());
 						else
-							current_sfi.SetUint64(-1);
+							current_sfi.SetUint64(uint64_t(-1));
 					}break;
 					case oo::ScriptValue::type_enum::COMPONENT:
 					{
@@ -421,7 +425,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 						if (iter != all_mappedUUID.end())
 							current_sfi.SetUint64(iter->second.GetUUID());
 						else
-							current_sfi.SetUint64(-1);
+							current_sfi.SetUint64(uint64_t(-1));
 					}break;
 					case oo::ScriptValue::type_enum::FUNCTION:
 					{
@@ -432,7 +436,7 @@ void Serializer::SavePrefabObject(oo::GameObject& go, rapidjson::Value& val,rapi
 						if (iter != all_mappedUUID.end())
 							arr[0].SetUint64(iter->second.GetUUID());
 						else
-							arr[0].SetUint64(-1);
+							arr[0].SetUint64(uint64_t(-1));
 
 						current_sfi = arr;//update the value
 					}break;
@@ -837,7 +841,7 @@ void Serializer::RemapScripts(std::unordered_map<oo::UUID, oo::UUID>& scriptIds,
 				auto iter = scriptIds.find(id);
 				if (iter == scriptIds.end())
 				{
-					id = -1;
+					id = uint64_t(-1);
 				}
 				else
 					id = iter->second;
