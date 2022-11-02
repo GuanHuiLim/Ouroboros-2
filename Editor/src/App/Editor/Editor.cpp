@@ -64,6 +64,7 @@ static void FileDrop(oo::FileDropEvent* e)
 			return;
 		}
 		std::filesystem::copy(p, Project::GetAssetFolder() / p.filename(),std::filesystem::copy_options::overwrite_existing);
+		Project::GetAssetManager()->Scan();
 	}
 }
 Editor::Editor()
