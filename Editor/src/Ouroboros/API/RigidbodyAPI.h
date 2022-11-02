@@ -7,9 +7,11 @@
 
 namespace oo
 {
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, IsStatic, bool, IsStatic, SetStatic)
+
     SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, IsTrigger, bool, IsTrigger, SetTrigger)
 
-    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, UseGravity, bool, IsGravityEnabled, SetGravity)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, GravityDisabled, bool, IsGravityDisabled, SetGravity)
 
     SCRIPT_API void Rigidbody_GetVelocity(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
