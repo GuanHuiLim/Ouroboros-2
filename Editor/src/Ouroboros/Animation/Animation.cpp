@@ -18,6 +18,7 @@ Technology is prohibited.
 #include "AnimationTimeline.h"
 #include "AnimationKeyFrame.h"
 #include "AnimationInternal.h"
+#include "Project.h"
 
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"
@@ -345,6 +346,8 @@ namespace oo::Anim
 		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
 		assert(result == true);
 		auto& createdAnim = Animation::animation_storage[key];
+
+		//auto assetmanager = Project::GetAssetManager();
 
 		return &createdAnim;
 	}

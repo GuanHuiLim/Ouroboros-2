@@ -35,8 +35,8 @@ namespace oo::Anim
 {
 	AnimationSystem::~AnimationSystem()
 	{
-		EventManager::Unsubscribe<AnimationSystem, OpenFileEvent>(this, &AnimationSystem::OpenFileCallback);
-		EventManager::Unsubscribe<AnimationSystem, CloseProjectEvent>(this, &AnimationSystem::CloseProjectCallback);
+		EventManager::Unsubscribe<OpenFileEvent>(&AnimationSystem::OpenFileCallback);
+		EventManager::Unsubscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
@@ -49,8 +49,8 @@ namespace oo::Anim
 		this->world = _world;
 		this->scene = _scene;
 
-		EventManager::Subscribe<AnimationSystem, OpenFileEvent>(this,&AnimationSystem::OpenFileCallback);
-		EventManager::Subscribe<AnimationSystem, CloseProjectEvent>(this,&AnimationSystem::CloseProjectCallback);
+		EventManager::Subscribe<OpenFileEvent>(&AnimationSystem::OpenFileCallback);
+		EventManager::Subscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
@@ -455,5 +455,9 @@ namespace oo::Anim
 	Animation* AnimationSystem::AddAnimation(std::string const& name)
 	{		
 		return internal::AddAnimationToStorage(name);
+	}
+	AnimationTree* AnimationSystem::CreateAnimationTree(std::string const& name)
+	{
+		return AnimationTree::Create("Test Animation Tree");
 	}
 }
