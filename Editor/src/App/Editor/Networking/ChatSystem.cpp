@@ -4,11 +4,12 @@
 #include <imgui/imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 #include "App/Editor/Utility/Windows_Utill.h"
-
+#include "Ouroboros/EventSystem/EventManager.h"
 ChatSystem::ChatSystem()
 	:client{SLNet::RakPeerInterface::GetInstance()},
 	clientID{ SLNet::UNASSIGNED_SYSTEM_ADDRESS }
 {
+	oo::EventManager::Subscribe<ChatSystem, NetworkingSendEvent>(this, &ChatSystem::PrepareMessageSend);
 }
 
 ChatSystem::~ChatSystem()
@@ -57,9 +58,23 @@ void ChatSystem::Show()
 			MessageTypes(packetIdentifier, p->data);
 		}
 	}
+	if (m_messages.empty() == false)
+	{
+		SendMsg(m_messages.front());
+		m_messages.pop_front();
+	}
 }
 
-void ChatSystem::SendMessage(std::string& msg)
+void ChatSystem::PrepareMessageSend(NetworkingSendEvent* e)
+{
+	std::string msg;
+	msg = e->type;
+	LOG_CORE_INFO(msg);
+	msg += e->data;
+	m_messages.push_back(msg);
+}
+
+void ChatSystem::SendMsg(const std::string& msg)
 {
 	client->Send(msg.c_str(), (int)msg.size() + 1, HIGH_PRIORITY, RELIABLE_ORDERED, 0, SLNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
@@ -99,9 +114,11 @@ void ChatSystem::MessageTypes(unsigned char id, unsigned char* data)
 		m_messages.emplace_back(temp);
 		break;
 	}
-	case 2:
+	case '2':
 	{
-
+		std::string temp = reinterpret_cast<char*>((data + 1));
+		NetworkingReceivedEvent e(2, temp);
+		oo::EventManager::Broadcast(&e);
 	}
 	};
 }

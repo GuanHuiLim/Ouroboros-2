@@ -30,6 +30,8 @@ Technology is prohibited.
 
 #include "UI/Optional Windows/SceneOrderingWindow.h"
 
+#include "App/Editor/Networking/ChatSystem.h"
+
 #include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Events/OpenFileEvent.h"
@@ -74,6 +76,7 @@ public:
 	MeshHierarchy m_meshHierarchy;
 	RendererDebugger m_rendererDebugger;
 
+	ChatSystem m_chatsystem;
 
 	SceneOrderingWindow m_sceneOderingWindow;
 public:

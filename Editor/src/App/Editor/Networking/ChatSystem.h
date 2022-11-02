@@ -1,5 +1,6 @@
 #pragma once
 
+#include "App/Editor/Networking/NetworkingEvent.h"
 #include "slikenet/peerinterface.h"
 #include "slikenet/statistics.h"
 #include <string>
@@ -11,7 +12,8 @@ public:
 	~ChatSystem();
 
 	void Show();
-	void SendMessage(std::string& msg);
+	void PrepareMessageSend(NetworkingSendEvent* e);
+	void SendMsg(const std::string& msg);
 	unsigned char GetPacketIdentifier(SLNet::Packet* p);
 private:
 	void AddMessage(std::string&& str);

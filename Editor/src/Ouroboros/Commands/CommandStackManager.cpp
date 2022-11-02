@@ -6,6 +6,8 @@
 
 #include <Ouroboros/Core/Assert.h>
 #include <Ouroboros/EventSystem/EventManager.h>
+#include "App/Editor/Networking/NetworkingEvent.h"
+#include "Ouroboros/Commands/Delete_ActionCommand.h"
 void oo::CommandStackManager::InitEvents()
 {
 	EventManager::Subscribe<LoadSceneEvent>(
@@ -15,6 +17,12 @@ void oo::CommandStackManager::InitEvents()
 			CommandStackManager::ClearCommandBuffer();
 		}
 	);
+	EventManager::Subscribe<NetworkingReceivedEvent>([](NetworkingReceivedEvent* e) {
+			
+		auto* dc = new Delete_ActionCommand(e->data);
+		dc->Redo();
+		CommandStackManager::AddCommand(dc);
+		});
 }
 void oo::CommandStackManager::UndoCommand()
 {

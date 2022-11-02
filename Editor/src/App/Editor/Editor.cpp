@@ -128,7 +128,7 @@ void Editor::Update()
 
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
-
+	m_chatsystem.Show();
 	helper.Popups();
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl))
 	{
