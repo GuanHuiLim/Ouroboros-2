@@ -71,7 +71,7 @@ namespace oo
         auto [success, editor_key, editorScene] = m_sceneManager.CreateNewScene<EditorScene>(startfile.SceneName, startfile.LoadPath);
         ASSERT_MSG(!success, "Scene couldnt be loaded, is the file path passed in correct?");
         
-        m_editorScene = editorScene;
+        m_editorScene = editorScene.lock();
         m_sceneManager.ChangeScene(m_editorScene);
     }
 
@@ -99,17 +99,18 @@ namespace oo
             //Force save when you press play [ not sure if intended ]
             editor_scene->Save();
 
-            auto editor_scene_name = editor_scene->GetSceneName();
-            m_temporaryAdd = !m_runtimeController.HasScene(editor_scene_name);
+            auto editor_filepath = editor_scene->GetFilePath();
+            // determine if runtime controller have a scene with current loadpath added
+            m_temporaryAdd = !m_runtimeController.HasSceneWithName(editor_scene->GetSceneName());
             // add selected path as load path
             if (m_temporaryAdd)
-                m_runtimeController.AddLoadPath(editor_scene_name, editor_scene->GetFilePath());
+                m_runtimeController.AddLoadPath(editor_scene->GetSceneName(), editor_filepath);
 
             // Generate all the scenes on run
             m_runtimeController.GenerateScenes();
 
             // Change runtime scene to currently selected
-            m_runtimeController.ChangeRuntimeScene(editor_scene_name);
+            m_runtimeController.ChangeRuntimeScene(editor_scene->GetSceneName());
         }
         // if in runtime 
         else if (m_activeState == SCENE_STATE::RUNNING)
@@ -170,7 +171,7 @@ namespace oo
         if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
-            m_runtimeController.RemoveLoadPath(m_editorScene.lock()->GetSceneName());
+            m_runtimeController.RemoveLoadPathByName(m_editorScene.lock()->GetSceneName());
         }
 
         // set editor to new file path
@@ -209,7 +210,7 @@ namespace oo
         if (m_temporaryAdd)
         {
             m_temporaryAdd = false;
-            m_runtimeController.RemoveLoadPath(m_editorScene.lock()->GetSceneName());
+            m_runtimeController.RemoveLoadPathByPath(m_editorScene.lock()->GetFilePath());
         }
 
         m_activeState = SCENE_STATE::EDITING;
