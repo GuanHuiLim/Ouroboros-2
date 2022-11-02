@@ -481,7 +481,7 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Separator();
                 ImGui::Text("Animation");
                 ImGui::SameLine(textsize.x * 12);
-                //ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 256);
+                ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 256);
                 ImGui::Text("Speed");
                 ImGui::SameLine(textsize.x * 12);
                 ImGui::InputFloat("##speed", &id->anim_node->speed);
