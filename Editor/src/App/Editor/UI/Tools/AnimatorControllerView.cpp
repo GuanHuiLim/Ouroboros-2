@@ -230,20 +230,9 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
             {
                 if (it == temp.begin())
                 {
-                    if (!oo::Anim::Animation::name_to_ID.contains("empty animation 2"))
-                    {
-                        oo::Anim::Animation empty_anim_2{};
-                        empty_anim_2.name = "empty animation 2";
-
-                        oo::Anim::Animation::name_to_ID[empty_anim_2.name] = empty_anim_2.animation_ID;
-
-                        auto key = empty_anim_2.animation_ID;
-                        oo::Anim::Animation::animation_storage.emplace(key, std::move(empty_anim_2));
-                    }
-
                     oo::Anim::NodeInfo nodeinfo{
                         .name{ "New Node" },
-                        .animation_name{ "empty animation 2" },
+                        .animation_name{ oo::Anim::Animation::empty_animation_name },
                         .speed{ 1.f },
                         .position{0.f,0.f,0.f}
                     };
