@@ -345,7 +345,7 @@ namespace oo::Anim
 		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
 		Animation::name_to_ID[anim.name] = anim.animation_ID;
 		size_t key = anim.animation_ID;
-		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
+		auto [iter, result] = Animation::animation_storage.insert_or_assign(key, std::move(anim));
 		assert(result == true);
 		auto& createdAnim = Animation::animation_storage[key];
 
