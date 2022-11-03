@@ -686,7 +686,7 @@ namespace oGFX
 			bufferCopyRegion.bufferOffset = 0;
 			mipInformation.push_back(bufferCopyRegion);
 
-			this->format = VK_FORMAT_R8G8B8A8_SRGB;
+			this->format = VK_FORMAT_R8G8B8A8_UNORM;
 			return imgData.size() ? true : false;
 		}
 

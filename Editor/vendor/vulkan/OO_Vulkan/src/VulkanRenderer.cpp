@@ -64,6 +64,7 @@ Technology is prohibited.
 #include <chrono>
 #include <random>
 #include <filesystem>
+#include <sstream>
 
 VulkanRenderer* VulkanRenderer::s_vulkanRenderer{ nullptr };
 
@@ -1873,32 +1874,75 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//throw std::runtime_error("Failed to load model! (" + file + ")");
 	}
 
-	std::cout <<"[Loading] " << file << std::endl;
+	
 
+	std::cout <<"[Loading] " << file << std::endl;
+	//if (scene->mNumAnimations && scene->mAnimations[0]->mNumMorphMeshChannels)
+	//{
+	//	std::stringstream ss{"Morphs\n"};
+	//	for (size_t i = 0; i < scene->mAnimations[0]->mNumMorphMeshChannels; i++)
+	//	{
+	//		auto& morph = scene->mAnimations[0]->mMorphMeshChannels[i];
+	//		for (size_t y = 0; y < morph->mNumKeys; y++)
+	//		{
+	//			auto& key = morph->mKeys[y];
+	//			ss << "T:[" << key.mTime << "]" << std::endl;
+	//			for (size_t x = 0; x < key.mNumValuesAndWeights; x++)
+	//			{
+	//				ss << "\tV:[" << key.mValues[x] << "] W:[" << key.mWeights[x] << "]" << std::endl;
+	//			}
+	//		}
+	//		ss << std::endl;
+	//	}
+	//	std::cout << ss.str() << std::endl;
+	//}
+
+	size_t count{ 0 };
 	std::cout << "Meshes" << scene->mNumMeshes << std::endl;
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
-		std::cout << "\tMesh" << i << " " << scene->mMeshes[i]->mName.C_Str() << std::endl;
-			std::cout << "\t\tverts:"  << scene->mMeshes[i]->mNumVertices << std::endl;
-			std::cout << "\t\tbones:"  << scene->mMeshes[i]->mNumBones << std::endl;
-			//int sum = 0;
-			//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
-			//{
-			//	std::map<uint32_t, float> wts;
-			//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
-			//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
-			//	{
-			//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
-			//		assert(wts.find(weight.mVertexId) == wts.end());
-			//		wts[weight.mVertexId] = weight.mWeight;
-			//	}
-			//	for (auto [v,w] :wts)
-			//	{
-			//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
-			//	}
-			//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
-			//}
-			//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
+		auto& mesh = scene->mMeshes[i];
+		std::cout << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
+		std::cout << "\t\tverts:"  << mesh->mNumVertices << std::endl;
+		std::cout << "\t\tbones:"  << mesh->mNumBones << std::endl;
+		/*
+		for (size_t anim = 0; anim < mesh->mNumAnimMeshes; anim++)
+		{
+		std::stringstream ss;
+			ss << "Anim mesh_" << anim << ":" << mesh->mName.C_Str() << std::endl;
+			auto& animMesh = mesh->mAnimMeshes[anim];
+			if (animMesh->HasPositions())
+			{
+				for (size_t pos = 0; pos < animMesh->mNumVertices; pos++)
+				{
+					++count;
+					auto v = aiVector3D_to_glm(animMesh->mVertices[pos]);
+					ss << "\tPos:"<< pos<< "[" << v.x << "," << v.y << "," << v.z <<"]" << std::endl;
+				}
+			}
+		std::cout << ss.str() << std::endl;
+		}
+		std::cout << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
+		*/
+		
+		//int sum = 0;
+		//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
+		//{
+		//	std::map<uint32_t, float> wts;
+		//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
+		//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
+		//	{
+		//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
+		//		assert(wts.find(weight.mVertexId) == wts.end());
+		//		wts[weight.mVertexId] = weight.mWeight;
+		//	}
+		//	for (auto [v,w] :wts)
+		//	{
+		//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
+		//	}
+		//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
+		//}
+		//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
 
 #if 0
