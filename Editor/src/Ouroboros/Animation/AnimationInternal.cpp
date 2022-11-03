@@ -1691,6 +1691,16 @@ namespace oo::Anim::internal
 		}
 	}
 
+	void CalculateParameterIndexes(AnimationTree& tree)
+	{
+		uint index{ 0 };
+		for (auto& param : tree.parameters)
+		{
+			tree.paramIDtoIndexMap.insert_or_assign(param.paramID, index);
+			++index;
+		}
+	}
+
 	Animation* AddAnimationToStorage(std::string const& name)
 	{
 		Animation anim{};

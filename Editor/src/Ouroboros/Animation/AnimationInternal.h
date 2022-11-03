@@ -143,8 +143,12 @@ namespace oo::Anim::internal
 
 	void ReAssignReferences(AnimationTree& tree);
 
+	void CalculateParameterIndexes(AnimationTree& tree);
+
 	Animation* AddAnimationToStorage(std::string const& name);
 
 	//parameters
 	uint GetParameterIndex(IAnimationComponent& comp, std::string const& paramName);
+	
+
 }

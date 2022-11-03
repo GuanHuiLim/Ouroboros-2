@@ -100,7 +100,7 @@ namespace oo::Anim::internal
 			}
 		}
 		
-		
+		internal::CalculateParameterIndexes(tree);
 	}
 }
 namespace oo::Anim
