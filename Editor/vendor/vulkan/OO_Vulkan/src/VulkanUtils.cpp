@@ -866,7 +866,7 @@ void oGFX::vkutils::tools::insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, V
 
 size_t oGFX::vkutils::tools::UniformBufferPaddedSize(size_t size, size_t bufferMinAlignment)
 {
-	size_t result;
+	size_t result{ size };
 	if (bufferMinAlignment > 0) {
 		result = (size + bufferMinAlignment - 1) & ~(bufferMinAlignment - 1);
 	}

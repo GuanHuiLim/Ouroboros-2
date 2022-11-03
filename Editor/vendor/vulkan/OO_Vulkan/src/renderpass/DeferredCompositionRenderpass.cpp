@@ -101,7 +101,8 @@ void DeferredCompositionRenderpass::Draw()
 	range.size = sizeof(LightPC);
 	cmd.SetPushConstant(PSOLayoutDB::deferredLightingCompositionPSOLayout,range,&pc);
 
-	uint32_t dynamicOffset = vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), vr.m_device.properties.limits.minUniformBufferOffsetAlignment);
+	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
+		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::deferredLightingCompositionPSOLayout, 0,
 		std::array<VkDescriptorSet, 3>
 		{

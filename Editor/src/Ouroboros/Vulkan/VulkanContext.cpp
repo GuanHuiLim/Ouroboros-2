@@ -51,7 +51,7 @@ namespace oo
 
     VulkanContext::~VulkanContext()
     {
-        // do nothing for now
+        vr->DestroyWorld(&gw);
         //vkEngine.cleanup();
         delete vr;
 
@@ -175,6 +175,9 @@ namespace oo
             myPlane.submesh[0] = 1;
         }        
 
+        gw.numCameras = 1;
+        // TODO: BAD fix this..
+        vr->InitWorld(&gw);
         vr->SetWorld(&gw);
     }
 
