@@ -44,7 +44,7 @@ namespace oo
     {
         auto w = e->GetHeight();
         auto h = e->GetWidth();
-        auto ar = w / h;
+        auto ar = static_cast<float>(w) / h;
         m_editorCamera.SetAspectRatio(ar);
         m_runtimeCamera.SetAspectRatio(ar);
     }
