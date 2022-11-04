@@ -48,6 +48,8 @@ EditorViewport::~EditorViewport()
 void EditorViewport::Show()
 {
 
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
 	auto& camera_matrices = oo::EditorController::EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	
@@ -64,18 +66,15 @@ void EditorViewport::Show()
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
 
-	//auto contentWidth = vMax.x - vMin.x;
-	//auto contentHeight = vMax.y - vMin.y;
-
-	auto contentWidth = float(windowWidth);
-	auto contentHeight = float(windowHeight);
+	auto contentWidth = vpDim.x;
+	auto contentHeight = vpDim.y;
 	
+	//framebuffer
 	ImVec2 prevpos = ImGui::GetCursorPos();
-	ImGui::Image(0, ImGui::GetContentRegionAvail());
+	ImGui::Image(graphicsworld->imguiID[0], ImGui::GetContentRegionAvail());
 	ImGui::SetCursorPos(prevpos);
 
-
-	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
+	//ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
 
 
 
@@ -87,7 +86,6 @@ void EditorViewport::Show()
 		return;
 	}
 
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
 	if (gameobject == nullptr || scene->IsValid(*gameobject) == false)
 	{
