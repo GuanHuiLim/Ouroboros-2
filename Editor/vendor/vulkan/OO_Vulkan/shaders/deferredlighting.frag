@@ -31,48 +31,51 @@ layout( push_constant ) uniform pc
 vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular)
 {
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);
-	vec3 N = normal;
+	vec3 N = normalize(normal);
 	float alpha = roughness;
 	vec3 Kd = albedo;
 	vec3 Ks = vec3(specular);
 	
 	// Vector to light
 	vec3 L = Lights_SSBO[lightIndex].position.xyz - fragPos;
+
 	// Distance from light to fragment position
 	float dist = length(L);
-	
 	
 	// Viewer to fragment
 	vec3 V = uboFrameContext.cameraPosition.xyz - fragPos;
 	
-	//if(dist < ubo.lights[lightIndex].radius)
+	//if(dist < Lights_SSBO[lightIndex].radius.x)
 	{
-	
+     // Light to fragment
+		L = normalize(L);	
 		V = normalize(V);
-		
-		// Light to fragment
-		L = normalize(L);
 		
 		vec3 H = normalize(L+V);
 	
-		// Attenuation
-		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);
+	    float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
+		float r2 = Lights_SSBO[lightIndex].radius.x;
+
+    		// Attenuation
+		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);		 
 	
 		// Diffuse part
-		vec3 N = normalize(normal);
 		float NdotL = max(0.0, dot(N, L));
 		vec3 diff = Lights_SSBO[lightIndex].color.xyz * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
-	
+
+
 		// Specular part
 		// Specular map values are stored in alpha of albedo mrt
 		//vec3 R = -reflect(L, N);
 		//float RdotV = max(0.0, dot(R, V));
 		//vec3 spec = ubo.lights[lightIndex].color.xyz * specular * pow(RdotV, 16.0) * atten;
 	
-		result = diff;// + spec;	
+		//result = diff;// + spec;	
+		result = diff;
 	}
 
 	return result;
+//	return fragPos;
 }
 
 uint DecodeFlags(in float value)

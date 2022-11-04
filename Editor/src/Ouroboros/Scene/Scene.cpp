@@ -80,7 +80,10 @@ namespace oo
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
             //rendering system initialization
+            // temporarily initialize number of cameras to 1
+            m_graphicsWorld->numCameras = 1;
             m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
+            Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
         }
 
         PRINT(m_name);
@@ -209,6 +212,10 @@ namespace oo
 
         GetWorld().Get_System<oo::RendererSystem>()->SaveEditorCamera();
         EndOfFrameUpdate();
+
+        // kill the graphics world
+        Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
+
         m_lookupTable.clear();
         m_gameObjects.clear();
         m_rootGo.reset();
