@@ -5,6 +5,7 @@
 #include <imgui/misc/cpp/imgui_stdlib.h>
 #include "App/Editor/Utility/Windows_Utill.h"
 #include "Ouroboros/EventSystem/EventManager.h"
+#include "App/Editor/Networking/PacketUtils.h"
 ChatSystem::ChatSystem()
 	:client{SLNet::RakPeerInterface::GetInstance()},
 	clientID{ SLNet::UNASSIGNED_SYSTEM_ADDRESS }
@@ -25,8 +26,10 @@ void ChatSystem::Show()
 {
 	if (connected == false)
 	{
+		ImGui::Begin("Live Share",0);
 		ImGui::InputText("IP", &ip);
 		ImGui::InputText("Port", &serverPort);
+		ImGui::InputText("User Name", PacketUtilts::s_personalHeader.name, 20);
 		if (ImGui::Button("Connect"))
 		{
 			if ((ip.empty() | serverPort.empty()) == false)
@@ -49,13 +52,14 @@ void ChatSystem::Show()
 				m_messages.emplace_back(client->GetGuidFromSystemAddress(SLNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
 			}
 		}
+		ImGui::End();
 	}
 	else
 	{
 		for (p = client->Receive(); p; client->DeallocatePacket(p), p = client->Receive())
 		{
 			unsigned char packetIdentifier = GetPacketIdentifier(p);
-			MessageTypes(packetIdentifier, p->data);
+			MessageTypes(packetIdentifier, p);
 		}
 	}
 	if (m_messages.empty() == false)
@@ -67,11 +71,12 @@ void ChatSystem::Show()
 
 void ChatSystem::PrepareMessageSend(NetworkingSendEvent* e)
 {
-	std::string msg;
-	msg = e->type;
-	LOG_CORE_INFO(msg);
-	msg += e->data;
-	m_messages.push_back(msg);
+	if (connected == true)
+	{
+		PacketUtilts::s_personalHeader.packetType = e->type;
+		PacketUtilts::PackHeaderIntoPacket(e->data);
+		m_messages.push_back(std::move(e->data));
+	}
 }
 
 void ChatSystem::SendMsg(const std::string& msg)
@@ -103,7 +108,7 @@ void ChatSystem::ScrollToBottom()
 	}
 }
 
-void ChatSystem::MessageTypes(unsigned char id, unsigned char* data)
+void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 {
 	switch (id)
 	{
@@ -114,10 +119,12 @@ void ChatSystem::MessageTypes(unsigned char id, unsigned char* data)
 		m_messages.emplace_back(temp);
 		break;
 	}
-	case '2':
+	case 100:
 	{
-		std::string temp = reinterpret_cast<char*>((data + 1));
-		NetworkingReceivedEvent e(2, temp);
+		PacketHeader header;
+		std::string data(reinterpret_cast<char*>(pk->data),pk->length);
+		PacketUtilts::ProcessHeader(header,data);
+		NetworkingReceivedEvent e(std::move(header), std::move(data));
 		oo::EventManager::Broadcast(&e);
 	}
 	};

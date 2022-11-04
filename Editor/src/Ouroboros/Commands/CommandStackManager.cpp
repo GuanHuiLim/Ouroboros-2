@@ -18,10 +18,27 @@ void oo::CommandStackManager::InitEvents()
 		}
 	);
 	EventManager::Subscribe<NetworkingReceivedEvent>([](NetworkingReceivedEvent* e) {
-			
-		auto* dc = new Delete_ActionCommand(e->data);
-		dc->Redo();
-		CommandStackManager::AddCommand(dc);
+
+		switch (CommandPacketType(e->header.packetType))
+		{
+		case CommandPacketType::ActionObject:break;
+		case CommandPacketType::DeleteObject:
+		{
+			auto* dc = new Delete_ActionCommand(e->header, e->data);
+			CommandStackManager::AddCommand(dc);
+		}break;
+		case CommandPacketType::CreateObject:
+		{
+			auto* dc = new Create_ActionCommand(e->header, e->data);
+			CommandStackManager::AddCommand(dc);
+		}break;
+		case CommandPacketType::ReorderObject:break;
+		case CommandPacketType::AddComponentObject:break;
+		case CommandPacketType::RemoveComponentObject:break;
+		case CommandPacketType::ActionScript:break;
+		case CommandPacketType::AddScript:break;
+		case CommandPacketType::RemoveScript:break;
+		}
 		});
 }
 void oo::CommandStackManager::UndoCommand()

@@ -1,19 +1,20 @@
 #pragma once
 #include "ActionCommand.h"
 #include "Ouroboros/ECS/GameObject.h"
-
+#include "App/Editor/Networking/PacketUtils.h"
 namespace oo
 {
 	class Delete_ActionCommand:public ActionCommand
 	{
 	public:
-		Delete_ActionCommand(std::string& data);
 		Delete_ActionCommand(std::shared_ptr<oo::GameObject> deletedObj);
 		~Delete_ActionCommand();
 
 		void Undo()override;
 		void Redo()override;
+
 		std::string GetData();
+		Delete_ActionCommand(const PacketHeader& header,std::string& data);
 		
 	private:
 		oo::UUID parentID;
@@ -29,6 +30,8 @@ namespace oo
 
 		void Undo()override;
 		void Redo()override;
+		std::string GetData();
+		Create_ActionCommand(const PacketHeader& header,const std::string& _data);
 	private:
 		oo::UUID parentID;
 		oo::UUID object;

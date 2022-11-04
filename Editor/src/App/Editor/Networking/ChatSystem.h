@@ -18,7 +18,7 @@ public:
 private:
 	void AddMessage(std::string&& str);
 	void ScrollToBottom();
-	void MessageTypes(unsigned char id , unsigned char* data);
+	void MessageTypes(unsigned char id , SLNet::Packet* pk);
 private:
 	SLNet::RakNetStatistics* rss = 0;
 	SLNet::RakPeerInterface* client = 0;
