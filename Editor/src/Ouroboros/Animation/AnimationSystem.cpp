@@ -460,6 +460,6 @@ namespace oo::Anim
 	}
 	AnimationTree* AnimationSystem::CreateAnimationTree(std::string const& name)
 	{
-		return AnimationTree::Create("Test Animation Tree");
+		return AnimationTree::Create(name);
 	}
 }
