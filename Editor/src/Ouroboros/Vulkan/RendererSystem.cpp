@@ -39,7 +39,7 @@ namespace oo
         Camera camera;
         camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         camera.movementSpeed = 5.0f;
-        camera.SetPosition({ 0, 1, 0 });
+        camera.SetPosition({ 0, 8, 8 });
         camera.Rotate({ 45, 180, 0 });
         return camera;
     }();

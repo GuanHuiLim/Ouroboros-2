@@ -61,7 +61,7 @@ namespace oo
 #endif
     
     private:
-        SCENE_STATE m_activeState = SCENE_STATE::RUNNING;
+        SCENE_STATE m_activeState = SCENE_STATE::EDITING;
     };
 
 }

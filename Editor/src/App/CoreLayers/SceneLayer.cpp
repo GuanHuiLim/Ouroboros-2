@@ -30,6 +30,8 @@ namespace oo
         , m_runtimeController{ m_sceneManager }
 #ifdef OO_EDITOR
         , m_editorController{ m_sceneManager, m_runtimeController, m_activeState }
+#elif OO_EXECUTABLE
+        , m_activeState { SCENE_STATE::RUNNING }
 #endif
         , Layer("Scene Management Layer")
     {
