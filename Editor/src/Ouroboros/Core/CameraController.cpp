@@ -13,6 +13,22 @@ void CameraController::Update(float dt, bool update_controls)
     if (update_controls)
     {
         // Poll input states
+
+        const bool increase_move_speed = oo::input::IsKeyPressed(KEY_PLUS);
+        const bool decrease_move_speed = oo::input::IsKeyPressed(KEY_MINUS);
+        
+        // Camera Sensitivity
+        if (increase_move_speed)
+        {
+            m_Camera->movementSpeed += m_sensitivityRate;
+            LOG_TRACE("Increased camera sensitivity");
+        }
+        else if (decrease_move_speed && m_Camera->movementSpeed > m_sensitivityRate)
+        {
+            m_Camera->movementSpeed -= m_sensitivityRate;
+            LOG_TRACE("Decreased camera sensitivity");
+        }
+
         const bool strafe_right = oo::input::IsKeyHeld(KEY_D) && oo::input::IsMouseButtonHeld(MOUSE_BUTTON_RIGHT);
         const bool strafe_left = oo::input::IsKeyHeld(KEY_A) && oo::input::IsMouseButtonHeld(MOUSE_BUTTON_RIGHT);
         const bool forward = oo::input::IsKeyHeld(KEY_W) && oo::input::IsMouseButtonHeld(MOUSE_BUTTON_RIGHT);

@@ -30,6 +30,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Input.h"
 
 #include "Ouroboros/Scene/EditorController.h"
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 namespace oo
 {
@@ -48,8 +49,18 @@ namespace oo
         auto w = e->GetHeight();
         auto h = e->GetWidth();
         auto ar = static_cast<float>(w) / h;
-        EditorController::EditorCamera.SetAspectRatio(ar);
+        //EditorController::EditorCamera.SetAspectRatio(ar);
         m_runtimeCamera.SetAspectRatio(ar);
+    }
+
+    void RendererSystem::OnEditorViewportResize(EditorViewportResizeEvent* e)
+    {
+        auto w = e->X;
+        auto h = e->Y;
+        auto ar = static_cast<float>(w) / h;
+        EditorController::EditorCamera.SetAspectRatio(ar);
+        m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
+        //m_runtimeCamera.SetAspectRatio(ar);
     }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
@@ -93,19 +104,18 @@ namespace oo
 
     void RendererSystem::Init()
     {
-        // setup cameras
-        auto [width, height] = Application::Get().GetWindow().GetSize();
         // set camera
         oo::GetCurrentSceneStateEvent e;
         oo::EventManager::Broadcast(&e);
         switch (e.state)
         {
         case oo::SCENE_STATE::EDITING:
-            EditorController::EditorCamera.SetAspectRatio((float)width / (float)height);
+            EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
             m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
             break;
         case oo::SCENE_STATE::RUNNING:
-
+            // setup cameras
+            auto [width, height] = Application::Get().GetWindow().GetSize();
             m_runtimeCamera = [&]()
             {
                 Camera camera;
@@ -213,14 +223,15 @@ namespace oo
     {
         m_cc.Update(oo::timer::dt());
         EditorController::EditorCamera = *m_cc.GetCamera();
-        auto pos = EditorController::EditorCamera.m_position; // m_cc.GetCamera()->m_position;
-        LOG_TRACE("Editor Camera Position {0} {1} {2}", pos.x, pos.y, pos.z);
+        //auto pos = EditorController::EditorCamera.m_position; // m_cc.GetCamera()->m_position;
+        //LOG_TRACE("Editor Camera Position {0} {1} {2}", pos.x, pos.y, pos.z);
     }
 
     // additional function that runs during runtime scene only.
     void RendererSystem::UpdateCamerasRuntime()
     {
         static bool using_editor_camera = false;
+#ifdef OO_EDITOR
         if (oo::input::IsKeyPressed(KEY_F8))
         {
             using_editor_camera = !using_editor_camera;
@@ -236,7 +247,7 @@ namespace oo
             }
             m_cc.SetCamera(&m_graphicsWorld->cameras[0]);
         }
-
+#endif
         if (!using_editor_camera)
         {
             // TODO: debug draw the camera's view in editormode

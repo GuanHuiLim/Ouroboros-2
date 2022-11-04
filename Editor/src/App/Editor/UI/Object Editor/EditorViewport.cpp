@@ -35,6 +35,10 @@ Technology is prohibited.
 #include "Ouroboros/Core/Input.h"
 
 #include "Ouroboros/Scene/EditorController.h"
+
+#include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
 EditorViewport::EditorViewport()
 {
 	ImGuizmo::AllowAxisFlip(false);
@@ -69,6 +73,18 @@ void EditorViewport::Show()
 	auto contentWidth = vpDim.x;
 	auto contentHeight = vpDim.y;
 	
+	if (m_viewportWidth != contentWidth || m_viewportHeight != contentHeight)
+	{
+		//resize viewport
+		m_viewportWidth = contentWidth;
+		m_viewportHeight = contentHeight;
+
+		EditorViewportResizeEvent e;
+		e.X = m_viewportWidth;
+		e.Y = m_viewportHeight;
+		oo::EventManager::Broadcast<EditorViewportResizeEvent>(&e);
+	}
+
 	//framebuffer
 	ImVec2 prevpos = ImGui::GetCursorPos();
 	ImGui::Image(graphicsworld->imguiID[0], ImGui::GetContentRegionAvail());
@@ -81,7 +97,7 @@ void EditorViewport::Show()
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
 
-	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
+	if (m_viewportWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
 	{
 		return;
 	}
@@ -99,19 +115,19 @@ void EditorViewport::Show()
 	projection = glm::value_ptr(camera_matrices.perspective);
 
 	//Debug Red box
-	//ImGui::GetForegroundDrawList()->AddRect(vMin, {vMin.x + contentWidth, vMin.y+contentHeight}, ImU32(0xFF0000FF));
+	//ImGui::GetForegroundDrawList()->AddRect(vMin, {vMin.x + m_viewportWidth, vMin.y + m_viewportHeight}, ImU32(0xFF0000FF));
 
-	ImGui::SetNextWindowSize({ contentWidth,contentHeight });
+	ImGui::SetNextWindowSize({ m_viewportWidth, m_viewportHeight });
 	ImGui::SetNextWindowPos(vMin);
 
 	//window hole should be same size as content area
-	ImGui::SetWindowHitTestHole(ImGui::GetCurrentWindow(), vMin, { contentWidth,contentHeight });
+	ImGui::SetWindowHitTestHole(ImGui::GetCurrentWindow(), vMin, { m_viewportWidth, m_viewportHeight });
 
 	// IMPORTANT: we now NEED to call this before begin frame
-	ImGuizmo::SetRect(vMin.x, vMin.y, contentWidth, contentHeight);
+	ImGuizmo::SetRect(vMin.x, vMin.y, m_viewportWidth, m_viewportHeight);
 
 	//keep a decent scaling for the guizmo
-	float gizmoSize = windowWidth / contentWidth;
+	float gizmoSize = windowWidth / m_viewportWidth;
 
 
 

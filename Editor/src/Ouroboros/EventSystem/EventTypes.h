@@ -19,6 +19,13 @@ Technology is prohibited.
 
 #include "Ouroboros/EventSystem/Event.h"
 #include "App/SceneHeader.h"
+
+//Editor events
+struct EditorViewportResizeEvent : public oo::Event
+{
+    float X, Y;
+};
+
 namespace oo
 {
     //forward declare
@@ -38,4 +45,6 @@ namespace oo
     {
         SCENE_STATE state = SCENE_STATE::EDITING;
     };
+
+
 }
