@@ -61,7 +61,7 @@ namespace oo
         std::weak_ptr<RuntimeScene> GetRuntimeScene() const;
         
         // we can put static editor Camera publicly accesible here.
-        inline static Camera EditorCamera;
+        static Camera EditorCamera;
 
     private:
         void OnLoadProjectEvent(LoadProjectEvent* loadProjEvent);
