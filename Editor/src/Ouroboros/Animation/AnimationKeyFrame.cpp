@@ -34,8 +34,6 @@ namespace oo::Anim::internal
 					writer.Key(prop.get_name().data(), static_cast<rapidjson::SizeType>(prop.get_name().size()));
 					
 					rttr::variant val{ prop.get_value(obj) };
-					std::string name = val.get_type().get_name().data();
-					std::string quat_name = rttr::type::get<glm::quat>().get_name().data();
 					internal::serializeDataFn_map.at(prop.get_type().get_id())(writer, val);
 				}
 			}		

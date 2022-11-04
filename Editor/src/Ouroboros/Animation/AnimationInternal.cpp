@@ -93,7 +93,7 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		auto& prop = val.get_value<rttr::property>();
 		writer.StartObject();
 		writer.Key("Type", static_cast<rapidjson::SizeType>(std::string("Type").size()));
-		rttr::variant type = prop.get_type();
+		rttr::variant type = prop.get_declaring_type();
 		oo::Anim::internal::serializeDataFn_map.at(rttr::type::get<rttr::type>().get_id())(writer, type);
 
 		writer.Key("Property", static_cast<rapidjson::SizeType>(std::string("Property").size()));
@@ -301,7 +301,7 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 	{
 		writer.StartObject();
 		writer.Key("Type Hash", static_cast<rapidjson::SizeType>(std::string("Type Hash").size()));
-		writer.Uint64(static_cast<uint64_t>(rttrType_to_hash[rttr::type::get<glm::vec3>().get_id()]));
+		writer.Uint64(static_cast<uint64_t>(rttrType_to_hash[rttr::type::get<glm::quat>().get_id()]));
 		writer.Key("Value", static_cast<rapidjson::SizeType>(std::string("Value").size()));
 		internal::serializeDataFn_map.at(val.get_type().get_id())(writer, val);
 		writer.EndObject();
@@ -362,8 +362,8 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 		= [](rapidjson::Value& value)
 	{
 		auto obj = value.GetObj(); 
-		auto var = oo::Anim::internal::loadDataFn_map.at(rttr::type::get<rttr::type>().get_id())(obj.FindMember("Type")->value).get_value<rttr::type>();
-		auto prop = var.get_property(obj.FindMember("Property")->value.GetString());
+		auto type = oo::Anim::internal::loadDataFn_map.at(rttr::type::get<rttr::type>().get_id())(obj.FindMember("Type")->value).get_value<rttr::type>();
+		auto prop = type.get_property(obj.FindMember("Property")->value.GetString());
 		return rttr::variant{ prop };
 	};
 	/*------------------------
@@ -411,8 +411,9 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 	map[rttr::type::get<oo::Anim::Timeline::TYPE>().get_id()]
 		= [](rapidjson::Value& value)
 	{
-		auto enum_value = rttr::type::get <oo::Anim::Timeline::TYPE>().get_enumeration().name_to_value(value.GetString());
-		return rttr::variant{ enum_value };
+		auto temp = std::string{ value.GetString() };
+		auto enum_variant = rttr::type::get <oo::Anim::Timeline::TYPE>().get_enumeration().name_to_value(value.GetString());
+		return rttr::variant{ enum_variant };
 	};
 
 	map[rttr::type::get<oo::Anim::Timeline::DATATYPE>().get_id()]
