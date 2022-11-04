@@ -48,7 +48,7 @@ void MeshHierarchy::OpenFileCallBack(OpenFileEvent* e)
 	{
 		ImGuiManager::GetItem("Mesh Hierarchy").m_enabled = true;
 		auto relativepath = std::filesystem::relative(e->m_filepath, Project::GetAssetFolder());
-		auto asset = Project::GetAssetManager()->LoadPath(relativepath);
+		auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
 		m_current_id = asset.GetID();
 		//asset = Project::GetAssetManager()->Get(m_current_id);
 		//auto path = asset.GetFilePath();

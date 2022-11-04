@@ -45,15 +45,16 @@ namespace oo
         public:
             Settings() : negativeButton{ InputAxis::INPUTCODE_INVALID }, positiveButton{ InputAxis::INPUTCODE_INVALID },
                 negativeAltButton{ InputAxis::INPUTCODE_INVALID }, positiveAltButton{ InputAxis::INPUTCODE_INVALID },
-                pressesRequired{ 0 }, maxGapTime{ 0 }, holdDurationRequired{ 0 }
+                pressesRequired{ 0 }, maxGapTime{ 0 }, holdDurationRequired{ 0 }, invert{ false }, onPressOnly{ false }
             {
             }
 
             Settings(InputCode negativeButton, InputCode positiveButton, InputCode negativeAltButton, InputCode positiveAltButton,
-                unsigned pressesRequired, float maxGapTime, float holdDurationRequired)
+                unsigned pressesRequired, float maxGapTime, float holdDurationRequired, bool invert, bool onPressOnly)
                 : negativeButton{ negativeButton }, positiveButton{ positiveButton },
                 negativeAltButton{ negativeAltButton }, positiveAltButton{ positiveAltButton },
-                pressesRequired{ pressesRequired }, maxGapTime{ maxGapTime }, holdDurationRequired{ holdDurationRequired }
+                pressesRequired{ pressesRequired }, maxGapTime{ maxGapTime }, holdDurationRequired{ holdDurationRequired },
+                invert{ invert }, onPressOnly{ onPressOnly }
             {
             }
 
@@ -65,6 +66,8 @@ namespace oo
             unsigned pressesRequired;
             float maxGapTime;
             float holdDurationRequired;
+            bool invert;
+            bool onPressOnly;
 
         public:
             /*********************************************************************************//*!

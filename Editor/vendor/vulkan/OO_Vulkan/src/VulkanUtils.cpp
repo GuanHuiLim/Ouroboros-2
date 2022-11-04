@@ -686,7 +686,7 @@ namespace oGFX
 			bufferCopyRegion.bufferOffset = 0;
 			mipInformation.push_back(bufferCopyRegion);
 
-			this->format = VK_FORMAT_R8G8B8A8_SRGB;
+			this->format = VK_FORMAT_R8G8B8A8_UNORM;
 			return imgData.size() ? true : false;
 		}
 
@@ -841,6 +841,36 @@ void oGFX::vkutils::tools::setImageLayout(VkCommandBuffer cmdbuffer, VkImage ima
 	subresourceRange.levelCount = 1;
 	subresourceRange.layerCount = 1;
 	setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
+}
+
+void oGFX::vkutils::tools::insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
+{	
+	VkImageMemoryBarrier imageMemoryBarrier = oGFX::vkutils::inits::imageMemoryBarrier();
+	imageMemoryBarrier.srcAccessMask = srcAccessMask;
+	imageMemoryBarrier.dstAccessMask = dstAccessMask;
+	imageMemoryBarrier.oldLayout = oldImageLayout;
+	imageMemoryBarrier.newLayout = newImageLayout;
+	imageMemoryBarrier.image = image;
+	imageMemoryBarrier.subresourceRange = subresourceRange;
+
+	vkCmdPipelineBarrier(
+		cmdbuffer,
+		srcStageMask,
+		dstStageMask,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &imageMemoryBarrier);
+
+}
+
+size_t oGFX::vkutils::tools::UniformBufferPaddedSize(size_t size, size_t bufferMinAlignment)
+{
+	size_t result{ size };
+	if (bufferMinAlignment > 0) {
+		result = (size + bufferMinAlignment - 1) & ~(bufferMinAlignment - 1);
+	}
+	return result;
 }
 
 std::string oGFX::vkutils::tools::VkResultString(VkResult value)

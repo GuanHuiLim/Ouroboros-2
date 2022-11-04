@@ -49,6 +49,7 @@ Technology is prohibited.
 #endif
 
 #include "GraphicsBatch.h"
+#include "FramebufferBuilder.h"
 #include "DelayedDeleter.h"
 
 #include "IcoSphereCreator.h"
@@ -63,6 +64,7 @@ Technology is prohibited.
 #include <chrono>
 #include <random>
 #include <filesystem>
+#include <sstream>
 
 VulkanRenderer* VulkanRenderer::s_vulkanRenderer{ nullptr };
 
@@ -77,7 +79,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT && !(messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT))
 	{
 		int x;
-		std::cerr << pCallbackData->pMessage << std::endl;
+		std::cerr << pCallbackData->pMessage << std::endl<< std::endl;
 		//assert(false); temp comment out
 		x= 5; // for breakpoint
 	}
@@ -343,6 +345,7 @@ void VulkanRenderer::CreateDefaultRenderpass()
 {
 	if (renderPass_default)
 	{
+		return;
 		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
 		renderPass_default = VK_NULL_HANDLE;
 	}
@@ -481,12 +484,13 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 		VkDescriptorBufferInfo vpBufferInfo{};
 		vpBufferInfo.buffer = vpUniformBuffer[i];	// buffer to get data from
 		vpBufferInfo.offset = 0;					// position of start of data
-		vpBufferInfo.range = sizeof(CB::FrameContextUBO);			// size of data
+		vpBufferInfo.range = sizeof(CB::FrameContextUBO);// size of data
 
 		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
 			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(descriptorSets_uniform[i], SetLayoutDB::FrameUniform);
 	}
+	
 	//UNIFORM VALUES DESCRIPTOR SET LAYOUT
 	// UboViewProejction binding info
 	//VkDescriptorSetLayoutBinding vpLayoutBinding = 
@@ -527,6 +531,128 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 	{
 		throw std::runtime_error("Failed to create a descriptor set layout!");
 	}
+}
+
+void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src, vkutils::Texture2D dst)
+{
+	bool supportsBlit = true;
+
+	VkFormatProperties formatProps;
+
+	// Check if the device supports blitting from optimal images (the swapchain images are in optimal format)
+	vkGetPhysicalDeviceFormatProperties(m_device.physicalDevice, src.format, &formatProps);
+	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+		//std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+		supportsBlit = false;
+	}
+
+	// Check if the device supports blitting to linear images
+	vkGetPhysicalDeviceFormatProperties(m_device.physicalDevice, dst.format, &formatProps);
+	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+		//std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+		supportsBlit = false;
+	}
+
+	// Source for the copy is the last rendered swapchain image
+
+	// Transition destination image to transfer destination layout
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmd,
+		dst.image,
+		0,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmd,
+		src.image,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, // DO PROPER RESOURCE TRACKING
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// If source and destination support blit we'll blit as this also does automatic format conversion (e.g. from BGR to RGB)
+	if (supportsBlit)
+	{
+		// Define the region to blit (we will blit the whole swapchain image)
+		VkOffset3D srcBlitSize;
+		srcBlitSize.x = src.width;
+		srcBlitSize.y = src.height;
+		srcBlitSize.z = 1;
+
+		VkOffset3D dstBlitSize;
+		dstBlitSize.x = dst.width;
+		dstBlitSize.y = dst.height;
+		dstBlitSize.z = 1;
+		VkImageBlit imageBlitRegion{};
+		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.srcSubresource.layerCount = 1;
+		imageBlitRegion.srcOffsets[1] = srcBlitSize;
+		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.dstSubresource.layerCount = 1;
+		imageBlitRegion.dstOffsets[1] = dstBlitSize;
+
+		// Issue the blit command
+		vkCmdBlitImage(
+			cmd,
+			src.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dst.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageBlitRegion,
+			VK_FILTER_NEAREST);
+	}
+	else
+	{
+		// Otherwise use image copy (requires us to manually flip components)
+		VkImageCopy imageCopyRegion{};
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = dst.width;
+		imageCopyRegion.extent.height = dst.height;
+		imageCopyRegion.extent.depth = 1;
+
+		// Issue the copy command
+		vkCmdCopyImage(
+			cmd,
+			src.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dst.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageCopyRegion);
+	}
+
+	// Transition destination image to general layout, which is the required layout for mapping the image memory later on
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmd,
+		dst.image,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// Transition back the swap chain image after the blit is done
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmd,
+		src.image,
+		VK_ACCESS_TRANSFER_READ_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
 }
 
 void VulkanRenderer::CreateDefaultPSOLayouts()
@@ -642,6 +768,60 @@ void VulkanRenderer::SetWorld(GraphicsWorld* world)
 	// force a sync here
 	vkDeviceWaitIdle(m_device.logicalDevice);
 	currWorld = world;
+
+	if (currWorld)
+	{
+		
+	}
+
+}
+
+void VulkanRenderer::InitWorld(GraphicsWorld* world)
+{
+	assert(world && "dont pass nullptr");
+
+	for (uint32_t x = 0; x < world->numCameras; ++x)
+	{
+		auto& image = world->renderTargets[x];
+		if (image.image == VK_NULL_HANDLE)
+		{
+			image.name = "GW_"+std::to_string(x)+":COL";
+			image.forFrameBuffer(&m_device, m_swapchain.swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+				m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
+			image.name = "WorldColourTarget";			
+			world->imguiID[x] = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, image.imageLayout);
+		}
+		auto& depth = world->depthTargets[x];
+		if (depth.image == VK_NULL_HANDLE)
+		{
+			depth.name = "GW_"+std::to_string(x)+":DEPTH";
+			depth.forFrameBuffer(&m_device, G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+				m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
+			depth.name = "WorldDepthTarget";			
+			//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
+		}
+	}	
+	world->initialized = true;
+}
+
+void VulkanRenderer::DestroyWorld(GraphicsWorld* world)
+{
+	assert(world && "dont pass nullptr");
+	vkDeviceWaitIdle(m_device.logicalDevice);
+	for (uint32_t x = 0; x < world->numCameras; ++x)
+	{
+		auto& image = world->renderTargets[x];
+		if (image.image)
+		{
+			image.destroy();
+		}
+		auto& depth = world->depthTargets[x];
+		if (depth.image)
+		{
+			depth.destroy();	
+		}
+	}	
+	world->initialized = false;
 }
 
 void VulkanRenderer::CreateLightingBuffers()
@@ -662,6 +842,8 @@ void VulkanRenderer::UploadLights()
 {
 	if (currWorld == nullptr)
 		return;
+
+	assert(currWorld->initialized && "World not initialized - did you call VulkanRenderer::InitWorld?");
 
 	PROFILE_SCOPED();
 
@@ -739,18 +921,11 @@ void VulkanRenderer::CreateSynchronisation()
 void VulkanRenderer::CreateUniformBuffers()
 {	
 	// ViewProjection buffer size
-
-	VkPhysicalDeviceProperties props;
-	vkGetPhysicalDeviceProperties(m_device.physicalDevice,&props);
-	size_t minUboAlignment = props.limits.minUniformBufferOffsetAlignment;
 	//auto dynamicAlignment = sizeof(glm::mat4);
-	uboDynamicAlignment = sizeof(CB::FrameContextUBO);
-	if (minUboAlignment > 0) {
-		uboDynamicAlignment = (uboDynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
-	}
-
 	numCameras = 2;
-	VkDeviceSize vpBufferSize = uboDynamicAlignment * numCameras;
+	uboDynamicAlignment = oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO),m_device.properties.limits.minUniformBufferOffsetAlignment);
+	
+	VkDeviceSize vpBufferSize = numCameras*uboDynamicAlignment;
 
 	//// LightData bufffer size
 	//VkDeviceSize modelBufferSize = modelUniformAlignment * MAX_OBJECTS;
@@ -764,7 +939,6 @@ void VulkanRenderer::CreateUniformBuffers()
 	//create uniform buffers
 	for (size_t i = 0; i < m_swapchain.swapChainImages.size(); i++)
 	{
-		// TODO: Disable host coherent bit and manuall flush buffers for application
 		oGFX::CreateBuffer(m_device.physicalDevice, m_device.logicalDevice, vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
 			//| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -994,10 +1168,12 @@ void VulkanRenderer::DebugGUIcalls()
 {
 	if(ImGui::Begin("img"))
 	{
+		if (currWorld) {
 		const char* views[]  = { "Lookat", "FirstPerson" };
-		ImGui::ListBox("Camera View", reinterpret_cast<int*>(&camera.m_CameraMovementType), views, 2);
+		ImGui::ListBox("Camera View", reinterpret_cast<int*>(&currWorld->cameras.front().m_CameraMovementType), views, 2);
 		auto sz = ImGui::GetContentRegionAvail();
 		ImGui::Image(myImg, { sz.x,sz.y });
+		}
 	}
 	ImGui::End();
 	
@@ -1413,12 +1589,12 @@ bool VulkanRenderer::PrepareFrame()
 
 	DelayedDeleter::get()->Update();
 
+	
 	return true;
 }
 
 void VulkanRenderer::BeginDraw()
 {
-
 	PROFILE_SCOPED();
 
 	//wait for given fence to signal from last draw before continuing
@@ -1437,8 +1613,36 @@ void VulkanRenderer::BeginDraw()
 
 		descAllocs[swapchainIdx].ResetPools();
 
-		batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
-		batches.GenerateBatches();
+		if (currWorld)
+		{
+			for (size_t x = 0; x < currWorld->numCameras; x++)
+			{
+				auto& image = currWorld->renderTargets[x];
+				VkDescriptorImageInfo desc_image[1] = {};
+				desc_image[0].sampler = image.sampler;
+				desc_image[0].imageView = image.view;
+				desc_image[0].imageLayout = image.imageLayout;
+				VkWriteDescriptorSet write_desc[1] = {};
+				write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
+				write_desc[0].descriptorCount = 1;
+				if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+				{
+					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				}
+				else
+				{
+					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				}
+				if (currWorld->imguiID[x])
+				{
+					write_desc[0].pImageInfo = desc_image;
+					vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
+				}				
+			}		
+			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
+			batches.GenerateBatches();
+		}
 
 		UpdateUniformBuffers();
 		UploadInstanceData();	
@@ -1451,13 +1655,18 @@ void VulkanRenderer::BeginDraw()
 			.BindBuffer(5, objectInformationBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 			.Build(descriptorSet_gpuscene,SetLayoutDB::gpuscene);
 
+		auto uniformMinAlignment = m_device.properties.limits.minUniformBufferOffsetAlignment;
+		auto paddedAlignment = oGFX::vkutils::tools::UniformBufferPaddedSize(2*sizeof(CB::FrameContextUBO), uniformMinAlignment);
+		
 		VkDescriptorBufferInfo vpBufferInfo{};
 		vpBufferInfo.buffer = vpUniformBuffer[swapchainIdx];	// buffer to get data from
-		vpBufferInfo.offset = 0;									// position of start of data
-		vpBufferInfo.range = sizeof(CB::FrameContextUBO);			// size of data
+		vpBufferInfo.offset = 0;				// position of start of data
+		vpBufferInfo.range = sizeof(CB::FrameContextUBO);		// size of data
 		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
 			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(descriptorSets_uniform[swapchainIdx], SetLayoutDB::FrameUniform);
+	
+		
         
 		if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
         {
@@ -1496,19 +1705,46 @@ void VulkanRenderer::RenderFrame()
 		// Manually schedule the order of the render pass execution. (single threaded)
 		if(currWorld)
 		{
-			RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
-			//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
-			RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
-			//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
-			RenderPassDatabase::GetRenderPass<DeferredCompositionRenderpass>()->Draw();
-			//RenderPassDatabase::GetRenderPass<ForwardRenderpass>()->Draw();
-#if defined (ENABLE_DECAL_IMPLEMENTATION)
-			RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();
-#endif			
-			if (shouldRunDebugDraw)
-			{
-				RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->Draw();
+			renderIteration = 0;
+			for (size_t i = 0; i < currWorld->numCameras; i++)
+			{		
+				VkMemoryBarrier memoryBarrier{};
+				memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+				memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+				memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;	
+
+				vkCmdPipelineBarrier(commandBuffers[swapchainIdx],
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // dstStageMask
+					VK_DEPENDENCY_BY_REGION_BIT,		  // dependancy flag
+					0,                                    // memoryBarrierCount
+					nullptr,                       // pMemoryBarriers
+					0, NULL, 0, NULL
+				);
+
+				RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
+				//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
+				RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
+				//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
+				RenderPassDatabase::GetRenderPass<DeferredCompositionRenderpass>()->Draw();
+				//RenderPassDatabase::GetRenderPass<ForwardRenderpass>()->Draw();
+#if defined		(ENABLE_DECAL_IMPLEMENTATION)
+				RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();
+#endif				
+				if (shouldRunDebugDraw)
+				{
+					RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->Draw();
+				}
+
+				++renderIteration;
 			}
+			if (currWorld->numCameras > 1)
+			{
+				// TODO: Very bad pls fix
+				BlitFramebuffer(commandBuffers[swapchainIdx], currWorld->renderTargets[1], m_swapchain.swapChainImages[swapchainIdx]);
+			}
+			// only blit main framebuffer
+			BlitFramebuffer(commandBuffers[swapchainIdx], currWorld->renderTargets[0], m_swapchain.swapChainImages[swapchainIdx]);
 		}
     }
 }
@@ -1613,8 +1849,8 @@ bool VulkanRenderer::ResizeSwapchain()
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
 	// new model loader
-	
 	Assimp::Importer importer;
+	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
 	uint flags = 0;
 	flags |= aiProcess_Triangulate;
 	flags |= aiProcess_GenSmoothNormals;
@@ -1622,7 +1858,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	flags |= aiProcess_CalcTangentSpace;
 	flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
 	flags |= aiProcess_FlipUVs;
-	flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
+	//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 	const aiScene *scene = importer.ReadFile(file,flags
 		//  aiProcess_Triangulate                // Make sure we get triangles rather than nvert polygons
 		//| aiProcess_LimitBoneWeights           // 4 weights for skin model max
@@ -1644,32 +1880,75 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//throw std::runtime_error("Failed to load model! (" + file + ")");
 	}
 
-	std::cout <<"[Loading] " << file << std::endl;
+	
 
+	std::cout <<"[Loading] " << file << std::endl;
+	//if (scene->mNumAnimations && scene->mAnimations[0]->mNumMorphMeshChannels)
+	//{
+	//	std::stringstream ss{"Morphs\n"};
+	//	for (size_t i = 0; i < scene->mAnimations[0]->mNumMorphMeshChannels; i++)
+	//	{
+	//		auto& morph = scene->mAnimations[0]->mMorphMeshChannels[i];
+	//		for (size_t y = 0; y < morph->mNumKeys; y++)
+	//		{
+	//			auto& key = morph->mKeys[y];
+	//			ss << "T:[" << key.mTime << "]" << std::endl;
+	//			for (size_t x = 0; x < key.mNumValuesAndWeights; x++)
+	//			{
+	//				ss << "\tV:[" << key.mValues[x] << "] W:[" << key.mWeights[x] << "]" << std::endl;
+	//			}
+	//		}
+	//		ss << std::endl;
+	//	}
+	//	std::cout << ss.str() << std::endl;
+	//}
+
+	size_t count{ 0 };
 	std::cout << "Meshes" << scene->mNumMeshes << std::endl;
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
-		std::cout << "\tMesh" << i << " " << scene->mMeshes[i]->mName.C_Str() << std::endl;
-			std::cout << "\t\tverts:"  << scene->mMeshes[i]->mNumVertices << std::endl;
-			std::cout << "\t\tbones:"  << scene->mMeshes[i]->mNumBones << std::endl;
-			//int sum = 0;
-			//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
-			//{
-			//	std::map<uint32_t, float> wts;
-			//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
-			//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
-			//	{
-			//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
-			//		assert(wts.find(weight.mVertexId) == wts.end());
-			//		wts[weight.mVertexId] = weight.mWeight;
-			//	}
-			//	for (auto [v,w] :wts)
-			//	{
-			//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
-			//	}
-			//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
-			//}
-			//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
+		auto& mesh = scene->mMeshes[i];
+		std::cout << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
+		std::cout << "\t\tverts:"  << mesh->mNumVertices << std::endl;
+		std::cout << "\t\tbones:"  << mesh->mNumBones << std::endl;
+		/*
+		for (size_t anim = 0; anim < mesh->mNumAnimMeshes; anim++)
+		{
+		std::stringstream ss;
+			ss << "Anim mesh_" << anim << ":" << mesh->mName.C_Str() << std::endl;
+			auto& animMesh = mesh->mAnimMeshes[anim];
+			if (animMesh->HasPositions())
+			{
+				for (size_t pos = 0; pos < animMesh->mNumVertices; pos++)
+				{
+					++count;
+					auto v = aiVector3D_to_glm(animMesh->mVertices[pos]);
+					ss << "\tPos:"<< pos<< "[" << v.x << "," << v.y << "," << v.z <<"]" << std::endl;
+				}
+			}
+		std::cout << ss.str() << std::endl;
+		}
+		std::cout << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
+		*/
+		
+		//int sum = 0;
+		//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
+		//{
+		//	std::map<uint32_t, float> wts;
+		//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
+		//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
+		//	{
+		//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
+		//		assert(wts.find(weight.mVertexId) == wts.end());
+		//		wts[weight.mVertexId] = weight.mWeight;
+		//	}
+		//	for (auto [v,w] :wts)
+		//	{
+		//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
+		//	}
+		//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
+		//}
+		//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
 
 #if 0
@@ -1964,26 +2243,67 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 					break;
 				}
 			}
+#define NORMALIZE_BONE_WEIGHTS
 
 			// Check if the number of weights is >4, just in case, since we dont support
 			if (!success)
 			{
+				
+				
+				float sum;
+#ifdef NORMALIZE_BONE_WEIGHTS
+				uint32_t minBone = boneIndex;
+				float minW = weight;
+				for (size_t i = 0; i < 4; i++)
+				{
+					if (vertex.boneWeights[i] < minW)
+					{
+						std::swap(vertex.boneWeights[i], minW);
+						std::swap(vertex.boneIdx[i], minBone);
+					}
+				}
+				sum = 0.0f;
+				for (size_t i = 0; i < 4; i++)
+				{
+					sum += vertex.boneWeights[i];
+				}
+				for (size_t i = 0; i < 4; i++)
+				{
+					vertex.boneWeights[i]*= (1.0f/sum);
+				}
+				sum = 0.0f;
+				for (auto&[key,val] :  fileData.strToBone)
+				{
+					if (val == minBone)
+					{
+						std::cout << "Discarded weight: [" << key<<",\t"<< minW << "]" << std::endl;
+						break;
+					}
+				}
+				for (size_t i = 0; i < 4; i++)
+				{
+					sum += vertex.boneWeights[i];
+				}
+				//std::cout << "Final sum : [" << sum<< "]"<<std::endl;
+
+#else
 				//dump bone names
 				std::cout << "Dumping bones...\n";
-				std::cout << "Bone affected : " << currBone->mName.C_Str() << std::endl;
+				std::cout << "Bone affected : " << currBone->mName.C_Str() << ",\t" << weight<< std::endl;
 				for (size_t i = 0; i < 4; i++)
 				{
 					for (auto&[key,val] :  fileData.strToBone)
 					{
 						if (val == vertex.boneIdx[i])
 						{
-							std::cout << "Bone affected : " << key << std::endl;
+							std::cout << "Bone affected : " << key << ",\t"<<vertex.boneWeights[i] << std::endl;
 							break;
 						}
 					}
-				}
+				}				
 				// Vertex already has 4 bone weights assigned.
 				assert(false && "Bone weights >4 is not supported.");
+#endif // NORMALIZE_BONE_WEIGHTS
 			}
 		}
 
@@ -1991,7 +2311,7 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 	vCnt += aimesh.mNumVertices;
 }
 
-void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* parent, glm::mat4 parentXform)
+void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* parent, glm::mat4 parentXform,std::string prefix)
 {
 	std::string node_name{ ainode->mName.data };
 
@@ -2008,7 +2328,8 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode*
 	auto iter = fileData.strToBone.find(node_name);
 	if (iter != fileData.strToBone.end())
 	{
-		//std::cout << "Creating bone " << node_name << std::endl;
+		std::cout <<prefix<< "Creating bone " << node_name << std::endl;
+		prefix += '\t';
 		bIsBoneNode = true;
 		node = new oGFX::BoneNode;
 		node->mbIsBoneNode = true;
@@ -2046,11 +2367,11 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode*
 		if (bIsBoneNode)
 		{
 			// we have collapsed the transforms start for new local transform
-			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,glm::mat4(1.0f));
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,glm::mat4(1.0f),prefix);
 		}
 		else
 		{
-			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,node_transform);
+			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,node_transform,prefix);
 		}
 	}
 }
@@ -2200,41 +2521,55 @@ void VulkanRenderer::UpdateUniformBuffers()
 	float width = static_cast<float>(windowPtr->m_width);
 	float ar = width / height;
 
-	CB::FrameContextUBO frameContextUBO;
-	frameContextUBO.projection = camera.matrices.perspective;
-	frameContextUBO.view = camera.matrices.view;
-	frameContextUBO.viewProjection = frameContextUBO.projection * frameContextUBO.view;
-	frameContextUBO.inverseViewProjection = glm::inverse(frameContextUBO.viewProjection);
-	frameContextUBO.cameraPosition = glm::vec4(camera.m_position,1.0);
-	frameContextUBO.renderTimer.x = renderClock;
-    frameContextUBO.renderTimer.y = std::sin(renderClock * glm::pi<float>());
-    frameContextUBO.renderTimer.z = std::cos(renderClock * glm::pi<float>());
-	frameContextUBO.renderTimer.w = 0.0f; // unused
-
-	// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
-	// Bind this to every single shader possible.
-	// Remove this upon shipping the final product.
+	CB::FrameContextUBO frameContextUBO[2]{};
+	if (currWorld)
 	{
-		frameContextUBO.vector4_values0 = m_ShaderDebugValues.vector4_values0;
-		frameContextUBO.vector4_values1 = m_ShaderDebugValues.vector4_values1;
-		frameContextUBO.vector4_values2 = m_ShaderDebugValues.vector4_values2;
-		frameContextUBO.vector4_values3 = m_ShaderDebugValues.vector4_values3;
-		frameContextUBO.vector4_values4 = m_ShaderDebugValues.vector4_values4;
-		frameContextUBO.vector4_values5 = m_ShaderDebugValues.vector4_values5;
-		frameContextUBO.vector4_values6 = m_ShaderDebugValues.vector4_values6;
-		frameContextUBO.vector4_values7 = m_ShaderDebugValues.vector4_values7;
-		frameContextUBO.vector4_values8 = m_ShaderDebugValues.vector4_values8;
-		frameContextUBO.vector4_values9 = m_ShaderDebugValues.vector4_values9;
+		for (size_t i = 0; i < currWorld->numCameras; i++)
+		{
+			auto& camera = currWorld->cameras[i];
+			
+			frameContextUBO[i].projection = camera.matrices.perspective;
+			frameContextUBO[i].view = camera.matrices.view;
+			frameContextUBO[i].viewProjection = frameContextUBO[i].projection * frameContextUBO[i].view;
+			frameContextUBO[i].inverseViewProjection = glm::inverse(frameContextUBO[i].viewProjection);
+			frameContextUBO[i].cameraPosition = glm::vec4(camera.m_position,1.0);
+			frameContextUBO[i].renderTimer.x = renderClock;
+			frameContextUBO[i].renderTimer.y = std::sin(renderClock * glm::pi<float>());
+			frameContextUBO[i].renderTimer.z = std::cos(renderClock * glm::pi<float>());
+			frameContextUBO[i].renderTimer.w = 0.0f; // unused
+		
+			// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
+			// Bind this to every single shader possible.
+			// Remove this upon shipping the final product.
+			{			
+				frameContextUBO[i].vector4_values0 = m_ShaderDebugValues.vector4_values0;
+				frameContextUBO[i].vector4_values1 = m_ShaderDebugValues.vector4_values1;
+				frameContextUBO[i].vector4_values2 = m_ShaderDebugValues.vector4_values2;
+				frameContextUBO[i].vector4_values3 = m_ShaderDebugValues.vector4_values3;
+				frameContextUBO[i].vector4_values4 = m_ShaderDebugValues.vector4_values4;
+				frameContextUBO[i].vector4_values5 = m_ShaderDebugValues.vector4_values5;
+				frameContextUBO[i].vector4_values6 = m_ShaderDebugValues.vector4_values6;
+				frameContextUBO[i].vector4_values7 = m_ShaderDebugValues.vector4_values7;
+				frameContextUBO[i].vector4_values8 = m_ShaderDebugValues.vector4_values8;
+				frameContextUBO[i].vector4_values9 = m_ShaderDebugValues.vector4_values9;
+			}
+		}
 	}
 
+	
+
 	void *data;
-	vkMapMemory(m_device.logicalDevice, vpUniformBufferMemory[swapchainIdx], 0, uboDynamicAlignment, 0, &data);
-	memcpy(data, &frameContextUBO, sizeof(CB::FrameContextUBO));
+	auto alignedRange = oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), m_device.properties.limits.minUniformBufferOffsetAlignment);
+	// map whole aligned range
+	vkMapMemory(m_device.logicalDevice, vpUniformBufferMemory[swapchainIdx], 0, numCameras*alignedRange, 0, &data);
+
+	memcpy(data, &frameContextUBO[0], sizeof(CB::FrameContextUBO));
+	memcpy((char*)data+alignedRange, &frameContextUBO[1], sizeof(CB::FrameContextUBO));
 
 	VkMappedMemoryRange memRng{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 	memRng.memory = vpUniformBufferMemory[swapchainIdx];
-	memRng.offset = 0;
-	memRng.size = uboDynamicAlignment;
+	memRng.offset =  0;
+	memRng.size =  numCameras*alignedRange;
 	VK_CHK(vkFlushMappedMemoryRanges(m_device.logicalDevice, 1, &memRng));
 
 	vkUnmapMemory(m_device.logicalDevice, vpUniformBufferMemory[swapchainIdx]);

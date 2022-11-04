@@ -128,6 +128,10 @@ namespace Ecs
 		};
 		info.broadcast_RemoveComponentEvent = [](IECSWorld& world, EntityID id)
 		{
+			//do nothing if component not there
+			if (world.has_component<T>(id) == false) return;
+
+
 			size_t hash = IECSWorld::get_component_hash<T>();
 			T& comp = world.get_component<T>(id);
 			ComponentEvent evnt{ id,comp };
@@ -1209,7 +1213,7 @@ namespace Ecs
 		Archetype* arch = entities[eid.index].chunk->header.archetype;
 		for (auto& compIdentifier : arch->componentList->components)
 		{
-			internal::broadcast_remove_component_callback(this, eid, compIdentifier.hash.name_hash);			
+			internal::broadcast_remove_component_callback(this, eid, compIdentifier.hash.name_hash);
 		}
 
 

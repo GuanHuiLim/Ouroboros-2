@@ -27,18 +27,13 @@ namespace Ouroboros
             get { return Time_GetUnscaledDeltaTime(); }
         }
 
-        //[DllImport("__Internal")] private static extern float Time_GetFixedDeltaTime();
+        [DllImport("__Internal")] private static extern float Time_GetFixedDeltaTime();
+        [DllImport("__Internal")] private static extern void Time_SetFixedDeltaTime(float value);
 
-        //public static float fixedDeltaTime
-        //{
-        //    get { return Time_GetFixedDeltaTime(); }
-        //}
-
-        //[DllImport("__Internal")] private static extern float Time_GetFixedUnscaledDeltaTime();
-
-        //public static float fixedUnscaledDeltaTime
-        //{
-        //    get { return Time_GetFixedUnscaledDeltaTime(); }
-        //}
+        public static float fixedDeltaTime
+        {
+            get { return Time_GetFixedDeltaTime(); }
+            set { Time_SetFixedDeltaTime(value); }
+        }
     }
 }

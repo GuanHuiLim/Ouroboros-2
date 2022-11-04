@@ -54,7 +54,7 @@ void SceneOrderingWindow::Show()
 	{
 		ImGui::PushID(counter);
 		ImGui::BeginGroup();
-		ImGui::ImageButton(ImGuiManager::s_editorAssetManager.LoadName("SceneIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_medium);
+		ImGui::ImageButton(ImGuiManager::s_editorAssetManager.GetOrLoadName("SceneIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_medium);
 		ImGui::EndGroup();
 		
 		ImGui::SameLine();

@@ -30,7 +30,7 @@ namespace oo
         bool IsPrefab = false;
         bool Active = true;
         bool ActiveInHierarchy = true;
-        oo::UUID Id = -1;
+        oo::UUID Id = oo::UUID::Invalid;
         std::string Name = "Default Name Long enough for no short string optimization";
         scenenode::weak_pointer Node = {};
 

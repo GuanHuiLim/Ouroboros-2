@@ -19,6 +19,7 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
 #include "Ouroboros/ECS/DuplicatedComponent.h"
+#include "Ouroboros/ECS/GameObjectDisabledComponent.h"
 
 #include "Ouroboros/Scripting/ScriptComponent.h"
 
@@ -317,6 +318,7 @@ namespace oo
                 GameObjectComponent::OnDisableEvent onDisableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onDisableEvent);
                 LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
+
             }
             else
             {
@@ -337,6 +339,17 @@ namespace oo
 
         // Set this object's active state in hierarchy
         SetHierarchyActive(parent.GetComponent<GameObjectComponent>(), hierarchyActive);
+
+        if (parent.ActiveInHierarchy())
+        {
+            // let's remove gameobject disabled component (since its now active)
+            parent.TryRemoveComponent<GameObjectDisabledComponent>();
+        }
+        else
+        {
+            // let's add gameobject disabled component (since its now inactive)
+            parent.EnsureComponent<GameObjectDisabledComponent>();
+        }
 
         // Set active In Hierarchy for children to be
         for (auto& child : parent.GetDirectChilds())

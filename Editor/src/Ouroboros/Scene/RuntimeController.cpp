@@ -29,6 +29,11 @@ namespace oo
     void RuntimeController::OnLoadProjectEvent(LoadProjectEvent* loadProjEvent)
     {
         SetLoadPaths(std::move(loadProjEvent->m_filename_pathname));
+    // start the project immediately at first detected scene
+#if OO_EXECUTABLE
+        GenerateScenes();
+        ChangeRuntimeScene(0);
+#endif
     }
 
     void RuntimeController::SetLoadPaths(container_type&& loadPaths)
@@ -74,7 +79,7 @@ namespace oo
 
     bool RuntimeController::HasScene(size_type sceneIndex) const
     {
-        return sceneIndex > 0 && sceneIndex < m_loadpaths.size();
+        return sceneIndex >= 0 && sceneIndex < m_loadpaths.size();
     }
 
     void RuntimeController::AddLoadPath(std::string_view sceneName, std::string_view loadpath)

@@ -41,9 +41,9 @@ LoggingView::LoggingView()
 }
 void LoggingView::InitAsset()
 {
-	assets.emplace("LogsIcon", ImGuiManager::s_editorAssetManager.LoadName("LogsIcon.png")[0]);
-	assets.emplace("WarningIcon", ImGuiManager::s_editorAssetManager.LoadName("WarningIcon.png")[0]);
-	assets.emplace("ErrorIcon", ImGuiManager::s_editorAssetManager.LoadName("ErrorIcon.png")[0]);
+	assets.emplace("LogsIcon", ImGuiManager::s_editorAssetManager.GetOrLoadName("LogsIcon.png")[0]);
+	assets.emplace("WarningIcon", ImGuiManager::s_editorAssetManager.GetOrLoadName("WarningIcon.png")[0]);
+	assets.emplace("ErrorIcon", ImGuiManager::s_editorAssetManager.GetOrLoadName("ErrorIcon.png")[0]);
 }
 /**
  * \brief 

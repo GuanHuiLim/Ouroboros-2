@@ -22,6 +22,9 @@ Technology is prohibited.
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObject.h"
 
+#include "Project.h"
+#include "App/Editor/Serializer.h"
+
 namespace oo
 {
     SCRIPT_API uint64_t CreateEntity(uint32_t sceneID)
@@ -36,6 +39,40 @@ namespace oo
         scene->GetWorld().Get_System<ScriptSystem>()->InvokeForObject(uuid, "Awake");
         scene->GetWorld().Get_System<ScriptSystem>()->InvokeForObject(uuid, "Start");
         return uuid.GetUUID();
+    }
+
+    SCRIPT_API ComponentDatabase::IntPtr InstantiatePrefab(Scene::ID_type sceneID, const char* filePath, oo::UUID parentID)
+    {
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        std::shared_ptr<GameObject> parent = ScriptManager::GetObjectFromScene(sceneID, parentID);
+        UUID uuid = Serializer::LoadPrefab(Project::GetPrefabFolder().string() + "/" + filePath, parent, *scene);
+
+        ScriptSystem* ss = scene->GetWorld().Get_System<ScriptSystem>();
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        std::vector<UUID> children = obj->GetChildrenUUID(true);
+
+        // set up all C# stuff for all objects first, may be relied on in inspector variables, Awake and Start
+        for (UUID childUUID : children)
+        {
+            ss->SetUpObject(childUUID);
+        }
+        // update all C# inspector fields, may be relied on in Awake and Start
+        for (UUID childUUID : children)
+        {
+            ss->UpdateObjectFieldsWithInfo(childUUID);
+        }
+        // Invoke all Awake first, Start may rely on Awake running first
+        for (UUID childUUID : children)
+        {
+            ss->InvokeForObject(childUUID, "Awake");
+        }
+        // Invoke all Start last
+        for (UUID childUUID : children)
+        {
+            ss->InvokeForObject(childUUID, "Start");
+        }
+
+        return ss->GetGameObject(uuid);
     }
 
     //SCRIPT_API uint32_t InstantiateEntity(Entity src)

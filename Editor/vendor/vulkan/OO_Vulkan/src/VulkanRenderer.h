@@ -138,6 +138,8 @@ public:
 	void CreateDefaultRenderpass();
 	void CreateDefaultDescriptorSetLayout();
 
+	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src, vkutils::Texture2D dst);
+
 	void CreateDefaultPSOLayouts();
 	//void CreateDepthBufferImage();
 	void CreateFramebuffers(); 
@@ -177,7 +179,10 @@ public:
 	void ResizeDeferredFB();
 
 	void SetWorld(GraphicsWorld* world);
+	void InitWorld(GraphicsWorld* world);
+	void DestroyWorld(GraphicsWorld* world);
 	GraphicsWorld* currWorld{ nullptr };
+	uint32_t renderIteration{ 0};
 	float renderClock{ 0.0f };
 
 	GraphicsBatch batches;
@@ -264,7 +269,7 @@ public:
 	ModelFileResource* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex, std::vector<uint32_t>& indices, gfxModel* model);
 	void LoadSubmesh(gfxModel& mdl, SubMesh& submesh, aiMesh* aimesh, ModelFileResource* modelFile);
 	void LoadBoneInformation(ModelFileResource& fileData, oGFX::Skeleton& skeleton, aiMesh& aimesh, std::vector<oGFX::BoneWeight>& boneWeights, uint32_t& vCnt);
-	void BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* node, glm::mat4 parentXform = glm::mat4(1.0f));
+	void BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* node, glm::mat4 parentXform = glm::mat4(1.0f), std::string prefix = std::string("\t"));
 	const oGFX::Skeleton* GetSkeleton(uint32_t modelID);
 	oGFX::CPUSkeletonInstance* CreateSkeletonInstance(uint32_t modelID);
 
@@ -337,7 +342,6 @@ public:
 	bool resizeSwapchain = false;
 	bool m_prepared = false;
 
-	Camera camera;
 
 	// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
 	// Bind this to every single shader possible.

@@ -33,12 +33,17 @@ namespace vkutils
 	void Texture::destroy()
 	{
 		vkDestroyImageView(device->logicalDevice, view, nullptr);
+		view = VK_NULL_HANDLE;
+
 		vkDestroyImage(device->logicalDevice, image, nullptr);
+		image = VK_NULL_HANDLE;
 		if (sampler)
 		{
 			vkDestroySampler(device->logicalDevice, sampler, nullptr);
+			sampler = VK_NULL_HANDLE;
 		}
 		vkFreeMemory(device->logicalDevice, deviceMemory, nullptr);
+		deviceMemory = VK_NULL_HANDLE;
 	}
 
 	/**
@@ -530,6 +535,9 @@ namespace vkutils
 		}
 
 		usage = imageUsageFlags;
+
+		// for blitting
+		usage = imageUsageFlags | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		
 		assert(aspectMask > 0);
 
@@ -554,7 +562,7 @@ namespace vkutils
 		imageinfo.arrayLayers = 1;
 		imageinfo.format = format;
 		imageinfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageinfo.usage = imageUsageFlags | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageinfo.usage = usage;
 		imageinfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		VK_CHK(vkCreateImage(device->logicalDevice, &imageinfo, nullptr, &image));

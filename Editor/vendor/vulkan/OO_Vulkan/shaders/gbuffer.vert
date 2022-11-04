@@ -20,11 +20,11 @@ layout(location = 15) in uvec4 inInstanceData;
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec2 outUV;
 layout(location = 2) out vec3 outColor;
-layout(location = 15) flat out uvec4 outInstanceData;
 layout(location = 7) out struct
 {
 	mat3 btn;
 }outLightData;
+layout(location = 15) flat out uvec4 outInstanceData;
 
 #include "frame.shader"
 layout(set = 1, binding = 0) uniform UboFrameContext
@@ -56,22 +56,29 @@ void main()
 	mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[instanceIndex]);
 	
 	// inefficient
-	const mat4 inverseMat = inverse(dInsMatrix);
+	mat3 L2W = mat3(dInsMatrix);//inverse(dInsMatrix);
+	//L2W = mat3(1.0);
 
-	vec3 binormal = normalize(cross(inTangent, inNormal));
+	vec3 NN = normalize(inNormal);
+	vec3 NT = normalize(inTangent);
+	vec3 NB = cross(NN, NT);
 	
-	outLightData.btn = mat3(inTangent, binormal, mat3(transpose(inverseMat))*inNormal);
+	vec3 T = normalize(L2W * vec3(NT)).xyz;
+	vec3 B = normalize(L2W * vec3(NB)).xyz;
+	vec3 N = normalize(L2W * vec3(NN)).xyz;
 
-	 bool skinned = (inInstanceData.y & 0xFF00 ) > 1;
+	outLightData.btn = (mat3(T,B,N));
+
+	bool skinned = (inInstanceData.y & 0xFF00 ) > 1;
     if(skinned)
 	{
 		mat4x4 boneToModel; // what do i do with this
 		outPosition = ComputeSkinnedVertexPosition(dInsMatrix,inPosition,inBoneIdx,inBoneWeights,objectInfo.boneStartIdx,boneToModel);
 	}
-	else{
+	else
+	{
 		outPosition = dInsMatrix * vec4(inPosition,1.0);
 	}
-
 
 	gl_Position = uboFrameContext.viewProjection * outPosition;
 	

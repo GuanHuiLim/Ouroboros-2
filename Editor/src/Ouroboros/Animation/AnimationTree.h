@@ -21,6 +21,7 @@ namespace oo::Anim
 {
 	struct AnimationTree
 	{
+		friend class AnimationSystem;
 		static std::unordered_map<std::string, AnimationTree> map;
 	
 		std::string name{"Unnamed Animation Tree"};
@@ -33,6 +34,11 @@ namespace oo::Anim
 		//std::vector<Node> nodes;
 
 		static AnimationTree* Create(std::string const name = "Unnamed Animation Tree");
+	
+		RTTR_ENABLE();
+
+	private:
+		static AnimationTree* Add(AnimationTree&& tree);
 	};
 
 

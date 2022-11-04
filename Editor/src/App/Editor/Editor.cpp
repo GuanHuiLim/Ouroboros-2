@@ -38,7 +38,7 @@ Technology is prohibited.
 
 static void FileDrop(oo::FileDropEvent* e)
 {
-	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf" };
+	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf", ".tga"};
 	if (e->GetType() != oo::FileDropType::DropFile)
 		return;
 	std::filesystem::path p = e->GetFile();
@@ -68,9 +68,6 @@ static void FileDrop(oo::FileDropEvent* e)
 }
 Editor::Editor()
 {
-	UI_RTTRType::Init();
-	Serializer::Init();//runs the init function
-	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
 	oo::EventManager::Subscribe<oo::FileDropEvent>(&FileDrop);
 
