@@ -18,6 +18,7 @@ Technology is prohibited.
 #include "AnimationTimeline.h"
 #include "AnimationKeyFrame.h"
 #include "AnimationInternal.h"
+#include "Project.h"
 
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"
@@ -149,7 +150,7 @@ namespace oo::Anim
 		//to do later
 	}
 
-	void Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
+	std::vector<Animation*> Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
 	{
 
 
@@ -167,10 +168,9 @@ namespace oo::Anim
 		if (!scene)
 		{
 			assert(false);
-			//return {}; // Dont explode...
-			//throw std::runtime_error("Failed to load model! (" + file + ")");
+			return {};
 		}
-		if (scene->HasAnimations() == false) return;
+		if (scene->HasAnimations() == false) return {};
 
 		PrintNodeHierarchy(scene);
 
@@ -199,7 +199,7 @@ namespace oo::Anim
 					//debugging print
 					for (size_t i = 0; i < children_index.size(); ++i) std::cout << " |";
 					std::cout << child->mName + "  hierarchy: ";
-					for (auto& idx : children_index) std::cout << idx << ',';
+					for (auto& index : children_index) std::cout << index << ',';
 					std::cout << std::endl;
 
 					//recurse
@@ -221,6 +221,7 @@ namespace oo::Anim
 
 
 		std::cout << "Animated scene\n";
+		std::vector<Animation*> anims;
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
 			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
@@ -239,7 +240,7 @@ namespace oo::Anim
 				std::cout << "Anim channel: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
 
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				oGFX::BoneNode* curr = resource->skeleton->m_boneNodes;
+				//oGFX::BoneNode* curr = resource->skeleton->m_boneNodes;
 				std::string boneName{ channel->mNodeName.C_Str() };
 				//guarding for safety
 				//assert(resource->strToBone.contains(boneName));
@@ -249,7 +250,7 @@ namespace oo::Anim
 					continue;
 				}
 
-				auto boneindex = resource->strToBone[boneName];
+				//auto boneindex = resource->strToBone[boneName];
 				//bone should exist in the skeleton!!
 				assert(bone_hierarchy_map.contains(boneName));
 				std::vector<int> children_index = bone_hierarchy_map[boneName];
@@ -333,9 +334,11 @@ namespace oo::Anim
 
 			auto createdAnim = Animation::AddAnimation(std::move(anim));
 			assert(createdAnim);
+			anims.emplace_back(createdAnim);
 		}
-		//std::cout << std::endl;
 
+
+		return anims;
 	}
 	Animation* Animation::AddAnimation(Animation&& anim)
 	{
@@ -343,8 +346,9 @@ namespace oo::Anim
 		Animation::name_to_ID[anim.name] = anim.animation_ID;
 		size_t key = anim.animation_ID;
 		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
-		assert(result == true);
 		auto& createdAnim = Animation::animation_storage[key];
+
+		//auto assetmanager = Project::GetAssetManager();
 
 		return &createdAnim;
 	}

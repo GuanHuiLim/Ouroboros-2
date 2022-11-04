@@ -46,7 +46,7 @@ public:
 
 	glm::quat m_orientation{ 0, 0, 0, 1 };
 	glm::vec3 m_rotation{};
-	glm::vec3 m_position{};
+	glm::vec3 m_position{0.0f,3.0f,0.0f};
 
 	glm::vec3 m_TargetPosition{ 0.0f, 0.0f, 0.0f };
 	float m_TargetDistance{ 10.0f };

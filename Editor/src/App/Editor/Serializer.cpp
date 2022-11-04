@@ -42,6 +42,7 @@ Technology is prohibited.
 #include <Ouroboros/Vulkan/CameraComponent.h>
 #include "Ouroboros/Audio/AudioListenerComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
+#include "Ouroboros/Animation/AnimationComponent.h"
 
 #include <Ouroboros/Transform/TransformSystem.h>
 
@@ -75,6 +76,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::SphereColliderComponent>();
 	AddLoadComponent<oo::AudioListenerComponent>();
 	AddLoadComponent<oo::AudioSourceComponent>();
+	AddLoadComponent<oo::AnimationComponent>();
 
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
@@ -357,6 +359,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::BoxColliderComponent>(go, val, doc);
 	SaveComponent<oo::CapsuleColliderComponent>(go, val, doc);
 	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
+	SaveComponent<oo::AnimationComponent>(go, val, doc);
 
 	SaveScript(go, val, doc);// this is the last item
 }

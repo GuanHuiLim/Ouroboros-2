@@ -138,6 +138,8 @@ public:
 	void CreateDefaultRenderpass();
 	void CreateDefaultDescriptorSetLayout();
 
+	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src, vkutils::Texture2D dst);
+
 	void CreateDefaultPSOLayouts();
 	//void CreateDepthBufferImage();
 	void CreateFramebuffers(); 
@@ -177,7 +179,10 @@ public:
 	void ResizeDeferredFB();
 
 	void SetWorld(GraphicsWorld* world);
+	void InitWorld(GraphicsWorld* world);
+	void DestroyWorld(GraphicsWorld* world);
 	GraphicsWorld* currWorld{ nullptr };
+	uint32_t renderIteration{ 0};
 	float renderClock{ 0.0f };
 
 	GraphicsBatch batches;
@@ -337,7 +342,6 @@ public:
 	bool resizeSwapchain = false;
 	bool m_prepared = false;
 
-	Camera camera;
 
 	// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
 	// Bind this to every single shader possible.

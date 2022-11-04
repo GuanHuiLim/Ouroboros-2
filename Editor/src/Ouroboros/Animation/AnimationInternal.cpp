@@ -641,6 +641,25 @@ namespace oo::Anim::internal
 		return ref;
 	}
 
+	TimelineRef CreateTimelineReference(AnimRef anim_ref, std::string const& timeline_name)
+	{
+		int index = 0;
+		bool found = false;
+		for (auto& timeline : anim_ref->timelines)
+		{
+			if (timeline.name == timeline_name)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found)
+			return TimelineRef{ .anim{anim_ref}, .index{index} };
+		else
+			return {};
+	}
+
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type)
 	{
 		switch (type)
@@ -1661,6 +1680,7 @@ namespace oo::Anim::internal
 				node.group.groups = &tree.groups;
 				for (auto& link : node.outgoingLinks)
 					link.links = &group.links;
+				node.anim.anims = &(Animation::animation_storage);
 			}
 
 			for (auto& [link_id, link] : group.links)

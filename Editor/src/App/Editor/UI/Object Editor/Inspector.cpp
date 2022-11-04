@@ -55,6 +55,7 @@ Technology is prohibited.
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
 #include <Ouroboros/ECS/GameObjectDisabledComponent.h>
+#include <Ouroboros/Animation/AnimationComponent.h>
 
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
@@ -150,6 +151,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
+	DisplayComponent<oo::AnimationComponent>(gameobject);
 	
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
@@ -189,6 +191,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
 			selected |= AddScriptsSelectable(gameobject);
 
 			ImGui::EndListBox();

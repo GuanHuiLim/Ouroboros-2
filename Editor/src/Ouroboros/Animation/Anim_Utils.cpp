@@ -73,6 +73,7 @@ namespace oo::Anim::internal
 		static std::uniform_int_distribution<size_t> distrib{ 0 };
 		return distrib(mt);
 	};
+	
 }
 
 namespace oo::Anim
@@ -207,7 +208,6 @@ namespace oo::Anim
 	void LoadLinkRef(rapidjson::Value& value, LinkRef& ref)
 	{
 		auto obj = value.GetObj();
-		auto test = obj.FindMember("ID")->value.GetUint64();
 		ref.id = obj.FindMember("ID")->value.GetUint64();
 	}
 	void LoadAnimRef(rapidjson::Value& value, AnimRef& ref)
@@ -271,7 +271,7 @@ namespace oo::Anim
 		assert(groups);
 		return (*groups).contains(id);
 	}
-	Group& GroupRef::Retrieve(size_t id) const
+	Group& GroupRef::Retrieve() const
 	{
 		return (*groups).at(id);
 	}
@@ -311,7 +311,7 @@ namespace oo::Anim
 		assert(nodes);
 		return (*nodes).contains(id);
 	}
-	Node& NodeRef::Retrieve(size_t id) const
+	Node& NodeRef::Retrieve() const
 	{
 		return (*nodes).at(id);
 	}
@@ -350,7 +350,7 @@ namespace oo::Anim
 		assert(links);
 		return (*links).contains(id);
 	}
-	Link& LinkRef::Retrieve(size_t id) const
+	Link& LinkRef::Retrieve() const
 	{
 		return (*links).at(id);
 	}
@@ -388,8 +388,21 @@ namespace oo::Anim
 			this->operator->()->animation_ID == id;*/
 		return (*anims).contains(id);
 	}
-	Animation& AnimRef::Retrieve(size_t id) const
+	Animation& AnimRef::Retrieve() const
 	{
 		return (*anims).at(id);
 	}
+
+	/*-------------------------------
+	TimelineRef
+	-------------------------------*/
+	Timeline& oo::Anim::TimelineRef::Retrieve() const
+	{
+		return anim->timelines[index];
+	}
+	bool oo::Anim::TimelineRef::valid() const
+	{
+		return index >= 0 && index < static_cast<int>(anim->timelines.size());
+	}
+
 }

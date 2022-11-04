@@ -100,8 +100,7 @@ namespace oo::Anim::internal
 			}
 		}
 		
-		internal::ReAssignReferences(tree);
-		internal::ReloadReferences(tree);
+		
 	}
 }
 namespace oo::Anim
