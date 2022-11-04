@@ -417,18 +417,24 @@ namespace oo
 
     void ScriptSystem::OnObjectEnabled(GameObjectComponent::OnEnableEvent* e)
     {
+        if (!isPlaying)
+            return;
         if (scene.FindWithInstanceID(e->Id) == nullptr)
             return;
         InvokeForObject(e->Id, "OnEnable");
     }
     void ScriptSystem::OnObjectDisabled(GameObjectComponent::OnDisableEvent* e)
     {
+        if (!isPlaying)
+            return;
         if (scene.FindWithInstanceID(e->Id) == nullptr)
             return;
         InvokeForObject(e->Id, "OnDisable");
     }
     void ScriptSystem::OnObjectDestroyed(GameObject::OnDestroy* e)
     {
+        if (!isPlaying)
+            return;
         UUID uuid = e->go->GetInstanceID();
         if (scene.FindWithInstanceID(uuid) == nullptr)
             return;
@@ -438,11 +444,15 @@ namespace oo
 
     void ScriptSystem::OnPhysicsTick(PhysicsTickEvent* e)
     {
+        if (!isPlaying)
+            return;
         InvokeForAllEnabled("FixedUpdate");
     }
 
     void ScriptSystem::OnTriggerEvent(PhysicsTriggerEvent* e)
     {
+        if (!isPlaying)
+            return;
         MonoObject* obj = componentDatabase.TryRetrieveDerivedObject(e->TriggerID, "Ouroboros", "Collider");
         MonoObject* other = componentDatabase.TryRetrieveDerivedObject(e->OtherID, "Ouroboros", "Collider");
 
@@ -494,6 +504,9 @@ namespace oo
 
     void ScriptSystem::OnCollisionEvent(PhysicsCollisionEvent* e)
     {
+        if (!isPlaying)
+            return;
+
         struct TempContactPoint
         {
             ScriptValue::vec3_type normal;

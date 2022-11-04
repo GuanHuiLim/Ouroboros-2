@@ -101,13 +101,16 @@ void ShadowPass::Draw()
 	cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
 	cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
 
+	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
+		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 		std::array<VkDescriptorSet, 3>
 		{
 			vr.descriptorSet_gpuscene,
 			vr.descriptorSets_uniform[swapchainIdx],
 			vr.descriptorSet_bindless
-		}
+		},
+		1, &dynamicOffset
 	);
 	
 	// Bind merged mesh vertex & index buffers, instancing buffers.

@@ -33,6 +33,8 @@ Technology is prohibited.
 #include "App/Editor/Events/GizmoOperationEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Input.h"
+
+#include "Ouroboros/Scene/EditorController.h"
 EditorViewport::EditorViewport()
 {
 	ImGuizmo::AllowAxisFlip(false);
@@ -46,7 +48,7 @@ EditorViewport::~EditorViewport()
 void EditorViewport::Show()
 {
 
-	auto& camera_matrices = oo::Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera.matrices;//perspective
+	auto& camera_matrices = oo::EditorController::EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	
 	int windowWidth = window.GetSize().first;

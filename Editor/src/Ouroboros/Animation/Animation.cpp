@@ -168,8 +168,7 @@ namespace oo::Anim
 		if (!scene)
 		{
 			assert(false);
-			//return {}; // Dont explode...
-			//throw std::runtime_error("Failed to load model! (" + file + ")");
+			return {};
 		}
 		if (scene->HasAnimations() == false) return {};
 
@@ -334,19 +333,19 @@ namespace oo::Anim
 			}
 
 			auto createdAnim = Animation::AddAnimation(std::move(anim));
-			anims.emplace_back(createdAnim);
 			assert(createdAnim);
+			anims.emplace_back(createdAnim);
 		}
-		//std::cout << std::endl;
 
+
+		return anims;
 	}
 	Animation* Animation::AddAnimation(Animation&& anim)
 	{
 		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
 		Animation::name_to_ID[anim.name] = anim.animation_ID;
 		size_t key = anim.animation_ID;
-		auto [iter, result] = Animation::animation_storage.insert_or_assign(key, std::move(anim));
-		assert(result == true);
+		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
 		auto& createdAnim = Animation::animation_storage[key];
 
 		//auto assetmanager = Project::GetAssetManager();
