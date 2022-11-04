@@ -34,7 +34,14 @@ namespace oo::Anim::internal
 				for (auto& prop : properties)
 				{
 					writer.Key(prop.get_name().data(), static_cast<rapidjson::SizeType>(prop.get_name().size()));
+					auto temp_type = prop.get_type();
 					rttr::variant val{ prop.get_value(obj) };
+					auto value_type = val.get_type();
+					if (value_type == rttr::type::get<rttr::property>())
+					{
+						auto temp_prop = val.get_value<rttr::property>();
+						int i = 0;
+					}
 					internal::serializeDataFn_map.at(prop.get_type().get_id())(writer, val);
 				}
 			}		
@@ -54,7 +61,10 @@ namespace oo::Anim::internal
 			{
 				auto serialize_fn = rttr::type::get<KeyFrame>().get_method(internal::serialize_method_name);
 				for (auto& kf : timeline.keyframes)
-					serialize_fn.invoke({}, writer, kf);
+				{
+					auto result = serialize_fn.invoke({}, writer, kf);
+					assert(result.is_valid());
+				}
 			}
 			writer.EndArray();
 		}
@@ -73,7 +83,9 @@ namespace oo::Anim::internal
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
-				prop.set_value(obj, val);
+				auto tmp_type = val.get_type();
+				auto result = prop.set_value(obj, val);
+				assert(result);
 			}
 		}
 		//children_index
@@ -94,7 +106,8 @@ namespace oo::Anim::internal
 			for (auto& kf : keyframes)
 			{
 				KeyFrame new_kf{};
-				load_fn.invoke({}, kf.GetObj(), new_kf);
+				auto result = load_fn.invoke({}, kf.GetObj(), new_kf);
+				assert(result.is_valid());
 				timeline.keyframes.emplace_back(std::move(new_kf));
 			}
 		}
@@ -121,8 +134,8 @@ namespace oo::Anim
 			)
 			
 			.property("name", &Timeline::name)
-			.property_readonly("type", &Timeline::type)
-			.property_readonly("datatype", &Timeline::datatype)
+			.property("type", &Timeline::type)
+			.property("datatype", &Timeline::datatype)
 			.property("rttr_type", &Timeline::rttr_type)
 			.property("rttr_property", &Timeline::rttr_property)
 			.property("component_hash", &Timeline::component_hash)

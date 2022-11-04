@@ -46,6 +46,7 @@ namespace oo::Anim
 
 	private:
 		static Animation* AddAnimation(Animation&& anim);
+		static void RemoveAnimation(std::string const& name);
 	};
 
 
