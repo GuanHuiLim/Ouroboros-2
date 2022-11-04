@@ -28,15 +28,18 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Core/Input.h"
+
+#include "Ouroboros/Scene/EditorController.h"
+
 namespace oo
 {
-    Camera RendererSystem::m_editorCamera = [&]()
+    Camera EditorController::EditorCamera = [&]()
     {
         Camera camera;
         camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         camera.movementSpeed = 5.0f;
-        camera.SetPosition({ 0, 8, 8 });
-        camera.Rotate({ 45, 180, 0 });
+        //camera.SetPosition({ 0, 8, 8 });
+        //camera.Rotate({ 45, 180, 0 });
         return camera;
     }();
 
@@ -45,7 +48,7 @@ namespace oo
         auto w = e->GetHeight();
         auto h = e->GetWidth();
         auto ar = static_cast<float>(w) / h;
-        m_editorCamera.SetAspectRatio(ar);
+        EditorController::EditorCamera.SetAspectRatio(ar);
         m_runtimeCamera.SetAspectRatio(ar);
     }
 
@@ -98,8 +101,8 @@ namespace oo
         switch (e.state)
         {
         case oo::SCENE_STATE::EDITING:
-            m_editorCamera.SetAspectRatio((float)width / (float)height);
-            m_graphicsWorld->cameras[0] = m_editorCamera;
+            EditorController::EditorCamera.SetAspectRatio((float)width / (float)height);
+            m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
             break;
         case oo::SCENE_STATE::RUNNING:
 
@@ -145,10 +148,10 @@ namespace oo
         switch (e.state)
         {
         case oo::SCENE_STATE::RUNNING:
-            m_editorCamera = m_graphicsWorld->cameras[0];
+            EditorController::EditorCamera = m_graphicsWorld->cameras[0];
             break;
         }
-        //m_editorCamera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+        //EditorController::EditorCamera  = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
     }
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
@@ -209,6 +212,8 @@ namespace oo
     void RendererSystem::UpdateCamerasEditorMode()
     {
         m_cc.Update(oo::timer::dt());
+        auto pos = m_cc.GetCamera()->m_position;
+        LOG_TRACE("Editor Camera Position {0} {1} {2}", pos.x, pos.y, pos.z);
     }
 
     // additional function that runs during runtime scene only.
@@ -222,7 +227,7 @@ namespace oo
             if (using_editor_camera)
             {
                 m_runtimeCamera = m_graphicsWorld->cameras[0];
-                m_graphicsWorld->cameras[0] = m_editorCamera;
+                m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
             }
             else
             {

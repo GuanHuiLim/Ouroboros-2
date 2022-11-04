@@ -293,15 +293,17 @@ namespace oo
                 pte.State = PhysicsEventState::NONE;
                 break;
             case myPhysx::trigger::onTriggerEnter:
-                LOG_TRACE("Trigger Enter Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
+                if(DebugMessges)
+                    LOG_TRACE("Trigger Enter Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::trigger::onTriggerStay:
-                LOG_TRACE("Trigger Stay Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
+                if (DebugMessges)
+                    LOG_TRACE("Trigger Stay Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::trigger::onTriggerExit:
-                LOG_TRACE("Trigger Exit Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
+                if (DebugMessges) LOG_TRACE("Trigger Exit Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::EXIT;
                 break;
             }
@@ -338,15 +340,15 @@ namespace oo
                 pce.State = PhysicsEventState::NONE;
                 break;
             case myPhysx::collision::onCollisionEnter:
-                LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if (DebugMessges)LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::collision::onCollisionStay:
-                //LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if(DebugMessges) LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::collision::onCollisionExit:
-                LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if (DebugMessges) LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::EXIT;
                 break;
             }
@@ -366,6 +368,9 @@ namespace oo
 
     void PhysicsSystem::RenderDebugColliders()
     {
+        if (DrawDebug == false)
+            return;
+
         TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
         //TODO : Toggle to enable/disable debug drawing of bounds.
        

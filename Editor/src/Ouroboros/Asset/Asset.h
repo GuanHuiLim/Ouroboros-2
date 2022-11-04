@@ -27,6 +27,17 @@ Technology is prohibited.
 #include "OO_Vulkan/src/MeshModel.h"
 #include "Ouroboros/Audio/Audio.h"
 
+/****************************************************************************************
+* 
+* How to Add Support for a New Asset Type
+* 
+* 1) Add the type of asset to the AssetInfo::Type enum (in Asset.h).
+* 2) Declare the list of supported extensions for the asset type.
+* 3) Implement the loading and unloading procedure for the corresponding asset in the
+*     AssetInfo::Reload(AssetInfo::Type) method (in Asset.cpp).
+* 
+****************************************************************************************/
+
 namespace oo
 {
     class Asset;
@@ -60,6 +71,8 @@ namespace oo
             Font,
             Audio,
             Model,
+            Animation,
+            AnimationTree,
             _COUNT,
         };
 
@@ -159,6 +172,8 @@ namespace oo
         static constexpr ExtensionList<5> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".dds", ".tga" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
+        static constexpr ExtensionList<1> EXTS_ANIMATION = { ".anim" };
+        static constexpr ExtensionList<1> EXTS_ANIMATION_TREE = { ".tree" };
         static constexpr ExtensionList<1> EXTS_MODEL = { ".fbx" };
 
         /* --------------------------------------------------------------------------- */

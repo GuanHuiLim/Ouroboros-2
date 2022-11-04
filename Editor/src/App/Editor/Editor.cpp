@@ -35,6 +35,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Events/FileDropEvent.h"
 #include "Ouroboros/Core/Timer.h"
+#include <Ouroboros/Physics/PhysicsSystem.h>
 
 static void FileDrop(oo::FileDropEvent* e)
 {
@@ -64,6 +65,7 @@ static void FileDrop(oo::FileDropEvent* e)
 			return;
 		}
 		std::filesystem::copy(p, Project::GetAssetFolder() / p.filename(),std::filesystem::copy_options::overwrite_existing);
+		Project::GetAssetManager()->Scan();
 	}
 }
 Editor::Editor()
@@ -90,6 +92,7 @@ Editor::Editor()
 	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
 	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
 	ImGuiManager::Create("Animator Controller", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animatorControllerView.Show(); });
+	ImGuiManager::Create("Animation Timeline", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animationTimelineView.Show(); });
 	ImGuiManager::Create("Mesh Hierarchy", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar ), [this] {this->m_meshHierarchy.Show(); });
 	ImGuiManager::Create("Renderer Debugger", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_rendererDebugger.Show(); });
 	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
@@ -211,6 +214,18 @@ void Editor::MenuBar()
 			if (ImGui::MenuItem("Renderer Debugger", 0, ImGuiManager::GetItem("Renderer Debugger").m_enabled))
 			{
 				ImGuiManager::GetItem("Renderer Debugger").m_enabled = !ImGuiManager::GetItem("Renderer Debugger").m_enabled;
+			}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Debugging"))
+		{
+			if (ImGui::MenuItem("Physics Debug Draw", 0, oo::PhysicsSystem::DrawDebug))
+			{
+				oo::PhysicsSystem::DrawDebug = !oo::PhysicsSystem::DrawDebug;
+			}
+			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessges))
+			{
+				oo::PhysicsSystem::DebugMessges = !oo::PhysicsSystem::DebugMessges;
 			}
 			ImGui::EndMenu();
 		}

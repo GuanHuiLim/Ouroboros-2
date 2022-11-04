@@ -59,7 +59,7 @@ namespace oo
     
     private:
         CameraController m_cc;
-        static Camera m_editorCamera;
+        //static Camera m_editorCamera;
         Camera m_runtimeCamera;
         
         bool m_firstFrame = true; // potentially improvable if this can be run once per creation

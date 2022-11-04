@@ -83,7 +83,12 @@ namespace oo
         switch (GetActiveState())
         {
         case SCENE_STATE::EDITING:
-            ASSERT_MSG(true, "this should never happen!");
+            // TODO: needs to be fixed
+            e->CurrentEditorScene = nullptr;
+            e->CurrentRuntimeScene = m_runtimeController.GetRuntimeScene().lock();
+            e->CurrentScene = std::static_pointer_cast<Scene>(e->CurrentRuntimeScene);
+            e->IsEditor = false;
+            //ASSERT_MSG(true, "this should never happen!");
             break;
 
         case SCENE_STATE::RUNNING:

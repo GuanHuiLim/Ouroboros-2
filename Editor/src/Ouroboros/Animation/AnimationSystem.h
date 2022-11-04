@@ -48,20 +48,21 @@ namespace oo::Anim
 
 		Scene::go_ptr CreateAnimationTestObject();
 
-		bool SaveAnimationTree(std::string name, std::string filepath);
-		bool SaveAnimation(std::string name, std::string filepath);
-		bool SaveAllAnimations(std::string filepath);
-		bool SaveAllAnimationTree(std::string filepath);
-		bool LoadAnimationTree(std::string filepath);
-		bool LoadAnimation(std::string filepath);
-		bool LoadAssets(std::string filepath);
-		void OpenFileCallback(OpenFileEvent* evnt);
-		void CloseProjectCallback(CloseProjectEvent* evnt);
+		static bool SaveAnimationTree(std::string name, std::string filepath);
+		static bool SaveAnimation(std::string name, std::string filepath);
+		static bool SaveAllAnimations(std::string filepath);
+		static bool SaveAllAnimationTree(std::string filepath);
+		static AnimationTree* LoadAnimationTree(std::string filepath);
+		static Animation* LoadAnimation(std::string filepath);
+		static bool LoadAssets(std::string filepath);
+		static void OpenFileCallback(OpenFileEvent* evnt);
+		static void CloseProjectCallback(CloseProjectEvent* evnt);
 
 		static Animation* AddAnimation(std::string const& name);
+		static AnimationTree* CreateAnimationTree(std::string const& name);
 	private:
-		bool SaveAnimation(Animation& anim, std::string filepath);
-		bool SaveAnimationTree(AnimationTree& tree, std::string filepath);
+		static bool SaveAnimation(Animation& anim, std::string filepath);
+		static bool SaveAnimationTree(AnimationTree& tree, std::string filepath);
 		void TestObject();
 	};
 

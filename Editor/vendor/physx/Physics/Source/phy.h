@@ -256,6 +256,9 @@ namespace myPhysx {
         void addTorque(PxVec3 f_amount, force f);
 
         // set default value for each type of shape & can change shape too
+        template<typename Type>
+        void reAttachShape(rigid rigidType, Type data);
+
         void setShape(shape shape);
         void removeShape();
 
