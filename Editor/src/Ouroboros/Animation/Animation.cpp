@@ -81,7 +81,8 @@ namespace oo::Anim::internal
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
-				prop.set_value(obj, val);
+				auto result = prop.set_value(obj, val);
+				assert(result);
 			}
 		}
 		//script events
@@ -219,6 +220,7 @@ namespace oo::Anim
 			traverse_recursive(current);
 		}
 
+		std::string prefix_name = std::filesystem::path{ filepath }.stem().string() + "_";
 
 		std::cout << "Animated scene\n";
 		std::vector<Animation*> anims;
@@ -233,7 +235,7 @@ namespace oo::Anim
 			std::cout << "-------------------------------------------------------" << std::endl;
 
 			Animation anim{};
-			anim.name = scene->mAnimations[i]->mName.C_Str();
+			anim.name = prefix_name + scene->mAnimations[i]->mName.C_Str();
 
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
@@ -343,13 +345,31 @@ namespace oo::Anim
 	Animation* Animation::AddAnimation(Animation&& anim)
 	{
 		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
+
+		//remove existing dupe
+		if (Animation::name_to_ID.contains(anim.name))
+		{
+			RemoveAnimation(anim.name);
+		}
+
 		Animation::name_to_ID[anim.name] = anim.animation_ID;
 		size_t key = anim.animation_ID;
 		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
+		assert(result);//should not have overwritten anything as dupes are removed beforehand
 		auto& createdAnim = Animation::animation_storage[key];
 
 		//auto assetmanager = Project::GetAssetManager();
 
 		return &createdAnim;
+	}
+
+	void Animation::RemoveAnimation(std::string const& name)
+	{
+		assert(Animation::name_to_ID.contains(name));
+		assert(Animation::animation_storage.contains(Animation::name_to_ID[name]));
+
+		Animation::animation_storage.erase(Animation::name_to_ID[name]);
+		Animation::name_to_ID.erase(name);
+
 	}
 }

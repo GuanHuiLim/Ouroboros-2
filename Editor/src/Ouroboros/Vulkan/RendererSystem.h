@@ -26,6 +26,10 @@ Technology is prohibited.
 #include "Ouroboros/Core/CameraController.h"
 
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
+
+//fwd declaration
+struct EditorViewportResizeEvent;
+
 namespace oo
 {
     class RendererSystem : public Ecs::System
@@ -46,6 +50,7 @@ namespace oo
 
     private:
         void OnScreenResize(WindowResizeEvent* e);
+        void OnEditorViewportResize(EditorViewportResizeEvent* e);
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
@@ -59,7 +64,6 @@ namespace oo
     
     private:
         CameraController m_cc;
-        static Camera m_editorCamera;
         Camera m_runtimeCamera;
         
         bool m_firstFrame = true; // potentially improvable if this can be run once per creation
