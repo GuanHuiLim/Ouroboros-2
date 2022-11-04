@@ -69,10 +69,11 @@ void EditorViewport::Show()
 
 	auto contentWidth = float(windowWidth);
 	auto contentHeight = float(windowHeight);
-	vMin.x = 0;
-	vMin.y = 0;
-	vMax.x = contentWidth;
-	vMax.y = contentHeight;
+	
+	ImVec2 prevpos = ImGui::GetCursorPos();
+	ImGui::Image(0, ImGui::GetContentRegionAvail());
+	ImGui::SetCursorPos(prevpos);
+
 
 	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
 
