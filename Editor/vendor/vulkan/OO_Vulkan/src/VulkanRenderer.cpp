@@ -474,7 +474,6 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 		uboDynamicAlignment = (uboDynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
 	}
 
-	numCameras = 2;
 	VkDeviceSize vpBufferSize = uboDynamicAlignment * numCameras;
 
 	descriptorSets_uniform.resize(m_swapchain.swapChainImages.size());
@@ -782,28 +781,50 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 
 	for (uint32_t x = 0; x < world->numCameras; ++x)
 	{
-		auto& image = world->renderTargets[x];
-		if (image.image == VK_NULL_HANDLE)
+		auto& wrdID = world->targetIDs[x];
+		if (wrdID == -1)
 		{
-			image.name = "GW_"+std::to_string(x)+":COL";
-			image.forFrameBuffer(&m_device, m_swapchain.swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-				m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
-			image.name = "WorldColourTarget";			
-			
-		}
-		auto& depth = world->depthTargets[x];
-		if (depth.image == VK_NULL_HANDLE)
-		{
-			depth.name = "GW_"+std::to_string(x)+":DEPTH";
-			depth.forFrameBuffer(&m_device, G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-				m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
-			depth.name = "WorldDepthTarget";			
-			//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
-		}
-		if (world->imguiID[x] == 0)
-		{
-			world->imguiID[x] = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, image.imageLayout);
-		}
+			// allocate render target
+			bool found = false;
+			for (size_t i = 0; i < renderTargets.size(); i++)
+			{
+				
+				if (renderTargets[i].inUse == false)
+				{
+					numAllocatedCameras++;
+					renderTargets[i].inUse = true;
+					wrdID = i;
+					found = true;
+					break;
+				}
+			}
+			assert(found && "Could not find enough rendertargets");
+			// initialization
+			auto& image = renderTargets[wrdID].texture;
+			if (image.image == VK_NULL_HANDLE)
+			{
+				image.name = "GW_"+std::to_string(wrdID)+":COL";
+				image.forFrameBuffer(&m_device, m_swapchain.swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
+				image.name = "WorldColourTarget";			
+			}
+			if (image.image&&renderTargets[wrdID].imguiTex == 0)
+			{
+				renderTargets[wrdID].imguiTex = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, image.imageLayout);				
+			}
+			auto& depth =  renderTargets[wrdID].depth;
+			if (depth.image == VK_NULL_HANDLE)
+			{
+				depth.name = "GW_"+std::to_string(wrdID)+":DEPTH";
+				depth.forFrameBuffer(&m_device, G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
+				depth.name = "WorldDepthTarget";
+				//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
+			}
+
+			//assignment 
+			world->imguiID [x] = renderTargets[wrdID].imguiTex;
+		}		
 	}	
 	world->initialized = true;
 }
@@ -811,19 +832,13 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 void VulkanRenderer::DestroyWorld(GraphicsWorld* world)
 {
 	assert(world && "dont pass nullptr");
-	vkDeviceWaitIdle(m_device.logicalDevice);
+	assert(world->initialized && "World should exist dont destroy non-init world");
 	for (uint32_t x = 0; x < world->numCameras; ++x)
 	{
-		auto& image = world->renderTargets[x];
-		if (image.image)
-		{
-			image.destroy();
-		}
-		auto& depth = world->depthTargets[x];
-		if (depth.image)
-		{
-			depth.destroy();	
-		}
+		auto& wrdID = world->targetIDs[x];
+		renderTargets[wrdID].inUse = false;
+		wrdID = -1;
+		numAllocatedCameras--;
 	}	
 	world->initialized = false;
 }
@@ -926,7 +941,6 @@ void VulkanRenderer::CreateUniformBuffers()
 {	
 	// ViewProjection buffer size
 	//auto dynamicAlignment = sizeof(glm::mat4);
-	numCameras = 2;
 	uboDynamicAlignment = oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO),m_device.properties.limits.minUniformBufferOffsetAlignment);
 	
 	VkDeviceSize vpBufferSize = numCameras*uboDynamicAlignment;
@@ -1621,7 +1635,8 @@ void VulkanRenderer::BeginDraw()
 		{
 			for (size_t x = 0; x < currWorld->numCameras; x++)
 			{
-				auto& image = currWorld->renderTargets[x];
+				const auto targetID = currWorld->targetIDs[x];
+				auto& image = renderTargets[targetID].texture;
 				VkDescriptorImageInfo desc_image[1] = {};
 				desc_image[0].sampler = image.sampler;
 				desc_image[0].imageView = image.view;
@@ -1641,8 +1656,9 @@ void VulkanRenderer::BeginDraw()
 				if (currWorld->imguiID[x])
 				{
 					write_desc[0].pImageInfo = desc_image;
-					//vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
-				}				
+					vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
+				}
+								
 			}		
 			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
 			batches.GenerateBatches();
@@ -1712,6 +1728,7 @@ void VulkanRenderer::RenderFrame()
 			renderIteration = 0;
 			for (size_t i = 0; i < currWorld->numCameras; i++)
 			{		
+				renderTargetInUseID = currWorld->targetIDs[i];
 				VkMemoryBarrier memoryBarrier{};
 				memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 				memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -1745,10 +1762,12 @@ void VulkanRenderer::RenderFrame()
 			if (currWorld->numCameras > 1)
 			{
 				// TODO: Very bad pls fix
-				BlitFramebuffer(commandBuffers[swapchainIdx], currWorld->renderTargets[1], m_swapchain.swapChainImages[swapchainIdx]);
+				auto thisID = currWorld->targetIDs[1];
+				BlitFramebuffer(commandBuffers[swapchainIdx], renderTargets[thisID].texture, m_swapchain.swapChainImages[swapchainIdx]);
 			}
 			// only blit main framebuffer
-			BlitFramebuffer(commandBuffers[swapchainIdx], currWorld->renderTargets[0], m_swapchain.swapChainImages[swapchainIdx]);
+			auto thisID = currWorld->targetIDs[0];
+			BlitFramebuffer(commandBuffers[swapchainIdx],  renderTargets[thisID].texture, m_swapchain.swapChainImages[swapchainIdx]);
 		}
     }
 }

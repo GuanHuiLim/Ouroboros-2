@@ -71,7 +71,7 @@ void DebugDrawRenderpass::Draw()
 
 	VkFramebuffer fb;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&vr.currWorld->renderTargets[vr.renderIteration])
+		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].texture)
 		.BindImage(&depthAtt)
 		.Build(fb,debugRenderpass);
 

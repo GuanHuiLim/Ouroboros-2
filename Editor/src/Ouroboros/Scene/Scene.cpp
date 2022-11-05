@@ -217,7 +217,7 @@ namespace oo
         m_graphicsWorld->ClearLightInstances();
         m_graphicsWorld->ClearObjectInstances();
         // kill the graphics world
-        // Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
+        Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
 
         m_lookupTable.clear();
         m_gameObjects.clear();

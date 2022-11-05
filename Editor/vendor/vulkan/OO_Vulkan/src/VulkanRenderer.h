@@ -183,6 +183,7 @@ public:
 	void DestroyWorld(GraphicsWorld* world);
 	GraphicsWorld* currWorld{ nullptr };
 	uint32_t renderIteration{ 0};
+	uint32_t renderTargetInUseID{ 0 };
 	float renderClock{ 0.0f };
 
 	GraphicsBatch batches;
@@ -337,7 +338,17 @@ public:
 	uint32_t currentFrame = 0;
 
 	uint64_t uboDynamicAlignment;
-	uint32_t numCameras;
+	static constexpr uint32_t numCameras = 2;
+	uint32_t numAllocatedCameras;
+
+	struct RenderTarget
+	{
+		bool inUse = false;
+		vkutils::Texture2D texture;
+		vkutils::Texture2D depth;
+		ImTextureID imguiTex{};
+	};
+	std::array<RenderTarget, 4>renderTargets;
 
 	bool resizeSwapchain = false;
 	bool m_prepared = false;
