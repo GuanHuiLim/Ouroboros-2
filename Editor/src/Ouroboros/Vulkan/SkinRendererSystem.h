@@ -17,5 +17,8 @@ namespace oo
 		void Init();
 
 		virtual void Run(Ecs::ECSWorld* world) override;
+
+	private:
+		void OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt);
 	};
 }
