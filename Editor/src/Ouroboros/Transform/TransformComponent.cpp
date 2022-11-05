@@ -35,7 +35,14 @@ namespace oo
             .property_readonly("Global Position", &TransformComponent::GetGlobalPosition)
             .property_readonly("Global Rotation", &TransformComponent::GetGlobalRotationDeg)
             .property_readonly("Global Quaternion", &TransformComponent::GetGlobalRotationQuat)
-            .property_readonly("Global Scale", &TransformComponent::GetGlobalScale);
+            .property_readonly("Global Scale", &TransformComponent::GetGlobalScale)
+            .property_readonly("Local Forward", &TransformComponent::LocalForward)
+            .property_readonly("Local Left", &TransformComponent::LocalLeft)
+            .property_readonly("Local Up", &TransformComponent::LocalUp)
+            .property_readonly("Global Forward", &TransformComponent::GlobalForward)
+            .property_readonly("Global Left", &TransformComponent::GlobalLeft)
+            .property_readonly("Global Up", &TransformComponent::GlobalUp)
+            ;
         //added readonly for debugging purposes
     }
 
@@ -44,11 +51,13 @@ namespace oo
     TransformComponent::vec3 TransformComponent::GetEulerAngles()             const { return LocalEulerAngles; }
     TransformComponent::vec3 TransformComponent::GetScale()                   const { return LocalTransform.Scale; }
 
-    TransformComponent::vec3 TransformComponent::LocalRight()                 const { return LocalTransform.Right(); }
+    // Take note we negate here because of LH(underlying implementation) Conversion to RH(Vulkan)
+    TransformComponent::vec3 TransformComponent::LocalLeft()                  const { return LocalTransform.Right(); }
     TransformComponent::vec3 TransformComponent::LocalUp()                    const { return LocalTransform.Up(); }
     TransformComponent::vec3 TransformComponent::LocalForward()               const { return LocalTransform.Forward(); }
-                                                
-    TransformComponent::vec3 TransformComponent::GlobalRight()                const { return GlobalTransform.Right(); }
+    
+    // Take note we negate here because of LH(underlying implementation) Conversion to RH(Vulkan)                                            
+    TransformComponent::vec3 TransformComponent::GlobalLeft()                 const { return GlobalTransform.Right(); }
     TransformComponent::vec3 TransformComponent::GlobalUp()                   const { return GlobalTransform.Up(); }
     TransformComponent::vec3 TransformComponent::GlobalForward()              const { return GlobalTransform.Forward(); }
                                                 
@@ -59,7 +68,7 @@ namespace oo
     TransformComponent::mat4 TransformComponent::GetGlobalRotationMatrix()    const { return GlobalTransform.GetRotationMatrix(); }
     TransformComponent::vec3 TransformComponent::GetGlobalRotationRad()       const { return GlobalTransform.GetEulerAnglesRad(); }
     TransformComponent::vec3 TransformComponent::GetGlobalRotationDeg()       const { return GlobalTransform.GetEulerAnglesDeg(); }
-    TransformComponent::quat oo::TransformComponent::GetGlobalRotationQuat()  const { return GlobalTransform.Orientation; }
+    TransformComponent::quat TransformComponent::GetGlobalRotationQuat()      const { return GlobalTransform.Orientation; }
     TransformComponent::vec3 TransformComponent::GetGlobalScale()             const { return GlobalTransform.Scale; }
 
     TransformComponent::vec3& TransformComponent::Position()                  
@@ -156,10 +165,16 @@ namespace oo
         GlobalTransform.SetTransform(target_global_matrix);
     }
 
-    void oo::TransformComponent::LookAt(vec3 target)
+    /*void oo::TransformComponent::LookAt(vec3 target)
     {
         LocalMatrixDirty = true;
         LocalTransform.LookAt(target);
+    }*/
+
+    void oo::TransformComponent::LookAt(vec3 normalized_direction)
+    {
+        GlobalMatrixDirty = true;
+        GlobalTransform.LookAt(normalized_direction);
     }
 
     void TransformComponent::CalculateLocalTransform()

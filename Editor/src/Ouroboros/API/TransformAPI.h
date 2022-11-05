@@ -15,14 +15,13 @@ Technology is prohibited.
 #pragma once
 #include "Ouroboros/Scripting/ExportAPI.h"
 
-#include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Scripting/ScriptSystem.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 
 namespace oo
 {
-    SCRIPT_API void Transform3D_GetLocalPosition(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z) 
+    SCRIPT_API void Transform3D_GetLocalPosition(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
     { 
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -32,7 +31,7 @@ namespace oo
         *z = vec3.z;
     }
 
-    SCRIPT_API void Transform3D_SetLocalPosition(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    SCRIPT_API void Transform3D_SetLocalPosition(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -42,7 +41,7 @@ namespace oo
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
-    SCRIPT_API void Transform3D_GetGlobalPosition(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    SCRIPT_API void Transform3D_GetGlobalPosition(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -52,7 +51,7 @@ namespace oo
         *z = vec3.z;
     }
 
-    SCRIPT_API void Transform3D_SetGlobalPosition(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    SCRIPT_API void Transform3D_SetGlobalPosition(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -62,7 +61,47 @@ namespace oo
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
-    SCRIPT_API void Transform3D_GetLocalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    SCRIPT_API void Transform3D_GetGlobalForward(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GlobalForward();
+        *x = vec3.x;
+        *y = vec3.y;
+        *z = vec3.z;
+    }
+
+    SCRIPT_API void Transform3D_SetGlobalForward(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        component.LookAt({ x, y, z });
+
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
+    }
+
+    SCRIPT_API void Transform3D_GetGlobalLeft(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GlobalLeft();
+        *x = vec3.x;
+        *y = vec3.y;
+        *z = vec3.z;
+    }
+
+    SCRIPT_API void Transform3D_GetGlobalUp(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        TransformComponent::vec3 vec3 = component.GlobalUp();
+        *x = vec3.x;
+        *y = vec3.y;
+        *z = vec3.z;
+    }
+
+    SCRIPT_API void Transform3D_GetLocalEulerAngles(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -72,7 +111,17 @@ namespace oo
         *z = vec3.z;
     }
 
-    SCRIPT_API void Transform3D_SetLocalEulerAngles(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    SCRIPT_API void Transform3D_LookAt(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        TransformComponent& component = obj->GetComponent<TransformComponent>();
+        component.LookAt({ x, y, z });
+
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
+    }
+
+    SCRIPT_API void Transform3D_SetLocalEulerAngles(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -82,7 +131,7 @@ namespace oo
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
-    SCRIPT_API void Transform3D_GetGlobalEulerAngles(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    SCRIPT_API void Transform3D_GetGlobalEulerAngles(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -92,7 +141,7 @@ namespace oo
         *z = vec3.z;
     }
 
-    SCRIPT_API void Transform3D_SetGlobalEulerAngles(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    SCRIPT_API void Transform3D_SetGlobalEulerAngles(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -102,7 +151,7 @@ namespace oo
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
-    SCRIPT_API void Transform3D_GetLocalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    SCRIPT_API void Transform3D_GetLocalScale(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -112,7 +161,7 @@ namespace oo
         *z = vec3.z;
     }
 
-    SCRIPT_API void Transform3D_SetLocalScale(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    SCRIPT_API void Transform3D_SetLocalScale(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -122,7 +171,7 @@ namespace oo
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
-    SCRIPT_API void Transform3D_GetGlobalScale(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
+    SCRIPT_API void Transform3D_GetGlobalScale(Scene::ID_type sceneID, oo::UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -132,7 +181,7 @@ namespace oo
         *z = vec3.z;
     }
 
-    SCRIPT_API void Transform3D_SetGlobalScale(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    SCRIPT_API void Transform3D_SetGlobalScale(Scene::ID_type sceneID, oo::UUID uuid, float x, float y, float z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         TransformComponent& component = obj->GetComponent<TransformComponent>();
@@ -142,28 +191,59 @@ namespace oo
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
-    SCRIPT_API int Transform_GetChildCount(Scene::ID_type sceneID, UUID uuid)
+    SCRIPT_API int Transform_GetChildCount(Scene::ID_type sceneID, oo::UUID uuid)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         return static_cast<int>(obj->GetDirectChildCount());
     }
 
-    SCRIPT_API ComponentDatabase::IntPtr Transform_GetChild(Scene::ID_type sceneID, UUID uuid, size_t childIndex)
+    SCRIPT_API ComponentDatabase::IntPtr Transform_GetChild(Scene::ID_type sceneID, oo::UUID uuid, size_t childIndex)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
-        std::vector<UUID> children = obj->GetDirectChildsUUID();
+        std::vector<oo::UUID> children = obj->GetDirectChildsUUID();
         if (childIndex >= children.size())
         {
             // Throw out of range exception?
             ScriptEngine::ThrowOutOfIndexException();
-            // return 0;
         }
         
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         return scene->GetWorld().Get_System<ScriptSystem>()->GetComponent(children[childIndex], "Ouroboros", "Transform");
     }
 
-    SCRIPT_API void Transform_SetParent(Scene::ID_type sceneID, UUID uuid, UUID newParent, bool preserveTransforms)
+    SCRIPT_API ComponentDatabase::IntPtr Transform_FindChild(Scene::ID_type sceneID, oo::UUID uuid, const char* childPath)
+    {
+        GameObject obj = *(ScriptManager::GetObjectFromScene(sceneID, uuid));
+
+        std::string pathString{ childPath };
+        size_t curr = 0;
+        size_t separator = pathString.find_first_of('/', curr);
+        while (curr != std::string::npos)
+        {
+            std::string childName = pathString.substr(curr, separator - curr);
+            bool childFound = false;
+            for(GameObject child : obj.GetChildren())
+            {
+                if (child.Name() != childName)
+                    continue;
+                obj = child;
+                childFound = true;
+                break;
+            }
+            if (!childFound)
+                return ComponentDatabase::InvalidPtr;
+
+            if (separator == std::string::npos)
+                break;
+            curr = separator + 1;
+            separator = pathString.find_first_of('/', curr);
+        }
+
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        return scene->GetWorld().Get_System<ScriptSystem>()->GetComponent(obj.GetInstanceID(), "Ouroboros", "Transform");
+    }
+
+    SCRIPT_API void Transform_SetParent(Scene::ID_type sceneID, oo::UUID uuid, oo::UUID newParent, bool preserveTransforms)
     {
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
@@ -179,14 +259,14 @@ namespace oo
         scene->GetWorld().Get_System<TransformSystem>()->UpdateSubTree(*obj);
     }
 
-    SCRIPT_API uint32_t Transform_GetParent(Scene::ID_type sceneID, UUID uuid)
+    SCRIPT_API uint32_t Transform_GetParent(Scene::ID_type sceneID, oo::UUID uuid)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
-        UUID parentUUID = obj->GetParentUUID();
+        oo::UUID parentUUID = obj->GetParentUUID();
 
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         if (parentUUID == GameObject::ROOTID)
-            return 0;
+            return ComponentDatabase::InvalidPtr;
         return scene->GetWorld().Get_System<ScriptSystem>()->GetComponent(parentUUID, "Ouroboros", "Transform");
     }
 }

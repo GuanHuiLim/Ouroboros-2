@@ -60,6 +60,11 @@ namespace oo
     public:
         using FunctionPointer = void(*)(EventType*);
         EventFunction(FunctionPointer function) : m_function{ function } {};
+
+        bool operator==(EventFunction& rhs)
+        {
+            return (m_function == rhs.m_function);
+        }
     private:
         void Invoke(Event* event) override 
         {

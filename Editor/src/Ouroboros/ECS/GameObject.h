@@ -64,7 +64,7 @@ namespace oo
 
         // only done after ecs able to return dynamic objects
         std::string& Name()                         const;
-        UUID GetInstanceID()                        const;
+        oo::UUID GetInstanceID()                        const;
         scenenode::weak_pointer GetSceneNode()      const;
         bool GetIsPrefab()                          const;
         Entity GetEntity()                          const;
@@ -124,9 +124,9 @@ namespace oo
         std::vector<GameObject> GetDirectChilds(bool includeItself = false) const;
         std::vector<GameObject> GetChildren(bool includeItself = false) const;
         
-        UUID GetParentUUID() const;
-        std::vector<UUID> GetDirectChildsUUID(bool includeItself = false) const;
-        std::vector<UUID> GetChildrenUUID(bool includeItself = false) const;
+        oo::UUID GetParentUUID() const;
+        std::vector<oo::UUID> GetDirectChildsUUID(bool includeItself = false) const;
+        std::vector<oo::UUID> GetChildrenUUID(bool includeItself = false) const;
         
         bool HasChild() const;
         bool HasValidParent() const;
@@ -162,6 +162,9 @@ namespace oo
 
         template<typename Component>
         void RemoveComponent() const;
+        
+        template<typename Component>
+        void TryRemoveComponent() const;
 
         template<>
         void RemoveComponent<TransformComponent>() const;
@@ -205,6 +208,13 @@ namespace oo
         ASSERT_MSG(m_scene->IsValid(*this) == false, " gameobject does not belong to this scene, how did you create this gameobject??");
         m_scene->GetWorld().add_component<Component>(m_entity, args...);
         return GetComponent<Component>();
+    }
+
+    template<typename Component>
+    inline void GameObject::TryRemoveComponent() const
+    {
+        if(HasComponent<Component>())
+            RemoveComponent<Component>();
     }
 
     template<typename Component>

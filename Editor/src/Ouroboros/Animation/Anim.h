@@ -14,6 +14,14 @@ Technology is prohibited.
 
 #pragma once
 #include "Anim_Utils.h"
+#include "AnimationGroup.h"
+#include "AnimationNode.h"
+#include "AnimationLink.h"
+#include "AnimationCondition.h"
+#include "AnimationParameter.h"
+#include "AnimationTimeline.h"
+#include "AnimationKeyFrame.h"
+#include "Animation.h"
 #include "AnimationTree.h"
 #include "AnimationTracker.h"
 namespace oo::Anim::internal

@@ -28,36 +28,37 @@ namespace oo
         CONVEX
     };
 
-    /*-----------------------------------------------------------------------------*/
-    /* Base collider component that all colliders inherit from                     */
-    /*-----------------------------------------------------------------------------*/
-    struct ColliderBase 
-    {
-        bool IsTrigger = false;
-        vec3 Offset = { 0.0, 0.0, 0.0 };
+    ///*-----------------------------------------------------------------------------*/
+    ///* Base collider component that all colliders inherit from                     */
+    ///*-----------------------------------------------------------------------------*/
+    //struct ColliderBase 
+    //{
+    //    bool IsTrigger = false;
+    //    //vec3 Offset = { 0.0, 0.0, 0.0 };
 
-        ColliderType Collider;
+    //    ColliderType Collider;
 
-        RTTR_ENABLE();
-    };
+    //    RTTR_ENABLE();
+    //};
 
     /*-----------------------------------------------------------------------------*/
     /* Describes a Sphere Collider Component                                       */
     /*-----------------------------------------------------------------------------*/
-    struct SphereColliderComponent final : public ColliderBase
+    struct SphereColliderComponent final /*: public ColliderBase*/
     {
         Sphere Bounds = { { 0.f, 0.f, 0.f }, { 0.5f } };
         float Radius = 0.5f;
 
         Sphere GlobalBounds;
 
-        RTTR_ENABLE(ColliderBase);
+        //RTTR_ENABLE(ColliderBase);
+        RTTR_ENABLE();
     };
 
     /*-----------------------------------------------------------------------------*/
     /* Describes a Box Collider Component                                          */
     /*-----------------------------------------------------------------------------*/
-    struct BoxColliderComponent final : public ColliderBase
+    struct BoxColliderComponent final /*: public ColliderBase*/
     {
         //AABB Bounds = { { -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f } };
         vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
@@ -65,15 +66,19 @@ namespace oo
         vec3 GlobalHalfExtents = { 0.5f, 0.5f, 0.5f };
         //AABB GlobalBounds;
 
-        RTTR_ENABLE(ColliderBase);
+        //RTTR_ENABLE(ColliderBase);
+        RTTR_ENABLE();
     };
 
-    struct CapsuleColliderComponent final :public ColliderBase
+    struct CapsuleColliderComponent final /*: public ColliderBase*/
     {
         float Radius        = 0.5f;
         float HalfHeight    = 0.5f;
 
-        RTTR_ENABLE(ColliderBase);
+        float GlobalRadius = 0.5f;
+        float GlobalHalfHeight = 0.5f;
+        //RTTR_ENABLE(ColliderBase);
+        RTTR_ENABLE();
     };
 
 }

@@ -28,11 +28,14 @@ Technology is prohibited.
 #include <iostream>
 #include <vector>
 #include <map>
+#include <queue>
+#include <deque>
+#include <memory>
 //#include <glm/glm.hpp>
 
 #include "uuid.h"
 
-#define PVD_DEBUGGER false
+//#define PVD_DEBUGGER false
 
 using namespace physx;
 
@@ -47,42 +50,59 @@ namespace myPhysx {
 
     enum class rigid { none, rstatic, rdynamic };
     enum class shape { none, box, sphere, capsule, plane };
-    enum class force { conventional, explosive, velocity, acceleration };
-
-    /*
+    enum class force { force, acceleration, impulse, velocityChanged };
+    enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit};
+    enum class collision { none, onCollisionEnter, onCollisionStay, onCollisionExit};
+    
+    
     class EventCallBack : public PxSimulationEventCallback {
 
-    private:
-
     public:
-        void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override {
-            printf("CALLBACK: onConstraintBreak\n");
-        }
-        void onWake(PxActor** actors, PxU32 count) override {
-            printf("CALLBACK: onWake\n");
-        }
-        void onSleep(PxActor** actors, PxU32 count) override {
-            printf("CALLBACK: onSleep\n");
-        }
-        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) override {
-            printf("CALLBACK: onContact\n");
-        }
-        void onTrigger(PxTriggerPair* pairs, PxU32 count) override {
-            printf("CALLBACK: onTrigger\n");
-        }
-        void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override {
-            printf("CALLBACK: onAdvance\n");
-        }
-    };
-    */
+        void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override;
 
-    struct RigidDynamic {
+        void onWake(PxActor** actors, PxU32 count) override;
+
+        void onSleep(PxActor** actors, PxU32 count) override;
+
+        void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) override;
+
+        void onTrigger(PxTriggerPair* pairs, PxU32 count) override;
+
+        void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
+    };
+
+    struct ContactPoint {
+
+        PxVec3 normal;
+        PxVec3 point;
+        PxVec3 impulse;
+    };
+
+    struct ContactManifold {
+
+        phy_uuid::UUID shape1_ID;
+        phy_uuid::UUID shape2_ID;
+
+        collision status = collision::none;
+
+        std::vector<ContactPoint> m_contactPoint;
+        PxU8 contactCount;
+    };
+
+    struct TriggerManifold {
+
+        phy_uuid::UUID triggerID;
+        phy_uuid::UUID otherID;
+
+        trigger status = trigger::none;
+        bool passingAway = false;
+
+        //bool isStaying = false;
+    };
+
+    struct RigidBody {
 
         PxRigidDynamic* rigidDynamic = nullptr;
-    };
-
-    struct RigidStatic {
-
         PxRigidStatic* rigidStatic = nullptr;
     };
 
@@ -97,6 +117,8 @@ namespace myPhysx {
     // backend holds the overall info of the entire physics engine
     namespace physx_system {
 
+        static PhysxWorld* currentWorld;
+
         void init();
 
         void shutdown();
@@ -108,6 +130,19 @@ namespace myPhysx {
         PxFoundation* getFoundation();
 
         PxPhysics* getPhysics();
+
+        bool isTrigger(const PxFilterData& data);
+
+        bool isTriggerShape(PxShape* shape);
+
+        void provideCurrentWorld(PhysxWorld* world);
+        
+        PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+                                                PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+                                                PxPairFlags& pairFlags, const void* constantBlock,
+                                                PxU32 constantBlockSize);
+
+        void setupFiltering(PxShape* shape);
     };
 
     // describes a physics scene
@@ -124,6 +159,10 @@ namespace myPhysx {
         std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
+        
+        std::queue<TriggerManifold> m_triggerCollisionPairs; // queue to store the trigger collision pairs
+
+        std::queue<ContactManifold> m_collisionPairs; // queue to store the collision pairs
 
     public:
 
@@ -140,13 +179,24 @@ namespace myPhysx {
         PhysicsObject createInstance();
         void removeInstance(PhysicsObject obj);
 
-        //CHECKING QUERY
+        // MAP OF OBJECTS
+        std::map<phy_uuid::UUID, int>* getAllObject();
+
+        // TRIGGER
+        void updateTriggerState(phy_uuid::UUID id); // function to update objects for OnTriggerStay
+        std::queue<TriggerManifold>* getTriggerData(); // function to retrieve the trigger queue data
+        void clearTriggerData(); // function to reset the trigger queue data
+
+        // COLLISION
+        std::queue<ContactManifold>* getCollisionData(); // function to retrieve the collision queue data
+        void clearCollisionData(); // function to reset the collision queue data
+
     };
 
     // associated to each object in the physics world (me store)
     struct PhysxObject {
 
-        phy_uuid::UUID id = 0;
+        std::unique_ptr<phy_uuid::UUID> id = nullptr;
         phy_uuid::UUID matID = 0;
 
         // shape
@@ -154,11 +204,10 @@ namespace myPhysx {
         shape shape = shape::none;
 
         // ensure at least static or dynamic is init
-        RigidStatic rs{};
-        RigidDynamic rd{};
-
+        RigidBody rb{};
         rigid rigidID = rigid::none;
 
+        bool trigger = false;
         bool gravity = true; // static should be false
         bool kinematic = false;
     };
@@ -180,8 +229,9 @@ namespace myPhysx {
         PxReal getLinearDamping() const;
         PxVec3 getLinearVelocity() const;
 
-        bool getGravity() const;
-        bool getKinematic() const;
+        bool isTrigger() const;
+        bool useGravity() const;
+        bool isKinematic() const;
 
         // SETTERS
         void setRigidType(rigid type);
@@ -195,14 +245,20 @@ namespace myPhysx {
         void setLinearDamping(PxReal linearDamping);
         void setLinearVelocity(PxVec3 linearVelocity);
 
-        void setGravity(bool gravity);
-        void setKinematic(bool kine);
+        void disableGravity(bool gravity);
+        void enableKinematic(bool kine);
 
+        // TRIGGERS
+        void setTriggerShape(bool trigger);
+        
         // FORCE
         void addForce(PxVec3 f_amount, force f);
         void addTorque(PxVec3 f_amount, force f);
 
         // set default value for each type of shape & can change shape too
+        template<typename Type>
+        void reAttachShape(rigid rigidType, Type data);
+
         void setShape(shape shape);
         void removeShape();
 

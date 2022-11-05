@@ -19,11 +19,19 @@ Technology is prohibited.
 //#include "Editor.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
+#include "Ouroboros/Transform/TransformSystem.h"
+#include "Ouroboros/Audio/AudioSystem.h"
+#include "Ouroboros/Core/Application.h"
+
+//optick
+#include "optick.h"
 
 namespace oo
 {
-    EditorScene::EditorScene(std::string const& filepath)
-        : Scene{ "Editor Scene" }
+    EditorScene::EditorScene(std::string const& name, std::string const& filepath)
+        : Scene{ name }
     {
         if (!filepath.empty())
             SetFilePath(filepath);
@@ -32,15 +40,24 @@ namespace oo
     void EditorScene::Init()
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_init, tracy::Color::Aqua);
+        OPTICK_EVENT();
+        
+        // Reset some global window related settings here ... might be a bit scuffed and needa shift elsewhere
+        {
+            // Unlock the mouse if it was locked in play mode
+            Application::Get().GetWindow().SetMouseLockState(false);
+        }
 
         Scene::Init();
 
         //Register All Systems
         {
             TRACY_PROFILE_SCOPE_N(editor_registration);
+            GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
             //bool wantDebug = true;
 
+            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
             //TRACY_PROFILE_SCOPE_N(registration);
             /*GetWorld().RegisterSystem<PrefabComponentSystem>();
             GetWorld().RegisterSystem<EditorComponentSystem>();
@@ -76,9 +93,10 @@ namespace oo
     void EditorScene::Update()
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
+        OPTICK_EVENT();
 
-        Scene::Update();
-
+        GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
+        GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
         GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
 
         {
@@ -127,6 +145,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
+        GetWorld().Get_System<RendererSystem>()->UpdateCamerasEditorMode();
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -141,6 +160,8 @@ namespace oo
         DebugDraw::DrawYGrid(gridSize, 1.0f, oGFX::Colors::RED);
 
         Scene::Render();
+        
+        GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
 
         //constexpr const char* const rendering = "Overall Rendering";
         //constexpr const char* const text_rendering = "Text Rendering";

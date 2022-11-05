@@ -71,7 +71,7 @@ namespace oo
             }
             else if (typeClass == ScriptEngine::GetClass("ScriptCore", "Ouroboros", "GameObject"))
             {
-                paramInfoList[i].value = static_cast<ScriptValue>(static_cast<UUID>(0));
+                paramInfoList[i].value = static_cast<ScriptValue>(UUID::Invalid);
             }
             else
             {
@@ -87,26 +87,26 @@ namespace oo
 
     ScriptValue ScriptFieldInfo::TryGetRuntimeValue()
     {
-        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+        if (scriptPtr == ScriptDatabase::InvalidPtr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
             return value;
-        return ScriptValue::GetFieldValue(script, scriptField, value);
+        return ScriptValue::GetFieldValue(mono_gchandle_get_target(scriptPtr), scriptField, value);
     }
 
     void ScriptFieldInfo::TrySetRuntimeValue(ScriptValue const& newValue)
     {
-        if (script == nullptr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
+        if (scriptPtr == ScriptDatabase::InvalidPtr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
         {
             value = newValue;
         }
         else
         {
-            ScriptValue::SetFieldValue(script, scriptField, newValue);
+            ScriptValue::SetFieldValue(mono_gchandle_get_target(scriptPtr), scriptField, newValue);
         }
     }
 
-    void ScriptFieldInfo::SetScriptReference(MonoClassField* field, MonoObject* obj)
+    void ScriptFieldInfo::SetScriptReference(MonoClassField* field, ScriptDatabase::IntPtr objPtr)
     {
-        script = obj;
+        scriptPtr = objPtr;
         scriptField = field;
     }
 
@@ -241,24 +241,30 @@ namespace oo
 
     std::vector<ScriptFieldInfo> const ScriptClassInfo::GetScriptFieldInfoAll() const
     {
+        MonoClass* monoBehaviour = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
         MonoClass* _class = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
         // create sample instance with the default values
         MonoObject* sample = ScriptEngine::CreateObject(_class);
         mono_runtime_object_init(sample);
 
         std::vector<ScriptFieldInfo> resultList;
-        void* iter = NULL;
-        MonoClassField* field = nullptr;
-        while ((field = mono_class_get_fields(_class, &iter)) != nullptr)
+
+        while (_class != nullptr && _class != monoBehaviour)
         {
-            if (!ScriptEngine::CheckClassFieldInspectorVisible(sample, field))
-                continue;
-            std::string fieldName(mono_field_get_name(field));
-            ScriptValue fieldValue = ScriptValue::GetFieldValue(sample, field);
-            if (!fieldValue.IsNullType())
+            void* iter = NULL;
+            MonoClassField* field = nullptr;
+            while ((field = mono_class_get_fields(_class, &iter)) != nullptr)
             {
-                resultList.push_back({ fieldName, fieldValue });
+                if (!ScriptEngine::CheckClassFieldInspectorVisible(sample, field))
+                    continue;
+                std::string fieldName(mono_field_get_name(field));
+                ScriptValue fieldValue = ScriptValue::GetFieldValue(sample, field);
+                if (!fieldValue.IsNullType())
+                {
+                    resultList.push_back({ fieldName, fieldValue });
+                }
             }
+            _class = mono_class_get_parent(_class);
         }
         return resultList;
     }

@@ -28,14 +28,17 @@ namespace oo
 
         registration::class_<RigidbodyComponent>("Rigidbody")
             //.property("type", &RigidbodyComponent::collider_type)
-            .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
+            .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
+            .property("Disable Gravity", &RigidbodyComponent::IsGravityDisabled, &RigidbodyComponent::SetGravity)
+            .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
-            .property("Velocity", &RigidbodyComponent::GetLinearVelocity, &RigidbodyComponent::SetLinearVelocity)
+            .property_readonly("Velocity", &RigidbodyComponent::GetLinearVelocity)
             .property("Linear Damping", &RigidbodyComponent::GetLinearDamping, &RigidbodyComponent::SetLinearDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Angular Velocity", &RigidbodyComponent::GetAngularVelocity, &RigidbodyComponent::SetAngularVelocity)
+            .property_readonly("Angular Velocity", &RigidbodyComponent::GetAngularVelocity)
             .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Gravity Disabled", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
+            .property("Offset", &RigidbodyComponent::Offset)
+            .property_readonly("Underlying physX UUID", &RigidbodyComponent::GetUnderlyingUUID)
             //.property_readonly("underlying shape", &RigidbodyComponent::collider_shape)
             //.property_readonly("dirty", &RigidbodyComponent::Dirty)
             /*.property("Kinematic", &RigidbodyComponent::Kinematic)
@@ -61,13 +64,13 @@ namespace oo
         return object.getMaterial(); 
     }
     
-    glm::vec3 oo::RigidbodyComponent::GetPositionInPhysicsWorld() const
+    vec3 oo::RigidbodyComponent::GetPositionInPhysicsWorld() const
     {
         auto res = object.getposition();
         return { res.x, res.y, res.z };
     }
 
-    glm::quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
+    quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
     {
         auto res = object.getOrientation();
         return { res.w, res.x, res.y, res.z,  };
@@ -92,10 +95,10 @@ namespace oo
         return object.getAngularDamping();
     }
 
-    glm::vec3 oo::RigidbodyComponent::GetAngularVelocity() const
+    vec3 oo::RigidbodyComponent::GetAngularVelocity() const
     {
         auto vel = object.getAngularVelocity();
-        return glm::vec3{ vel.x, vel.y, vel.z };
+        return vec3{ vel.x, vel.y, vel.z };
     }
 
     float oo::RigidbodyComponent::GetLinearDamping() const
@@ -103,20 +106,20 @@ namespace oo
         return object.getLinearDamping();
     }
 
-    glm::vec3 oo::RigidbodyComponent::GetLinearVelocity() const
+    vec3 oo::RigidbodyComponent::GetLinearVelocity() const
     {
         auto vel = object.getLinearVelocity();
-        return glm::vec3{ vel.x, vel.y, vel.z };
+        return vec3{ vel.x, vel.y, vel.z };
     }
 
     bool oo::RigidbodyComponent::IsGravityEnabled() const
     {
-        return object.getGravity();
+        return !IsGravityDisabled();
     }
 
     bool oo::RigidbodyComponent::IsGravityDisabled() const
     {
-        return !IsGravityEnabled();
+        return object.useGravity();
     }
 
     bool oo::RigidbodyComponent::IsStatic() const
@@ -126,12 +129,28 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsKinematic() const
     {
-        return !IsStatic() && object.getKinematic();
+        return !IsStatic() && object.isKinematic();
     }
 
     bool oo::RigidbodyComponent::IsDynamic() const
     {
-        return !IsStatic() && !object.getKinematic();
+        return !IsStatic() && !object.isKinematic();
+    }
+
+    bool oo::RigidbodyComponent::IsTrigger() const
+    {
+        return IsTriggerObject;//&& object.isTrigger();
+    }
+
+    bool oo::RigidbodyComponent::IsCollider() const
+    {
+        return !IsTrigger();
+    }
+
+    void oo::RigidbodyComponent::SetTrigger(bool enable)
+    {
+        IsTriggerObject = enable;
+        //object.setTriggerShape(IsTriggerObject);
     }
 
     void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 
@@ -139,27 +158,29 @@ namespace oo
         object.setMaterial(material); 
     }
 
-    void RigidbodyComponent::SetPosOrientation(glm::vec3 pos, glm::quat quat) 
+    void RigidbodyComponent::SetPosOrientation(vec3 pos, quat quat) 
     { 
         object.setPosOrientation({ pos.x, pos.y, pos.z }, { quat.x, quat.y, quat.z, quat.w }); 
     }
     
-    void oo::RigidbodyComponent::SetGravity(bool enable)
+    void oo::RigidbodyComponent::SetGravity(bool to_disable)
     {
-        object.setGravity(enable);
+        // only applies to none static objects.
+        if (!IsStaticObject)
+            object.disableGravity(to_disable);
     }
 
-    void RigidbodyComponent::EnableGravity()
+    /*void RigidbodyComponent::EnableGravity()
     { 
-        object.setGravity(true);
+        SetGravity(false);
     }
     
     void RigidbodyComponent::DisableGravity()
     {
-        object.setGravity(false);
-    }
+        SetGravity(true);
+    }*/
 
-    void oo::RigidbodyComponent::SetKinematic(bool kine) { object.setKinematic(kine); }
+    void oo::RigidbodyComponent::SetKinematic(bool kine) { object.enableKinematic(kine); }
 
     // prob functions that dont really need
 
@@ -173,7 +194,7 @@ namespace oo
         object.setAngularDamping(static_cast<PxReal>(angularDamping));
     }
 
-    void RigidbodyComponent::SetAngularVelocity(glm::vec3 angularVelocity)
+    void RigidbodyComponent::SetAngularVelocity(vec3 angularVelocity)
     {
         object.setAngularVelocity(PxVec3{ angularVelocity.x, angularVelocity.y, angularVelocity.z });
     }
@@ -183,7 +204,7 @@ namespace oo
         object.setLinearDamping(static_cast<PxReal>(linearDamping));
     }
 
-    void RigidbodyComponent::SetLinearVelocity(glm::vec3 linearVelocity)
+    void RigidbodyComponent::SetLinearVelocity(vec3 linearVelocity)
     {
         object.setLinearVelocity(PxVec3{ linearVelocity.x, linearVelocity.y, linearVelocity.z });
     }
@@ -193,7 +214,7 @@ namespace oo
         switch (type)
         {
         case ForceMode::FORCE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocity);
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::force);
             break;
 
         case ForceMode::ACCELERATION:
@@ -201,11 +222,11 @@ namespace oo
             break;
         
         case ForceMode::IMPULSE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::explosive);
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::impulse);
             break;
         
         case ForceMode::VELOCITY_CHANGE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::conventional);
+            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocityChanged);
             break;
         }
     }
@@ -215,7 +236,7 @@ namespace oo
         switch (type)
         {
         case ForceMode::FORCE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocity);
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::force);
             break;
 
         case ForceMode::ACCELERATION:
@@ -223,13 +244,18 @@ namespace oo
             break;
 
         case ForceMode::IMPULSE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::explosive);
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::impulse);
             break;
 
         case ForceMode::VELOCITY_CHANGE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::conventional);
+            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocityChanged);
             break;
         }
+    }
+
+    oo::UUID oo::RigidbodyComponent::GetUnderlyingUUID() const
+    {
+        return oo::UUID{ std::uint64_t{object.id} };
     }
 
 }

@@ -19,6 +19,9 @@ project "Editor"
     filter "files:vendor/**/**.c"
         flags { "NoPCH" }
     filter {}   -- resets the filter
+    
+    --enables OpenMP multiprocessing library
+    openmp "On"
 
     files
     {
@@ -61,9 +64,11 @@ project "Editor"
         "%{IncludeDir.scripting}",
 		
         "%{IncludeDir.fmod}",
-
+        "%{IncludeDir.discord}",
         --for tracy
         "%{IncludeDir.tracy}",
+		--for optick
+        "%{IncludeDir.optick}",
     }
 
     -- library diretories
@@ -78,6 +83,7 @@ project "Editor"
         -- "%{LibraryDir.physx}/Release",
         "%{LibraryDir.assimp}/Release",
         "%{LibraryDir.fmod}",
+        "%{LibraryDir.discord}",
     }
 
     -- linking External libraries 
@@ -118,7 +124,9 @@ project "Editor"
         "dbghelp",
         --"srcsrv", are these even needed? might just remove-em altogether.
         --"symsrv",
-
+        
+        "Discord",
+        "discord_game_sdk_dll",
     }
     
     -- Editor Project Level Disable Warning 
@@ -165,12 +173,16 @@ project "Editor"
             {"{COPY} \"%{AppVendor}/sdl2/lib/x64/SDL2.dll\" \"" .. binApp .. "\""},
             -- Controller Support file
             {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" \"" .. binApp .. "\""},
+
             -- ImGui Default ini
             {"{COPY} \"%{AppDir}/default.ini\" \"" .. binApp .. "\""},
-			-- ImGui Default Style Settings
+			-- ImGui EditorMode Style Settings
             {"{COPY} \"%{AppDir}/EditorMode.settings\" \"" .. binApp .. "\""},
-			-- ImGui Default Style Settings
+			-- ImGui PlayMode Style Settings
             {"{COPY} \"%{AppDir}/PlayMode.settings\" \"" .. binApp .. "\""},
+            -- Copy Imgui.ini
+            {"{COPY} \"%{AppDir}/imgui.ini\" \"" .. binApp .. "\""},
+
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
 			-- copy Editor Icons Folder in its entirety.
@@ -180,11 +192,19 @@ project "Editor"
             {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
+            -- optick server copy
+            {"{COPY} \"%{AppDir}/optick_server\" \"" .. binApp .. "/optick_server\""}, 
+
 			-- vulkan shaders copy
             { "mkdir \"" .. binApp .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			
+            -- copies vulkan shaders app directory
             { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
-            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""}, 
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""},
+            
+            -- discord sdk
+            {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },
+            
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -259,6 +279,9 @@ project "Editor"
             {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
             -- copy Release DLLs
             {"{COPY} \"%{AppDir}/dlls/release/\" \"" .. binApp .. "\"" },
+
+            -- copy iss file for compiling /for production only
+            {"{COPY} \"%{AppDir}/engine_portable.iss\" \"" .. binApp .. "\"" },
         }
 
         links

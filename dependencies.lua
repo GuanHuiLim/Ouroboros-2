@@ -35,6 +35,7 @@ IncludeDir["fmod"]          = AppVendor .. "/fmod/core/inc"
 -- IncludeDir["freetype"]      = EngineVendor .. "/freetype/include"
 IncludeDir["mono"]          =  AppVendor .. "/scripting/vendor/mono/include/mono-2.0"
 IncludeDir["tracy"]         = AppVendor .. "/tracy"
+IncludeDir["optick"]         = AppVendor .. "/optick"
 IncludeDir["rapidjson"]     = AppVendor .. "/rapidjson/include"
 IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 -- IncludeDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader"
@@ -43,6 +44,8 @@ IncludeDir["VulkanSDK"]     = "%{VULKAN_SDK}/Include"
 
 IncludeDir["physx"]                 = AppVendor .. "/physx"
 IncludeDir["physx_foundation"]      = AppVendor .. "/physx/Physics/Physx/pxshared/include"
+
+IncludeDir["discord"]      = AppVendor .. "/discord/cpp"
 
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
@@ -68,6 +71,8 @@ LibraryDir["assimp"]     	= AppVendor .. "/vulkan/vendor/assimp/BINARIES/Win32/l
 -- LibraryDir["tinyobjloader"] = EngineVendor .. "/tinyobjloader/lib"
 -- LibraryDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap/lib"
 -- LibraryDir["launcher"]      = AppVendor .. "launcher/Oroborous-Launcher/lib"
+LibraryDir["discord"]       = AppVendor .. "/discord/lib/x86_64"
+
 
 -- Paths to libraries that will be used
 Library                     = {}

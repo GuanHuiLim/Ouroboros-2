@@ -147,11 +147,12 @@ namespace oo
                 InputAxis::InputType::KeyboardButton,
                 InputAxis::Settings
                 {
-                    static_cast<InputAxis::InputCode>(input::KeyCode::LEFT),
                     static_cast<InputAxis::InputCode>(input::KeyCode::RIGHT),
-                    static_cast<InputAxis::InputCode>(input::KeyCode::A),
+                    static_cast<InputAxis::InputCode>(input::KeyCode::LEFT),
                     static_cast<InputAxis::InputCode>(input::KeyCode::D),
-                    0U, 0.0f, 0.0f
+                    static_cast<InputAxis::InputCode>(input::KeyCode::A),
+                    0U, 0.0f, 0.0f,
+                    false, false
                 },
                 InputAxis::ControllerInputType::Trigger_Joystick,
                 InputAxis::Settings
@@ -160,7 +161,8 @@ namespace oo
                     static_cast<InputAxis::InputCode>(input::ControllerAxisCode::LEFTX),
                     InputAxis::INPUTCODE_INVALID,
                     InputAxis::INPUTCODE_INVALID,
-                    0U, 0.0f, 0.0f
+                    0U, 0.0f, 0.0f,
+                    false, false
                 }
             }
         );
@@ -175,7 +177,8 @@ namespace oo
                     static_cast<InputAxis::InputCode>(input::KeyCode::UP),
                     static_cast<InputAxis::InputCode>(input::KeyCode::S),
                     static_cast<InputAxis::InputCode>(input::KeyCode::W),
-                    0U, 0.0f, 0.0f
+                    0U, 0.0f, 0.0f,
+                    false, false
                 },
                 InputAxis::ControllerInputType::Trigger_Joystick,
                 InputAxis::Settings
@@ -184,7 +187,8 @@ namespace oo
                     static_cast<InputAxis::InputCode>(input::ControllerAxisCode::LEFTY),
                     InputAxis::INPUTCODE_INVALID,
                     InputAxis::INPUTCODE_INVALID,
-                    0U, 0.0f, 0.0f
+                    0U, 0.0f, 0.0f,
+                    false, false
                 }
             }
         );
@@ -199,7 +203,8 @@ namespace oo
                     static_cast<InputAxis::InputCode>(input::MouseCode::Button0),
                     InputAxis::INPUTCODE_INVALID,
                     InputAxis::INPUTCODE_INVALID,
-                    0U, 0.0f, 0.0f
+                    0U, 0.0f, 0.0f,
+                    false, false
                 },
                 InputAxis::ControllerInputType::Trigger_Joystick,
                 InputAxis::Settings
@@ -208,7 +213,8 @@ namespace oo
                     static_cast<InputAxis::InputCode>(input::ControllerAxisCode::TRIGGERRIGHT),
                     InputAxis::INPUTCODE_INVALID,
                     InputAxis::INPUTCODE_INVALID,
-                    0U, 0.0f, 0.0f
+                    0U, 0.0f, 0.0f,
+                    false, false
                 }
             }
         );

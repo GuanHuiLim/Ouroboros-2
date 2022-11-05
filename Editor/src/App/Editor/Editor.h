@@ -21,6 +21,8 @@ Technology is prohibited.
 #include "UI/Tools/StyleEditor.h"
 #include "UI/Tools/WarningMessage.h"
 #include "UI/Tools/LoggingView.h"
+#include "UI/Tools/AnimatorControllerView.h"
+#include "UI/Tools/AnimationTimelineView.h"
 #include "UI/Tools/Toolbar.h"
 #include "UI/Tools/PenTool.h"
 #include "UI/Tools/InputManagerUI.h"
@@ -67,6 +69,8 @@ public:
 	WarningMessage m_warningMessage;
 	Toolbar m_toolbar;
 	LoggingView m_loggingView;
+	AnimatorControllerView m_animatorControllerView;
+	AnimationTimelineView m_animationTimelineView;
 	PenTool m_pentool;
 	InputManagerUI m_inputManager;
 	MeshHierarchy m_meshHierarchy;
@@ -76,8 +80,19 @@ public:
 	SceneOrderingWindow m_sceneOderingWindow;
 public:
 	PopupHelperWindow helper;
+	struct TimedSequence
+	{
+		TimedSequence(std::function<void()>ins, float _duration):
+			max_duration{ _duration },
+			curr_duration{ _duration },
+			instruction{ ins } {};
+		std::function<void(void)> instruction;
+		const float max_duration = 0;
+		float curr_duration = 0;
+	};
+	void AddSequence(TimedSequence&& seq);
 private:
-
-
+	std::vector<TimedSequence> m_timedseq;
+	void TimedUpdate();
 };
 

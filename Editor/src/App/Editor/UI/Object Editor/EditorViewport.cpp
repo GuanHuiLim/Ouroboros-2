@@ -28,10 +28,21 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
 #include "Ouroboros/Transform/TransformComponent.h"
-
+#include "Ouroboros/Commands/CommandStackManager.h"
+#include "Ouroboros/Commands/Component_ActionCommand.h"
+#include "App/Editor/Events/GizmoOperationEvent.h"
+#include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Input.h"
+
+#include "Ouroboros/Scene/EditorController.h"
+
+#include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
 EditorViewport::EditorViewport()
 {
+	ImGuizmo::AllowAxisFlip(false);
+	
 }
 
 EditorViewport::~EditorViewport()
@@ -41,7 +52,9 @@ EditorViewport::~EditorViewport()
 void EditorViewport::Show()
 {
 
-	auto& camera_matrices = oo::Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera.matrices;//perspective
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
+	auto& camera_matrices = oo::EditorController::EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	
 	int windowWidth = window.GetSize().first;
@@ -57,29 +70,38 @@ void EditorViewport::Show()
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
 
-	//auto contentWidth = vMax.x - vMin.x;
-	//auto contentHeight = vMax.y - vMin.y;
+	auto contentWidth = vpDim.x;
+	auto contentHeight = vpDim.y;
+	
+	if (m_viewportWidth != contentWidth || m_viewportHeight != contentHeight)
+	{
+		//resize viewport
+		m_viewportWidth = contentWidth;
+		m_viewportHeight = contentHeight;
 
-	auto contentWidth = float(windowWidth);
-	auto contentHeight = float(windowHeight);
-	vMin.x = 0;
-	vMin.y = 0;
-	vMax.x = contentWidth;
-	vMax.y = contentHeight;
+		EditorViewportResizeEvent e;
+		e.X = m_viewportWidth;
+		e.Y = m_viewportHeight;
+		oo::EventManager::Broadcast<EditorViewportResizeEvent>(&e);
+	}
 
-	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
+	//framebuffer
+	ImVec2 prevpos = ImGui::GetCursorPos();
+	ImGui::Image(graphicsworld->imguiID[0], ImGui::GetContentRegionAvail());
+	ImGui::SetCursorPos(prevpos);
+
+	//ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
 
 
 
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
 
-	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
+	if (m_viewportWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
 	{
 		return;
 	}
 
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
 	if (gameobject == nullptr || scene->IsValid(*gameobject) == false)
 	{
@@ -93,19 +115,19 @@ void EditorViewport::Show()
 	projection = glm::value_ptr(camera_matrices.perspective);
 
 	//Debug Red box
-	//ImGui::GetForegroundDrawList()->AddRect(vMin, {vMin.x + contentWidth, vMin.y+contentHeight}, ImU32(0xFF0000FF));
+	//ImGui::GetForegroundDrawList()->AddRect(vMin, {vMin.x + m_viewportWidth, vMin.y + m_viewportHeight}, ImU32(0xFF0000FF));
 
-	ImGui::SetNextWindowSize({ contentWidth,contentHeight });
+	ImGui::SetNextWindowSize({ m_viewportWidth, m_viewportHeight });
 	ImGui::SetNextWindowPos(vMin);
 
 	//window hole should be same size as content area
-	ImGui::SetWindowHitTestHole(ImGui::GetCurrentWindow(), vMin, { contentWidth,contentHeight });
+	ImGui::SetWindowHitTestHole(ImGui::GetCurrentWindow(), vMin, { m_viewportWidth, m_viewportHeight });
 
 	// IMPORTANT: we now NEED to call this before begin frame
-	ImGuizmo::SetRect(vMin.x, vMin.y, contentWidth, contentHeight);
+	ImGuizmo::SetRect(vMin.x, vMin.y, m_viewportWidth, m_viewportHeight);
 
 	//keep a decent scaling for the guizmo
-	float gizmoSize = windowWidth / contentWidth;
+	float gizmoSize = windowWidth / m_viewportWidth;
 
 
 
@@ -121,9 +143,22 @@ void EditorViewport::Show()
 	ImGuizmo::SetDrawlist();
 
 	//ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
+	static rttr::variant before_edit;
 
 	if (ImGuizmo::Manipulate(view, projection, (ImGuizmo::OPERATION)m_gizmoOperation, (ImGuizmo::MODE)m_gizmoMode, glm::value_ptr(m_matrix)))
 	{
+		if (before_edit.is_valid() == false)
+		{
+			switch (m_gizmoOperation)
+			{
+			case ImGuizmo::OPERATION::TRANSLATE:
+				before_edit = transform.GetPosition();break;
+			case ImGuizmo::OPERATION::ROTATE:
+				before_edit = transform.GetRotationQuat();break;
+			case ImGuizmo::OPERATION::SCALE:
+				before_edit = transform.GetScale();break;
+			}
+		}
 		if (ImGuizmo::IsUsing())
 		{
 			glm::vec3 mScale = transform.GetGlobalScale();
@@ -136,25 +171,58 @@ void EditorViewport::Show()
 				glm::value_ptr(mScale));*/
 			
 			// If we can't trust imguizmo, we can still trust glm.
-			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
 
+			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
+			
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
 			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.
 		}
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)))
+	if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)&& before_edit.is_valid())
+	{
+		rttr::variant after_edit;
+		switch (m_gizmoOperation)
+		{
+		case ImGuizmo::OPERATION::TRANSLATE:
+		{
+			after_edit = transform.GetPosition();
+			rttr::property prop = transform.get_type().get_property("Position");
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::TransformComponent>(before_edit, after_edit, prop, gameobject->GetInstanceID()));
+		}break;
+		case ImGuizmo::OPERATION::ROTATE:
+		{
+			after_edit = transform.GetRotationQuat();
+			rttr::property prop = transform.get_type().get_property("Quaternion");
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::TransformComponent>(before_edit, after_edit, prop, gameobject->GetInstanceID()));
+		}break;
+		case ImGuizmo::OPERATION::SCALE:
+		{
+			after_edit = transform.GetScale();
+			rttr::property prop = transform.get_type().get_property("Scaling");
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::TransformComponent>(before_edit, after_edit, prop, gameobject->GetInstanceID()));
+		}break;
+		}
+		before_edit.clear();
+	}
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)))
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)))
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
+		ChangeGizmoEvent e(m_gizmoOperation);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
 	}
 }

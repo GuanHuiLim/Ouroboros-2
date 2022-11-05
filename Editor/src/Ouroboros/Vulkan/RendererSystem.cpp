@@ -21,87 +21,166 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Application.h"
 #include "VulkanContext.h"
+#include "Ouroboros/Core/Timer.h"
+#include "Ouroboros/Core/Application.h"
+
+#include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
+#include "Ouroboros/Core/Input.h"
+
+#include "Ouroboros/Scene/EditorController.h"
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 namespace oo
 {
-    void oo::MeshRendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
+    Camera EditorController::EditorCamera = [&]()
     {
-        assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
+        Camera camera;
+        camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
+        camera.movementSpeed = 5.0f;
+        camera.SetPosition({ 0, 8, 8 });
+        camera.Rotate({ 45, 180, 0 });
+        return camera;
+    }();
 
-        auto& comp = evnt->component;
-        comp.Light_ID = m_graphicsWorld->CreateLightInstance();
-
-        //update graphics world side to prevent wrong initial placement
-        auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
-        auto& graphics_object = m_graphicsWorld->GetLightInstance(comp.Light_ID);
-        graphics_object.position = glm::vec4{ transform_component.GetGlobalPosition(), 0.f };
+    void RendererSystem::OnScreenResize(WindowResizeEvent* e)
+    {
+        auto w = e->GetHeight();
+        auto h = e->GetWidth();
+        auto ar = static_cast<float>(w) / h;
+        //EditorController::EditorCamera.SetAspectRatio(ar);
+        m_runtimeCamera.SetAspectRatio(ar);
     }
 
-    void oo::MeshRendererSystem::OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt)
+    void RendererSystem::OnEditorViewportResize(EditorViewportResizeEvent* e)
+    {
+        auto w = e->X;
+        auto h = e->Y;
+        auto ar = static_cast<float>(w) / h;
+        EditorController::EditorCamera.SetAspectRatio(ar);
+        m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
+        //m_runtimeCamera.SetAspectRatio(ar);
+    }
+
+    void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
+    {
+        assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
+        auto& lightComp = evnt->component;
+        auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
+        InitializeLight(lightComp, transform_component);
+    }
+
+    void oo::RendererSystem::OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt)
     {
         auto& comp = evnt->component;
         m_graphicsWorld->DestroyLightInstance(comp.Light_ID);
     }
 
-    void oo::MeshRendererSystem::OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
+    void oo::RendererSystem::OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
 
-        auto& comp = evnt->component;
-        comp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
-        //HARDCODED AS CUBE, TO BE REMOVED LATER
-        comp.model_handle = 0;
-        comp.meshInfo.submeshBits[0] = true;
-        
-        //update graphics world side
+        auto& meshComp = evnt->component;
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
-        auto& graphics_object = m_graphicsWorld->GetObjectInstance(comp.graphicsWorld_ID);
-        graphics_object.localToWorld = transform_component.GlobalTransform;
-        
+        InitializeMesh(meshComp, transform_component);
+
+        //HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
+        meshComp.model_handle = 0;
+        meshComp.meshInfo.submeshBits[0] = true;
     }
 
-    void oo::MeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
+    void oo::RendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         auto& comp = evnt->component;
         m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
     }
 
-    oo::MeshRendererSystem::MeshRendererSystem(GraphicsWorld* graphicsWorld)
+    oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld)
+        : m_graphicsWorld { graphicsWorld }
     {
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
-
-        this->m_graphicsWorld = graphicsWorld;
     }
 
-    void MeshRendererSystem::Init()
+    void RendererSystem::Init()
     {
-        // Mesh Renderer
-        m_world->SubscribeOnAddComponent<MeshRendererSystem, MeshRendererComponent>(
-            this, &MeshRendererSystem::OnMeshAssign);
+        // set camera
+        oo::GetCurrentSceneStateEvent e;
+        oo::EventManager::Broadcast(&e);
+        switch (e.state)
+        {
+        case oo::SCENE_STATE::EDITING:
+            EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
+            m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
+            break;
+        case oo::SCENE_STATE::RUNNING:
+            // setup cameras
+            auto [width, height] = Application::Get().GetWindow().GetSize();
+            m_runtimeCamera = [&]()
+            {
+                Camera camera;
+                camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
+                camera.SetAspectRatio((float)width / (float)height);
+                camera.movementSpeed = 5.0f;
+                //camera.SetPosition({ 0, 8, 8 });
+                //camera.Rotate({ 45, 180, 0 });
+                return camera;
+            }();
 
-        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, MeshRendererComponent>(
-            this, &MeshRendererSystem::OnMeshRemove);
+            m_graphicsWorld->cameras[0] = m_runtimeCamera;
+            break;
+        }
+        auto& camera = m_graphicsWorld->cameras[0];
+        m_cc.SetCamera(&camera);
+
+        // Mesh Renderer
+        m_world->SubscribeOnAddComponent<RendererSystem, MeshRendererComponent>(
+            this, &RendererSystem::OnMeshAssign);
+
+        m_world->SubscribeOnRemoveComponent<RendererSystem, MeshRendererComponent>(
+            this, &RendererSystem::OnMeshRemove);
 
         //Lights
-        m_world->SubscribeOnAddComponent<MeshRendererSystem, LightComponent>(
-            this, &MeshRendererSystem::OnLightAssign);
+        m_world->SubscribeOnAddComponent<RendererSystem, LightComponent>(
+            this, &RendererSystem::OnLightAssign);
 
-        m_world->SubscribeOnRemoveComponent<MeshRendererSystem, LightComponent>(
-            this, &MeshRendererSystem::OnLightRemove);
+        m_world->SubscribeOnRemoveComponent<RendererSystem, LightComponent>(
+            this, &RendererSystem::OnLightRemove);
+
+        EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
     }
 
-    void oo::MeshRendererSystem::Run(Ecs::ECSWorld* world)
+    void RendererSystem::SaveEditorCamera()
+    {
+        // Save camera information back to appropriate place
+        oo::GetCurrentSceneStateEvent e;
+        oo::EventManager::Broadcast(&e);
+        switch (e.state)
+        {
+        case oo::SCENE_STATE::RUNNING:
+            EditorController::EditorCamera = m_graphicsWorld->cameras[0];
+            break;
+        }
+        //EditorController::EditorCamera  = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
+    }
+
+    void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
         // Update Newly Duplicated Lights
         static Ecs::Query duplicated_lights_query = Ecs::make_raw_query<LightComponent, TransformComponent, DuplicatedComponent>();
         world->for_each(duplicated_lights_query, [&](LightComponent& lightComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
         {
-            lightComp.Light_ID = m_graphicsWorld->CreateLightInstance();
-            //update graphics world side to prevent wrong initial placement
-            auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
-            graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+            InitializeLight(lightComp, transformComp);
         });
-        
+
+        // Update Newly Duplicated Mesh
+        static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, DuplicatedComponent>();
+        world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        { 
+            InitializeMesh(meshComp, transformComp);
+        });
+
+        // update meshes
         static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent>();
         world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
         {
@@ -114,12 +193,18 @@ namespace oo
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
+            
+            // update transform if this is the first frame of rendering
+            if (m_firstFrame)
+            {
+                actualObject.localToWorld = transformComp.GlobalTransform;
+                m_firstFrame = false;
+            }
         });
 
 
         // Update Lights
         static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-
         world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
         {
             auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
@@ -128,31 +213,92 @@ namespace oo
             graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
             graphics_light.color = lightComp.Color;
             graphics_light.radius = lightComp.Radius;
-            
+        });
+
+        // draw debug stuff
+        RenderDebugDraws(world);
+    }
+
+    void RendererSystem::UpdateCamerasEditorMode()
+    {
+        m_cc.Update(oo::timer::dt());
+        EditorController::EditorCamera = *m_cc.GetCamera();
+        //auto pos = EditorController::EditorCamera.m_position; // m_cc.GetCamera()->m_position;
+        //LOG_TRACE("Editor Camera Position {0} {1} {2}", pos.x, pos.y, pos.z);
+    }
+
+    // additional function that runs during runtime scene only.
+    void RendererSystem::UpdateCamerasRuntime()
+    {
+        static bool using_editor_camera = false;
+#ifdef OO_EDITOR
+        if (oo::input::IsKeyPressed(KEY_F8))
+        {
+            using_editor_camera = !using_editor_camera;
+
+            if (using_editor_camera)
+            {
+                m_runtimeCamera = m_graphicsWorld->cameras[0];
+                m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
+            }
+            else
+            {
+                m_graphicsWorld->cameras[0] = m_runtimeCamera;
+            }
+            m_cc.SetCamera(&m_graphicsWorld->cameras[0]);
+        }
+#endif
+        if (!using_editor_camera)
+        {
+            // TODO: debug draw the camera's view in editormode
+            //DebugDraw::AddLine();
+
+            // Update Camera(s)
+            // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
+
+            Camera* camera = m_cc.GetCamera();
+            static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
+            m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+            {
+                camera->SetPosition(transformComp.GetGlobalPosition());
+                camera->SetRotation(transformComp.GetGlobalRotationQuat());
+            });
+        }
+
+        m_cc.Update(oo::timer::dt(), using_editor_camera);
+    }
+    
+    void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)
+    {
+        // Draw Debug Lights
+        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
+        world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+        {
+            auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
             // lighting debug draw
             Sphere sphere;
-            sphere.center = vec3{ graphics_light.position }; 
+            sphere.center = vec3{ graphics_light.position };
             sphere.radius = 0.1f;
             DebugDraw::AddSphere(sphere, graphics_light.color);
         });
     }
 
-    // additional function that runs during runtime scene only.
-    void MeshRendererSystem::UpdateCameras()
+    void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp)
     {
-        // TODO: debug draw the camera's view in editormode
-        //DebugDraw::AddLine();
-        
-        // Update Camera
-        // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
-        
-        auto& camera = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
-        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-        m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
-        {
-            camera.SetPosition(transformComp.GetGlobalPosition());
-            camera.SetRotation(transformComp.GetGlobalRotationDeg());
-        });
+        meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+
+        //update graphics world side
+        auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
+        graphics_object.localToWorld = transformComp.GetGlobalMatrix();
     }
+
+    void RendererSystem::InitializeLight(LightComponent& lightComp, TransformComponent& transformComp)
+    {
+        lightComp.Light_ID = m_graphicsWorld->CreateLightInstance();
+        //update graphics world side to prevent wrong initial placement
+        auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+        graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+    }
+
 }
 

@@ -23,6 +23,7 @@ namespace oo
 		PrefabManager();
 		~PrefabManager();
 		static void MakePrefab(std::shared_ptr<oo::GameObject> go);
+		static void BreakPrefab(std::shared_ptr<oo::GameObject> go);
 	private:
 
 	};

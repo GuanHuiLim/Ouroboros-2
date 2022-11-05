@@ -105,7 +105,7 @@ InspectorProperties::InspectorProperties()
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::UUID_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
-		auto value = v.get_value<UUID>().GetUUID();
+		auto value = v.get_value<oo::UUID>().GetUUID();
 		ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
 		ImGui::InputScalarN(name.c_str(), ImGuiDataType_::ImGuiDataType_U64, &value, 1); //read only
 		ImGui::PopItemFlag();
@@ -222,12 +222,12 @@ InspectorProperties::InspectorProperties()
 		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
 		if (ImGui::BeginListBox(name.c_str(), { contentRegion.x,contentRegion.y * 0.2f }))
 		{
-			std::string name;
-			for (auto i = 0; i < value.mesh_handle.GetData<ModelFileResource*>()->numSubmesh; ++i)
+			
+			for (uint32_t i = 0; i < value.mesh_handle.GetData<ModelFileResource*>()->numSubmesh; ++i)
 			{
-				name = "Mesh " + std::to_string(i);
+				std::string Meshname = "Mesh " + std::to_string(i);
 				bool submesh = value.submeshBits[i];
-				if (ImGui::Selectable(name.c_str(), &submesh))
+				if (ImGui::Selectable(Meshname.c_str(), &submesh))
 				{
 					value.submeshBits[i] = submesh;
 					edited = true;

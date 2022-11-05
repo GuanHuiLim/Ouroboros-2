@@ -17,6 +17,7 @@
 
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Input/InputManager.h"
+#include "App/Editor/Properties/SerializerProperties.h"
 
 void Project::LoadProject(std::filesystem::path& config)
 {
@@ -48,8 +49,6 @@ void Project::LoadProject(std::filesystem::path& config)
     UpdateScriptingFiles();
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
 
-    // load input manager
-    oo::InputManager::LoadDefault();
 
 	//scenes to add to scene manager
 	oo::RuntimeController::container_type m_loadpaths;
@@ -66,7 +65,10 @@ void Project::LoadProject(std::filesystem::path& config)
 	//load assets here
 	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
 	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
-	s_AssetManager->LoadDirectoryAsync(hard_assetfolderpath, true);
+	s_AssetManager->GetOrLoadDirectoryAsync(hard_assetfolderpath, true);
+
+	//load input manager
+	LoadInputs(GetProjectFolder() / ("InputBindings"));
 }
 
 void Project::SaveProject()
@@ -98,7 +100,7 @@ void Project::SaveProject()
 		rapidjson::Value data(scene_loadpath.string().c_str(),doc.GetAllocator());
 		scenes->value.AddMember(name, data, doc.GetAllocator());
 	}
-		//write your scenes
+	//write your scenes
 	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
 	//get all scenes
@@ -121,6 +123,136 @@ void Project::SaveProject()
 		ofs.close();
 	}
 	ifs.close();
+
+	SaveInputs(GetProjectFolder() / ("InputBindings"));
+}
+
+void Project::LoadInputs(const std::filesystem::path& loadpath)
+{
+	std::ifstream ifs2(loadpath);
+	if (!ifs2)
+	{
+		// load input manager if there is nothing
+		oo::InputManager::LoadDefault();
+		return;
+	}
+	rapidjson::IStreamWrapper isw2(ifs2);
+	rapidjson::Document input_doc;
+	input_doc.ParseStream(isw2);
+	SerializerLoadProperties loadproperties;
+
+    std::vector<oo::InputAxis> InputManager_Axis;
+	//auto& InputManager_Axis = oo::InputManager::GetAxes();
+	rttr::type t = rttr::type::get<oo::InputAxis>();
+	for (auto iter = input_doc.MemberBegin(); iter != input_doc.MemberEnd(); ++iter)
+	{
+		oo::InputAxis axis;
+		for (auto members = iter->value.MemberBegin(); members != iter->value.MemberEnd(); ++members)
+		{
+			rttr::property prop = t.get_property(members->name.GetString());
+			auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
+			if (types_ui_rttr == UI_RTTRType::types.end())
+			{
+				if (prop.get_type() == rttr::type::get<oo::InputAxis::Settings>())
+				{
+					auto arr = members->value.GetArray();
+					oo::InputAxis::Settings setting;
+					setting.negativeButton = arr[0].GetUint();
+					setting.positiveButton = arr[1].GetUint();
+					setting.negativeAltButton = arr[2].GetUint();
+					setting.positiveAltButton = arr[3].GetUint();
+					setting.pressesRequired = arr[4].GetUint();
+					setting.maxGapTime = arr[5].GetFloat();
+					setting.holdDurationRequired = arr[6].GetFloat();
+                    setting.invert = arr[7].GetBool();
+                    setting.onPressOnly = arr[8].GetBool();
+					prop.set_value(axis, setting);
+					continue;
+				}
+				else
+				{
+					ASSERT_MSG(true, "type not supported");
+					continue;
+				}
+			}
+			auto loadprop_iter = loadproperties.m_load_commands.find(types_ui_rttr->second);
+			if (loadprop_iter == loadproperties.m_load_commands.end())
+			{
+				ASSERT_MSG(true, "type not supported");
+				continue;
+			}
+			rttr::variant var = prop.get_value(axis);
+			loadprop_iter->second(var, std::move(members->value));
+			prop.set_value(axis, var);
+		}
+		InputManager_Axis.push_back(axis);
+	}
+	ifs2.close();
+    oo::InputManager::Load(InputManager_Axis);
+	
+}
+
+
+void Project::SaveInputs(const std::filesystem::path& savepath)
+{
+	rapidjson::Document input_doc;
+	auto& doc_object = input_doc.SetObject();
+	SerializerSaveProperties saveproperties;
+
+	//auto obj = input_doc.GetObj();
+	auto& InputManager_Axis = oo::InputManager::GetAxes();
+	rttr::type t = rttr::type::get<oo::InputAxis>();
+	auto properties = t.get_properties();
+	for (auto& axes : InputManager_Axis)
+	{
+		rapidjson::Value values(rapidjson::kObjectType);
+		for (rttr::property prop : properties)
+		{
+			auto types_ui_rttr = UI_RTTRType::types.find(prop.get_type().get_id());
+			if (types_ui_rttr == UI_RTTRType::types.end())
+			{
+				if (prop.get_type() == rttr::type::get<oo::InputAxis::Settings>())
+				{
+					rapidjson::Value setting(rapidjson::kArrayType);
+					auto axes_Setting = prop.get_value(axes).get_value<oo::InputAxis::Settings>();
+					setting.PushBack(axes_Setting.negativeButton, input_doc.GetAllocator());
+					setting.PushBack(axes_Setting.positiveButton, input_doc.GetAllocator());
+					setting.PushBack(axes_Setting.negativeAltButton, input_doc.GetAllocator());
+					setting.PushBack(axes_Setting.positiveAltButton, input_doc.GetAllocator());
+					setting.PushBack(axes_Setting.pressesRequired, input_doc.GetAllocator());
+					setting.PushBack(axes_Setting.maxGapTime, input_doc.GetAllocator());
+					setting.PushBack(axes_Setting.holdDurationRequired, input_doc.GetAllocator());
+                    setting.PushBack(axes_Setting.invert, input_doc.GetAllocator());
+                    setting.PushBack(axes_Setting.onPressOnly, input_doc.GetAllocator());
+
+					values.AddMember(rapidjson::Value(prop.get_name().data(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
+					continue;
+				}
+				else
+				{
+					ASSERT_MSG(true, "type not supported");
+					continue;
+				}
+			}
+			auto saveprop_iter = saveproperties.m_save_commands.find(types_ui_rttr->second);
+			if (saveprop_iter == saveproperties.m_save_commands.end())
+			{
+				ASSERT_MSG(true, "type not supported");
+				continue;
+			}
+
+			saveprop_iter->second(input_doc, values, prop.get_value(axes), prop);
+			//values.AddMember(rapidjson::Value(prop.get_name().data(), input_doc.GetAllocator()), setting, input_doc.GetAllocator());
+		}
+		doc_object.AddMember(rapidjson::Value(axes.GetName().c_str(), input_doc.GetAllocator()), values, input_doc.GetAllocator());
+	}
+
+	std::ofstream ofs2(savepath);
+	if (!ofs2)
+		return;
+	rapidjson::OStreamWrapper osw(ofs2);
+	rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+	input_doc.Accept(writer);
 }
 
 void Project::UpdateScriptingFiles()

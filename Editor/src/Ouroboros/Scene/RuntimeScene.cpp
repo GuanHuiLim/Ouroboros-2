@@ -26,6 +26,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Transform/TransformSystem.h"
+#include "Ouroboros/Audio/AudioSystem.h"
 
 namespace oo
 {
@@ -50,7 +52,7 @@ namespace oo
 
             GetWorld().Add_System<PhysicsSystem>()->Init(this);
 
-            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
+            GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
             GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
             //Register All Systems
@@ -97,13 +99,19 @@ namespace oo
 
         TRACY_PROFILE_SCOPE(runtime_scene_update);
 
-        Scene::Update();
 
-        //GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
-
+        GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
+        GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
+        
         {
             TRACY_PROFILE_SCOPE(input_update);
             GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        {
+            TRACY_PROFILE_SCOPE(scripts_update);
+            GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
             TRACY_PROFILE_SCOPE_END();
         }
 
@@ -113,89 +121,18 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
+        /*{
+            TRACY_PROFILE_SCOPE(physics_runtime_update);
+            GetWorld().Get_System<TransformSystem>()->Run(&GetWorld());
+            TRACY_PROFILE_SCOPE_END();
+        }*/
+
         {
             TRACY_PROFILE_SCOPE(animation_update);
             GetWorld().Run_System<oo::Anim::AnimationSystem>();
             TRACY_PROFILE_SCOPE_END();
         }
 
-        //Update All Systems
-        //constexpr const char* const scripts_update = "Scripts Update";
-        //{
-        //    TRACY_PROFILE_SCOPE(scripts_update);
-        //    GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
-        //    //auto ss = GetWorld().GetSystem<oo::ScriptSystem>();
-        //    //ss->InvokeFunctionAll("Update");
-        //    TRACY_PROFILE_SCOPE_END();
-        //}
-        //constexpr const char* const ui_update = "UI Update";
-        {
-            /* TRACY_PROFILE_SCOPE(ui_update);
-            GetWorld().GetSystem<oo::UISystem>()->RuntimeUpdate();
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-        //constexpr const char* const transforms_first_parse = "transforms first parse update";
-        {
-            //TRACY_PROFILE_SCOPE(transforms_first_parse);
-            ////Transforms gets first-parsed updated after scripts
-            //GetWorld().GetSystem<oo::TransformSystem>()->UpdateTransform();
-            //TRACY_PROFILE_SCOPE_END();
-        }
-        //constexpr const char* const physics_update = "physics update";
-        {
-            /*TRACY_PROFILE_SCOPE(physics_update);
-            GetWorld().GetSystem<oo::PhysicsSystem>()->Update(dt);
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-        //constexpr const char* const scripts_lateupdate = "Scripts LateUpdate";
-        {
-            /*TRACY_PROFILE_SCOPE(scripts_lateupdate);
-            auto ss = GetWorld().GetSystem<oo::ScriptSystem>();
-            ss->InvokeFunctionAll("LateUpdate");
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-        //constexpr const char* const transform_update = "tranform update";
-        {
-            /*TRACY_PROFILE_SCOPE(transform_update);
-            GetWorld().GetSystem<oo::TransformSystem>()->Update();
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-        //constexpr const char* const animator_update = "animator update";
-        {
-            /*TRACY_PROFILE_SCOPE(animator_update);
-            GetWorld().GetSystem<oo::AnimatorSystem>()->Update(dt);
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-        //constexpr const char* const audio_update = "audio update";
-        {
-            /*TRACY_PROFILE_SCOPE(audio_update);
-            GetWorld().GetSystem<oo::AudioSystem>()->Update();
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-        //constexpr const char* const waypoint_update = "waypoint update";
-        {
-            /*TRACY_PROFILE_SCOPE(waypoint_update);
-            GetWorld().GetSystem<WaypointSystem>()->Update(dt);
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-        //constexpr const char* const animator_controller_update = "animator controller update";
-        {
-            /*TRACY_PROFILE_SCOPE(animator_controller_update);
-            GetWorld().GetSystem<oo::AnimatorControllersystem>()->Update(dt);
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-
-        //constexpr const char* const particles_update = "Particles update";
-        {
-            /*TRACY_TRACK_PERFORMANCE(particles_update);
-            GetWorld().GetSystem<oo::ParticleRenderingSystem>()->Update(dt);*/
-        }
-
-        //constexpr const char* const video_update = "Video update";
-        {
-            /*TRACY_TRACK_PERFORMANCE(video_update);
-            GetWorld().GetSystem<oo::VideoSystem>()->Update(dt);*/
-        }
             
         TRACY_PROFILE_SCOPE_END();
 
@@ -205,6 +142,12 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(runtime_scene_late_update);
         Scene::LateUpdate();
+        {
+            TRACY_PROFILE_SCOPE(scripts_late_update);
+            GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
+            TRACY_PROFILE_SCOPE_END();
+        }
+        GetWorld().Get_System<RendererSystem>()->UpdateCamerasRuntime();
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -212,7 +155,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(runtime_scene_rendering);
         Scene::Render();
-        GetWorld().Get_System<MeshRendererSystem>()->UpdateCameras();
+        GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
         TRACY_PROFILE_SCOPE_END();
         //constexpr const char* const text_rendering = "Text Rendering";
         {

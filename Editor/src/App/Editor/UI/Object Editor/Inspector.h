@@ -55,10 +55,10 @@ private: //inspecting functions
 	template <typename Component>
 	void DisplayComponent(oo::GameObject& gameobject);
 	template <typename Component>
-	void SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, UUID id, bool edited, bool endEdit );
+	void SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, oo::UUID id, bool edited, bool endEdit );
 	void DisplayNestedComponent(rttr::property prop ,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
 	void DisplayArrayView(rttr::property prop,rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit);
-
+	void DisplayEnumView(rttr::property prop, rttr::variant& value, bool& edited, bool& endEdit);
 	void DisplayScript(oo::GameObject& gameobject);
 
 private: //inspecting elements
@@ -67,7 +67,7 @@ private: //inspecting elements
 	bool m_showReadonly = false;
 };
 template<typename Component>
-inline void Inspector::SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, UUID id, bool edited, bool endEdit)
+inline void Inspector::SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, oo::UUID id, bool edited, bool endEdit)
 {
 	if (endEdit)
 	{
@@ -172,6 +172,15 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 				bool end_edit = false;
 				DisplayNestedComponent(prop ,prop_type, value, edited, end_edit);
 				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
+			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant value = prop.get_value(component);
+				bool edited = false;
+				bool end_edit = false;
+				DisplayEnumView(prop, value, edited, end_edit);
+				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
+
 			}
 			continue;
 		}

@@ -65,6 +65,10 @@ void EditorLayer::OnUpdate()
 		}
 		ImGui::EndMainMenuBar();
 	}
-
+#ifdef OO_EDITOR
+	m_editor.AddSequence(Editor::TimedSequence([this] {
+			m_discord_helper.Update();
+		}, 2.0f));
+#endif
 	TRACY_PROFILE_SCOPE_END();
 }

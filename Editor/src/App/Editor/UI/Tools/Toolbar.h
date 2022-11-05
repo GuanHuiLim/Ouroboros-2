@@ -15,6 +15,7 @@ Technology is prohibited.
 #include <string>
 #include <unordered_map>
 #include "Ouroboros/Asset/Asset.h"
+#include "App/Editor/Events/GizmoOperationEvent.h"
 class Toolbar
 {
 public:
@@ -31,7 +32,10 @@ public:
 	 This function should only be invoked in Editor.cpp
 	*//**********************************************************************************/
 	void Show();
+	void OnGizmoChange(ChangeGizmoEvent* e);
 private:
+private:
+	int currGizmoOperation = 7;
 	std::unordered_map<std::string,oo::Asset> m_iconsSaved;
 	float btn_width;
 	float btn_height;

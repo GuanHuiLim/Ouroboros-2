@@ -26,7 +26,7 @@ namespace oo
     class ScriptManager final
     {
     public:
-        static SceneManager const* s_SceneManager;
+        static SceneManager* s_SceneManager;
 
     private:
         static std::string s_BuildPath;
@@ -108,7 +108,7 @@ namespace oo
 
         \return     a shared_ptr to the requested GameObject, if it is found
         *//**********************************************************************************/
-        static inline std::shared_ptr<GameObject> GetObjectFromScene(Scene::ID_type sceneID, UUID uuid)
+        static inline std::shared_ptr<GameObject> GetObjectFromScene(Scene::ID_type sceneID, oo::UUID uuid)
         {
             std::shared_ptr<Scene> scene = GetScene(sceneID);
             std::shared_ptr<GameObject> obj = scene->FindWithInstanceID(uuid);

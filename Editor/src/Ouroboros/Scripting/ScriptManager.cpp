@@ -24,7 +24,7 @@ namespace oo
 {
     // Global stuff that transfers between scenes
 
-    SceneManager const* ScriptManager::s_SceneManager;
+    SceneManager* ScriptManager::s_SceneManager;
     std::string ScriptManager::s_BuildPath;
     std::string ScriptManager::s_ProjectPath;
 

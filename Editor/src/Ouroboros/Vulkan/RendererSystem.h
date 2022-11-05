@@ -15,24 +15,42 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include "RendererComponent.h"
+#include "MeshRendererComponent.h"
 #include "LightComponent.h"
 #include "CameraComponent.h"
 
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
+
+#include "Ouroboros/Core/CameraController.h"
+
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
+
+//fwd declaration
+struct EditorViewportResizeEvent;
+
 namespace oo
 {
-    class MeshRendererSystem : public Ecs::System
+    class RendererSystem : public Ecs::System
     {
     private:
         GraphicsWorld* m_graphicsWorld{nullptr};
         //Ecs::ECSWorld* m_world{nullptr};
     public:
-        MeshRendererSystem(GraphicsWorld* graphicsWorld);
+        RendererSystem(GraphicsWorld* graphicsWorld);
 
         void Init();
+
+        virtual void Run(Ecs::ECSWorld* world) override;
+
+        void UpdateCamerasEditorMode();
+        void UpdateCamerasRuntime();
+        void SaveEditorCamera();
+
+    private:
+        void OnScreenResize(WindowResizeEvent* e);
+        void OnEditorViewportResize(EditorViewportResizeEvent* e);
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
@@ -40,9 +58,14 @@ namespace oo
         void OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
         void OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
 
-        //void Init(Ecs::ECSWorld* world, GraphicsWorld* graphicsWorld);
-
-        virtual void Run(Ecs::ECSWorld* world) override;
-        void UpdateCameras();
+        void RenderDebugDraws(Ecs::ECSWorld* world);
+        void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp);
+        void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
+    
+    private:
+        CameraController m_cc;
+        Camera m_runtimeCamera;
+        
+        bool m_firstFrame = true; // potentially improvable if this can be run once per creation
     };
 }

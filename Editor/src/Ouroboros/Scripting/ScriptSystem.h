@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObject.h"
 
+#include "Ouroboros/Physics/PhysicsEvents.h"
+
 namespace oo
 {
     // Scene specific script stuff, go to ScriptManager for global stuff that transfers between scenes
@@ -32,15 +34,12 @@ namespace oo
         ~ScriptSystem();
 
         bool StartPlay();
-        void SetUpObject(UUID uuid);
+        void SetUpObject(oo::UUID uuid);
+        void UpdateObjectFieldsWithInfo(oo::UUID uuid);
         bool StopPlay();
         bool IsPlaying();
 
-        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
-        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
-        void OnObjectDestroyed(GameObject::OnDestroy* e);
-
-        void ResetScriptInfo(UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
+        void ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
         void RefreshScriptInfoAll();
 
         ScriptDatabase::IntPtr AddScript(ScriptDatabase::UUID uuid, const char* name_space, const char* name);
@@ -51,14 +50,15 @@ namespace oo
 
         ComponentDatabase::IntPtr AddComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         ComponentDatabase::IntPtr GetComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
+        ComponentDatabase::IntPtr HasActualComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         void RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         void SetComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
         bool CheckComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
 
         ComponentDatabase::IntPtr GetGameObject(ComponentDatabase::UUID uuid);
 
-        void InvokeForObject(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
-        void InvokeForObjectEnabled(UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
+        void InvokeForObject(oo::UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
+        void InvokeForObjectEnabled(oo::UUID uuid, const char* functionName, int paramCount = 0, void** params = NULL);
 
         void InvokeForEach(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
         void InvokeForEachEnabled(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
@@ -67,10 +67,18 @@ namespace oo
         void InvokeForAllEnabled(const char* functionName, int paramCount = 0, void** params = NULL);
 
     private:
-        void SetUpObject(UUID uuid, ScriptComponent const& script);
+        void SetUpObject(oo::UUID uuid, ScriptComponent const& script);
 
         void UpdateAllScriptFieldsWithInfo();
-        void UpdateScriptFieldsWithInfo(UUID uuid, ScriptComponent& script);
+        void UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script);
+
+        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
+        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
+        void OnObjectDestroyed(GameObject::OnDestroy* e);
+
+        void OnPhysicsTick(PhysicsTickEvent* e);
+        void OnTriggerEvent(PhysicsTriggerEvent* e);
+        void OnCollisionEvent(PhysicsCollisionEvent* e);
 
         Scene& scene;
         ScriptDatabase& scriptDatabase;

@@ -85,7 +85,7 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 	swapChainCreateInfo.imageExtent = extent;
 	swapChainCreateInfo.minImageCount = imageCount;
 	swapChainCreateInfo.imageArrayLayers = 1;
-	swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	swapChainCreateInfo.preTransform = swapChainDetails.surfaceCapabilities.currentTransform;
 	//handles blending between different graphics e.g windows
 	swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;

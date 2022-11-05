@@ -15,7 +15,7 @@ Technology is prohibited.
 #include "Ouroboros/Asset/Asset.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "OO_Vulkan/src/Node.h"
-
+#include "Ouroboros/ECS/GameObject.h"
 class MeshHierarchy
 {
 public:
@@ -30,5 +30,6 @@ public:
 	void Show();
 	static void CreateObject(Node* starting_node,oo::AssetID asset_id );
 private:
+	static std::shared_ptr<oo::GameObject> CreateSkeleton(decltype(ModelFileResource::skeleton) skele);
 	oo::AssetID m_current_id = 0;
 };

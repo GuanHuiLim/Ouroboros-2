@@ -34,11 +34,12 @@ Technology is prohibited.
 #include "App/Editor/Events/DuplicateButtonEvent.h"
 
 #include "Ouroboros/Core/Events/FileDropEvent.h"
-
+#include "Ouroboros/Core/Timer.h"
+#include <Ouroboros/Physics/PhysicsSystem.h>
 
 static void FileDrop(oo::FileDropEvent* e)
 {
-	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf" };
+	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf", ".tga"};
 	if (e->GetType() != oo::FileDropType::DropFile)
 		return;
 	std::filesystem::path p = e->GetFile();
@@ -64,32 +65,39 @@ static void FileDrop(oo::FileDropEvent* e)
 			return;
 		}
 		std::filesystem::copy(p, Project::GetAssetFolder() / p.filename(),std::filesystem::copy_options::overwrite_existing);
+		Project::GetAssetManager()->Scan();
 	}
 }
 Editor::Editor()
 {
-	UI_RTTRType::Init();
-	Serializer::Init();//runs the init function
-	Serializer::InitEvents();
 	oo::CommandStackManager::InitEvents();
 	oo::EventManager::Subscribe<oo::FileDropEvent>(&FileDrop);
-	
 
+	AddSequence(TimedSequence([] {
+		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+		Serializer::SaveScene(*(scene));
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Auto Saved");
+		}, 240.0f));
+	
+	//object editors
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
 	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
 	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
-	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
 	ImGuiManager::Create("Editor Viewport", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoBackground |ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar), [this] {this->m_EditorViewport.Show(); });
+	ImGuiManager::Create("Script Sequencer", false, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
 
+	//tools
 	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
 	ImGuiManager::Create("PenTool", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoDecoration), [this] {this->m_pentool.Show(); });
 	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
 	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
+	ImGuiManager::Create("Animator Controller", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animatorControllerView.Show(); });
+	ImGuiManager::Create("Animation Timeline", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animationTimelineView.Show(); });
 	ImGuiManager::Create("Mesh Hierarchy", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar ), [this] {this->m_meshHierarchy.Show(); });
 	ImGuiManager::Create("Renderer Debugger", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_rendererDebugger.Show(); });
+	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
 
-
-
+	//external (project based tools)
 	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
 	ImGuiManager::Create("Input Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_inputManager.Show(); });
 
@@ -111,6 +119,7 @@ void Editor::Update()
 		m_styleEditor.InitStyle(); 
 		m_toolbar.InitAssets();
 		m_loggingView.InitAsset();
+		m_fileBrowser.InitAssets();
 		return true; 
 	}();
 	ImGui::DockSpaceOverViewport(ImGui::GetWindowViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
@@ -121,30 +130,51 @@ void Editor::Update()
 	m_warningMessage.Show();
 
 	helper.Popups();
-	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_S))
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl))
 	{
-		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		Serializer::SaveScene(*(scene));
+		if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_S))
+		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Z))
+		{
+			oo::CommandStackManager::UndoCommand();
+		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Y))
+		{
+			oo::CommandStackManager::RedoCommand();
+		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_C))
+		{
+			CopyButtonEvent cbe;
+			oo::EventManager::Broadcast<CopyButtonEvent>(&cbe);
+		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_V))
+		{
+			PasteButtonEvent cbe;
+			oo::EventManager::Broadcast<PasteButtonEvent>(&cbe);
+		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_P))
+		{
+			if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftShift))
+			{
+				ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PAUSE);
+				oo::EventManager::Broadcast(&tbe);
+			}
+			else if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftAlt))
+			{
+				ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::STOP);
+				oo::EventManager::Broadcast(&tbe);
+			}
+			else
+			{
+				ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PLAY);
+				oo::EventManager::Broadcast(&tbe);
+			}
+		}
 	}
-	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Z))
-	{
-		oo::CommandStackManager::UndoCommand();
-	}
-	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Y))
-	{
-		oo::CommandStackManager::RedoCommand();
-	}
-	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_C))
-	{
-		CopyButtonEvent cbe;
-		oo::EventManager::Broadcast<CopyButtonEvent>(&cbe);
-	}
-	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_V))
-	{
-		PasteButtonEvent cbe;
-		oo::EventManager::Broadcast<PasteButtonEvent>(&cbe);
-
-	}
+	TimedUpdate();
 }
 
 void Editor::MenuBar()
@@ -177,13 +207,48 @@ void Editor::MenuBar()
 			{
 				ImGuiManager::GetItem("Input Manager").m_enabled = !ImGuiManager::GetItem("Input Manager").m_enabled;
 			}
+			if (ImGui::MenuItem("Script Sequencer", 0, ImGuiManager::GetItem("Script Sequencer").m_enabled))
+			{
+				ImGuiManager::GetItem("Script Sequencer").m_enabled = !ImGuiManager::GetItem("Script Sequencer").m_enabled;
+			}
 			if (ImGui::MenuItem("Renderer Debugger", 0, ImGuiManager::GetItem("Renderer Debugger").m_enabled))
 			{
 				ImGuiManager::GetItem("Renderer Debugger").m_enabled = !ImGuiManager::GetItem("Renderer Debugger").m_enabled;
 			}
 			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("Debugging"))
+		{
+			if (ImGui::MenuItem("Physics Debug Draw", 0, oo::PhysicsSystem::DrawDebug))
+			{
+				oo::PhysicsSystem::DrawDebug = !oo::PhysicsSystem::DrawDebug;
+			}
+			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessges))
+			{
+				oo::PhysicsSystem::DebugMessges = !oo::PhysicsSystem::DebugMessges;
+			}
+			ImGui::EndMenu();
+		}
 		ImGui::EndMainMenuBar();
+	}
+}
+
+void Editor::AddSequence(TimedSequence&& seq)
+{
+	m_timedseq.push_back(seq);
+}
+
+void Editor::TimedUpdate()
+{
+	float dt = oo::timer::dt();
+	for (auto& curr_seq : m_timedseq)
+	{
+		curr_seq.curr_duration -= dt;
+		if (curr_seq.curr_duration <= 0)
+		{
+			curr_seq.instruction();
+			curr_seq.curr_duration = curr_seq.max_duration;
+		}
 	}
 }
 
@@ -210,16 +275,19 @@ void PopupHelperWindow::CloseProjectEvent_EventReceiver(OpenPromptEvent<ClosePro
 
 void PopupHelperWindow::OpenFileEvent_EventReceiver(OpenPromptEvent<OpenFileEvent>* e)
 {
-	if (e->nextAction.nextEvent.m_type != OpenFileEvent::FileType::SCENE)
+	if (e->nextAction.nextEvent.m_type == OpenFileEvent::FileType::SCENE || 
+		e->nextAction.nextEvent.m_type == OpenFileEvent::FileType::PREFAB)
 	{
-		oo::EventManager::Broadcast<OpenFileEvent>(&e->nextAction.nextEvent);
+		if (ImGui::IsPopupOpen(ImGuiID{ 0 }, ImGuiPopupFlags_::ImGuiPopupFlags_AnyPopup))
+			return;
+		eventAfterPrompt_ofe = e->nextAction;
+		openfile = true;
 		return;
 	}
-	if (ImGui::IsPopupOpen(ImGuiID{ 0 }, ImGuiPopupFlags_::ImGuiPopupFlags_AnyPopup))
-		return;
 
-	eventAfterPrompt_ofe = e->nextAction;
-	openfile = true;
+	oo::EventManager::Broadcast<OpenFileEvent>(&e->nextAction.nextEvent);
+	return;
+
 }
 
 void PopupHelperWindow::CloseProjectPopup()
@@ -241,11 +309,12 @@ void PopupHelperWindow::CloseProjectPopup()
 		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
 		if (ImGui::Button("Yes", { buttonsizeX,0 }))
 		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+
 			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
 			if (eventAfterPrompt.nextAction)
 				eventAfterPrompt.nextAction();
-			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-			Serializer::SaveScene(*(scene));
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -253,6 +322,7 @@ void PopupHelperWindow::CloseProjectPopup()
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0, 0, 1.0f));
 		if (ImGui::Button("No", { buttonsizeX,0 }))
 		{
+			oo::EventManager::Broadcast(&eventAfterPrompt.nextEvent);
 			if (eventAfterPrompt.nextAction)
 				eventAfterPrompt.nextAction();
 			ImGui::CloseCurrentPopup();
@@ -289,20 +359,22 @@ void PopupHelperWindow::OpenFilePopup()
 		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
 		if (ImGui::Button("Yes", { buttonsizeX,0 }))
 		{
+			//save the scene before the scene changes
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+			
 			oo::EventManager::Broadcast(&eventAfterPrompt_ofe.nextEvent);
 			if (eventAfterPrompt_ofe.nextAction)
 				eventAfterPrompt_ofe.nextAction();
 			ImGui::CloseCurrentPopup();
-			//save the scene
-			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-			Serializer::SaveScene(*(scene));
 		}
 		ImGui::SameLine();
 		ImGui::Dummy({ paddingX, 0 }); ImGui::SameLine();
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0, 0, 1.0f));
 		if (ImGui::Button("No", { buttonsizeX,0 }))
 		{
-			if (eventAfterPrompt_ofe.nextAction)
+			oo::EventManager::Broadcast(&eventAfterPrompt_ofe.nextEvent);
+			if (eventAfterPrompt_ofe.nextAction && eventAfterPrompt_ofe.launchEventDesipteNo)
 				eventAfterPrompt_ofe.nextAction();
 			ImGui::CloseCurrentPopup();
 		}

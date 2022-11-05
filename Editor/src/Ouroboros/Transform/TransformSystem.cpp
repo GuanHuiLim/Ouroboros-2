@@ -52,7 +52,10 @@ namespace oo
         // Reset all has changed to false regardless of their previous state.
         // Note: this should only occure once per frame. Otherwise wonky behaviour.
         static Ecs::Query query = Ecs::make_query<TransformComponent>();
-        world->for_each(query, [&](TransformComponent& tf) { tf.HasChangedThisFrame = false; });
+        world->for_each(query, [&](TransformComponent& tf)
+        { 
+            tf.HasChangedThisFrame = false; 
+        });
 
         // TODO
         // update local transformations : can be parallelized.
@@ -63,6 +66,7 @@ namespace oo
         scenegraph::shared_pointer root_node = graph.get_root();
         UpdateTree(root_node, false);
 
+
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -70,25 +74,68 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(transform_subtree_update, tracy::Color::Gold3);
 
-        UpdateLocalTransforms();
+        UpdateLocalTransform(go.GetComponent<TransformComponent>());
         UpdateTree(go.GetSceneNode().lock(), includeItself);
         
         TRACY_PROFILE_SCOPE_END();
     }
 
+    //void TransformSystem::StartOfFrame()
+    //{
+    //    static Ecs::Query query = Ecs::make_query<TransformComponent>();
+    //    m_world->for_each(query, [&](TransformComponent& tf)
+    //        {
+    //            // set current frame data to be previous frame data
+    //            tf.PrevLocalPosition    = tf.LocalTransform.Position;
+    //            tf.PrevLocalOrientation = tf.LocalTransform.Orientation;
+    //            tf.PrevGlobalPosition   = tf.GlobalTransform.Position;
+    //            tf.PrevGlobalOrientation = tf.GlobalTransform.Orientation;
+    //            /*
+    //            tf.LocalTranslationDelta =  glm::vec3{};
+    //            tf.LocalOrientationDelta =  glm::quat{};
+    //            tf.GlobalTranslationDelta = glm::vec3{};
+    //            tf.GlobalOrientationDelta = glm::quat{};*/
+    //        });
+    //}
+
+    //void TransformSystem::EndOfFrame()
+    //{
+    //    static Ecs::Query query = Ecs::make_query<TransformComponent>();
+    //    m_world->for_each(query, [&](TransformComponent& tf)
+    //        {
+    //            // calculate deltas
+    //            tf.LocalTranslationDelta  = tf.LocalTransform.Position - tf.PrevLocalPosition;
+    //            tf.LocalOrientationDelta  = tf.LocalTransform.Orientation.value - tf.PrevLocalOrientation;
+    //            tf.GlobalTranslationDelta = tf.GlobalTransform.Position - tf.PrevGlobalPosition;
+    //            tf.GlobalOrientationDelta = tf.GlobalTransform.Orientation.value - tf.PrevGlobalOrientation;
+    //        });
+    //}
+
+
+    void TransformSystem::UpdateLocalTransform(TransformComponent& tf)
+    {
+        // TODO: this part of the code doesn't need to be serial.
+        // Update local and global transform immediately
+        if (tf.LocalMatrixDirty)
+        {
+            //std::string debugName = goc.Name;
+            tf.CalculateLocalTransform();
+        }
+    }
 
     void TransformSystem::UpdateLocalTransforms()
     {
         TRACY_PROFILE_SCOPE_NC(transform_local_transform_update, tracy::Color::Gold4);
-
+        
         // Update their local transform
-        static Ecs::Query query = Ecs::make_raw_query<TransformComponent>();
-        m_world->for_each(query, [&](TransformComponent& tf)
+        static Ecs::Query query = Ecs::make_raw_query</*GameObjectComponent, */TransformComponent>();
+        m_world->for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
             {
                 // TODO: this part of the code doesn't need to be serial.
                 // Update local and global transform immediately
                 if (tf.LocalMatrixDirty)
                 {
+                    //std::string debugName = goc.Name;
                     tf.CalculateLocalTransform();
                 }
             });
@@ -111,7 +158,7 @@ namespace oo
         {
             // Find root gameobject
             auto const go = m_scene->FindWithInstanceID(node->get_handle());
-
+            GameObjectComponent goc = go->GetComponent<GameObjectComponent>();
             UpdateTransform(go, go->Transform());
             //// Skip gameobjects that has the deferred component
             //if (go->HasComponent<DeferredComponent>() == false)

@@ -12,13 +12,17 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
+
 class EditorViewport
 {
 public:
 	EditorViewport();
 	~EditorViewport();
 	void Show();
-private:
+
 	int m_gizmoOperation = 7;
+private:
 	int m_gizmoMode = 1;	// IMGUIZMO::MODE::WORLD <- default
+
+	float m_viewportWidth, m_viewportHeight;
 };

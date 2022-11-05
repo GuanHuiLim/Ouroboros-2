@@ -198,9 +198,9 @@ namespace oo
 
             EventFunction<EventType> callback{ function };
             std::size_t index = 0;
-            for (auto& function : function_container)
+            for (auto& each_function : function_container)
             {
-                if ((*function) == callback)
+                if (*(static_cast<EventFunction<EventType>*>(each_function.get())) == callback)
                 {
                     function_container.erase(function_container.begin() + index);
                     break;

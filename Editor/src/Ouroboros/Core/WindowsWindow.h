@@ -73,6 +73,7 @@ namespace oo
         unsigned int GetHeight() const { return m_data.Height; }
         std::pair<unsigned int, unsigned int> GetSize() const { return { m_data.Width, m_data.Height }; }
         std::pair<int, int> GetWindowPos() const;
+        bool GetMouseCursorMode() const;  // true implies locked.
 
         void* GetNativeWindow() const { return m_window; }
         //void* GetRenderingContext() const { return m_context; }
@@ -89,6 +90,9 @@ namespace oo
         void SetTitle(const std::string& title);
         void SetFullScreen(bool fullscreen);
         void ShowCursor(bool show = true);
+        void SetCursorGlobalPosition(int x, int y);
+        void SetCursorPosition(int x, int y);
+        void SetMouseLockState(bool lock);  // function still reports delta
 
     private:
         void Init(const WindowProperties& properties);
