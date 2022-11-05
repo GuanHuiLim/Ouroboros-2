@@ -72,7 +72,7 @@ void DebugDrawRenderpass::Draw()
 	VkFramebuffer fb;
 	FramebufferBuilder::Begin(&vr.fbCache)
 		.BindImage(&vr.currWorld->renderTargets[vr.renderIteration])
-		.BindImage(&vr.currWorld->depthTargets[vr.renderIteration])
+		.BindImage(&depthAtt)
 		.Build(fb,debugRenderpass);
 
 	renderPassBeginInfo.framebuffer = fb;
