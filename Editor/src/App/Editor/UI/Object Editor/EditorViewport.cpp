@@ -58,7 +58,7 @@ void EditorViewport::Show()
 	auto& window = oo::Application::Get().GetWindow();
 	
 	int windowWidth = window.GetSize().first;
-	int windowHeight = window.GetSize().second;
+	//int windowHeight = window.GetSize().second;	unused var
 	
 	ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 	ImVec2 vMax = ImGui::GetWindowContentRegionMax();
@@ -97,7 +97,7 @@ void EditorViewport::Show()
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
 
-	if (m_viewportWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
+	if (m_viewportWidth <= 0 || m_viewportHeight <= 0 || selectedItems.empty() )
 	{
 		return;
 	}

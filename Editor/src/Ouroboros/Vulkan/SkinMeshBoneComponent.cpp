@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "RendererComponent.h"
+#include "SkinRendererComponent.h"
 #include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
 

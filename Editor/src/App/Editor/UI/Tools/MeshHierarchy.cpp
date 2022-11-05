@@ -31,7 +31,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "SceneManagement/include/SceneManager.h"
-#include "Ouroboros/Vulkan/RendererComponent.h"
+#include "Ouroboros/Vulkan/SkinRendererComponent.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 MeshHierarchy::MeshHierarchy()
 {

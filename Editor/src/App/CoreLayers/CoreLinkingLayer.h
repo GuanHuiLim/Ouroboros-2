@@ -5,7 +5,8 @@
 \par            email: c.tecklee\@digipen.edu
 \date           Jul 1, 2022
 \brief          Defines a layer that will be running in the both the editor and
-                the final distribution build that contains the main rendering scene
+                the final distribution build that contains the essential setup code
+                required to run for either versions to work
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents

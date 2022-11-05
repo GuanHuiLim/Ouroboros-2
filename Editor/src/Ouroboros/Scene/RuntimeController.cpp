@@ -181,8 +181,8 @@ namespace oo
 
     RuntimeController::size_type RuntimeController::GetIndexWithLoadPath(std::string_view loadpath) const
     {
-        size_type index = -1;   // initialize to can't be found.
-        size_type counter = -1;
+        size_type index = static_cast<size_type>(-1);   // initialize to can't be found.
+        size_type counter = static_cast<size_type>(-1);
         for (auto& sceneInfo : m_loadpaths)
         {
             counter++;

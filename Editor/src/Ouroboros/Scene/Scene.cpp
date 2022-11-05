@@ -201,7 +201,6 @@ namespace oo
 
         // TODO: Solution To tie graphics world to rendering context for now!
         static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
-        // comment because cannot 
         vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
 
         TRACY_PROFILE_SCOPE_END();

@@ -85,7 +85,7 @@ namespace oo
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
         InitializeMesh(meshComp, transform_component);
 
-        //HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
+        // TODO: HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
         meshComp.model_handle = 0;
         meshComp.meshInfo.submeshBits[0] = true;
     }
