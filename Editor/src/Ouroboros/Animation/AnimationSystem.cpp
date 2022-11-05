@@ -423,8 +423,12 @@ namespace oo::Anim
 		auto load_fn = rttr::type::get< AnimationTree>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, tree);
 
+		auto loaded_tree = AnimationTree::Add(std::move(tree));
 
-		return AnimationTree::Add(std::move(tree));
+		internal::ReAssignReferences(*loaded_tree);
+		internal::ReloadReferences(*loaded_tree);
+
+		return loaded_tree;
 	}
 	Animation* AnimationSystem::LoadAnimation(std::string filepath)
 	{
@@ -456,6 +460,6 @@ namespace oo::Anim
 	}
 	AnimationTree* AnimationSystem::CreateAnimationTree(std::string const& name)
 	{
-		return AnimationTree::Create("Test Animation Tree");
+		return AnimationTree::Create(name);
 	}
 }

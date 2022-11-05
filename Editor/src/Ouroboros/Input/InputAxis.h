@@ -17,6 +17,9 @@ Technology is prohibited.
 #include <limits>
 #include <string>
 #include <rttr/type>
+
+#include <Ouroboros/Core/Timer.h>
+
 namespace oo
 {
     class InputAxis
@@ -156,8 +159,41 @@ namespace oo
             unsigned pressCount;
             float pressGapTimeLeft;
             InputAxis::InputCode lastPressed;
+            bool isController;
 
         private:
+            /*********************************************************************************//*!
+            \brief      Used to get the current value of the input axis' keyboard or mouse input that the tracker is
+                        looking at based on how the tracked variables meet the input axis' conditions
+
+            \return     the value of the input axis the tracker is looking at, usually with a range of [-1, 1]
+            *//**********************************************************************************/
+            float GetKeyboardMouseValue();
+
+            /*********************************************************************************//*!
+            \brief      Used to get the current value of the input controller input that the tracker is
+                        looking at based on how the tracked variables meet the input axis' conditions
+
+            \return     the value of the input axis the tracker is looking at, usually with a range of [-1, 1]
+            *//**********************************************************************************/
+            float GetControllerValue();
+
+            /*********************************************************************************//*!
+            \brief      Helper function used to get the controller trigger or joystick axis value,
+                        taking into consideration if only on press is wanted
+
+            \param      inputCode
+                    the input code of the joystick or trigger input to get the value of
+
+            \return     the value of the input axis the tracker is looking at, usually with a range of [-1, 1]
+            *//**********************************************************************************/
+            inline float GetTriggerJoystickValue(InputCode inputCode)
+            {
+                if (axis.controllerSettings.onPressOnly && lastPressed == inputCode && durationHeld > timer::dt())
+                    return 0.0f;
+                return GetControllerAxisValue(inputCode);
+            }
+
             /*********************************************************************************//*!
             \brief      Helper function to check if any keyboard/mouse input that is different
                         from the currently tracked last pressed input code is detected, and if so,
@@ -168,14 +204,23 @@ namespace oo
             *//**********************************************************************************/
             void UpdateLastPressed(InputCode potentialButton);
             /*********************************************************************************//*!
-            \brief      Helper function to check if any controller input that is different
+            \brief      Helper function to check if any controller button input that is different
                         from the currently tracked last pressed input code is detected, and if so,
                         update the tracked variables accordingly
 
             \param      potentialButton
                     the potential input code to check for input detection
             *//**********************************************************************************/
-            void UpdateLastPressedController(InputCode potentialButton);
+            void UpdateLastPressedControllerButton(InputCode potentialButton);
+            /*********************************************************************************//*!
+            \brief      Helper function to check if any controller axis input that is different
+                        from the currently tracked last pressed input code is detected, and if so,
+                        update the tracked variables accordingly
+
+            \param      potentialAxis
+                    the potential input code to check for input detection
+            *//**********************************************************************************/
+            void UpdateLastPressedControllerAxis(InputCode potentialAxis);
         };
 
     private:

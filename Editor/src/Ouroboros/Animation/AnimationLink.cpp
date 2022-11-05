@@ -83,8 +83,8 @@ namespace oo::Anim::internal
 			auto load_fn = rttr::type::get<Condition>().get_method(internal::load_method_name);
 			for (auto& condition : conditions)
 			{
-				Condition new_condition{};
-				load_fn.invoke({}, condition, condition);
+				Condition new_condition{}; 
+				load_fn.invoke({}, condition.GetObj(), new_condition);
 
 				link.conditions.emplace_back(std::move(new_condition));
 			}

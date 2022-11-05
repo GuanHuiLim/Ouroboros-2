@@ -81,7 +81,8 @@ namespace oo::Anim::internal
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
-				prop.set_value(obj, val);
+				auto result = prop.set_value(obj, val);
+				assert(result);
 			}
 		}
 		//script events
@@ -144,10 +145,38 @@ namespace oo::Anim
 		return container;
 	}();
 
+	void PrintNode(decltype(aiScene::mRootNode) node, std::vector<uint> const& hierarchy)
+	{
+		std::ostringstream buffer;
+		for (auto const& i : hierarchy)
+			buffer << " ";
+		
+		buffer << "->" << node->mName.C_Str();
+
+		std::cout << buffer.str() << std::endl;
+	}
+
+	void PrintRecusive(decltype(aiScene::mRootNode) node, std::vector<uint> hierarchy = {})
+	{
+		PrintNode(node, hierarchy);
+		if (node->mNumChildren == 0) return;
+
+		//recurse on children
+		hierarchy.emplace_back(0);
+		for (uint i = 0; i < node->mNumChildren; i++)
+		{
+			hierarchy.back() = i;
+			PrintRecusive(node->mChildren[i], hierarchy);
+		}
+	}
 
 	void PrintNodeHierarchy(const aiScene* scene)
 	{
-		//to do later
+		std::cout << "----------|Node Hierarchy|----------" << std::endl;
+
+		auto node = scene->mRootNode;
+		PrintRecusive(node);
+		
 	}
 
 	std::vector<Animation*> Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
@@ -168,14 +197,17 @@ namespace oo::Anim
 		if (!scene)
 		{
 			assert(false);
-			//return {}; // Dont explode...
-			//throw std::runtime_error("Failed to load model! (" + file + ")");
+			return {};
 		}
 		if (scene->HasAnimations() == false) return {};
 
+#ifdef EDITOR_DEBUG
 		PrintNodeHierarchy(scene);
+#endif // EDITOR_DEBUG
 
-		std::cout << "Bone hierarchy: " << std::endl;
+		
+
+		std::cout << "--------------|Bone hierarchy|--------------" << std::endl;
 		//generate hierarchy map
 		std::unordered_map<std::string, std::vector<int>> bone_hierarchy_map{};
 		{
@@ -220,6 +252,7 @@ namespace oo::Anim
 			traverse_recursive(current);
 		}
 
+		std::string prefix_name = std::filesystem::path{ filepath }.stem().string() + "_";
 
 		std::cout << "Animated scene\n";
 		std::vector<Animation*> anims;
@@ -234,7 +267,7 @@ namespace oo::Anim
 			std::cout << "-------------------------------------------------------" << std::endl;
 
 			Animation anim{};
-			anim.name = scene->mAnimations[i]->mName.C_Str();
+			anim.name = prefix_name + scene->mAnimations[i]->mName.C_Str();
 
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
@@ -334,23 +367,41 @@ namespace oo::Anim
 			}
 
 			auto createdAnim = Animation::AddAnimation(std::move(anim));
-			anims.emplace_back(createdAnim);
 			assert(createdAnim);
+			anims.emplace_back(createdAnim);
 		}
-		//std::cout << std::endl;
 
+
+		return anims;
 	}
 	Animation* Animation::AddAnimation(Animation&& anim)
 	{
 		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
+
+		//remove existing dupe
+		if (Animation::name_to_ID.contains(anim.name))
+		{
+			RemoveAnimation(anim.name);
+		}
+
 		Animation::name_to_ID[anim.name] = anim.animation_ID;
 		size_t key = anim.animation_ID;
 		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
-		assert(result == true);
+		assert(result);//should not have overwritten anything as dupes are removed beforehand
 		auto& createdAnim = Animation::animation_storage[key];
 
 		//auto assetmanager = Project::GetAssetManager();
 
 		return &createdAnim;
+	}
+
+	void Animation::RemoveAnimation(std::string const& name)
+	{
+		assert(Animation::name_to_ID.contains(name));
+		assert(Animation::animation_storage.contains(Animation::name_to_ID[name]));
+
+		Animation::animation_storage.erase(Animation::name_to_ID[name]);
+		Animation::name_to_ID.erase(name);
+
 	}
 }

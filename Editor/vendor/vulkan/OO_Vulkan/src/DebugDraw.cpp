@@ -103,7 +103,7 @@ void DebugDraw::AddSphere(const Sphere& sphere, const oGFX::Color& col)
     static std::vector<oGFX::Vertex> vertices;
     static std::vector<uint32_t> indices;
     static bool once = [&]() {
-        auto [sphVertices, spfIndices] = icosahedron::make_icosphere(2, false);
+        auto [sphVertices, spfIndices] = icosahedron::make_icosphere(1, false);
         vertices.reserve(sphVertices.size());
         for (auto&& v : sphVertices)
         {

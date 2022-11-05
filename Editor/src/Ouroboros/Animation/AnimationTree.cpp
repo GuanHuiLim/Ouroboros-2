@@ -94,14 +94,13 @@ namespace oo::Anim::internal
 			for (auto& param : params)
 			{
 				Parameter new_param{};
-				load_fn.invoke({}, tree, param.GetObj(), new_param);
+				load_fn.invoke({}, param.GetObj(), new_param);
 
 				tree.parameters.emplace_back(std::move(new_param));
 			}
 		}
 		
-		internal::ReAssignReferences(tree);
-		internal::ReloadReferences(tree);
+		internal::CalculateParameterIndexes(tree);
 	}
 }
 namespace oo::Anim

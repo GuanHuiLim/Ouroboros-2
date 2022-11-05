@@ -30,6 +30,8 @@ namespace oo
         , m_runtimeController{ m_sceneManager }
 #ifdef OO_EDITOR
         , m_editorController{ m_sceneManager, m_runtimeController, m_activeState }
+#elif OO_EXECUTABLE
+        , m_activeState { SCENE_STATE::RUNNING }
 #endif
         , Layer("Scene Management Layer")
     {
@@ -83,7 +85,12 @@ namespace oo
         switch (GetActiveState())
         {
         case SCENE_STATE::EDITING:
-            ASSERT_MSG(true, "this should never happen!");
+            // TODO: needs to be fixed
+            e->CurrentEditorScene = nullptr;
+            e->CurrentRuntimeScene = m_runtimeController.GetRuntimeScene().lock();
+            e->CurrentScene = std::static_pointer_cast<Scene>(e->CurrentRuntimeScene);
+            e->IsEditor = false;
+            //ASSERT_MSG(true, "this should never happen!");
             break;
 
         case SCENE_STATE::RUNNING:

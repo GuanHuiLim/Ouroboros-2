@@ -1,5 +1,5 @@
 #pragma once
-#include "RendererComponent.h"
+#include "SkinRendererComponent.h"
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
@@ -17,5 +17,8 @@ namespace oo
 		void Init();
 
 		virtual void Run(Ecs::ECSWorld* world) override;
+
+	private:
+		void OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt);
 	};
 }

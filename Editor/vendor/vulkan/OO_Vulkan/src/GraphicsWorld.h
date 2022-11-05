@@ -18,7 +18,10 @@ Technology is prohibited.
 #include "../shaders/shared_structs.h"
 #include "BitContainer.h"
 #include "MeshModel.h"
+#include "Camera.h"
+#include "VulkanTexture.h"
 
+#include "imgui/imgui.h"
 #include <vector>
 #include <array>
 
@@ -105,15 +108,22 @@ public:
     void DestroyLightInstance(int32_t id);
     void ClearLightInstances();
 
+    uint32_t numCameras = 1;
+    std::array<Camera, 2>cameras;
+    std::array<vkutils::Texture2D, 2>renderTargets;
+    std::array<vkutils::Texture2D, 2>depthTargets;
+    std::array<ImTextureID, 2>imguiID{};
 
     // TODO: Fix Me ! This is for testing
     DecalInstance m_HardcodedDecalInstance;
 
+    friend class VulkanRenderer;
 private:
     int32_t m_entityCount{};
     BitContainer<ObjectInstance> m_ObjectInstances;
     int32_t m_lightCount{};
     BitContainer<OmniLightInstance> m_OmniLightInstances;
+    bool initialized = false;
     //etc
 
     // + Spatial Acceleration Structures

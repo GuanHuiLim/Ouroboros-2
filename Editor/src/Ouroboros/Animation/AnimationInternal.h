@@ -42,6 +42,7 @@ namespace oo::Anim::internal
 	GroupRef CreateGroupReference(AnimationTree& tree, size_t id);
 	LinkRef CreateLinkReference(Group& group, size_t id);
 	AnimRef CreateAnimationReference(size_t id);
+	TimelineRef CreateTimelineReference(AnimRef anim_ref, std::string const& timeline_name);
 
 	Parameter::DataType ParameterDefaultValue(P_TYPE const type);
 	Parameter::DataType ConditionDefaultValue(P_TYPE const type);
@@ -142,8 +143,12 @@ namespace oo::Anim::internal
 
 	void ReAssignReferences(AnimationTree& tree);
 
+	void CalculateParameterIndexes(AnimationTree& tree);
+
 	Animation* AddAnimationToStorage(std::string const& name);
 
 	//parameters
 	uint GetParameterIndex(IAnimationComponent& comp, std::string const& paramName);
+	
+
 }

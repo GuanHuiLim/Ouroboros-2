@@ -155,11 +155,11 @@ namespace myPhysx
             createFoundation();
 
             if constexpr (use_debugger) {
-                printf("DEBUGGER ON\n");
-                myPVD.createPvd(getFoundation(), "192.168.2.32");
+                //printf("DEBUGGER ON\n");
+                myPVD.createPvd(getFoundation(), "192.168.157.213");
             }
             else {
-                printf("DEBUGGER OFF\n");
+                //printf("DEBUGGER OFF\n");
             }
 
             createPhysics();
@@ -407,6 +407,8 @@ namespace myPhysx
         // CHECK GOT THE INSTANCE CREATED OR NOT
         if (world->all_objects.contains(id)) {
 
+            bool changingType = false;
+
             //PhysxObject* underlying_obj = world->all_objects.at(id);
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
             PxRigidStatic* rstat = underlying_obj->rb.rigidStatic;
@@ -415,11 +417,13 @@ namespace myPhysx
             // CHECK IF HAVE RIGIDBODY CREATED OR NOT
             // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
             if (rstat) {
+                changingType = true;
                 temp_trans = rstat->getGlobalPose();
                 world->scene->removeActor(*rstat);
                 underlying_obj->rb.rigidStatic = nullptr; // clear the current data
             }
             else if (rdyna) {
+                changingType = true;
                 temp_trans = rdyna->getGlobalPose();
                 world->scene->removeActor(*rdyna);
                 underlying_obj->rb.rigidDynamic = nullptr;
@@ -442,6 +446,29 @@ namespace myPhysx
                 world->scene->addActor(*underlying_obj->rb.rigidDynamic);
             }
 
+            // CHECK WHETHER IS CHANGING OF RIGID TYPE
+            if (changingType) {
+
+                // ATTACH THE NEW SHAPE
+                if (underlying_obj->m_shape) {
+
+                    //printf("SHAPE TYPE: %d", underlying_obj->shape);
+                    
+                    // ATTACH THE NEW SHAPE BASED THE SHAPE TYPE
+                    if (underlying_obj->shape == shape::box) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().box());
+
+                    else if (underlying_obj->shape == shape::sphere) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().sphere());
+
+                    else if (underlying_obj->shape == shape::plane) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().plane());
+
+                    else if (underlying_obj->shape == shape::capsule) 
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().capsule());
+                }
+            }
+
             // Check how many actors created in the scene
             //PxActorTypeFlags desiredTypes = PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC;
             //PxU32 count = world->scene->getNbActors(desiredTypes);
@@ -449,6 +476,27 @@ namespace myPhysx
             
             //PxU32 noo = world->scene->getActors(desiredTypes, buffer, count);
             //printf("%d - actors\n\n", noo);
+        }
+    }
+
+    template<typename Type>
+    void PhysicsObject::reAttachShape(rigid rigidType, Type data) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+            PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
+
+            underlying_obj->m_shape = physx_system::getPhysics()->createShape(data, *material, true);
+
+            // ATTACH THE SHAPE TO THE OBJECT
+            if (rigidType == rigid::rstatic)
+                underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+
+            else if (rigidType == rigid::rdynamic)
+                underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+
+            physx_system::setupFiltering(underlying_obj->m_shape);
         }
     }
 
@@ -1032,18 +1080,18 @@ namespace myPhysx
 /*-----------------------------------------------------------------------------*/
 /*                           EVENT CALLBACK                                    */
 /*-----------------------------------------------------------------------------*/
-    void EventCallBack::onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) {
-        printf("CALLBACK: onConstraintBreak\n");
+    void EventCallBack::onConstraintBreak(PxConstraintInfo* /*constraints*/, PxU32 /*count*/) {
+        //printf("CALLBACK: onConstraintBreak\n");
     }
-    void EventCallBack::onWake(PxActor** actors, PxU32 count) {
-        printf("CALLBACK: onWake\n");
+    void EventCallBack::onWake(PxActor** /*actors*/, PxU32 /*count*/) {
+        //printf("CALLBACK: onWake\n");
     }
-    void EventCallBack::onSleep(PxActor** actors, PxU32 count) {
-        printf("CALLBACK: onSleep\n");
+    void EventCallBack::onSleep(PxActor** /*actors*/, PxU32 /*count*/) {
+        //printf("CALLBACK: onSleep\n");
     }
-    void EventCallBack::onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 count) {
-        printf("CALLBACK: onContact -- ");
-        printf("PAIRS: %d\n", count);
+    void EventCallBack::onContact(const PxContactPairHeader& /*pairHeader*/, const PxContactPair* pairs, PxU32 count) {
+        //printf("CALLBACK: onContact -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1078,17 +1126,17 @@ namespace myPhysx
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
                 state = collision::onCollisionEnter;
-                printf("Shape is ENTERING CONTACT volume\n");
+                //printf("Shape is ENTERING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
                 state = collision::onCollisionStay;
-                printf("Shape is STAYING CONTACT volume\n");
+                //printf("Shape is STAYING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
                 state = collision::onCollisionExit;
-                printf("Shape is LEAVING CONTACT volume\n");
+                //printf("Shape is LEAVING CONTACT volume\n");
             }
 
             // Store all the ID of the actors that collided
@@ -1103,8 +1151,8 @@ namespace myPhysx
 
     }
     void EventCallBack::onTrigger(PxTriggerPair* pairs, PxU32 count) {
-        printf("CALLBACK: onTrigger -- ");
-        printf("PAIRS: %d\n", count);
+        //printf("CALLBACK: onTrigger -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1119,13 +1167,13 @@ namespace myPhysx
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
                 //stayTrigger = true;
                 state = trigger::onTriggerEnter;
-                printf("Shape is ENTERING TRIGGER volume\n");
+                //printf("Shape is ENTERING TRIGGER volume\n");
             }
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
                 //stayTrigger = false;
                 state = trigger::onTriggerExit;
                 //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
-                printf("Shape is LEAVING TRIGGER volume\n");
+                //printf("Shape is LEAVING TRIGGER volume\n");
             }
 
             // Store all the ID of the actors that collided with trigger)
@@ -1158,7 +1206,7 @@ namespace myPhysx
             //}
         }
     }
-    void EventCallBack::onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) {
-        printf("CALLBACK: onAdvance\n");
+    void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
+        //printf("CALLBACK: onAdvance\n");
     }
 }

@@ -24,4 +24,5 @@ private:
     
     glm::vec3 m_rotation{}; //data used to clamp
     Camera* m_Camera{ nullptr };
+    float m_sensitivityRate = 10;
 };

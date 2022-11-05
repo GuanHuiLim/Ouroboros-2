@@ -36,6 +36,7 @@ namespace oo
     private:
         SceneManager& m_sceneManager;                                   // scene manager it is talking to
         std::unordered_map<std::string, std::string> m_filepathLookup;  // lookup table for { name : filepath } from loaded paths
+        //std::unordered_map<std::string, std::string> m_filenameLookup;  // lookup table for { filepath : name } from loaded paths
         container_type m_loadpaths;                                     // all the paths that are loaded. uniquely identified by filepath
         std::weak_ptr<RuntimeScene> m_runtimeScene = {};                // ptr to current runtime scene.
         
@@ -47,17 +48,24 @@ namespace oo
         void RemoveScenes();
         void ClearSceneLibrary();
 
-        bool HasScene(std::string_view sceneName) const;
-        bool HasScene(size_type sceneIndex) const;
+        bool HasSceneWithName(std::string_view sceneName) const;
+        bool HasSceneWithLoadPath(std::string_view loadpath) const;
+        bool HasSceneWithIndex(size_type sceneIndex) const;
         void AddLoadPath(std::string_view sceneName, std::string_view loadpath);
-        void RemoveLoadPath(std::string_view sceneName);
+        void RemoveLoadPathByName(std::string_view sceneName);
+        void RemoveLoadPathByPath(std::string_view loadpath);
         void SwapSceneOrder(std::string_view sceneName1, std::string_view sceneName2);
         void SwapSceneOrder(size_type sceneIndex1, size_type sceneIndex2);
         void ChangeRuntimeScene(std::string_view sceneName);
         void ChangeRuntimeScene(size_type sceneIndex);
 
+        size_type GetIndexWithLoadPath(std::string_view loadpath) const;
+
         std::weak_ptr<RuntimeScene> GetRuntimeScene() const;
         void SetRuntimeScene(std::weak_ptr<RuntimeScene> newScene);
+
+        //special editor function
+        //void AddLoadPathForEditor(std::string_view sceneName, std::string_view loadpath);
     };
 
 }
