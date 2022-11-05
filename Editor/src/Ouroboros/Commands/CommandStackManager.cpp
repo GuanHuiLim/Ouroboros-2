@@ -8,8 +8,10 @@
 #include <Ouroboros/EventSystem/EventManager.h>
 #include "App/Editor/Networking/NetworkingEvent.h"
 #include "Ouroboros/Commands/Delete_ActionCommand.h"
+#include "Ouroboros/Commands/Component_ActionCommand.h"
 void oo::CommandStackManager::InitEvents()
 {
+	ActionCommandHelper::Init();
 	EventManager::Subscribe<LoadSceneEvent>(
 		[](LoadSceneEvent* lse)
 		{
@@ -21,7 +23,11 @@ void oo::CommandStackManager::InitEvents()
 
 		switch (CommandPacketType(e->header.packetType))
 		{
-		case CommandPacketType::ActionObject:break;
+		case CommandPacketType::ActionObject:
+		{
+			auto* ac = ActionCommandHelper::CreateActionCommand(e->header,e->data);
+			CommandStackManager::AddCommand(ac);
+		}break;
 		case CommandPacketType::DeleteObject:
 		{
 			auto* dc = new Delete_ActionCommand(e->header, e->data);
@@ -29,8 +35,8 @@ void oo::CommandStackManager::InitEvents()
 		}break;
 		case CommandPacketType::CreateObject:
 		{
-			auto* dc = new Create_ActionCommand(e->header, e->data);
-			CommandStackManager::AddCommand(dc);
+			auto* cc = new Create_ActionCommand(e->header, e->data);
+			CommandStackManager::AddCommand(cc);
 		}break;
 		case CommandPacketType::ReorderObject:break;
 		case CommandPacketType::AddComponentObject:break;

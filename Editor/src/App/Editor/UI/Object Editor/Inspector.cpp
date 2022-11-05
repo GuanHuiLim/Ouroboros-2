@@ -130,18 +130,14 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
-
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
-	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
-
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
 	DisplayComponent<oo::CameraComponent>(gameobject);
-
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	
