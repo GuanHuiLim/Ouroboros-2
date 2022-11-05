@@ -1108,8 +1108,10 @@ namespace oo::Anim::internal
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
 	{
-		//name should not be empty!!
-		assert(name.empty() == false);
+		//do nothing if name empty
+		if (name.empty()) return;
+		//assert(name.empty() == false);
+		
 		//retrieve tree
 		if (AnimationTree::map.contains(name) == false)
 		{
