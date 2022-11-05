@@ -789,7 +789,7 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 			image.forFrameBuffer(&m_device, m_swapchain.swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 				m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
 			image.name = "WorldColourTarget";			
-			world->imguiID[x] = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, image.imageLayout);
+			
 		}
 		auto& depth = world->depthTargets[x];
 		if (depth.image == VK_NULL_HANDLE)
@@ -799,6 +799,10 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 				m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
 			depth.name = "WorldDepthTarget";			
 			//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
+		}
+		if (world->imguiID[x] == 0)
+		{
+			world->imguiID[x] = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, image.imageLayout);
 		}
 	}	
 	world->initialized = true;
@@ -1637,7 +1641,7 @@ void VulkanRenderer::BeginDraw()
 				if (currWorld->imguiID[x])
 				{
 					write_desc[0].pImageInfo = desc_image;
-					vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
+					//vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
 				}				
 			}		
 			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
