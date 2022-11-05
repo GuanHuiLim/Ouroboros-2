@@ -1605,8 +1605,6 @@ bool VulkanRenderer::PrepareFrame()
 		resizeSwapchain = false;
 	}
 
-	DelayedDeleter::get()->Update();
-
 	
 	return true;
 }
@@ -1629,6 +1627,8 @@ void VulkanRenderer::BeginDraw()
         VkResult res = vkAcquireNextImageKHR(m_device.logicalDevice, m_swapchain.swapchain, std::numeric_limits<uint64_t>::max(),
             imageAvailable[currentFrame], VK_NULL_HANDLE, &swapchainIdx);
 
+
+		DelayedDeleter::get()->Update();
 		descAllocs[swapchainIdx].ResetPools();
 
 		if (currWorld)

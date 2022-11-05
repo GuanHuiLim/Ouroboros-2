@@ -23,13 +23,13 @@ public:
 	static DelayedDeleter* get();
 	static void Shutdown();
 
-	void DeleteAfterFrames(std::function<void()> fn, size_t frames = 3);
+	void DeleteAfterFrames(std::function<void()> fn, size_t frames = 4);
 	void DeleteAfterSeconds(std::function<void()> fn, float seconds = 3);
 	void Update(float deltaTime = 0.0f);
 	void Clear();
 
 private:
-	static constexpr int MAX_FRAMES = 3;
+	static constexpr size_t MAX_FRAMES = 4;
 	size_t m_frame{ 0 };
 	std::array<std::vector<std::function<void()>>, MAX_FRAMES> m_funcs;
 	
