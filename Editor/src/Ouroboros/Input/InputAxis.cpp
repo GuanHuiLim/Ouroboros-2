@@ -142,15 +142,16 @@ namespace oo
         if (pressGapTimeLeft > 0.0f)
         {
             pressGapTimeLeft -= deltaTime;
-            if (pressGapTimeLeft <= 0.0f)
-                pressCount = 0;
         }
 
         if (!isController)
         {
             if (IsInputCodePressed(axis.type, lastPressed))
             {
+                if (pressGapTimeLeft <= 0.0f)
+                    pressCount = 0;
                 pressGapTimeLeft = axis.settings.maxGapTime;
+
                 ++pressCount;
                 if (pressCount > axis.settings.pressesRequired)
                     pressCount -= axis.settings.pressesRequired;
@@ -172,7 +173,10 @@ namespace oo
                 {
                     if (IsControllerInputCodePressed(lastPressed))
                     {
+                        if (pressGapTimeLeft <= 0.0f)
+                            pressCount = 0;
                         pressGapTimeLeft = axis.controllerSettings.maxGapTime;
+
                         ++pressCount;
                         if (pressCount > axis.controllerSettings.pressesRequired)
                             pressCount -= axis.controllerSettings.pressesRequired;
@@ -193,7 +197,11 @@ namespace oo
                     {
                         if (durationHeld <= 0)
                         {
+                            // just pressed
+                            if (pressGapTimeLeft <= 0.0f)
+                                pressCount = 0;
                             pressGapTimeLeft = axis.controllerSettings.maxGapTime;
+
                             ++pressCount;
                             if (pressCount > axis.controllerSettings.pressesRequired)
                                 pressCount -= axis.controllerSettings.pressesRequired;
