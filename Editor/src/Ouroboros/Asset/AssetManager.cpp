@@ -353,6 +353,7 @@ namespace oo
                                                  const std::chrono::file_clock::time_point& t)
     {
         const std::filesystem::path DIR = std::filesystem::canonical(dir);
+        const auto DIR_WRITE_TIME = std::filesystem::last_write_time(DIR);
 
         // Iterate directory contents
         for (auto& fp : std::filesystem::directory_iterator(DIR))
@@ -364,7 +365,6 @@ namespace oo
                 iterateDirectoryAdditions(FP, tLast, t);
 
             // Check if directory was updated recently
-            const auto DIR_WRITE_TIME = std::filesystem::last_write_time(DIR);
             if (tLast < DIR_WRITE_TIME && DIR_WRITE_TIME <= t)
             {
                 // Check if not meta file
