@@ -1069,6 +1069,9 @@ namespace oo::Anim::internal
 
 	void UpdateTracker(UpdateTrackerInfo& info)
 	{
+		//if no animation tree assigned, do nothing
+		if (info.comp.animTree == nullptr) return;
+
 		auto result = CheckNodeTransitions(info);
 		if (result)
 		{
