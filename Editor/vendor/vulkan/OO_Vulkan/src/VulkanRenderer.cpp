@@ -113,6 +113,18 @@ VulkanRenderer::~VulkanRenderer()
 
 	DelayedDeleter::get()->Shutdown();
 
+	for (size_t i = 0; i < renderTargets.size(); i++)
+	{
+		if (renderTargets[i].texture.image)
+		{
+			renderTargets[i].texture.destroy();
+		}
+		if (renderTargets[i].depth.image)
+		{
+			renderTargets[i].depth.destroy();
+		}
+	}
+
 	RenderPassDatabase::Shutdown();
 
 #ifdef _DEBUG
