@@ -432,7 +432,7 @@ namespace oo
 
     void WindowsWindow::SetCursorGlobalPosition(int x, int y)
     {
-        int res = SDL_WarpMouseGlobal(x, y);
+        SDL_WarpMouseGlobal(x, y);
         ASSERT(SDL_GetError() != 0);
     }
 
