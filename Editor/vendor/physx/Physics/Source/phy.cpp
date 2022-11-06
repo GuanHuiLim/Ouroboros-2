@@ -274,7 +274,7 @@ namespace myPhysx
         phy_uuid::UUID generated_uuid = *obj.id;
         // store the object
         m_objects.emplace_back(std::move(obj));
-        all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
+        all_objects.insert({ generated_uuid, static_cast<int>(m_objects.size()) - 1 }); // add back the m_objects last element
         
         // return the object i created
         return PhysicsObject{ generated_uuid, this }; // a copy
