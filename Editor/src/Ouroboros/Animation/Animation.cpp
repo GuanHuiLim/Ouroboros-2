@@ -149,7 +149,10 @@ namespace oo::Anim
 	{
 		std::ostringstream buffer;
 		for (auto const& i : hierarchy)
-			buffer << " ";
+		{
+			(void)(i);
+			buffer << "|";
+		}
 		
 		buffer << "->" << node->mName.C_Str();
 

@@ -81,7 +81,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			//check if object is valid before saving.
 			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
 			if (go == nullptr)
-				id = -1;
+				id = oo::UUID::Invalid;
 			rapidjson::Value data(static_cast<uint64_t>(id.GetUUID()));
 			val.AddMember(name, data, doc.GetAllocator());
 		});
@@ -93,7 +93,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			//check if object is valid before saving.
 			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
 			if (go == nullptr)
-				id = -1;
+				id = oo::UUID::Invalid;
 			rapidjson::Value data(static_cast<uint64_t>(id.GetUUID()));
 			//rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));//save as int64
 			val.AddMember(name, data, doc.GetAllocator());
@@ -107,7 +107,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			//check if object is valid before saving.
 			auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(id);
 			if (go == nullptr)
-				id = -1;
+				id = oo::UUID::Invalid;
 
 			rapidjson::Value data(rapidjson::kArrayType);
 			data.PushBack(static_cast<uint64_t>((id.GetUUID())), doc.GetAllocator());
