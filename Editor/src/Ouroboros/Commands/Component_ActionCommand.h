@@ -6,12 +6,10 @@
 #include <string>
 
 #include "Ouroboros/ECS/GameObject.h"
-#include "Ouroboros/EventSystem/EventManager.h"
 
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/Networking/PacketUtils.h"
 #include "App/Editor/Serializer.h"
-#include "App/Editor/Networking/NetworkingEvent.h"
 namespace oo
 {
 
@@ -41,8 +39,7 @@ inline Component_ActionCommand<Component>::Component_ActionCommand(rttr::variant
 	gameobject_ID{id}
 {
 	message = "Component Value Edited :";
-	NetworkingSendEvent e((char)CommandPacketType::ActionObject, GetData());
-	oo::EventManager::Broadcast(&e);
+	PacketUtilts::BroadCastCommand(CommandPacketType::ActionObject, GetData());
 }
 
 template<typename Component>

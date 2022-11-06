@@ -34,6 +34,7 @@ void ChatSystem::Show()
 		{
 			if ((ip.empty() | serverPort.empty()) == false)
 			{
+				PacketUtilts::is_connected = true;
 				connected = true;
 				socketDescriptor = SLNet::SocketDescriptor(atoi(clientPort.c_str()), 0);
 				socketDescriptor.socketFamily = AF_INET;

@@ -13,8 +13,7 @@ oo::Delete_ActionCommand::Delete_ActionCommand(std::shared_ptr<oo::GameObject> d
 	message = "Delete Object :" + deletedObj->Name();
 	parentID = deletedObj->GetParentUUID();
 	revivedObject = deletedObj->GetInstanceID();
-	NetworkingSendEvent e((char)CommandPacketType::DeleteObject, GetData());
-	oo::EventManager::Broadcast(&e);
+	PacketUtilts::BroadCastCommand(CommandPacketType::DeleteObject, GetData());
 }
 
 oo::Delete_ActionCommand::~Delete_ActionCommand()
@@ -77,9 +76,7 @@ oo::Create_ActionCommand::Create_ActionCommand(std::shared_ptr<oo::GameObject> c
 	:parentID(createdobj->GetParentUUID()),object(createdobj->GetInstanceID())
 {
 	message = "Created Object :" + createdobj->Name();
-
-	NetworkingSendEvent e((char)CommandPacketType::CreateObject, GetData());
-	oo::EventManager::Broadcast(&e);
+	PacketUtilts::BroadCastCommand(CommandPacketType::CreateObject, GetData());
 }
 oo::Create_ActionCommand::~Create_ActionCommand()
 {

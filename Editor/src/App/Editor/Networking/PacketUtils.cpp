@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "PacketUtils.h"
-
+#include "NetworkingEvent.h"
+#include "Ouroboros/EventSystem/EventManager.h"
 std::string PacketUtilts::ParseCommandData(const std::string& data, size_t& currentPos)
 {
 	size_t newpos = data.find(PacketUtilts::SEPERATOR, currentPos);
@@ -24,4 +25,13 @@ void PacketUtilts::PackHeaderIntoPacket(std::string& data,const PacketHeader& he
 	std::string convert_buff = buffer;
 	convert_buff += PacketUtilts::SEPERATOR;
 	data.insert(0, convert_buff);
+}
+
+void PacketUtilts::BroadCastCommand(CommandPacketType cpt, const std::string& data)
+{
+	if (PacketUtilts::is_connected == true)
+	{
+		NetworkingSendEvent e((char)cpt, data);
+		oo::EventManager::Broadcast(&e);
+	}
 }
