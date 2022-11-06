@@ -246,18 +246,6 @@ namespace oo
             return;
         componentDatabase.Delete(uuid, name_space, name);
     }
-    void ScriptSystem::SetComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
-    {
-        if (!isPlaying)
-            return;
-        componentDatabase.SetEnabled(uuid, name_space, name, isEnabled);
-    }
-    bool ScriptSystem::CheckComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name)
-    {
-        if (!isPlaying)
-            return false;
-        return componentDatabase.CheckEnabled(uuid, name_space, name);
-    }
 
     ComponentDatabase::IntPtr ScriptSystem::GetGameObject(ComponentDatabase::UUID uuid)
     {

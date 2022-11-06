@@ -175,25 +175,6 @@ namespace oo
                 std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
                 return obj->HasComponent<T>();
             };
-            ComponentDatabase::ComponentSetAction setEnabled = [](ComponentDatabase::SceneID sceneID, ComponentDatabase::UUID uuid, bool isEnabled)
-            {
-                //std::weak_ptr<IScene> scene_weak = s_SceneManager->GetScene(static_cast<IScene::ID_type>(sceneID));
-                //if (scene_weak.expired())
-                //    return;
-                //Scene& scene = *(std::dynamic_pointer_cast<Scene>(scene_weak.lock()).get());
-                //std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
-                //obj->GetComponent<T>().SetActive(isEnabled);
-            };
-            ComponentDatabase::ComponentCheck isEnabled = [](ComponentDatabase::SceneID sceneID, ComponentDatabase::UUID uuid)
-            {
-                //std::weak_ptr<IScene> scene_weak = s_SceneManager->GetScene(static_cast<IScene::ID_type>(sceneID));
-                //if (scene_weak.expired())
-                //    return false;
-                //Scene& scene = *(std::dynamic_pointer_cast<Scene>(scene_weak.lock()).get());
-                //std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
-                //return obj->GetComponent<T>().IsActive();
-                return true;
-            };
             ComponentDatabase::ComponentAction remove = [](ComponentDatabase::SceneID sceneID, ComponentDatabase::UUID uuid)
             {
                 std::weak_ptr<IScene> scene_weak = s_SceneManager->GetScene(static_cast<IScene::ID_type>(sceneID));
@@ -203,7 +184,7 @@ namespace oo
                 std::shared_ptr<GameObject> obj = scene.FindWithInstanceID(uuid);
                 return obj->RemoveComponent<T>();
             };
-            ComponentDatabase::RegisterComponent(name_space, name, add, remove, has, setEnabled, isEnabled);
+            ComponentDatabase::RegisterComponent(name_space, name, add, remove, has);
         }
 
     };
