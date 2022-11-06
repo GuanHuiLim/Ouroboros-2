@@ -23,6 +23,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 
 #include "Ouroboros/Physics/PhysicsEvents.h"
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
 
 namespace oo
 {
@@ -69,6 +70,9 @@ namespace oo
 
         void UpdateAllScriptFieldsWithInfo();
         void UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script);
+
+        void OnApplicationFocus(WindowFocusEvent* e);
+        void OnApplicationPause(WindowLoseFocusEvent* e);
 
         void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
         void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);

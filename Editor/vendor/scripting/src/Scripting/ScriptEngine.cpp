@@ -38,7 +38,7 @@ namespace oo
         _pclose(msbuildPathFile);
 
         // execute build command
-        std::string command("\"\"" + msbuildPath + "\" \"" + projPath + "\" -noLogo -verbosity:quiet -t:Build -fl1 -flp1:logfile=\"" 
+        std::string command("\"\"" + msbuildPath + "\" \"" + projPath + "\" -noLogo -verbosity:quiet -t:Build -fl1 -p:nowarn=0649 -flp1:logfile=\"" 
                             + errorsPath + "\";errorsonly -fl2 -flp2:logfile=\"" + warningsPath 
                             + "\";warningsonly -p:Configuration=\"Debug OpenGL\";Platform=\"x64\"");
         FILE* compileResult = _popen(command.c_str(), "r");

@@ -28,6 +28,9 @@ namespace oo
     ScriptSystem::ScriptSystem(Scene& scene, ScriptDatabase& scripts, ComponentDatabase& components)
     : scene{ scene }, scriptDatabase{ scripts }, componentDatabase{ components }, isPlaying{ false }
     {
+        EventManager::Subscribe<ScriptSystem, WindowFocusEvent>(this, &ScriptSystem::OnApplicationFocus);
+        EventManager::Subscribe<ScriptSystem, WindowLoseFocusEvent>(this, &ScriptSystem::OnApplicationPause);
+
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Subscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
         EventManager::Subscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
@@ -39,6 +42,9 @@ namespace oo
 
     ScriptSystem::~ScriptSystem()
     {
+        EventManager::Unsubscribe<ScriptSystem, WindowFocusEvent>(this, &ScriptSystem::OnApplicationFocus);
+        EventManager::Unsubscribe<ScriptSystem, WindowLoseFocusEvent>(this, &ScriptSystem::OnApplicationPause);
+
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnEnableEvent>(this, &ScriptSystem::OnObjectEnabled);
         EventManager::Unsubscribe<ScriptSystem, GameObjectComponent::OnDisableEvent>(this, &ScriptSystem::OnObjectDisabled);
         EventManager::Unsubscribe<ScriptSystem, GameObject::OnDestroy>(this, &ScriptSystem::OnObjectDestroyed);
@@ -401,6 +407,19 @@ namespace oo
                 fieldInfo.SetScriptReference(field, scriptPtr);
             }
         }
+    }
+
+    void ScriptSystem::OnApplicationFocus(WindowFocusEvent* e)
+    {
+        if (!isPlaying)
+            return;
+        InvokeForAllEnabled("OnApplicationFocus");
+    }
+    void ScriptSystem::OnApplicationPause(WindowLoseFocusEvent* e)
+    {
+        if (!isPlaying)
+            return;
+        InvokeForAllEnabled("OnApplicationPause");
     }
 
     void ScriptSystem::OnObjectEnabled(GameObjectComponent::OnEnableEvent* e)
