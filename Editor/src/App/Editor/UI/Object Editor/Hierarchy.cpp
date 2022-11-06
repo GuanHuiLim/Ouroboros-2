@@ -117,6 +117,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 			{
 				networking_selected = true;
 				flags = (ImGuiTreeNodeFlags_) (flags |ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Selected);
+				break;
 			}
 		}
 	//end of networking code/////
