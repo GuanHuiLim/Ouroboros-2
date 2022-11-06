@@ -156,6 +156,63 @@ void DebugDraw::AddTriangle(const Triangle& tri, const oGFX::Color& col)
     vr->g_DebugDrawIndexBufferCPU.emplace_back(0 + sz); // E2
 }
 
+void DebugDraw::DrawCameraFrustrum(const Camera& camera, const oGFX::Color& col)
+{
+    DrawCameraFrustrum(camera.m_position, camera.matrices.view, camera.GetAspectRatio() , camera.GetFov(), camera.GetNearClip(), camera.GetFarClip(), col);
+}
+
+void DebugDraw::DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& view, float ar, float fov,float znear, float zfar,const oGFX::Color& col)
+{
+    mat4 inv = glm::inverse(view);
+
+    float halfHeight = tanf(glm::radians(fov / 2.f));
+    float halfWidth = halfHeight * ar;
+
+    float xn = halfWidth * znear + EPSILON;
+    float xf = halfWidth * zfar + EPSILON;
+    float yn = halfHeight * znear + EPSILON;
+    float yf = halfHeight * zfar + EPSILON;
+
+    glm::vec4 f[8u] =
+    {
+        // znear face
+        {xn, yn,  -znear, 1.f},
+        {-xn, yn, -znear, 1.f},
+        {xn, -yn, -znear, 1.f},
+        {-xn, -yn,-znear , 1.f},
+
+        // zfar face
+        {xf, yf, -zfar, 1.f},
+        {-xf, yf,-zfar , 1.f},
+        {xf, -yf,-zfar , 1.f},
+        {-xf, -yf,-zfar, 1.f},
+    };
+
+    glm::vec3 v[8];
+    for (int i = 0; i < 8; i++)
+    {
+        glm::vec4 ff = inv * f[i];
+        v[i].x = ff.x / ff.w;
+        v[i].y = ff.y / ff.w;
+        v[i].z = ff.z / ff.w;
+    }
+
+    AddLine(v[0], v[1], oGFX::Colors::WHITE);
+    AddLine(v[0], v[2], oGFX::Colors::WHITE);
+    AddLine(v[3], v[1], oGFX::Colors::WHITE);
+    AddLine(v[3], v[2], oGFX::Colors::WHITE);
+
+    AddLine(v[4], v[5], oGFX::Colors::WHITE);
+    AddLine(v[4], v[6], oGFX::Colors::WHITE);
+    AddLine(v[7], v[5], oGFX::Colors::WHITE);
+    AddLine(v[7], v[6], oGFX::Colors::WHITE);
+
+    AddLine(v[0], v[4], oGFX::Colors::WHITE);
+    AddLine(v[1], v[5], oGFX::Colors::WHITE);
+    AddLine(v[3], v[7], oGFX::Colors::WHITE);
+    AddLine(v[2], v[6], oGFX::Colors::WHITE);
+}
+
 void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& basis0, const glm::vec3& basis1, const oGFX::Color& color)
 {
     constexpr unsigned k_segments = 32;

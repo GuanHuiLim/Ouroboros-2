@@ -72,7 +72,9 @@ public:
 	} keys;
 
 	bool Moving() const { return keys.left || keys.right || keys.up || keys.down; };
+	void SetNearClip(float inNear) { m_znear = inNear; UpdateProjectionMatrix(); }
 	float GetNearClip() const { return m_znear; };
+	void SetFarClip(float inFar) { m_zfar = inFar; UpdateProjectionMatrix(); }
 	float GetFarClip() const { return m_zfar; };
 
 	void LookAt(const glm::vec3& pos, const glm::vec3& target, const glm::vec3& upVec = {0.0f,1.0f,0.0f});
@@ -106,7 +108,11 @@ public:
 	// Returns true if view or position has been changed
 	bool UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime);
 
-	void SetAspectRatio(float aspect) { m_aspectRatio = aspect; }
+	void SetFov(float fov) { m_fovDegrees = fov; UpdateProjectionMatrix(); }
+	float GetFov() const { return m_fovDegrees; }
+
+	void SetAspectRatio(float aspect) { m_aspectRatio = aspect; UpdateProjectionMatrix(); }
+	float GetAspectRatio() const { return m_aspectRatio; }
 
 	void UpdateProjectionMatrix();
 
