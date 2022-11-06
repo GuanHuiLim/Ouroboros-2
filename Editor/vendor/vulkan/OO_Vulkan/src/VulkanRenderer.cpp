@@ -544,7 +544,7 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 	}
 }
 
-void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src, vkutils::Texture2D dst)
+void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal)
 {
 	bool supportsBlit = true;
 
@@ -572,7 +572,7 @@ void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src
 		dst.image,
 		0,
 		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED,
+		dst.currentLayout,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -583,7 +583,7 @@ void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src
 		src.image,
 		VK_ACCESS_MEMORY_READ_BIT,
 		VK_ACCESS_TRANSFER_READ_BIT,
-		VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, // DO PROPER RESOURCE TRACKING
+		src.currentLayout, // DO PROPER RESOURCE TRACKING
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -647,11 +647,10 @@ void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src
 		VK_ACCESS_TRANSFER_WRITE_BIT,
 		VK_ACCESS_MEMORY_READ_BIT,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		dstFinal,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
 	// Transition back the swap chain image after the blit is done
 	oGFX::vkutils::tools::insertImageMemoryBarrier(
 		cmd,
@@ -659,11 +658,13 @@ void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src
 		VK_ACCESS_TRANSFER_READ_BIT,
 		VK_ACCESS_MEMORY_READ_BIT,
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		VK_IMAGE_LAYOUT_GENERAL,
+		srcFinal,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
+	dst.currentLayout = dstFinal;
+	src.currentLayout = srcFinal;
 }
 
 void VulkanRenderer::CreateDefaultPSOLayouts()
@@ -1012,6 +1013,7 @@ void VulkanRenderer::CreateDescriptorPool()
 	std::vector<VkDescriptorPoolSize> samplerpoolSizes = { samplerPoolSize };
 
 	VkDescriptorPoolCreateInfo samplerPoolCreateInfo = oGFX::vkutils::inits::descriptorPoolCreateInfo(samplerpoolSizes,1); // or MAX_OBJECTS?
+	samplerPoolCreateInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 	result = vkCreateDescriptorPool(m_device.logicalDevice, &samplerPoolCreateInfo, nullptr, &samplerDescriptorPool);
 	VK_NAME(m_device.logicalDevice, "samplerDescriptorPool", samplerDescriptorPool);
 	if (result != VK_SUCCESS)
@@ -1771,15 +1773,37 @@ void VulkanRenderer::RenderFrame()
 
 				++renderIteration;
 			}
+			auto& dst = m_swapchain.swapChainImages[swapchainIdx];
+			dst.currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			if (currWorld->numCameras > 1)
 			{
 				// TODO: Very bad pls fix
 				auto thisID = currWorld->targetIDs[1];
-				BlitFramebuffer(commandBuffers[swapchainIdx], renderTargets[thisID].texture, m_swapchain.swapChainImages[swapchainIdx]);
+				auto& texture = renderTargets[thisID].texture;
+				texture.currentLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;				
+
+				BlitFramebuffer(commandBuffers[swapchainIdx],
+					texture, VK_IMAGE_LAYOUT_GENERAL,
+					dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+				auto nextID = currWorld->targetIDs[0];
+				auto& nextTexture = renderTargets[nextID].texture;
+				nextTexture.currentLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+				BlitFramebuffer(commandBuffers[swapchainIdx], 
+					nextTexture, VK_IMAGE_LAYOUT_GENERAL,
+					dst,VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+			}
+			else
+			{
+				auto thisID = currWorld->targetIDs[0];
+				auto& texture = renderTargets[thisID].texture;
+				texture.currentLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;	
+				BlitFramebuffer(commandBuffers[swapchainIdx],
+					texture,VK_IMAGE_LAYOUT_GENERAL,
+					dst,VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
 			}
 			// only blit main framebuffer
-			auto thisID = currWorld->targetIDs[0];
-			BlitFramebuffer(commandBuffers[swapchainIdx],  renderTargets[thisID].texture, m_swapchain.swapChainImages[swapchainIdx]);
+			
 		}
     }
 }

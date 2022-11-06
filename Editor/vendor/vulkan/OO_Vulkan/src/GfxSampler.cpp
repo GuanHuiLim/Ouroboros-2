@@ -24,6 +24,8 @@ void GfxSamplerManager::Init()
 {
     auto& vr = *VulkanRenderer::get();
     auto& device = vr.m_device.logicalDevice;
+    float maxAni = vr.m_device.properties.limits.maxSamplerAnisotropy;
+    VkBool32 aniEnabled = vr.m_device.enabledFeatures.samplerAnisotropy;
 
     {
         VkSamplerCreateInfo samplerCreateInfo{};
@@ -39,8 +41,8 @@ void GfxSamplerManager::Init()
         samplerCreateInfo.mipLodBias = 0.0f;									// Level of details bias for mip level
         samplerCreateInfo.minLod = 0.0f;										// minimum level of detail to pick mip level
         samplerCreateInfo.maxLod = 0.0f;										// maximum level of detail to pick mip level
-        samplerCreateInfo.anisotropyEnable = VK_TRUE;							// Enable anisotropy
-        samplerCreateInfo.maxAnisotropy = 16;									// Anisotropy sample level
+        samplerCreateInfo.anisotropyEnable = aniEnabled;							// Enable anisotropy
+        samplerCreateInfo.maxAnisotropy = maxAni;									// Anisotropy sample level
 
         VkResult result = vkCreateSampler(device, &samplerCreateInfo, nullptr, &textureSampler);
         VK_NAME(device, "textureSampler", textureSampler);
@@ -60,7 +62,8 @@ void GfxSamplerManager::Init()
         samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerCreateInfo.mipLodBias = 0.0f;
-        samplerCreateInfo.maxAnisotropy = 1.0f;
+        samplerCreateInfo.maxAnisotropy = maxAni;
+        samplerCreateInfo.anisotropyEnable = aniEnabled;
         samplerCreateInfo.minLod = 0.0f;
         samplerCreateInfo.maxLod = 1.0f;
         samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;

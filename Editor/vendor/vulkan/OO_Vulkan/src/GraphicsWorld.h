@@ -110,7 +110,7 @@ public:
 
     uint32_t numCameras = 1;
     std::array<Camera, 2>cameras;
-    std::array<int32_t, 2>targetIDs{ -1 };
+    std::array<int32_t, 2>targetIDs{ -1,-1 };
     std::array<ImTextureID, 2>imguiID{};
 
     // TODO: Fix Me ! This is for testing
