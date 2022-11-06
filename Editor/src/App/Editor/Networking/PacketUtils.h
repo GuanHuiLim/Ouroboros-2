@@ -13,6 +13,7 @@ enum class CommandPacketType :int
 	RemoveScript,
 	UNDO_command,
 	REDO_command,
+	Selected_Object,
 };
 struct PacketHeader
 {

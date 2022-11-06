@@ -27,8 +27,8 @@ void oo::CommandStackManager::InitEvents()
 		{
 		case CommandPacketType::ActionObject:
 		{
-			auto* ac = ActionCommandHelper::CreateActionCommand(e->header,e->data);
-			CommandStackManager::AddCommand(e->header,ac);
+			auto* ac = ActionCommandHelper::CreateActionCommand(e->header, e->data);
+			CommandStackManager::AddCommand(e->header, ac);
 		}break;
 		case CommandPacketType::DeleteObject:
 		{
@@ -54,7 +54,12 @@ void oo::CommandStackManager::InitEvents()
 		{
 			RedoCommand(e->header);
 		}break;
-		}
+		case CommandPacketType::Selected_Object:
+		{
+			NetworkingSelectionEvent nse = NetworkingSelectionEvent(e->header, e->data);
+			oo::EventManager::Broadcast(&nse);
+		}break;
+		};
 		});
 }
 void oo::CommandStackManager::UndoCommand()

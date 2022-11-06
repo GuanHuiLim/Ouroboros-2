@@ -52,9 +52,12 @@ Technology is prohibited.
 #include <App/Editor/Events/OpenPromtEvent.h>
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
-
+//networking
+#include <App/Editor/Networking/NetworkingEvent.h>
+#include <App/Editor/Networking/PacketUtils.h>
+//profiller
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-
+//other components
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 //#include <Ouroboros/Vulkan/RendererComponent.h>
@@ -70,6 +73,15 @@ Hierarchy::Hierarchy()
 {
 	oo::EventManager::Subscribe<CopyButtonEvent>(&CopyEvent);
 	oo::EventManager::Subscribe<PasteButtonEvent>(&PasteEvent);
+	oo::EventManager::Subscribe<NetworkingSelectionEvent>([] (NetworkingSelectionEvent* e){
+		auto iter = Hierarchy::GetSelected().find(e->gameobjID);
+		if (iter == s_selected.end())
+		{
+			if (Hierarchy::GetSelectedTime() > e->time_triggered)
+				Hierarchy::GetSelectedNonConst().erase(iter);
+		}
+		s_networkUserSelection[e->header.name] = ItemSelectedTiming{ e->time_triggered,e->gameobjID };
+		});
 
 }
 
@@ -97,10 +109,30 @@ void Hierarchy::Show()
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
+	//networking code////////////
+		bool networking_selected = false;
+		for (auto& p : s_networkUserSelection)
+		{
+			if (p.second.gameobjecID == handle)
+			{
+				networking_selected = true;
+				flags = (ImGuiTreeNodeFlags_) (flags |ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Selected);
+			}
+		}
+	//end of networking code/////
 	ImGui::PushID(static_cast<int>(handle));
 	bool open = false;
 	if (!rename)
-		open = (ImGui::TreeNodeEx(name, flags));
+	{
+		if(networking_selected == false)
+			open = (ImGui::TreeNodeEx(name, flags));
+		else
+		{
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
+			open = (ImGui::TreeNodeEx(name, flags));
+			ImGui::PopStyleColor();
+		}
+	}
 	else
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -132,14 +164,26 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	if (hovered)
 	{
 		m_hovered = node.get_handle();
-		if ((clicked || keyenter))
+		if ((clicked || keyenter) && s_selected.contains(handle) == false) //always insert values that unique (avoid unnesscary checks)
 		{
+			for (auto other_handles : s_networkUserSelection)
+			{
+				if (other_handles.second.gameobjecID == handle)
+				{
+					WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG,
+						other_handles.first + " had this selected!");
+					return open;
+				}
+			}
 			if (ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LSHIFT)))
 				s_selected.emplace(handle);
 			else
 			{
+				using namespace std::chrono;
 				s_selected.clear();
 				s_selected.emplace(handle);
+				s_selectedTime_Epoc = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+				BroadcastSelection(handle);//networking part
 			}
 		}
 	}
@@ -214,6 +258,14 @@ void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
+}
+std::set<scenenode::handle_type>& Hierarchy::GetSelectedNonConst()
+{
+	return s_selected;
+}
+const uint64_t Hierarchy::GetSelectedTime()
+{
+	return s_selectedTime_Epoc;
 }
 void Hierarchy::PreviewPrefab(const std::filesystem::path& p, const std::filesystem::path& currscene)
 {
@@ -359,6 +411,7 @@ void Hierarchy::NormalView()
 		bool open = false;
 		if (source->GetIsPrefab())//prefab
 		{
+
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
 			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
@@ -454,14 +507,27 @@ void Hierarchy::FilteredView()
 		if (hovered)
 		{
 			m_hovered = handle;
-			if ((clicked || keyenter))
+			if ((clicked || keyenter) && s_selected.contains(handle) == false) //avoid unnessary checks
 			{
+				for (auto other_handles : s_networkUserSelection)
+				{
+					if (other_handles.second.gameobjecID == handle)
+					{
+						WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG,
+							other_handles.first + " had this selected!");
+						return;
+					}
+				}
+
 				if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
 					s_selected.emplace(handle);
 				else
 				{
 					s_selected.clear();
 					s_selected.emplace(handle);
+					using namespace std::chrono;
+					s_selectedTime_Epoc = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+					BroadcastSelection(handle);//networking part
 				}
 			}
 		}
@@ -664,4 +730,17 @@ void Hierarchy::PasteEvent(PasteButtonEvent* pbe)
 
 void Hierarchy::DuplicateEvent(DuplicateButtonEvent* dbe)
 {
+}
+
+void Hierarchy::BroadcastSelection(oo::UUID gameobj)
+{
+	if (PacketUtilts::is_connected == false)
+		return;
+	using namespace std::chrono;
+	uint64_t currTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+	std::string data;
+	data += std::to_string(currTime);
+	data += PacketUtilts::SEPERATOR;
+	data += std::to_string(gameobj);
+	PacketUtilts::BroadCastCommand(CommandPacketType::Selected_Object, data);
 }
