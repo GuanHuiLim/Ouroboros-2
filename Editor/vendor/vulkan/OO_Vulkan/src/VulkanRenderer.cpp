@@ -793,7 +793,7 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 				{
 					numAllocatedCameras++;
 					renderTargets[i].inUse = true;
-					wrdID = i;
+					wrdID = static_cast<int32_t>(i);
 					found = true;
 					break;
 				}
