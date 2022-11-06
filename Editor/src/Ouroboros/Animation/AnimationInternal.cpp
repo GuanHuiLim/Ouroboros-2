@@ -1072,6 +1072,12 @@ namespace oo::Anim::internal
 		//if no animation tree assigned, do nothing
 		if (info.comp.animTree == nullptr) return;
 
+		if (info.tracker.currentNode == false)
+		{
+			assert(false);
+		}
+
+
 		auto result = CheckNodeTransitions(info);
 		if (result)
 		{

@@ -54,7 +54,6 @@ namespace oo
 
             GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
-            GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
             //Register All Systems
             //GetWorld().Add_System<ScriptSystem>(*this);
             /*auto meshObj = oo::Mesh::CreateCubeMeshObject(this, GetGraphicsWorld());
@@ -86,6 +85,9 @@ namespace oo
             LoadFromFile();
             TRACY_PROFILE_SCOPE_END();
         }
+        //post load file processes
+        GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
+
 
         StartSimulation();
 
