@@ -27,6 +27,17 @@ Technology is prohibited.
 #include "OO_Vulkan/src/MeshModel.h"
 #include "Ouroboros/Audio/Audio.h"
 
+/****************************************************************************************
+* 
+* How to Add Support for a New Asset Type
+* 
+* 1) Add the type of asset to the AssetInfo::Type enum (in Asset.h).
+* 2) Declare the list of supported extensions for the asset type.
+* 3) Implement the loading and unloading procedure for the corresponding asset in the
+*     AssetInfo::Reload(AssetInfo::Type) method (in Asset.cpp).
+* 
+****************************************************************************************/
+
 namespace oo
 {
     class Asset;
@@ -60,6 +71,9 @@ namespace oo
             Font,
             Audio,
             Model,
+            Animation,
+            AnimationTree,
+            _COUNT,
         };
 
         /* --------------------------------------------------------------------------- */
@@ -85,6 +99,12 @@ namespace oo
         static Snowflake GenerateSnowflake();
 
         /// <summary>
+        /// Retrieves the type of the asset.
+        /// </summary>
+        /// <returns>The type of the asset.</returns>
+        Type GetType() const;
+
+        /// <summary>
         /// Reloads the data from the file into the asset.
         /// </summary>
         void Reload();
@@ -94,6 +114,11 @@ namespace oo
         /// </summary>
         /// <param name="type">The explicit type of asset to load as.</param>
         void Reload(AssetInfo::Type type);
+
+        /// <summary>
+        /// Unloads the data in the asset.
+        /// </summary>
+        void Unload();
 
         /// <summary>
         /// Writes the data from the asset into the file.
@@ -120,6 +145,7 @@ namespace oo
         Callback onAssetDestroy = [](AssetInfo&) {};
         std::vector<rttr::variant> data;
         Type type = Type::Text;
+        bool isDataLoaded = false;
     };
 
     /// <summary>
@@ -143,9 +169,11 @@ namespace oo
 
         static constexpr AssetID ID_NULL = AssetInfo::ID_NULL;
         static constexpr Extension EXT_META = ".meta";
-        static constexpr ExtensionList<4> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".dds" };
+        static constexpr ExtensionList<5> EXTS_TEXTURE = { ".png", ".jpg", ".jpeg", ".dds", ".tga" };
         static constexpr ExtensionList<2> EXTS_FONT = { ".ttf", ".otf" };
         static constexpr ExtensionList<3> EXTS_AUDIO = { ".ogg", ".mp3", ".wav" };
+        static constexpr ExtensionList<1> EXTS_ANIMATION = { ".anim" };
+        static constexpr ExtensionList<1> EXTS_ANIMATION_TREE = { ".tree" };
         static constexpr ExtensionList<1> EXTS_MODEL = { ".fbx" };
 
         /* --------------------------------------------------------------------------- */
@@ -170,6 +198,7 @@ namespace oo
         [[nodiscard]] inline AI_GETTER(GetTimeLoaded, timeLoaded);
         [[nodiscard]] inline AI_GETTER(GetRawData, data);
         [[nodiscard]] inline AI_GETTER(GetType, type);
+        [[nodiscard]] inline AI_GETTER(IsDataLoaded, isDataLoaded);
 
 #undef AI_GETTER
 #undef AI_VALUE_OR_DEFAULT
@@ -197,12 +226,18 @@ namespace oo
         void Reload(AssetInfo::Type type);
 
         /// <summary>
+        /// Unloads the data in the asset.
+        /// </summary>
+        void Unload();
+
+        /// <summary>
         /// Writes the data from the asset into the file.
         /// </summary>
         void Overwrite();
 
         /// <summary>
         /// Retrieves the data stored by the asset of a given type.
+        /// Loads the data from the file if not loaded.
         /// </summary>
         /// <typeparam name="T">The type of data.</typeparam>
         /// <returns>The data.</returns>
@@ -270,7 +305,11 @@ namespace oo
     inline T Asset::GetData() const
     {
         if (auto sp = info.lock())
+        {
+            if (!IsDataLoaded())
+                sp->Reload();
             return sp->GetData<T>();
+        }
         return {};
     }
 

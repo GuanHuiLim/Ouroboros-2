@@ -97,11 +97,13 @@ namespace oo
             std::string m_name;
             bool m_isScript;
 
-            component_type() : m_objID{ 0 }, m_isScript{ false } {};
+            component_type() : m_objID{ UUID::Invalid }, m_isScript{ false } {};
 
             component_type(UUID id, std::string name_space, std::string name, bool isScript)
                 : m_objID{ id }, m_namespace{ name_space }, m_name{ name }, m_isScript{ isScript }
             {};
+
+            bool is_valid();
         };
 
         // used to store the necessary info to create a generic C# Asset
@@ -190,7 +192,7 @@ namespace oo
             UUID m_objID;
             function_info m_info;
 
-            function_type() : m_objID{ GameObject::ROOTID }, m_info{} { }
+            function_type() : m_objID{ UUID::Invalid }, m_info{} { }
 
             /*********************************************************************************//*!
             \brief      Uses function info currently stored to invoke a specific C# script's function

@@ -33,6 +33,12 @@ Technology is prohibited.
 #include "App/Editor/Events/GizmoOperationEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Input.h"
+
+#include "Ouroboros/Scene/EditorController.h"
+
+#include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
 EditorViewport::EditorViewport()
 {
 	ImGuizmo::AllowAxisFlip(false);
@@ -46,11 +52,13 @@ EditorViewport::~EditorViewport()
 void EditorViewport::Show()
 {
 
-	auto& camera_matrices = oo::Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera.matrices;//perspective
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
+	auto& camera_matrices = oo::EditorController::EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	
 	int windowWidth = window.GetSize().first;
-	int windowHeight = window.GetSize().second;
+	//int windowHeight = window.GetSize().second;	unused var
 	
 	ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 	ImVec2 vMax = ImGui::GetWindowContentRegionMax();
@@ -62,29 +70,38 @@ void EditorViewport::Show()
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
 
-	//auto contentWidth = vMax.x - vMin.x;
-	//auto contentHeight = vMax.y - vMin.y;
+	auto contentWidth = vpDim.x;
+	auto contentHeight = vpDim.y;
+	
+	if (m_viewportWidth != contentWidth || m_viewportHeight != contentHeight)
+	{
+		//resize viewport
+		m_viewportWidth = contentWidth;
+		m_viewportHeight = contentHeight;
 
-	auto contentWidth = float(windowWidth);
-	auto contentHeight = float(windowHeight);
-	vMin.x = 0;
-	vMin.y = 0;
-	vMax.x = contentWidth;
-	vMax.y = contentHeight;
+		EditorViewportResizeEvent e;
+		e.X = m_viewportWidth;
+		e.Y = m_viewportHeight;
+		oo::EventManager::Broadcast<EditorViewportResizeEvent>(&e);
+	}
 
-	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
+	//framebuffer
+	ImVec2 prevpos = ImGui::GetCursorPos();
+	ImGui::Image(graphicsworld->imguiID[0], ImGui::GetContentRegionAvail());
+	ImGui::SetCursorPos(prevpos);
+
+	//ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
 
 
 
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
 
-	if (contentWidth <= 0 || contentHeight <= 0 || selectedItems.empty() )
+	if (m_viewportWidth <= 0 || m_viewportHeight <= 0 || selectedItems.empty() )
 	{
 		return;
 	}
 
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto gameobject = scene->FindWithInstanceID(*selectedItems.begin());
 	if (gameobject == nullptr || scene->IsValid(*gameobject) == false)
 	{
@@ -98,19 +115,19 @@ void EditorViewport::Show()
 	projection = glm::value_ptr(camera_matrices.perspective);
 
 	//Debug Red box
-	//ImGui::GetForegroundDrawList()->AddRect(vMin, {vMin.x + contentWidth, vMin.y+contentHeight}, ImU32(0xFF0000FF));
+	//ImGui::GetForegroundDrawList()->AddRect(vMin, {vMin.x + m_viewportWidth, vMin.y + m_viewportHeight}, ImU32(0xFF0000FF));
 
-	ImGui::SetNextWindowSize({ contentWidth,contentHeight });
+	ImGui::SetNextWindowSize({ m_viewportWidth, m_viewportHeight });
 	ImGui::SetNextWindowPos(vMin);
 
 	//window hole should be same size as content area
-	ImGui::SetWindowHitTestHole(ImGui::GetCurrentWindow(), vMin, { contentWidth,contentHeight });
+	ImGui::SetWindowHitTestHole(ImGui::GetCurrentWindow(), vMin, { m_viewportWidth, m_viewportHeight });
 
 	// IMPORTANT: we now NEED to call this before begin frame
-	ImGuizmo::SetRect(vMin.x, vMin.y, contentWidth, contentHeight);
+	ImGuizmo::SetRect(vMin.x, vMin.y, m_viewportWidth, m_viewportHeight);
 
 	//keep a decent scaling for the guizmo
-	float gizmoSize = windowWidth / contentWidth;
+	float gizmoSize = windowWidth / m_viewportWidth;
 
 
 

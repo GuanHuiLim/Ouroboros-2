@@ -45,18 +45,23 @@ namespace oo
 		void SetAnimationTree(std::string name);
 		std::string GetAnimationTreeName();
 		void SetParameter(std::string const& name, Anim::Parameter::DataType value);
+		void SetParameterByID(size_t id, Anim::Parameter::DataType value);
+		void SetParameterByIndex(uint index, Anim::Parameter::DataType value);
+
+		size_t GetParameterID(std::string const& name);
+		uint GetParameterIndex(std::string const& name);
 
 		Anim::AnimationTree* GetAnimationTree();
 		Anim::AnimationTracker& GetTracker();
-		Anim::Group* GetGroup(std::string const& name);
+		Anim::GroupRef GetGroup(std::string const& name);
 
 		//adds a node to the group in the animation tree attached to this component
 		//returns nullptr if no animation tree
-		Anim::Node* AddNode(std::string const& groupName, Anim::NodeInfo& info);
+		Anim::NodeRef AddNode(std::string const& groupName, Anim::NodeInfo& info);
 		
 		//adds a link between two nodes
 		//returns nullptr if link was not added due to error(src or dst not found)
-		Anim::Link* AddLink(std::string const& groupName, std::string const& src, std::string const& dst);
+		Anim::LinkRef AddLink(std::string const& groupName, std::string const& src, std::string const& dst);
 		
 		
 		Anim::Parameter* AddParameter(Anim::ParameterInfo const& info);
@@ -67,7 +72,7 @@ namespace oo
 		//Anim::Animation* AddAnimation(std::string const& groupName, std::string const& nodeName, std::string const name = { "Unnamed Animation" });
 
 		//add timeline to animation
-		Anim::Timeline* AddTimeline(std::string const& groupName, std::string const& nodeName, Anim::TimelineInfo const& info);
+		Anim::TimelineRef AddTimeline(std::string const& groupName, std::string const& nodeName, Anim::TimelineInfo const& info);
 
 		/*Anim::Timeline* AddTimeline(std::string const& groupName, std::string const& nodeName,
 			std::string const& timelineName, Anim::Timeline::TYPE type, Anim::Timeline::DATATYPE datatype);*/
@@ -79,6 +84,7 @@ namespace oo
 		Anim::ScriptEvent* AddScriptEvent(std::string const& groupName, std::string const nodeName,
 			std::string const& timelineName, Anim::ScriptEvent scriptevent);
 
+		Anim::AnimRef SetNodeAnimation(Anim::SetNodeAnimInfo const& info);
 		RTTR_ENABLE();
 	};
 }

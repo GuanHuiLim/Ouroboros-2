@@ -54,7 +54,7 @@ void SceneOrderingWindow::Show()
 	{
 		ImGui::PushID(counter);
 		ImGui::BeginGroup();
-		ImGui::ImageButton(ImGuiManager::s_editorAssetManager.LoadName("SceneIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_medium);
+		ImGui::ImageButton(ImGuiManager::s_editorAssetManager.GetOrLoadName("SceneIcon.png").begin()->GetData<ImTextureID>(), ImGui_StylePresets::image_medium);
 		ImGui::EndGroup();
 		
 		ImGui::SameLine();
@@ -75,7 +75,7 @@ void SceneOrderingWindow::Show()
 		}
 		if (ImGui::ArrowButton("up button", ImGuiDir_::ImGuiDir_Up))
 		{
-			runtimeController->SwapSceneOrder(counter, counter - 1);
+			runtimeController->SwapSceneOrder(counter, oo::RuntimeController::size_type(counter - 1));
 		}
 		if (up_enabled == false)
 		{
@@ -90,7 +90,7 @@ void SceneOrderingWindow::Show()
 		}
 		if (ImGui::ArrowButton("down button", ImGuiDir_::ImGuiDir_Down))
 		{
-			runtimeController->SwapSceneOrder(counter, counter + 1);
+			runtimeController->SwapSceneOrder(counter, oo::RuntimeController::size_type(counter + 1));
 		}
 		if (down_enabled == false)
 		{

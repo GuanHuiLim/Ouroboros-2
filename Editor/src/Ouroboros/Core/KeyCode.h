@@ -202,6 +202,7 @@ namespace oo
 #define KEY_APOSTROPHE      ::oo::input::Key::APOSTROPHE    /* ' */
 #define KEY_COMMA           ::oo::input::Key::COMMA         /* , */
 #define KEY_MINUS           ::oo::input::Key::MINUS         /* - */
+#define KEY_PLUS            ::oo::input::Key::EQUALS        /* + */
 #define KEY_PERIOD          ::oo::input::Key::PERIOD        /* . */
 #define KEY_SLASH           ::oo::input::Key::SLASH         /* / */
 #define KEY_0               ::oo::input::Key::D0

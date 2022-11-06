@@ -49,6 +49,39 @@ namespace oo
         using AssetInfoPtr = std::shared_ptr<AssetInfo>;
         using AssetInfoMap = std::unordered_map<AssetID, AssetInfoPtr>;
         using AssetInfoTypedMap = std::unordered_map<AssetInfo::Type, AssetInfoMap>;
+
+        struct AssetInfoFileTree
+        {
+            struct Node
+            {
+                using Container = std::map<std::string, std::unique_ptr<Node>>;
+                Node(const std::string& name = "", AssetID id = Asset::ID_NULL) : name{ name }, id{ id } {}
+                std::string name;
+                AssetID id;
+                Container children;
+            };
+
+            Node* insert(const std::filesystem::path& path);
+            void erase(const std::filesystem::path& path);
+            Node* at(const std::filesystem::path& path);
+            const Node* at(const std::filesystem::path& path) const;
+            bool contains(const std::filesystem::path& path) const;
+            void print()
+            {
+                print(root.get());
+            }
+            void print(Node* n, int level = 0)
+            {
+                for (int i = 0; i < level; ++i)
+                    std::cout << "  ";
+                std::cout << (n->name.empty() ? "<no-name>" : n->name) << std::endl;
+                for (auto& i : n->children)
+                    print(i.second.get(), level + 1);
+            }
+
+            std::unique_ptr<Node> root = std::make_unique<Node>("<ROOT_NODE>");
+        };
+
         struct AssetStore
         {
             bool empty() const;
@@ -58,12 +91,16 @@ namespace oo
             void erase(const AssetID& id);
             AssetInfoPtr& at(const AssetID& id);
             const AssetInfoPtr& at(const AssetID& id) const;
+            AssetInfoFileTree::Node* at(const std::filesystem::path& path);
+            const AssetInfoFileTree::Node* at(const std::filesystem::path& path) const;
             bool contains(const AssetID& id) const;
+            bool contains(const std::filesystem::path& path) const;
             AssetInfoMap& filter(const AssetInfo::Type& type);
-            const AssetInfoMap& filter(const AssetInfo::Type& type)const;
+            const AssetInfoMap& filter(const AssetInfo::Type& type) const;
 
             AssetInfoMap all;
             AssetInfoTypedMap byType;
+            AssetInfoFileTree tree;
         };
 
         /* --------------------------------------------------------------------------- */
@@ -99,13 +136,16 @@ namespace oo
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
-        /// <summary>
-        /// Enables the running of the file watcher.
-        /// </summary>
-        //static void GlobalStartRunning();
+#ifdef OO_DEBUG
+        void PrintTree()
+        {
+            store.tree.print();
+        }
+#endif
 
         /// <summary>
         /// Retrieves an asset using its ID.
+        /// Does not load the asset's associated file data.
         /// </summary>
         /// <param name="snowflake">The ID of the asset.</param>
         /// <returns>The asset.</returns>
@@ -113,6 +153,7 @@ namespace oo
 
         /// <summary>
         /// Asynchronously retrieves an asset using its ID.
+        /// Does not load the asset's associated file data.
         /// </summary>
         /// <param name="snowflake">The ID of the asset.</param>
         /// <returns>The future asset.</returns>
@@ -120,24 +161,33 @@ namespace oo
 
         /// <summary>
         /// Retrieves all loaded assets of a given type.
+        /// Does not load the assets' associated file data.
         /// </summary>
         /// <param name="type">The type of asset.</param>
         /// <returns>The loaded assets.</returns>
-        std::vector<Asset> GetLoadedAssetsByType(AssetInfo::Type type) const;
+        std::vector<Asset> GetAssetsByType(AssetInfo::Type type) const;
 
         /// <summary>
-        /// Loads or retrieves an asset at a given file path.
+        /// Loads and retrieves an asset at a given file path.
         /// </summary>
         /// <param name="fp">The file path relative to the AssetManager's root path.</param>
         /// <returns>The asset.</returns>
-        Asset LoadPath(const std::filesystem::path& fp);
+        Asset GetOrLoadPath(const std::filesystem::path& fp);
 
         /// <summary>
-        /// Asynchronously loads or retrieves an asset at a given file path.
+        /// Asynchronously loads and retrieves an asset at a given file path.
         /// </summary>
         /// <param name="fp">The file path relative to the AssetManager's root path.</param>
         /// <returns>The future asset.</returns>
-        std::future<Asset> LoadPathAsync(const std::filesystem::path& fp);
+        std::future<Asset> GetOrLoadPathAsync(const std::filesystem::path& fp);
+
+        /// <summary>
+        /// Loads and retrieves all assets in a given directory path.
+        /// </summary>
+        /// <param name="path">The directory path relative to the AssetManager's root path.</param>
+        /// <param name="recursive">Whether to load directories recursively.</param>
+        /// <returns>The assets.</returns>
+        std::vector<Asset> GetOrLoadDirectory(const std::filesystem::path& path, bool recursive = false);
 
         /// <summary>
         /// Loads or retrieves all assets in a given directory path.
@@ -145,15 +195,7 @@ namespace oo
         /// <param name="path">The directory path relative to the AssetManager's root path.</param>
         /// <param name="recursive">Whether to load directories recursively.</param>
         /// <returns>The assets.</returns>
-        std::vector<Asset> LoadDirectory(const std::filesystem::path& path, bool recursive = false);
-
-        /// <summary>
-        /// Loads or retrieves all assets in a given directory path.
-        /// </summary>
-        /// <param name="path">The directory path relative to the AssetManager's root path.</param>
-        /// <param name="recursive">Whether to load directories recursively.</param>
-        /// <returns>The assets.</returns>
-        std::future<std::vector<Asset>> LoadDirectoryAsync(const std::filesystem::path& path, bool recursive = false);
+        std::future<std::vector<Asset>> GetOrLoadDirectoryAsync(const std::filesystem::path& path, bool recursive = false);
 
         /// <summary>
         /// Loads or retrieves an asset by a given file name.
@@ -161,7 +203,7 @@ namespace oo
         /// <param name="fn">The file name.</param>
         /// <param name="caseSensitive">Whether the file name is case sensitive.</param>
         /// <returns>The assets matching the criteria.</returns>
-        std::vector<Asset> LoadName(const std::filesystem::path& fn, bool caseSensitive = true);
+        std::vector<Asset> GetOrLoadName(const std::filesystem::path& fn, bool caseSensitive = true);
 
         /// <summary>
         /// Asynchronously loads or retrieves an asset by a given file name.
@@ -169,17 +211,22 @@ namespace oo
         /// <param name="fn">The file name.</param>
         /// <param name="caseSensitive">Whether the file name is case sensitive.</param>
         /// <returns>The assets matching the criteria.</returns>
-        std::future<std::vector<Asset>> LoadNameAsync(const std::filesystem::path& fn, bool caseSensitive = true);
+        std::future<std::vector<Asset>> GetOrLoadNameAsync(const std::filesystem::path& fn, bool caseSensitive = true);
 
         /// <summary>
-        /// Reloads all updated assets.
+        /// Unloads all assets.
         /// </summary>
-        void ReloadAssets();
+        void UnloadAll();
 
         /// <summary>
-        /// Reloads all assets.
+        /// Scans for updated assets.
         /// </summary>
-        void ForceReloadAssets();
+        void Scan();
+
+        /// <summary>
+        /// Scans all assets.
+        /// </summary>
+        void ForceScan();
 
     private:
         /* --------------------------------------------------------------------------- */
@@ -207,14 +254,24 @@ namespace oo
         void watchFiles(FileWatchEvent* ev);
 
         /// <summary>
-        /// Iterates through a directory for changes in the filesystem.
+        /// Iterates through a directory for additions and modifications in the filesystem.
         /// </summary>
         /// <param name="dir">The directory to iterate.</param>
         /// <param name="lastTime">The last time at which an iteration was performed.</param>
         /// <param name="iterationTime">The time at which this iteration is performed.</param>
-        void iterateDirectory(const std::filesystem::path& dir,
-                              const std::chrono::file_clock::time_point& lastTime,
-                              const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
+        void iterateDirectoryAdditions(const std::filesystem::path& dir,
+                                       const std::chrono::file_clock::time_point& lastTime,
+                                       const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
+
+        /// <summary>
+        /// Iterates through a directory for omissions in the filesystem.
+        /// </summary>
+        /// <param name="dir">The directory to iterate.</param>
+        /// <param name="lastTime">The last time at which an iteration was performed.</param>
+        /// <param name="iterationTime">The time at which this iteration is performed.</param>
+        void iterateDirectoryOmissions(const std::filesystem::path& dir,
+                                       const std::chrono::file_clock::time_point& lastTime,
+                                       const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
 
         /// <summary>
         /// Ensures that a meta file for an asset exists
@@ -223,19 +280,26 @@ namespace oo
         AssetMetaContent ensureMeta(const std::filesystem::path& fp);
 
         /// <summary>
-        /// Loads or retrieves an asset at a given absolute file path.
+        /// Retrieves an asset at a given absolute file path.
         /// </summary>
         /// <param name="fp">The file path.</param>
         /// <returns>The asset.</returns>
-        Asset getOrLoadAbsolute(const std::filesystem::path& fp);
+        Asset getAsset(const std::filesystem::path& fp);
 
         /// <summary>
-        /// Loads asset info from a given file into the store.
+        /// Loads and retrieves asset at a given absolute file path.
+        /// </summary>
+        /// <param name="fp">The file path.</param>
+        /// <returns>The asset.</returns>
+        Asset getLoadedAsset(const std::filesystem::path& fp);
+
+        /// <summary>
+        /// Indexes an asset from a given file into the store.
         /// </summary>
         /// <param name="fp">The file path.</param>
         /// <param name="id">The asset ID.</param>
         /// <returns>The asset.</returns>
-        Asset loadAssetIntoStore(std::filesystem::path fp, AssetID id = Asset::GenerateSnowflake());
+        Asset indexAsset(const std::filesystem::path& fp, AssetID id = Asset::GenerateSnowflake());
 
         friend Asset;
     };

@@ -42,7 +42,7 @@ void AssetBrowser::TextureUI(rttr::variant& data, bool& edited)
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
 	ImGui::BeginTable("##Assets", static_cast<int>(windowSize.x / (ImGui_StylePresets::image_medium.x + spacing.x)));
 
-	for (const auto& assets : Project::GetAssetManager()->GetLoadedAssetsByType(oo::AssetInfo::Type::Texture))
+	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Texture))
 	{
 		ImGui::TableNextColumn();
 		ImGui::BeginGroup();
@@ -67,7 +67,7 @@ void AssetBrowser::AudioUI(rttr::variant& data, bool& edited)
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
 
-	for (const auto& assets : Project::GetAssetManager()->GetLoadedAssetsByType(oo::AssetInfo::Type::Audio))
+	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Audio))
 	{
 		if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
 		{
@@ -84,7 +84,7 @@ void AssetBrowser::MeshUI(rttr::variant& data, bool& edited)
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
 
 
-	for (const auto& assets : Project::GetAssetManager()->GetLoadedAssetsByType(oo::AssetInfo::Type::Model))
+	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Model))
 	{
 		if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
 		{

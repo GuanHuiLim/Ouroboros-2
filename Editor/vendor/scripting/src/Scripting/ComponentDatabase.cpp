@@ -72,7 +72,7 @@ namespace oo
         objectMap.emplace(std::pair{ id, Object{} });
 
         Object& object = objectMap[id];
-        object.componentList.resize(componentTypeMap.size());
+        object.componentList.resize(componentTypeMap.size(), InvalidPtr);
         
         MonoClass* GOClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "GameObject");
         MonoObject* GO = ScriptEngine::CreateObject(GOClass);
@@ -108,7 +108,7 @@ namespace oo
         IntPtr* component = TryGetComponent(id, name_space, name);
         if(component == nullptr)
             throw std::exception("ComponentDatabase: failed to find Object/Component Type");
-        if (*component != 0)
+        if (*component != InvalidPtr)
             return *component;
 
         if (!onlyScript)
@@ -153,7 +153,7 @@ namespace oo
     {
         IntPtr* ptr = TryGetComponent(id, name_space, name);
         if (ptr == nullptr)
-            return 0;
+            return InvalidPtr;
         return *ptr;
     }
 
@@ -161,7 +161,7 @@ namespace oo
     {
         IntPtr* ptr = TryGetComponentDerived(id, name_space, name);
         if (ptr == nullptr)
-            return 0;
+            return InvalidPtr;
         return *ptr;
     }
 
@@ -174,7 +174,7 @@ namespace oo
     {
         Object* object = TryGetObject(id);
         if (object == nullptr)
-            return 0;
+            return InvalidPtr;
         return object->gameObject;
     }
 
@@ -191,13 +191,13 @@ namespace oo
     void ComponentDatabase::Delete(UUID id, const char* name_space, const char* name, bool onlyScript)
     {
         IntPtr* component = TryGetComponent(id, name_space, name);
-        if (component == nullptr || *component == 0)
+        if (component == nullptr || *component == InvalidPtr)
             return;
 
         if (!onlyScript)
             GetComponentType(name_space, name).Remove(sceneID, id);
         mono_gchandle_free(*component);
-        *component = 0;
+        *component = InvalidPtr;
     }
 
     void ComponentDatabase::Delete(UUID id)
@@ -207,10 +207,10 @@ namespace oo
             return;
         for (IntPtr& ptr : object->componentList)
         {
-            if (ptr == 0)
+            if (ptr == InvalidPtr)
                 continue;
             mono_gchandle_free(ptr);
-            ptr = 0;
+            ptr = InvalidPtr;
         }
         mono_gchandle_free(object->gameObject);
         objectMap.erase(id);
@@ -222,7 +222,7 @@ namespace oo
         {
             for (IntPtr ptr : object.componentList)
             {
-                if (ptr == 0)
+                if (ptr == InvalidPtr)
                     continue;
                 mono_gchandle_free(ptr);
             }
@@ -305,7 +305,7 @@ namespace oo
         if (type != nullptr)
         {
             IntPtr* ptr = TryGetComponent(*object, *type);
-            if (*ptr != 0)
+            if (*ptr != InvalidPtr)
                 return ptr;
         }
 
@@ -318,7 +318,7 @@ namespace oo
             if (derivedType != nullptr)
             {
                 IntPtr* ptr = TryGetComponent(*object, *derivedType);
-                if (*ptr != 0)
+                if (*ptr != InvalidPtr)
                     return ptr;
             }
         }

@@ -17,6 +17,9 @@ Technology is prohibited.
 #include "Asset.h"
 
 #include "OO_Vulkan/src/MeshModel.h"
+#include "Ouroboros/Animation/Animation.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
+#include "Ouroboros/Animation/AnimationTree.h"
 #include "Ouroboros/Audio/Audio.h"
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/Vulkan/VulkanContext.h"
@@ -51,8 +54,7 @@ namespace oo
 {
     AssetInfo::~AssetInfo()
     {
-        if (onAssetDestroy)
-            onAssetDestroy(*this);
+        Unload();
     }
 
     Snowflake AssetInfo::GenerateSnowflake()
@@ -60,22 +62,31 @@ namespace oo
         return ::GenerateSnowflake();
     }
 
-    void AssetInfo::Reload()
+#define REGISTER_TYPE(_EXT_LIST, _TYPE)                                 \
+    if (findIn(FP_EXT.string(), _EXT_LIST.begin(), _EXT_LIST.end()))    \
+        return AssetInfo::Type::_TYPE;
+
+    AssetInfo::Type AssetInfo::GetType() const
     {
         const auto FP_EXT = contentPath.extension();
-        if (findIn(FP_EXT.string(), Asset::EXTS_TEXTURE.begin(), Asset::EXTS_TEXTURE.end()))
-            Reload(AssetInfo::Type::Texture);
-        else if (findIn(FP_EXT.string(), Asset::EXTS_AUDIO.begin(), Asset::EXTS_AUDIO.end()))
-            Reload(AssetInfo::Type::Audio);
-        else if (findIn(FP_EXT.string(), Asset::EXTS_MODEL.begin(), Asset::EXTS_MODEL.end()))
-            Reload(AssetInfo::Type::Model);
+        REGISTER_TYPE(Asset::EXTS_TEXTURE, Texture);
+        REGISTER_TYPE(Asset::EXTS_AUDIO, Audio);
+        REGISTER_TYPE(Asset::EXTS_MODEL, Model);
+        REGISTER_TYPE(Asset::EXTS_ANIMATION, Animation);
+        REGISTER_TYPE(Asset::EXTS_ANIMATION_TREE, AnimationTree);
+        return AssetInfo::Type::Text;
+    }
+
+#undef REGISTER_TYPE
+
+    void AssetInfo::Reload()
+    {
+        Reload(GetType());
     }
 
     void AssetInfo::Reload(AssetInfo::Type t)
     {
-        // Call old asset destruction callback
-        if (onAssetDestroy)
-            onAssetDestroy(*this);
+        Unload();
 
         type = t;
         switch (type)
@@ -118,12 +129,42 @@ namespace oo
                 {
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
-                    self.data.emplace_back(std::shared_ptr<ModelFileResource>(vr->LoadModelFromFile(self.contentPath.string())));
+                    auto sp = std::shared_ptr<ModelFileResource>(vr->LoadModelFromFile(self.contentPath.string()));
+                    self.data.emplace_back(sp);
+
+                    auto anims = Anim::Animation::LoadAnimationFromFBX(self.contentPath.string(), sp.get());
+                    auto v = std::vector<std::string>();
+                    for (auto& anim : anims)
+                    {
+                        v.emplace_back(anim->name);
+                    }
+                    self.data.emplace_back(v);
                 };
-                onAssetDestroy = [](AssetInfo& self)
+                onAssetDestroy = [](AssetInfo& self) {};
+                break;
+            }
+            case AssetInfo::Type::Animation:
+            {
+                // Load animation
+                onAssetCreate = [](AssetInfo& self)
                 {
-                    //delete self.GetData<ModelFileResource*>();
+                    using namespace Anim;
+                    Animation* anim = AnimationSystem::LoadAnimation(self.contentPath.string());
+                    self.data.emplace_back(anim->name);
                 };
+                onAssetDestroy = [](AssetInfo& self) {};
+                break;
+            }
+            case AssetInfo::Type::AnimationTree:
+            {
+                // Load animation tree
+                onAssetCreate = [](AssetInfo& self)
+                {
+                    using namespace Anim;
+                    AnimationTree* animTree = AnimationSystem::LoadAnimationTree(self.contentPath.string());
+                    self.data.emplace_back(animTree->name);
+                };
+                onAssetDestroy = [](AssetInfo& self) {};
                 break;
             }
         }
@@ -131,6 +172,26 @@ namespace oo
         // Call asset creation callback
         if (onAssetCreate)
             onAssetCreate(*this);
+
+        // Mark as data loaded
+        isDataLoaded = true;
+        timeLoaded = std::chrono::file_clock::now();
+    }
+
+    void AssetInfo::Unload()
+    {
+        if (!isDataLoaded)
+            return;
+
+        // Call old asset destruction callback
+        if (onAssetDestroy)
+            onAssetDestroy(*this);
+
+        // Clear data
+        data.clear();
+
+        // Mark as data unloaded
+        isDataLoaded = false;
     }
 
     void AssetInfo::Overwrite()
@@ -159,6 +220,15 @@ namespace oo
 
         if (auto sp = info.lock())
             sp->Reload(type);
+    }
+
+    void Asset::Unload()
+    {
+        if (!IsValid())
+            return;
+
+        if (auto sp = info.lock())
+            sp->Unload();
     }
 
     void Asset::Overwrite()

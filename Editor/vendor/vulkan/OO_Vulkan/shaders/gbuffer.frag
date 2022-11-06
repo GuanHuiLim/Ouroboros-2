@@ -103,11 +103,20 @@ void main()
     }
 	
     {
-        outNormal = vec4(inLightData.btn[2], 0.0f);
+        outNormal = vec4(inLightData.btn[2], 0.0);
     }
 	if(textureIndex_Normal != 1)
-	{
-		outNormal.rgb = normalize(outNormal.rgb+texture(textureDescriptorArray[textureIndex_Normal], inUV.xy).rgb);
+	{        
+        vec3 texNormal = texture(textureDescriptorArray[textureIndex_Normal], inUV.xy).xyz;
+        //float gamma = 2.2;
+        //texNormal = pow(texNormal,vec3(gamma));
+        texNormal = texNormal  * 2.0 - 1.0;
+        //texNormal = normalize(max(vec3(0),texNormal));
+
+        //texNormal = texNormal * 2.0 - 1.0;
+		outNormal.rgb = normalize(inLightData.btn * texNormal);
+		//outNormal.rgb = texNormal;
+       // outNormal.rgb = vec3(0.0,1.0,0.0);
 	}
 
     {

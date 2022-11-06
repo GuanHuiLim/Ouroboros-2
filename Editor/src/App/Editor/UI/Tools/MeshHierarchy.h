@@ -30,6 +30,6 @@ public:
 	void Show();
 	static void CreateObject(Node* starting_node,oo::AssetID asset_id );
 private:
-	static std::shared_ptr<oo::GameObject> CreateSkeleton(decltype(ModelFileResource::skeleton) skele);
+	static std::shared_ptr<oo::GameObject> CreateSkeleton(ModelFileResource* resource, uint32_t gfx_ID);
 	oo::AssetID m_current_id = 0;
 };

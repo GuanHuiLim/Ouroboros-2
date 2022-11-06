@@ -26,7 +26,7 @@ namespace oo
     };
 
     // Determine State of Trigger
-    enum class TriggerState
+    enum class PhysicsEventState
     {
         NONE,
         ENTER,
@@ -38,6 +38,23 @@ namespace oo
     {
         UUID TriggerID = UUID{ 0 };
         UUID OtherID = UUID{ 0 };
-        TriggerState State = TriggerState::NONE;
+        PhysicsEventState State = PhysicsEventState::NONE;
     };
+
+    struct ContactPoint
+    {
+        glm::vec3 Normal;
+        glm::vec3 Point;
+        glm::vec3 Impulse;
+    };
+
+    struct PhysicsCollisionEvent : public Event
+    {
+        UUID Collider1 = UUID{ 0 };
+        UUID Collider2 = UUID{ 0 };
+        PhysicsEventState State = PhysicsEventState::NONE;
+        std::vector<ContactPoint> ContactPoints;
+        std::size_t ContactCount;
+    };
+
 }

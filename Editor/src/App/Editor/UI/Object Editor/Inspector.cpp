@@ -54,6 +54,9 @@ Technology is prohibited.
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
+#include <Ouroboros/ECS/GameObjectDisabledComponent.h>
+#include <Ouroboros/Animation/AnimationComponent.h>
+
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
@@ -82,8 +85,10 @@ void Inspector::Show()
 		auto gameobject = scene->FindWithInstanceID(*selected_items.begin());//first item
 		if (gameobject == nullptr)
 			return;
-		bool active = gameobject->ActiveInHierarchy();
 		
+		//bool active = gameobject->ActiveInHierarchy();
+		bool active = gameobject->IsActive();
+
 		//bool disable_prefabEdit = gameobject->GetIsPrefab() && gameobject->HasComponent<oo::PrefabComponent>() == false;
 		//if (disable_prefabEdit)
 		//{
@@ -130,16 +135,23 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::TransformComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
+	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
+
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
+	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
+	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
+
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
 	DisplayComponent<oo::CameraComponent>(gameobject);
+
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
+	DisplayComponent<oo::AnimationComponent>(gameobject);
 	
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
@@ -170,6 +182,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 			selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 			//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
 			//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
@@ -178,6 +191,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
 			selected |= AddScriptsSelectable(gameobject);
 
 			ImGui::EndListBox();

@@ -36,7 +36,7 @@ namespace oo
         ~ScriptFieldInfo() = default;
 
         ScriptFieldInfo(std::string const& name, ScriptValue const& value)
-            : name{ name }, value{ value }, script{ nullptr }, scriptField{ nullptr } {}
+            : name{ name }, value{ value }, scriptPtr{ ScriptDatabase::InvalidPtr }, scriptField{ nullptr } {}
 
         /*********************************************************************************//*!
         \brief      attempts to try getting the actual C# field value this ScriptFieldInfo represents
@@ -62,17 +62,17 @@ namespace oo
 
         \param     field
                 the pointer to the class field that this ScriptFieldInfo represents
-        \param      obj
-                the pointer to the C# script instance that this ScriptFieldInfo belongs to
+        \param      objPtr
+                the IntPtr to the C# script instance that this ScriptFieldInfo belongs to
         *//**********************************************************************************/
-        void SetScriptReference(MonoClassField* field, MonoObject* obj);
+        void SetScriptReference(MonoClassField* field, ScriptDatabase::IntPtr objPtr);
 
     public:
         std::string name;
         ScriptValue value;
 
     private:
-        MonoObject* script;
+        ScriptDatabase::IntPtr scriptPtr;
         MonoClassField* scriptField;
     };
 

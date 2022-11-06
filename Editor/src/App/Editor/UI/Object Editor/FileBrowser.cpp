@@ -33,6 +33,15 @@ Technology is prohibited.
 #include "Ouroboros/Core/KeyCode.h"
 #include "Project.h"
 
+namespace
+{
+	bool isSubPath(const std::filesystem::path& base, const std::filesystem::path& destination)
+	{
+		std::string relative = std::filesystem::relative(destination, base).string();
+		return relative.size() == 1 || relative[0] != '.' && relative[1] != '.';
+	}
+}
+
 FileBrowser::FileBrowser()	
 {
 	oo::EventManager::Subscribe<OpenFileEvent>(&OpenAnimationEvent);
@@ -44,16 +53,16 @@ FileBrowser::FileBrowser()
 
 void FileBrowser::InitAssets()
 {
-	m_Icons[".png"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PNGIcon.png");
-	m_Icons[".obj"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/OBJFileIcon.png");
-	m_Icons[".mp3"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/MP3FileIcon.png");
-	m_Icons[".prefab"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/PrefabIcon.png");
-	m_Icons[".scn"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/SceneIcon.png");
-	m_Icons[".anim"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimationClipIcon.png");
-	m_Icons[".controller"]	= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/AnimatorIcon.png");
-	m_Icons[".cs"]			= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/CSFileIcon.png");
-	m_Icons["generic"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/GenericFileIcon.png");
-	m_Icons["folder"]		= ImGuiManager::s_editorAssetManager.LoadPath("File Icons/FolderIcon.png");
+	m_Icons[".png"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/PNGIcon.png");
+	m_Icons[".obj"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/OBJFileIcon.png");
+	m_Icons[".mp3"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/MP3FileIcon.png");
+	m_Icons[".prefab"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/PrefabIcon.png");
+	m_Icons[".scn"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/SceneIcon.png");
+	m_Icons[".anim"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/AnimationClipIcon.png");
+	m_Icons[".controller"]	= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/AnimatorIcon.png");
+	m_Icons[".cs"]			= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/CSFileIcon.png");
+	m_Icons["generic"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/GenericFileIcon.png");
+	m_Icons["folder"]		= ImGuiManager::s_editorAssetManager.GetOrLoadPath("File Icons/FolderIcon.png");
 }
 
 inline void FileBrowser::SetDirectory(LoadProjectEvent* lpe)
@@ -67,6 +76,26 @@ void FileBrowser::Show()
 {
 	if (m_rootpath.empty())
 		return;
+#ifdef EDITOR_PLATFORM_WINDOWS
+	if (isSubPath(Project::GetAssetFolder(), m_currentpath) && ImGui::BeginMenuBar())
+	{
+		if (ImGui::BeginMenu("Compiler"))
+		{
+			if (ImGui::MenuItem("Convert Current Folder to DDS"))
+			{
+				std::stringstream ss;
+				ss << ".\\converter\\crunch_x64.exe -file ";
+				ss << std::filesystem::canonical(m_currentpath);
+				ss << " -timestamp -ignoreerrors -fileformat dds -dxt1 -outsamedir";
+				LOG_INFO("Running command {0}", ss.str());
+				std::system(ss.str().c_str());
+				LOG_INFO("Converted assets to dds in {0}", m_currentpath);
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenuBar();
+	}
+#endif // EDITOR_PLATFORM_WINDOWS
 	ImGui::BeginTable("2views", 2,ImGuiTableFlags_BordersInnerV|ImGuiTableFlags_Resizable, ImVec2(0, 0), 0);
 	ImGui::TableNextColumn();
 	DirectoryBrowser();

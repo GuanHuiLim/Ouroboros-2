@@ -35,6 +35,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 
 #include "Ouroboros/Audio/AudioSystem.h"
 
@@ -54,7 +55,7 @@ namespace oo
         , m_removeList {}
         , m_lookupTable {}
         , m_gameObjects{}
-        , m_graphicsWorld { nullptr }
+        //, m_graphicsWorld { nullptr } TODO: temporarily have one static world
         , m_ecsWorld { nullptr }
         , m_scenegraph { nullptr }
         , m_rootGo { nullptr }
@@ -76,15 +77,15 @@ namespace oo
         {
             m_ecsWorld->Add_System<oo::DeferredSystem>(this);
             m_ecsWorld->Add_System<oo::DuplicatedSystem>(this);
-
             m_ecsWorld->Add_System<oo::TransformSystem>(this);
-
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
-
-            //rendering system initialization
-            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
-
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
+            //rendering system initialization
+            // temporarily initialize number of cameras to 1
+            m_graphicsWorld->numCameras = 1;
+            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
+            Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
+            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
         }
 
         PRINT(m_name);
@@ -96,25 +97,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_update, tracy::Color::Seashell2);
 
-        // Update Systems
-        {
-            //// nothing should run before this.
-            //m_ecsWorld->Get_System<oo::TransformSystem>()->StartOfFrame();
-
-            m_ecsWorld->Get_System<oo::TransformSystem>()->Run(m_ecsWorld.get());
-
-            m_ecsWorld->Get_System<oo::AudioSystem>()->Run(m_ecsWorld.get());
-
-            //constexpr const char* const scripts_update = "Scripts Update";
-            //UNREFERENCED(scripts_update);
-            {
-                TRACY_PROFILE_SCOPE(scripts_update);
-                GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
-                TRACY_PROFILE_SCOPE_END();
-            }
-            // m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("Update");
-        }
-
         PRINT(m_name);
 
         TRACY_PROFILE_SCOPE_END();
@@ -124,7 +106,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
 
-        m_ecsWorld->Get_System<oo::ScriptSystem>()->InvokeForAll("LateUpdate");
         PRINT(m_name);
 
         TRACY_PROFILE_SCOPE_END();
@@ -135,6 +116,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(base_scene_rendering, tracy::Color::Seashell3);
 
         GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
+        GetWorld().Get_System<oo::SkinMeshRendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
         TRACY_PROFILE_SCOPE_END();
@@ -219,7 +201,6 @@ namespace oo
 
         // TODO: Solution To tie graphics world to rendering context for now!
         static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
-        // comment because cannot 
         vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
 
         TRACY_PROFILE_SCOPE_END();
@@ -233,6 +214,13 @@ namespace oo
 
         GetWorld().Get_System<oo::RendererSystem>()->SaveEditorCamera();
         EndOfFrameUpdate();
+
+        // TODO: Temporarily remove destroying the world on load
+        m_graphicsWorld->ClearLightInstances();
+        m_graphicsWorld->ClearObjectInstances();
+        // kill the graphics world
+        Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
+
         m_lookupTable.clear();
         m_gameObjects.clear();
         m_rootGo.reset();

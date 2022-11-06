@@ -10,41 +10,71 @@ namespace oo
 	}
 	void SkinMeshRendererSystem::Init()
 	{
+		m_world->SubscribeOnAddComponent<SkinMeshRendererSystem, SkinMeshRendererComponent>(
+			this, &SkinMeshRendererSystem::OnMeshAssign);
+
 	}
 	void SkinMeshRendererSystem::Run(Ecs::ECSWorld* world)
 	{
-		static Ecs::Query skin_mesh_query = []()
-		{
-			Ecs::Query query;
-			return query.with<SkinMeshRendererComponent, TransformComponent>().build();
-		}();
-		static Ecs::Query skin_bone_mesh_query = []()
-		{
-			Ecs::Query query;
-			return query.with<SkinMeshBoneComponent, TransformComponent>().build();
-		}();
+		
+		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+		
+		static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
+
+		world->for_each(skin_mesh_query,
+			[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
+			{
+				//do nothing if transform did not change
+				if (transformComp.HasChangedThisFrame == false) return;
+
+
+				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
+
+				if (gfx_Object.bones.size() != m_comp.num_bones)
+					gfx_Object.bones.resize(m_comp.num_bones);
+
+				gfx_Object.modelID = m_comp.meshResource;
+				gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
+				gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
+				gfx_Object.submesh = m_comp.meshInfo.submeshBits;
+
+				gfx_Object.localToWorld = transformComp.GetGlobalMatrix();
+			});
 
 		world->for_each(skin_bone_mesh_query,
 			[&](SkinMeshBoneComponent& boneComp, TransformComponent& transformComp)
 			{
 				//do nothing if transform did not change
 				if (transformComp.HasChangedThisFrame == false) return;
-
-
+				
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(boneComp.graphicsWorld_ID);
-				gfx_Object.localToWorld = transformComp.GetGlobalMatrix();
+				
+				//set bone matrix to inverse bind pose * matrix
+				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] =  transformComp.GetGlobalMatrix() * boneComp.inverseBindPose_info.transform;
 			});
 
-		world->for_each(skin_mesh_query, 
-			[&](MeshRendererComponent& m_comp, TransformComponent& transformComp)
-			{
-				//do nothing if transform did not change
-				auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
 
-				if (transformComp.HasChangedThisFrame)
-					actualObject.localToWorld = transformComp.GetGlobalMatrix();
-			});
+
 
 		
+
+		
+	}
+
+	void SkinMeshRendererSystem::OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)
+	{
+		assert(m_world != nullptr);
+
+		auto& meshComp = evnt->component;
+		auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
+
+		meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+		
+		//update initial position
+		auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
+		graphics_object.localToWorld = transform_component.GetGlobalMatrix();
+		graphics_object.flags = ObjectInstanceFlags::SKINNED;
+
+		meshComp.gfx_Object = &graphics_object;
 	}
 }

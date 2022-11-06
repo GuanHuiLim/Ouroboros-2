@@ -117,7 +117,7 @@ ScriptingProperties::ScriptingProperties()
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::LIST, [this](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::list_type>();
-			int size = data.valueList.size();
+			int size = static_cast<int>(data.valueList.size());
 			ImVec2 cursorPos = ImGui::GetCursorPos();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::DragInt(v.name.c_str(), &size);

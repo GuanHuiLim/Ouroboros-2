@@ -29,6 +29,11 @@ namespace oo
     void RuntimeController::OnLoadProjectEvent(LoadProjectEvent* loadProjEvent)
     {
         SetLoadPaths(std::move(loadProjEvent->m_filename_pathname));
+    // start the project immediately at first detected scene
+#if OO_EXECUTABLE
+        GenerateScenes();
+        ChangeRuntimeScene(0);
+#endif
     }
 
     void RuntimeController::SetLoadPaths(container_type&& loadPaths)
@@ -36,6 +41,8 @@ namespace oo
         RemoveScenes();
         ClearSceneLibrary();
         m_loadpaths = std::move(loadPaths);
+        for (auto& sceneinfo : m_loadpaths)
+            m_filepathLookup.emplace(sceneinfo.SceneName, sceneinfo.LoadPath);
     }
 
     RuntimeController::container_type RuntimeController::GetLoadPaths() const 
@@ -48,7 +55,9 @@ namespace oo
         // loops through all loadpaths, create the neccesary scenes
         for (auto& scenePath : m_loadpaths)
         {
-            m_sceneManager.CreateNewScene<RuntimeScene>(scenePath.SceneName, scenePath.LoadPath);
+            // scenes are uniquely identified by their names
+            auto[result, key, weak_ptr] = m_sceneManager.CreateNewScene<RuntimeScene>(scenePath.SceneName, scenePath.LoadPath);
+            ASSERT_MSG(result == false, "new scene is not created as the name is already in use!");
         }
     }
 
@@ -67,38 +76,56 @@ namespace oo
         m_loadpaths.clear(); 
     }
 
-    bool RuntimeController::HasScene(std::string_view sceneName) const
+    bool RuntimeController::HasSceneWithName(std::string_view sceneName) const
     {
         return m_filepathLookup.contains(sceneName.data());
     }
 
-    bool RuntimeController::HasScene(size_type sceneIndex) const
+    bool RuntimeController::HasSceneWithLoadPath(std::string_view loadpath) const
     {
-        return sceneIndex > 0 && sceneIndex < m_loadpaths.size();
+        return std::find(m_loadpaths.begin(), m_loadpaths.end(), loadpath) != m_loadpaths.end();
+    }
+
+    bool RuntimeController::HasSceneWithIndex(size_type sceneIndex) const
+    {
+        return sceneIndex >= 0 && sceneIndex < m_loadpaths.size();
     }
 
     void RuntimeController::AddLoadPath(std::string_view sceneName, std::string_view loadpath)
     {
         // ensure unique file path
-        if (std::find(m_loadpaths.cbegin(), m_loadpaths.cend(), loadpath) == m_loadpaths.cend())
+        //if (std::find(m_loadpaths.cbegin(), m_loadpaths.cend(), loadpath) == m_loadpaths.cend())
+        //if (std::find(m_loadpaths.cbegin(), m_loadpaths.cend(), loadpath) == m_loadpaths.cend())
+        if(m_filepathLookup.contains(sceneName.data()) == false)
         {
             m_loadpaths.emplace_back(sceneName, loadpath);
             m_filepathLookup.emplace(sceneName, loadpath);
         }
         else
         {
-            LOG_ERROR("Attempting to add a scene named \"{0}\" with an already existing file path location {1}", sceneName, loadpath);
+            LOG_ERROR("Attempting to add a scene named \"{0}\" with an already existing file path located at \"{1}\"", sceneName, loadpath);
         }
     }
 
-    void RuntimeController::RemoveLoadPath(std::string_view sceneName)
+    void RuntimeController::RemoveLoadPathByName(std::string_view sceneName)
     {
         auto iter = std::find_if(m_loadpaths.begin(), m_loadpaths.end(), [=](SceneInfo elem) { return elem.SceneName == sceneName; });
         if (iter != m_loadpaths.end())
         {
+            ASSERT_MSG(HasSceneWithName(sceneName) == false, "This should never happen!");
+            m_filepathLookup.erase(iter->SceneName);
             m_loadpaths.erase(iter);
-            ASSERT_MSG(HasScene(sceneName) == false, "This should never happen!");
-            m_filepathLookup.erase(sceneName.data());
+        }
+    }
+
+    void RuntimeController::RemoveLoadPathByPath(std::string_view loadpath)
+    {
+        auto iter = std::find_if(m_loadpaths.begin(), m_loadpaths.end(), [=](SceneInfo elem) { return elem.LoadPath == loadpath; });
+        if (iter != m_loadpaths.end())
+        {
+            ASSERT_MSG(HasSceneWithLoadPath(loadpath) == false, "This should never happen!");
+            m_filepathLookup.erase(iter->SceneName);
+            m_loadpaths.erase(iter);
         }
     }
 
@@ -116,7 +143,7 @@ namespace oo
 
     void RuntimeController::SwapSceneOrder(size_type index1, size_type index2)
     {
-        if (HasScene(index1) && HasScene(index2))
+        if (HasSceneWithIndex(index1) && HasSceneWithIndex(index2))
         {
             std::swap(m_loadpaths[index1], m_loadpaths[index2]);
             LOG_INFO("Swapping scene order! Index {0} swapped with Index {1}", index1, index2);
@@ -141,7 +168,7 @@ namespace oo
 
     void RuntimeController::ChangeRuntimeScene(size_type sceneIndex)
     {
-        if (HasScene(sceneIndex))
+        if (HasSceneWithIndex(sceneIndex))
         {
             LOG_INFO("Changing runtime scene to {1} via index {0} ", sceneIndex, m_loadpaths[sceneIndex].SceneName);
             m_sceneManager.ChangeScene(m_loadpaths[sceneIndex].SceneName);
@@ -150,6 +177,20 @@ namespace oo
         {
             LOG_INFO("Invalid index {0}! Failed attempting to change runtime scene.", sceneIndex);
         }
+    }
+
+    RuntimeController::size_type RuntimeController::GetIndexWithLoadPath(std::string_view loadpath) const
+    {
+        size_type index = static_cast<size_type>(-1);   // initialize to can't be found.
+        size_type counter = static_cast<size_type>(-1);
+        for (auto& sceneInfo : m_loadpaths)
+        {
+            counter++;
+            if (sceneInfo.LoadPath == loadpath)
+                break;
+        }
+        index = counter;
+        return index;
     }
 
     std::weak_ptr<RuntimeScene> RuntimeController::GetRuntimeScene() const 
@@ -161,5 +202,12 @@ namespace oo
     {
         m_runtimeScene = newScene;
     }
+
+    //void RuntimeController::AddLoadPathForEditor(std::string_view sceneName, std::string_view loadpath)
+    //{
+    //    // we always make sure editor can get added no matter what.
+    //    m_loadpaths.emplace_back(sceneName, loadpath);
+    //    m_filepathLookup.emplace(sceneName, loadpath);
+    //}
 
 }

@@ -9,7 +9,7 @@ class CameraController
 public:
 
     // Per tick update
-    void Update(float dt);
+    void Update(float dt, bool update_controls = true);
 
     // Sets a camera to control
     void SetCamera(Camera* camera) { m_Camera = camera; }
@@ -24,4 +24,5 @@ private:
     
     glm::vec3 m_rotation{}; //data used to clamp
     Camera* m_Camera{ nullptr };
+    float m_sensitivityRate = 10;
 };

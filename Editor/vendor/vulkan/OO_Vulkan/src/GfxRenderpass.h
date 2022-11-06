@@ -15,6 +15,7 @@ Technology is prohibited.
 
 #include "Profiling.h"
 #include "rhi/CommandList.h"
+#include "FramebufferBuilder.h"
 
 #include <vector>
 #include <memory>
