@@ -77,8 +77,8 @@ void DeferredCompositionRenderpass::Draw()
 
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&vr.currWorld->renderTargets[vr.renderIteration])
-		.BindImage(&vr.currWorld->depthTargets[vr.renderIteration])
+		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].texture)
+		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].depth)
 		.Build(currentFB,vr.renderPass_default);
 	renderPassBeginInfo.framebuffer = currentFB;
 

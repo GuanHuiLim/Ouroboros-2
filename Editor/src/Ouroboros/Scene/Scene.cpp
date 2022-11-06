@@ -55,7 +55,7 @@ namespace oo
         , m_removeList {}
         , m_lookupTable {}
         , m_gameObjects{}
-        , m_graphicsWorld { nullptr }
+        //, m_graphicsWorld { nullptr } TODO: temporarily have one static world
         , m_ecsWorld { nullptr }
         , m_scenegraph { nullptr }
         , m_rootGo { nullptr }
@@ -215,6 +215,9 @@ namespace oo
         GetWorld().Get_System<oo::RendererSystem>()->SaveEditorCamera();
         EndOfFrameUpdate();
 
+        // TODO: Temporarily remove destroying the world on load
+        m_graphicsWorld->ClearLightInstances();
+        m_graphicsWorld->ClearObjectInstances();
         // kill the graphics world
         Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
 
