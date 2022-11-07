@@ -64,7 +64,7 @@ namespace oo
 
         // only done after ecs able to return dynamic objects
         std::string& Name()                         const;
-        oo::UUID GetInstanceID()                        const;
+        oo::UUID GetInstanceID()                    const;
         scenenode::weak_pointer GetSceneNode()      const;
         bool GetIsPrefab()                          const;
         Entity GetEntity()                          const;
