@@ -39,6 +39,7 @@ void oo::Delete_ActionCommand::Redo()
 	auto obj = scene->FindWithInstanceID(revivedObject);
 	if (obj == nullptr)
 		ASSERT_MSG(true, "object not found");
+	data = Serializer::SaveDeletedObject(obj, *scene);
 	scene->DestroyGameObject(*obj);
 }
 
@@ -50,9 +51,7 @@ std::string oo::Delete_ActionCommand::GetData()
 	currData += PacketUtilts::SEPERATOR;
 	piD = revivedObject.GetUUID();
 	currData += std::to_string(piD);//its ok
-	currData += PacketUtilts::SEPERATOR;
-
-	currData += data;
+ 
 	return currData;
 }
 oo::Delete_ActionCommand::Delete_ActionCommand(const PacketHeader& header, std::string& _data)
@@ -61,8 +60,7 @@ oo::Delete_ActionCommand::Delete_ActionCommand(const PacketHeader& header, std::
 	std::string temp_str = PacketUtilts::ParseCommandData(_data, offset);
 
 	parentID = std::stoull(temp_str);
-	revivedObject = std::stoull(PacketUtilts::ParseCommandData(_data, offset));
-	data = std::string(_data.begin() + (offset), _data.end());
+	revivedObject = std::stoull(std::string(_data.begin() + (offset), _data.end()));
 
 	message += header.name;
 	message += " Deleted Object : ";

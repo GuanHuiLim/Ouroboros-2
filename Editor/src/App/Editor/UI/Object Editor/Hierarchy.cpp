@@ -75,7 +75,7 @@ Hierarchy::Hierarchy()
 	oo::EventManager::Subscribe<PasteButtonEvent>(&PasteEvent);
 	oo::EventManager::Subscribe<NetworkingSelectionEvent>([] (NetworkingSelectionEvent* e){
 		auto iter = Hierarchy::GetSelected().find(e->gameobjID);
-		if (iter == s_selected.end())
+		if (iter != s_selected.end())
 		{
 			if (Hierarchy::GetSelectedTime() > e->time_triggered)
 				Hierarchy::GetSelectedNonConst().erase(iter);
@@ -290,7 +290,10 @@ void Hierarchy::NormalView()
 		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
 		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
 		if (ImGui::Selectable("##parent to root", false, ImGuiSelectableFlags_AllowItemOverlap, ImGui::GetContentRegionAvail()))
+		{
 			s_selected.clear();
+			BroadcastSelection(oo::UUID::Invalid);
+		}
 		ImGui::SetCursorPos(temp);
 		ImGui::PopStyleColor(2);
 		if (ImGui::BeginDragDropTarget())
@@ -620,6 +623,7 @@ void Hierarchy::RightClickOptions()
 				object->Destroy();
 			}
 			s_selected.clear();
+			BroadcastSelection(oo::UUID::Invalid);
 		}
 		if (ImGui::MenuItem("Duplicate GameObject"))
 		{
