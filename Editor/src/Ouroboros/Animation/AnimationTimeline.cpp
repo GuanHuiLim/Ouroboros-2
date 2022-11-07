@@ -37,11 +37,6 @@ namespace oo::Anim::internal
 					auto temp_type = prop.get_type();
 					rttr::variant val{ prop.get_value(obj) };
 					auto value_type = val.get_type();
-					if (value_type == rttr::type::get<rttr::property>())
-					{
-						auto temp_prop = val.get_value<rttr::property>();
-						int i = 0;
-					}
 					internal::serializeDataFn_map.at(prop.get_type().get_id())(writer, val);
 				}
 			}		

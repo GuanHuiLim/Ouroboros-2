@@ -98,6 +98,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     if (!_animator->GetActualComponent().animTree)
     {
         auto tree = oo::Anim::AnimationTree::Create("Test Animation Tree");
+        (void)(tree);
         _animator->SetAnimationTree("Test Animation Tree");
         //auto& start_node = tree->groups.begin()->second.startNode;
     }
@@ -280,7 +281,7 @@ void AnimatorControllerView::DisplayParameters()
                 {
                     bool requestDelete = false;
                     ++_currParamId;
-                    ImGui::PushID(animator->GetActualComponent().animTree->parameters[i].paramID);
+                    ImGui::PushID(static_cast<int>(animator->GetActualComponent().animTree->parameters[i].paramID));
                     ImGui::PushItemWidth(-160);
                     if (ImGui::SmallButton("X"))
                     {
@@ -537,7 +538,7 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                     bool requestDelete = false;
                     //do param display
                     ++_currCondId;
-                    ImGui::PushID(link->conditions[i].paramID);
+                    ImGui::PushID(static_cast<int>(link->conditions[i].paramID));
                     ImGui::PushItemWidth(-160);
                     if (ImGui::SmallButton("X"))
                     {
@@ -717,11 +718,11 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
     }
 }
 
-AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& uniqueId, oo::Anim::Node* _anim_node)
+AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& _uniqueId, oo::Anim::Node* _anim_node)
 {
-    m_nodes.emplace_back(uniqueId++, _anim_node);
-    m_nodes.back().Input.emplace_back(uniqueId++, &m_nodes.back(), _anim_node->name.c_str());
-    m_nodes.back().Output.emplace_back(uniqueId++, &m_nodes.back(), _anim_node->name.c_str());
+    m_nodes.emplace_back(_uniqueId++, _anim_node);
+    m_nodes.back().Input.emplace_back(_uniqueId++, &m_nodes.back(), _anim_node->name.c_str());
+    m_nodes.back().Output.emplace_back(_uniqueId++, &m_nodes.back(), _anim_node->name.c_str());
     m_nodes.back().pos = ImVec2(_anim_node->position.x, _anim_node->position.y);
 
     BuildNode(&m_nodes.back());
@@ -729,7 +730,7 @@ AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& unique
     return &m_nodes.back();
 }
 
-AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(oo::AnimationComponent* _animator, int& uniqueId, ed::PinId inputPinId, ed::PinId outputPinId)
+AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(oo::AnimationComponent* _animator, int& _uniqueId, ed::PinId inputPinId, ed::PinId outputPinId)
 {
     auto& temp = _animator->GetActualComponent().animTree->groups;
 

@@ -145,10 +145,41 @@ namespace oo::Anim
 		return container;
 	}();
 
+	void PrintNode(decltype(aiScene::mRootNode) node, std::vector<uint> const& hierarchy)
+	{
+		std::ostringstream buffer;
+		for (auto const& i : hierarchy)
+		{
+			(void)(i);
+			buffer << "|";
+		}
+		
+		buffer << "->" << node->mName.C_Str();
+
+		std::cout << buffer.str() << std::endl;
+	}
+
+	void PrintRecusive(decltype(aiScene::mRootNode) node, std::vector<uint> hierarchy = {})
+	{
+		PrintNode(node, hierarchy);
+		if (node->mNumChildren == 0) return;
+
+		//recurse on children
+		hierarchy.emplace_back(0);
+		for (uint i = 0; i < node->mNumChildren; i++)
+		{
+			hierarchy.back() = i;
+			PrintRecusive(node->mChildren[i], hierarchy);
+		}
+	}
 
 	void PrintNodeHierarchy(const aiScene* scene)
 	{
-		//to do later
+		std::cout << "----------|Node Hierarchy|----------" << std::endl;
+
+		auto node = scene->mRootNode;
+		PrintRecusive(node);
+		
 	}
 
 	std::vector<Animation*> Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
@@ -173,9 +204,13 @@ namespace oo::Anim
 		}
 		if (scene->HasAnimations() == false) return {};
 
+#ifdef EDITOR_DEBUG
 		PrintNodeHierarchy(scene);
+#endif // EDITOR_DEBUG
 
-		std::cout << "Bone hierarchy: " << std::endl;
+		
+
+		std::cout << "--------------|Bone hierarchy|--------------" << std::endl;
 		//generate hierarchy map
 		std::unordered_map<std::string, std::vector<int>> bone_hierarchy_map{};
 		{

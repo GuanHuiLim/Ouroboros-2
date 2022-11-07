@@ -125,7 +125,8 @@ namespace oo
         // direct copy of all gameobjects in the scene
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 
-        std::unique_ptr<GraphicsWorld> m_graphicsWorld;
+        //TODO : temporarily only have one graphics world
+        inline static std::unique_ptr<GraphicsWorld> m_graphicsWorld;
         std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
         go_ptr m_rootGo;

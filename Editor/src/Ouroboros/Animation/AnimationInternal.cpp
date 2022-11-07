@@ -1069,6 +1069,15 @@ namespace oo::Anim::internal
 
 	void UpdateTracker(UpdateTrackerInfo& info)
 	{
+		//if no animation tree assigned, do nothing
+		if (info.comp.animTree == nullptr) return;
+
+		if (info.tracker.currentNode == false)
+		{
+			assert(false);
+		}
+
+
 		auto result = CheckNodeTransitions(info);
 		if (result)
 		{
@@ -1108,8 +1117,10 @@ namespace oo::Anim::internal
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
 	{
-		//name should not be empty!!
-		assert(name.empty() == false);
+		//do nothing if name empty
+		if (name.empty()) return;
+		//assert(name.empty() == false);
+		
 		//retrieve tree
 		if (AnimationTree::map.contains(name) == false)
 		{

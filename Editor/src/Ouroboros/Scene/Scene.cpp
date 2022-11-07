@@ -35,6 +35,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/VulkanContext.h"
 
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 
 #include "Ouroboros/Audio/AudioSystem.h"
 
@@ -54,7 +55,7 @@ namespace oo
         , m_removeList {}
         , m_lookupTable {}
         , m_gameObjects{}
-        , m_graphicsWorld { nullptr }
+        //, m_graphicsWorld { nullptr } TODO: temporarily have one static world
         , m_ecsWorld { nullptr }
         , m_scenegraph { nullptr }
         , m_rootGo { nullptr }
@@ -84,6 +85,7 @@ namespace oo
             m_graphicsWorld->numCameras = 1;
             m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
+            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
         }
 
         PRINT(m_name);
@@ -114,6 +116,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(base_scene_rendering, tracy::Color::Seashell3);
 
         GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
+        GetWorld().Get_System<oo::SkinMeshRendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
         TRACY_PROFILE_SCOPE_END();
@@ -198,7 +201,6 @@ namespace oo
 
         // TODO: Solution To tie graphics world to rendering context for now!
         static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
-        // comment because cannot 
         vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
 
         TRACY_PROFILE_SCOPE_END();
@@ -213,6 +215,9 @@ namespace oo
         GetWorld().Get_System<oo::RendererSystem>()->SaveEditorCamera();
         EndOfFrameUpdate();
 
+        // TODO: Temporarily remove destroying the world on load
+        m_graphicsWorld->ClearLightInstances();
+        m_graphicsWorld->ClearObjectInstances();
         // kill the graphics world
         Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
 

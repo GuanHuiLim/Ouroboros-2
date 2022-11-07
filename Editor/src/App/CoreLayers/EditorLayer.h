@@ -54,11 +54,11 @@ public:
         m_tracker{ [this](std::filesystem::path& p) {Project::LoadProject(p); m_editormode = true; } },
         m_prefab_controller{ m_sceneManager }
     {
-        LOG_INFO("Test Info");
+        /*LOG_INFO("Test Info");
         LOG_TRACE("Test Trace");
         LOG_WARN("Test Warn");
         LOG_ERROR("Test Error");
-        LOG_CRITICAL("Test Critical");
+        LOG_CRITICAL("Test Critical");*/
         ImGuiManager::s_scenemanager = &m_sceneManager;
         ImGuiManager::s_prefab_controller = &m_prefab_controller;
     }
