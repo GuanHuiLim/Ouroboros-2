@@ -33,7 +33,8 @@ namespace oo
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Pitch, float, GetPitch, SetPitch)
 
     SCRIPT_API_GET_FUNC(AudioSourceComponent, IsPlaying, bool, IsPlaying)
-    SCRIPT_API_GET_FUNC(AudioSourceComponent, GetPlaybackTime, float, GetPlaybackTime)
+    SCRIPT_API_GET_FUNC(AudioSourceComponent, PlaybackTime, float, GetPlaybackTime, SetPlaybackTime)
+    SCRIPT_API_GET_FUNC(AudioSourceComponent, PlaybackTimeSamples, uint, GetPlaybackTimeSamples, SetPlaybackTimeSamples)
 
     SCRIPT_API AssetID AudioSourceComponent_GetAudioClip(Scene::ID_type sceneID, UUID uuid)
     {
