@@ -203,6 +203,11 @@ namespace oo
             // we only update dynamic colliders
             if (rb.IsStatic() || rb.IsTrigger()) 
                 return;
+            
+            // probably better to just constantly set this 3 instead of checking
+            rb.object.lockPositionX(rb.LockXAxis);
+            rb.object.lockPositionY(rb.LockYAxis);
+            rb.object.lockPositionZ(rb.LockZAxis);
 
             auto pos = rb.GetPositionInPhysicsWorld();
             auto delta_position = pos - tf.GetGlobalPosition();

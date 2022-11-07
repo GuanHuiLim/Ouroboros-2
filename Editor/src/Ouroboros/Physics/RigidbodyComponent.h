@@ -80,6 +80,9 @@ namespace oo
 
     public:
         bool IsTriggerObject = false;
+        bool LockXAxis = false;
+        bool LockYAxis = false;
+        bool LockZAxis = false;
 
         myPhysx::PhysicsObject object{};
         vec3 Offset = { 0.0, 0.0, 0.0 };
