@@ -205,9 +205,13 @@ namespace oo
                 return;
             
             // probably better to just constantly set this 3 instead of checking
-            rb.object.lockPositionX(rb.LockXAxis);
-            rb.object.lockPositionY(rb.LockYAxis);
-            rb.object.lockPositionZ(rb.LockZAxis);
+            rb.object.lockPositionX(rb.LockXAxisPosition);
+            rb.object.lockPositionY(rb.LockYAxisPosition);
+            rb.object.lockPositionZ(rb.LockZAxisPosition);
+
+            rb.object.lockRotationX(rb.LockXAxisRotation);
+            rb.object.lockRotationY(rb.LockYAxisRotation);
+            rb.object.lockRotationZ(rb.LockZAxisRotation);
 
             auto pos = rb.GetPositionInPhysicsWorld();
             auto delta_position = pos - tf.GetGlobalPosition();
