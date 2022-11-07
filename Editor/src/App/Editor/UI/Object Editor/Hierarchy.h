@@ -46,7 +46,7 @@ protected:
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-	std::shared_ptr<oo::GameObject> CreateGameObjectImmediate();
+	std::shared_ptr<oo::GameObject> CreateGameObjectImmediate(std::function<void(oo::GameObject&)> modifications = 0);
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
 	static constexpr const unsigned int Popup_ID = 100000;

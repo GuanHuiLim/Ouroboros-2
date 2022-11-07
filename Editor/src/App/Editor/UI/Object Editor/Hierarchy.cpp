@@ -590,24 +590,32 @@ void Hierarchy::RightClickOptions()
 			}
 			if(ImGui::MenuItem("Box"))
 			{
-				auto go = CreateGameObjectImmediate();
-				go->SetName("Box");
-				go->EnsureComponent<oo::MeshRendererComponent>();
-				go->EnsureComponent<oo::BoxColliderComponent>();
+				CreateGameObjectImmediate([](oo::GameObject& go) 
+					{
+						go.SetName("Box");
+						go.EnsureComponent<oo::MeshRendererComponent>();
+						go.EnsureComponent<oo::BoxColliderComponent>();
+					});
+			
 			}
 			if (ImGui::MenuItem("Light"))
 			{
-				auto go = CreateGameObjectImmediate();
-				go->SetName("Light");
-				go->EnsureComponent<oo::LightComponent>();
+				CreateGameObjectImmediate([](oo::GameObject& go) 
+					{
+						go.SetName("Light");
+						go.EnsureComponent<oo::LightComponent>();
+					});
+
 			}
 			if (ImGui::MenuItem("Camera"))
 			{
-				auto go = CreateGameObjectImmediate();
-				go->SetName("Camera");
-				go->EnsureComponent<oo::CameraComponent>();
-				// for now lets add a mesh to let us know where our camera is
-				go->EnsureComponent<oo::MeshRendererComponent>();
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Camera");
+						go.EnsureComponent<oo::CameraComponent>();
+						// for now lets add a mesh to let us know where our camera is
+						go.EnsureComponent<oo::MeshRendererComponent>();
+					});
 			}
 			ImGui::EndMenu();
 		}
@@ -674,11 +682,14 @@ void Hierarchy::Filter_ByScript()
 {
 }
 
-std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate()
+std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate(std::function<void(oo::GameObject&)> modifications)
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
+	if (modifications)
+		modifications(*go);//for different types of presets
+
 	oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(go));
 	if (s_selected.size() == 1 && m_hovered == *(s_selected.begin()))
 	{

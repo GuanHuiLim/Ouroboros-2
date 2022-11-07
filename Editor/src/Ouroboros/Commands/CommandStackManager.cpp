@@ -9,6 +9,7 @@
 
 #include "Ouroboros/Commands/Delete_ActionCommand.h"
 #include "Ouroboros/Commands/Component_ActionCommand.h"
+#include "Ouroboros/Commands/Ordering_ActionCommand.h"
 #include "App/Editor/Networking/NetworkingEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 void oo::CommandStackManager::InitEvents()
@@ -40,7 +41,14 @@ void oo::CommandStackManager::InitEvents()
 			auto* cc = new Create_ActionCommand(e->header, e->data);
 			CommandStackManager::AddCommand(e->header, cc);
 		}break;
-		case CommandPacketType::ReorderObject:break;
+		case CommandPacketType::ParentObject: {
+			auto* pc = new Parenting_ActionCommand(e->header, e->data);
+			CommandStackManager::AddCommand(e->header, pc);
+		}break;
+		case CommandPacketType::ReorderObject: {
+			auto* rc = new Ordering_ActionCommand(e->header, e->data);
+			CommandStackManager::AddCommand(e->header, rc);
+		}break;
 		case CommandPacketType::AddComponentObject:break;
 		case CommandPacketType::RemoveComponentObject:break;
 		case CommandPacketType::ActionScript:break;
@@ -179,22 +187,18 @@ void oo::CommandStackManager::ClearCommandBuffer()
 		s_commands.pop_back();
 	}
 	s_commands.clear();
-}
-
-void oo::CommandStackManager::ClearCommandBuffer(PacketHeader& header)
-{
-	auto iter = s_networkMembers.find(header.name);
-	if (iter == s_networkMembers.end())
+	//clear network members
+	for (auto& member : s_networkMembers)
 	{
-		return;
+		member.second.current = 0;
+		auto& commands = member.second.commands;
+		while (commands.empty() == false)
+		{
+			oo::ActionCommand* command = commands.back();
+			delete command;
+			commands.pop_back();
+		}
+		commands.clear();
 	}
-	ActionDeque& ad = iter->second;
-	while (ad.commands.empty()  == false )
-	{
-		auto last_command = ad.commands.back();
-		delete last_command;
-		ad.commands.pop_back();
-	}
-	ad.current = 0;
-	ad.commands.clear();
+	s_networkMembers.clear();
 }

@@ -18,7 +18,6 @@ public:
 	static void AddCommand(PacketHeader& header, ActionCommand* cmd);
 	static void AddCommand(ActionCommand * command);
 	static void ClearCommandBuffer();
-	static void ClearCommandBuffer(PacketHeader& header);
 private:
 	inline static int s_current;
 	inline static std::deque<oo::ActionCommand*> s_commands;

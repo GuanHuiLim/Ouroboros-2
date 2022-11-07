@@ -5,6 +5,7 @@ enum class CommandPacketType :int
 	ActionObject = 1,
 	DeleteObject,
 	CreateObject,
+	ParentObject,
 	ReorderObject,
 	AddComponentObject,
 	RemoveComponentObject,
