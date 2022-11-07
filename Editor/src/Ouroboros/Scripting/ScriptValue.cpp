@@ -736,79 +736,76 @@ namespace oo
         //        }
         //    }
         //},
-        //{ 
-        //    ScriptValue::type_enum::PREFAB, ScriptValue::helper_functions
-        //    {
-        //        // SetFieldValue
-        //        [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
-        //        {
-        //            ScriptValue::prefab_type prefab = value.GetValue<ScriptValue::prefab_type>();
-        //            MonoClass* prefabClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Prefab");
-        //            MonoObject* fieldValue = ScriptEngine::CreateObject(prefabClass);
+        { 
+            ScriptValue::type_enum::PREFAB, ScriptValue::helper_functions
+            {
+                // SetFieldValue
+                [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
+                {
+                    ScriptValue::prefab_type prefab = value.GetValue<ScriptValue::prefab_type>();
+                    MonoClass* prefabClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Prefab");
+                    MonoObject* fieldValue = ScriptEngine::CreateObject(prefabClass);
 
-        //            MonoString* pathString = ScriptEngine::CreateString(prefab.filePath.c_str());
-        //            MonoClassField* pathField = mono_class_get_field_from_name(prefabClass, "filePath");
-        //            mono_field_set_value(fieldValue, pathField, pathString);
+                    MonoString* pathString = ScriptEngine::CreateString(prefab.filePath.c_str());
+                    MonoClassField* pathField = mono_class_get_field_from_name(prefabClass, "filePath");
+                    mono_field_set_value(fieldValue, pathField, pathString);
+                    mono_field_set_value(obj, field, mono_object_unbox(fieldValue));
+                },
+                // GetFieldValue
+                [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
+                {
+                    MonoType* type = mono_field_get_type(field);
+                    MonoClass* typeClass = mono_type_get_class(type);
+                    MonoObject* fieldObj = mono_field_get_value_object(mono_domain_get(), field, object);
+                    std::string filePath = "";
+                    if (fieldObj != nullptr)
+                    {
+                        MonoClassField* pathField = mono_class_get_field_from_name(typeClass, "filePath");
+                        MonoString* pathString;
+                        mono_field_get_value(fieldObj, pathField, &pathString);
+                        if (pathString != nullptr)
+                        {
+                            filePath = mono_string_to_utf8(pathString);
+                        }
+                    }
+                    return ScriptValue(ScriptValue::prefab_type{ filePath });
+                },
+                // GetObjectValue
+                [](MonoObject* object, ScriptValue const& refInfo)
+                {
+                    std::string filePath = "";
+                    if (object != nullptr)
+                    {
+                        MonoClass* objClass = mono_object_get_class(object);
+                        MonoClassField* pathField = mono_class_get_field_from_name(objClass, "filePath");
+                        MonoString* pathString;
+                        mono_field_get_value(object, pathField, &pathString);
+                        if (pathString != nullptr)
+                        {
+                            filePath = mono_string_to_utf8(pathString);
+                        }
+                    }
+                    return ScriptValue(ScriptValue::prefab_type{ filePath });
+                },
+                // AddToList
+                [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
+                {
+                    MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
-        //            ScriptEngine::InvokeFunction(fieldValue, "LoadSourceObject");
-        //            mono_field_set_value(obj, field, fieldValue);
-        //        },
-        //        // GetFieldValue
-        //        [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
-        //        {
-        //            MonoType* type = mono_field_get_type(field);
-        //            MonoClass* typeClass = mono_type_get_class(type);
-        //            MonoObject* fieldObj = mono_field_get_value_object(mono_domain_get(), field, object);
-        //            std::string filePath = "";
-        //            if (fieldObj != nullptr)
-        //            {
-        //                MonoClassField* pathField = mono_class_get_field_from_name(typeClass, "filePath");
-        //                MonoString* pathString;
-        //                mono_field_get_value(fieldObj, pathField, &pathString);
-        //                if (pathString != nullptr)
-        //                {
-        //                    filePath = mono_string_to_utf8(pathString);
-        //                }
-        //            }
-        //            return ScriptValue(ScriptValue::prefab_type{ filePath });
-        //        },
-        //        // GetObjectValue
-        //        [](MonoObject* object, ScriptValue const& refInfo)
-        //        {
-        //            std::string filePath = "";
-        //            if (object != nullptr)
-        //            {
-        //                MonoClass* objClass = mono_object_get_class(object);
-        //                MonoClassField* pathField = mono_class_get_field_from_name(objClass, "filePath");
-        //                MonoString* pathString;
-        //                mono_field_get_value(object, pathField, &pathString);
-        //                if (pathString != nullptr)
-        //                {
-        //                    filePath = mono_string_to_utf8(pathString);
-        //                }
-        //            }
-        //            return ScriptValue(ScriptValue::prefab_type{ filePath });
-        //        },
-        //        // AddToList
-        //        [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
-        //        {
-        //            MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
+                    ScriptValue::prefab_type prefab = value.GetValue<ScriptValue::prefab_type>();
+                    MonoClass* prefabClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Prefab");
+                    MonoObject* entry = ScriptEngine::CreateObject(prefabClass);
 
-        //            ScriptValue::prefab_type prefab = value.GetValue<ScriptValue::prefab_type>();
-        //            MonoClass* prefabClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Prefab");
-        //            MonoObject* entry = ScriptEngine::CreateObject(prefabClass);
+                    MonoString* pathString = ScriptEngine::CreateString(prefab.filePath.c_str());
+                    MonoClassField* pathField = mono_class_get_field_from_name(prefabClass, "filePath");
+                    mono_field_set_value(entry, pathField, pathString);
 
-        //            MonoString* pathString = ScriptEngine::CreateString(prefab.filePath.c_str());
-        //            MonoClassField* pathField = mono_class_get_field_from_name(prefabClass, "filePath");
-        //            mono_field_set_value(entry, pathField, pathString);
-        //            ScriptEngine::InvokeFunction(entry, "LoadSourceObject");
-
-        //            void* args[1];
-        //            args[0] = entry;
-        //            mono_runtime_invoke(addMethod, list, args, NULL);
-        //        }
-        //    }
-        //},
+                    void* args[1];
+                    args[0] = entry;
+                    mono_runtime_invoke(addMethod, list, args, NULL);
+                }
+            }
+        },
         { 
             ScriptValue::type_enum::CLASS, ScriptValue::helper_functions
             {
@@ -1123,6 +1120,8 @@ namespace oo
                 return type_enum::VECTOR3;
             //if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Colour")) // Colour
             //    return type_enum::COLOUR;
+            if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Prefab")) // Prefab
+                return type_enum::PREFAB;
             return type_enum::EMPTY;
         }
         case MONO_TYPE_CLASS:
@@ -1144,8 +1143,6 @@ namespace oo
                 return type_enum::COMPONENT;
             //if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Asset")) // is an Asset
             //    return type_enum::ASSET;
-            //if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Prefab")) // is a Prefab
-            //    return type_enum::PREFAB;
             if (ScriptEngine::CheckTypeHasAttribute(type, serializableType)) // is a container for info
                 return type_enum::CLASS;
             return type_enum::EMPTY;
@@ -1310,9 +1307,9 @@ namespace oo
         //    }
         //}
         //break;
-        //case ScriptValue::type_enum::PREFAB:
-        //    valueList.emplace_back(ScriptValue::prefab_type{ "" });
-        //    break;
+        case ScriptValue::type_enum::PREFAB:
+            valueList.emplace_back(ScriptValue::prefab_type{ "" });
+            break;
         case ScriptValue::type_enum::CLASS:
         {
             ScriptClassInfo classInfo{ name_space, name };

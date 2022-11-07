@@ -28,5 +28,10 @@ namespace Ouroboros
                 return null;
             return GCHandle.FromIntPtr(ptr).Target as GameObject;
         }
+
+        public override string ToString()
+        {
+            return "Prefab(\"" + filePath + "\")";
+        }
     }
 }

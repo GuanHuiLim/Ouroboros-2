@@ -50,7 +50,7 @@ namespace oo
             GAMEOBJECT,
             COMPONENT,
             //ASSET,
-            //PREFAB,
+            PREFAB,
             CLASS,
             LIST,
             FUNCTION,
@@ -115,11 +115,11 @@ namespace oo
         //};
 
         // used to store the necessary info to create a C# prefab reference
-        //struct prefab_type
-        //{
-        //public:
-        //    std::string filePath; // local file path, will prepend prefab file path later
-        //};
+        struct prefab_type
+        {
+        public:
+            std::string filePath; // local file path, will prepend prefab file path later
+        };
 
         // used to store the necessary info to create a C# data container
         struct class_type
@@ -214,7 +214,7 @@ namespace oo
             UUID,
             component_type,
             //asset_type,
-            //prefab_type,
+            prefab_type,
             class_type,
             list_type,
             function_type
