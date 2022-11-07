@@ -743,13 +743,19 @@ namespace oo
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
                     ScriptValue::prefab_type prefab = value.GetValue<ScriptValue::prefab_type>();
+                    if (prefab.filePath.size() <= 0)
+                    {
+                        mono_field_set_value(obj, field, nullptr);
+                        return;
+                    }
+
                     MonoClass* prefabClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Prefab");
                     MonoObject* fieldValue = ScriptEngine::CreateObject(prefabClass);
 
                     MonoString* pathString = ScriptEngine::CreateString(prefab.filePath.c_str());
                     MonoClassField* pathField = mono_class_get_field_from_name(prefabClass, "filePath");
                     mono_field_set_value(fieldValue, pathField, pathString);
-                    mono_field_set_value(obj, field, mono_object_unbox(fieldValue));
+                    mono_field_set_value(obj, field, fieldValue);
                 },
                 // GetFieldValue
                 [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
@@ -1120,8 +1126,6 @@ namespace oo
                 return type_enum::VECTOR3;
             //if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Colour")) // Colour
             //    return type_enum::COLOUR;
-            if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Prefab")) // Prefab
-                return type_enum::PREFAB;
             return type_enum::EMPTY;
         }
         case MONO_TYPE_CLASS:
@@ -1143,6 +1147,8 @@ namespace oo
                 return type_enum::COMPONENT;
             //if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Asset")) // is an Asset
             //    return type_enum::ASSET;
+            if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Prefab")) // is a Prefab
+                return type_enum::PREFAB;
             if (ScriptEngine::CheckTypeHasAttribute(type, serializableType)) // is a container for info
                 return type_enum::CLASS;
             return type_enum::EMPTY;

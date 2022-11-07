@@ -41,6 +41,11 @@ namespace oo
         return uuid.GetUUID();
     }
 
+    SCRIPT_API bool CheckValidPrefabPath(const char* filePath)
+    {
+        return std::filesystem::exists(Project::GetPrefabFolder() / filePath);
+    }
+
     SCRIPT_API ComponentDatabase::IntPtr InstantiatePrefab(Scene::ID_type sceneID, const char* filePath, oo::UUID parentID)
     {
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
