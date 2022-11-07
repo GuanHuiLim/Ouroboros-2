@@ -7,6 +7,7 @@
 #include <Ouroboros/Core/Assert.h>
 #include "App/Editor/Networking/PacketUtils.h"
 
+#include "Ouroboros/Commands/ActionCommandHelper.h"
 #include "Ouroboros/Commands/Delete_ActionCommand.h"
 #include "Ouroboros/Commands/Component_ActionCommand.h"
 #include "Ouroboros/Commands/Ordering_ActionCommand.h"
@@ -49,8 +50,14 @@ void oo::CommandStackManager::InitEvents()
 			auto* rc = new Ordering_ActionCommand(e->header, e->data);
 			CommandStackManager::AddCommand(e->header, rc);
 		}break;
-		case CommandPacketType::AddComponentObject:break;
-		case CommandPacketType::RemoveComponentObject:break;
+		case CommandPacketType::AddComponentObject: {
+			auto* ac = ActionCommandHelper::CreateActionCommand_Add(e->header, e->data);
+			CommandStackManager::AddCommand(e->header, ac);
+		}break;
+		case CommandPacketType::RemoveComponentObject: {
+			auto* ac = ActionCommandHelper::CreateActionCommand_Remove(e->header, e->data);
+			CommandStackManager::AddCommand(e->header, ac);
+		}break;
 		case CommandPacketType::ActionScript:break;
 		case CommandPacketType::AddScript:break;
 		case CommandPacketType::RemoveScript:break;
