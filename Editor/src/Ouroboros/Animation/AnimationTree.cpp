@@ -110,31 +110,34 @@ namespace oo::Anim
 		using namespace rttr;
 		registration::class_<AnimationTree>("Animation Tree")
 			.property("name", &AnimationTree::name)
+			.property("treeID", &AnimationTree::treeID)
 			.method(internal::serialize_method_name, &internal::SerializeTree)
 			.method(internal::load_method_name, &internal::LoadTree)
 			;
 	}
 
 
-	std::unordered_map<std::string, AnimationTree> AnimationTree::map{};
+	std::unordered_map<size_t, AnimationTree> AnimationTree::map{};
 
 	AnimationTree* AnimationTree::Create(std::string const name)
 	{
-		AnimationTree tree;
+		AnimationTree tree{};
 		tree.name = name;
-		AnimationTree::map.emplace(name, std::move(tree));
-		auto& createdTree = AnimationTree::map[name];
+		tree.treeID = internal::generateUID();
+		auto ptr_to_tree = AnimationTree::Add(std::move(tree));
+		assert(ptr_to_tree);
+		auto& createdTree = *ptr_to_tree;
 		//create a default group and assign to tree
 		GroupInfo info{ .name{"Group 1"},.tree{&createdTree} };
-		internal::AddGroupToTree(AnimationTree::map[name], info);
+		internal::AddGroupToTree(createdTree, info);
 
-		return &(AnimationTree::map[name]);
+		return &createdTree;
 	}
 
 	AnimationTree* AnimationTree::Add(AnimationTree&& tree)
 	{
-		auto name = tree.name;
-		AnimationTree::map.emplace(name, std::move(tree));
-		return &(AnimationTree::map[name]);
+		auto key = tree.treeID;
+		AnimationTree::map.insert_or_assign(key, std::move(tree));
+		return &(AnimationTree::map[key]);
 	}
 }

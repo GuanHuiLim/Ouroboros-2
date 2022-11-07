@@ -33,6 +33,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/KeyCode.h"
 #include "Project.h"
 
+#include "Ouroboros/Animation/AnimationSystem.h"
 namespace
 {
 	bool isSubPath(const std::filesystem::path& base, const std::filesystem::path& destination)
@@ -266,13 +267,14 @@ void FileBrowser::PopupOptions()
 			FileBehaviour(result_path.parent_path());
 			Find_AndSelect(result_path);*/
 		}
-		if (ImGui::MenuItem("Create Animator"))
+		if (ImGui::MenuItem("Create Animation Tree"))
 		{
 			//oo::AnimatorController::CreateNewControllerAsset();
+			oo::Anim::AnimationSystem::CreateAnimationTree("New Animation Tree");
 		}
-		if (ImGui::MenuItem("Create Animation Clip"))
+		if (ImGui::MenuItem("Create Animation"))
 		{
-			//oo::AnimationClip::CreateNewAnimationClipAsset();
+			//oo::Anim::AnimationSystem::crea
 		}
 		ImGui::EndMenu();
 	}
