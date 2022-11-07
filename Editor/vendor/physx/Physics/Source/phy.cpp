@@ -156,7 +156,7 @@ namespace myPhysx
 
             if constexpr (use_debugger) {
                 printf("DEBUGGER ON\n");
-                myPVD.createPvd(getFoundation(), "192.168.157.213");
+                myPVD.createPvd(getFoundation(), "172.28.68.41");
             }
             else {
                 printf("DEBUGGER OFF\n");
@@ -578,6 +578,101 @@ namespace myPhysx
         }
     }
 
+    void PhysicsObject::lockPositionX(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                //// ROTATE IN Z
+                //PxRigidDynamicLockFlag::eLOCK_LINEAR_Z | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y;
+                //// ROTATE IN Y
+                //PxRigidDynamicLockFlag::eLOCK_LINEAR_Y | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z;
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_X, lock);
+
+                underlying_obj->lockPositionAxis.x_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockPositionY(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lock);
+
+                underlying_obj->lockPositionAxis.y_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockPositionZ(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lock);
+
+                underlying_obj->lockPositionAxis.z_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockRotationX(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lock);
+
+                underlying_obj->lockRotationAxis.x_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockRotationY(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lock);
+
+                underlying_obj->lockRotationAxis.y_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockRotationZ(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lock);
+
+                underlying_obj->lockRotationAxis.z_axis = lock;
+            }
+        }
+    }
+
     void PhysicsObject::enableKinematic(bool kine) {
 
         if (world->all_objects.contains(id)) {
@@ -658,6 +753,38 @@ namespace myPhysx
                 //underlying_obj->m_shape->getGeometry().capsule().halfHeight = halfHeight;
             }
         }
+    }
+
+    LockingAxis PhysicsObject::getLockPositionAxis() const {
+
+        LockingAxis posAxis{ false };
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            posAxis.x_axis = underlying_obj->lockPositionAxis.x_axis;
+            posAxis.y_axis = underlying_obj->lockPositionAxis.y_axis;
+            posAxis.z_axis = underlying_obj->lockPositionAxis.z_axis;
+        }
+
+        return posAxis;
+    }
+
+    LockingAxis PhysicsObject::getLockRotationAxis() const {
+
+        LockingAxis rotAxis{ false };
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            rotAxis.x_axis = underlying_obj->lockRotationAxis.x_axis;
+            rotAxis.y_axis = underlying_obj->lockRotationAxis.y_axis;
+            rotAxis.z_axis = underlying_obj->lockRotationAxis.z_axis;
+        }
+
+        return rotAxis;
     }
 
     Material PhysicsObject::getMaterial() const {
