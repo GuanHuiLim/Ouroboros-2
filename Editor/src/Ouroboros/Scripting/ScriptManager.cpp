@@ -69,11 +69,17 @@ namespace oo
             LOG_ERROR(e.what());
             return false;
         }
-        DisplayWarnings();
         if (DisplayErrors())
+        {
+            DisplayWarnings();
             return false;
-        LOG_CORE_TRACE("Script Compiling Successful");
-        return true;
+        }
+        else
+        {
+            LOG_CORE_TRACE("Script Compiling Successful");
+            DisplayWarnings();
+            return true;
+        }
     }
     void ScriptManager::Load()
     {
