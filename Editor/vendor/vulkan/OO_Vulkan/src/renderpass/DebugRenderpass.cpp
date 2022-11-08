@@ -81,6 +81,18 @@ void DebugDrawRenderpass::Draw()
 	PROFILE_GPU_CONTEXT(cmdlist);
 	PROFILE_GPU_EVENT("DebugDraw");
 
+	auto gbuffer = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmdlist,
+		gbuffer->attachments[GBufferAttachmentIndex::DEPTH].image,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 });
+
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	rhi::CommandList cmd{ cmdlist };

@@ -83,10 +83,23 @@ void DeferredCompositionRenderpass::Draw()
 		.Build(currentFB,vr.renderPass_default);
 	renderPassBeginInfo.framebuffer = currentFB;
 
+	// transition depth buffer
+	auto gbuffer = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmdlist,
+		gbuffer->attachments[GBufferAttachmentIndex::DEPTH].image,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 });
+
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	rhi::CommandList cmd{ cmdlist };
 	cmd.SetDefaultViewportAndScissor();
-	
+
 	const auto& info = vr.globalLightBuffer.GetDescriptorBufferInfo();
 	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[swapchainIdx])
 		.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
@@ -119,6 +132,7 @@ void DeferredCompositionRenderpass::Draw()
 		1,&dynamicOffset
 	);
 	cmd.BindPSO(pso_DeferredLightingComposition);
+
 	cmd.DrawFullScreenQuad();
 
 	vkCmdEndRenderPass(cmdlist);
@@ -147,10 +161,10 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	assert(gbuffer != nullptr);
 
     // Image descriptors for the offscreen color attachments
-    VkDescriptorImageInfo texDescriptorPosition = oGFX::vkutils::inits::descriptorImageInfo(
-        GfxSamplerManager::GetSampler_Deferred(),
-		gbuffer->attachments[GBufferAttachmentIndex::POSITION].view,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    // VkDescriptorImageInfo texDescriptorPosition = oGFX::vkutils::inits::descriptorImageInfo(
+    //     GfxSamplerManager::GetSampler_Deferred(),
+	// 	gbuffer->attachments[GBufferAttachmentIndex::POSITION].view,
+    //     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     VkDescriptorImageInfo texDescriptorNormal = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
@@ -182,12 +196,13 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	// TODO: How to handle shadow map sampling?
 	const auto& dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
     DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.swapchainIdx])
-        .BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT)
+        //.BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // to remove
+        .BindImage(1, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
         .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         //.BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(5, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // REMOVED
+        .BindImage(5, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
         .BindBuffer(7, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .Build(vr.descriptorSet_DeferredComposition, SetLayoutDB::DeferredLightingComposition);
 }

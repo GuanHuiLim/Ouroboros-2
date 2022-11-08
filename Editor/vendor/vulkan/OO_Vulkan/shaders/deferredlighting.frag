@@ -8,7 +8,8 @@ layout(set = 1, binding = 0) uniform UboFrameContext
 };
 #include "shared_structs.h"
 
-layout (set = 0, binding = 1) uniform sampler2D samplerposition;
+layout (set = 0, binding = 1) uniform sampler2D samplerDepth;
+// layout (set = 0, binding = 1) uniform sampler2D samplerposition; we construct position using depth
 layout (set = 0, binding = 2) uniform sampler2D samplerNormal;
 layout (set = 0, binding = 3) uniform sampler2D samplerAlbedo;
 layout (set = 0, binding = 4) uniform sampler2D samplerMaterial;
@@ -119,10 +120,33 @@ uint DecodeFlags(in float value)
     return uint(value * 255.0f);
 }
 
+vec3 WorldPosFromDepth(float depth, in vec2 uvCoord, in mat4 projInv, in mat4 viewInv) {
+    
+	float z = depth;
+	// skip this step because vulkan
+	// z = depth * 2.0 - 1.0;
+	
+	vec2 uv = uvCoord * 2.0 - 1.0;
+	float x = uvCoord.x * 2 - 1;
+	// flipped y for vulkan
+    float y = (1 - uvCoord.y) * 2 - 1;
+
+    vec4 clipSpacePosition = vec4(x, y, z, 1.0);
+    vec4 viewSpacePosition = projInv * clipSpacePosition;
+
+    // Perspective division
+    viewSpacePosition /= viewSpacePosition.w;
+
+    vec4 worldSpacePosition = viewInv * viewSpacePosition;
+
+    return worldSpacePosition.xyz;
+}
+
 void main()
 {
 	// Get G-Buffer values
-	vec3 fragPos = texture(samplerposition, inUV).rgb;
+	vec4 depth = texture(samplerDepth, inUV);
+	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);

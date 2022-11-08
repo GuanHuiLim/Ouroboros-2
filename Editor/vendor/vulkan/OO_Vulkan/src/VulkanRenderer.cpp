@@ -1238,8 +1238,8 @@ void VulkanRenderer::DebugGUIcalls()
 			const ImVec2 imageSize = { sz.x, sz.x * aspectRatio };
 	
 			//auto gbuff = GBufferRenderPass::Get();
-			ImGui::BulletText("World Position");
-			ImGui::Image(gbuff->deferredImg[POSITION], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+			//ImGui::BulletText("World Position");
+			//ImGui::Image(gbuff->deferredImg[POSITION], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
 			ImGui::BulletText("World Normal");
 			ImGui::Image(gbuff->deferredImg[NORMAL], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
 			ImGui::BulletText("Albedo");
@@ -2628,6 +2628,8 @@ void VulkanRenderer::UpdateUniformBuffers()
 			frameContextUBO[i].view = camera.matrices.view;
 			frameContextUBO[i].viewProjection = frameContextUBO[i].projection * frameContextUBO[i].view;
 			frameContextUBO[i].inverseViewProjection = glm::inverse(frameContextUBO[i].viewProjection);
+			frameContextUBO[i].inverseView = glm::inverse(frameContextUBO[i].view);
+			frameContextUBO[i].inverseProjection = glm::inverse(frameContextUBO[i].projection);
 			frameContextUBO[i].cameraPosition = glm::vec4(camera.m_position,1.0);
 			frameContextUBO[i].renderTimer.x = renderClock;
 			frameContextUBO[i].renderTimer.y = std::sin(renderClock * glm::pi<float>());

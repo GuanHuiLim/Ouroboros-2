@@ -1,7 +1,5 @@
 layout (location = 0) out vec2 outUV;
 
-layout (set = 0, binding = 1) uniform sampler2D samplerposition;
-
 #include "shared_structs.h"
 layout( push_constant ) uniform pc
 {
