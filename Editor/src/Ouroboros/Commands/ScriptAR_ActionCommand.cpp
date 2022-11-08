@@ -9,6 +9,7 @@ oo::ScriptAdd_ActionCommand::ScriptAdd_ActionCommand(oo::UUID go, std::string _n
 {
 	message = "Added Script :";
 	message += script_namespace + script_name;
+	PacketUtilts::BroadCastCommand(CommandPacketType::AddScript,GetData());
 }
 
 oo::ScriptAdd_ActionCommand::~ScriptAdd_ActionCommand()
@@ -66,8 +67,9 @@ oo::ScriptAdd_ActionCommand::ScriptAdd_ActionCommand(PacketHeader& header, std::
 oo::ScriptRemove_ActionCommand::ScriptRemove_ActionCommand(oo::UUID go, std::string _namespace, std::string _name)
 	:instance{ go }, script_namespace{ _namespace }, script_name{ _name }
 {
-	message = "Added Script :";
+	message = "Removed Script :";
 	message += script_namespace + script_name;
+	PacketUtilts::BroadCastCommand(CommandPacketType::RemoveScript, GetData());
 }
 
 oo::ScriptRemove_ActionCommand::~ScriptRemove_ActionCommand()
