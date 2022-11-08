@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Timer.h"
 #include "Log.h"
 #include <Physics/Source/phy.h>
+#include "Ouroboros/Audio/Audio.h"
 
 namespace oo
 {
@@ -31,6 +32,7 @@ namespace oo
             LOG_CORE_INFO("Begin loading static lifetime objects");
             timer::init();
             myPhysx::physx_system::init();
+            audio::Init();
         }
     
         void terminate()
@@ -39,6 +41,7 @@ namespace oo
             LOG_CORE_INFO("Finish unloading static lifetime objects");
             log::shutdown();
             myPhysx::physx_system::shutdown();
+            audio::ShutDown();
         }
     };
 }

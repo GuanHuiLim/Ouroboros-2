@@ -17,9 +17,14 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ExportAPI.h"
 
 #include "Ouroboros/Audio/AudioSourceComponent.h"
+#include "Ouroboros/Audio/Audio.h"
 
 namespace oo
 {
+    /*-----------------------------------------------------------------------------*/
+    /* AudioSource Component Functions for C#                                      */
+    /*-----------------------------------------------------------------------------*/
+
     SCRIPT_API_FUNCTION(AudioSourceComponent, Play)
     SCRIPT_API_FUNCTION(AudioSourceComponent, Stop)
     SCRIPT_API_FUNCTION(AudioSourceComponent, Pause)
@@ -33,7 +38,8 @@ namespace oo
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Pitch, float, GetPitch, SetPitch)
 
     SCRIPT_API_GET_FUNC(AudioSourceComponent, IsPlaying, bool, IsPlaying)
-    SCRIPT_API_GET_FUNC(AudioSourceComponent, GetPlaybackTime, float, GetPlaybackTime)
+    SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, PlaybackTime, float, GetPlaybackTime, SetPlaybackTime)
+    SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, PlaybackTimeSamples, uint, GetPlaybackTimeSamples, SetPlaybackTimeSamples)
 
     SCRIPT_API AssetID AudioSourceComponent_GetAudioClip(Scene::ID_type sceneID, UUID uuid)
     {
@@ -48,5 +54,23 @@ namespace oo
         if (asset.GetID() == Asset::ID_NULL || asset.GetType() != AssetInfo::Type::Audio)
             ScriptEngine::ThrowNullException();
         obj->GetComponent<AudioSourceComponent>().SetAudioClip(asset);
+    }
+
+    /*-----------------------------------------------------------------------------*/
+    /* AudioClip Functions for C#                                                  */
+    /*-----------------------------------------------------------------------------*/
+    SCRIPT_API SoundID AudioClip_GetSoundID(AssetID assetID)
+    {
+        Asset asset = Project::GetAssetManager()->Get(assetID);
+        if (asset.GetID() == Asset::ID_NULL || asset.GetType() != AssetInfo::Type::Audio)
+            ScriptEngine::ThrowNullException();
+        return asset.GetData<SoundID>();
+    }
+
+    SCRIPT_API float AudioClip_GetLength(SoundID id)
+    {
+        unsigned int length = 0;
+        audio::GetSound(id)->getLength(&length, FMOD_TIMEUNIT_MS);
+        return static_cast<float>(length) / 1000;
     }
 }
