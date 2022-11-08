@@ -18,6 +18,7 @@ Technology is prohibited.
 
 VkSampler GfxSamplerManager::textureSampler = nullptr;
 VkSampler GfxSamplerManager::deferredSampler = nullptr;
+VkSampler GfxSamplerManager::shadowSampler = nullptr;
 // TODO: Add more sampler objects as needed...
 
 void GfxSamplerManager::Init()
@@ -70,6 +71,24 @@ void GfxSamplerManager::Init()
         VK_CHK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &deferredSampler));
         VK_NAME(device, "deferredSampler", deferredSampler);
     }
+
+    {
+        VkSamplerCreateInfo samplerCreateInfo = oGFX::vkutils::inits::samplerCreateInfo();
+        samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+        samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+        samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        samplerCreateInfo.mipLodBias = 0.0f;
+        samplerCreateInfo.maxAnisotropy = maxAni;
+        samplerCreateInfo.anisotropyEnable = aniEnabled;
+        samplerCreateInfo.minLod = 0.0f;
+        samplerCreateInfo.maxLod = 1.0f;
+        samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        VK_CHK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &shadowSampler));
+        VK_NAME(device, "shadowSampler", shadowSampler);
+    }
 }
 
 void GfxSamplerManager::Shutdown()
@@ -79,5 +98,6 @@ void GfxSamplerManager::Shutdown()
 
     vkDestroySampler(device, textureSampler, nullptr);
     vkDestroySampler(device, deferredSampler, nullptr);
+    vkDestroySampler(device, shadowSampler, nullptr);
     // TODO: Add more sampler objects as needed...
 }

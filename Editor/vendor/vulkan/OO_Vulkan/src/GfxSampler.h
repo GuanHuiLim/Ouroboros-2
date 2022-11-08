@@ -24,6 +24,7 @@ public:
 
     static const VkSampler GetDefaultSampler() { return textureSampler; }
     static const VkSampler GetSampler_Deferred() { return deferredSampler; }
+    static const VkSampler GetSampler_ShowMapClamp() { return shadowSampler; }
     // TODO: Add more sampler objects as needed...
 
     // List of some default sampler types to consider:
@@ -43,5 +44,6 @@ private:
 
     static VkSampler textureSampler;
     static VkSampler deferredSampler;
+    static VkSampler shadowSampler;
     // TODO: Add more sampler objects as needed...
 };

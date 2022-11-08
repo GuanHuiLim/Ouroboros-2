@@ -59,7 +59,7 @@ struct ObjectInstance
 
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
-    ObjectInstanceFlags flags{};
+    ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(SHADOW_RECEIVER | SHADOW_CASTER)};
 
 
     std::vector<glm::mat4> bones;

@@ -282,6 +282,11 @@ public:
 	std::vector<vkutils::Texture2D> g_Textures;
 	std::vector<ImTextureID> g_imguiIDs;
 
+	uint32_t whiteTextureID = static_cast<uint32_t>(-1);
+	uint32_t blackTextureID = static_cast<uint32_t>(-1);
+	uint32_t normalTextureID = static_cast<uint32_t>(-1);
+	uint32_t pinkTextureID = static_cast<uint32_t>(-1);
+
 	// - Synchronisation
 	std::vector<VkSemaphore> imageAvailable;
 	std::vector<VkSemaphore> renderFinished;
@@ -292,6 +297,7 @@ public:
 	VkRenderPass renderPass_default2{};
 
 	vkutils::Buffer indirectCommandsBuffer{};
+	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};
 	uint32_t indirectDrawCount{};
 
 	GpuVector<oGFX::BoneWeight> skinningVertexBuffer{};
@@ -423,7 +429,7 @@ public:
 	private:
 		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);		
 		uint32_t CreateTextureImage(const std::string& fileName);
-		uint32_t UpdateBindlessGlobalTexture(vkutils::Texture2D texture);		
+		uint32_t AddBindlessGlobalTexture(vkutils::Texture2D texture);		
 
 		
 

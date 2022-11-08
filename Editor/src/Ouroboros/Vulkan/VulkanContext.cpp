@@ -114,8 +114,9 @@ namespace oo
         auto obj = gw.CreateObjectInstance();
         auto plane = gw.CreateObjectInstance();
 
-        int32_t white = 0x00404040;
-        auto tex = vr->CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&white));
+        //int32_t white = 0x00404040;
+        //auto tex = vr->CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&white));
+        uint32_t tex = vr->whiteTextureID;
 
         DefaultMesh dm = CreateDefaultCubeMesh();
         cubeMesh.reset(vr->LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr));
