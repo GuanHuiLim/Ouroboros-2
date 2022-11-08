@@ -24,8 +24,7 @@ Technology is prohibited.
 
 #include "Scripting/ScriptEngine.h"
 
-//#include "../Asset/Asset.h"
-//#include "../Asset/AssetTypes.h"
+#include "Ouroboros/Asset/Asset.h"
 #include "Ouroboros/ECS/GameObject.h"
 
 namespace oo
@@ -49,7 +48,7 @@ namespace oo
             //COLOUR,
             GAMEOBJECT,
             COMPONENT,
-            //ASSET,
+            ASSET,
             PREFAB,
             CLASS,
             LIST,
@@ -105,14 +104,6 @@ namespace oo
 
             bool is_valid();
         };
-
-        // used to store the necessary info to create a generic C# Asset
-        //struct asset_type
-        //{
-        //public:
-        //    AssetType type;
-        //    AssetHandle handle;
-        //};
 
         // used to store the necessary info to create a C# prefab reference
         struct prefab_type
@@ -213,7 +204,7 @@ namespace oo
             //oo::Colour,
             UUID,
             component_type,
-            //asset_type,
+            Asset,
             prefab_type,
             class_type,
             list_type,
