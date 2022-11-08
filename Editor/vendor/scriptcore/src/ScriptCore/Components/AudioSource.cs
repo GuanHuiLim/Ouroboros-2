@@ -85,10 +85,21 @@ namespace Ouroboros
         }
 
         [DllImport("__Internal")] private static extern float AudioSourceComponent_GetPlaybackTime(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetPlaybackTime(uint sceneID, ulong instanceID, float value);
 
         public float time
         {
             get { return AudioSourceComponent_GetPlaybackTime(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetPlaybackTime(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern uint AudioSourceComponent_GetPlaybackTimeSamples(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetPlaybackTimeSamples(uint sceneID, ulong instanceID, uint value);
+
+        public uint timeSamples
+        {
+            get { return AudioSourceComponent_GetPlaybackTimeSamples(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetPlaybackTimeSamples(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
         [DllImport("__Internal")] private static extern ulong AudioSourceComponent_GetAudioClip(uint sceneID, ulong instanceID);

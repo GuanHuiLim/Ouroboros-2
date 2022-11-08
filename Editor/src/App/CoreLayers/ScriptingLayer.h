@@ -14,6 +14,8 @@ Technology is prohibited.
 
 #pragma once
 
+#include <filesystem>
+
 #include "Ouroboros/Core/Layer.h"
 #include <Scripting/Scripting.h>
 #include "Ouroboros/Scripting/ScriptManager.h"
@@ -27,6 +29,7 @@ Technology is prohibited.
 #include "Ouroboros/Physics/ColliderComponents.h"
 
 #include "Ouroboros/EventSystem/EventSystem.h"
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 
 namespace oo
@@ -44,6 +47,7 @@ namespace oo
             ScriptManager::RegisterComponent<RigidbodyComponent>("Ouroboros", "Rigidbody");
             ScriptManager::RegisterComponent<BoxColliderComponent>("Ouroboros", "BoxCollider");
 
+#if OO_EDITOR
             ScriptManager::s_SceneManager = &sceneManager;
             EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)
                 {
@@ -55,6 +59,40 @@ namespace oo
                         ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<ScriptSystem>()->RefreshScriptInfoAll();
                     }
                 });
+            EventManager::Subscribe<WindowFocusEvent>([](WindowFocusEvent* e)
+                {
+                    std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
+                    if (scene == nullptr)
+                        return;
+                    ScriptSystem* ss = scene->GetWorld().Get_System<ScriptSystem>();
+                    if (ss->IsPlaying())
+                        return;
+
+                    if (std::filesystem::exists(Project::GetScriptBuildPath() / "Scripting.dll"))
+                    {
+                        bool outdated = false;
+                        std::filesystem::file_time_type dll_time = std::filesystem::last_write_time(Project::GetScriptBuildPath() / "Scripting.dll");
+                        for (std::filesystem::directory_entry const& dir : std::filesystem::recursive_directory_iterator(Project::GetProjectFolder() / "Scripts"))
+                        {
+                            if (dir.is_directory())
+                                continue;
+                            if (dir.last_write_time() > dll_time)
+                            {
+                                outdated = true;
+                                break;
+                            }
+                        }
+                        if (!outdated)
+                            return;
+                    }
+
+                    if (ScriptManager::Compile())
+                    {
+                        ScriptManager::Load();
+                        ss->RefreshScriptInfoAll();
+                    }
+                });
+#endif
         }
 
         ~ScriptingLayer()

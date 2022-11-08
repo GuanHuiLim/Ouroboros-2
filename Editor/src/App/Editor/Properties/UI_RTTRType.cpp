@@ -22,6 +22,8 @@ Technology is prohibited.
 #include <Archetypes_Ecs/src/A_Ecs.h>
 #include "Ouroboros/Asset/Asset.h"
 #include "Ouroboros/Vulkan/MeshInfo.h"
+#include "Ouroboros/Vulkan/Color.h"
+
 void UI_RTTRType::Init()
 {
 	types.emplace(rttr::type::get<bool>().get_id(), UItypes::BOOL_TYPE);
@@ -43,5 +45,6 @@ void UI_RTTRType::Init()
 	types.emplace(rttr::type::get<Ecs::EntityID>().get_id(), UItypes::ENTITY_TYPE);
 	types.emplace(rttr::type::get<oo::Asset>().get_id(), UItypes::ASSET_TYPE);
 	types.emplace(rttr::type::get<MeshInfo>().get_id(), UItypes::MESH_INFO_TYPE);
+	types.emplace(rttr::type::get<oo::Color>().get_id(), UItypes::COLOR_TYPE);
 
 }

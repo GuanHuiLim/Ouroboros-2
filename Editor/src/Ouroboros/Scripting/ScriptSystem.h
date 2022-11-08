@@ -23,6 +23,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 
 #include "Ouroboros/Physics/PhysicsEvents.h"
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
 
 namespace oo
 {
@@ -52,8 +53,6 @@ namespace oo
         ComponentDatabase::IntPtr GetComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         ComponentDatabase::IntPtr HasActualComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
         void RemoveComponent(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
-        void SetComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled);
-        bool CheckComponentEnabled(ComponentDatabase::UUID uuid, const char* name_space, const char* name);
 
         ComponentDatabase::IntPtr GetGameObject(ComponentDatabase::UUID uuid);
 
@@ -71,6 +70,9 @@ namespace oo
 
         void UpdateAllScriptFieldsWithInfo();
         void UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script);
+
+        void OnApplicationFocus(WindowFocusEvent* e);
+        void OnApplicationPause(WindowLoseFocusEvent* e);
 
         void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
         void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);

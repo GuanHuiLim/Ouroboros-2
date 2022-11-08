@@ -154,20 +154,4 @@ namespace oo
             ScriptEngine::ThrowNullException();
         scene->GetWorld().Get_System<ScriptSystem>()->RemoveComponent(uuid, name_space, name);
     }
-
-    SCRIPT_API bool CheckComponentEnabled(Scene::ID_type sceneID, oo::UUID uuid, const char* name_space, const char* name)
-    {
-        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        if (scene->FindWithInstanceID(uuid) == nullptr)
-            ScriptEngine::ThrowNullException();
-        return scene->GetWorld().Get_System<ScriptSystem>()->CheckComponentEnabled(uuid, name_space, name);
-    }
-
-    SCRIPT_API void SetComponentEnabled(Scene::ID_type sceneID, oo::UUID uuid, const char* name_space, const char* name, bool active)
-    {
-        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
-        if (scene->FindWithInstanceID(uuid) == nullptr)
-            ScriptEngine::ThrowNullException();
-        scene->GetWorld().Get_System<ScriptSystem>()->SetComponentEnabled(uuid, name_space, name, active);
-    }
 }

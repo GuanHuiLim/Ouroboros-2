@@ -16,6 +16,7 @@ Technology is prohibited.
 
 #include <glm/glm.hpp>
 #include <rttr/type>
+#include "Color.h"
 namespace oo
 {
     enum class LightType
@@ -30,8 +31,10 @@ namespace oo
         // shouldn't be changed by other systems.
         std::int32_t Light_ID = -1;
 
-        glm::vec4 Color = glm::vec4{ 1.f };
-        glm::vec4 Radius = glm::vec4{ 1.f };
+        Color Color = { };
+        //glm::vec4 Color = glm::vec4{ 1.f };
+        float Radius = 1.f;
+        //glm::vec4 Radius = glm::vec4{ 1.f }; // the true radius is vec4
         
         LightType LightType = LightType::POINT;
 
