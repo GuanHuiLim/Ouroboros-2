@@ -197,20 +197,20 @@ void DebugDraw::DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& v
         v[i].z = ff.z / ff.w;
     }
 
-    AddLine(v[0], v[1], oGFX::Colors::WHITE);
-    AddLine(v[0], v[2], oGFX::Colors::WHITE);
-    AddLine(v[3], v[1], oGFX::Colors::WHITE);
-    AddLine(v[3], v[2], oGFX::Colors::WHITE);
+    AddLine(v[0], v[1], col);
+    AddLine(v[0], v[2], col);
+    AddLine(v[3], v[1], col);
+    AddLine(v[3], v[2], col);
 
-    AddLine(v[4], v[5], oGFX::Colors::WHITE);
-    AddLine(v[4], v[6], oGFX::Colors::WHITE);
-    AddLine(v[7], v[5], oGFX::Colors::WHITE);
-    AddLine(v[7], v[6], oGFX::Colors::WHITE);
+    AddLine(v[4], v[5], col);
+    AddLine(v[4], v[6], col);
+    AddLine(v[7], v[5], col);
+    AddLine(v[7], v[6], col);
 
-    AddLine(v[0], v[4], oGFX::Colors::WHITE);
-    AddLine(v[1], v[5], oGFX::Colors::WHITE);
-    AddLine(v[3], v[7], oGFX::Colors::WHITE);
-    AddLine(v[2], v[6], oGFX::Colors::WHITE);
+    AddLine(v[0], v[4], col);
+    AddLine(v[1], v[5], col);
+    AddLine(v[3], v[7], col);
+    AddLine(v[2], v[6], col);
 }
 
 void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& basis0, const glm::vec3& basis1, const oGFX::Color& color)
