@@ -155,6 +155,11 @@ void Editor::Update()
 			PasteButtonEvent cbe;
 			oo::EventManager::Broadcast<PasteButtonEvent>(&cbe);
 		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_D))
+		{
+			DuplicateButtonEvent dbe;
+			oo::EventManager::Broadcast<DuplicateButtonEvent>(&dbe);
+		}
 		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_P))
 		{
 			if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftShift))
