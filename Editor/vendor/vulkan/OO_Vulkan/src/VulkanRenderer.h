@@ -138,7 +138,7 @@ public:
 	void CreateDefaultRenderpass();
 	void CreateDefaultDescriptorSetLayout();
 
-	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D src, vkutils::Texture2D dst);
+	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal);
 
 	void CreateDefaultPSOLayouts();
 	//void CreateDepthBufferImage();

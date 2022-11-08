@@ -18,6 +18,7 @@ Technology is prohibited.
 #include "MathCommon.h"
 #include "Geometry.h"
 #include "GfxTypes.h"
+#include "Camera.h"
 
 #include <vector>
 #include <array>
@@ -29,6 +30,9 @@ struct DebugDraw
 	static void AddAABB(const AABB& aabb, const oGFX::Color& col = oGFX::Colors::WHITE);
 	static void AddSphere(const Sphere& sphere, const oGFX::Color& col = oGFX::Colors::WHITE);
 	static void AddTriangle(const Triangle& tri, const oGFX::Color& col = oGFX::Colors::WHITE);
+
+	static void DrawCameraFrustrum(const Camera&, const oGFX::Color& col = oGFX::Colors::WHITE);
+	static void DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& view, float ar,float fov ,float znear, float zfar, const oGFX::Color& col = oGFX::Colors::WHITE);
 
 	// Debug draws a circular disc, spanned by the 2 given basis vectors
 	static void AddDisc(const glm::vec3& center, float radius, const glm::vec3& basis0, const glm::vec3& basis1, const oGFX::Color& color = oGFX::Colors::WHITE);

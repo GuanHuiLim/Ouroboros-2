@@ -34,6 +34,7 @@ namespace vkutils
 		VkImage image{};
 		VkFormat format{};
 		VkImageLayout imageLayout{};
+		VkImageLayout currentLayout{};
 		VkDeviceMemory deviceMemory{};
 		VkImageView view{};
 		uint32_t width{}, height{};

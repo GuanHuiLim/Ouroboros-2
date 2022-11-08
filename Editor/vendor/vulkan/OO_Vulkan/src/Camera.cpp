@@ -373,7 +373,12 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 
 void Camera::UpdateProjectionMatrix()
 {
-	if (m_aspectRatio != m_aspectRatio) return;
+	if (m_aspectRatio != m_aspectRatio)
+	{ 
+		assert(false && "Times like this we must ask ourselves - why is aspect ratio NaN");
+		return;
+	}
+	assert(m_aspectRatio != 0.0f);
 
 	if (m_CameraProjectionType == CameraProjectionType::orthographic)
 	{

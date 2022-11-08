@@ -34,7 +34,7 @@ void DelayedDeleter::Shutdown()
 void DelayedDeleter::DeleteAfterFrames(std::function<void()> fn, size_t frames)
 {
     assert(frames);
-    frames = std::min(frames, 3ull);
+    frames = std::min(frames, MAX_FRAMES);
 
     auto currFrame = m_frame + frames;
 
