@@ -279,17 +279,15 @@ namespace oo
             DebugDraw::AddSphere(sphere, graphics_light.color);
         });
 
-        // TODO: debug draw the camera's view in editormode
+        // Camera debug draw
         static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-        //DebugDraw::AddLine();
         world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
-            {
-                Camera camera;
-                camera.SetPosition(transformComp.GetGlobalPosition());
-                camera.SetRotation(transformComp.GetGlobalRotationQuat());
-                DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::GREEN);
-            });
-
+        {
+            Camera camera;
+            camera.SetPosition(transformComp.GetGlobalPosition());
+            camera.SetRotation(transformComp.GetGlobalRotationQuat());
+            DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::GREEN);
+        });
 
     }
 
