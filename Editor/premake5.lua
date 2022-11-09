@@ -286,7 +286,8 @@ project "Editor"
             {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
             -- copy Release DLLs
             {"{COPY} \"%{AppDir}/dlls/release/\" \"" .. binApp .. "\"" },
-
+            -- slikenet
+            {"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
             -- copy iss file for compiling /for production only
             {"{COPY} \"%{AppDir}/engine_portable.iss\" \"" .. binApp .. "\"" },
         }
@@ -295,4 +296,5 @@ project "Editor"
         {
             "rttr_core",
             "fmod_vc",
+            "SLikeNet_DLL_Release_x64",
         }

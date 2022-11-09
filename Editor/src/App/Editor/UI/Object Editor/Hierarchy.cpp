@@ -79,6 +79,8 @@ Hierarchy::Hierarchy()
 		{
 			if (Hierarchy::GetSelectedTime() > e->time_triggered)
 				Hierarchy::GetSelectedNonConst().erase(iter);
+			else
+				return;
 		}
 		s_networkUserSelection[e->header.name] = ItemSelectedTiming{ e->time_triggered,e->gameobjID };
 		});
