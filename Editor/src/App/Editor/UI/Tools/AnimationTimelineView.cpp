@@ -484,29 +484,6 @@ void AnimationTimelineView::DrawTimeLineContent()
                     {
                         timeline = &animation->timelines[i];
                     }
-                    //opentimeline = ImGui::Selectable(animation->timelines[i].name.c_str(), false);
-
-                    //if (opentimeline)
-                    //{
-                    //    timeline = &animation->timelines[i];
-                    //    for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
-                    //    {
-                    //        if (animation->timelines[i].datatype == oo::Anim::Timeline::DATATYPE::VEC3)
-                    //        {
-                    //            if (currentTime == animation->timelines[i].keyframes[j].time)
-                    //            {
-                    //                //draw the property editor
-                    //                //ImGui::DragFloat("X", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().x);
-                    //                //ImGui::DragFloat("Y", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().y);
-                    //                //ImGui::DragFloat("Z", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().z);
-
-                    //                //animation->timelines[i].rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
-                    //                //                                                animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
-                    //            }
-                    //        }
-                    //    }
-                    //    ImGui::TreePop();
-                    //}
                 }
                 if(requestDelete)
                     animation->timelines.erase(animation->timelines.begin() + i);
@@ -524,6 +501,7 @@ void AnimationTimelineView::DrawTimeLineContent()
 
             if (ImGui::BeginPopup("##addtimeline"))
             {
+                //need to get the available gameobject from the heirarchy and get all its properties
                 if (ImGui::MenuItem("Add Example Timeline"))
                 {
                     auto& temp = animator->GetActualComponent().animTree->groups;
