@@ -18,9 +18,10 @@ public:
 private:
 	std::string SI_name;
 	std::string SFI_name;
+	oo::UUID gameobjectID;
+
 	oo::ScriptValue pre_val;
 	oo::ScriptValue post_val;
-	oo::UUID gameobjectID;
 };
 
 }

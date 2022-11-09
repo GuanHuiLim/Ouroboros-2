@@ -300,6 +300,36 @@ std::string Serializer::SaveSingleVariant(rttr::type t, rttr::property prop, rtt
 	return buffer.GetString();
 }
 
+std::string Serializer::SaveSingleScriptField(oo::ScriptFieldInfo& sfi)
+{
+	rapidjson::Document doc;
+	rapidjson::Value & val = doc.SetObject();
+	auto iter = m_saveScriptProperties.m_ScriptSave.find(sfi.value.GetValueType());
+	if (iter == m_saveScriptProperties.m_ScriptSave.end())
+	{
+		ASSERT_MSG(true, "not found, why?");
+		return "";
+	}
+	iter->second(doc, val, sfi);
+	rapidjson::StringBuffer buffer(0, 64);
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	doc.Accept(writer);
+	return buffer.GetString();
+}
+
+void Serializer::LoadSingleScriptField(oo::ScriptFieldInfo& value, std::string& data)
+{
+	rapidjson::StringStream stream(data.c_str());
+	rapidjson::Document doc;
+	doc.ParseStream(stream);
+	
+	auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(value.value.GetValueType());
+	if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
+		return;
+	//loads only 1 value as the name of the function describes
+	sfiLoadIter->second(std::move(doc.MemberBegin()->value), value);
+}
+
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)
 {
 	scenenode::raw_pointer curr;

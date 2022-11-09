@@ -8,6 +8,7 @@
 #include <SceneManagement/include/SceneManager.h>
 
 #include "Ouroboros/Scripting/ScriptComponent.h"
+#include "App/Editor/Serializer.h"
 namespace oo
 {
 	Script_ActionCommand::Script_ActionCommand(const std::string& scriptInfo, const std::string& scriptFieldInfo, oo::ScriptValue pre_value, oo::ScriptValue post_value, oo::UUID gameobjID)
@@ -61,10 +62,33 @@ namespace oo
 	}
 	std::string oo::Script_ActionCommand::GetData()
 	{
+		std::string data;
+		data += SI_name;
+		data += PacketUtilts::SEPERATOR;
+		data += SFI_name;
+		data += PacketUtilts::SEPERATOR;
+		data += std::to_string(gameobjectID.GetUUID());
+		data += PacketUtilts::SEPERATOR;
+		//getting the script values
+		oo::ScriptFieldInfo info(SI_name, pre_val);
+		data += Serializer::SaveSingleScriptField(info);
+		data += PacketUtilts::SEPERATOR;
+		info.value = post_val;
+		data += Serializer::SaveSingleScriptField(info);
+		data += PacketUtilts::SEPERATOR;
 
-		return std::string();
+		return data;
 	}
 	Script_ActionCommand::Script_ActionCommand(PacketHeader& packet, std::string& data)
 	{
+		size_t offset = 0;
+		SI_name = PacketUtilts::ParseCommandData(data, offset);
+		SFI_name = PacketUtilts::ParseCommandData(data, offset);
+		gameobjectID = std::stoull(PacketUtilts::ParseCommandData(data, offset));
+		//wip
+
+		message = "Script Fields Edited by : ";
+		message += packet.name;
+		Redo();
 	}
 }
