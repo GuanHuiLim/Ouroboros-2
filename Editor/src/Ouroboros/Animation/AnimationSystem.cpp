@@ -303,12 +303,12 @@ namespace oo::Anim
 		return true;
 	}
 
-	bool AnimationSystem::SaveAnimationTree(std::string name, std::string filepath)
+	bool AnimationSystem::SaveAnimationTree(size_t id, std::string filepath)
 	{
 
 		//map should contain the animation tree
-		assert(AnimationTree::map.contains(name));
-		auto& tree = AnimationTree::map[name];
+		assert(AnimationTree::map.contains(id));
+		auto& tree = AnimationTree::map[id];
 
 		return SaveAnimationTree(tree, filepath);
 	}
@@ -460,6 +460,10 @@ namespace oo::Anim
 	}
 	AnimationTree* AnimationSystem::CreateAnimationTree(std::string const& name)
 	{
-		return AnimationTree::Create(name);
+		auto tree = AnimationTree::Create(name);
+		auto filepath = Project::GetAssetFolder().string() + "/" + tree->name + ".tree";
+		SaveAnimationTree(*tree, filepath);
+		auto asset = Project::GetAssetManager()->GetOrLoadPath(std::filesystem::path{ filepath });
+		return tree;
 	}
 }

@@ -70,6 +70,8 @@ Hierarchy::Hierarchy()
 {
 	oo::EventManager::Subscribe<CopyButtonEvent>(&CopyEvent);
 	oo::EventManager::Subscribe<PasteButtonEvent>(&PasteEvent);
+	oo::EventManager::Subscribe<DuplicateButtonEvent>(&DuplicateEvent);
+	oo::EventManager::Subscribe<DestroyGameObjectButtonEvent>(&DestroyEvent);
 
 }
 
@@ -664,4 +666,37 @@ void Hierarchy::PasteEvent(PasteButtonEvent* pbe)
 
 void Hierarchy::DuplicateEvent(DuplicateButtonEvent* dbe)
 {
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+	if (rect.Contains(ImGui::GetMousePos()) == false)
+		return;
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto go : s_selected)
+	{
+		auto object = scene->FindWithInstanceID(go);
+		if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
+			continue;
+		oo::GameObject new_object = object->Duplicate();
+		//need the scene::go_ptr
+		auto goptr = scene->FindWithInstanceID(new_object.GetInstanceID());
+		oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(goptr));
+	}
+}
+
+void Hierarchy::DestroyEvent(DestroyGameObjectButtonEvent* dbe)
+{
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+	if (rect.Contains(ImGui::GetMousePos()) == false)
+		return;
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto go : s_selected)
+	{
+		auto object = scene->FindWithInstanceID(go);
+		if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
+			continue;
+		oo::CommandStackManager::AddCommand(new oo::Delete_ActionCommand(object));
+		object->Destroy();
+	}
+	s_selected.clear();
 }

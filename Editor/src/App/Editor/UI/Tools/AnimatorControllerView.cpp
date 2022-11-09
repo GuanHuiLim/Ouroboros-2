@@ -18,6 +18,7 @@ Technology is prohibited.
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
 
 #include "App/Editor/Utility/ImGuiManager.h"
 
@@ -97,7 +98,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
 
     if (!_animator->GetActualComponent().animTree)
     {
-        auto tree = oo::Anim::AnimationTree::Create("Test Animation Tree");
+        auto tree = oo::Anim::AnimationSystem::CreateAnimationTree("Test Animation Tree");
         (void)(tree);
         _animator->SetAnimationTree("Test Animation Tree");
         //auto& start_node = tree->groups.begin()->second.startNode;

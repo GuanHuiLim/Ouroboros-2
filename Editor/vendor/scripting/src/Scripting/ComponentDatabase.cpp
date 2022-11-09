@@ -24,15 +24,14 @@ namespace oo
     std::unordered_map<std::string, std::vector<std::string>> ComponentDatabase::inheritanceMap;
 
     void ComponentDatabase::RegisterComponent(std::string const& name_space, std::string const& name,
-        ComponentAction Add, ComponentAction Remove, ComponentCheck Has,
-        ComponentSetAction SetEnabled, ComponentCheck CheckEnabled)
+        ComponentAction Add, ComponentAction Remove, ComponentCheck Has)
     {
         std::string key = name_space + "." + name;
         componentTypeMap.emplace
         (
             key, ComponentType
             {
-                Add, Remove, Has, SetEnabled, CheckEnabled, name_space, name, componentTypeMap.size()
+                Add, Remove, Has, name_space, name, componentTypeMap.size()
             }
         );
     }
@@ -176,16 +175,6 @@ namespace oo
         if (object == nullptr)
             return InvalidPtr;
         return object->gameObject;
-    }
-
-    bool ComponentDatabase::CheckEnabled(UUID id, const char* name_space, const char* name)
-    {
-        return GetComponentType(name_space, name).CheckEnabled(sceneID, id);
-    }
-
-    void ComponentDatabase::SetEnabled(UUID id, const char* name_space, const char* name, bool isEnabled)
-    {
-        GetComponentType(name_space, name).SetEnabled(sceneID, id, isEnabled);
     }
 
     void ComponentDatabase::Delete(UUID id, const char* name_space, const char* name, bool onlyScript)

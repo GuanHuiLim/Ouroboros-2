@@ -218,7 +218,24 @@ namespace oo::Anim
 		// name to identify target animation
 		std::string anim_name;
 	};
-	
+	struct TargetTimelineInfo
+	{
+		//id of the animation the timeline is located at
+		size_t anim_id{internal::invalid_ID};
+		//name of the timeline
+		std::string timeline_name{};
+
+	};
+	struct TargetNodeInfo
+	{
+		std::string group_name{};
+		std::string node_name{};
+	};
+	struct TargetLinkInfo
+	{
+		std::string group_name{};
+		std::string link_name{};
+	};
 }
 
 

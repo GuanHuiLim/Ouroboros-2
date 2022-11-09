@@ -138,7 +138,6 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
 
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
-	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
 	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
@@ -180,10 +179,9 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		{
 			selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
-			//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
-			//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);

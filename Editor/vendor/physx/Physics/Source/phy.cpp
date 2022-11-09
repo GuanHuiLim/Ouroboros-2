@@ -155,11 +155,11 @@ namespace myPhysx
             createFoundation();
 
             if constexpr (use_debugger) {
-                //printf("DEBUGGER ON\n");
-                myPVD.createPvd(getFoundation(), "192.168.157.213");
+                printf("DEBUGGER ON\n");
+                myPVD.createPvd(getFoundation(), "172.28.68.41");
             }
             else {
-                //printf("DEBUGGER OFF\n");
+                printf("DEBUGGER OFF\n");
             }
 
             createPhysics();
@@ -274,7 +274,7 @@ namespace myPhysx
         phy_uuid::UUID generated_uuid = *obj.id;
         // store the object
         m_objects.emplace_back(std::move(obj));
-        all_objects.insert({ generated_uuid, static_cast<int>(m_objects.size()) - 1 }); // add back the m_objects last element
+        all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
         
         // return the object i created
         return PhysicsObject{ generated_uuid, this }; // a copy
@@ -578,6 +578,101 @@ namespace myPhysx
         }
     }
 
+    void PhysicsObject::lockPositionX(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                //// ROTATE IN Z
+                //PxRigidDynamicLockFlag::eLOCK_LINEAR_Z | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y;
+                //// ROTATE IN Y
+                //PxRigidDynamicLockFlag::eLOCK_LINEAR_Y | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z;
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_X, lock);
+
+                underlying_obj->lockPositionAxis.x_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockPositionY(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lock);
+
+                underlying_obj->lockPositionAxis.y_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockPositionZ(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lock);
+
+                underlying_obj->lockPositionAxis.z_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockRotationX(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lock);
+
+                underlying_obj->lockRotationAxis.x_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockRotationY(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lock);
+
+                underlying_obj->lockRotationAxis.y_axis = lock;
+            }
+        }
+    }
+
+    void PhysicsObject::lockRotationZ(bool lock) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID == rigid::rdynamic) {
+
+                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lock);
+
+                underlying_obj->lockRotationAxis.z_axis = lock;
+            }
+        }
+    }
+
     void PhysicsObject::enableKinematic(bool kine) {
 
         if (world->all_objects.contains(id)) {
@@ -658,6 +753,38 @@ namespace myPhysx
                 //underlying_obj->m_shape->getGeometry().capsule().halfHeight = halfHeight;
             }
         }
+    }
+
+    LockingAxis PhysicsObject::getLockPositionAxis() const {
+
+        LockingAxis posAxis{ false };
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            posAxis.x_axis = underlying_obj->lockPositionAxis.x_axis;
+            posAxis.y_axis = underlying_obj->lockPositionAxis.y_axis;
+            posAxis.z_axis = underlying_obj->lockPositionAxis.z_axis;
+        }
+
+        return posAxis;
+    }
+
+    LockingAxis PhysicsObject::getLockRotationAxis() const {
+
+        LockingAxis rotAxis{ false };
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            rotAxis.x_axis = underlying_obj->lockRotationAxis.x_axis;
+            rotAxis.y_axis = underlying_obj->lockRotationAxis.y_axis;
+            rotAxis.z_axis = underlying_obj->lockRotationAxis.z_axis;
+        }
+
+        return rotAxis;
     }
 
     Material PhysicsObject::getMaterial() const {
@@ -1081,17 +1208,17 @@ namespace myPhysx
 /*                           EVENT CALLBACK                                    */
 /*-----------------------------------------------------------------------------*/
     void EventCallBack::onConstraintBreak(PxConstraintInfo* /*constraints*/, PxU32 /*count*/) {
-        //printf("CALLBACK: onConstraintBreak\n");
+        printf("CALLBACK: onConstraintBreak\n");
     }
     void EventCallBack::onWake(PxActor** /*actors*/, PxU32 /*count*/) {
-        //printf("CALLBACK: onWake\n");
+        printf("CALLBACK: onWake\n");
     }
     void EventCallBack::onSleep(PxActor** /*actors*/, PxU32 /*count*/) {
-        //printf("CALLBACK: onSleep\n");
+        printf("CALLBACK: onSleep\n");
     }
     void EventCallBack::onContact(const PxContactPairHeader& /*pairHeader*/, const PxContactPair* pairs, PxU32 count) {
-        //printf("CALLBACK: onContact -- ");
-        //printf("PAIRS: %d\n", count);
+        printf("CALLBACK: onContact -- ");
+        printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1126,17 +1253,17 @@ namespace myPhysx
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
                 state = collision::onCollisionEnter;
-                //printf("Shape is ENTERING CONTACT volume\n");
+                printf("Shape is ENTERING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
                 state = collision::onCollisionStay;
-                //printf("Shape is STAYING CONTACT volume\n");
+                printf("Shape is STAYING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
                 state = collision::onCollisionExit;
-                //printf("Shape is LEAVING CONTACT volume\n");
+                printf("Shape is LEAVING CONTACT volume\n");
             }
 
             // Store all the ID of the actors that collided
@@ -1151,8 +1278,8 @@ namespace myPhysx
 
     }
     void EventCallBack::onTrigger(PxTriggerPair* pairs, PxU32 count) {
-        //printf("CALLBACK: onTrigger -- ");
-        //printf("PAIRS: %d\n", count);
+        printf("CALLBACK: onTrigger -- ");
+        printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1167,13 +1294,13 @@ namespace myPhysx
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
                 //stayTrigger = true;
                 state = trigger::onTriggerEnter;
-                //printf("Shape is ENTERING TRIGGER volume\n");
+                printf("Shape is ENTERING TRIGGER volume\n");
             }
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
                 //stayTrigger = false;
                 state = trigger::onTriggerExit;
                 //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
-                //printf("Shape is LEAVING TRIGGER volume\n");
+                printf("Shape is LEAVING TRIGGER volume\n");
             }
 
             // Store all the ID of the actors that collided with trigger)
@@ -1207,6 +1334,6 @@ namespace myPhysx
         }
     }
     void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
-        //printf("CALLBACK: onAdvance\n");
+        printf("CALLBACK: onAdvance\n");
     }
 }

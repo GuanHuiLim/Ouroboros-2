@@ -48,7 +48,7 @@ namespace oo::Anim
 
 		Scene::go_ptr CreateAnimationTestObject();
 
-		static bool SaveAnimationTree(std::string name, std::string filepath);
+		static bool SaveAnimationTree(size_t id, std::string filepath);
 		static bool SaveAnimation(std::string name, std::string filepath);
 		static bool SaveAllAnimations(std::string filepath);
 		static bool SaveAllAnimationTree(std::string filepath);

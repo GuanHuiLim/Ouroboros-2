@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "App/Editor/UI/Object Editor/AssetBrowser.h"
 #include "Ouroboros/Vulkan/MeshInfo.h"
+#include <Ouroboros/Vulkan/Color.h>
 InspectorProperties::InspectorProperties()
 {
 	m_InspectorUI[UI_RTTRType::UItypes::BOOL_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
@@ -100,6 +101,19 @@ InspectorProperties::InspectorProperties()
 				speed = variant_speed.get_value<float>();
 		}
 		edited = ImGui::DragFloat4(name.c_str(), glm::value_ptr(value),speed);
+		if (edited) { v = value; };
+		endEdit = ImGui::IsItemDeactivatedAfterEdit();
+	};
+	m_InspectorUI[UI_RTTRType::UItypes::COLOR_TYPE] = [](rttr::property& prop, std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
+	{
+		auto value = v.get_value<oo::Color>();
+		/*float speed = 1.0f;
+		{
+			rttr::variant variant_speed = prop.get_metadata(UI_metadata::DRAG_SPEED);
+			if (variant_speed.is_valid())
+				speed = variant_speed.get_value<float>();
+		}*/
+		edited = ImGui::ColorPicker4(name.c_str(), &value.r, ImGuiColorEditFlags_::ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_::ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_::ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_::ImGuiColorEditFlags_InputRGB);
 		if (edited) { v = value; };
 		endEdit = ImGui::IsItemDeactivatedAfterEdit();
 	};

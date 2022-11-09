@@ -59,8 +59,17 @@ namespace oo
         if (!channel)
             return 0;
         unsigned int result;
-        channel->getPosition(&result, FMOD_TIMEUNIT_MS);
+        FMOD_ERR_HAND(channel->getPosition(&result, FMOD_TIMEUNIT_MS));
         return static_cast<float>(result) / 1000;
+    }
+
+    unsigned int AudioSourceComponent::GetPlaybackTimeSamples() const
+    {
+        if (!channel)
+            return 0;
+        unsigned int result;
+        FMOD_ERR_HAND(channel->getPosition(&result, FMOD_TIMEUNIT_PCM));
+        return result;
     }
 
     void AudioSourceComponent::SetAudioClip(Asset a)
@@ -95,6 +104,20 @@ namespace oo
     {
         pitch = p;
         isDirty = true;
+    }
+
+    void AudioSourceComponent::SetPlaybackTime(float t)
+    {
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setPosition(static_cast<unsigned int>(t * 1000), FMOD_TIMEUNIT_MS));
+    }
+
+    void AudioSourceComponent::SetPlaybackTimeSamples(unsigned int t)
+    {
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setPosition(t, FMOD_TIMEUNIT_PCM));
     }
 
     void AudioSourceComponent::Play()
