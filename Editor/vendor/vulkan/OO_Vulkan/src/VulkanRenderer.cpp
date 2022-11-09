@@ -283,14 +283,27 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		CreateCommandBuffers();
 		CreateDescriptorPool();
+
+		uint32_t whiteTexture = 0xFFFFFFFF; // ABGR
+		uint32_t blackTexture = 0xFF000000; // ABGR
+		uint32_t normalTexture = 0xFFFF8080; // ABGR
+		uint32_t pinkTexture = 0xFFA040A0; // ABGR
+
+		whiteTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&whiteTexture));
+		blackTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&blackTexture));
+		normalTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&normalTexture));
+		pinkTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&pinkTexture));
+		
+		auto& shadowTexture =RenderPassDatabase::GetRenderPass<ShadowPass>()->shadow_depth;
+		shadowTexture.updateDescriptor();
+		auto shadowLoc = AddBindlessGlobalTexture(shadowTexture);
+		auto dummy = g_imguiIDs.size(); // dummy because external engine users have 1:1 access to globalTex and imguiID
+		g_imguiIDs.push_back({});
+
 		CreateSynchronisation();
 
 		InitDebugBuffers();
-		g_GlobalMeshBuffers.IdxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-		g_GlobalMeshBuffers.VtxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		g_GlobalMeshBuffers.IdxBuffer.reserve(8 * 1000 * 1000);
-		g_GlobalMeshBuffers.VtxBuffer.reserve(8*1000*1000);
-
+		
 
 		PROFILE_INIT_VULKAN(&m_device.logicalDevice, &m_device.physicalDevice, &m_device.graphicsQueue, (uint32_t*)&m_device.queueIndices.graphicsFamily, 1, nullptr);
 	}
@@ -1027,7 +1040,7 @@ void VulkanRenderer::CreateDescriptorPool()
 	uint32_t variableDescCounts[] = { MAX_OBJECTS };
 	variableDescriptorCountAllocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT;
 	variableDescriptorCountAllocInfo.descriptorSetCount = 1;
-	variableDescriptorCountAllocInfo.pDescriptorCounts  = variableDescCounts;
+	variableDescriptorCountAllocInfo.pDescriptorCounts = variableDescCounts;
 
 	//Descriptor set allocation info
 	VkDescriptorSetAllocateInfo setAllocInfo = oGFX::vkutils::inits::descriptorSetAllocateInfo(samplerDescriptorPool,&SetLayoutDB::bindless,1);
@@ -1074,7 +1087,7 @@ void VulkanRenderer::CreateDescriptorSets_Lights()
 
 void VulkanRenderer::InitImGUI()
 {
-	if (m_imguiInitialized) return;
+	if (m_imguiInitialized) return;	
 
 	VkAttachmentDescription attachment = {};
 	attachment.format = m_swapchain.swapChainImageFormat;
@@ -1225,8 +1238,8 @@ void VulkanRenderer::DebugGUIcalls()
 			const ImVec2 imageSize = { sz.x, sz.x * aspectRatio };
 	
 			//auto gbuff = GBufferRenderPass::Get();
-			ImGui::BulletText("World Position");
-			ImGui::Image(gbuff->deferredImg[POSITION], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+			//ImGui::BulletText("World Position");
+			//ImGui::Image(gbuff->deferredImg[POSITION], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
 			ImGui::BulletText("World Normal");
 			ImGui::Image(gbuff->deferredImg[NORMAL], imageSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
 			ImGui::BulletText("Albedo");
@@ -1349,7 +1362,11 @@ void VulkanRenderer::InitializeRenderBuffers()
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         &indirectCommandsBuffer,
         MAX_OBJECTS * sizeof(oGFX::IndirectCommand));
-    VK_NAME(m_device.logicalDevice, "Indirect Command Buffer", indirectCommandsBuffer.buffer);
+    VK_NAME(m_device.logicalDevice, "Indirect Command Buffer", indirectCommandsBuffer.buffer); 
+	
+	shadowCasterCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	shadowCasterCommandsBuffer.reserve(MAX_OBJECTS);
+	VK_NAME(m_device.logicalDevice, "Shadow Command Buffer", shadowCasterCommandsBuffer.m_buffer);
 
 	// Note: Moved here from VulkanRenderer::UpdateInstanceData
     m_device.CreateBuffer(
@@ -1382,12 +1399,18 @@ void VulkanRenderer::InitializeRenderBuffers()
 	skinningVertexBuffer.reserve(MAX_SKINNING_VERTEX_BUFFER_SIZE);  
     VK_NAME(m_device.logicalDevice, "Skinning Vertex Buffer", skinningVertexBuffer.getBuffer());
 
+	g_GlobalMeshBuffers.IdxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+	g_GlobalMeshBuffers.VtxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	g_GlobalMeshBuffers.IdxBuffer.reserve(8 * 1000 * 1000);
+	g_GlobalMeshBuffers.VtxBuffer.reserve(8 * 1000 * 1000);
+
 	// TODO: Move other global GPU buffer initialization here...
 }
 
 void VulkanRenderer::DestroyRenderBuffers()
 {
 	indirectCommandsBuffer.destroy();
+	shadowCasterCommandsBuffer.destroy();
 	instanceBuffer.destroy();
 	objectInformationBuffer.destroy();
 	globalLightBuffer.destroy();
@@ -1404,7 +1427,8 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		return;
 	}
 
-	
+	// All object commands
+	{
 	auto& allObjectsCommands = batches.GetBatch(GraphicsBatch::ALL_OBJECTS);
 
 	objectCount = 0;
@@ -1447,6 +1471,19 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 	del->DeleteAfterFrames([=]() { vkFreeMemory(m_device.logicalDevice, oldMemory, nullptr); });
 	
 	stagingBuffer.destroy();
+	}
+
+	// shadow commands
+	{
+		auto& shadowObjects = batches.GetBatch(GraphicsBatch::SHADOW_CAST);
+		if (shadowObjects.size() > MAX_OBJECTS)
+		{
+			MESSAGE_BOX_ONCE(windowPtr->GetRawHandle(), L"You just busted the max size of indirect command buffer.", L"BAD ERROR");
+		}
+		shadowCasterCommandsBuffer.clear();
+		shadowCasterCommandsBuffer.writeTo(shadowObjects.size(), (void*)shadowObjects.data(), 0);
+	}
+
 }
 
 void VulkanRenderer::UploadInstanceData()
@@ -2504,7 +2541,7 @@ uint32_t VulkanRenderer::CreateTexture(uint32_t width, uint32_t height, unsigned
 	auto ind = CreateTextureImage(fileData);
 
 	//create texture descriptor
-	int descriptorLoc = UpdateBindlessGlobalTexture(g_Textures[ind]);
+	int descriptorLoc = AddBindlessGlobalTexture(g_Textures[ind]);
 
 	//return location of set with texture
 	return descriptorLoc;
@@ -2517,7 +2554,7 @@ uint32_t VulkanRenderer::CreateTexture(const std::string& file)
 	uint32_t textureImageLoc = CreateTextureImage(file);
 
 	//create texture descriptor
-	int descriptorLoc = UpdateBindlessGlobalTexture(g_Textures[textureImageLoc]);
+	int descriptorLoc = AddBindlessGlobalTexture(g_Textures[textureImageLoc]);
 
 	//return location of set with texture
 	return descriptorLoc;
@@ -2591,6 +2628,8 @@ void VulkanRenderer::UpdateUniformBuffers()
 			frameContextUBO[i].view = camera.matrices.view;
 			frameContextUBO[i].viewProjection = frameContextUBO[i].projection * frameContextUBO[i].view;
 			frameContextUBO[i].inverseViewProjection = glm::inverse(frameContextUBO[i].viewProjection);
+			frameContextUBO[i].inverseView = glm::inverse(frameContextUBO[i].view);
+			frameContextUBO[i].inverseProjection = glm::inverse(frameContextUBO[i].projection);
 			frameContextUBO[i].cameraPosition = glm::vec4(camera.m_position,1.0);
 			frameContextUBO[i].renderTimer.x = renderClock;
 			frameContextUBO[i].renderTimer.y = std::sin(renderClock * glm::pi<float>());
@@ -2675,7 +2714,7 @@ VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(VulkanDevice& device,
 	// SHADER STAGE CREATION INFORMATION
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
 	shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	//shader stage name
+	//shader stage name 
 	shaderStageCreateInfo.stage = stage;
 
 	//build shader modules to link to pipeline
@@ -2692,7 +2731,7 @@ VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(VulkanDevice& device,
 	return shaderStageCreateInfo;
 }
 
-uint32_t VulkanRenderer::UpdateBindlessGlobalTexture(vkutils::Texture2D texture)
+uint32_t VulkanRenderer::AddBindlessGlobalTexture(vkutils::Texture2D texture)
 {
 	std::vector<VkWriteDescriptorSet> writeSets
 	{
@@ -2716,10 +2755,11 @@ ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)
 
 ImTextureID VulkanRenderer::CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l)
 {
+	
 	if (VulkanRenderer::get()->m_imguiInitialized == false)
 	{
 		return 0;
-	}
+	}	
 	
 	return ImGui_ImplVulkan_AddTexture(s,v,l);
 }

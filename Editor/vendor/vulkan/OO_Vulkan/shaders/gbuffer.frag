@@ -13,10 +13,10 @@ layout(location = 7) in struct
     mat3 btn;
 }inLightData;
 
-layout(location = 0) out vec4 outPosition; // TODO: Optimization for space, not necessary as position can be reconstructed from depth.
-layout(location = 1) out vec4 outNormal;
-layout(location = 2) out vec4 outAlbedo;
-layout(location = 3) out vec4 outMaterial;
+//layout(location = 0) out vec4 outPosition; // Optimization for space reconstructed from depth.
+layout(location = 0) out vec4 outNormal;
+layout(location = 1) out vec4 outAlbedo;
+layout(location = 2) out vec4 outMaterial;
 
 #include "shader_utility.shader"
 
@@ -78,7 +78,9 @@ void Jump(inout uint perInstanceData, inout float3 albedo)
 void main()
 {
     outAlbedo = vec4(inColor, 1.0);
-    outPosition = inPosition;
+    
+    //outPosition = inPosition;
+    // implicit depthOut will reconstruct the position
 
     // TODO: We need to use a mask to check whether to use textures or values.
     const bool useAlbedoTexture = true;

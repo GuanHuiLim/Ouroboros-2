@@ -1,5 +1,10 @@
 layout (location = 0) out vec2 outUV;
 
+#include "shared_structs.h"
+layout( push_constant ) uniform pc
+{
+	LightPC lightPC;
+};
 // this shader creates a fullscreen quad without any vertices
 void main() 
 {

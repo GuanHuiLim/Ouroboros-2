@@ -25,7 +25,7 @@ public:
 	void Init(VkBufferUsageFlags usage);
 	void Init(VulkanDevice* device,VkBufferUsageFlags usage);
 
-	void writeTo(size_t size, void* data, size_t offset = 0);
+	void writeTo(size_t size,const void* data, size_t offset = 0);
 
 	void resize(size_t size);
 	void reserve(size_t size);
@@ -97,7 +97,7 @@ inline void GpuVector<T>::Init(VulkanDevice* device, VkBufferUsageFlags usage)
 }
 
 template <typename T>
-void GpuVector<T>::writeTo(size_t writeSize, void* data, size_t offset)
+void GpuVector<T>::writeTo(size_t writeSize,const void* data, size_t offset)
 {
 	if ((writeSize + offset) > m_capacity)
 	{

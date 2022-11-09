@@ -10,6 +10,8 @@ struct FrameContext
 	mat4 view;
 	mat4 viewProjection;
 	mat4 inverseViewProjection;
+	mat4 inverseView;
+	mat4 inverseProjection;
 	vec4 cameraPosition;
 	vec4 renderTimer;
 

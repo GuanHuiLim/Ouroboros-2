@@ -25,11 +25,11 @@ Technology is prohibited.
 
 enum GBufferAttachmentIndex
 {
-    POSITION = 0,
-    NORMAL = 1,
-    ALBEDO = 2,
-    MATERIAL = 3,
-    DEPTH = 4,
+    //POSITION = 0,
+    NORMAL ,
+    ALBEDO ,
+    MATERIAL ,
+    DEPTH ,
 
     MAX_ATTACHMENTS,
     TOTAL_COLOR_ATTACHMENTS = MAX_ATTACHMENTS - 1

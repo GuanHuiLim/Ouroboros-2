@@ -375,7 +375,7 @@ void Camera::UpdateProjectionMatrix()
 {
 	if (m_aspectRatio != m_aspectRatio)
 	{ 
-		assert(false && "Times like this we must ask ourselves - why is aspect ratio NaN");
+		//assert(false && "Times like this we must ask ourselves - why is aspect ratio NaN");
 		return;
 	}
 	assert(m_aspectRatio != 0.0f);
