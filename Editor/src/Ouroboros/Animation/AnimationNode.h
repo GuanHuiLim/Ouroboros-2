@@ -50,6 +50,7 @@ namespace oo::Anim
 		//void SetAnimation(Asset asset);
 		//void SetAnimation(Asset asset);
 		Animation& GetAnimation();
+		bool HasAnimation();
 
 		RTTR_ENABLE();
 	};
