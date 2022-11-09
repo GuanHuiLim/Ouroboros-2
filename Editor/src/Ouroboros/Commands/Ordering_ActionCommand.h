@@ -1,6 +1,8 @@
 #pragma once
+#include <string>
 #include "ActionCommand.h"
 #include "Ouroboros/ECS/GameObject.h"
+#include "App/Editor/Networking/PacketUtils.h"
 namespace oo
 {
 	class Parenting_ActionCommand : public ActionCommand
@@ -10,7 +12,9 @@ namespace oo
 		~Parenting_ActionCommand();
 		void Undo()override;
 		void Redo()override;
+		Parenting_ActionCommand(PacketHeader& header, std::string& data);
 	private:
+		std::string GetData();
 		oo::UUID old_parent;
 		oo::UUID new_parent;
 		oo::UUID targetObject;
@@ -23,7 +27,9 @@ namespace oo
 		~Ordering_ActionCommand();
 		void Undo()override;
 		void Redo()override;
+		Ordering_ActionCommand(PacketHeader& header, std::string& data);
 	private:
+		std::string GetData();
 		oo::UUID object;
 		oo::UUID target;
 		oo::UUID previous;

@@ -52,6 +52,14 @@ namespace oo::Anim
 	using P_TYPE = ParamType;
 	//using ParameterValueType = std::variant<bool, int, float>;
 
+	struct UID
+	{
+		size_t id{};
+		UID() = default;
+		operator size_t() const { return id; }
+		UID(size_t _id) : id{_id}{}
+	};
+
 	struct InvalidType {};
 	//variables that are defined within an AnimationTree that can be accessed and assigned values from scripts or editor
 	struct Parameter;	

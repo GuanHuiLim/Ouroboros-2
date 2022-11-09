@@ -46,6 +46,7 @@ IncludeDir["physx"]                 = AppVendor .. "/physx"
 IncludeDir["physx_foundation"]      = AppVendor .. "/physx/Physics/Physx/pxshared/include"
 
 IncludeDir["discord"]      = AppVendor .. "/discord/cpp"
+IncludeDir["slikenet"]      = AppVendor .. "/slikenet/include"
 
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
@@ -72,7 +73,7 @@ LibraryDir["assimp"]     	= AppVendor .. "/vulkan/vendor/assimp/BINARIES/Win32/l
 -- LibraryDir["vkbootstrap"]   = EngineVendor .. "/vkbootstrap/lib"
 -- LibraryDir["launcher"]      = AppVendor .. "launcher/Oroborous-Launcher/lib"
 LibraryDir["discord"]       = AppVendor .. "/discord/lib/x86_64"
-
+LibraryDir["slikenet"]       = AppVendor .. "/slikenet/lib/"
 
 -- Paths to libraries that will be used
 Library                     = {}

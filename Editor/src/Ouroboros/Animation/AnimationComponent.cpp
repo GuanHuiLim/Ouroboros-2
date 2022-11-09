@@ -57,7 +57,9 @@ namespace oo
 
 	void oo::AnimationComponent::SetAnimationTree(oo::Asset asset)
 	{
-		auto treeID = asset.GetData<size_t>();
+		if (asset.IsValid() == false) return;
+
+		auto treeID = asset.GetData<Anim::UID>();
 		SetAnimationTree(treeID);
 		//if failed to find animation tree
 		if (HasAnimationTree() == false) return;

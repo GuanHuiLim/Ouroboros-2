@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "SceneManagement/include/SceneManager.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "App/Editor/Utility/ImGuiManager.h"
+#include <Project.h>
 
 SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 {
@@ -176,6 +177,14 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			}
 			val.AddMember(name, obj, doc.GetAllocator());
 		});
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::ASSET, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+			val.AddMember(name, sfi.value.GetValue<oo::Asset>().GetID(), doc.GetAllocator());
+		});
+
+
 }
 
 SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
@@ -290,6 +299,11 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 				if(iter != m_ScriptLoad.end())
 					iter->second(std::move(class_values->value), class_data.infoList[counter]);
 			}
+		});
+	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ASSET, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+		{
+			auto asset = Project::GetAssetManager()->Get(val.GetUint64());
+			sfi.value.SetValue(asset);
 		});
 
 }
