@@ -105,6 +105,14 @@ namespace oo
             bool is_valid();
         };
 
+        // used to store the necessary info to create a generic C# Asset
+        struct asset_type
+        {
+        public:
+            AssetInfo::Type type;
+            Asset asset;
+        };
+
         // used to store the necessary info to create a C# prefab reference
         struct prefab_type
         {
@@ -204,7 +212,7 @@ namespace oo
             //oo::Colour,
             UUID,
             component_type,
-            Asset,
+            asset_type,
             prefab_type,
             class_type,
             list_type,
