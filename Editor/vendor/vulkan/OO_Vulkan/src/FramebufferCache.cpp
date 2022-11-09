@@ -16,6 +16,8 @@ Technology is prohibited.
 #include <unordered_set>
 #include "VulkanUtils.h"
 #include "VulkanTexture.h"
+#include "DelayedDeleter.h"
+#include "VulkanRenderer.h"
 
 void FramebufferCache::Init(VkDevice newDevice)
 {
@@ -117,6 +119,35 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 		//add to cache
 
 		//store the pointers
+	}
+}
+
+void FramebufferCache::DeleteRelated(vkutils::Texture2D tex)
+{
+	for (auto iter = bufferCache.begin(); iter != bufferCache.end();)
+	{
+		bool found = false;
+		for (auto&t : iter->first.textures)
+		{
+			if (t->view == tex.view)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (found)
+		{
+			std::cout << "[FBCache] Removing fb "<<iter->second<<" hash "<< iter->first.hash() <<"\n";
+			VkFramebuffer fb = iter->second;
+			DelayedDeleter::get()->DeleteAfterFrames([=]() {				
+				vkDestroyFramebuffer(VulkanRenderer::get()->m_device.logicalDevice, fb, nullptr);
+				});
+			iter = bufferCache.erase(iter++);
+		}
+		else
+		{
+			++iter;
+		}
 	}
 }
 

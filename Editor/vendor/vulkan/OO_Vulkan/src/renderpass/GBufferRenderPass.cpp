@@ -78,7 +78,7 @@ void GBufferRenderPass::Draw()
 
 	// Clear values for all attachments written in the fragment shader
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
-	clearValues[GBufferAttachmentIndex::POSITION].color = zeroFloat4;
+	//clearValues[GBufferAttachmentIndex::POSITION].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::NORMAL]  .color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ALBEDO]  .color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
@@ -86,7 +86,7 @@ void GBufferRenderPass::Draw()
 	
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
+		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
 		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
@@ -161,8 +161,8 @@ void GBufferRenderPass::SetupRenderpass()
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
-	attachments[GBufferAttachmentIndex::POSITION].name = "GB_Position";
-	attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	//attachments[GBufferAttachmentIndex::POSITION].name = "GB_Position";
+	//attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::NORMAL	].name = "GB_Normal";
 	attachments[GBufferAttachmentIndex::NORMAL	].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::ALBEDO	].name = "GB_Albedo";
@@ -196,14 +196,14 @@ void GBufferRenderPass::SetupRenderpass()
 	}
 
 	// Formats
-	attachmentDescs[GBufferAttachmentIndex::POSITION].format = attachments[GBufferAttachmentIndex::POSITION].format;
+	//attachmentDescs[GBufferAttachmentIndex::POSITION].format = attachments[GBufferAttachmentIndex::POSITION].format;
 	attachmentDescs[GBufferAttachmentIndex::NORMAL]  .format = attachments[GBufferAttachmentIndex::NORMAL]  .format;
 	attachmentDescs[GBufferAttachmentIndex::ALBEDO]  .format = attachments[GBufferAttachmentIndex::ALBEDO]  .format;
 	attachmentDescs[GBufferAttachmentIndex::MATERIAL].format = attachments[GBufferAttachmentIndex::MATERIAL].format;
 	attachmentDescs[GBufferAttachmentIndex::DEPTH]   .format = attachments[GBufferAttachmentIndex::DEPTH]   .format;
 
 	std::vector<VkAttachmentReference> colorReferences;
-	colorReferences.push_back({ GBufferAttachmentIndex::POSITION, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	//colorReferences.push_back({ GBufferAttachmentIndex::POSITION, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::NORMAL,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::ALBEDO,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::MATERIAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
@@ -260,7 +260,7 @@ void GBufferRenderPass::SetupFramebuffer()
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 	
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
+		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
 		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
@@ -279,7 +279,7 @@ void GBufferRenderPass::SetupFramebuffer()
 	//VK_CHK(vkCreateFramebuffer(vr.m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
 	VK_NAME(vr.m_device.logicalDevice, "deferredFB", framebuffer_GBuffer);
 
-	deferredImg[GBufferAttachmentIndex::POSITION] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::POSITION].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	//deferredImg[GBufferAttachmentIndex::POSITION] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::POSITION].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredImg[GBufferAttachmentIndex::NORMAL]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::NORMAL  ].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredImg[GBufferAttachmentIndex::ALBEDO]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::ALBEDO  ].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredImg[GBufferAttachmentIndex::MATERIAL] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::MATERIAL].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -339,7 +339,7 @@ void GBufferRenderPass::CreatePipeline()
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
+		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
 	};
 
 	colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());

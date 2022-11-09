@@ -46,10 +46,11 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     struct SphereColliderComponent final /*: public ColliderBase*/
     {
-        Sphere Bounds = { { 0.f, 0.f, 0.f }, { 0.5f } };
+        //Sphere Bounds = { { 0.f, 0.f, 0.f }, { 0.5f } };
         float Radius = 0.5f;
 
-        Sphere GlobalBounds;
+        float GlobalRadius = 0.5f;
+        //Sphere GlobalBounds;
 
         //RTTR_ENABLE(ColliderBase);
         RTTR_ENABLE();

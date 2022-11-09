@@ -1,10 +1,10 @@
 /************************************************************************************//*!
-\file           AudioListenerComponent.h
+\file           Color.h
 \project        Ouroboros
-\author         Tay Yan Chong Clarence, t.yanchongclarence, 620008720 | code contribution (100%)
-\par            email: t.yanchongclarence\@digipen.edu
-\date           Sep 26, 2022
-\brief          Contains the declaration for the Audio Listener component.
+\author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
+\par            email: c.tecklee\@digipen.edu
+\date           Sept 30, 2022
+\brief          Defines a color struct that wraps glm vec4
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -13,14 +13,14 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #pragma once
-
-#include <rttr/type>
-
+#include "pch.h"
 namespace oo
 {
-    class AudioListenerComponent
+    class Color
     {
     public:
-        RTTR_ENABLE();
+        float r = 1.f, g = 1.f, b = 1.f, a = 1.f;
+        //glm::vec4 Color = glm::vec4{ 1.f };
+        operator glm::vec4() const { return glm::vec4{ r, g, b, a }; }
     };
 }

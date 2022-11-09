@@ -38,7 +38,6 @@ namespace oo
 
         using ComponentAction = std::function<void(SceneID, UUID)>;
         using ComponentCheck = std::function<bool(SceneID, UUID)>;
-        using ComponentSetAction = std::function<void(SceneID, UUID, bool)>;
 
         static constexpr IntPtr InvalidPtr = 0;
 
@@ -48,8 +47,6 @@ namespace oo
             ComponentAction Add;
             ComponentAction Remove;
             ComponentCheck Has;
-            ComponentSetAction SetEnabled;
-            ComponentCheck CheckEnabled;
 
             std::string name_space;
             std::string name;
@@ -68,8 +65,7 @@ namespace oo
 
     public:
         static void RegisterComponent(std::string const& name_space, std::string const& name,
-            ComponentAction Add, ComponentAction Remove, ComponentCheck Has,
-            ComponentSetAction SetEnabled, ComponentCheck CheckEnabled);
+            ComponentAction Add, ComponentAction Remove, ComponentCheck Has);
 
         static size_t GetComponentTypeIndex(const char* name_space, const char* name);
 
@@ -120,9 +116,6 @@ namespace oo
                 return nullptr;
             return mono_gchandle_get_target(ptr);
         }
-
-        bool CheckEnabled(UUID id, const char* name_space, const char* name);
-        void SetEnabled(UUID id, const char* name_space, const char* name, bool isEnabled);
 
         void Delete(UUID id, const char* name_space, const char* name, bool onlyScript = false);
         void Delete(UUID id);

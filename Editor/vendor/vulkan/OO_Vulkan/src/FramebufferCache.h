@@ -41,7 +41,7 @@ public:
 
 		size_t hash() const;
 	};
-
+	void DeleteRelated(vkutils::Texture2D tex);
 
 
 private:

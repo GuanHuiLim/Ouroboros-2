@@ -1110,26 +1110,42 @@ namespace oo::Anim::internal
 
 	}
 
-	void AssignAnimationTreeToComponent(IAnimationComponent& component)
+	/*void AssignAnimationTreeToComponent(IAnimationComponent& component)
 	{
-		component.animTree = &(AnimationTree::map[component.animTree_name]);
-	}
+		auto tree = internal::RetrieveAnimationTree(component.animTree_name);
+		assert(tree);
+		component.animTree = tree;
+	}*/
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
 	{
 		//do nothing if name empty
 		if (name.empty()) return;
-		//assert(name.empty() == false);
-		
-		//retrieve tree
-		if (AnimationTree::map.contains(name) == false)
+
+		auto tree = internal::RetrieveAnimationTree(name);
+		if (tree == nullptr)
 		{
 			LOG_CORE_DEBUG_CRITICAL("cannot find animation tree {0}!!", name);
 			assert(false);
 			return;
 		}
-		component.animTree_name = name;
-		AssignAnimationTreeToComponent(component);
+		component.animTree_name = tree->name;
+		component.animTree = tree;
+	}
+
+	void AssignAnimationTreeToComponent(IAnimationComponent& component, size_t id)
+	{
+		if (id == internal::invalid_ID) return;
+
+		auto tree = internal::RetrieveAnimationTree(id);
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_CRITICAL("cannot find animation tree ID: {0}!!", id);
+			assert(false);
+			return;
+		}
+		component.animTree_name = tree->name;
+		component.animTree = tree;
 	}
 
 	Group* RetrieveGroupFromTree(AnimationTree& tree, std::string const& groupName)
@@ -1273,6 +1289,34 @@ namespace oo::Anim::internal
 
 	}
 
+	Animation* RetrieveAnimation(size_t anim_id)
+	{
+		auto has_anim = Animation::animation_storage.contains(anim_id);
+		assert(has_anim);
+		if (has_anim)
+			return &(Animation::animation_storage[anim_id]);
+		else
+			return nullptr;
+	}
+
+	AnimationTree* RetrieveAnimationTree(std::string const& name)
+	{
+		for (auto& [key, tree] : AnimationTree::map)
+		{
+			if (tree.name == name)
+				return &tree;
+		}
+
+		return nullptr;
+	}
+
+	AnimationTree* RetrieveAnimationTree(size_t id)
+	{
+		if (AnimationTree::map.contains(id) == false) return nullptr;
+
+		return &(AnimationTree::map[id]);
+	}
+
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
 
@@ -1335,7 +1379,7 @@ namespace oo::Anim::internal
 	//	return AddNodeToGroup(*group, name, position);
 	//}
 
-	Timeline* AddTimelineToAnimation(Animation& animation, Anim::TimelineInfo const& info)
+	Timeline* AddTimelineToAnimation(Animation& animation, Anim::TimelineInfo& info)
 	{
 		Timeline* existing_timeline = TryRetrieveTimelineFromAnimation(animation, info.timeline_name);
 
@@ -1348,6 +1392,8 @@ namespace oo::Anim::internal
 		//detect gameobject hierarchy
 		if (info.hierarchy_provided == false)
 		{
+			info.timeline_name = info.target_object.Name() + "_" + info.rttr_property.get_name();
+
 			oo::UUID current = info.source_object.GetInstanceID();
 			oo::UUID target = info.target_object.GetInstanceID();
 			//if the target gameobject is not the root
@@ -1389,7 +1435,6 @@ namespace oo::Anim::internal
 			}
 
 		}
-
 		//create the new timeline
 		Timeline timeline{ createInfo };
 		return &(animation.timelines.emplace_back(std::move(timeline)));
@@ -1538,6 +1583,14 @@ namespace oo::Anim::internal
 		node.anim = CreateAnimationReference(anim.animation_ID);
 
 		return &anim;
+	}
+
+	void RemoveNodeFromGroup(Group& group, std::string const& node_name)
+	{
+	}
+
+	void RemoveLinkFromGroup(Group& group, std::string const& link_name)
+	{
 	}
 
 	void LoadFBX(std::string const& filepath, Animation* anim)
@@ -1755,5 +1808,19 @@ namespace oo::Anim::internal
 		assert(false);
 		LOG_CRITICAL("GetParameterIndex cannot find parameter {0}!!!", paramName);
 		return std::numeric_limits<uint>().max();
+	}
+	void ReInsertKeyFrame(Timeline& timeline, uint index, float time)
+	{
+		if (index >= timeline.keyframes.size())
+		{
+			assert(false);
+			return;
+		}
+
+		KeyFrame kf = timeline.keyframes[index];
+
+		timeline.keyframes.erase(timeline.keyframes.begin() + index);
+
+		AddKeyframeToTimeline(timeline, kf);
 	}
 }

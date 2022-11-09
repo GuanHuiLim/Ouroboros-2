@@ -19,10 +19,9 @@ Technology is prohibited.
 #include "Ouroboros/Physics/PhysicsFwd.h"
 #include "PhysicsEvents.h"
 #include "Ouroboros/Core/Timer.h"
-
 #include <Physics/Source/phy.h>
-
 #include <bitset>
+#include "Ouroboros/ECS/GameObjectComponent.h"
 
 namespace oo
 {
@@ -67,6 +66,8 @@ namespace oo
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsResolution(Timestep deltaTime);
         
+        void UpdateDuplicatedObjects();
+        void UpdateGlobalBounds();
         void UpdateCallbacks();
         void PostUpdate();
 
@@ -90,12 +91,15 @@ namespace oo
         void OnCapsuleColliderAdd(Ecs::ComponentEvent<CapsuleColliderComponent>* cc);
         void OnCapsuleColliderRemove(Ecs::ComponentEvent<CapsuleColliderComponent>* cc);
 
-        /*void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb);
-        void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb);*/
+        void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb);
+        void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb);
     
         void InitializeRigidbody(RigidbodyComponent& rb);
         void InitializeBoxCollider(RigidbodyComponent& rb);
         void InitializeCapsuleCollider(RigidbodyComponent& rb);
+        void InitializeSphereCollider(RigidbodyComponent& rb);
+
+        void AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc);
     };
 
 

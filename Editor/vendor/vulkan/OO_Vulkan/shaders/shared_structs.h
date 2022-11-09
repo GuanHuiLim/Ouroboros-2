@@ -49,6 +49,7 @@ struct SpotLightInstance
 struct LightPC
 {
     uvec4 numLights;
+    mat4 lightMat;
 };
 
 

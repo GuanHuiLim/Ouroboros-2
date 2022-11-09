@@ -32,6 +32,7 @@ Technology is prohibited.
 #include "App/Editor/Events/CopyButtonEvent.h"
 #include "App/Editor/Events/PasteButtonEvent.h"
 #include "App/Editor/Events/DuplicateButtonEvent.h"
+#include "App/Editor/Events/DestroyGameObjectButtonEvent.h"
 
 #include "Ouroboros/Core/Events/FileDropEvent.h"
 #include "Ouroboros/Core/Timer.h"
@@ -155,6 +156,11 @@ void Editor::Update()
 			PasteButtonEvent cbe;
 			oo::EventManager::Broadcast<PasteButtonEvent>(&cbe);
 		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_D))
+		{
+			DuplicateButtonEvent dbe;
+			oo::EventManager::Broadcast<DuplicateButtonEvent>(&dbe);
+		}
 		else if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_P))
 		{
 			if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftShift))
@@ -173,6 +179,11 @@ void Editor::Update()
 				oo::EventManager::Broadcast(&tbe);
 			}
 		}
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_Delete))
+	{
+		DestroyGameObjectButtonEvent dbe;
+		oo::EventManager::Broadcast<DestroyGameObjectButtonEvent>(&dbe);
 	}
 	TimedUpdate();
 }

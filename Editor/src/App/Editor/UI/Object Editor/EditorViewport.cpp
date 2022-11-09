@@ -204,21 +204,21 @@ void EditorViewport::Show()
 		}
 		before_edit.clear();
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::Q)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
 		ChangeGizmoEvent e(m_gizmoOperation);
 		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
 		ChangeGizmoEvent e(m_gizmoOperation);
 		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
 	}
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::R)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
 		ChangeGizmoEvent e(m_gizmoOperation);

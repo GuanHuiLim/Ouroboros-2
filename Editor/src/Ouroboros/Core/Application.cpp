@@ -48,9 +48,6 @@ namespace oo
         /*Initialize Input Management*/
         input::Init();
 
-        // Initialise audio
-        audio::Init();
-
         // Only start running file watchers ones dependencies are intiialised
         /*AssetManager::GlobalStartRunning();*/
     }
@@ -59,9 +56,6 @@ namespace oo
     {
         /*Shutdown Input Management*/
         input::ShutDown();
-
-        // Shutdown audio
-        audio::ShutDown();
 
         //m_window->~Window();
     }

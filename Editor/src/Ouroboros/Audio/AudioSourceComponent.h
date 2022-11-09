@@ -43,6 +43,7 @@ namespace oo
         [[nodiscard]] inline bool IsDirty() const { return isDirty; }
         [[nodiscard]] bool IsPlaying() const;
         [[nodiscard]] float GetPlaybackTime() const;
+        [[nodiscard]] unsigned int GetPlaybackTimeSamples() const;
 
         /* --------------------------------------------------------------------------- */
         /* Setters                                                                     */
@@ -54,6 +55,8 @@ namespace oo
         void SetLoop(bool l);
         void SetVolume(float v);
         void SetPitch(float p);
+        void SetPlaybackTime(float t);
+        void SetPlaybackTimeSamples(unsigned int t);
 
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
