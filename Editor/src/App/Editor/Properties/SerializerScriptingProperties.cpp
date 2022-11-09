@@ -183,6 +183,8 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
 			val.AddMember(name, sfi.value.GetValue<oo::Asset>().GetID(), doc.GetAllocator());
 		});
+
+
 }
 
 SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()

@@ -72,19 +72,19 @@ private: //inspecting elements
 template<typename Component>
 inline void Inspector::SaveComponentDataHelper(Component& component, rttr::property prop, rttr::variant& pre_value, rttr::variant&& edited_value, oo::UUID id, bool edited, bool endEdit)
 {
-	if (endEdit)
-	{
-		//undo redo command
-		oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<Component>
-			(pre_value, edited_value, prop, id));
-		pre_value.clear();//reset this variant
-	}
 	if (edited == true)
 	{
 		if (pre_value.is_valid() == false)//if the variant is empty that means it is ready to hold data
 			pre_value = prop.get_value(component);
 		//set value to component
 		prop.set_value(component, edited_value);
+	}
+	if (endEdit)
+	{
+		//undo redo command
+		oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<Component>
+			(pre_value, edited_value, prop, id));
+		pre_value.clear();//reset this variant
 	}
 }
 template<typename Component>
