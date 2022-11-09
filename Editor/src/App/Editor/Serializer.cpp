@@ -317,13 +317,13 @@ std::string Serializer::SaveSingleScriptField(oo::ScriptFieldInfo& sfi)
 	return buffer.GetString();
 }
 
-void Serializer::LoadSingleScriptField(oo::ScriptFieldInfo& value, std::string& data)
+void Serializer::LoadSingleScriptField(oo::ScriptFieldInfo& value, oo::ScriptValue::type_enum type, const  std::string& data)
 {
 	rapidjson::StringStream stream(data.c_str());
 	rapidjson::Document doc;
 	doc.ParseStream(stream);
 	
-	auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(value.value.GetValueType());
+	auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
 	if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
 		return;
 	//loads only 1 value as the name of the function describes

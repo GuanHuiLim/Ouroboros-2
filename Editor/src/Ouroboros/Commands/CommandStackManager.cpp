@@ -12,6 +12,7 @@
 #include "Ouroboros/Commands/Component_ActionCommand.h"
 #include "Ouroboros/Commands/Ordering_ActionCommand.h"
 #include "Ouroboros/Commands/ScriptAR_ActionCommand.h"
+#include "Ouroboros/Commands/Script_ActionCommand.h"
 #include "App/Editor/Networking/NetworkingEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 void oo::CommandStackManager::InitEvents()
@@ -59,7 +60,10 @@ void oo::CommandStackManager::InitEvents()
 			auto* ac = ActionCommandHelper::CreateActionCommand_Remove(e->header, e->data);
 			CommandStackManager::AddCommand(e->header, ac);
 		}break;
-		case CommandPacketType::ActionScript:break;
+		case CommandPacketType::ActionScript: {
+			auto* sac = new Script_ActionCommand(e->header, e->data);
+			CommandStackManager::AddCommand(e->header, sac);
+		}break;
 
 		case CommandPacketType::AddScript: {
 			auto* sa = new ScriptAdd_ActionCommand(e->header, e->data);

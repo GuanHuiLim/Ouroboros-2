@@ -14,6 +14,8 @@ namespace oo
 	Script_ActionCommand::Script_ActionCommand(const std::string& scriptInfo, const std::string& scriptFieldInfo, oo::ScriptValue pre_value, oo::ScriptValue post_value, oo::UUID gameobjID)
 		:SI_name{ scriptInfo }, SFI_name{ scriptFieldInfo }, pre_val{ pre_value }, post_val{ post_value }, gameobjectID{ gameobjID }
 	{
+		message = SI_name + " Changed field " + SFI_name;
+		PacketUtilts::BroadCastCommand(CommandPacketType::ActionScript, GetData());
 	};
 	Script_ActionCommand::~Script_ActionCommand()
 	{
@@ -70,7 +72,7 @@ namespace oo
 		data += std::to_string(gameobjectID.GetUUID());
 		data += PacketUtilts::SEPERATOR;
 		//getting the script values
-		oo::ScriptFieldInfo info(SI_name, pre_val);
+		oo::ScriptFieldInfo info(SFI_name, pre_val);
 		data += Serializer::SaveSingleScriptField(info);
 		data += PacketUtilts::SEPERATOR;
 		info.value = post_val;
@@ -86,6 +88,35 @@ namespace oo
 		SFI_name = PacketUtilts::ParseCommandData(data, offset);
 		gameobjectID = std::stoull(PacketUtilts::ParseCommandData(data, offset));
 		//wip
+		auto type = oo::ScriptClassInfo{ SI_name }.GetScriptFieldType(SFI_name);
+		
+
+		//get script field info
+		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+		auto go = scene->FindWithInstanceID(gameobjectID);
+		auto& scriptinfoall = go->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
+		auto scriptInfoIter = scriptinfoall.find(SI_name);
+		if (scriptInfoIter == scriptinfoall.end())
+		{
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "script not found");
+			return;
+		}
+
+		auto scriptfield = scriptInfoIter->second.fieldMap.find(SFI_name);
+		if (scriptfield == scriptInfoIter->second.fieldMap.end())
+		{
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "script field not found");
+			return;
+		}
+		oo::ScriptFieldInfo info = scriptfield->second;
+
+		std::string vals = PacketUtilts::ParseCommandData(data, offset);
+		Serializer::LoadSingleScriptField(info, type, vals);
+		pre_val = info.value;
+
+		vals = PacketUtilts::ParseCommandData(data, offset);
+		Serializer::LoadSingleScriptField(info, type, vals);
+		post_val = info.value;
 
 		message = "Script Fields Edited by : ";
 		message += packet.name;

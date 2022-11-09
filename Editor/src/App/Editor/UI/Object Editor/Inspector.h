@@ -100,7 +100,7 @@ inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
 		return false;//not found
 	if (ImGui::Selectable(name.c_str(), false))
 	{
-		if (go.HasComponent<Component>())
+		if (go.HasComponent<Component>() == false)
 		{
 			go.AddComponent<Component>();
 			oo::CommandStackManager::AddCommand(new oo::AddComponent_ActionCommand<Component>(go));

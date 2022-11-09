@@ -89,7 +89,7 @@ public:
 	static void LoadSingleVariant(oo::GameObject& go, rttr::variant& var, rttr::property& prop, const std::string& data);
 	//saving and loading of single script field
 	static std::string SaveSingleScriptField(oo::ScriptFieldInfo& sfi);
-	static void LoadSingleScriptField(oo::ScriptFieldInfo& value, std::string& data);
+	static void LoadSingleScriptField(oo::ScriptFieldInfo& value,oo::ScriptValue::type_enum type,const  std::string& data);
 private:
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);

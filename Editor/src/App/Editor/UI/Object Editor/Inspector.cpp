@@ -410,7 +410,7 @@ void Inspector::DisplayEnumView(rttr::property prop, rttr::variant& value, bool&
 	}
 	if (open_id == curr_id)
 	{
-		if (ImGui::BeginListBox("#enums"))
+		if (ImGui::BeginListBox("##enums"))
 		{
 			for (auto val : enumeration.get_values())
 			{
@@ -420,6 +420,7 @@ void Inspector::DisplayEnumView(rttr::property prop, rttr::variant& value, bool&
 					value = val;
 					open_id = 0;
 					endEdit = true;
+					edited = true;
 				}
 			}
 			ImGui::EndListBox();
