@@ -33,7 +33,9 @@ namespace oo
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
-        float GetAxis(std::string const& axisName);
+        InputAxis& GetAxis(std::string const& axisName);
+
+        float GetAxisValue(std::string const& axisName);
 
     private:
         std::unordered_map<std::string, InputAxis::Tracker> trackers;
