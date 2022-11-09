@@ -35,6 +35,11 @@ namespace oo
         Project::LoadInputs(Project::GetProjectFolder() / filePath);
     }
 
+    SCRIPT_API bool Project_HasInputsFile(const char* filePath)
+    {
+        return std::filesystem::exists(Project::GetProjectFolder() / filePath);
+    }
+
     SCRIPT_API float GetAxis(const char* axisName)
     {
         return ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxisValue(axisName);
@@ -92,7 +97,7 @@ namespace oo
     }
 
     /*-----------------------------------------------------------------------------*/
-    /* Input Functions for C#                                                      */
+    /* Keyboard Input Functions for C#                                             */
     /*-----------------------------------------------------------------------------*/
     SCRIPT_API bool IsAnyKeyPressed()
     {
@@ -123,6 +128,34 @@ namespace oo
     {
         return input::IsKeyReleased(static_cast<input::KeyCode>(key));
     }
+
+    SCRIPT_API int GetKeyPressed()
+    {
+        std::vector<input::KeyCode> keys = input::GetKeysPressed();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    SCRIPT_API int GetKeyHeld()
+    {
+        std::vector<input::KeyCode> keys = input::GetKeysHeld();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    SCRIPT_API int GetKeyReleased()
+    {
+        std::vector<input::KeyCode> keys = input::GetKeysReleased();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    /*-----------------------------------------------------------------------------*/
+    /* Mouse Input Functions for C#                                                */
+    /*-----------------------------------------------------------------------------*/
 
     SCRIPT_API void GetMousePosition(int* x, int* y)
     {
@@ -168,6 +201,49 @@ namespace oo
         return input::IsMouseButtonReleased(static_cast<input::MouseCode>(button));
     }
 
+    SCRIPT_API int GetMouseButtonPressed()
+    {
+        std::vector<input::MouseCode> keys = input::GetMouseButtonsPressed();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    SCRIPT_API int GetMouseButtonHeld()
+    {
+        std::vector<input::MouseCode> keys = input::GetMouseButtonsHeld();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    SCRIPT_API int GetMouseButtonReleased()
+    {
+        std::vector<input::MouseCode> keys = input::GetMouseButtonsReleased();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    /*-----------------------------------------------------------------------------*/
+    /* Controller Input Functions for C#                                           */
+    /*-----------------------------------------------------------------------------*/
+
+    SCRIPT_API bool IsAnyControllerButtonPressed()
+    {
+        return input::IsAnyControllerButtonPressed();
+    }
+
+    SCRIPT_API bool IsAnyControllerButtonHeld()
+    {
+        return input::IsAnyControllerButtonHeld();
+    }
+
+    SCRIPT_API bool IsAnyControllerButtonReleased()
+    {
+        return input::IsAnyControllerButtonReleased();
+    }
+
     SCRIPT_API bool IsControllerButtonPressed(int button)
     {
         return input::IsControllerButtonPressed(static_cast<input::ControllerButtonCode>(button));
@@ -183,8 +259,45 @@ namespace oo
         return input::IsControllerButtonReleased(static_cast<input::ControllerButtonCode>(button));
     }
 
+    SCRIPT_API int GetControllerButtonPressed()
+    {
+        std::vector<input::ControllerButtonCode> keys = input::GetControllerButtonsPressed();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    SCRIPT_API int GetControllerButtonHeld()
+    {
+        std::vector<input::ControllerButtonCode> keys = input::GetControllerButtonsHeld();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    SCRIPT_API int GetControllerButtonReleased()
+    {
+        std::vector<input::ControllerButtonCode> keys = input::GetControllerButtonsReleased();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]);
+    }
+
+    SCRIPT_API bool IsAnyControllerAxis()
+    {
+        return input::IsAnyControllerAxis();
+    }
+
     SCRIPT_API float GetControllerAxisValue(int axis)
     {
         return input::GetControllerAxisValue(static_cast<input::ControllerAxisCode>(axis));
+    }
+
+    SCRIPT_API int GetControllerAxis()
+    {
+        std::vector<std::tuple<input::ControllerAxisCode, float>> keys = input::GetControllerAxis();
+        if (keys.size() <= 0)
+            ScriptEngine::ThrowNullException();
+        return static_cast<int>(keys[0]._Myfirst._Val);
     }
 }

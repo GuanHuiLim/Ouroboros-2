@@ -67,23 +67,27 @@ namespace Ouroboros
 
         public static void Save()
         {
-            Save("InputBindings");
-        }
-        public static void Save(string filePath)
-        {
-            Project_SaveInputs(filePath);
+            Project_SaveInputs("Custom_InputBindings");
         }
 
+        [DllImport("__Internal")] private static extern bool Project_HasInputsFile(string filePath);
         [DllImport("__Internal")] private static extern void Project_LoadInputs(string filePath);
 
-        public static void Load()
+        public static void Revert()
         {
-            Load("InputBindings");
+            if (Project_HasInputsFile("Custom_InputBindings"))
+            {
+                Project_LoadInputs("Custom_InputBindings");
+            }
+            else
+            {
+                Project_LoadInputs("InputBindings");
+            }
         }
 
-        public static void Load(string filePath)
+        public static void Reset()
         {
-            Project_LoadInputs(filePath);
+            Project_LoadInputs("InputBindings");
         }
     }
 }
