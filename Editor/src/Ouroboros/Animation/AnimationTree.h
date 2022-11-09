@@ -22,7 +22,7 @@ namespace oo::Anim
 	struct AnimationTree
 	{
 		friend class AnimationSystem;
-		static std::unordered_map<std::string, AnimationTree> map;
+		static std::unordered_map<size_t, AnimationTree> map;
 	
 		std::string name{"Unnamed Animation Tree"};
 		//contains a collection of nodes and links between the nodes 
@@ -32,12 +32,13 @@ namespace oo::Anim
 		std::unordered_map<size_t, uint> paramIDtoIndexMap;
 		//std::vector<Animation> animations;
 		//std::vector<Node> nodes;
+		size_t treeID{ internal::invalid_ID };
 
-		static AnimationTree* Create(std::string const name = "Unnamed Animation Tree");
 	
 		RTTR_ENABLE();
 
 	private:
+		static AnimationTree* Create(std::string const name = "Unnamed Animation Tree");
 		static AnimationTree* Add(AnimationTree&& tree);
 	};
 

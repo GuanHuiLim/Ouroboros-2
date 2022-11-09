@@ -139,6 +139,19 @@ namespace oo::Anim
 			;
 	}
 
+	Timeline::Timeline(TimelineInfo const& info)
+	: type{ info.type }
+	, rttr_property{ info.rttr_property }
+	, rttr_type{ info.rttr_property.get_type() }
+	, name{ info.timeline_name }
+	, component_hash{ info.component_hash }
+	, children_index{ info.children_index }
+	{
+		get_componentFn = Ecs::ECSWorld::get_component_Fn(component_hash);
+
+		//verify able to retrieve the component info
+		assert(get_componentFn != nullptr);
+	}
 	/*-------------------------------
 	ProgressTracker
 	-------------------------------*/
