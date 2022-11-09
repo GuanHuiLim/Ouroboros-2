@@ -32,7 +32,7 @@ namespace oo::Anim
 		std::unordered_map<size_t, uint> paramIDtoIndexMap;
 		//std::vector<Animation> animations;
 		//std::vector<Node> nodes;
-		size_t treeID{ internal::invalid_ID };
+		UID treeID{ internal::invalid_ID };
 
 	
 		RTTR_ENABLE();

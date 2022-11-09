@@ -40,6 +40,7 @@ std::unordered_map <rttr::type::type_id, StringHash::size_type> oo::Anim::intern
 	add(rttr::type::get<float>(), "float");
 	add(rttr::type::get<int>(), "int");
 	add(rttr::type::get<size_t>(), "size_t");
+	add(rttr::type::get<oo::Anim::UID>(), "UID");
 	add(rttr::type::get<std::string>(), "std::string");
 	add(rttr::type::get<glm::vec3>(), "glm::vec3");
 	add(rttr::type::get<glm::quat>(), "glm::quat");
@@ -72,7 +73,11 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 	{
 		writer.Uint64(val.get_value<size_t>());
 	};
-
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		writer.Uint64(val.get_value<oo::Anim::UID>());
+	};
 	//rttr types
 	map[rttr::type::get<rttr::variant>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
@@ -273,6 +278,16 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		writer.Uint64(val.get_value<size_t>());
 		writer.EndObject();
 	};
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		writer.StartObject();
+		writer.Key("Type Hash", static_cast<rapidjson::SizeType>(std::string("Type Hash").size()));
+		writer.Uint64(static_cast<uint64_t>(rttrType_to_hash[rttr::type::get<oo::Anim::UID>().get_id()]));
+		writer.Key("Value", static_cast<rapidjson::SizeType>(std::string("Value").size()));
+		writer.Uint64(val.get_value<oo::Anim::UID>());
+		writer.EndObject();
+	};
 	map[rttr::type::get<std::string>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -334,6 +349,11 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 		= [](rapidjson::Value& value)
 	{
 		return rttr::variant{ value.GetUint64() };
+	};
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		return rttr::variant{ oo::Anim::UID{value.GetUint64()} };
 	};
 	map[rttr::type::get<std::string>().get_id()]
 		= [](rapidjson::Value& value)
@@ -505,6 +525,13 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 	{
 		auto val = static_cast<size_t>(value.GetUint64());
 		return rttr::variant{ val };
+	};
+
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto val = static_cast<size_t>(value.GetUint64());
+		return rttr::variant{ oo::Anim::UID{val} };
 	};
 
 	map[rttr::type::get<std::string>().get_id()]

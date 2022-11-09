@@ -269,7 +269,6 @@ void FileBrowser::PopupOptions()
 		}
 		if (ImGui::MenuItem("Create Animation Tree"))
 		{
-			//oo::AnimatorController::CreateNewControllerAsset();
 			oo::Anim::AnimationSystem::CreateAnimationTree("New Animation Tree");
 		}
 		if (ImGui::MenuItem("Create Animation"))
