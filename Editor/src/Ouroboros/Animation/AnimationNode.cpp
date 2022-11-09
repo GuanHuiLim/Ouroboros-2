@@ -143,10 +143,14 @@ namespace oo::Anim
 		, name{ info.name }
 		, node_ID{ info.nodeID == internal::invalid_ID ? internal::generateUID() : info.nodeID }
 	{
-		assert(Animation::name_to_ID.contains(info.animation_name));
+		auto anim_ptr = internal::RetrieveAnimation(info.animation_name);
+		if (anim_ptr == nullptr)
+		{
+			return;
+		}
+
 		anim.anims = &(Animation::animation_storage);
-		anim.id = Animation::animation_storage[
-			Animation::name_to_ID[info.animation_name]].animation_ID;
+		anim.id = anim_ptr->animation_ID;
 		anim.Reload();
 	}
 
@@ -155,5 +159,9 @@ namespace oo::Anim
 	{
 		assert(anim);
 		return *anim;
+	}
+	bool oo::Anim::Node::HasAnimation()
+	{
+		return anim;
 	}
 }
