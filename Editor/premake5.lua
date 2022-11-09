@@ -65,6 +65,7 @@ project "Editor"
 		
         "%{IncludeDir.fmod}",
         "%{IncludeDir.discord}",
+		"%{IncludeDir.slikenet}",
         --for tracy
         "%{IncludeDir.tracy}",
 		--for optick
@@ -84,6 +85,7 @@ project "Editor"
         "%{LibraryDir.assimp}/Release",
         "%{LibraryDir.fmod}",
         "%{LibraryDir.discord}",
+		"%{LibraryDir.slikenet}",
     }
 
     -- linking External libraries 
@@ -122,6 +124,7 @@ project "Editor"
         "assimp-vc142-mt",
 
         "dbghelp",
+		"ws2_32",
         --"srcsrv", are these even needed? might just remove-em altogether.
         --"symsrv",
         
@@ -233,6 +236,7 @@ project "Editor"
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" \"" .. binApp .. "\""},
             {"{COPY} \"%{LibraryDir.fmod}/fmodL.dll\" \"" .. binApp .. "\""},
+			{"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Debug_x64.dll\" \"" .. binApp .. "\""},
             -- copy Debug DLLs
             {"{COPY} \"%{AppDir}/dlls/Debug/\" \"" .. binApp .. "\"" },
         }
@@ -241,6 +245,7 @@ project "Editor"
         {
             "rttr_core_d",
             "fmodL_vc",
+			"SLikeNet_DLL_Debug_x64",
         }
     
     filter "configurations:Release"
@@ -255,6 +260,7 @@ project "Editor"
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
             {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
+			{"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
             -- copy Release DLLs
             {"{COPY} \"%{AppDir}/dlls/Release/\" \"" .. binApp .. "\"" },
         }
@@ -263,6 +269,7 @@ project "Editor"
         {
             "rttr_core",
             "fmod_vc",
+			"SLikeNet_DLL_Release_x64",
         }
         
     filter "configurations:Production"
@@ -279,7 +286,8 @@ project "Editor"
             {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
             -- copy Release DLLs
             {"{COPY} \"%{AppDir}/dlls/release/\" \"" .. binApp .. "\"" },
-
+            -- slikenet
+            {"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
             -- copy iss file for compiling /for production only
             {"{COPY} \"%{AppDir}/engine_portable.iss\" \"" .. binApp .. "\"" },
         }
@@ -288,4 +296,5 @@ project "Editor"
         {
             "rttr_core",
             "fmod_vc",
+            "SLikeNet_DLL_Release_x64",
         }

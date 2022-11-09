@@ -36,6 +36,9 @@ Technology is prohibited.
 #include <App/Editor/Properties/InspectorProperties.h>
 #include <App/Editor/Properties/ScriptingProperties.h>
 #include <App/Editor/Properties/UI_metadata.h>
+//undo redo for adding components
+#include <Ouroboros/Commands/CommandStackManager.h>
+#include <Ouroboros/Commands/AddComponent_ActionCommand.h>
 class Inspector
 {
 public:
@@ -97,7 +100,11 @@ inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
 		return false;//not found
 	if (ImGui::Selectable(name.c_str(), false))
 	{
-		go.AddComponent<Component>();
+		if (go.HasComponent<Component>() == false)
+		{
+			go.AddComponent<Component>();
+			oo::CommandStackManager::AddCommand(new oo::AddComponent_ActionCommand<Component>(go));
+		}
 		return true;
 	}
 	ImGui::Separator();
@@ -129,6 +136,7 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 			if (ImGui::SmallButton("x"))
 			{
 				gameobject.RemoveComponent<Component>();
+				oo::CommandStackManager::AddCommand(new oo::RemoveComponent_ActionCommand<Component>(gameobject));
 				ImGui::PopID();
 				return;
 			}

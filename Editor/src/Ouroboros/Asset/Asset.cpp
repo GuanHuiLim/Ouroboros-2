@@ -151,6 +151,7 @@ namespace oo
                     using namespace Anim;
                     Animation* anim = AnimationSystem::LoadAnimation(self.contentPath.string());
                     self.data.emplace_back(anim->name);
+                    self.data.emplace_back(anim->animation_ID);
                 };
                 onAssetDestroy = [](AssetInfo& self) {};
                 break;
@@ -163,6 +164,7 @@ namespace oo
                     using namespace Anim;
                     AnimationTree* animTree = AnimationSystem::LoadAnimationTree(self.contentPath.string());
                     self.data.emplace_back(animTree->name);
+                    self.data.emplace_back(animTree->treeID);
                 };
                 onAssetDestroy = [](AssetInfo& self) {};
                 break;
