@@ -59,7 +59,7 @@ struct ObjectInstance
 
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
-    ObjectInstanceFlags flags{};
+    ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(SHADOW_RECEIVER | SHADOW_CASTER)};
 
 
     std::vector<glm::mat4> bones;
@@ -110,7 +110,7 @@ public:
 
     uint32_t numCameras = 1;
     std::array<Camera, 2>cameras;
-    std::array<int32_t, 2>targetIDs{ -1 };
+    std::array<int32_t, 2>targetIDs{ -1,-1 };
     std::array<ImTextureID, 2>imguiID{};
 
     // TODO: Fix Me ! This is for testing

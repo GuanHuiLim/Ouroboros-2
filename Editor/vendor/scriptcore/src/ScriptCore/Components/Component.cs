@@ -9,31 +9,6 @@ namespace Ouroboros
         private GameObject m_GameObject = null;
         private int m_ComponentID = -1;
 
-        [DllImport("__Internal")] private static extern bool CheckComponentEnabled(UInt32 SceneID, UInt64 uuid, string name_space, string name);
-        [DllImport("__Internal")] private static extern void SetComponentEnabled(UInt32 SceneID, UInt64 uuid, string name_space, string name, bool active);
-
-        public bool enabled
-        {
-            get
-            {
-                Type type = GetType();
-                string name = type.Name;
-                string name_space = "";
-                if (type.Namespace != null)
-                    name_space = type.Namespace;
-                return CheckComponentEnabled(gameObject.scene, gameObject.GetInstanceID(), name_space, name);
-            }
-            set
-            {
-                Type type = GetType();
-                string name = type.Name;
-                string name_space = "";
-                if (type.Namespace != null)
-                    name_space = type.Namespace;
-                SetComponentEnabled(gameObject.scene, gameObject.GetInstanceID(), name_space, name, value);
-            }
-        }
-
         public GameObject gameObject
         {
             get { return m_GameObject; }

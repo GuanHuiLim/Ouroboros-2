@@ -211,8 +211,8 @@ namespace oo
 
             //if (transformComp.HasChanged())
             graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
-            graphics_light.color = lightComp.Color;
-            graphics_light.radius = lightComp.Radius;
+            graphics_light.color = glm::vec4{ lightComp.Color.r, lightComp.Color.g, lightComp.Color.b, lightComp.Color.a };
+            graphics_light.radius = vec4{ lightComp.Radius, 0, 0, 0 };
         });
 
         // draw debug stuff
@@ -250,9 +250,6 @@ namespace oo
 #endif
         if (!using_editor_camera)
         {
-            // TODO: debug draw the camera's view in editormode
-            //DebugDraw::AddLine();
-
             // Update Camera(s)
             // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
 
@@ -281,6 +278,17 @@ namespace oo
             sphere.radius = 0.1f;
             DebugDraw::AddSphere(sphere, graphics_light.color);
         });
+
+        // Camera debug draw
+        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
+        world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+        {
+            Camera camera;
+            camera.SetPosition(transformComp.GetGlobalPosition());
+            camera.SetRotation(transformComp.GetGlobalRotationQuat());
+            DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::GREEN);
+        });
+
     }
 
     void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp)

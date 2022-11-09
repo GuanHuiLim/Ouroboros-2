@@ -123,8 +123,9 @@ void ShadowPass::Draw()
 	{
 		auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
 		light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3{ 0.0f,0.0f,0.0f }, glm::vec3{ 0.0f,1.0f,0.0f });
-		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 100.0f);
-		glm::mat4 viewproj = light.projection * light.view[0] ;
+		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
+		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+		glm::mat4 viewproj = light.projection * light.view[0];
 
 
 		vkCmdPushConstants(cmdlist,
@@ -134,7 +135,7 @@ void ShadowPass::Draw()
 			sizeof(glm::mat4),			// size of data being pushed
 			glm::value_ptr(viewproj));	// actualy data being pushed (could be an array));
 
-		cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.buffer, 0, vr.objectCount);
+		cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, vr.shadowCasterCommandsBuffer.size());
 	}
 
 	vkCmdEndRenderPass(cmdlist);
@@ -174,7 +175,8 @@ void ShadowPass::SetupRenderpass()
 	attachmentDescs.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachmentDescs.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachmentDescs.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachmentDescs.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	//attachmentDescs.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	attachmentDescs.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	attachmentDescs.format = shadow_depth.format;
 
 
@@ -244,6 +246,7 @@ void ShadowPass::CreatePipeline()
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+	//VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
 	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
 	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);

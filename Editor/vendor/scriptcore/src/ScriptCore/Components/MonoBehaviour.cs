@@ -43,7 +43,7 @@ namespace Ouroboros
         [DllImport("__Internal")] private static extern void SetScriptEnabled(UInt32 sceneID, UInt64 uuid, string name_space, string name, bool enabled);
         [DllImport("__Internal")] private static extern bool CheckScriptEnabled(UInt32 sceneID, UInt64 uuid, string name_space, string name);
 
-        public new bool enabled
+        public bool enabled
         {
             get { return CheckScriptEnabled(gameObject.scene, gameObject.GetInstanceID(), GetType().Namespace ?? "", GetType().Name); ; }
             set { SetScriptEnabled(gameObject.scene, gameObject.GetInstanceID(), GetType().Namespace ?? "", GetType().Name, value); }

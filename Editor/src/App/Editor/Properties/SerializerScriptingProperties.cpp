@@ -98,6 +98,14 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			//rapidjson::Value data(static_cast<uint64_t>((id.GetUUID())));//save as int64
 			val.AddMember(name, data, doc.GetAllocator());
 		});
+    m_ScriptSave.emplace(oo::ScriptValue::type_enum::PREFAB, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+        {
+            rapidjson::Value name;
+            name.SetString(sfi.name.c_str(), doc.GetAllocator());
+            rapidjson::Value data;
+            data.SetString(sfi.value.GetValue<oo::ScriptValue::prefab_type>().filePath.c_str(), doc.GetAllocator());
+            val.AddMember(name, data, doc.GetAllocator());
+        });
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::FUNCTION, [this](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
 		{
 			rapidjson::Value name;
@@ -205,6 +213,10 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 			oo::UUID id = val.GetUint64();
 			sfi.value.GetValue<oo::ScriptValue::component_type>().m_objID = id;
 		});
+    m_ScriptLoad.emplace(oo::ScriptValue::type_enum::PREFAB, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+        {
+            sfi.value.SetValue(oo::ScriptValue::prefab_type(val.GetString()));
+        });
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
 			oo::UUID id = val.GetUint64();

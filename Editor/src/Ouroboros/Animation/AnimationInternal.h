@@ -83,9 +83,8 @@ namespace oo::Anim::internal
 
 	void UpdateTracker(UpdateTrackerInfo& info);
 
-	void AssignAnimationTreeToComponent(IAnimationComponent& component);
-
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name);
+	void AssignAnimationTreeToComponent(IAnimationComponent& component, size_t id);
 
 	//RETRIEVAL
 	Group* RetrieveGroupFromTree(AnimationTree& tree, std::string const& groupName);
@@ -101,13 +100,15 @@ namespace oo::Anim::internal
 	Parameter* RetrieveParameterFromComponent(IAnimationComponent& comp, size_t id);
 	Parameter* RetrieveParameterFromComponentByIndex(IAnimationComponent& comp, uint index);
 	Animation* RetrieveAnimation(std::string const& anim_name);
-	
+	Animation* RetrieveAnimation(size_t anim_id);
+	AnimationTree* RetrieveAnimationTree(std::string const& name);
+	AnimationTree* RetrieveAnimationTree(size_t id);
 	
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info);
 
 	Group* AddGroupToTree(AnimationTree& tree, GroupInfo& info);
 
-	Timeline* AddTimelineToAnimation(Animation& animation, Anim::TimelineInfo const& info);
+	Timeline* AddTimelineToAnimation(Animation& animation, Anim::TimelineInfo& info);
 
 
 	bool KeyframeMatchesTimeline(Timeline& timeline, KeyFrame const& keyframe);
@@ -123,6 +124,10 @@ namespace oo::Anim::internal
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info);
 
 	Animation* AddAnimationToNode(Node& node, Animation& anim);
+
+	void RemoveNodeFromGroup(Group& group, std::string const& node_name);
+	void RemoveLinkFromGroup(Group& group, std::string const& link_name);
+
 
 	void LoadFBX(std::string const& filepath, Animation* anim);
 
@@ -150,5 +155,6 @@ namespace oo::Anim::internal
 	//parameters
 	uint GetParameterIndex(IAnimationComponent& comp, std::string const& paramName);
 	
-
+	//timeline
+	void ReInsertKeyFrame(Timeline& timeline, uint index, float time);
 }

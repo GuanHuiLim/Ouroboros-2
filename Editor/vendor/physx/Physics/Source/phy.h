@@ -71,6 +71,13 @@ namespace myPhysx {
         void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
     };
 
+    struct LockingAxis {
+
+        bool x_axis;
+        bool y_axis;
+        bool z_axis;
+    };
+
     struct ContactPoint {
 
         PxVec3 normal;
@@ -207,6 +214,10 @@ namespace myPhysx {
         RigidBody rb{};
         rigid rigidID = rigid::none;
 
+        // lock and unlock pos/rot axis
+        LockingAxis lockPositionAxis{ false };
+        LockingAxis lockRotationAxis{ false };
+
         bool trigger = false;
         bool gravity = true; // static should be false
         bool kinematic = false;
@@ -218,6 +229,8 @@ namespace myPhysx {
         PhysxWorld* world;
 
         // GETTERS
+        LockingAxis getLockPositionAxis() const;
+        LockingAxis getLockRotationAxis() const;
         Material getMaterial() const;
         PxVec3 getposition() const;
         PxQuat getOrientation() const;
@@ -247,6 +260,15 @@ namespace myPhysx {
 
         void disableGravity(bool gravity);
         void enableKinematic(bool kine);
+
+        // AXIS LOCKING
+        void lockPositionX(bool lock);
+        void lockPositionY(bool lock);
+        void lockPositionZ(bool lock);
+
+        void lockRotationX(bool lock);
+        void lockRotationY(bool lock);
+        void lockRotationZ(bool lock);
 
         // TRIGGERS
         void setTriggerShape(bool trigger);

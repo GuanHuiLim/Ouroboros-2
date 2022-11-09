@@ -6,14 +6,14 @@ layout(set = 1, binding = 0) uniform UboFrameContext
 {
     FrameContext uboFrameContext;
 };
+#include "shared_structs.h"
 
-layout (set = 0, binding = 1) uniform sampler2D samplerposition;
+layout (set = 0, binding = 1) uniform sampler2D samplerDepth;
+// layout (set = 0, binding = 1) uniform sampler2D samplerposition; we construct position using depth
 layout (set = 0, binding = 2) uniform sampler2D samplerNormal;
 layout (set = 0, binding = 3) uniform sampler2D samplerAlbedo;
 layout (set = 0, binding = 4) uniform sampler2D samplerMaterial;
-layout (set = 0, binding = 5) uniform sampler2D samplerDepth;
-
-#include "shared_structs.h"
+layout (set = 0, binding = 5) uniform sampler2D samplerShadows;
 
 
 layout(std430, set = 0, binding = 7) readonly buffer Lights
@@ -28,7 +28,36 @@ layout( push_constant ) uniform pc
 
 #include "lightingEquations.shader"
 
-vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular)
+float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
+{
+
+	// perspective divide
+	vec4 projCoords = fragPosLightSpace/fragPosLightSpace.w;
+	//normalization [0,1] tex coords only.. FOR VULKAN DONT DO Z
+	projCoords.xy = projCoords.xy* 0.5 + 0.5;
+
+	float maxbias =  0.0001;
+	float mulBias = 0.002;
+	float bias = max(mulBias * (1.0 - NdotL),maxbias);
+	// Flip y during sample
+	vec2 uvs = vec2(projCoords.x,1.0-projCoords.y);
+	float closestDepth = texture(samplerShadows,uvs).r;
+	float currDepth = projCoords.z;
+
+	float shadow = 1.0;
+	if (projCoords.w > 0.0 && currDepth - bias > closestDepth ) 
+	{
+		if(projCoords.z < 1)
+		{
+			shadow = 0.0;		
+		}
+	}
+	//shadow = currDepth - bias > closestDepth ? 1.0 : 0.0;
+
+	return shadow;
+}
+
+vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular, float shadow)
 {
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);
 	vec3 N = normalize(normal);
@@ -45,14 +74,14 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 	// Viewer to fragment
 	vec3 V = uboFrameContext.cameraPosition.xyz - fragPos;
 	
+	// Light to fragment
+	L = normalize(L);	
+	V = normalize(V);
+	vec3 H = normalize(L+V);
+	float NdotL = max(0.0, dot(N, L));
+
 	//if(dist < Lights_SSBO[lightIndex].radius.x)
 	{
-     // Light to fragment
-		L = normalize(L);	
-		V = normalize(V);
-		
-		vec3 H = normalize(L+V);
-	
 	    float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
 		float r2 = Lights_SSBO[lightIndex].radius.x;
 
@@ -60,7 +89,7 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);		 
 	
 		// Diffuse part
-		float NdotL = max(0.0, dot(N, L));
+		
 		vec3 diff = Lights_SSBO[lightIndex].color.xyz * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
 
 
@@ -74,19 +103,50 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 		result = diff;
 	}
 
+	if(lightIndex == 0)
+	{
+		vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
+		float shadow = ShadowCalculation(outFragmentLightPos,NdotL);
+		result *= shadow;
+	}
+
 	return result;
 //	return fragPos;
 }
+
 
 uint DecodeFlags(in float value)
 {
     return uint(value * 255.0f);
 }
 
+vec3 WorldPosFromDepth(float depth, in vec2 uvCoord, in mat4 projInv, in mat4 viewInv) {
+    
+	float z = depth;
+	// skip this step because vulkan
+	// z = depth * 2.0 - 1.0;
+	
+	vec2 uv = uvCoord * 2.0 - 1.0;
+	float x = uvCoord.x * 2 - 1;
+	// flipped y for vulkan
+    float y = (1 - uvCoord.y) * 2 - 1;
+
+    vec4 clipSpacePosition = vec4(x, y, z, 1.0);
+    vec4 viewSpacePosition = projInv * clipSpacePosition;
+
+    // Perspective division
+    viewSpacePosition /= viewSpacePosition.w;
+
+    vec4 worldSpacePosition = viewInv * viewSpacePosition;
+
+    return worldSpacePosition.xyz;
+}
+
 void main()
 {
 	// Get G-Buffer values
-	vec3 fragPos = texture(samplerposition, inUV).rgb;
+	vec4 depth = texture(samplerDepth, inUV);
+	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
@@ -94,8 +154,7 @@ void main()
 	float roughness = material.r;
 
 	// Render-target composition
-
-	float ambient = 0.001;
+	float ambient = uboFrameContext.vector4_values5.x;
 	if (DecodeFlags(material.z) == 0x1)
 	{
 		ambient = 1.0;
@@ -107,13 +166,23 @@ void main()
 	// Ambient part
 	vec3 result = albedo.rgb * ambient;
 	
+	
+	
 	// Point Lights
 	for(int i = 0; i < lightPC.numLights.x; ++i)
 	{
-		result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular);
-	}    	
-	
+		//if(i==0)
+		//{
+		//	vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
+		//	float shadow = ShadowCalculation(outFragmentLightPos);
+		//	result += (shadow)*EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, shadow);
+		//}
+		//else
+		{
+			result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
+		}
+	}
+
 	result = pow(result, vec3(1.0/gamma));
-   
 	outFragcolor = vec4(result, 1.0);	
 }

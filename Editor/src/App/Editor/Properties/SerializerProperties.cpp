@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObjectComponent.h>
 #include "Ouroboros/Asset/Asset.h"
 #include "Ouroboros/Vulkan/MeshInfo.h"
+#include <Ouroboros/Vulkan/Color.h>
 SerializerSaveProperties::SerializerSaveProperties()
 {
 	m_save_commands.emplace(UI_RTTRType::UItypes::BOOL_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
@@ -83,6 +84,19 @@ SerializerSaveProperties::SerializerSaveProperties()
 		data.PushBack(vec.y, doc.GetAllocator());
 		data.PushBack(vec.z, doc.GetAllocator());
 		data.PushBack(vec.w, doc.GetAllocator());
+		obj.AddMember(name, data, doc.GetAllocator());
+		});
+	m_save_commands.emplace(UI_RTTRType::UItypes::COLOR_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
+		std::string temp = p.get_name().data();
+		rapidjson::Value name;
+		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+		rapidjson::Value data(rapidjson::kArrayType);
+		auto vec = variant.get_value<oo::Color>();
+		// IMPT NOTE: GLM vec4 Differs from glm Quat because its XYZW and Quats are WXYZ
+		data.PushBack(vec.r, doc.GetAllocator());
+		data.PushBack(vec.g, doc.GetAllocator());
+		data.PushBack(vec.b, doc.GetAllocator());
+		data.PushBack(vec.a, doc.GetAllocator());
 		obj.AddMember(name, data, doc.GetAllocator());
 		});
 	m_save_commands.emplace(UI_RTTRType::UItypes::QUAT_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
@@ -174,6 +188,16 @@ SerializerLoadProperties::SerializerLoadProperties()
 		glm::quat v(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat(), arr[3].GetFloat());
 		// Double note : quaternion does xyzw.
 		var = quaternion(v);
+		});
+
+	m_load_commands.emplace(UI_RTTRType::UItypes::COLOR_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {
+		auto arr = val.GetArray();
+		oo::Color c;
+		c.r = arr[0].GetFloat();
+		c.g = arr[1].GetFloat();
+		c.b = arr[2].GetFloat();
+		c.a = arr[3].GetFloat();
+		var = c;
 		});
 
 	m_load_commands.emplace(UI_RTTRType::UItypes::STRING_TYPE, [](rttr::variant& var, rapidjson::Value&& val) {var = static_cast<std::string>(val.GetString()); });

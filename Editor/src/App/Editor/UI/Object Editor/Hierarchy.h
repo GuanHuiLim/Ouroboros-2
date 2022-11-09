@@ -21,6 +21,7 @@ Technology is prohibited.
 #include "App/Editor/Events/CopyButtonEvent.h"
 #include "App/Editor/Events/PasteButtonEvent.h"
 #include "App/Editor/Events/DuplicateButtonEvent.h"
+#include "App/Editor/Events/DestroyGameObjectButtonEvent.h"
 #include <Ouroboros/ECS/GameObject.h>
 class Hierarchy
 {
@@ -54,6 +55,7 @@ public:
 	static void CopyEvent(CopyButtonEvent* cbe);
 	static void PasteEvent(PasteButtonEvent* pbe);
 	static void DuplicateEvent(DuplicateButtonEvent* dbe);
+	static void DestroyEvent(DestroyGameObjectButtonEvent* dbe);
 	inline static std::string s_clipboard;
 private:
 	enum class FilterTypes
