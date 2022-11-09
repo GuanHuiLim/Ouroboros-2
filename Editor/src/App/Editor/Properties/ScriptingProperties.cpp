@@ -29,6 +29,8 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 
 #include "App/Editor/Utility/ImGuiManager.h"
+
+#include "App/Editor/UI/Object Editor/AssetBrowser.h"
 ScriptingProperties::ScriptingProperties()
 {
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::BOOL, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
@@ -334,5 +336,39 @@ ScriptingProperties::ScriptingProperties()
 			if(editing)
 				v.TrySetRuntimeValue(oo::ScriptValue{ data });
 			
+		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::ASSET, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			oo::Asset data = v.TryGetRuntimeValue().GetValue<oo::Asset>();
+			static ImGuiID opened = 0;
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			std::string temp = data.GetFilePath().stem().string();
+			ImGui::InputText(v.name.c_str(),&temp);
+			ImGui::PopItemFlag();
+			ImGui::SameLine();
+
+			ImGuiID curr = ImGui::GetItemID();
+			ImGui::PushID(v.name.c_str());
+			if (ImGui::Button("edit"))
+			{
+				if (curr == opened)
+					opened = 0;
+				else
+					opened = curr;
+				editing = true;
+			}
+			ImGui::PopID();
+			if (curr == opened)
+			{
+				rttr::variant asset_data = data;
+				AssetBrowser::AssetPickerUI(asset_data ,edited, (int)data.GetType());
+				data = asset_data.get_value<oo::Asset>();
+			}
+			if (edited)
+			{
+				editing = true;
+				opened = 0;
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+			}
 		});
 }

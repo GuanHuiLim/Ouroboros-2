@@ -19,7 +19,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiStylePresets.h"
 void AssetBrowser::AssetPickerUI(rttr::variant& data, bool& edited,int asset_type)
 {
-	ImGui::BeginChild("AssetBrowserWindow", { 0,ImGui::GetContentRegionAvail().y * 0.3f },true);
+	ImGui::BeginChild("AssetBrowserWindow", { 0,200.0f },true);
 	switch (static_cast<oo::AssetInfo::Type>(asset_type))
 	{
 	case oo::AssetInfo::Type::Text:
@@ -60,6 +60,18 @@ void AssetBrowser::TextureUI(rttr::variant& data, bool& edited)
 
 void AssetBrowser::FontUI(rttr::variant& data, bool& edited)
 {
+	ImVec2 windowSize = ImGui::GetContentRegionAvail();
+	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
+
+	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Font))
+	{
+		if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+		}
+	}
 }
 
 void AssetBrowser::AudioUI(rttr::variant& data, bool& edited)
