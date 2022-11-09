@@ -202,16 +202,7 @@ namespace oo
 			assert(false);
 			return;
 		}
-		auto node = Anim::internal::RetrieveNodeFromGroup(*group, info.node_name);
-		//node should exist after adding to group
-		if (node == nullptr)
-		{
-			LOG_CORE_DEBUG_INFO("{0} node not found, cannot remove node!!", info.node_name);
-			assert(false);
-			return;
-		}
-
-		Anim::internal::RemoveNodeFromGroup(*group, info.node_name);
+		Anim::internal::RemoveNodeFromGroup(*group, info.node_ID);
 	}
 
 	Anim::LinkRef AnimationComponent::AddLink(std::string const& groupName, std::string const& src, std::string const& dst)
@@ -254,6 +245,27 @@ namespace oo
 		}
 
 		return oo::Anim::internal::CreateLinkReference(*group,link->linkID);
+	}
+
+	void oo::AnimationComponent::RemoveLink(Anim::TargetLinkInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.group_name);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot remove link!!", info.group_name);
+			assert(false);
+			return;
+		}
+		Anim::internal::RemoveLinkFromGroup(*group, info.link_ID);
 	}
 
 	Anim::Parameter* AnimationComponent::AddParameter(Anim::ParameterInfo const& info)
@@ -508,20 +520,20 @@ namespace oo
 			assert(false);
 			return {};
 		}
-		auto node = Anim::internal::RetrieveNodeFromGroup(*group, info.node_name);
+		auto node = Anim::internal::RetrieveNodeFromGroup(*group, info.node_ID);
 		//node should exist
 		if (node == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add animation to node!!", info.node_name);
+			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add animation to node!!", info.node_ID);
 			assert(false);
 			return {};
 		}
 
-		auto anim = Anim::internal::RetrieveAnimation(info.anim_name);
+		auto anim = Anim::internal::RetrieveAnimation(info.anim_asset);
 		//animation should exist
 		if (anim == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("{0} animation not found, cannot add animation to node!!", info.anim_name);
+			LOG_CORE_DEBUG_INFO("animation not found, cannot add animation to node!!");
 			assert(false);
 			return {};
 		}
