@@ -503,6 +503,10 @@ void FileBrowser::BuildDirectoryList(const std::string& path)
 	
 	for (auto& directory : list)
 	{
+		if (directory.extension() == oo::Asset::EXT_META)
+		{
+			continue;
+		}
 		m_directoryList.emplace_back(DirectoryInfo{ GetIcon(directory.extension().string()),directory});
 	}
 }
