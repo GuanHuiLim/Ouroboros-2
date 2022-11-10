@@ -16,4 +16,27 @@ float RandomUnsignedNormalizedFloat(uint seed)
     return wang_hash(seed) / 4294967295.0;
 }
 
+
+vec3 WorldPosFromDepth(float depth, in vec2 uvCoord, in mat4 projInv, in mat4 viewInv) {
+
+    float z = depth;
+    // skip this step because vulkan
+    // z = depth * 2.0 - 1.0;
+
+    vec2 uv = uvCoord * 2.0 - 1.0;
+    float x = uvCoord.x * 2.0 - 1.0;
+    // flipped y for vulkan
+    float y = (1.0 - uvCoord.y) * 2.0 - 1.0;
+
+    vec4 clipSpacePosition = vec4(x, y, z, 1.0);
+    vec4 viewSpacePosition = projInv * clipSpacePosition;
+
+    // Perspective division
+    viewSpacePosition /= viewSpacePosition.w;
+
+    vec4 worldSpacePosition = viewInv * viewSpacePosition;
+
+    return worldSpacePosition.xyz;
+}
+
 #endif//INCLUDE_GUARD
