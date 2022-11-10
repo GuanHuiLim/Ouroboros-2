@@ -32,6 +32,7 @@ struct EditorViewportResizeEvent;
 
 namespace oo
 {
+
     class RendererSystem : public Ecs::System
     {
     private:
@@ -67,5 +68,32 @@ namespace oo
         Camera m_runtimeCamera;
         
         bool m_firstFrame = true; // potentially improvable if this can be run once per creation
+
+        //WIP
+    public:
+        struct RendererSettings
+        {
+            struct SSAOSettings
+            {
+                float radius = 0.5f;
+                float bias = 0.025f;
+                RTTR_ENABLE();
+            }
+            SSAO{};
+
+            struct LightingSettings
+            {
+                float ambient = 0.2f;
+                float maxBias = 0.0001f;
+                float biasMultiplier = 0.002f;
+                RTTR_ENABLE();
+            }
+            Light{};
+
+            RTTR_ENABLE();
+        } 
+        m_rendererSettings{};
+
+        RTTR_ENABLE();
     };
 }
