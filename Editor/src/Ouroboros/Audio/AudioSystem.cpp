@@ -57,11 +57,11 @@ namespace oo
             // Iterate audio listeners
             {
                 static Ecs::Query query = Ecs::make_query<AudioListenerComponent>();
-                bool has = false;
-                bool warned = false;
+                static int lastListenerCount = 0;
+                int listenerCount = 0;
                 world->for_each(query, [&](AudioListenerComponent& al, TransformComponent& tf)
                 {
-                    if (!has)
+                    if (++listenerCount == 1)
                     {
                         const auto tfPos = tf.GetGlobalPosition();
                         FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
@@ -71,17 +71,21 @@ namespace oo
                         FMOD_VECTOR fmUp = { .x = tfUp.x, .y = tfUp.y, .z = tfUp.z };
 
                         audio::GetSystem()->set3DListenerAttributes(0, &fmPos, nullptr, &fmForward, &fmUp);
-                        has = true;
-                    }
-                    else if (!warned)
-                    {
-                        LOG_WARN("Should not have more than one Audio Listener in a scene!");
-                        warned = true;
                     }
                 });
-                if (!has)
+                if (listenerCount > 1 && lastListenerCount <= 1)
                 {
-                    //LOG_WARN("No Audio Listener in the scene!");
+                    LOG_WARN("Should not have more than one Audio Listener in a scene!");
+                    lastListenerCount = listenerCount;
+                }
+                if (listenerCount == 0 && lastListenerCount > 0)
+                {
+                    LOG_WARN("No Audio Listener in the scene!");
+                    lastListenerCount = listenerCount;
+                }
+                if (listenerCount == 1 && lastListenerCount != 1)
+                {
+                    lastListenerCount = listenerCount;
                 }
             }
 
