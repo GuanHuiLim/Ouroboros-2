@@ -312,5 +312,17 @@ namespace Ouroboros
         {
             return (float)System.Math.Tan(f);
         }
+
+        public static float Wrap(float f, float lower, float upper)
+        {
+            float range = upper - lower;
+            if (range > 0)
+            {
+                float mul = (f - lower) / range;
+                float imul = (int)mul;
+                f -= imul * range;
+            }
+            return f;
+        }
     }
 }
