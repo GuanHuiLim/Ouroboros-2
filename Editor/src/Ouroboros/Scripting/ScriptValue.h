@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "Scripting/ScriptEngine.h"
 
 #include "Ouroboros/Asset/Asset.h"
+#include "Ouroboros/Vulkan/Color.h"
 #include "Ouroboros/ECS/GameObject.h"
 
 namespace oo
@@ -45,7 +46,7 @@ namespace oo
             ENUM,
             VECTOR2,
             VECTOR3,
-            //COLOUR,
+            COLOR,
             GAMEOBJECT,
             COMPONENT,
             ASSET,
@@ -209,7 +210,7 @@ namespace oo
             enum_type,
             vec2_type,
             vec3_type,
-            //oo::Colour,
+            oo::Color,
             UUID,
             component_type,
             asset_type,
