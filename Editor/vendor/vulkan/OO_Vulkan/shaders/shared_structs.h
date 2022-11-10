@@ -11,10 +11,12 @@
 #ifdef __cplusplus
 #include "MathCommon.h"
 // GLSL Type
-using vec2 = glm::vec2;
-using vec3 = glm::vec3;
 using vec4 = glm::vec4;
+using vec3 = glm::vec3;
+using vec2 = glm::vec2;
 using uvec4 = glm::uvec4;
+using uvec3 = glm::uvec3;
+using uvec2 = glm::uvec2;
 using mat4 = glm::mat4;
 using uint = unsigned int;
 #endif
@@ -31,8 +33,8 @@ struct LocalLightInstance
 struct OmniLightInstance
 {
     vec4 position;
-    vec4 color;
-    vec4 radius;
+    vec4 color; // RGB Intensity
+    vec4 radius; // Inner rad outer rad etc..
     mat4 projection;
     mat4 view[6];
 };
@@ -48,15 +50,20 @@ struct SpotLightInstance
 
 struct LightPC
 {
-    uvec4 numLights;
-    mat4 lightMat;
-    uvec4 useSSAO;
+    uint numLights;
+    uint useSSAO;
+    float ambient;
+    float maxBias;
+    float mulBias;
+    vec3 PADDING;
 };
 
 struct SSAOPC
 {
-    uvec4 SD_SD; // screenDim_sampleDim
-    mat4 lightMat;
+    vec2 screenDim;
+    vec2 sampleDim; // screenDim_sampleDim
+    float radius;
+    float bias;
 };
 
 struct GPUTransform

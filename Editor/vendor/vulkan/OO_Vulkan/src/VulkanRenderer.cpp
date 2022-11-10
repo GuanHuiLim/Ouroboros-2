@@ -1804,8 +1804,9 @@ void VulkanRenderer::RenderFrame()
 #if defined		(ENABLE_DECAL_IMPLEMENTATION)
 				RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();
 #endif				
-				if (shouldRunDebugDraw)
+				//if (shouldRunDebugDraw) // for now need to run regardless because of transition.. TODO: FIX IT ONE DAY
 				{
+					RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->dodebugRendering = shouldRunDebugDraw;
 					RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->Draw();
 				}
 

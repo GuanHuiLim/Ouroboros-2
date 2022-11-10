@@ -22,9 +22,9 @@ layout(std430, set = 0, binding = 7) readonly buffer Lights
 	SpotLightInstance Lights_SSBO[];
 };
 
-layout( push_constant ) uniform pc
+layout( push_constant ) uniform lightpc
 {
-	LightPC lightPC;
+	LightPC PC;
 };
 
 #include "lightingEquations.shader"
@@ -37,8 +37,8 @@ float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
 	//normalization [0,1] tex coords only.. FOR VULKAN DONT DO Z
 	projCoords.xy = projCoords.xy* 0.5 + 0.5;
 
-	float maxbias =  0.0001;
-	float mulBias = 0.002;
+	float maxbias =  PC.maxBias;
+	float mulBias = PC.mulBias;
 	float bias = max(mulBias * (1.0 - NdotL),maxbias);
 	// Flip y during sample
 	vec2 uvs = vec2(projCoords.x,1.0-projCoords.y);
@@ -83,7 +83,9 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 
 	//if(dist < Lights_SSBO[lightIndex].radius.x)
 	{
-	    float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
+		//SpotLightInstance light = SpotLightInstance(Omni_LightSSBO[lightIndex]); 
+	    
+		float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
 		float r2 = Lights_SSBO[lightIndex].radius.x;
 
     		// Attenuation
@@ -106,7 +108,7 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 
 	if(lightIndex == 0)
 	{
-		vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
+		vec4 outFragmentLightPos = Lights_SSBO[lightIndex].projection * Lights_SSBO[lightIndex].view * vec4(fragPos,1.0);
 		float shadow = ShadowCalculation(outFragmentLightPos,NdotL);
 		result *= shadow;
 	}
@@ -137,7 +139,7 @@ void main()
 	float roughness = material.r;
 
 	// Render-target composition
-	float ambient = uboFrameContext.vector4_values5.x;
+	float ambient = PC.ambient;
 	if (DecodeFlags(material.z) == 0x1)
 	{
 		ambient = 1.0;
@@ -147,27 +149,15 @@ void main()
 	albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
-	vec3 result = albedo.rgb  * ambient;
-	
-	
+	vec3 result = albedo.rgb  * ambient;	
+	if(PC.useSSAO != 0){
+		result *=  SSAO;
+	}
 	
 	// Point Lights
-	for(int i = 0; i < lightPC.numLights.x; ++i)
+	for(int i = 0; i < PC.numLights; ++i)
 	{
-		//if(i==0)
-		//{
-		//	vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
-		//	float shadow = ShadowCalculation(outFragmentLightPos);
-		//	result += (shadow)*EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, shadow);
-		//}
-		//else
-		{
 			result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
-		}
-	}
-
-	if(lightPC.useSSAO.x > 0.5){
-		result *=  SSAO;
 	}
 	
 

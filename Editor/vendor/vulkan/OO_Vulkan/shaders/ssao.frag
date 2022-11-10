@@ -19,7 +19,7 @@ layout(std430, set = 0, binding = 4) readonly buffer RandomVectors
 
 layout( push_constant ) uniform pc
 {
-	SSAOPC ssaoPC;
+	SSAOPC PC;
 };
 
 #include "shader_utility.shader"
@@ -28,13 +28,11 @@ void main()
 {
 	// Get G-Buffer values
 	vec4 depth = texture(samplerDepth, inUV);
-	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
-	// this is bad and i should feel bad
-	fragPos = (uboFrameContext.view* vec4(fragPos,1.0)).xyz;
+	vec3 fragPos = ViewPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection).xyz;
 
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 
-	vec2 noiseScale = vec2(float(ssaoPC.SD_SD.x)/ssaoPC.SD_SD.z, float(ssaoPC.SD_SD.y)/ssaoPC.SD_SD.w);
+	vec2 noiseScale = vec2(float(PC.screenDim.x)/PC.sampleDim.x, float(PC.screenDim.y)/PC.sampleDim.y);
 	vec3 randomVec = texture(samplerNoise, inUV * noiseScale).xyz;
 
 	vec3 tangent   = normalize(randomVec - normal * dot(randomVec, normal));
@@ -42,10 +40,8 @@ void main()
 	mat3 TBN       = mat3(tangent, bitangent, normal);
 	
 	float occlusion = 0.0;
-	float radius = uboFrameContext.vector4_values5.z;
-	radius = radius == 0.0 ? 0.5 : radius;
-	float bias = float(uboFrameContext.vector4_values5.w);
-	bias = bias == 0.0 ?0.025 : bias;
+	float radius = PC.radius;
+	float bias = PC.bias;
 	int kernelSize = randomVectors.length();
 	for(int i = 0; i < kernelSize; ++i)
 	{
@@ -60,9 +56,7 @@ void main()
 		offset.y = 1.0 - offset.y;
 		// once again we ignore z because vulkan
 		float sampleDepth = texture(samplerDepth, offset.xy).r;
-		vec3 world = WorldPosFromDepth(sampleDepth,offset.xy,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
-		// this is bad and i should feel bad
-		world = vec3(uboFrameContext.view* vec4(world,1.0)).xyz;
+		vec3 world = ViewPosFromDepth(sampleDepth,offset.xy,uboFrameContext.inverseProjection).xyz;
 		
 		sampleDepth = world.z;
 		float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
