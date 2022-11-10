@@ -340,12 +340,52 @@ namespace oo
         std::chrono::file_clock::time_point tLast = ev->time;
         if (std::filesystem::exists(root))
         {
+            iterateDirectoryOrphans(root, tLast);
             iterateDirectoryAdditions(root, tLast);
             iterateDirectoryOmissions(root, tLast);
         }
         lastReloadTime = std::chrono::file_clock::now();
 
         TRACY_PROFILE_SCOPE_END();
+    }
+
+    void AssetManager::iterateDirectoryOrphans(const std::filesystem::path& dir,
+                                               const std::chrono::file_clock::time_point& tLast,
+                                               const std::chrono::file_clock::time_point& t)
+    {
+        const std::filesystem::path DIR = std::filesystem::canonical(dir);
+        std::list<std::filesystem::path> toRemove;
+
+        // Iterate directory contents
+        for (auto& fp : std::filesystem::directory_iterator(DIR))
+        {
+            const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+
+            // Recurse
+            if (std::filesystem::is_directory(FP))
+                iterateDirectoryOrphans(FP, tLast, t);
+
+            // Check if meta file
+            if (!isMetaPath(FP))
+                continue;
+
+            // Convert to asset path
+            std::filesystem::path fpContent = FP;
+            fpContent.replace_extension();
+
+            // Check if item exists
+            if (std::filesystem::exists(fpContent))
+                continue;
+
+            toRemove.emplace_back(FP);
+        }
+
+        // Remove orphans
+        for (const auto& fp : toRemove)
+        {
+            std::filesystem::remove(fp);
+            LOG_WARN("Removed orphaned meta file {0}", fp.filename());
+        }
     }
 
     void AssetManager::iterateDirectoryAdditions(const std::filesystem::path& dir,

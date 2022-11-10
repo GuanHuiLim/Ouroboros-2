@@ -80,6 +80,13 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
+        // Some system setup code
+        {
+            // set default debug draws
+            GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = false;
+            GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = false;
+        }
+
         {
             TRACY_PROFILE_SCOPE(runtime_load_from_file);
             LoadFromFile();

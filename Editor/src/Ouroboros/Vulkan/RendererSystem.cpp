@@ -59,6 +59,7 @@ namespace oo
         auto h = e->Y;
         auto ar = static_cast<float>(w) / h;
         EditorController::EditorCamera.SetAspectRatio(ar);
+        ASSERT_MSG(m_graphicsWorld == nullptr, "Graphics world shouldn't be null!");
         m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
         //m_runtimeCamera.SetAspectRatio(ar);
     }
@@ -100,6 +101,12 @@ namespace oo
         : m_graphicsWorld { graphicsWorld }
     {
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
+    }
+
+    RendererSystem::~RendererSystem()
+    {
+        // unsubscribe or it'll crash
+        EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
     }
 
     void RendererSystem::Init()
@@ -279,15 +286,18 @@ namespace oo
             DebugDraw::AddSphere(sphere, graphics_light.color);
         });
 
-        // Camera debug draw
-        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-        world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+        if (CameraDebugDraw)
         {
-            Camera camera;
-            camera.SetPosition(transformComp.GetGlobalPosition());
-            camera.SetRotation(transformComp.GetGlobalRotationQuat());
-            DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::GREEN);
-        });
+            // draws camera frustum if enabled.
+            static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
+            world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+            {
+                Camera camera;
+                camera.SetPosition(transformComp.GetGlobalPosition());
+                camera.SetRotation(transformComp.GetGlobalRotationQuat());
+                DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::ORANGE);
+            });
+        }
 
     }
 
