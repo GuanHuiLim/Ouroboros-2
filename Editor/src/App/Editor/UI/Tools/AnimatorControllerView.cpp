@@ -112,7 +112,8 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
         if (!_animator->GetActualComponent().animTree->groups.empty())
         {
             //reset the data before populating
-            uniqueId = 0;
+            uniqueId = 1;
+            m_nextLinkId = 100;
             m_nodes.clear();
             m_links_.clear();
 
@@ -132,8 +133,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                     ed::PinId inputPin = outputNode->Output[0].id;
                     ed::PinId outputPin = inputNode->Input[0].id;
 
-                    m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin));
-                    m_links_.back().link = &link;
+                    m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin, &link));
                     ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
                 }
             }
