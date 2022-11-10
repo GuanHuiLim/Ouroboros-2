@@ -254,6 +254,16 @@ namespace oo
         void watchFiles(FileWatchEvent* ev);
 
         /// <summary>
+        /// Iterates through a directory for orphaned meta files in the filesystem.
+        /// </summary>
+        /// <param name="dir">The directory to iterate.</param>
+        /// <param name="lastTime">The last time at which an iteration was performed.</param>
+        /// <param name="iterationTime">The time at which this iteration is performed.</param>
+        void iterateDirectoryOrphans(const std::filesystem::path& dir,
+                                     const std::chrono::file_clock::time_point& lastTime,
+                                     const std::chrono::file_clock::time_point& iterationTime = std::chrono::file_clock::now());
+
+        /// <summary>
         /// Iterates through a directory for additions and modifications in the filesystem.
         /// </summary>
         /// <param name="dir">The directory to iterate.</param>

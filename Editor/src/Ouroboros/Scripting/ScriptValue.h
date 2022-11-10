@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "Scripting/ScriptEngine.h"
 
 #include "Ouroboros/Asset/Asset.h"
+#include "Ouroboros/Vulkan/Color.h"
 #include "Ouroboros/ECS/GameObject.h"
 
 namespace oo
@@ -45,7 +46,7 @@ namespace oo
             ENUM,
             VECTOR2,
             VECTOR3,
-            //COLOUR,
+            COLOR,
             GAMEOBJECT,
             COMPONENT,
             ASSET,
@@ -61,7 +62,7 @@ namespace oo
         public:
             std::string name_space;
             std::string name;
-            unsigned int index;
+            unsigned int value;
 
             enum_type(std::string const& namespace_, std::string const& name_, unsigned int i);
 
@@ -71,6 +72,10 @@ namespace oo
             \return     all options of the C# enum as a list of strings
             *//**********************************************************************************/
             std::vector<std::string> GetOptions() const;
+
+            std::vector<int> GetValues() const;
+
+            std::string GetValueName(int val) const;
         };
 
         // used to store the necessary info to create a C# Vector2
@@ -103,6 +108,14 @@ namespace oo
             {};
 
             bool is_valid();
+        };
+
+        // used to store the necessary info to create a generic C# Asset
+        struct asset_type
+        {
+        public:
+            AssetInfo::Type type;
+            Asset asset;
         };
 
         // used to store the necessary info to create a C# prefab reference
@@ -201,10 +214,10 @@ namespace oo
             enum_type,
             vec2_type,
             vec3_type,
-            //oo::Colour,
+            oo::Color,
             UUID,
             component_type,
-            Asset,
+            asset_type,
             prefab_type,
             class_type,
             list_type,

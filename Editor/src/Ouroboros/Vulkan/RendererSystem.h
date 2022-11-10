@@ -39,6 +39,7 @@ namespace oo
         //Ecs::ECSWorld* m_world{nullptr};
     public:
         RendererSystem(GraphicsWorld* graphicsWorld);
+        virtual ~RendererSystem();
 
         void Init();
 
@@ -48,6 +49,7 @@ namespace oo
         void UpdateCamerasRuntime();
         void SaveEditorCamera();
 
+        inline static bool CameraDebugDraw = true;
     private:
         void OnScreenResize(WindowResizeEvent* e);
         void OnEditorViewportResize(EditorViewportResizeEvent* e);
