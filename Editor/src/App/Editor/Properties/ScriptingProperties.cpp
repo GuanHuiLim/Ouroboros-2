@@ -79,10 +79,11 @@ ScriptingProperties::ScriptingProperties()
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::enum_type>();
 			auto list = data.GetOptions();
+            auto name = data.GetValueName(data.value);
 
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImVec2 cursorPos = ImGui::GetCursorPos();
-			ImGui::InputText(v.name.c_str(), &list[data.index]);
+			ImGui::InputText(v.name.c_str(), &name);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
 			
@@ -105,7 +106,7 @@ ScriptingProperties::ScriptingProperties()
 				{
 					if (ImGui::Selectable(list[i].c_str()))
 					{
-						data.index = i;
+                        data.value = data.GetValues()[i];
 						v.TrySetRuntimeValue(oo::ScriptValue{ data });
 						editing = true;
 						edited = true;

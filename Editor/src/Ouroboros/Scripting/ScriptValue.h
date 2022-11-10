@@ -62,7 +62,7 @@ namespace oo
         public:
             std::string name_space;
             std::string name;
-            unsigned int index;
+            unsigned int value;
 
             enum_type(std::string const& namespace_, std::string const& name_, unsigned int i);
 
@@ -72,6 +72,10 @@ namespace oo
             \return     all options of the C# enum as a list of strings
             *//**********************************************************************************/
             std::vector<std::string> GetOptions() const;
+
+            std::vector<int> GetValues() const;
+
+            std::string GetValueName(int val) const;
         };
 
         // used to store the necessary info to create a C# Vector2

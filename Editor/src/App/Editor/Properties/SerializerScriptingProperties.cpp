@@ -83,7 +83,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 		{
 			rapidjson::Value name;
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
-			rapidjson::Value data(sfi.value.GetValue<oo::ScriptValue::enum_type>().index);
+			rapidjson::Value data(sfi.value.GetValue<oo::ScriptValue::enum_type>().value);
 			val.AddMember(name, data, doc.GetAllocator());
 		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
@@ -234,7 +234,7 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
         });
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ENUM, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{ 
-			sfi.value.GetValue<oo::ScriptValue::enum_type>().index = val.GetUint(); 
+			sfi.value.GetValue<oo::ScriptValue::enum_type>().value = val.GetUint();
 		});
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::COMPONENT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{

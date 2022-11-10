@@ -178,7 +178,7 @@ namespace oo
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
                     ScriptValue::enum_type fieldValue = value.GetValue<ScriptValue::enum_type>();
-                    mono_field_set_value(obj, field, &(fieldValue.index));
+                    mono_field_set_value(obj, field, &(fieldValue.value));
                 },
                 // GetFieldValue
                 [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
@@ -199,7 +199,7 @@ namespace oo
                 [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
                 {
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
-                    int entry = value.GetValue<ScriptValue::enum_type>().index;
+                    int entry = value.GetValue<ScriptValue::enum_type>().value;
                     void* args[1];
                     args[0] = &entry;
                     mono_runtime_invoke(addMethod, list, args, NULL);
@@ -1131,7 +1131,11 @@ namespace oo
         {
             MonoClass* typeClass = mono_type_get_class(type);
             if (ScriptEngine::CheckClassInheritance(typeClass, mono_get_enum_class())) // Enum
+            {
+                if (ScriptEngine::GetEnumOptionValues(type).size() <= 0)
+                    return type_enum::EMPTY;
                 return type_enum::ENUM;
+            }
             if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Vector2")) // Vector2
                 return type_enum::VECTOR2;
             if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Vector3")) // Vector3
@@ -1190,7 +1194,9 @@ namespace oo
         {
             enum_type currValue = GetValue<enum_type>();
             enum_type srcValue = src.GetValue<enum_type>();
-            return currValue.name == srcValue.name && currValue.name_space == srcValue.name_space && srcValue.index < currValue.GetOptions().size();
+            std::vector<int> newValues = currValue.GetValues();
+            return currValue.name == srcValue.name && currValue.name_space == srcValue.name_space
+                && std::find(newValues.begin(), newValues.end(), srcValue.value) != newValues.end();
         }
         if (currType == type_enum::COMPONENT)
         {
@@ -1218,10 +1224,11 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* enum_type                                                                   */
     /*-----------------------------------------------------------------------------*/
-    ScriptValue::enum_type::enum_type(std::string const& namespace_, std::string const& name_, unsigned int i) : name_space{ namespace_ }, name{ name_ }, index{ i }
+    ScriptValue::enum_type::enum_type(std::string const& namespace_, std::string const& name_, unsigned int val) : name_space{ namespace_ }, name{ name_ }, value{ val }
     {
-        if (index >= GetOptions().size())
-            index = 0;
+        std::vector<int> values = GetValues();
+        if (std::find(values.begin(), values.end(), value) == values.end())
+            value = values[0];
     };
 
     std::vector<std::string> ScriptValue::enum_type::GetOptions() const
@@ -1231,6 +1238,25 @@ namespace oo
             klass = ScriptEngine::TryGetClass("ScriptCore", name_space.c_str(), name.c_str());
         ASSERT(klass == nullptr);
         return ScriptEngine::GetEnumOptions(mono_class_get_type(klass));
+    }
+
+    std::vector<int> ScriptValue::enum_type::GetValues() const
+    {
+        MonoClass* klass = ScriptEngine::TryGetClass("Scripting", name_space.c_str(), name.c_str());
+        if (klass == nullptr)
+            klass = ScriptEngine::TryGetClass("ScriptCore", name_space.c_str(), name.c_str());
+        ASSERT(klass == nullptr);
+        return ScriptEngine::GetEnumOptionValues(mono_class_get_type(klass));
+    }
+
+    std::string ScriptValue::enum_type::GetValueName(int val) const
+    {
+        std::vector<int> values = GetValues();
+        std::vector<std::string> names = GetOptions();
+
+        size_t index = std::find(values.begin(), values.end(), val) - values.begin();
+        ASSERT(index >= names.size());
+        return names[index];
     }
 
     /*-----------------------------------------------------------------------------*/
