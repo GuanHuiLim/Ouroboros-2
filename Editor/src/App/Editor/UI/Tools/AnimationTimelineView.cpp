@@ -100,6 +100,15 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
                     timelines[i]->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
                                                           keyframes[i]->data.get_value<glm::vec3>());
                 }
+                else if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::QUAT)
+                {
+                    timelines[i]->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
+                                                          keyframes[i]->data.get_value<glm::quat>());
+                }
+                else if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+                {
+
+                }
             }
 
             currentKeyFrame++;
@@ -537,6 +546,19 @@ void AnimationTimelineView::DisplayInspector()
             if (scriptevent != nullptr)
             {
                 ImGui::Text("Invoke: ");
+                //ImGui Dropdown of all the invokable events 
+
+                fnInfo.clear();
+                oo::ScriptComponent::map_type& scriptMap = go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
+
+                for (auto it = scriptMap.begin(); it != scriptMap.end(); ++it)
+                {
+                    oo::ScriptInfo& scriptInfo = it->second;
+                    std::vector<oo::ScriptValue::function_info> fnInfoAll = scriptInfo.classInfo.GetFunctionInfoAll();
+                    for (oo::ScriptValue::function_info _fnInfo : fnInfoAll)
+                        fnInfo.push_back(_fnInfo);
+                }
+
                 ImGui::Text("Time: ");
                 ImGui::SameLine();
                 ImGui::DragFloat("##scripteventtime", &scriptevent->time, unitPerFrame);
@@ -565,16 +587,37 @@ void AnimationTimelineView::DisplayInspector()
                 ImGui::DragFloat("##keyframetime", &keyframe->time, unitPerFrame);
                 if (currentTime == keyframe->time)
                 {
-                    if (timeline != nullptr && timeline->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
+                    if (timeline != nullptr )
                     {
-                        //draw the property editor
-                        ImGui::DragFloat("X", &keyframe->data.get_value<glm::vec3>().x);
-                        ImGui::DragFloat("Y", &keyframe->data.get_value<glm::vec3>().y);
-                        ImGui::DragFloat("Z", &keyframe->data.get_value<glm::vec3>().z);
+                        if (timeline->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
+                        {
+                            //draw the property editor
+                            ImGui::DragFloat("X", &keyframe->data.get_value<glm::vec3>().x);
+                            ImGui::DragFloat("Y", &keyframe->data.get_value<glm::vec3>().y);
+                            ImGui::DragFloat("Z", &keyframe->data.get_value<glm::vec3>().z);
 
-                        //need to support applying to child object
-                        timeline->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
-                                                            keyframe->data.get_value<glm::vec3>());
+                            //need to support applying to child object
+                            timeline->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
+                                                              keyframe->data.get_value<glm::vec3>());
+                        }
+                        else if (timeline->datatype == oo::Anim::Timeline::DATATYPE::QUAT)
+                        {
+                            ImGui::Text(timeline->name.c_str());
+                            ImGui::SameLine();
+                            std::string label = "##" + timeline->name;
+                            ImGui::DragFloat4(label.c_str(), glm::value_ptr(keyframe->data.get_value<glm::quat>()), 0.01f);
+
+                            //apply it to the object property
+                            timeline->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
+                                                              keyframe->data.get_value<glm::quat>());
+
+                        }
+                        else if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+                        {
+                            ImGui::Checkbox(timeline->name.c_str(), &keyframe->data.get_value<bool>());
+                            
+                            //apply it to the object property
+                        }
                     }
                 }
             }

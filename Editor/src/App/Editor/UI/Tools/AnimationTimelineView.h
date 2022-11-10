@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <imgui/imgui_internal.h>
 #include <Ouroboros/Animation/Anim.h>
 #include <Ouroboros/Animation/AnimationComponent.h>
+#include <Ouroboros/Scripting/ScriptComponent.h>
 
 
 class AnimationTimelineView
@@ -35,6 +36,7 @@ private:
 	oo::Anim::ScriptEvent* scriptevent = nullptr;
 	oo::Anim::Timeline* timeline = nullptr;
 	oo::Anim::KeyFrame* keyframe = nullptr;
+	std::vector<oo::ScriptValue::function_info> fnInfo;
 
 	//to be used to apply data to gameObject, for previewing
 	std::vector<oo::Anim::Timeline*> timelines;	//if there are multiple timelines that has a keyframe at that currentKeyFrame, store them both in here
