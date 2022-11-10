@@ -288,6 +288,20 @@ namespace oo
 		return parameter;
 	}
 
+	void oo::AnimationComponent::RemoveParameter(Anim::TargetParameterInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return;
+		}
+
+		oo::Anim::internal::RemoveParameterFromTree(*tree, info.param_ID);
+	}
+
 	Anim::Condition* AnimationComponent::AddCondition(std::string const& groupName, std::string const& linkName, Anim::ConditionInfo info)
 	{
 		auto tree = GetAnimationTree();
@@ -335,6 +349,37 @@ namespace oo
 		Anim::internal::BindConditionToParameter(*tree, *condition);
 
 		return condition;
+	}
+
+	void oo::AnimationComponent::RemoveCondition(Anim::TargetConditionInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.link_info.group_name);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot remove condition!!", info.link_info.group_name);
+			assert(false);
+			return;
+		}
+		auto link = Anim::internal::RetrieveLinkFromGroup(*group, info.link_info.link_ID);
+		//link should exist
+		if (link == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} link not found, cannot remove condition!!", info.link_info.link_ID);
+			assert(false);
+			return;
+		}
+
+		oo::Anim::internal::RemoveConditionFromLink(*link, info.condition_ID);
+
 	}
 
 	Anim::TimelineRef AnimationComponent::AddTimeline(std::string const& groupName, std::string const& nodeName,

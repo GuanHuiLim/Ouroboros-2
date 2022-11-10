@@ -123,8 +123,10 @@ namespace oo::Anim::internal
 	Link* AddLinkBetweenNodes(Group& group, std::string const& src_name, std::string const& dst_name);
 
 	Parameter* AddParameterToTree(AnimationTree& tree, Anim::ParameterInfo const& info);
+	void RemoveParameterFromTree(AnimationTree& tree, UID param_ID);
 
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info);
+	void RemoveConditionFromLink(Link& link, UID conditionID);
 
 	Animation* AddAnimationToNode(Node& node, Animation& anim);
 

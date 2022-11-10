@@ -29,15 +29,16 @@ namespace oo::Anim
 		using DataType = rttr::variant;
 		using CompareFn = bool(DataType const&, DataType const&);
 		using CompareFnMap = std::unordered_map< P_TYPE, std::unordered_map<CompareType, CompareFn*>>;
+		static CompareFnMap const comparisonFn_map;
 
 		CompareType comparison_type;
 		P_TYPE type;
 		DataType value{};
 		//used to track the parameter's index in the animation tree's vector
-		size_t paramID{ internal::invalid_ID };
+		UID paramID{ internal::invalid_ID };
+		UID conditionID{ internal::invalid_ID };
 		uint32_t parameterIndex{};
 		CompareFn* compareFn{ nullptr };
-		static CompareFnMap const comparisonFn_map;
 
 		Condition() = default;
 		Condition(ConditionInfo const& info);

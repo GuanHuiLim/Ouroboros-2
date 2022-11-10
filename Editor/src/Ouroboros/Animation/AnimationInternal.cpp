@@ -1616,6 +1616,56 @@ namespace oo::Anim::internal
 		return &parameter;
 	}
 
+	void RemoveParameterFromTree(AnimationTree& tree, UID param_ID)
+	{
+		//find the parameter
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& param : tree.parameters)
+		{
+			if (param.paramID == param_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+
+		//remove conditions that reference the parameter
+		struct LinkCondition
+		{
+			Link* link{nullptr};
+			UID condition_ID{};
+		};
+		std::stack<LinkCondition> to_remove{};
+
+		for (auto& [groupID, group] : tree.groups)
+		{
+		for (auto& [linkID, link] : group.links)
+		{
+		for (auto& condition : link.conditions)
+		{
+			if (condition.paramID == param_ID)
+			{
+				to_remove.emplace(&link, condition.conditionID);
+			}
+		}
+		}
+		}
+		while (to_remove.empty() == false)
+		{
+			auto info = to_remove.top();
+			to_remove.pop();
+			RemoveConditionFromLink(*(info.link), info.condition_ID);
+		}
+
+		//remove the parameter
+		tree.parameters.erase(tree.parameters.begin() + index);
+
+
+	}
+
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info)
 	{
 		//verify there is a parameter available
@@ -1626,6 +1676,24 @@ namespace oo::Anim::internal
 		Condition condition{ info };
 		auto& createdCondition = link.conditions.emplace_back(std::move(condition));
 		return &createdCondition;
+	}
+
+	void RemoveConditionFromLink(Link& link, UID conditionID)
+	{
+		uint index = 0;
+		bool found{false};
+		for (auto& condition : link.conditions)
+		{
+			if (condition.conditionID == conditionID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+		assert(index < link.conditions.size());
+		link.conditions.erase(link.conditions.begin() + index);
 	}
 
 	Animation* AddAnimationToNode(Node& node, Animation& anim)
@@ -1659,6 +1727,27 @@ namespace oo::Anim::internal
 
 	void RemoveLinkFromGroup(Group& group, UID link_ID)
 	{
+		auto link = RetrieveLinkFromGroup(group, link_ID);
+		if (link == nullptr) return;
+
+		//remove outgoing link from src node
+		auto& outgoingLinks = link->src->outgoingLinks;
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& linkref : outgoingLinks)
+		{
+			if (linkref->linkID == link_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		assert(found);
+		if (found == false) return;
+		outgoingLinks.erase(outgoingLinks.begin() + index);
+
+		//remove link
 		group.links.erase(link_ID);
 	}
 
