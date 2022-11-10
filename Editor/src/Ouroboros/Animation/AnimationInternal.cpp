@@ -1369,16 +1369,16 @@ namespace oo::Anim::internal
 
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
-
+		//allow nodes with same name
 		//if node already added to this group then just return it
-		for (auto& [key, node] : group.nodes)
+		/*for (auto& [key, node] : group.nodes)
 		{
 			if (node.name == info.name)
 			{
 				LOG_CORE_WARN("{0} Animation Node already exists in group!!", info.name);
 				return &node;
 			}
-		}
+		}*/
 
 		//create the node and add it to this group
 		Node node{ info };
