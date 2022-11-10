@@ -72,16 +72,25 @@ namespace oo
                     {
                         bool outdated = false;
                         std::filesystem::file_time_type dll_time = std::filesystem::last_write_time(Project::GetScriptBuildPath() / "Scripting.dll");
-                        for (std::filesystem::directory_entry const& dir : std::filesystem::recursive_directory_iterator(Project::GetProjectFolder() / "Scripts"))
+
+                        if (std::filesystem::last_write_time(Project::GetProjectFolder() / "Scripts") > dll_time)
                         {
-                            if (dir.is_directory())
-                                continue;
-                            if (dir.last_write_time() > dll_time)
+                            outdated = true;
+                        }
+                        else
+                        {
+                            for (std::filesystem::directory_entry const& dir : std::filesystem::recursive_directory_iterator(Project::GetProjectFolder() / "Scripts"))
                             {
-                                outdated = true;
-                                break;
+                                if (!dir.is_directory())
+                                    continue;
+                                if (dir.last_write_time() > dll_time)
+                                {
+                                    outdated = true;
+                                    break;
+                                }
                             }
                         }
+
                         if (!outdated)
                             return;
                     }
