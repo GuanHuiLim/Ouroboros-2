@@ -85,10 +85,18 @@ namespace oo
 
 		//removes a link from a group
 		void RemoveLink(Anim::TargetLinkInfo const& info);
-		
+
+		//add a parameter to an animation tree
 		Anim::Parameter* AddParameter(Anim::ParameterInfo const& info);
 
+		//remove a parameter from the animation tree
+		void RemoveParameter(Anim::TargetParameterInfo const& info);
+
+		//add condition to a link
 		Anim::Condition* AddCondition(std::string const& groupName, std::string const& linkName, Anim::ConditionInfo info);
+
+		//remove condition from a link
+		void RemoveCondition(Anim::TargetConditionInfo const& info);
 
 		//add timeline to animation
 		Anim::TimelineRef AddTimeline(std::string const& groupName, std::string const& nodeName, Anim::TimelineInfo& info);

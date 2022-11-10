@@ -248,6 +248,20 @@ namespace oo::Anim
 		//id of the link
 		size_t link_ID{ internal::invalid_ID };
 	};
+
+	struct TargetConditionInfo
+	{
+		//information of the link the condition is attached to
+		TargetLinkInfo link_info{};
+		//id of the condition
+		size_t condition_ID{ internal::invalid_ID };
+	};
+
+	struct TargetParameterInfo
+	{
+		//id of the parameter
+		size_t param_ID{ internal::invalid_ID };
+	};
 }
 
 
