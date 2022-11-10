@@ -319,7 +319,7 @@ namespace Ouroboros
             if (range > 0)
             {
                 float mul = (f - lower) / range;
-                float imul = (int)mul;
+                float imul = (float)System.Math.Floor(mul);
                 f -= imul * range;
             }
             return f;
