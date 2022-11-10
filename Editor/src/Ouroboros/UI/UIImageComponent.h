@@ -24,7 +24,7 @@ namespace oo
     public:
         Asset TextureHandle;
         //std::shared_ptr<Texture> m_texture;
-        Color Color = { 1.0f, 1.0f, 1.0f, 1.0f };
+        Color Tint = { 1.0f, 1.0f, 1.0f, 1.0f };
         bool RaycastTarget = true;
 
         RTTR_ENABLE();

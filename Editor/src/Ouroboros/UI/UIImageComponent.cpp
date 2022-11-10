@@ -38,7 +38,7 @@ namespace oo
         using namespace rttr;
         registration::class_<UIImageComponent>("UI Image")
         .property("Texture", &UIImageComponent::TextureHandle)(metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture)))
-        .property("Colour", &UIImageComponent::Color)
+        .property("Colour Tint", &UIImageComponent::Tint)
         .property("Raycast Target", &UIImageComponent::RaycastTarget);
     }
 }

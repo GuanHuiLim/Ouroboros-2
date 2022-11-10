@@ -57,7 +57,7 @@ namespace oo
         AnchorPreset Preset = AnchorPreset::AnchorMiddleCentre;
         glm::vec3 AnchoredPosition = { 0,0,0 };
         float Angle = 0.f;
-        glm::vec3 Scale = { 1,1,1 };
+        glm::vec3 Scale = { 1, 1, 1 };
         glm::vec2 Size = { 100, 100 };
         glm::vec2 Pivot = { 0.5f, 0.5f };
         glm::vec2 AnchorMin = { 0.5f, 0.5f };
