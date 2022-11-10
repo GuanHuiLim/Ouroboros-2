@@ -50,6 +50,11 @@ namespace oo
         Application::Get().GetWindow().ShowCursor(isVisible);
     }
 
+    SCRIPT_API bool Cursor_GetLocked()
+    {
+        return Application::Get().GetWindow().GetMouseCursorMode();
+    }
+
     SCRIPT_API void Cursor_SetLocked(bool isLocked)
     {
         Application::Get().GetWindow().SetMouseLockState(isLocked);
