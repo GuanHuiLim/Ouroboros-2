@@ -339,10 +339,10 @@ ScriptingProperties::ScriptingProperties()
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::ASSET, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
-			oo::Asset data = v.TryGetRuntimeValue().GetValue<oo::Asset>();
+			oo::ScriptValue::asset_type data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::asset_type>();
 			static ImGuiID opened = 0;
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			std::string temp = data.GetFilePath().stem().string();
+			std::string temp = data.asset.GetFilePath().stem().string();
 			ImGui::InputText(v.name.c_str(),&temp);
 			ImGui::PopItemFlag();
 			ImGui::SameLine();
@@ -361,8 +361,8 @@ ScriptingProperties::ScriptingProperties()
 			if (curr == opened)
 			{
 				rttr::variant asset_data = data;
-				AssetBrowser::AssetPickerUI(asset_data ,edited, (int)data.GetType());
-				data = asset_data.get_value<oo::Asset>();
+				AssetBrowser::AssetPickerUI(asset_data ,edited, (int)data.type);
+				data.asset = asset_data.get_value<oo::Asset>();
 			}
 			if (edited)
 			{

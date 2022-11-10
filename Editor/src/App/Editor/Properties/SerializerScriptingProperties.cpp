@@ -181,7 +181,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 		{
 			rapidjson::Value name;
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
-			val.AddMember(name, sfi.value.GetValue<oo::Asset>().GetID(), doc.GetAllocator());
+			val.AddMember(name, sfi.value.GetValue<oo::ScriptValue::asset_type>().asset.GetID(), doc.GetAllocator());
 		});
 
 
@@ -303,7 +303,9 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ASSET, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
 			auto asset = Project::GetAssetManager()->Get(val.GetUint64());
-			sfi.value.SetValue(asset);
+            oo::ScriptValue::asset_type scriptAsset = sfi.value.GetValue<oo::ScriptValue::asset_type>();
+            scriptAsset.asset = asset;
+            sfi.value.SetValue(scriptAsset);
 		});
 
 }
