@@ -781,7 +781,11 @@ void AnimatorControllerView::OnDelete()
             {
                 auto id = std::find_if(m_links_.begin(), m_links_.end(), [linkId](auto& link) { return link.id == linkId; });
                 if (id != m_links_.end())
+                {
+                    auto deletingLink = id->link;
+                    animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->dst->group->name}, .link_ID{deletingLink->linkID} });
                     m_links_.erase(id);
+                }
             }
         }
 
@@ -803,6 +807,8 @@ void AnimatorControllerView::OnDelete()
                             {
                                 ed::DeleteLink(m_links_[i].id);
                                 auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                auto deletingLink = iter->link;
+                                animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->dst->group->name}, .link_ID{deletingLink->linkID} });
                                 m_links_.erase(iter);
                                 continue;
                             }
@@ -816,11 +822,19 @@ void AnimatorControllerView::OnDelete()
                             {
                                 ed::DeleteLink(m_links_[i].id);
                                 auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                auto deletingLink = iter->link;
+                                animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->src->group->name}, .link_ID{deletingLink->linkID} });
                                 m_links_.erase(iter);
                                 continue;
                             }
                         }
                     }
+                    auto deletingNodeContainer = FindNode(id->id);
+                    auto deletingNode = deletingNodeContainer->anim_node;
+                    //auto lid = std::find_if(m_links_.begin(), m_links_.end(), [linkId](auto& link) { return link.id == linkId; });
+                    //auto deletingLink = lid->link;
+                    //animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingNode->group->name}, .link_ID{deletingLink->linkID} });
+                    animator->RemoveNode(oo::Anim::TargetNodeInfo{ .group_name{deletingNode->group->name}, .node_ID{deletingNode->node_ID} });
                     m_nodes.erase(id);
                 }
             }
