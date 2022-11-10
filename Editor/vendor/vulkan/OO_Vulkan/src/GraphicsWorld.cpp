@@ -80,3 +80,39 @@ void GraphicsWorld::ClearLightInstances()
 	m_OmniLightInstances.Clear();
 	m_lightCount = 0;
 }
+
+void ObjectInstance::SetShadowCaster(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SHADOW_CASTER;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SHADOW_CASTER);
+	}
+}
+
+void ObjectInstance::SetShadowReciever(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SHADOW_RECEIVER;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SHADOW_RECEIVER);
+	}
+}
+
+void ObjectInstance::SetSkinned(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SKINNED;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SKINNED);
+	}
+}

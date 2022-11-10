@@ -44,6 +44,7 @@ Technology is prohibited.
 #include "renderpass/GBufferRenderPass.h"
 #include "renderpass/DebugRenderpass.h"
 #include "renderpass/ShadowPass.h"
+#include "renderpass/SSAORenderPass.h"
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 	#include "renderpass/ForwardDecalRenderpass.h"
 #endif
@@ -81,7 +82,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		int x;
 		std::cerr << pCallbackData->pMessage << std::endl<< std::endl;
 		//assert(false); temp comment out
-		x= 5; // for breakpoint
+		x=5; // for breakpoint
 	}
 
 	return VK_FALSE;
@@ -193,10 +194,10 @@ VulkanRenderer::~VulkanRenderer()
 		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
 		renderPass_default = VK_NULL_HANDLE;
 	}
-	if (renderPass_default2)
+	if (renderPass_default_noDepth)
 	{
-		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default2, nullptr);
-		renderPass_default2 = VK_NULL_HANDLE;
+		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default_noDepth, nullptr);
+		renderPass_default_noDepth = VK_NULL_HANDLE;
 	}
 }
 
@@ -272,12 +273,12 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		rpd->RegisterRenderPass(ptr);
 		 ptr = new DeferredCompositionRenderpass;
 		rpd->RegisterRenderPass(ptr);
+		ptr = new SSAORenderPass;
+		rpd->RegisterRenderPass(ptr);
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 		ptr = new ForwardDecalRenderpass;
 		rpd->RegisterRenderPass(ptr);
 #endif
-
-		RenderPassDatabase::InitAllRegisteredPasses();
 
 		CreateFramebuffers();
 
@@ -294,11 +295,10 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		normalTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&normalTexture));
 		pinkTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&pinkTexture));
 		
+		RenderPassDatabase::InitAllRegisteredPasses();
+
 		auto& shadowTexture =RenderPassDatabase::GetRenderPass<ShadowPass>()->shadow_depth;
 		shadowTexture.updateDescriptor();
-		auto shadowLoc = AddBindlessGlobalTexture(shadowTexture);
-		auto dummy = g_imguiIDs.size(); // dummy because external engine users have 1:1 access to globalTex and imguiID
-		g_imguiIDs.push_back({});
 
 		CreateSynchronisation();
 
@@ -467,16 +467,15 @@ void VulkanRenderer::CreateDefaultRenderpass()
 		throw std::runtime_error("Failed to create Render Pass");
 	}
 	VK_NAME(m_device.logicalDevice, "defaultRenderPass",renderPass_default);
-
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 	//VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default2));
-	VK_NAME(m_device.logicalDevice, "defaultRenderPass_2",renderPass_default2);
-	//depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	//result = vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &compositionPass);
-	//if (result != VK_SUCCESS)
-	//{
-	//	throw std::runtime_error("Failed to create Render Pass");
-	//}
+
+	
+	subpass.pDepthStencilAttachment = VK_NULL_HANDLE;
+	renderPassCreateInfo.attachmentCount = 1; // colour only
+	renderPassCreateInfo.dependencyCount = 0; // colour only
+	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default_noDepth));
+	VK_NAME(m_device.logicalDevice, "defaultRenderPass_default_noDepth",renderPass_default_noDepth);
+
 }
 
 void VulkanRenderer::CreateDefaultDescriptorSetLayout()
@@ -1536,15 +1535,15 @@ void VulkanRenderer::UploadInstanceData()
 						const uint8_t perInstanceData = ent.instanceData;
 						constexpr uint32_t invalidIndex = 0xFFFFFFFF;
 						if (albedo == invalidIndex)
-							albedo = 0; // TODO: Dont hardcode this bindless texture index
+							albedo = whiteTextureID; // TODO: Dont hardcode this bindless texture index
 						if (normal == invalidIndex)
-							normal = 1; // TODO: Dont hardcode this bindless texture index
+							normal = blackTextureID; // TODO: Dont hardcode this bindless texture index
 						if (roughness == invalidIndex)
-							roughness = 0; // TODO: Dont hardcode this bindless texture index
+							roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
 						if (metallic == invalidIndex)
-							metallic = 1; // TODO: Dont hardcode this bindless texture index
+							metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
 
-										  // Important: Make sure this index packing matches the unpacking in the shader
+						// Important: Make sure this index packing matches the unpacking in the shader
 						const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
 						const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
 						const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
@@ -1798,13 +1797,16 @@ void VulkanRenderer::RenderFrame()
 				//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
+				RenderPassDatabase::GetRenderPass<SSAORenderPass>()->Draw();
+
 				RenderPassDatabase::GetRenderPass<DeferredCompositionRenderpass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<ForwardRenderpass>()->Draw();
 #if defined		(ENABLE_DECAL_IMPLEMENTATION)
 				RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();
 #endif				
-				if (shouldRunDebugDraw)
+				//if (shouldRunDebugDraw) // for now need to run regardless because of transition.. TODO: FIX IT ONE DAY
 				{
+					RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->dodebugRendering = shouldRunDebugDraw;
 					RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->Draw();
 				}
 

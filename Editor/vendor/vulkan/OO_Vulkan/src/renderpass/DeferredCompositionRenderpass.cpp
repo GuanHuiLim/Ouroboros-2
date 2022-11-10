@@ -18,6 +18,7 @@ Technology is prohibited.
 #include "VulkanUtils.h"
 
 #include "GBufferRenderPass.h"
+#include "SSAORenderPass.h"
 #include "ShadowPass.h"
 
 #include <array>
@@ -90,7 +91,7 @@ void DeferredCompositionRenderpass::Draw()
 		gbuffer->attachments[GBufferAttachmentIndex::DEPTH].image,
 		VK_ACCESS_MEMORY_READ_BIT,
 		VK_ACCESS_MEMORY_READ_BIT,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
@@ -108,15 +109,18 @@ void DeferredCompositionRenderpass::Draw()
 	CreateDescriptors();
 
 	LightPC pc{};
+	pc.useSSAO = vr.useSSAO ? 1 : 0;
+	pc.ambient = vr.currWorld->lightSettings.ambient;
+	pc.maxBias = vr.currWorld->lightSettings.maxBias;
+	pc.mulBias = vr.currWorld->lightSettings.biasMultiplier;
 	
-	pc.numLights[0] = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
+	pc.numLights = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
 	VkPushConstantRange range;
 	range.offset = 0;
 	range.size = sizeof(LightPC);
-	if (pc.numLights[0])
+	if (pc.numLights)
 	{
 		auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
-		pc.lightMat = light.projection * light.view[0];
 	}
 	cmd.SetPushConstant(PSOLayoutDB::deferredLightingCompositionPSOLayout,range,&pc);
 
@@ -160,6 +164,9 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 	auto gbuffer = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
 	assert(gbuffer != nullptr);
 
+	auto ssao = RenderPassDatabase::GetRenderPass<SSAORenderPass>();
+	assert(ssao != nullptr);
+
     // Image descriptors for the offscreen color attachments
     // VkDescriptorImageInfo texDescriptorPosition = oGFX::vkutils::inits::descriptorImageInfo(
     //     GfxSamplerManager::GetSampler_Deferred(),
@@ -192,6 +199,12 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 		shadowTex.view,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+	auto& ssaoTex = ssao->SSAO_renderTarget;
+	VkDescriptorImageInfo texDescriptorSSAO = oGFX::vkutils::inits::descriptorImageInfo(
+		GfxSamplerManager::GetSampler_Deferred(),
+		ssaoTex.view,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
 	const auto& dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
@@ -203,6 +216,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         //.BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(5, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
+        .BindImage(6, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
         .BindBuffer(7, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .Build(vr.descriptorSet_DeferredComposition, SetLayoutDB::DeferredLightingComposition);
 }

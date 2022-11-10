@@ -36,6 +36,7 @@ public:
 
 	VkRenderPass debugRenderpass{};
 
+	bool dodebugRendering = true;
 private:
 
 	void CreateDebugRenderpass();
