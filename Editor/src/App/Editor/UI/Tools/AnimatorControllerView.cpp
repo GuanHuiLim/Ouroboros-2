@@ -112,7 +112,8 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
         if (!_animator->GetActualComponent().animTree->groups.empty())
         {
             //reset the data before populating
-            uniqueId = 0;
+            uniqueId = 1;
+            m_nextLinkId = 100;
             m_nodes.clear();
             m_links_.clear();
 

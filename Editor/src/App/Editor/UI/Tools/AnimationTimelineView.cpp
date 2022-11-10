@@ -111,6 +111,12 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
                 }
             }
 
+            //for (int i = 0; i < animation->events.size(); ++i)
+            //{
+            //    if ((currentKeyFrame * unitPerFrame) == animation->events[i].time)
+            //        animation->events[i].script_function_info.Invoke(go.get()->GetInstanceID());
+            //}
+
             currentKeyFrame++;
         }
     }
@@ -545,7 +551,10 @@ void AnimationTimelineView::DisplayInspector()
         {
             if (scriptevent != nullptr)
             {
+                static bool openEventDropdown = false;
+                static std::string eventName = "empty";
                 ImGui::Text("Invoke: ");
+                ImGui::SameLine();
                 //ImGui Dropdown of all the invokable events 
 
                 fnInfo.clear();
@@ -557,6 +566,55 @@ void AnimationTimelineView::DisplayInspector()
                     std::vector<oo::ScriptValue::function_info> fnInfoAll = scriptInfo.classInfo.GetFunctionInfoAll();
                     for (oo::ScriptValue::function_info _fnInfo : fnInfoAll)
                         fnInfo.push_back(_fnInfo);
+                }
+
+                ImGui::InputText("##eventstuff", &eventName, ImGuiInputTextFlags_ReadOnly);
+                ImGui::SameLine();
+                if (ImGui::ArrowButton("eventdownbtn", ImGuiDir_Down))
+                {
+                    openEventDropdown = !openEventDropdown;
+                }
+                if (openEventDropdown)
+                {
+                    for (int i = 0; i < fnInfo.size(); ++i)
+                    {
+                        std::string tempname = fnInfo[i].className + "." + fnInfo[i].functionName;
+                        //ImGui::Text(tempname.c_str());
+                        if (ImGui::Selectable(tempname.c_str()))
+                        {
+                            scriptevent->script_function_info = fnInfo[i];
+                            eventName = tempname;
+                            openEventDropdown = !openEventDropdown;
+                        }
+                    }
+                }
+
+                //use scriptevent to display any other parameters
+                if (!scriptevent->script_function_info.paramList.empty())
+                {
+                    for (int i = 0; i < scriptevent->script_function_info.paramList.size(); ++i)
+                    {
+                        std::string paramLabel = scriptevent->script_function_info.paramList[i].name + ":";
+                        ImGui::Text(paramLabel.c_str());
+                        ImGui::SameLine();
+                        std::string valueLabel = "##" + scriptevent->script_function_info.paramList[i].name;
+                        if (scriptevent->script_function_info.paramList[i].value.IsValueType<bool>())
+                        {
+                            ImGui::Checkbox(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<bool>());
+                        }
+                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<int>())
+                        {
+                            ImGui::DragInt(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<int>());
+                        }
+                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<float>())
+                        {
+                            ImGui::DragFloat(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<float>());
+                        }
+                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<std::string>())
+                        {
+                            ImGui::InputText(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<std::string>());
+                        }
+                    }
                 }
 
                 ImGui::Text("Time: ");
