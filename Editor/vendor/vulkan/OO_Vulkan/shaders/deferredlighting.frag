@@ -87,23 +87,25 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 	    
 		float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
 		float r2 = Lights_SSBO[lightIndex].radius.x;
+		vec3 lCol = Lights_SSBO[lightIndex].color.xyz;
 
     		// Attenuation
 		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);		 
 	
 		// Diffuse part
 		
-		vec3 diff = Lights_SSBO[lightIndex].color.xyz * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
+		vec3 diff = lCol * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
 
 
 		// Specular part
 		// Specular map values are stored in alpha of albedo mrt
-		//vec3 R = -reflect(L, N);
-		//float RdotV = max(0.0, dot(R, V));
-		//vec3 spec = ubo.lights[lightIndex].color.xyz * specular * pow(RdotV, 16.0) * atten;
+		vec3 R = -reflect(L, N);
+		float RdotV = max(0.0, dot(R, V));
+		//vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
+		vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
 	
 		//result = diff;// + spec;	
-		result = diff;
+		result = diff+spec;
 	}
 
 	if(lightIndex == 0)
@@ -135,7 +137,7 @@ void main()
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
 	float SSAO = texture(samplerSSAO, inUV).r;
-	float specular = material.b;
+	float specular = material.g;
 	float roughness = material.r;
 
 	// Render-target composition
@@ -149,7 +151,8 @@ void main()
 	albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
-	vec3 result = albedo.rgb  * ambient;	
+	vec3 result = albedo.rgb  * ambient;
+
 	if(PC.useSSAO != 0){
 		result *=  SSAO;
 	}

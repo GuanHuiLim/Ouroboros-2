@@ -1535,15 +1535,15 @@ void VulkanRenderer::UploadInstanceData()
 						const uint8_t perInstanceData = ent.instanceData;
 						constexpr uint32_t invalidIndex = 0xFFFFFFFF;
 						if (albedo == invalidIndex)
-							albedo = 0; // TODO: Dont hardcode this bindless texture index
+							albedo = whiteTextureID; // TODO: Dont hardcode this bindless texture index
 						if (normal == invalidIndex)
-							normal = 1; // TODO: Dont hardcode this bindless texture index
+							normal = blackTextureID; // TODO: Dont hardcode this bindless texture index
 						if (roughness == invalidIndex)
-							roughness = 0; // TODO: Dont hardcode this bindless texture index
+							roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
 						if (metallic == invalidIndex)
-							metallic = 1; // TODO: Dont hardcode this bindless texture index
+							metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
 
-										  // Important: Make sure this index packing matches the unpacking in the shader
+						// Important: Make sure this index packing matches the unpacking in the shader
 						const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
 						const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
 						const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
