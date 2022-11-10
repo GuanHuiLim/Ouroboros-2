@@ -503,6 +503,10 @@ void FileBrowser::BuildDirectoryList(const std::string& path)
 	
 	for (auto& directory : list)
 	{
+		if (directory.extension() == oo::Asset::EXT_META)
+		{
+			continue;
+		}
 		m_directoryList.emplace_back(DirectoryInfo{ GetIcon(directory.extension().string()),directory});
 	}
 }
@@ -609,11 +613,23 @@ bool FileBrowser::RenameFilePopup(DirectoryInfo& info)
 		}
 		else if (ImGui::InputText("##rename",&renameBuffer,ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue| ImGuiInputTextFlags_AutoSelectAll))
 		{
+			auto oldAssetPath = info.name;
+			auto oldMetaPath = oldAssetPath;
+			oldMetaPath += oo::Asset::EXT_META;
+
 			renameBuffer += info.name.extension().string();
-			std::filesystem::path temppath = info.name;
-			info.name.replace_filename(renameBuffer);
-			std::filesystem::rename(temppath,info.name);
+			std::string newAssetName = renameBuffer;
+			std::string newMetaName = renameBuffer + oo::Asset::EXT_META;
+
+			auto newAssetPath = info.name.replace_filename(newAssetName);
+			auto newMetaPath = newAssetPath;
+			newMetaPath += oo::Asset::EXT_META;
+
+			std::filesystem::rename(oldAssetPath, newAssetPath);
+			std::filesystem::rename(oldMetaPath, newMetaPath);
 			ImGui::CloseCurrentPopup();
+
+			Project::GetAssetManager()->Scan();
 		}
 		ImGui::EndPopup();
 	}

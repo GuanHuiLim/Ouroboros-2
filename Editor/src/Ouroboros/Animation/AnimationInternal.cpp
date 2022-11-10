@@ -1220,6 +1220,12 @@ namespace oo::Anim::internal
 		assert(false);
 		return nullptr;
 	}
+	Node* RetrieveNodeFromGroup(Group& group, UID node_ID)
+	{
+		if (group.nodes.contains(node_ID) == false) return nullptr;
+
+		return &(group.nodes[node_ID]);
+	}
 	//same as RetrieveNodeFromGroup but without error messages and asserts
 	Node* TryRetrieveNodeFromGroup(Group& group, std::string const& name)
 	{
@@ -1242,6 +1248,12 @@ namespace oo::Anim::internal
 		LOG_CORE_ERROR("could not find {0} link!!", linkName);
 		assert(false);
 		return nullptr;
+	}
+	Link* RetrieveLinkFromGroup(Group& group, UID link_ID)
+	{
+		if (group.links.contains(link_ID) == false) return nullptr;
+
+		return  &(group.links[link_ID]);
 	}
 
 	Parameter* RetrieveParameterFromTree(AnimationTree& tree, std::string const& param_name)
@@ -1318,6 +1330,17 @@ namespace oo::Anim::internal
 
 	Animation* RetrieveAnimation(size_t anim_id)
 	{
+		auto has_anim = Animation::animation_storage.contains(anim_id);
+		assert(has_anim);
+		if (has_anim)
+			return &(Animation::animation_storage[anim_id]);
+		else
+			return nullptr;
+	}
+
+	Animation* RetrieveAnimation(oo::Asset asset)
+	{
+		auto anim_id = asset.GetData<UID>();
 		auto has_anim = Animation::animation_storage.contains(anim_id);
 		assert(has_anim);
 		if (has_anim)
@@ -1612,12 +1635,31 @@ namespace oo::Anim::internal
 		return &anim;
 	}
 
-	void RemoveNodeFromGroup(Group& group, std::string const& node_name)
+	void RemoveNodeFromGroup(Group& group, UID node_ID)
 	{
+		std::stack<UID> links_to_remove{};
+		//remove links to the node and links from the node to others
+		for (auto& [id, link] : group.links)
+		{
+			if (link.dst->node_ID == node_ID || link.src->node_ID == node_ID)
+			{
+				links_to_remove.emplace(link.linkID);
+			}
+		}
+		while (links_to_remove.empty() == false)
+		{
+			auto linkID = links_to_remove.top();
+			links_to_remove.pop();
+			RemoveLinkFromGroup(group, linkID);
+		}
+		//remove the node
+		group.nodes.erase(node_ID);
+
 	}
 
-	void RemoveLinkFromGroup(Group& group, std::string const& link_name)
+	void RemoveLinkFromGroup(Group& group, UID link_ID)
 	{
+		group.links.erase(link_ID);
 	}
 
 	void LoadFBX(std::string const& filepath, Animation* anim)

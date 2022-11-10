@@ -208,6 +208,8 @@ project "Editor"
             -- discord sdk
             {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },
             
+			--copy version.txt
+			{"{COPY} \"%{AppDir}/version.txt\" \"" .. binApp .. "\""},
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -239,6 +241,7 @@ project "Editor"
 			{"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Debug_x64.dll\" \"" .. binApp .. "\""},
             -- copy Debug DLLs
             {"{COPY} \"%{AppDir}/dlls/Debug/\" \"" .. binApp .. "\"" },
+			{"{COPY} \"%{AppDir}/engine_portable_debug.iss\" \"" .. binApp .. "\"" },
         }
 
         links

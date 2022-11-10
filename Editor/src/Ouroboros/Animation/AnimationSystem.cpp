@@ -325,7 +325,7 @@ namespace oo::Anim
 
 	bool AnimationSystem::SaveAllAnimationTree(std::string filepath)
 	{
-		for (auto& [name, tree] : AnimationTree::map)
+		for (auto& [treeID, tree] : AnimationTree::map)
 		{
 			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
 			if (result == false)
