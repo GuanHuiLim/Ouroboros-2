@@ -77,6 +77,13 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
+        // Some system setup code
+        {
+            // set default debug draws
+            GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = true;
+            GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = true;
+        }
+
         // if filepath is a valid file path
         if (std::filesystem::exists(GetFilePath()))
         {

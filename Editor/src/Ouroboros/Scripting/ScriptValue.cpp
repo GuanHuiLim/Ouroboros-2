@@ -631,19 +631,27 @@ namespace oo
                 // SetFieldValue
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
-                    Asset asset = value.GetValue<Asset>();
+                    asset_type asset = value.GetValue<asset_type>();
+                    if (asset.asset.GetID() == Asset::ID_NULL)
+                    {
+                        mono_field_set_value(obj, field, nullptr);
+                        return;
+                    }
                     MonoObject* fieldValue = nullptr;
                     MonoClass* fieldClass = nullptr;
-                    switch (asset.GetType())
+                    switch (asset.type)
                     {
                     case AssetInfo::Type::Audio: fieldClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "AudioClip"); break;
                     }
                     if (fieldClass == nullptr)
+                    {
+                        mono_field_set_value(obj, field, nullptr);
                         return;
+                    }
                     fieldValue = ScriptEngine::CreateObject(fieldClass);
 
                     MonoClassField* handleField = mono_class_get_field_from_name(fieldClass, "id");
-                    AssetID id = asset.GetID();
+                    AssetID id = asset.asset.GetID();
                     mono_field_set_value(fieldValue, handleField, &id);
 
                     mono_field_set_value(obj, field, fieldValue);
@@ -651,48 +659,74 @@ namespace oo
                 // GetFieldValue
                 [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
                 {
+                    MonoClass* fieldClass = mono_type_get_class(mono_field_get_type(field));
+
+                    AssetInfo::Type type = AssetInfo::Type::Text;
+                    bool typeSupported = false;
+                    if (ScriptEngine::CheckClassInheritance(fieldClass, "ScriptCore", "Ouroboros", "AudioClip"))
+                    {
+                        type = AssetInfo::Type::Audio;
+                        typeSupported = true;
+                    }
+
+                    if (!typeSupported)
+                        return ScriptValue{};
+
                     MonoObject* fieldValue = nullptr;
                     mono_field_get_value(object, field, &fieldValue);
                     if (fieldValue == nullptr)
-                        return ScriptValue{ Asset{} };
+                        return ScriptValue{ asset_type{ type, Asset{} } };
 
-                    MonoClass* fieldClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
-                    MonoClassField* handleField = mono_class_get_field_from_name(fieldClass, "id");
+                    MonoClass* assetClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
+                    MonoClassField* handleField = mono_class_get_field_from_name(assetClass, "id");
                     AssetID id = 0;
                     mono_field_get_value(fieldValue, handleField, &id);
                     Asset asset = Project::GetAssetManager()->Get(id);
-                    return ScriptValue{ asset };
+                    return ScriptValue{ asset_type{ type, asset } };
                 },
                 // GetObjectValue
                 [](MonoObject* object, ScriptValue const& refInfo)
                 {
-                    if (object == nullptr)
-                        return ScriptValue{ Asset{} };
+                    MonoClass* klass = mono_object_get_class(object);
 
-                    MonoClass* fieldClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
-                    MonoClassField* handleField = mono_class_get_field_from_name(fieldClass, "id");
+                    AssetInfo::Type type = AssetInfo::Type::Text;
+                    bool typeSupported = false;
+                    if (ScriptEngine::CheckClassInheritance(klass, "ScriptCore", "Ouroboros", "AudioClip"))
+                    {
+                        type = AssetInfo::Type::Audio;
+                        typeSupported = true;
+                    }
+
+                    if (!typeSupported)
+                        return ScriptValue{};
+
+                    if (object == nullptr)
+                        return ScriptValue{ asset_type{ type, Asset{} } };
+
+                    MonoClass* assetClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
+                    MonoClassField* handleField = mono_class_get_field_from_name(assetClass, "id");
                     AssetID id = 0;
                     mono_field_get_value(object, handleField, &id);
                     Asset asset = Project::GetAssetManager()->Get(id);
-                    return ScriptValue{ asset };
+                    return ScriptValue{ asset_type{ type, asset } };
                 },
                 // AddToList
                 [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
                 {
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
-                    Asset asset = value.GetValue<Asset>();
+                    asset_type asset = value.GetValue<asset_type>();
                     MonoObject* entry = nullptr;
                     MonoClass* klass = nullptr;
-                    switch (asset.GetType())
+                    switch (asset.type)
                     {
                     case AssetInfo::Type::Audio: klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "AudioClip"); break;
                     }
-                    if (klass != nullptr)
+                    if (klass != nullptr && asset.asset.GetID() != Asset::ID_NULL)
                     {
                         entry = ScriptEngine::CreateObject(klass);
-                        MonoClassField* handleField = mono_class_get_field_from_name(klass, "id");
-                        AssetID id = asset.GetID();
+                        MonoClassField* handleField = mono_class_get_field_from_name(ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset"), "id");
+                        AssetID id = asset.asset.GetID();
                         mono_field_set_value(entry, handleField, &id);
                     }
 
@@ -1153,7 +1187,7 @@ namespace oo
             return currValue.m_isScript == srcValue.m_isScript && currValue.m_name == srcValue.m_name && currValue.m_namespace == srcValue.m_namespace;
         }
         if (currType == type_enum::ASSET)
-            return GetValue<Asset>().GetType() == src.GetValue<Asset>().GetType();
+            return GetValue<asset_type>().type == src.GetValue<asset_type>().type;
         if (currType == type_enum::CLASS)
         {
             class_type currValue = GetValue<class_type>();
@@ -1262,8 +1296,24 @@ namespace oo
         }
         break;
         case ScriptValue::type_enum::ASSET:
-            valueList.emplace_back(ScriptValue{ Asset() });
-            break;
+        {
+            MonoClass* klass = ScriptEngine::GetClass("ScriptCore", name_space.c_str(), name.c_str());
+            if (klass == nullptr)
+                klass = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
+
+            AssetInfo::Type assetType = AssetInfo::Type::Text;
+            bool typeSupported = false;
+            if (ScriptEngine::CheckClassInheritance(klass, "ScriptCore", "Ouroboros", "AudioClip"))
+            {
+                assetType = AssetInfo::Type::Audio;
+                typeSupported = true;
+            }
+
+            if (!typeSupported)
+                break;
+            valueList.emplace_back(ScriptValue::asset_type{ assetType, Asset{} });
+        }
+        break;
         case ScriptValue::type_enum::PREFAB:
             valueList.emplace_back(ScriptValue::prefab_type{ "" });
             break;

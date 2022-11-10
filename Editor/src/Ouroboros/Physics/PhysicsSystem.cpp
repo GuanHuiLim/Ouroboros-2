@@ -373,7 +373,7 @@ namespace oo
 
     void PhysicsSystem::RenderDebugColliders()
     {
-        if (DrawDebug == false)
+        if (ColliderDebugDraw == false)
             return;
 
         TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
