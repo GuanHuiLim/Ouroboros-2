@@ -67,6 +67,8 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout lights;
 	// 
 	inline static VkDescriptorSetLayout ForwardDecal;
+
+	inline static VkDescriptorSetLayout SSAO;
 };
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
@@ -75,6 +77,7 @@ struct PSOLayoutDB
 	inline static VkPipelineLayout defaultPSOLayout;
 	inline static VkPipelineLayout deferredLightingCompositionPSOLayout;
 	inline static VkPipelineLayout forwardDecalPSOLayout;
+	inline static VkPipelineLayout SSAOPSOLayout;
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -149,6 +152,7 @@ public:
 
 	ImTextureID myImg;
 
+	bool useSSAO = true;
     bool m_imguiInitialized = false;
 	bool m_initialized = false;
 
@@ -175,6 +179,8 @@ public:
 	VkDescriptorSet descriptorSet_bones;
 
 	VkDescriptorSet descriptorSet_objInfos;
+
+	VkDescriptorSet descriptorSet_SSAO;
 	// For UBO with the corresponding swap chain image
 	std::vector<VkDescriptorSet> descriptorSets_uniform;
 
@@ -296,7 +302,7 @@ public:
 
 	// - Pipeline
 	VkRenderPass renderPass_default{};
-	VkRenderPass renderPass_default2{};
+	VkRenderPass renderPass_default_noDepth{};
 
 	vkutils::Buffer indirectCommandsBuffer{};
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};
