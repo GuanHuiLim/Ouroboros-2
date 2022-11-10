@@ -1220,6 +1220,12 @@ namespace oo::Anim::internal
 		assert(false);
 		return nullptr;
 	}
+	Node* RetrieveNodeFromGroup(Group& group, UID node_ID)
+	{
+		if (group.nodes.contains(node_ID) == false) return nullptr;
+
+		return &(group.nodes[node_ID]);
+	}
 	//same as RetrieveNodeFromGroup but without error messages and asserts
 	Node* TryRetrieveNodeFromGroup(Group& group, std::string const& name)
 	{
@@ -1242,6 +1248,12 @@ namespace oo::Anim::internal
 		LOG_CORE_ERROR("could not find {0} link!!", linkName);
 		assert(false);
 		return nullptr;
+	}
+	Link* RetrieveLinkFromGroup(Group& group, UID link_ID)
+	{
+		if (group.links.contains(link_ID) == false) return nullptr;
+
+		return  &(group.links[link_ID]);
 	}
 
 	Parameter* RetrieveParameterFromTree(AnimationTree& tree, std::string const& param_name)
@@ -1318,6 +1330,17 @@ namespace oo::Anim::internal
 
 	Animation* RetrieveAnimation(size_t anim_id)
 	{
+		auto has_anim = Animation::animation_storage.contains(anim_id);
+		assert(has_anim);
+		if (has_anim)
+			return &(Animation::animation_storage[anim_id]);
+		else
+			return nullptr;
+	}
+
+	Animation* RetrieveAnimation(oo::Asset asset)
+	{
+		auto anim_id = asset.GetData<UID>();
 		auto has_anim = Animation::animation_storage.contains(anim_id);
 		assert(has_anim);
 		if (has_anim)
@@ -1593,6 +1616,56 @@ namespace oo::Anim::internal
 		return &parameter;
 	}
 
+	void RemoveParameterFromTree(AnimationTree& tree, UID param_ID)
+	{
+		//find the parameter
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& param : tree.parameters)
+		{
+			if (param.paramID == param_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+
+		//remove conditions that reference the parameter
+		struct LinkCondition
+		{
+			Link* link{nullptr};
+			UID condition_ID{};
+		};
+		std::stack<LinkCondition> to_remove{};
+
+		for (auto& [groupID, group] : tree.groups)
+		{
+		for (auto& [linkID, link] : group.links)
+		{
+		for (auto& condition : link.conditions)
+		{
+			if (condition.paramID == param_ID)
+			{
+				to_remove.emplace(&link, condition.conditionID);
+			}
+		}
+		}
+		}
+		while (to_remove.empty() == false)
+		{
+			auto info = to_remove.top();
+			to_remove.pop();
+			RemoveConditionFromLink(*(info.link), info.condition_ID);
+		}
+
+		//remove the parameter
+		tree.parameters.erase(tree.parameters.begin() + index);
+
+
+	}
+
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info)
 	{
 		//verify there is a parameter available
@@ -1605,6 +1678,24 @@ namespace oo::Anim::internal
 		return &createdCondition;
 	}
 
+	void RemoveConditionFromLink(Link& link, UID conditionID)
+	{
+		uint index = 0;
+		bool found{false};
+		for (auto& condition : link.conditions)
+		{
+			if (condition.conditionID == conditionID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+		assert(index < link.conditions.size());
+		link.conditions.erase(link.conditions.begin() + index);
+	}
+
 	Animation* AddAnimationToNode(Node& node, Animation& anim)
 	{
 		node.anim = CreateAnimationReference(anim.animation_ID);
@@ -1612,12 +1703,52 @@ namespace oo::Anim::internal
 		return &anim;
 	}
 
-	void RemoveNodeFromGroup(Group& group, std::string const& node_name)
+	void RemoveNodeFromGroup(Group& group, UID node_ID)
 	{
+		std::stack<UID> links_to_remove{};
+		//remove links to the node and links from the node to others
+		for (auto& [id, link] : group.links)
+		{
+			if (link.dst->node_ID == node_ID || link.src->node_ID == node_ID)
+			{
+				links_to_remove.emplace(link.linkID);
+			}
+		}
+		while (links_to_remove.empty() == false)
+		{
+			auto linkID = links_to_remove.top();
+			links_to_remove.pop();
+			RemoveLinkFromGroup(group, linkID);
+		}
+		//remove the node
+		group.nodes.erase(node_ID);
+
 	}
 
-	void RemoveLinkFromGroup(Group& group, std::string const& link_name)
+	void RemoveLinkFromGroup(Group& group, UID link_ID)
 	{
+		auto link = RetrieveLinkFromGroup(group, link_ID);
+		if (link == nullptr) return;
+
+		//remove outgoing link from src node
+		auto& outgoingLinks = link->src->outgoingLinks;
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& linkref : outgoingLinks)
+		{
+			if (linkref->linkID == link_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		assert(found);
+		if (found == false) return;
+		outgoingLinks.erase(outgoingLinks.begin() + index);
+
+		//remove link
+		group.links.erase(link_ID);
 	}
 
 	void LoadFBX(std::string const& filepath, Animation* anim)
