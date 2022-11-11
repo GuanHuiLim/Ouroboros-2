@@ -64,6 +64,7 @@ struct SSAOPC
     vec2 sampleDim; // screenDim_sampleDim
     float radius;
     float bias;
+    uint numSamples;
 };
 
 struct GPUTransform

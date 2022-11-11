@@ -43,6 +43,7 @@ void main()
 	float radius = PC.radius;
 	float bias = PC.bias;
 	int kernelSize = randomVectors.length();
+	kernelSize = int(PC.numSamples);
 	for(int i = 0; i < kernelSize; ++i)
 	{
 	    // get sample position
