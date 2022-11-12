@@ -34,22 +34,6 @@ Technology is prohibited.
 
 namespace oo
 {
-    RTTR_REGISTRATION
-    {
-        using namespace rttr;
-        registration::class_<RendererSystem::RendererSettings::SSAOSettings>("SSAO Settings")
-            .property("Radius", &RendererSystem::RendererSettings::SSAOSettings::radius)
-            .property("Bias", &RendererSystem::RendererSettings::SSAOSettings::bias);
-        registration::class_<RendererSystem::RendererSettings::LightingSettings>("Light Settings")
-            .property("Ambient", &RendererSystem::RendererSettings::LightingSettings::ambient)
-            .property("Max Bias", &RendererSystem::RendererSettings::LightingSettings::maxBias)
-            .property("Bias Multiplier", &RendererSystem::RendererSettings::LightingSettings::biasMultiplier);
-        registration::class_<RendererSystem::RendererSettings>("Renderer Settings")
-            .property("SSAO Configuration", &RendererSystem::RendererSettings::SSAO)
-            .property("Light Configuration", &RendererSystem::RendererSettings::Light);
-        registration::class_<RendererSystem>("Renderer System")
-            .property("Renderer Settings", &RendererSystem::m_rendererSettings);
-    }
 
     Camera EditorController::EditorCamera = [&]()
     {
