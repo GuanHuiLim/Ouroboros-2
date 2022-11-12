@@ -35,6 +35,11 @@ namespace oo
 
         InputAxis& GetAxis(std::string const& axisName);
 
+        inline std::unordered_map<std::string, InputAxis::Tracker> const& GetTrackers()
+        {
+            return trackers;
+        }
+
         float GetAxisValue(std::string const& axisName);
 
     private:

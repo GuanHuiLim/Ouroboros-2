@@ -45,6 +45,28 @@ namespace oo
         return ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxisValue(axisName);
     }
 
+    SCRIPT_API MonoArray* GetAxesAll()
+    {
+        auto const& trackers = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetTrackers();
+        
+        MonoClass* axisKlass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "InputManager/Axis");
+        MonoArray* arr = ScriptEngine::CreateArray(axisKlass, trackers.size());
+        
+        unsigned index = 0;
+        for (auto const& [key, tracker] : trackers)
+        {
+            MonoObject* axis = ScriptEngine::CreateObject(axisKlass);
+
+            MonoString* nameString = ScriptEngine::CreateString(key.c_str());
+            MonoClassField* nameField = mono_class_get_field_from_name(axisKlass, "name");
+            mono_field_set_value(axis, nameField, nameString);
+
+            mono_array_set(arr, MonoObject*, index, axis);
+            ++index;
+        }
+        return arr;
+    }
+
     SCRIPT_API void InputManager_SetPositiveKeyCode(const char* axisName, input::KeyCode keyCode)
     {
         InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
@@ -94,6 +116,57 @@ namespace oo
         if (axis.GetControllerType() != InputAxis::ControllerInputType::Button)
             axis.SetControllerType(InputAxis::ControllerInputType::Button);
         axis.GetControllerSettings().negativeButton = static_cast<InputAxis::InputCode>(buttonCode);
+    }
+
+    SCRIPT_API bool InputManager_IsPositiveKeyCode(const char* axisName, input::KeyCode keyCode)
+    {
+        InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+        if (axis.GetType() != InputAxis::InputType::KeyboardButton)
+            return false;
+        return axis.GetSettings().positiveButton == static_cast<InputAxis::InputCode>(keyCode);
+    }
+    SCRIPT_API bool InputManager_IsPositiveMouseCode(const char* axisName, input::MouseCode mouseCode)
+    {
+        InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+        if (axis.GetType() != InputAxis::InputType::MouseButton)
+            return false;
+        return axis.GetSettings().positiveButton == static_cast<InputAxis::InputCode>(mouseCode);
+    }
+    SCRIPT_API bool InputManager_IsPositiveControllerButtonCode(const char* axisName, input::ControllerButtonCode buttonCode)
+    {
+        InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+        if (axis.GetControllerType() != InputAxis::ControllerInputType::Button)
+            return false;
+        return axis.GetControllerSettings().positiveButton == static_cast<InputAxis::InputCode>(buttonCode);
+    }
+    SCRIPT_API bool InputManager_IsPositiveControllerAxisCode(const char* axisName, input::ControllerAxisCode axisCode)
+    {
+        InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+        if (axis.GetControllerType() != InputAxis::ControllerInputType::Trigger_Joystick)
+            return false;
+        return axis.GetControllerSettings().positiveButton == static_cast<InputAxis::InputCode>(axisCode);
+    }
+
+    SCRIPT_API bool InputManager_IsNegativeKeyCode(const char* axisName, input::KeyCode keyCode)
+    {
+        InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+        if (axis.GetType() != InputAxis::InputType::KeyboardButton)
+            return false;
+        return axis.GetSettings().negativeButton == static_cast<InputAxis::InputCode>(keyCode);
+    }
+    SCRIPT_API bool InputManager_IsNegativeMouseCode(const char* axisName, input::MouseCode mouseCode)
+    {
+        InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+        if (axis.GetType() != InputAxis::InputType::MouseButton)
+            return false;
+        return axis.GetSettings().negativeButton == static_cast<InputAxis::InputCode>(mouseCode);
+    }
+    SCRIPT_API bool InputManager_IsNegativeControllerButtonCode(const char* axisName, input::ControllerButtonCode buttonCode)
+    {
+        InputAxis& axis = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<InputSystem>()->GetAxis(axisName);
+        if (axis.GetControllerType() != InputAxis::ControllerInputType::Button)
+            return false;
+        return axis.GetControllerSettings().negativeButton == static_cast<InputAxis::InputCode>(buttonCode);
     }
 
     /*-----------------------------------------------------------------------------*/

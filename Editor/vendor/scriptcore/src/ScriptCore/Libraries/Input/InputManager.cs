@@ -56,12 +56,53 @@ namespace Ouroboros
             {
                 InputManager_SetNegativeControllerButtonCode(name, button);
             }
+
+            [DllImport("__Internal")] private static extern bool InputManager_IsPositiveKeyCode(string axisName, KeyCode keyCode);
+            [DllImport("__Internal")] private static extern bool InputManager_IsPositiveMouseCode(string axisName, MouseCode mouseCode);
+            [DllImport("__Internal")] private static extern bool InputManager_IsPositiveControllerButtonCode(string axisName, ControllerButtonCode buttonCode);
+            [DllImport("__Internal")] private static extern bool InputManager_IsPositiveControllerAxisCode(string axisName, ControllerAxisCode axisCode);
+
+            public bool IsPositive(KeyCode key)
+            {
+                return InputManager_IsPositiveKeyCode(name, key);
+            }
+            public bool IsPositive(MouseCode key)
+            {
+                return InputManager_IsPositiveMouseCode(name, key);
+            }
+            public bool IsPositive(ControllerButtonCode key)
+            {
+                return InputManager_IsPositiveControllerButtonCode(name, key);
+            }
+            public bool IsPositive(ControllerAxisCode key)
+            {
+                return InputManager_IsPositiveControllerAxisCode(name, key);
+            }
+
+            [DllImport("__Internal")] private static extern bool InputManager_IsNegativeKeyCode(string axisName, KeyCode keyCode);
+            [DllImport("__Internal")] private static extern bool InputManager_IsNegativeMouseCode(string axisName, MouseCode mouseCode);
+            [DllImport("__Internal")] private static extern bool InputManager_IsNegativeControllerButtonCode(string axisName, ControllerButtonCode buttonCode);
+
+            public bool IsNegative(KeyCode key)
+            {
+                return InputManager_IsNegativeKeyCode(name, key);
+            }
+            public bool IsNegative(MouseCode key)
+            {
+                return InputManager_IsNegativeMouseCode(name, key);
+            }
+            public bool IsNegative(ControllerButtonCode key)
+            {
+                return InputManager_IsNegativeControllerButtonCode(name, key);
+            }
         }
 
         public static Axis GetAxis(string name)
         {
             return new Axis(name);
         }
+
+        [DllImport("__Internal")] public static extern Axis[] GetAxesAll();
 
         [DllImport("__Internal")] private static extern void Project_SaveInputs(string filePath);
 
