@@ -63,18 +63,6 @@ EditorViewport::~EditorViewport()
 
 void EditorViewport::Show()
 {
-	// Update Editor Camera
-	// Camera controller updates editor camera
-	m_cc.Update(oo::timer::dt(), true);
-
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	auto graphicsworld = scene->GetGraphicsWorld();
-	auto& camera_matrices = EditorCamera.matrices;//perspective
-	auto& window = oo::Application::Get().GetWindow();
-	
-	int windowWidth = window.GetSize().first;
-	//int windowHeight = window.GetSize().second;	unused var
-	
 	ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 	ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 
@@ -84,6 +72,24 @@ void EditorViewport::Show()
 	vMax.y += ImGui::GetWindowPos().y;
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
+
+	// Update Editor Camera
+	// Camera controller updates editor camera
+	bool cameraFocus = false;
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_::ImGuiFocusedFlags_ChildWindows))
+	{
+		cameraFocus = true;
+	}
+	m_cc.Update(oo::timer::dt(), cameraFocus);
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
+	auto& camera_matrices = EditorCamera.matrices;//perspective
+	auto& window = oo::Application::Get().GetWindow();
+	
+	int windowWidth = window.GetSize().first;
+	//int windowHeight = window.GetSize().second;	unused var
+	
 
 	auto contentWidth = vpDim.x;
 	auto contentHeight = vpDim.y;
@@ -239,5 +245,11 @@ void EditorViewport::Show()
 		ChangeGizmoEvent e(m_gizmoOperation);
 		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
+	}
+	//wrong but it helps 
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)))
+	{
+		glm::vec3 target = EditorCamera.GetFront();
+		EditorCamera.SetPosition(transform.GetGlobalPosition() - (target * 10.0f));
 	}
 }
