@@ -29,6 +29,8 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 
 #include "App/Editor/Utility/ImGuiManager.h"
+
+#include "App/Editor/UI/Object Editor/AssetBrowser.h"
 ScriptingProperties::ScriptingProperties()
 {
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::BOOL, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
@@ -77,10 +79,11 @@ ScriptingProperties::ScriptingProperties()
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::enum_type>();
 			auto list = data.GetOptions();
+            auto name = data.GetValueName(data.value);
 
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImVec2 cursorPos = ImGui::GetCursorPos();
-			ImGui::InputText(v.name.c_str(), &list[data.index]);
+			ImGui::InputText(v.name.c_str(), &name);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
 			
@@ -94,7 +97,6 @@ ScriptingProperties::ScriptingProperties()
 					showList = currID;
 				else
 					showList = 0;
-				editing = true;
 			}
 			if (showList == currID)
 			{
@@ -103,7 +105,7 @@ ScriptingProperties::ScriptingProperties()
 				{
 					if (ImGui::Selectable(list[i].c_str()))
 					{
-						data.index = i;
+                        data.value = data.GetValues()[i];
 						v.TrySetRuntimeValue(oo::ScriptValue{ data });
 						editing = true;
 						edited = true;
@@ -192,6 +194,26 @@ ScriptingProperties::ScriptingProperties()
 				if (payload)
 				{
 					data = *static_cast<oo::UUID*>(payload->Data);
+					editing = true;
+					edited = true;
+					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+				}
+				ImGui::EndDragDropTarget();
+			}
+		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::PREFAB, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::prefab_type>();
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			std::string referenceObj = data.filePath.empty()? "Invalid Object" : std::filesystem::path(data.filePath).filename().string();
+			ImGui::InputText(v.name.c_str(), &referenceObj, ImGuiInputTextFlags_ReadOnly);
+			ImGui::PopItemFlag();
+			if (ImGui::BeginDragDropTarget())
+			{
+				auto* payload = ImGui::AcceptDragDropPayload(".prefab");
+				if (payload)
+				{
+					data.filePath = (*static_cast<std::filesystem::path*>(payload->Data)).string();
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
@@ -334,5 +356,38 @@ ScriptingProperties::ScriptingProperties()
 			if(editing)
 				v.TrySetRuntimeValue(oo::ScriptValue{ data });
 			
+		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::ASSET, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			oo::ScriptValue::asset_type data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::asset_type>();
+			static ImGuiID opened = 0;
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			std::string temp = data.asset.GetFilePath().stem().string();
+			ImGui::InputText(v.name.c_str(),&temp);
+			ImGui::PopItemFlag();
+			ImGui::SameLine();
+
+			ImGuiID curr = ImGui::GetItemID();
+			ImGui::PushID(v.name.c_str());
+			if (ImGui::Button("edit"))
+			{
+				if (curr == opened)
+					opened = 0;
+				else
+					opened = curr;
+			}
+			ImGui::PopID();
+			if (curr == opened)
+			{
+				rttr::variant asset_data = data;
+				AssetBrowser::AssetPickerUI(asset_data ,edited, (int)data.type);
+				data.asset = asset_data.get_value<oo::Asset>();
+			}
+			if (edited)
+			{
+				editing = true;
+				opened = 0;
+				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+			}
 		});
 }

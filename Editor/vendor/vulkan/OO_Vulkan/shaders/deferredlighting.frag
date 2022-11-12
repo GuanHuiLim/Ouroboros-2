@@ -14,6 +14,7 @@ layout (set = 0, binding = 2) uniform sampler2D samplerNormal;
 layout (set = 0, binding = 3) uniform sampler2D samplerAlbedo;
 layout (set = 0, binding = 4) uniform sampler2D samplerMaterial;
 layout (set = 0, binding = 5) uniform sampler2D samplerShadows;
+layout (set = 0, binding = 6) uniform sampler2D samplerSSAO;
 
 
 layout(std430, set = 0, binding = 7) readonly buffer Lights
@@ -120,36 +121,18 @@ uint DecodeFlags(in float value)
     return uint(value * 255.0f);
 }
 
-vec3 WorldPosFromDepth(float depth, in vec2 uvCoord, in mat4 projInv, in mat4 viewInv) {
-    
-	float z = depth;
-	// skip this step because vulkan
-	// z = depth * 2.0 - 1.0;
-	
-	vec2 uv = uvCoord * 2.0 - 1.0;
-	float x = uvCoord.x * 2 - 1;
-	// flipped y for vulkan
-    float y = (1 - uvCoord.y) * 2 - 1;
-
-    vec4 clipSpacePosition = vec4(x, y, z, 1.0);
-    vec4 viewSpacePosition = projInv * clipSpacePosition;
-
-    // Perspective division
-    viewSpacePosition /= viewSpacePosition.w;
-
-    vec4 worldSpacePosition = viewInv * viewSpacePosition;
-
-    return worldSpacePosition.xyz;
-}
+#include "shader_utility.shader"
 
 void main()
 {
 	// Get G-Buffer values
 	vec4 depth = texture(samplerDepth, inUV);
 	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
+	//fragPos.z = depth.r;
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
+	float SSAO = texture(samplerSSAO, inUV).r;
 	float specular = material.b;
 	float roughness = material.r;
 
@@ -164,7 +147,7 @@ void main()
 	albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
-	vec3 result = albedo.rgb * ambient;
+	vec3 result = albedo.rgb  * ambient;
 	
 	
 	
@@ -182,6 +165,11 @@ void main()
 			result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
 		}
 	}
+
+	if(lightPC.useSSAO.x > 0.5){
+		result *=  SSAO;
+	}
+	
 
 	result = pow(result, vec3(1.0/gamma));
 	outFragcolor = vec4(result, 1.0);	

@@ -312,5 +312,58 @@ namespace Ouroboros
         {
             return (float)System.Math.Tan(f);
         }
+
+        public static float Wrap(float f, float lower, float upper)
+        {
+            float range = upper - lower;
+            range = System.Math.Abs(range);
+            if (range != 0)
+            {
+                float mul = (f - lower) / range;
+                float imul = (float)System.Math.Floor(mul);
+                f -= imul * range;
+            }
+            return f;
+        }
+
+        public static float NearestInterval(float f, float interval)
+        {
+            interval = System.Math.Abs(interval);
+            if (interval != 0)
+            {
+                float mul = f / interval;
+                float imulLower = (float)System.Math.Floor(mul);
+                float imulUpper = imulLower + 1;
+                if (mul - imulLower < imulUpper - mul)
+                    f = imulLower * interval;
+                else
+                    f = imulUpper * interval;
+            }
+            return f;
+        }
+
+        public static float LowerInterval(float f, float interval)
+        {
+            interval = System.Math.Abs(interval);
+            if (interval != 0)
+            {
+                float mul = f / interval;
+                float imul = (float)System.Math.Floor(mul);
+                f = imul * interval;
+            }
+            return f;
+        }
+
+        public static float UpperInterval(float f, float interval)
+        {
+            interval = System.Math.Abs(interval);
+            if (interval != 0)
+            {
+                float mul = f / interval;
+                float imul = (float)System.Math.Ceiling(mul);
+                f = imul * interval;
+            }
+            return f;
+        }
     }
 }

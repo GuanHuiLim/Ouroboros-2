@@ -50,8 +50,14 @@ struct LightPC
 {
     uvec4 numLights;
     mat4 lightMat;
+    uvec4 useSSAO;
 };
 
+struct SSAOPC
+{
+    uvec4 SD_SD; // screenDim_sampleDim
+    mat4 lightMat;
+};
 
 struct GPUTransform
 {

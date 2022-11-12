@@ -239,6 +239,13 @@ namespace oo
         return ScriptEngine::CheckClassExists("Scripting", name_space.c_str(), name.c_str());
     }
 
+    ScriptValue::type_enum const ScriptClassInfo::GetScriptFieldType(std::string const& fieldName)
+    {
+        MonoClass* klass = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
+        MonoClassField* field = mono_class_get_field_from_name(klass, fieldName.c_str());
+        return ScriptValue::GetType(mono_field_get_type(field));
+    }
+
     std::vector<ScriptFieldInfo> const ScriptClassInfo::GetScriptFieldInfoAll() const
     {
         MonoClass* monoBehaviour = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour");

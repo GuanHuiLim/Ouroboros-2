@@ -33,6 +33,7 @@ Technology is prohibited.
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/Prefab/PrefabManager.h>
 #include <Ouroboros/Commands/Script_ActionCommand.h>
+#include <Ouroboros/Commands/ScriptAR_ActionCommand.h>
 
 #include <Ouroboros/Audio/AudioListenerComponent.h>
 #include <Ouroboros/Audio/AudioSourceComponent.h>
@@ -252,6 +253,7 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
             auto ss = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetWorld().Get_System<oo::ScriptSystem>();
             ss->AddScript(go.GetInstanceID(), script.name_space.c_str(), script.name.c_str());
 			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
+			oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go.GetInstanceID(), script.name_space, script.name));
 			ImGui::PopStyleColor();
 			return true;
 		}
@@ -433,7 +435,7 @@ void Inspector::DisplayEnumView(rttr::property prop, rttr::variant& value, bool&
 	}
 	if (open_id == curr_id)
 	{
-		if (ImGui::BeginListBox("#enums"))
+		if (ImGui::BeginListBox("##enums"))
 		{
 			for (auto val : enumeration.get_values())
 			{
@@ -443,6 +445,7 @@ void Inspector::DisplayEnumView(rttr::property prop, rttr::variant& value, bool&
 					value = val;
 					open_id = 0;
 					endEdit = true;
+					edited = true;
 				}
 			}
 			ImGui::EndListBox();
@@ -467,6 +470,14 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 			if (ImGui::SmallButton("x"))
 			{
                 ss->RemoveScript(gameobject.GetInstanceID(), scriptInfo.second.classInfo.name_space.c_str(), scriptInfo.second.classInfo.name.c_str());
+				oo::CommandStackManager::AddCommand(
+					new oo::ScriptRemove_ActionCommand(
+						gameobject.GetInstanceID(),
+						scriptInfo.second.classInfo.name_space,
+						scriptInfo.second.classInfo.name
+					)
+				);
+
 				sc.RemoveScriptInfo(scriptInfo.second.classInfo);
 				ImGui::PopID();
 				return;
