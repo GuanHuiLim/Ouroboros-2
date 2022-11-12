@@ -135,6 +135,7 @@ private: //Member Functions
 	void DisplayAnimatorController(oo::AnimationComponent* _animator);
 	void DisplayParameters();
 	void DisplayInspector();
+	void DisplayAnimationSelector(oo::Anim::Node* _anim_node, ImGuiID& openID);
 	void DisplayConditions(oo::Anim::Link* link);
 	NodeInfo* CreateNode(oo::Anim::Node* _anim_node);
 	LinkInfo* CreateLink(oo::Anim::Link* link, ed::PinId inputPinId, ed::PinId outputPinId);
