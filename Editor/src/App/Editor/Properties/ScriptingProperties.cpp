@@ -75,6 +75,13 @@ ScriptingProperties::ScriptingProperties()
 			edited = ImGui::IsItemDeactivatedAfterEdit();
             if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::COLOR, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			oo::Color data = v.TryGetRuntimeValue().GetValue<oo::Color>();
+			editing = ImGui::ColorPicker4(v.name.c_str(), &data.r, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_InputRGB);
+			edited = ImGui::IsItemDeactivatedAfterEdit();
+			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::ENUM, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::enum_type>();
