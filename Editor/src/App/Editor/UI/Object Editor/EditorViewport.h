@@ -13,6 +13,10 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
+#include "OO_Vulkan/src/Camera.h"
+#include "Ouroboros/Core/CameraController.h"
+
+
 class EditorViewport
 {
 public:
@@ -21,8 +25,14 @@ public:
 	void Show();
 
 	int m_gizmoOperation = 7;
+
+	// Editor Camera only exist within this viewport
+	// default values found in cpp
+	static Camera EditorCamera;
+
 private:
 	int m_gizmoMode = 1;	// IMGUIZMO::MODE::WORLD <- default
+	float m_viewportWidth = 0.f, m_viewportHeight = 0.f;
 
-	float m_viewportWidth, m_viewportHeight;
+	inline static CameraController m_cc;
 };

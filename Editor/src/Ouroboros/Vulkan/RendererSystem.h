@@ -29,6 +29,7 @@ Technology is prohibited.
 
 //fwd declaration
 struct EditorViewportResizeEvent;
+struct PreviewWindowResizeEvent;
 
 namespace oo
 {
@@ -40,18 +41,20 @@ namespace oo
         //Ecs::ECSWorld* m_world{nullptr};
     public:
         RendererSystem(GraphicsWorld* graphicsWorld);
+        virtual ~RendererSystem();
 
         void Init();
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
-        void UpdateCamerasEditorMode();
-        void UpdateCamerasRuntime();
+        void UpdateCameras();
         void SaveEditorCamera();
 
+        inline static bool CameraDebugDraw = true;
     private:
         void OnScreenResize(WindowResizeEvent* e);
         void OnEditorViewportResize(EditorViewportResizeEvent* e);
+        void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
@@ -62,9 +65,9 @@ namespace oo
         void RenderDebugDraws(Ecs::ECSWorld* world);
         void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
-    
+        
     private:
-        CameraController m_cc;
+        CameraController m_runtimeCC;
         Camera m_runtimeCamera;
         
         bool m_firstFrame = true; // potentially improvable if this can be run once per creation

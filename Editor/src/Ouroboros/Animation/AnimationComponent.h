@@ -43,10 +43,21 @@ namespace oo
 		Ecs::EntityID root_object{};
 	public:
 		Anim::IAnimationComponent& GetActualComponent();
+
+		//ignore for now
 		void Set_Root_Entity(Ecs::EntityID entity);
+
+		//set animation tree via name 
+		//*note that if multiple trees with same name exists, any one of them could be chosen
 		void SetAnimationTree(std::string name);
+
+		//set animation tree via unique id
 		void SetAnimationTree(size_t id);
+
+		//set animation tree via asset
 		void SetAnimationTree(oo::Asset asset);
+
+		//get name of animation tree, or empty string if no animation tree attached
 		std::string GetAnimationTreeName();
 		bool HasAnimationTree();
 		void SetParameter(std::string const& name, Anim::Parameter::DataType value);
@@ -64,16 +75,28 @@ namespace oo
 		//adds a node to the group in the animation tree attached to this component
 		//returns nullptr if no animation tree
 		Anim::NodeRef AddNode(std::string const& groupName, Anim::NodeInfo& info);
+
+		//removes a node from a group
 		void RemoveNode(Anim::TargetNodeInfo const& info);
 
 		//adds a link between two nodes
 		//returns nullptr if link was not added due to error(src or dst not found)
 		Anim::LinkRef AddLink(std::string const& groupName, std::string const& src, std::string const& dst);
+
+		//removes a link from a group
 		void RemoveLink(Anim::TargetLinkInfo const& info);
-		
+
+		//add a parameter to an animation tree
 		Anim::Parameter* AddParameter(Anim::ParameterInfo const& info);
 
+		//remove a parameter from the animation tree
+		void RemoveParameter(Anim::TargetParameterInfo const& info);
+
+		//add condition to a link
 		Anim::Condition* AddCondition(std::string const& groupName, std::string const& linkName, Anim::ConditionInfo info);
+
+		//remove condition from a link
+		void RemoveCondition(Anim::TargetConditionInfo const& info);
 
 		//add timeline to animation
 		Anim::TimelineRef AddTimeline(std::string const& groupName, std::string const& nodeName, Anim::TimelineInfo& info);

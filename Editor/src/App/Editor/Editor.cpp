@@ -37,6 +37,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Events/FileDropEvent.h"
 #include "Ouroboros/Core/Timer.h"
 #include <Ouroboros/Physics/PhysicsSystem.h>
+#include <Ouroboros/Vulkan/RendererSystem.h>
 
 static void FileDrop(oo::FileDropEvent* e)
 {
@@ -97,6 +98,7 @@ Editor::Editor()
 	ImGuiManager::Create("Mesh Hierarchy", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar ), [this] {this->m_meshHierarchy.Show(); });
 	ImGuiManager::Create("Renderer Debugger", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_rendererDebugger.Show(); });
 	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
+	ImGuiManager::Create("Preview Window", true, ImGuiWindowFlags_None, [this] {this->m_previewWindow.Show(); });
 
 	//external (project based tools)
 	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
@@ -129,7 +131,7 @@ void Editor::Update()
 
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
-
+	m_chatsystem.Show();
 	helper.Popups();
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl))
 	{
@@ -230,14 +232,19 @@ void Editor::MenuBar()
 		}
 		if (ImGui::BeginMenu("Debugging"))
 		{
-			if (ImGui::MenuItem("Physics Debug Draw", 0, oo::PhysicsSystem::DrawDebug))
+			if (ImGui::MenuItem("Colliders Debug Draw", 0, oo::PhysicsSystem::ColliderDebugDraw))
 			{
-				oo::PhysicsSystem::DrawDebug = !oo::PhysicsSystem::DrawDebug;
+				oo::PhysicsSystem::ColliderDebugDraw = !oo::PhysicsSystem::ColliderDebugDraw;
 			}
 			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessges))
 			{
 				oo::PhysicsSystem::DebugMessges = !oo::PhysicsSystem::DebugMessges;
 			}
+			if (ImGui::MenuItem("Camera Debug Draw", 0, oo::RendererSystem::CameraDebugDraw))
+			{
+				oo::RendererSystem::CameraDebugDraw = !oo::RendererSystem::CameraDebugDraw;
+			}
+			
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();

@@ -98,6 +98,8 @@ namespace oo
         *//**********************************************************************************/
         bool IsValid() const;
 
+        ScriptValue::type_enum const GetScriptFieldType(std::string const& fieldName);
+
         /*********************************************************************************//*!
         \brief      gets a list of the info of all public fields of the C# class
          
