@@ -55,14 +55,14 @@ namespace oo
         m_graphicsWorld->cameras[1] = EditorViewport::EditorCamera;
     }
 
-    void RendererSystem::OnPreviewWindowResize(PreviewWindowResizeEvent* e)
+    /*void RendererSystem::OnPreviewWindowResize(PreviewWindowResizeEvent* e)
     {
         auto w = e->X;
         auto h = e->Y;
         auto ar = static_cast<float>(w) / h;
         m_runtimeCamera.SetAspectRatio(ar);
         m_graphicsWorld->cameras[0] = m_runtimeCamera;
-    }
+    }*/
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
@@ -107,7 +107,7 @@ namespace oo
     {
         // unsubscribe or it'll crash
         EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
-        EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
+        //EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
     }
 
@@ -122,10 +122,12 @@ namespace oo
             auto [width, height] = Application::Get().GetWindow().GetSize();
             camera.SetAspectRatio((float)width / (float)height);
 #else 
-            GetPreviewWindowSizeEvent e;
+            /*GetPreviewWindowSizeEvent e;
             EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
             auto ar = e.Width / e.Height;
-            camera.SetAspectRatio(ar);
+            camera.SetAspectRatio(ar);*/
+            static constexpr float defaultAR = 16.0 / 9.0;
+            camera.SetAspectRatio(defaultAR);
 #endif
             camera.movementSpeed = 5.0f;
             //camera.SetPosition({ 0, 8, 8 });
@@ -149,7 +151,7 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<RendererSystem, LightComponent>(
             this, &RendererSystem::OnLightRemove);
 
-        EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
+        //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
     }
@@ -238,6 +240,18 @@ namespace oo
 
             camera->SetPosition(transformComp.GetGlobalPosition());
             camera->SetRotation(transformComp.GetGlobalRotationQuat());
+            switch (cameraComp.AspectRatio)
+            {
+            case CameraAspectRatio::FOUR_BY_THREE:
+                camera->SetAspectRatio(4.0/3.0);
+                break;
+            case CameraAspectRatio::SIXTEEN_BY_NINE:
+                camera->SetAspectRatio(16.0/9.0);
+                break;
+            case CameraAspectRatio::SIXTEEN_BY_TEN:
+                camera->SetAspectRatio(16.0/10.0);
+                break;
+            }
         });
         m_runtimeCC.Update(oo::timer::dt(), false);
 

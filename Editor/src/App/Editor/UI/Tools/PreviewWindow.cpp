@@ -54,7 +54,7 @@ void PreviewWindow::Show()
 
 	float contentWidth = 0;
 	float contentHeight = 0;
-	float ar = graphicsworld->cameras[1].GetAspectRatio();
+	float ar = graphicsworld->cameras[0].GetAspectRatio();
 	ImVec2 imagesize = ImGui::GetContentRegionAvail();
 	ImVec2 resize_by_ar = { imagesize.y * ar, imagesize.x / ar };
 	ImVec2 cursorPosition = ImGui::GetCursorPos();
