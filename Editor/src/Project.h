@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <string>
 #include "Ouroboros/Asset/AssetManager.h"
-
+#include "rapidjson/document.h"
 class Project
 {
 public:
@@ -14,6 +14,7 @@ public:
 	static void LoadInputs(const std::filesystem::path& loadpath);
 	static void SaveInputs(const std::filesystem::path& savepath);
 
+
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
 	static std::filesystem::path GetAssetFolder() { return s_projectFolder.string() + s_assetFolder.string(); };
@@ -24,7 +25,11 @@ public:
 	static std::filesystem::path GetScriptModulePath() { return s_projectFolder.string() + s_scriptmodulePath.string(); };
 	static std::filesystem::path GetScriptBuildPath() { return s_projectFolder.string() + s_scriptbuildPath.string(); };
 private:
-    static void UpdateScriptingFiles();
+
+	static void LoadRenderer(rapidjson::Value& val, rapidjson::Document& doc);
+	static void SaveRenderer(rapidjson::Value& val, rapidjson::Document& doc);
+    
+	static void UpdateScriptingFiles();
 	
 	inline static std::shared_ptr<oo::AssetManager> s_AssetManager = nullptr;
 	inline static std::filesystem::path s_configFile;
