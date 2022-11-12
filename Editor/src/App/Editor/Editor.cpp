@@ -97,7 +97,7 @@ Editor::Editor()
 	ImGuiManager::Create("Mesh Hierarchy", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar ), [this] {this->m_meshHierarchy.Show(); });
 	ImGuiManager::Create("Renderer Debugger", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_rendererDebugger.Show(); });
 	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
-	ImGuiManager::Create("Preview Window", true, ImGuiWindowFlags_None, [this] {this->m_previewWindow.Show(); });
+	ImGuiManager::Create("Preview Window", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollWithMouse), [this] {this->m_previewWindow.Show(); });
 
 	//external (project based tools)
 	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
