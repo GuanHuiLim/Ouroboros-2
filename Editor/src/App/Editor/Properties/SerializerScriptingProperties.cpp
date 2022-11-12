@@ -67,11 +67,23 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			data.PushBack(data_value.z, doc.GetAllocator());
 			val.AddMember(name, data, doc.GetAllocator());
 		});
+    m_ScriptSave.emplace(oo::ScriptValue::type_enum::COLOR, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+        {
+            rapidjson::Value name;
+            name.SetString(sfi.name.c_str(), doc.GetAllocator());
+            rapidjson::Value data(rapidjson::kArrayType);
+            auto data_value = sfi.value.GetValue<oo::Color>();
+            data.PushBack(data_value.r, doc.GetAllocator());
+            data.PushBack(data_value.g, doc.GetAllocator());
+            data.PushBack(data_value.b, doc.GetAllocator());
+            data.PushBack(data_value.a, doc.GetAllocator());
+            val.AddMember(name, data, doc.GetAllocator());
+        });
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::ENUM, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
 		{
 			rapidjson::Value name;
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
-			rapidjson::Value data(sfi.value.GetValue<oo::ScriptValue::enum_type>().index);
+			rapidjson::Value data(sfi.value.GetValue<oo::ScriptValue::enum_type>().value);
 			val.AddMember(name, data, doc.GetAllocator());
 		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
@@ -181,7 +193,7 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 		{
 			rapidjson::Value name;
 			name.SetString(sfi.name.c_str(), doc.GetAllocator());
-			val.AddMember(name, sfi.value.GetValue<oo::Asset>().GetID(), doc.GetAllocator());
+			val.AddMember(name, sfi.value.GetValue<oo::ScriptValue::asset_type>().asset.GetID(), doc.GetAllocator());
 		});
 
 
@@ -213,9 +225,16 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 			//glm::vec3 vec(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat());
 			sfi.value.SetValue(vec);
 		});
+    m_ScriptLoad.emplace(oo::ScriptValue::type_enum::COLOR, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
+        {
+            auto arr = val.GetArray();
+            oo::Color color(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat(), arr[3].GetFloat());
+            //glm::vec3 vec(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat());
+            sfi.value.SetValue(color);
+        });
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ENUM, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{ 
-			sfi.value.GetValue<oo::ScriptValue::enum_type>().index = val.GetUint(); 
+			sfi.value.GetValue<oo::ScriptValue::enum_type>().value = val.GetUint();
 		});
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::COMPONENT, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
@@ -303,7 +322,9 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ASSET, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)
 		{
 			auto asset = Project::GetAssetManager()->Get(val.GetUint64());
-			sfi.value.SetValue(asset);
+            oo::ScriptValue::asset_type scriptAsset = sfi.value.GetValue<oo::ScriptValue::asset_type>();
+            scriptAsset.asset = asset;
+            sfi.value.SetValue(scriptAsset);
 		});
 
 }

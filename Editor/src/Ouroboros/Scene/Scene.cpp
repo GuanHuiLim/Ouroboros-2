@@ -81,8 +81,8 @@ namespace oo
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
             //rendering system initialization
-            // temporarily initialize number of cameras to 1
-            m_graphicsWorld->numCameras = 1;
+            // temporarily initialize number of cameras to 2 [0 is Scene camera] [1 is Editor Camera]
+            m_graphicsWorld->numCameras = 2;
             m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
             m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
@@ -106,6 +106,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
 
+        m_ecsWorld->Get_System<oo::RendererSystem>()->UpdateCameras();
         PRINT(m_name);
 
         TRACY_PROFILE_SCOPE_END();

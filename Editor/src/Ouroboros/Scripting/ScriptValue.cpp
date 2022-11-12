@@ -178,7 +178,7 @@ namespace oo
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
                     ScriptValue::enum_type fieldValue = value.GetValue<ScriptValue::enum_type>();
-                    mono_field_set_value(obj, field, &(fieldValue.index));
+                    mono_field_set_value(obj, field, &(fieldValue.value));
                 },
                 // GetFieldValue
                 [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
@@ -199,7 +199,7 @@ namespace oo
                 [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
                 {
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
-                    int entry = value.GetValue<ScriptValue::enum_type>().index;
+                    int entry = value.GetValue<ScriptValue::enum_type>().value;
                     void* args[1];
                     args[0] = &entry;
                     mono_runtime_invoke(addMethod, list, args, NULL);
@@ -355,94 +355,94 @@ namespace oo
                 }
             }
         },
-        //{ 
-        //    ScriptValue::type_enum::COLOUR, ScriptValue::helper_functions
-        //    {
-        //        // SetFieldValue
-        //        [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
-        //        {
-        //            oo::Colour color = value.GetValue<oo::Colour>();
-        //            float rValue = color.colour.r;
-        //            float gValue = color.colour.g;
-        //            float bValue = color.colour.b;
-        //            float aValue = color.colour.a;
-        //            MonoClass* colourClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Colour");
-        //            MonoObject* monoColor = ScriptEngine::CreateObject(colourClass);
+        { 
+            ScriptValue::type_enum::COLOR, ScriptValue::helper_functions
+            {
+                // SetFieldValue
+                [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
+                {
+                    oo::Color color = value.GetValue<oo::Color>();
+                    float rValue = color.r;
+                    float gValue = color.g;
+                    float bValue = color.b;
+                    float aValue = color.a;
+                    MonoClass* colorClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Color");
+                    MonoObject* monoColor = ScriptEngine::CreateObject(colorClass);
 
-        //            MonoClassField* rField = mono_class_get_field_from_name(colourClass, "r");
-        //            mono_field_set_value(monoColor, rField, &rValue);
-        //            MonoClassField* gField = mono_class_get_field_from_name(colourClass, "g");
-        //            mono_field_set_value(monoColor, gField, &gValue);
-        //            MonoClassField* bField = mono_class_get_field_from_name(colourClass, "b");
-        //            mono_field_set_value(monoColor, bField, &bValue);
-        //            MonoClassField* aField = mono_class_get_field_from_name(colourClass, "a");
-        //            mono_field_set_value(monoColor, aField, &aValue);
+                    MonoClassField* rField = mono_class_get_field_from_name(colorClass, "r");
+                    mono_field_set_value(monoColor, rField, &rValue);
+                    MonoClassField* gField = mono_class_get_field_from_name(colorClass, "g");
+                    mono_field_set_value(monoColor, gField, &gValue);
+                    MonoClassField* bField = mono_class_get_field_from_name(colorClass, "b");
+                    mono_field_set_value(monoColor, bField, &bValue);
+                    MonoClassField* aField = mono_class_get_field_from_name(colorClass, "a");
+                    mono_field_set_value(monoColor, aField, &aValue);
 
-        //            mono_field_set_value(obj, field, mono_object_unbox(monoColor));
-        //        },
-        //        // GetFieldValue
-        //        [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
-        //        {
-        //            MonoType* type = mono_field_get_type(field);
-        //            MonoClass* typeClass = mono_type_get_class(type);
-        //            MonoObject* fieldObj = mono_field_get_value_object(mono_domain_get(), field, object);
-        //            float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
+                    mono_field_set_value(obj, field, mono_object_unbox(monoColor));
+                },
+                // GetFieldValue
+                [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
+                {
+                    MonoType* type = mono_field_get_type(field);
+                    MonoClass* typeClass = mono_type_get_class(type);
+                    MonoObject* fieldObj = mono_field_get_value_object(mono_domain_get(), field, object);
+                    float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
 
-        //            if (fieldObj != nullptr)
-        //            {
-        //                MonoClassField* colorField = mono_class_get_field_from_name(typeClass, "r");
-        //                mono_field_get_value(fieldObj, colorField, &r);
-        //                colorField = mono_class_get_field_from_name(typeClass, "g");
-        //                mono_field_get_value(fieldObj, colorField, &g);
-        //                colorField = mono_class_get_field_from_name(typeClass, "b");
-        //                mono_field_get_value(fieldObj, colorField, &b);
-        //                colorField = mono_class_get_field_from_name(typeClass, "a");
-        //                mono_field_get_value(fieldObj, colorField, &a);
-        //            }
-        //            return ScriptValue(oo::Colour{ r, g, b, a });
-        //        },
-        //        // GetObjectValue
-        //        [](MonoObject* object, ScriptValue const& refInfo)
-        //        {
-        //            float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
-        //            if (object != nullptr)
-        //            {
-        //                MonoClass* objClass = mono_object_get_class(object);
-        //                MonoClassField* rField = mono_class_get_field_from_name(objClass, "r");
-        //                mono_field_get_value(object, rField, &r);
-        //                MonoClassField* gField = mono_class_get_field_from_name(objClass, "g");
-        //                mono_field_get_value(object, gField, &g);
-        //                MonoClassField* bField = mono_class_get_field_from_name(objClass, "b");
-        //                mono_field_get_value(object, bField, &b);
-        //                MonoClassField* aField = mono_class_get_field_from_name(objClass, "a");
-        //                mono_field_get_value(object, aField, &a);
-        //            }
-        //            return ScriptValue(oo::Colour{ r, g, b, a });
-        //        },
-        //        // AddToList
-        //        [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
-        //        {
-        //            MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
+                    if (fieldObj != nullptr)
+                    {
+                        MonoClassField* colorField = mono_class_get_field_from_name(typeClass, "r");
+                        mono_field_get_value(fieldObj, colorField, &r);
+                        colorField = mono_class_get_field_from_name(typeClass, "g");
+                        mono_field_get_value(fieldObj, colorField, &g);
+                        colorField = mono_class_get_field_from_name(typeClass, "b");
+                        mono_field_get_value(fieldObj, colorField, &b);
+                        colorField = mono_class_get_field_from_name(typeClass, "a");
+                        mono_field_get_value(fieldObj, colorField, &a);
+                    }
+                    return ScriptValue(oo::Color{ r, g, b, a });
+                },
+                // GetObjectValue
+                [](MonoObject* object, ScriptValue const& refInfo)
+                {
+                    float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
+                    if (object != nullptr)
+                    {
+                        MonoClass* objClass = mono_object_get_class(object);
+                        MonoClassField* rField = mono_class_get_field_from_name(objClass, "r");
+                        mono_field_get_value(object, rField, &r);
+                        MonoClassField* gField = mono_class_get_field_from_name(objClass, "g");
+                        mono_field_get_value(object, gField, &g);
+                        MonoClassField* bField = mono_class_get_field_from_name(objClass, "b");
+                        mono_field_get_value(object, bField, &b);
+                        MonoClassField* aField = mono_class_get_field_from_name(objClass, "a");
+                        mono_field_get_value(object, aField, &a);
+                    }
+                    return ScriptValue(oo::Color{ r, g, b, a });
+                },
+                // AddToList
+                [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
+                {
+                    MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
-        //            oo::Colour colour = value.GetValue<oo::Colour>();
-        //            MonoClass* klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Colour");
-        //            MonoObject* entry = ScriptEngine::CreateObject(klass);
+                    oo::Color color = value.GetValue<oo::Color>();
+                    MonoClass* klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Color");
+                    MonoObject* entry = ScriptEngine::CreateObject(klass);
 
-        //            MonoClassField* rField = mono_class_get_field_from_name(klass, "r");
-        //            mono_field_set_value(entry, rField, &colour.colour.r);
-        //            MonoClassField* gField = mono_class_get_field_from_name(klass, "g");
-        //            mono_field_set_value(entry, gField, &colour.colour.g);
-        //            MonoClassField* bField = mono_class_get_field_from_name(klass, "b");
-        //            mono_field_set_value(entry, bField, &colour.colour.b);
-        //            MonoClassField* aField = mono_class_get_field_from_name(klass, "a");
-        //            mono_field_set_value(entry, aField, &colour.colour.a);
+                    MonoClassField* rField = mono_class_get_field_from_name(klass, "r");
+                    mono_field_set_value(entry, rField, &color.r);
+                    MonoClassField* gField = mono_class_get_field_from_name(klass, "g");
+                    mono_field_set_value(entry, gField, &color.g);
+                    MonoClassField* bField = mono_class_get_field_from_name(klass, "b");
+                    mono_field_set_value(entry, bField, &color.b);
+                    MonoClassField* aField = mono_class_get_field_from_name(klass, "a");
+                    mono_field_set_value(entry, aField, &color.a);
 
-        //            void* args[1];
-        //            args[0] = entry;
-        //            mono_runtime_invoke(addMethod, list, args, NULL);
-        //        }
-        //    }
-        //},
+                    void* args[1];
+                    args[0] = entry;
+                    mono_runtime_invoke(addMethod, list, args, NULL);
+                }
+            }
+        },
         { 
             ScriptValue::type_enum::GAMEOBJECT, ScriptValue::helper_functions
             {
@@ -631,19 +631,28 @@ namespace oo
                 // SetFieldValue
                 [](MonoObject* obj, MonoClassField* field, ScriptValue const& value)
                 {
-                    Asset asset = value.GetValue<Asset>();
+                    asset_type asset = value.GetValue<asset_type>();
+                    if (asset.asset.GetID() == Asset::ID_NULL)
+                    {
+                        mono_field_set_value(obj, field, nullptr);
+                        return;
+                    }
                     MonoObject* fieldValue = nullptr;
                     MonoClass* fieldClass = nullptr;
-                    switch (asset.GetType())
+                    switch (asset.type)
                     {
                     case AssetInfo::Type::Audio: fieldClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "AudioClip"); break;
+                    case AssetInfo::Type::Texture: fieldClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Texture"); break;
                     }
                     if (fieldClass == nullptr)
+                    {
+                        mono_field_set_value(obj, field, nullptr);
                         return;
+                    }
                     fieldValue = ScriptEngine::CreateObject(fieldClass);
 
                     MonoClassField* handleField = mono_class_get_field_from_name(fieldClass, "id");
-                    AssetID id = asset.GetID();
+                    AssetID id = asset.asset.GetID();
                     mono_field_set_value(fieldValue, handleField, &id);
 
                     mono_field_set_value(obj, field, fieldValue);
@@ -651,48 +660,85 @@ namespace oo
                 // GetFieldValue
                 [](MonoObject* object, MonoClassField* field, ScriptValue const& refInfo)
                 {
+                    MonoClass* fieldClass = mono_type_get_class(mono_field_get_type(field));
+
+                    AssetInfo::Type type = AssetInfo::Type::Text;
+                    bool typeSupported = false;
+                    if (ScriptEngine::CheckClassInheritance(fieldClass, "ScriptCore", "Ouroboros", "AudioClip"))
+                    {
+                        type = AssetInfo::Type::Audio;
+                        typeSupported = true;
+                    }
+                    else if (ScriptEngine::CheckClassInheritance(fieldClass, "ScriptCore", "Ouroboros", "Texture"))
+                    {
+                        type = AssetInfo::Type::Texture;
+                        typeSupported = true;
+                    }
+
+                    if (!typeSupported)
+                        return ScriptValue{};
+
                     MonoObject* fieldValue = nullptr;
                     mono_field_get_value(object, field, &fieldValue);
                     if (fieldValue == nullptr)
-                        return ScriptValue{ Asset{} };
+                        return ScriptValue{ asset_type{ type, Asset{} } };
 
-                    MonoClass* fieldClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
-                    MonoClassField* handleField = mono_class_get_field_from_name(fieldClass, "id");
+                    MonoClass* assetClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
+                    MonoClassField* handleField = mono_class_get_field_from_name(assetClass, "id");
                     AssetID id = 0;
                     mono_field_get_value(fieldValue, handleField, &id);
                     Asset asset = Project::GetAssetManager()->Get(id);
-                    return ScriptValue{ asset };
+                    return ScriptValue{ asset_type{ type, asset } };
                 },
                 // GetObjectValue
                 [](MonoObject* object, ScriptValue const& refInfo)
                 {
-                    if (object == nullptr)
-                        return ScriptValue{ Asset{} };
+                    MonoClass* klass = mono_object_get_class(object);
 
-                    MonoClass* fieldClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
-                    MonoClassField* handleField = mono_class_get_field_from_name(fieldClass, "id");
+                    AssetInfo::Type type = AssetInfo::Type::Text;
+                    bool typeSupported = false;
+                    if (ScriptEngine::CheckClassInheritance(klass, "ScriptCore", "Ouroboros", "AudioClip"))
+                    {
+                        type = AssetInfo::Type::Audio;
+                        typeSupported = true;
+                    }
+                    else if (ScriptEngine::CheckClassInheritance(klass, "ScriptCore", "Ouroboros", "Texture"))
+                    {
+                        type = AssetInfo::Type::Texture;
+                        typeSupported = true;
+                    }
+
+                    if (!typeSupported)
+                        return ScriptValue{};
+
+                    if (object == nullptr)
+                        return ScriptValue{ asset_type{ type, Asset{} } };
+
+                    MonoClass* assetClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
+                    MonoClassField* handleField = mono_class_get_field_from_name(assetClass, "id");
                     AssetID id = 0;
                     mono_field_get_value(object, handleField, &id);
                     Asset asset = Project::GetAssetManager()->Get(id);
-                    return ScriptValue{ asset };
+                    return ScriptValue{ asset_type{ type, asset } };
                 },
                 // AddToList
                 [](MonoObject* list, MonoClass* elementClass, ScriptValue const& value)
                 {
                     MonoMethod* addMethod = mono_class_get_method_from_name(mono_object_get_class(list), "Add", 1);
 
-                    Asset asset = value.GetValue<Asset>();
+                    asset_type asset = value.GetValue<asset_type>();
                     MonoObject* entry = nullptr;
                     MonoClass* klass = nullptr;
-                    switch (asset.GetType())
+                    switch (asset.type)
                     {
                     case AssetInfo::Type::Audio: klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "AudioClip"); break;
+                    case AssetInfo::Type::Texture: klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Texture"); break;
                     }
-                    if (klass != nullptr)
+                    if (klass != nullptr && asset.asset.GetID() != Asset::ID_NULL)
                     {
                         entry = ScriptEngine::CreateObject(klass);
-                        MonoClassField* handleField = mono_class_get_field_from_name(klass, "id");
-                        AssetID id = asset.GetID();
+                        MonoClassField* handleField = mono_class_get_field_from_name(ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset"), "id");
+                        AssetID id = asset.asset.GetID();
                         mono_field_set_value(entry, handleField, &id);
                     }
 
@@ -1085,13 +1131,17 @@ namespace oo
         {
             MonoClass* typeClass = mono_type_get_class(type);
             if (ScriptEngine::CheckClassInheritance(typeClass, mono_get_enum_class())) // Enum
+            {
+                if (ScriptEngine::GetEnumOptionValues(type).size() <= 0)
+                    return type_enum::EMPTY;
                 return type_enum::ENUM;
+            }
             if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Vector2")) // Vector2
                 return type_enum::VECTOR2;
             if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Vector3")) // Vector3
                 return type_enum::VECTOR3;
-            //if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Colour")) // Colour
-            //    return type_enum::COLOUR;
+            if (ScriptEngine::CheckClassInheritance(typeClass, "ScriptCore", "Ouroboros", "Color")) // Color
+                return type_enum::COLOR;
             return type_enum::EMPTY;
         }
         case MONO_TYPE_CLASS:
@@ -1144,7 +1194,9 @@ namespace oo
         {
             enum_type currValue = GetValue<enum_type>();
             enum_type srcValue = src.GetValue<enum_type>();
-            return currValue.name == srcValue.name && currValue.name_space == srcValue.name_space && srcValue.index < currValue.GetOptions().size();
+            std::vector<int> newValues = currValue.GetValues();
+            return currValue.name == srcValue.name && currValue.name_space == srcValue.name_space
+                && std::find(newValues.begin(), newValues.end(), srcValue.value) != newValues.end();
         }
         if (currType == type_enum::COMPONENT)
         {
@@ -1153,7 +1205,7 @@ namespace oo
             return currValue.m_isScript == srcValue.m_isScript && currValue.m_name == srcValue.m_name && currValue.m_namespace == srcValue.m_namespace;
         }
         if (currType == type_enum::ASSET)
-            return GetValue<Asset>().GetType() == src.GetValue<Asset>().GetType();
+            return GetValue<asset_type>().type == src.GetValue<asset_type>().type;
         if (currType == type_enum::CLASS)
         {
             class_type currValue = GetValue<class_type>();
@@ -1172,10 +1224,11 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* enum_type                                                                   */
     /*-----------------------------------------------------------------------------*/
-    ScriptValue::enum_type::enum_type(std::string const& namespace_, std::string const& name_, unsigned int i) : name_space{ namespace_ }, name{ name_ }, index{ i }
+    ScriptValue::enum_type::enum_type(std::string const& namespace_, std::string const& name_, unsigned int val) : name_space{ namespace_ }, name{ name_ }, value{ val }
     {
-        if (index >= GetOptions().size())
-            index = 0;
+        std::vector<int> values = GetValues();
+        if (std::find(values.begin(), values.end(), value) == values.end())
+            value = values[0];
     };
 
     std::vector<std::string> ScriptValue::enum_type::GetOptions() const
@@ -1185,6 +1238,25 @@ namespace oo
             klass = ScriptEngine::TryGetClass("ScriptCore", name_space.c_str(), name.c_str());
         ASSERT(klass == nullptr);
         return ScriptEngine::GetEnumOptions(mono_class_get_type(klass));
+    }
+
+    std::vector<int> ScriptValue::enum_type::GetValues() const
+    {
+        MonoClass* klass = ScriptEngine::TryGetClass("Scripting", name_space.c_str(), name.c_str());
+        if (klass == nullptr)
+            klass = ScriptEngine::TryGetClass("ScriptCore", name_space.c_str(), name.c_str());
+        ASSERT(klass == nullptr);
+        return ScriptEngine::GetEnumOptionValues(mono_class_get_type(klass));
+    }
+
+    std::string ScriptValue::enum_type::GetValueName(int val) const
+    {
+        std::vector<int> values = GetValues();
+        std::vector<std::string> names = GetOptions();
+
+        size_t index = std::find(values.begin(), values.end(), val) - values.begin();
+        ASSERT(index >= names.size());
+        return names[index];
     }
 
     /*-----------------------------------------------------------------------------*/
@@ -1240,9 +1312,9 @@ namespace oo
         case ScriptValue::type_enum::VECTOR3:
             valueList.emplace_back(vec3_type{ 0, 0, 0 });
             break;
-        //case ScriptValue::type_enum::COLOUR:
-        //    valueList.emplace_back(oo::Colour{ 1, 1, 1, 1 });
-        //    break;
+        case ScriptValue::type_enum::COLOR:
+            valueList.emplace_back(oo::Color{ 1, 1, 1, 1 });
+            break;
         case ScriptValue::type_enum::GAMEOBJECT:
             valueList.emplace_back(UUID::Invalid);
             break;
@@ -1262,8 +1334,29 @@ namespace oo
         }
         break;
         case ScriptValue::type_enum::ASSET:
-            valueList.emplace_back(ScriptValue{ Asset() });
-            break;
+        {
+            MonoClass* klass = ScriptEngine::GetClass("ScriptCore", name_space.c_str(), name.c_str());
+            if (klass == nullptr)
+                klass = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
+
+            AssetInfo::Type assetType = AssetInfo::Type::Text;
+            bool typeSupported = false;
+            if (ScriptEngine::CheckClassInheritance(klass, "ScriptCore", "Ouroboros", "AudioClip"))
+            {
+                assetType = AssetInfo::Type::Audio;
+                typeSupported = true;
+            }
+            else if (ScriptEngine::CheckClassInheritance(klass, "ScriptCore", "Ouroboros", "Texture"))
+            {
+                assetType = AssetInfo::Type::Texture;
+                typeSupported = true;
+            }
+
+            if (!typeSupported)
+                break;
+            valueList.emplace_back(ScriptValue::asset_type{ assetType, Asset{} });
+        }
+        break;
         case ScriptValue::type_enum::PREFAB:
             valueList.emplace_back(ScriptValue::prefab_type{ "" });
             break;
