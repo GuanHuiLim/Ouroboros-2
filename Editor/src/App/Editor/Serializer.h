@@ -82,6 +82,14 @@ public:
 	\brief      Recreation of the object 
 	*//**********************************************************************************/
 	static std::vector<oo::UUID> LoadObjectsFromString(std::string& data, oo::UUID parentID, oo::Scene& scene);
+
+	//saving and loading single variant
+	static std::string SaveSingleVariant(rttr::type t, rttr::property prop, rttr::variant v);
+	template<typename Component>
+	static void LoadSingleVariant(oo::GameObject& go, rttr::variant& var, rttr::property& prop, const std::string& data);
+	//saving and loading of single script field
+	static std::string SaveSingleScriptField(oo::ScriptFieldInfo& sfi);
+	static void LoadSingleScriptField(oo::ScriptFieldInfo& value,oo::ScriptValue::type_enum type,const  std::string& data);
 private:
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);
@@ -93,6 +101,8 @@ private:
 	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
 	static void SaveSequentialContainer(rttr::variant variant, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
 	static void SaveNestedComponent(rttr::variant var, rapidjson::Value& val, rttr::property prop,rapidjson::Document& doc);
+	//for saving 1 variant
+	static void SaveVariant(rttr::type t,rttr::property prop, rttr::variant v, rapidjson::Value& val, rapidjson::Document& doc);
 	//loading
 	static oo::UUID Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene,rapidjson::Document & doc);
 	static void LoadObject(oo::GameObject& go, rapidjson::Value::MemberIterator& iter, rapidjson::Value::MemberIterator& end);
@@ -100,6 +110,9 @@ private:
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
 	static void LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val);
 	static void LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val);
+	//loading 1 variant
+	template <typename Component>
+	static void LoadVariant(oo::GameObject& go,rttr::variant& var, rttr::property& prop, rapidjson::Document& doc);
 	//creation
 	static oo::UUID CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p);
 	//scripts
@@ -121,6 +134,15 @@ private:
 	inline static constexpr int rapidjson_precision = 4;
 	inline static constexpr float rapidjson_epsilon = 0.0001f;
 };
+
+template<typename Component>
+inline void Serializer::LoadSingleVariant(oo::GameObject& go, rttr::variant& var, rttr::property& prop, const std::string& data)
+{
+	rapidjson::StringStream stream(data.c_str());
+	rapidjson::Document doc;
+	doc.ParseStream(stream);
+	LoadVariant<Component>(go,var,prop, doc);
+}
 
 template<typename Component>
 inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val,rapidjson::Document& doc)
@@ -221,6 +243,53 @@ inline void Serializer::LoadComponent(oo::GameObject& go, rapidjson::Value&& val
 		command->second(v, std::move(iter->value));
 		prop.set_value(component, v);
 	}
+}
+template<typename Component>
+inline void Serializer::LoadVariant(oo::GameObject& go, rttr::variant& var, rttr::property& prop, rapidjson::Document& doc)
+{
+	if (go.HasComponent<Component>() == false)
+		return;
+	Component& component = go.GetComponent<Component>();
+	auto member = doc.GetObj().MemberBegin();
+	rttr::type t = rttr::type::get_by_name(member->name.GetString());
+	auto propertyData = member->value.MemberBegin();
+	prop = t.get_property(propertyData->name.GetString());
+	if (prop.is_valid() == false)
+		return;
+
+	auto types_UI = UI_RTTRType::types.find(prop.get_type().get_id());
+	if (types_UI == UI_RTTRType::types.end())
+	{
+		rttr::type prop_type = prop.get_type();
+		if (prop_type.is_sequential_container())
+		{
+			rttr::variant v = prop.get_value(component);
+			LoadSequentialContainer(v, propertyData->value);
+			prop.set_value(var, v);
+		}
+		if (prop_type.is_class())
+		{
+			rttr::variant variant = prop.get_value(component);
+			LoadNestedComponent(variant, propertyData->value);
+			prop.set_value(var, variant);
+		}
+		else if (prop_type.is_enumeration())
+		{
+			rttr::variant enum_data = prop.get_value(component);
+
+			//saves all enum data as int
+			auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+			m_LoadProperties.m_load_commands.find(rttrType->second)->second(enum_data, std::move(propertyData->value));
+			prop.set_value(var, enum_data);
+		}
+		return;//not supported
+	}
+	auto command = m_LoadProperties.m_load_commands.find(types_UI->second);
+	if (command == m_LoadProperties.m_load_commands.end())
+		return;//don't have this save function
+	
+	command->second(var, std::move(propertyData->value));
+
 }
 /*********************************************************************************//*!
 \brief      This Function is slow as it dosent do data copying for the prefab.

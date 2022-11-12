@@ -96,14 +96,6 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
         return;
     }
 
-    //if (!_animator->GetActualComponent().animTree)
-    //{
-    //    auto tree = oo::Anim::AnimationSystem::CreateAnimationTree("Test Animation Tree");
-    //    (void)(tree);
-    //    _animator->SetAnimationTree("Test Animation Tree");
-    //    //auto& start_node = tree->groups.begin()->second.startNode;
-    //}
-
     //Handle for everytime i press a new animatortree
     //if (m_firstFrame)
     if constexpr (true)
@@ -133,8 +125,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                     ed::PinId inputPin = outputNode->Output[0].id;
                     ed::PinId outputPin = inputNode->Input[0].id;
 
-                    m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin));
-                    m_links_.back().link = &link;
+                    m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin, &link));
                     ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
                 }
             }
@@ -166,27 +157,6 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     {
         ed::Link(LinkInfo.id, LinkInfo.inputID, LinkInfo.outputID);
     }
-
-    /*if (m_firstFrame)
-    {
-        auto& temp = _animator->GetActualComponent().animTree->groups;
-        for (auto it = temp.begin(); it != temp.end(); ++it)
-        {
-            for (auto it2 = it->second.links.begin(); it2 != it->second.links.end(); ++it2)
-            {
-                NodeInfo* outputNode = FindNode(it2->second.src.operator->());
-                NodeInfo* inputNode = FindNode(it2->second.dst.operator->());
-
-                ed::PinId inputPin = outputNode->Output[0].id;
-                ed::PinId outputPin = inputNode->Input[0].id;
-
-                m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin));
-                m_links_.back().link = &(it2->second);
-                ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
-            }
-        }
-    }*/
-
 
     //
     // 2) Handle interactions
@@ -253,7 +223,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 if (it == temp.begin())
                 {
                     oo::Anim::NodeInfo nodeinfo{
-                        .name{ "New Node" },
+                        .name{ "New Node " + std::to_string(uniqueId) },
                         .animation_name{ oo::Anim::Animation::empty_animation_name },
                         .speed{ 1.f },
                         .position{0.f,0.f,0.f}
@@ -782,7 +752,11 @@ void AnimatorControllerView::OnDelete()
             {
                 auto id = std::find_if(m_links_.begin(), m_links_.end(), [linkId](auto& link) { return link.id == linkId; });
                 if (id != m_links_.end())
+                {
+                    auto deletingLink = id->link;
+                    animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->dst->group->name}, .link_ID{deletingLink->linkID} });
                     m_links_.erase(id);
+                }
             }
         }
 
@@ -804,6 +778,8 @@ void AnimatorControllerView::OnDelete()
                             {
                                 ed::DeleteLink(m_links_[i].id);
                                 auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                auto deletingLink = iter->link;
+                                animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->dst->group->name}, .link_ID{deletingLink->linkID} });
                                 m_links_.erase(iter);
                                 continue;
                             }
@@ -817,11 +793,16 @@ void AnimatorControllerView::OnDelete()
                             {
                                 ed::DeleteLink(m_links_[i].id);
                                 auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                auto deletingLink = iter->link;
+                                animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->src->group->name}, .link_ID{deletingLink->linkID} });
                                 m_links_.erase(iter);
                                 continue;
                             }
                         }
                     }
+                    auto deletingNodeContainer = FindNode(id->id);
+                    auto deletingNode = deletingNodeContainer->anim_node;
+                    animator->RemoveNode(oo::Anim::TargetNodeInfo{ .group_name{deletingNode->group->name}, .node_ID{deletingNode->node_ID} });
                     m_nodes.erase(id);
                 }
             }

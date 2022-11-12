@@ -29,7 +29,8 @@ public:
 	Hierarchy();
 	void Show();
 	static const std::set<scenenode::handle_type>& GetSelected();
-
+	static std::set<scenenode::handle_type>& GetSelectedNonConst();
+	static const uint64_t GetSelectedTime();
 	void PreviewPrefab(const std::filesystem::path& p,const std::filesystem::path& currscene);
 	void PopBackPrefabStack();
 protected:
@@ -46,7 +47,7 @@ protected:
 	void Filter_ByComponent();
 	void Filter_ByScript();
 
-	std::shared_ptr<oo::GameObject> CreateGameObjectImmediate();
+	std::shared_ptr<oo::GameObject> CreateGameObjectImmediate(std::function<void(oo::GameObject&)> modifications = 0);
 public:
 	static constexpr const char* const payload_name = "HIERARCHY_PAYLOAD";
 	static constexpr const unsigned int Popup_ID = 100000;
@@ -78,6 +79,17 @@ private:
 		std::string m_curr_sceneFilepath = "";
 	};
 	std::vector<PrefabSceneData> m_prefabsceneList;
+
+	struct ItemSelectedTiming
+	{
+		uint64_t timesinceEpoc;
+		scenenode::handle_type gameobjecID;
+	};
 	//static
+public: //networking
+	inline static std::unordered_map<std::string, ItemSelectedTiming> s_networkUserSelection;
+private:
+	inline static uint64_t s_selectedTime_Epoc = 0;
 	inline static std::set<scenenode::handle_type> s_selected;
+	static void BroadcastSelection(oo::UUID gameobj);
 };

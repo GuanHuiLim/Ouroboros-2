@@ -28,8 +28,11 @@ Technology is prohibited.
 #include "UI/Tools/InputManagerUI.h"
 #include "UI/Tools/MeshHierarchy.h"
 #include "UI/Tools/RendererDebugger.h"
+#include "UI/Tools/PreviewWindow.h"
 
 #include "UI/Optional Windows/SceneOrderingWindow.h"
+
+#include "App/Editor/Networking/ChatSystem.h"
 
 #include "App/Editor/Events/OpenPromtEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
@@ -75,7 +78,9 @@ public:
 	InputManagerUI m_inputManager;
 	MeshHierarchy m_meshHierarchy;
 	RendererDebugger m_rendererDebugger;
+	PreviewWindow m_previewWindow;
 
+	ChatSystem m_chatsystem;
 
 	SceneOrderingWindow m_sceneOderingWindow;
 public:

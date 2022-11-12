@@ -77,6 +77,13 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
+        // Some system setup code
+        {
+            // set default debug draws
+            GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = true;
+            GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = true;
+        }
+
         // if filepath is a valid file path
         if (std::filesystem::exists(GetFilePath()))
         {
@@ -145,7 +152,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
-        GetWorld().Get_System<RendererSystem>()->UpdateCamerasEditorMode();
         TRACY_PROFILE_SCOPE_END();
     }
 

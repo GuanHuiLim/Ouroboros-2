@@ -1,7 +1,7 @@
 #pragma once
 #include "ActionCommand.h"
 #include "Ouroboros/ECS/GameObject.h"
-
+#include "App/Editor/Networking/PacketUtils.h"
 namespace oo
 {
 	class Delete_ActionCommand:public ActionCommand
@@ -12,6 +12,10 @@ namespace oo
 
 		void Undo()override;
 		void Redo()override;
+
+		std::string GetData();
+		Delete_ActionCommand(const PacketHeader& header,std::string& data);
+		
 	private:
 		oo::UUID parentID;
 		oo::UUID revivedObject = oo::UUID(static_cast<uint64_t>(-1));
@@ -26,6 +30,8 @@ namespace oo
 
 		void Undo()override;
 		void Redo()override;
+		std::string GetData();
+		Create_ActionCommand(const PacketHeader& header,const std::string& _data);
 	private:
 		oo::UUID parentID;
 		oo::UUID object;

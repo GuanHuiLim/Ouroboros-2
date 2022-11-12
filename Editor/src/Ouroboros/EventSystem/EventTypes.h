@@ -26,6 +26,16 @@ struct EditorViewportResizeEvent : public oo::Event
     float X, Y;
 };
 
+struct PreviewWindowResizeEvent : public oo::Event
+{
+    float X, Y;
+};
+
+struct GetPreviewWindowSizeEvent : public oo::Event
+{
+    float Width, Height;
+};
+
 namespace oo
 {
     //forward declare

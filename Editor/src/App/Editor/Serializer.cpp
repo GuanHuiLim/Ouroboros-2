@@ -290,6 +290,46 @@ std::vector<oo::UUID> Serializer::LoadObjectsFromString(std::string& data, oo::U
 	return go_UUID;
 }
 
+std::string Serializer::SaveSingleVariant(rttr::type t, rttr::property prop, rttr::variant v)
+{
+	rapidjson::Document doc;
+	SaveVariant(t, prop, v, doc.SetObject(), doc);
+	rapidjson::StringBuffer buffer(0, 64);
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	doc.Accept(writer);
+	return buffer.GetString();
+}
+
+std::string Serializer::SaveSingleScriptField(oo::ScriptFieldInfo& sfi)
+{
+	rapidjson::Document doc;
+	rapidjson::Value & val = doc.SetObject();
+	auto iter = m_saveScriptProperties.m_ScriptSave.find(sfi.value.GetValueType());
+	if (iter == m_saveScriptProperties.m_ScriptSave.end())
+	{
+		ASSERT_MSG(true, "not found, why?");
+		return "";
+	}
+	iter->second(doc, val, sfi);
+	rapidjson::StringBuffer buffer(0, 64);
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	doc.Accept(writer);
+	return buffer.GetString();
+}
+
+void Serializer::LoadSingleScriptField(oo::ScriptFieldInfo& value, oo::ScriptValue::type_enum type, const  std::string& data)
+{
+	rapidjson::StringStream stream(data.c_str());
+	rapidjson::Document doc;
+	doc.ParseStream(stream);
+	
+	auto sfiLoadIter = m_loadScriptProperties.m_ScriptLoad.find(type);
+	if (sfiLoadIter == m_loadScriptProperties.m_ScriptLoad.end())
+		return;
+	//loads only 1 value as the name of the function describes
+	sfiLoadIter->second(std::move(doc.MemberBegin()->value), value);
+}
+
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)
 {
 	scenenode::raw_pointer curr;
@@ -577,6 +617,45 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 	val.AddMember(name, sub_component, doc.GetAllocator());
 }
 
+void Serializer::SaveVariant(rttr::type type, rttr::property prop, rttr::variant var, rapidjson::Value& val, rapidjson::Document& doc)
+{
+	rapidjson::Value v(rapidjson::kObjectType);
+	v.SetObject();
+	auto prop_type = prop.get_type();
+	auto iter = UI_RTTRType::types.find(prop_type.get_id());
+	if (iter == UI_RTTRType::types.end())
+	{
+		if (prop_type.is_sequential_container())
+		{
+			rttr::variant variant = var;
+			SaveSequentialContainer(variant, v, prop, doc);
+		}
+		else if (prop_type.is_class())
+		{
+			rttr::variant component_variant = var;
+			SaveNestedComponent(component_variant, v, prop, doc);
+		}
+		else if (prop_type.is_enumeration())
+		{
+			rttr::variant enum_data = var;
+			int value = enum_data.get_value<int>();
+			//saves all enum data as int
+			auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+			m_SaveProperties.m_save_commands.find(rttrType->second)->second(doc, v, value, prop);
+		}
+		return;//not supported
+	}
+	auto sf = m_SaveProperties.m_save_commands.find(iter->second);
+	if (sf == m_SaveProperties.m_save_commands.end())
+		return;//don't have this save function
+	sf->second(doc, v, var, prop);
+
+	std::string temp = type.get_name().data();
+	rapidjson::Value name;
+	name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
+	val.AddMember(name, v, doc.GetAllocator());
+}
+
 oo::UUID Serializer::Loading(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, rapidjson::Document& doc)
 {
 	// TODO : This can be improved if required. Clean up please
@@ -694,6 +773,7 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 		prop.set_value(variant, v);
 	}
 }
+
 
 oo::UUID Serializer::CreatePrefab(std::shared_ptr<oo::GameObject> starting, oo::Scene& scene, std::filesystem::path& p)
 {
