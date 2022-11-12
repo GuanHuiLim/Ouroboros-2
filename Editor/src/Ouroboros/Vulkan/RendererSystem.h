@@ -33,6 +33,7 @@ struct PreviewWindowResizeEvent;
 
 namespace oo
 {
+
     class RendererSystem : public Ecs::System
     {
     private:

@@ -87,14 +87,14 @@ namespace oo
         InitializeMesh(meshComp, transform_component);
 
         // TODO: HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
-        meshComp.model_handle = 0;
-        meshComp.meshInfo.submeshBits[0] = true;
+        meshComp.ModelHandle = 0;
+        meshComp.MeshInformation.submeshBits[0] = true;
     }
 
     void oo::RendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         auto& comp = evnt->component;
-        m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
+        m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
     }
 
     oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld)
@@ -191,11 +191,13 @@ namespace oo
         world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
         {
             //do nothing if transform did not change
-            auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
-            actualObject.modelID = m_comp.model_handle;
-            actualObject.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
-            actualObject.bindlessGlobalTextureIndex_Normal= m_comp.normalID;
-            actualObject.submesh = m_comp.meshInfo.submeshBits;
+            auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
+            actualObject.modelID = m_comp.ModelHandle;
+            actualObject.bindlessGlobalTextureIndex_Albedo      = m_comp.AlbedoID;
+            actualObject.bindlessGlobalTextureIndex_Normal      = m_comp.NormalID;
+            actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
+            actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
+            actualObject.submesh = m_comp.MeshInformation.submeshBits;
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
@@ -290,10 +292,10 @@ namespace oo
 
     void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp)
     {
-        meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+        meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
 
         //update graphics world side
-        auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
+        auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.GraphicsWorldID);
         graphics_object.localToWorld = transformComp.GetGlobalMatrix();
     }
 

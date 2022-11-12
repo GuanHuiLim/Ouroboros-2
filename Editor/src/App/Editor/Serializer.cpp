@@ -43,6 +43,10 @@ Technology is prohibited.
 #include "Ouroboros/Audio/AudioListenerComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 #include "Ouroboros/Animation/AnimationComponent.h"
+#include <Ouroboros/UI/RectTransformComponent.h>
+#include <Ouroboros/UI/UIButtonComponent.h>
+#include <Ouroboros/UI/UICanvasComponent.h>
+#include <Ouroboros/UI/UIImageComponent.h>
 
 #include <Ouroboros/Transform/TransformSystem.h>
 
@@ -77,6 +81,11 @@ void Serializer::Init()
 	AddLoadComponent<oo::AudioListenerComponent>();
 	AddLoadComponent<oo::AudioSourceComponent>();
 	AddLoadComponent<oo::AnimationComponent>();
+
+	AddLoadComponent<oo::RectTransformComponent>();
+	AddLoadComponent<oo::UICanvasComponent>();
+	AddLoadComponent<oo::UIButtonComponent>();
+	AddLoadComponent<oo::UIImageComponent>();
 
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
@@ -400,6 +409,11 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::CapsuleColliderComponent>(go, val, doc);
 	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
 	SaveComponent<oo::AnimationComponent>(go, val, doc);
+
+	SaveComponent<oo::RectTransformComponent>(go, val, doc);
+	SaveComponent<oo::UICanvasComponent>(go, val, doc);
+	SaveComponent<oo::UIButtonComponent>(go, val, doc);
+	SaveComponent<oo::UIImageComponent>(go, val, doc);
 
 	SaveScript(go, val, doc);// this is the last item
 }

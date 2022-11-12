@@ -41,6 +41,21 @@ enum ObjectInstanceFlags : uint32_t // fuck enum class
                              // etc
 };
 
+inline ObjectInstanceFlags operator|(ObjectInstanceFlags a, ObjectInstanceFlags b)
+{
+    return static_cast<ObjectInstanceFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
+
+inline ObjectInstanceFlags operator&(ObjectInstanceFlags a, ObjectInstanceFlags b)
+{
+    return static_cast<ObjectInstanceFlags>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+}
+
+inline ObjectInstanceFlags operator~(ObjectInstanceFlags a)
+{
+    return static_cast<ObjectInstanceFlags>(~static_cast<uint32_t>(a));
+}
+
 //CHAR_BIT * sizeof(uint64_t)
 struct ObjectInstance
 {
@@ -61,6 +76,10 @@ struct ObjectInstance
     glm::mat4x4 localToWorld{ 1.0f };
     ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(SHADOW_RECEIVER | SHADOW_CASTER)};
 
+    // helper functions
+    void SetShadowCaster(bool s);
+    void SetShadowReciever(bool s);
+    void SetSkinned(bool s);
 
     std::vector<glm::mat4> bones;
 
@@ -115,6 +134,19 @@ public:
 
     // TODO: Fix Me ! This is for testing
     DecalInstance m_HardcodedDecalInstance;
+
+    struct SSAOSettings
+    {
+        float radius = 0.5f;
+        float bias = 0.025f;
+    }ssaoSettings{};
+
+    struct LightingSettings
+    {
+        float ambient = 0.2f;
+        float maxBias = 0.0001f;
+        float biasMultiplier = 0.002f;
+    }lightSettings{};
 
     friend class VulkanRenderer;
 private:
