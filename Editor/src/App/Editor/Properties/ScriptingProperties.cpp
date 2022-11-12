@@ -97,7 +97,6 @@ ScriptingProperties::ScriptingProperties()
 					showList = currID;
 				else
 					showList = 0;
-				editing = true;
 			}
 			if (showList == currID)
 			{
@@ -195,6 +194,26 @@ ScriptingProperties::ScriptingProperties()
 				if (payload)
 				{
 					data = *static_cast<oo::UUID*>(payload->Data);
+					editing = true;
+					edited = true;
+					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+				}
+				ImGui::EndDragDropTarget();
+			}
+		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::PREFAB, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::prefab_type>();
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			std::string referenceObj = data.filePath.empty()? "Invalid Object" : std::filesystem::path(data.filePath).filename().string();
+			ImGui::InputText(v.name.c_str(), &referenceObj, ImGuiInputTextFlags_ReadOnly);
+			ImGui::PopItemFlag();
+			if (ImGui::BeginDragDropTarget())
+			{
+				auto* payload = ImGui::AcceptDragDropPayload(".prefab");
+				if (payload)
+				{
+					data.filePath = (*static_cast<std::filesystem::path*>(payload->Data)).string();
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
@@ -356,7 +375,6 @@ ScriptingProperties::ScriptingProperties()
 					opened = 0;
 				else
 					opened = curr;
-				editing = true;
 			}
 			ImGui::PopID();
 			if (curr == opened)

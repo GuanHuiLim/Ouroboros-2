@@ -24,4 +24,6 @@ private:
 	static void AudioUI(rttr::variant& data, bool& edited);
 	static void MeshUI(rttr::variant& data, bool& edited);
 	static void AnimationTreeUI(rttr::variant& data, bool& edited);
+	static bool SearchFilter(const std::string& object);
+	inline static std::string m_filter = "";
 };
