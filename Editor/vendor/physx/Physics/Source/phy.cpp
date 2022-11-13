@@ -1042,7 +1042,7 @@ namespace myPhysx
         return false;
     }
 
-    bool PhysicsObject::useCollider() const {
+    bool PhysicsObject::isColliderEnabled() const {
 
         if (world->all_objects.contains(id)) {
 
