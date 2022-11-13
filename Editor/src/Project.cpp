@@ -77,7 +77,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_AssetManager->GetOrLoadDirectoryAsync(hard_assetfolderpath, true);
 
 	//load input manager
-	LoadInputs(GetProjectFolder() / ("InputBindings"));
+	LoadInputs(GetProjectFolder() / InputFileName);
 }
 
 void Project::SaveProject()
@@ -146,7 +146,7 @@ void Project::SaveProject()
 	}
 	ifs.close();
 
-	SaveInputs(GetProjectFolder() / ("InputBindings"));
+	SaveInputs(GetProjectFolder() / (InputFileName));
 }
 
 void Project::LoadInputs(const std::filesystem::path& loadpath)

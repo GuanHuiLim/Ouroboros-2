@@ -5,15 +5,17 @@
 #include "rapidjson/document.h"
 class Project
 {
+	static constexpr const char* InputFileName = "InputBindings";
 public:
 	static void LoadProject(std::filesystem::path& p);
 	static void SaveProject();
 public:
 	static std::shared_ptr<oo::AssetManager> GetAssetManager() { return s_AssetManager; };
 	
+	//input
 	static void LoadInputs(const std::filesystem::path& loadpath);
 	static void SaveInputs(const std::filesystem::path& savepath);
-
+	static std::filesystem::path GetInputFilePath() { return GetProjectFolder() / InputFileName; };
 
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
