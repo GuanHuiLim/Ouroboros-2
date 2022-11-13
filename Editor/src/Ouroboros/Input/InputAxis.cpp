@@ -104,7 +104,7 @@ namespace oo
 		controllerSettings.holdDurationRequired = 0.0f;
 	}
 
-    InputAxis::Tracker::Tracker(InputAxis const& axis)
+    InputAxis::Tracker::Tracker(InputAxis& axis)
         : axis{ axis }, durationHeld{ 0.0f }, pressCount{ 0 }, pressGapTimeLeft{ 0.0f }, lastPressed{ InputAxis::INPUTCODE_INVALID }, isController{ false }
     {
 

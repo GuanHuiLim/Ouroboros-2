@@ -152,7 +152,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
-        GetWorld().Get_System<RendererSystem>()->UpdateCamerasEditorMode();
         TRACY_PROFILE_SCOPE_END();
     }
 
