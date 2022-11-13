@@ -1369,16 +1369,16 @@ namespace oo::Anim::internal
 
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
-
+		//allow nodes with same name
 		//if node already added to this group then just return it
-		for (auto& [key, node] : group.nodes)
+		/*for (auto& [key, node] : group.nodes)
 		{
 			if (node.name == info.name)
 			{
 				LOG_CORE_WARN("{0} Animation Node already exists in group!!", info.name);
 				return &node;
 			}
-		}
+		}*/
 
 		//create the node and add it to this group
 		Node node{ info };
@@ -1701,6 +1701,17 @@ namespace oo::Anim::internal
 		node.anim = CreateAnimationReference(anim.animation_ID);
 
 		return &anim;
+	}
+
+	Animation* AddAnimationToNode(Node& node, oo::Asset asset)
+	{
+		auto anim = RetrieveAnimation(asset);
+		if (anim == nullptr)
+		{
+			return nullptr;
+		}
+		node.anim = CreateAnimationReference(anim->animation_ID);
+		node.anim_asset = asset;
 	}
 
 	void RemoveNodeFromGroup(Group& group, UID node_ID)
