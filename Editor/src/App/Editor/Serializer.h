@@ -174,7 +174,9 @@ inline void Serializer::SaveComponent(oo::GameObject& go, rapidjson::Value& val,
 			else if (prop_type.is_enumeration())
 			{
 				rttr::variant enum_data = prop.get_value(component);
-				int value = enum_data.get_value<int>();
+				//rttr::enumeration enuma = prop_type.get_enumeration();
+				//std::string value = enuma.value_to_name(enum_data);
+				int value = enum_data.to_int();
 				//saves all enum data as int
 				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
 				m_SaveProperties.m_save_commands.find(rttrType->second)->second(doc,v,value,prop);
@@ -228,11 +230,11 @@ inline void Serializer::LoadComponent(oo::GameObject& go, rapidjson::Value&& val
 			else if (prop_type.is_enumeration())
 			{
 				rttr::variant enum_data = prop.get_value(component);
-				
 				//saves all enum data as int
 				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
 				m_LoadProperties.m_load_commands.find(rttrType->second)->second(enum_data, std::move(iter->value));
-				prop.set_value(component, enum_data);
+				rttr::enumeration enuma = prop_type.get_enumeration();		
+				prop.set_value(component, enuma.name_to_value(enuma.value_to_name(enum_data)));
 			}
 			continue;//not supported
 		}
