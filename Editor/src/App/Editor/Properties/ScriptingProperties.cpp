@@ -79,10 +79,11 @@ ScriptingProperties::ScriptingProperties()
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::enum_type>();
 			auto list = data.GetOptions();
+            auto name = data.GetValueName(data.value);
 
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImVec2 cursorPos = ImGui::GetCursorPos();
-			ImGui::InputText(v.name.c_str(), &list[data.index]);
+			ImGui::InputText(v.name.c_str(), &name);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
 			
@@ -96,7 +97,6 @@ ScriptingProperties::ScriptingProperties()
 					showList = currID;
 				else
 					showList = 0;
-				editing = true;
 			}
 			if (showList == currID)
 			{
@@ -105,7 +105,7 @@ ScriptingProperties::ScriptingProperties()
 				{
 					if (ImGui::Selectable(list[i].c_str()))
 					{
-						data.index = i;
+                        data.value = data.GetValues()[i];
 						v.TrySetRuntimeValue(oo::ScriptValue{ data });
 						editing = true;
 						edited = true;
@@ -194,6 +194,26 @@ ScriptingProperties::ScriptingProperties()
 				if (payload)
 				{
 					data = *static_cast<oo::UUID*>(payload->Data);
+					editing = true;
+					edited = true;
+					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+				}
+				ImGui::EndDragDropTarget();
+			}
+		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::PREFAB, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::prefab_type>();
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			std::string referenceObj = data.filePath.empty()? "Invalid Object" : std::filesystem::path(data.filePath).filename().string();
+			ImGui::InputText(v.name.c_str(), &referenceObj, ImGuiInputTextFlags_ReadOnly);
+			ImGui::PopItemFlag();
+			if (ImGui::BeginDragDropTarget())
+			{
+				auto* payload = ImGui::AcceptDragDropPayload(".prefab");
+				if (payload)
+				{
+					data.filePath = (*static_cast<std::filesystem::path*>(payload->Data)).string();
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
@@ -355,7 +375,6 @@ ScriptingProperties::ScriptingProperties()
 					opened = 0;
 				else
 					opened = curr;
-				editing = true;
 			}
 			ImGui::PopID();
 			if (curr == opened)

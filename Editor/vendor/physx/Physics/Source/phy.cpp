@@ -1042,6 +1042,20 @@ namespace myPhysx
         return false;
     }
 
+    bool PhysicsObject::isColliderEnabled() const {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->rigidID != rigid::none)
+                return underlying_obj->collider;
+        }
+
+        // default return.
+        return true;
+    }
+
     void PhysicsObject::setMass(PxReal mass) {
 
         if (world->all_objects.contains(id)) {

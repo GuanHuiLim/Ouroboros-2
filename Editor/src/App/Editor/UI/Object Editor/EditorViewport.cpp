@@ -38,11 +38,23 @@ Technology is prohibited.
 
 #include "Ouroboros/EventSystem/EventTypes.h"
 #include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/Core/Timer.h"
+
+// Default settings for editor camera
+Camera EditorViewport::EditorCamera = [&]()
+{
+	Camera camera;
+	camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
+	camera.movementSpeed = 5.0f;
+	camera.SetPosition({ 0, 8, 8 });
+	camera.Rotate({ 45, 180, 0 });
+	return camera;
+}();
 
 EditorViewport::EditorViewport()
 {
 	ImGuizmo::AllowAxisFlip(false);
-	
+	m_cc.SetCamera(&EditorCamera);
 }
 
 EditorViewport::~EditorViewport()
@@ -51,10 +63,13 @@ EditorViewport::~EditorViewport()
 
 void EditorViewport::Show()
 {
+	// Update Editor Camera
+	// Camera controller updates editor camera
+	m_cc.Update(oo::timer::dt(), true);
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto graphicsworld = scene->GetGraphicsWorld();
-	auto& camera_matrices = oo::EditorController::EditorCamera.matrices;//perspective
+	auto& camera_matrices = EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	
 	int windowWidth = window.GetSize().first;
@@ -87,7 +102,7 @@ void EditorViewport::Show()
 
 	//framebuffer
 	ImVec2 prevpos = ImGui::GetCursorPos();
-	ImGui::Image(graphicsworld->imguiID[0], ImGui::GetContentRegionAvail());
+	ImGui::Image(graphicsworld->imguiID[1], ImGui::GetContentRegionAvail());
 	ImGui::SetCursorPos(prevpos);
 
 	//ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
