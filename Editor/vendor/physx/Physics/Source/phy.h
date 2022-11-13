@@ -221,6 +221,7 @@ namespace myPhysx {
         bool trigger = false;
         bool gravity = true; // static should be false
         bool kinematic = false;
+        bool collider = true;
     };
 
     struct PhysicsObject { // you store
@@ -260,6 +261,7 @@ namespace myPhysx {
 
         void disableGravity(bool gravity);
         void enableKinematic(bool kine);
+        void enableCollider(bool collide);
 
         // AXIS LOCKING
         void lockPositionX(bool lock);
