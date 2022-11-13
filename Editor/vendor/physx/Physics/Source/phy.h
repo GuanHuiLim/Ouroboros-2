@@ -246,6 +246,7 @@ namespace myPhysx {
         bool isTrigger() const;
         bool useGravity() const;
         bool isKinematic() const;
+        bool useCollider() const;
 
         // SETTERS
         void setRigidType(rigid type);
