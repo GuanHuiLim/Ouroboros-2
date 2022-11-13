@@ -31,6 +31,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 
 #include "App/Editor/UI/Object Editor/AssetBrowser.h"
+#include <Project.h>
 ScriptingProperties::ScriptingProperties()
 {
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::BOOL, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
@@ -220,7 +221,8 @@ ScriptingProperties::ScriptingProperties()
 				auto* payload = ImGui::AcceptDragDropPayload(".prefab");
 				if (payload)
 				{
-					data.filePath = (*static_cast<std::filesystem::path*>(payload->Data)).string();
+					auto path = (*static_cast<std::filesystem::path*>(payload->Data));
+					data.filePath = std::filesystem::relative(path, Project::GetPrefabFolder()).string();
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
