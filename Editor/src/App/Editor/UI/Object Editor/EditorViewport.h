@@ -15,7 +15,7 @@ Technology is prohibited.
 
 #include "OO_Vulkan/src/Camera.h"
 #include "Ouroboros/Core/CameraController.h"
-
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 
 class EditorViewport
 {
@@ -29,10 +29,17 @@ public:
 	// Editor Camera only exist within this viewport
 	// default values found in cpp
 	static Camera EditorCamera;
-
 private:
+	void MenuBar();
+
 	int m_gizmoMode = 1;	// IMGUIZMO::MODE::WORLD <- default
 	float m_viewportWidth = 0.f, m_viewportHeight = 0.f;
 
 	inline static CameraController m_cc;
+private://maximize on play
+	inline static bool s_maximizeOnPlay = false;
+	inline static std::vector<bool> s_windowStates;
+public: //maximize on play
+	static void OnPlayEvent(ToolbarButtonEvent* e);
+	static void OnStopEvent(ToolbarButtonEvent* e);
 };

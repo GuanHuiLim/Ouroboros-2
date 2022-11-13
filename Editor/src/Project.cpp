@@ -18,7 +18,8 @@
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include "Ouroboros/Input/InputManager.h"
 #include "App/Editor/Properties/SerializerProperties.h"
-
+#include "Ouroboros/Vulkan/GlobalRendererSettings.h"
+#include "App/Editor/Properties/UI_RTTRType.h"
 void Project::LoadProject(std::filesystem::path& config)
 {
 	static bool run_once = []() {	oo::EventManager::Subscribe<CloseProjectEvent>([](CloseProjectEvent*) {SaveProject(); }); return true; }();
@@ -59,6 +60,14 @@ void Project::LoadProject(std::filesystem::path& config)
 	}
 	LoadProjectEvent lpe(std::move(s_projectFolder.string() + s_sceneFolder.string() + s_startingScene.string()), std::move(m_loadpaths),std::move(s_projectFolder.string()));
 	oo::EventManager::Broadcast(&lpe);
+
+	//load renderer settings
+	if (doc.HasMember("Renderer Settings"))
+	{
+		LoadRenderer(doc.FindMember("Renderer Settings")->value, doc);
+	}
+
+
 	//end
 	ifs.close();
 
@@ -68,7 +77,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_AssetManager->GetOrLoadDirectoryAsync(hard_assetfolderpath, true);
 
 	//load input manager
-	LoadInputs(GetProjectFolder() / ("InputBindings"));
+	LoadInputs(GetProjectFolder() / InputFileName);
 }
 
 void Project::SaveProject()
@@ -100,6 +109,19 @@ void Project::SaveProject()
 		rapidjson::Value data(scene_loadpath.string().c_str(),doc.GetAllocator());
 		scenes->value.AddMember(name, data, doc.GetAllocator());
 	}
+	
+	if (doc.HasMember("Renderer Settings"))
+	{
+		auto& val = doc.FindMember("Renderer Settings")->value;
+		val.RemoveAllMembers();//its easier to clear everything and key in the value again
+		SaveRenderer(val, doc);
+	}
+	else
+	{
+		rapidjson::Value val(rapidjson::kObjectType);
+		SaveRenderer(val,doc);
+		doc.AddMember("Renderer Settings", val, doc.GetAllocator());
+	}
 	//write your scenes
 	//doc.AddMember("Scenes", scenes,doc.GetAllocator());
 
@@ -124,7 +146,7 @@ void Project::SaveProject()
 	}
 	ifs.close();
 
-	SaveInputs(GetProjectFolder() / ("InputBindings"));
+	SaveInputs(GetProjectFolder() / (InputFileName));
 }
 
 void Project::LoadInputs(const std::filesystem::path& loadpath)
@@ -253,6 +275,80 @@ void Project::SaveInputs(const std::filesystem::path& savepath)
 	rapidjson::OStreamWrapper osw(ofs2);
 	rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
 	input_doc.Accept(writer);
+}
+
+void Project::LoadRenderer(rapidjson::Value& val, rapidjson::Document& doc)
+{
+	SerializerLoadProperties loadProperties;
+	rttr::type t = oo::RendererSettings::setting.Lighting.get_type();
+	auto& lighting = oo::RendererSettings::setting.Lighting;
+	auto& lighting_val = val.FindMember(t.get_name().data())->value;
+	for (auto iter = lighting_val.MemberBegin(); iter != lighting_val.MemberEnd(); ++iter)
+	{
+		rttr::property prop = t.get_property(iter->name.GetString());
+		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
+		if (typeiter == UI_RTTRType::types.end())
+			continue;
+		auto commanditer = loadProperties.m_load_commands.find(typeiter->second);
+		if (commanditer == loadProperties.m_load_commands.end())
+			continue;
+
+		rttr::variant v;
+		commanditer->second(v,std::move(iter->value));
+		prop.set_value(lighting, v);
+	}
+	//----SSAO------//
+	t = oo::RendererSettings::setting.SSAO.get_type();
+	auto& SSAO = oo::RendererSettings::setting.SSAO;
+	auto& SSAO_val = val.FindMember(t.get_name().data())->value;
+	for (auto iter = SSAO_val.MemberBegin(); iter != SSAO_val.MemberEnd(); ++iter)
+	{
+		rttr::property prop = t.get_property(iter->name.GetString());
+		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
+		if (typeiter == UI_RTTRType::types.end())
+			continue;
+		auto commanditer = loadProperties.m_load_commands.find(typeiter->second);
+		if (commanditer == loadProperties.m_load_commands.end())
+			continue;
+
+		rttr::variant v;
+		commanditer->second(v, std::move(iter->value));
+		prop.set_value(SSAO, v);
+	}
+}
+
+void Project::SaveRenderer(rapidjson::Value& val,rapidjson::Document& doc)
+{
+	SerializerSaveProperties saveProperties;
+	rttr::type t = oo::RendererSettings::setting.Lighting.get_type();
+	auto& lighting = oo::RendererSettings::setting.Lighting;
+	rapidjson::Value lighting_val(rapidjson::kObjectType);
+	for (auto prop : t.get_properties())
+	{
+		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
+		if (typeiter == UI_RTTRType::types.end())
+			continue;
+		auto commanditer = saveProperties.m_save_commands.find(typeiter->second);
+		if (commanditer == saveProperties.m_save_commands.end())
+			continue;
+		commanditer->second(doc, lighting_val, prop.get_value(lighting), prop);
+	}
+	val.AddMember(rapidjson::Value(t.get_name().data(), doc.GetAllocator()), lighting_val, doc.GetAllocator());
+	
+	t = oo::RendererSettings::setting.SSAO.get_type();
+	auto& SSAO = oo::RendererSettings::setting.SSAO;
+	rapidjson::Value SSAO_val(rapidjson::kObjectType);
+	for (auto prop : t.get_properties())
+	{
+		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
+		if (typeiter == UI_RTTRType::types.end())
+			continue;
+		auto commanditer = saveProperties.m_save_commands.find(typeiter->second);
+		if (commanditer == saveProperties.m_save_commands.end())
+			continue;
+		commanditer->second(doc, SSAO_val, prop.get_value(SSAO), prop);
+	}
+	val.AddMember(rapidjson::Value(t.get_name().data(), doc.GetAllocator()), SSAO_val, doc.GetAllocator());
 }
 
 void Project::UpdateScriptingFiles()

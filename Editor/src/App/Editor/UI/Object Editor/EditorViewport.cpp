@@ -40,6 +40,9 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Timer.h"
 
+#include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Vulkan/RendererSystem.h"
+
 // Default settings for editor camera
 Camera EditorViewport::EditorCamera = [&]()
 {
@@ -53,6 +56,8 @@ Camera EditorViewport::EditorCamera = [&]()
 
 EditorViewport::EditorViewport()
 {
+	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnPlayEvent);
+	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnStopEvent);
 	ImGuizmo::AllowAxisFlip(false);
 	m_cc.SetCamera(&EditorCamera);
 }
@@ -63,18 +68,10 @@ EditorViewport::~EditorViewport()
 
 void EditorViewport::Show()
 {
-	// Update Editor Camera
-	// Camera controller updates editor camera
-	m_cc.Update(oo::timer::dt(), true);
+	//menu bar for the viewport
+	MenuBar();
 
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-	auto graphicsworld = scene->GetGraphicsWorld();
-	auto& camera_matrices = EditorCamera.matrices;//perspective
-	auto& window = oo::Application::Get().GetWindow();
-	
-	int windowWidth = window.GetSize().first;
-	//int windowHeight = window.GetSize().second;	unused var
-	
+	//gizmo code here
 	ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 	ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 
@@ -84,6 +81,24 @@ void EditorViewport::Show()
 	vMax.y += ImGui::GetWindowPos().y;
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
+
+	// Update Editor Camera
+	// Camera controller updates editor camera
+	bool cameraFocus = false;
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_::ImGuiFocusedFlags_ChildWindows))
+	{
+		cameraFocus = true;
+	}
+	m_cc.Update(oo::timer::dt(), cameraFocus);
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
+	auto& camera_matrices = EditorCamera.matrices;//perspective
+	auto& window = oo::Application::Get().GetWindow();
+	
+	int windowWidth = window.GetSize().first;
+	//int windowHeight = window.GetSize().second;	unused var
+	
 
 	auto contentWidth = vpDim.x;
 	auto contentHeight = vpDim.y;
@@ -239,5 +254,69 @@ void EditorViewport::Show()
 		ChangeGizmoEvent e(m_gizmoOperation);
 		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
+	}
+	//wrong but it helps 
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)))
+	{
+		glm::vec3 target = EditorCamera.GetFront();
+		EditorCamera.SetPosition(transform.GetGlobalPosition() - (target * 10.0f));
+	}
+}
+
+void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)
+{
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY && s_maximizeOnPlay)
+	{
+		s_windowStates.clear();
+		for (auto& window : ImGuiManager::s_GUIContainer)
+		{
+			s_windowStates.push_back(window.second.m_enabled);
+			window.second.m_enabled = false;
+		}
+		ImGuiManager::GetItem("Toolbar").m_enabled = true;
+		ImGuiManager::GetItem("Preview Window").m_enabled = true;
+	}
+}
+
+void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
+{
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay)
+	{
+		int i = 0;
+		for (auto& window : ImGuiManager::s_GUIContainer)
+		{
+			window.second.m_enabled = s_windowStates[i++];
+		}
+		s_windowStates.clear();
+	}
+}
+
+void EditorViewport::MenuBar()
+{
+	if (ImGui::BeginMenuBar())
+	{
+
+		if (ImGui::BeginMenu("Debugging"))
+		{
+			if (ImGui::MenuItem("Colliders Debug Draw", 0, oo::PhysicsSystem::ColliderDebugDraw))
+			{
+				oo::PhysicsSystem::ColliderDebugDraw = !oo::PhysicsSystem::ColliderDebugDraw;
+			}
+			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessges))
+			{
+				oo::PhysicsSystem::DebugMessges = !oo::PhysicsSystem::DebugMessges;
+			}
+			if (ImGui::MenuItem("Camera Debug Draw", 0, oo::RendererSystem::CameraDebugDraw))
+			{
+				oo::RendererSystem::CameraDebugDraw = !oo::RendererSystem::CameraDebugDraw;
+			}
+
+			ImGui::EndMenu();
+		}
+		if (ImGui::MenuItem("Maximize on Play",0, &s_maximizeOnPlay, true))
+		{
+			//s_maximizeOnPlay = !s_maximizeOnPlay;
+		}
+		ImGui::EndMenuBar();
 	}
 }

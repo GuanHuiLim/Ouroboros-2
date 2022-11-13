@@ -31,6 +31,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 
 #include "App/Editor/UI/Object Editor/AssetBrowser.h"
+#include <Project.h>
 ScriptingProperties::ScriptingProperties()
 {
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::BOOL, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
@@ -74,6 +75,13 @@ ScriptingProperties::ScriptingProperties()
 			editing = ImGui::DragFloat3(v.name.c_str(), reinterpret_cast<float*>(&data), 0.1f);
 			edited = ImGui::IsItemDeactivatedAfterEdit();
             if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::COLOR, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			oo::Color data = v.TryGetRuntimeValue().GetValue<oo::Color>();
+			editing = ImGui::ColorPicker4(v.name.c_str(), &data.r, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_InputRGB);
+			edited = ImGui::IsItemDeactivatedAfterEdit();
+			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::ENUM, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
@@ -213,7 +221,8 @@ ScriptingProperties::ScriptingProperties()
 				auto* payload = ImGui::AcceptDragDropPayload(".prefab");
 				if (payload)
 				{
-					data.filePath = (*static_cast<std::filesystem::path*>(payload->Data)).string();
+					auto path = (*static_cast<std::filesystem::path*>(payload->Data));
+					data.filePath = std::filesystem::relative(path, Project::GetPrefabFolder()).string();
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };

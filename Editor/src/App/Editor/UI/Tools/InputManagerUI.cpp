@@ -13,10 +13,11 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "InputManagerUI.h"
+#include "App/Editor/UI/Tools/WarningMessage.h"
 
 #include "Ouroboros/Core/ControllerCode.h"
 #include "Ouroboros/Input/InputManager.h"
-
+#include "Project.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -26,9 +27,15 @@ Technology is prohibited.
 #include <rttr/property.h>
 #include <rttr/enumeration.h>
 
+#include <Ouroboros/EventSystem/EventManager.h>
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 #include <string>
 InputManagerUI::InputManagerUI()
 {
+	oo::EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e) {
+		if(e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP)
+			Project::LoadInputs(Project::GetInputFilePath());
+		});
 }
 
 InputManagerUI::~InputManagerUI()
@@ -37,6 +44,21 @@ InputManagerUI::~InputManagerUI()
 
 void InputManagerUI::Show()
 {
+	if (ImGui::BeginMenuBar())
+	{
+		if (ImGui::MenuItem("Save"))
+		{
+			Project::SaveInputs(Project::GetInputFilePath());
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "saved input file");
+		}
+		if (ImGui::MenuItem("Revert/Load"))
+		{
+			Project::LoadInputs(Project::GetInputFilePath());
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "loaded input file");
+		}
+		ImGui::EndMenuBar();
+	}
+
 	for (auto& input : oo::InputManager::GetAxes())
 	{
 		ImGui::Separator();

@@ -122,10 +122,12 @@ void SSAORenderPass::Draw()
 	cmd.BindPSO(pso_SSAO);
 
 	SSAOPC pc{};
-	pc.SD_SD.x = vr.m_swapchain.swapChainExtent.width;
-	pc.SD_SD.y = vr.m_swapchain.swapChainExtent.height;
-	pc.SD_SD.z = 4;
-	pc.SD_SD.w = 4;
+	pc.screenDim.x = vr.m_swapchain.swapChainExtent.width;
+	pc.screenDim.y = vr.m_swapchain.swapChainExtent.height;
+	pc.sampleDim.x = 4;
+	pc.sampleDim.y = 4;
+	pc.radius = vr.currWorld->ssaoSettings.radius;
+	pc.bias = vr.currWorld->ssaoSettings.bias;
 	VkPushConstantRange range;
 	range.offset = 0;
 	range.size = sizeof(SSAOPC);
