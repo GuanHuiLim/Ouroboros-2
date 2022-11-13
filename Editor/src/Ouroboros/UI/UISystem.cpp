@@ -239,7 +239,9 @@ namespace oo
         if (camera == nullptr)
             return;
 
-        Ray mouseWorldPos = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), oo::input::GetMouseX(), oo::input::GetMouseY());
+        Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), oo::input::GetMouseX(), oo::input::GetMouseY());
+        LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
+        DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 10.f);
         //Point2D mouseWorldPoint{ mousePos };
 
         /*SceneCamera* cam = SceneCamera::MainCamera();
@@ -259,9 +261,11 @@ namespace oo
                 // retrieve canvas gameobject
                 auto go = m_scene->FindWithInstanceID(goc.Id);
 
-                // Iterate through and update all buttons
-                for (auto& child : go->GetChildren(true))
+                // Iterate through and update all childs in REVERSE
+                auto childs = go->GetChildren(true);
+                for (auto iter = childs.rbegin(); iter != childs.rend(); ++iter)
                 {
+                    auto& child = *iter;
                     if (child.ActiveInHierarchy() == false)
                         continue;
 
@@ -279,13 +283,15 @@ namespace oo
                     case UICanvasComponent::RenderMode::WorldSpace:
                         //Shoot a ray
                         auto obb = child.GetComponent<RectTransformComponent>().BoundingVolume;
-                        mouseOutside = !intersection::RayOBB(mouseWorldPos, obb);
+                        mouseOutside = !intersection::RayOBB(mouseWorldRay, obb);
                         //mouseOutside = !Intersection2D::PointAABB(mouseWorldPoint, child.GetComponent<RectTransformComponent>().BoundingVolume);
                         break;
                     }
 
                     if (mouseOutside)
                         continue;
+
+                    // Intersection detected!
 
                     // we find the highest object that's currently selected (because what we're clicking on now does not OWN a raycast component!
                     // [it'll either be a parent raycastComponent or be the canvas which means not found and terminate.]
@@ -310,22 +316,29 @@ namespace oo
                         m_previouslySelectedObject = GameObject{}; //invalid gameobject
                     }
 
-                    // On Enter
-                    //UIRaycastComponent* selectedButtonPointer = currentlySelected.TryGetComponent<UIRaycastComponent>();
-                    //if (selectedButtonPointer != nullptr /*&& selectedButtonPointer->IsInteractable()*/)
-                    //{
-                    //    UpdateButtonCallback(selectedButtonPointer, true);
-                    //    m_previouslySelectedObject = &currentlySelected;
-                    //}
+                    // On Enter : we try because currently Selected might still be a canvas.
+                    UIRaycastComponent* selectedButtonPointer = currentlySelected.TryGetComponent<UIRaycastComponent>();
+                    if (selectedButtonPointer != nullptr /*&& selectedButtonPointer->IsInteractable()*/)
+                    {
+                        UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
+                        m_previouslySelectedObject = currentlySelected;
+                    }
                     
-                    UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
-                    m_previouslySelectedObject = currentlySelected;
+                    //UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
+                    //m_previouslySelectedObject = currentlySelected;
 
                     return;
                 }
 
             });
 
+        // not hovering over any ui element
+        // deselect what i'm previously selecting
+        if (m_scene->IsValid(m_previouslySelectedObject))
+        {
+            UpdateButtonCallback(m_previouslySelectedObject.GetInstanceID(), &m_previouslySelectedObject.GetComponent<UIRaycastComponent>(), false);
+            m_previouslySelectedObject = GameObject{};  // set to null.
+        }
     }
 
     bool UISystem::UpdateButtonCallback(UUID buttonId, UIRaycastComponent* raycastComp, bool isInside)
@@ -344,6 +357,7 @@ namespace oo
             raycastComp->HasEntered = true;
             e.Type = UIButtonEventType::ON_POINTER_ENTER;
             EventManager::Broadcast<UIButtonEvent>(&e);
+            //LOG_TRACE("UI On pointer enter!");
             //raycastComp->InvokeButtonEvent("OnPointerEnter");
             //if (!raycastComp->IsInteractable()) // for if OnPointerEnter sets interactable false
             //    return false;
@@ -357,6 +371,7 @@ namespace oo
                 raycastComp->IsPressed = false;
                 e.Type = UIButtonEventType::ON_RELEASE;
                 EventManager::Broadcast<UIButtonEvent>(&e);
+                LOG_TRACE("UI On Release!");
                 //raycastComp->InvokeButtonEvent("OnRelease");
                 //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
                 //    return false;
@@ -364,6 +379,7 @@ namespace oo
             raycastComp->HasEntered = false;
             e.Type = UIButtonEventType::ON_POINTER_EXIT;
             EventManager::Broadcast<UIButtonEvent>(&e);
+            //LOG_TRACE("UI On Pointer Exit!");
             //raycastComp->InvokeButtonEvent("OnPointerExit");
             return false;
         }
@@ -375,6 +391,7 @@ namespace oo
             raycastComp->IsPressed = true;
             e.Type = UIButtonEventType::ON_PRESS;
             EventManager::Broadcast<UIButtonEvent>(&e);
+            LOG_TRACE("UI On Press!");
             //raycastComp->InvokeButtonEvent("OnPress");
             //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
             //    return false;
@@ -383,6 +400,7 @@ namespace oo
         {
             e.Type = UIButtonEventType::ON_CLICK;
             EventManager::Broadcast<UIButtonEvent>(&e);
+            LOG_TRACE("UI On Click!");
             //raycastComp->InvokeButtonEvent("OnClick");
             // isInteractable check since OnClick could disable the button,
             //if so OnRelease already invoked, shouldn't be invoked again after OnInteractDisabled
@@ -392,6 +410,7 @@ namespace oo
             raycastComp->IsPressed = false;
             e.Type = UIButtonEventType::ON_RELEASE;
             EventManager::Broadcast<UIButtonEvent>(&e);
+            LOG_TRACE("UI On Release!");
             //raycastComp->InvokeButtonEvent("OnRelease");
             //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
             //    return false;
@@ -417,22 +436,26 @@ namespace oo
         auto& transform = cameraTf;
         // camera's Project Matrix
         const auto& proj = camera.matrices.perspective;
-        //camera's transform in World Space
-        const auto& worldSpaceMatrix = transform->GetGlobalMatrix(); //transform->GetGlobalPosition();
+        const auto& pos = transform->GetGlobalPosition();
         
-        glm::vec3 point = worldSpaceMatrix * glm::inverse(proj) * glm::vec4{ worldpos, 1 };
-        // direction is calculated from camera global position to the newly found point
-        auto dir = point - cameraTf->GetGlobalPosition();
-        // we use the camera's Z as the starting point.
-        return { {point.x, point.y, cameraTf->GetGlobalPosition().z}, dir };
+        // camera's transform in World Space
+        //const auto& worldSpaceMatrix = transform->GetGlobalMatrix(); 
+        //glm::vec3 point = worldSpaceMatrix * glm::inverse(proj) * glm::vec4{ worldpos, 1 };
+        //// direction is calculated from camera global position to the newly found point
+        //auto dir = point - cameraTf->GetGlobalPosition();
+        //// we use the camera's Z as the starting point.
+        //return { {point.x, point.y, cameraTf->GetGlobalPosition().z}, dir };
 
         ////TODO: store the inverse of the camera
-        //float xProj = 1.0f / proj[0][0];
-        //float yProj = 1.0f / proj[1][1];
-        ////oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
-        //worldpos.x = pos.x + worldpos.x * xProj;
-        //worldpos.y = pos.y + worldpos.y * yProj;
+        float xProj = 1.0f / proj[0][0];
+        float yProj = 1.0f / proj[1][1];
+        //oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
+        worldpos.x = pos.x + worldpos.x * xProj;
+        worldpos.y = pos.y + worldpos.y * yProj;
+        worldpos.z = pos.z;
+        
+        worldpos += transform->GlobalForward();
 
-        //return worldpos;
+        return { worldpos, glm::normalize(worldpos - pos)};
     }
 }
