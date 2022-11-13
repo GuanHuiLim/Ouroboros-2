@@ -18,14 +18,31 @@ Technology is prohibited.
 
 #include <rttr/type>
 #include <glm/glm.hpp>
+#include "Utility/UUID.h"
+#include "Ouroboros/EventSystem/Event.h"
 
 namespace oo
 {
-    class UIButtonComponent final 
+    enum class UIButtonEventType
+    {
+        ON_POINTER_ENTER,
+        ON_POINTER_EXIT,
+        ON_PRESS,
+        ON_CLICK,
+        ON_RELEASE,
+    };
+
+    struct UIButtonEvent : public Event
+    {
+        UIButtonEventType Type;
+        UUID buttonID;
+    };
+
+    class UIRaycastComponent final 
     {
     public:
 
-        bool IsInteractable = true;
+        //bool IsInteractable = true;
         bool HasEntered = false;
         bool IsPressed = false;
 

@@ -19,6 +19,8 @@ Technology is prohibited.
 #include <rttr/type>
 #include <glm/glm.hpp>
 
+#include "Ouroboros/Geometry/Shapes.h"
+
 namespace oo
 {
     class RectTransformComponent final
@@ -52,17 +54,45 @@ namespace oo
             StretchWhole = 16,
         };
 
+        bool IsDirty = true;    // set to true for the first frame update!
+
         bool IsWorldSpace = false;
-        //bool m_dirty = true;
+        
         AnchorPreset Preset = AnchorPreset::AnchorMiddleCentre;
-        glm::vec3 AnchoredPosition = { 0,0,0 };
-        float Angle = 0.f;
+        
+        glm::vec3 AnchoredPosition = { 0, 0, 0 };
+        glm::vec3 EulerAngles = { 0, 0, 0 };
         glm::vec3 Scale = { 1, 1, 1 };
+
         glm::vec2 Size = { 100, 100 };
         glm::vec2 Pivot = { 0.5f, 0.5f };
         glm::vec2 AnchorMin = { 0.5f, 0.5f };
         glm::vec2 AnchorMax = { 0.5f, 0.5f };
-        
+
+        glm::vec3 ParentOffset = { 0,0,0 };
+        OrientedBoundingBox BoundingVolume = {};
+
+        void SetPreset(AnchorPreset);
+        AnchorPreset GetPreset() const;
+
+        void SetAnchoredPosition(glm::vec3);
+        void SetEulerAngles(glm::vec3);
+        void SetScale(glm::vec3);
+
+        void SetSize(glm::vec2);
+        void SetPivot(glm::vec2);
+        void SetAnchorMin(glm::vec2);
+        void SetAnchorMax(glm::vec2);
+
+        glm::vec3 GetAnchoredPosition() const;
+        glm::vec3 GetEulerAngles() const;
+        glm::vec3 GetScale() const;
+
+        glm::vec2 GetSize() const;
+        glm::vec2 GetPivot() const;
+        glm::vec2 GetAnchorMin() const;
+        glm::vec2 GetAnchorMax() const;
+
         RTTR_ENABLE();
     };
 }

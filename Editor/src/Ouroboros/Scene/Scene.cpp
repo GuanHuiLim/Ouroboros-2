@@ -59,6 +59,7 @@ namespace oo
         , m_ecsWorld { nullptr }
         , m_scenegraph { nullptr }
         , m_rootGo { nullptr }
+        , m_mainCamera { nullptr }
     {
     }
 
@@ -83,7 +84,7 @@ namespace oo
             //rendering system initialization
             // temporarily initialize number of cameras to 2 [0 is Scene camera] [1 is Editor Camera]
             m_graphicsWorld->numCameras = 2;
-            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
+            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get(), this)->Init();
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
             m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
         }
@@ -106,7 +107,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
 
-        m_ecsWorld->Get_System<oo::RendererSystem>()->UpdateCameras();
+        m_ecsWorld->Get_System<oo::RendererSystem>()->UpdateCameras(m_mainCamera);
         PRINT(m_name);
 
         TRACY_PROFILE_SCOPE_END();
@@ -555,5 +556,15 @@ namespace oo
     GraphicsWorld* Scene::GetGraphicsWorld() const 
     { 
         return m_graphicsWorld.get(); 
+    }
+    
+    Scene::go_ptr Scene::GetMainCameraObject() const
+    {
+        return m_mainCamera;
+    }
+
+    Camera Scene::MainCamera() const
+    {
+        return m_graphicsWorld->cameras[m_mainCamera->GetComponent<CameraComponent>().GraphicsWorldIndex];
     }
 }

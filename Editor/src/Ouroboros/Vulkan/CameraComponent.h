@@ -21,6 +21,8 @@ namespace oo
     class CameraComponent
     {
     public:
+        bool MainCamera = false;
+        int GraphicsWorldIndex = -1;
         RTTR_ENABLE();
     };
 }

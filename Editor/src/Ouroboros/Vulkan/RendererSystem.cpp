@@ -31,6 +31,7 @@ Technology is prohibited.
 
 #include "App/Editor/UI/Object Editor/EditorViewport.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/ECS/GameObjectComponent.h"
 
 namespace oo
 {
@@ -97,8 +98,9 @@ namespace oo
         m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
     }
 
-    oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld)
+    oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld, Scene* scene)
         : m_graphicsWorld { graphicsWorld }
+        , m_scene { scene }
     {
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
     }
@@ -224,17 +226,24 @@ namespace oo
     }
 
     // additional function that runs during runtime scene only.
-    void RendererSystem::UpdateCameras()
+    void RendererSystem::UpdateCameras(Scene::go_ptr& mainCamera)
     {
         // Update Camera(s)
         // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
 
         Camera* camera = m_runtimeCC.GetCamera();
-        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-        m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+        static Ecs::Query camera_query = Ecs::make_query<GameObjectComponent, CameraComponent, TransformComponent>();
+        m_world->for_each(camera_query, [&](GameObjectComponent& goc, CameraComponent& cameraComp, TransformComponent& transformComp)
         {
             /*if (!transformComp.HasChangedThisFrame)
                 return;*/
+            // set this to be the main scene camera!
+            if (cameraComp.MainCamera)
+            {
+                mainCamera = m_scene->FindWithInstanceID(goc.Id);
+                // TODO : for the time being this will always be hard coded to be 0.
+                cameraComp.GraphicsWorldIndex = 0;
+            }
 
             camera->SetPosition(transformComp.GetGlobalPosition());
             camera->SetRotation(transformComp.GetGlobalRotationQuat());

@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/CameraController.h"
 
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
+#include "Ouroboros/Scene/Scene.h"
 
 //fwd declaration
 struct EditorViewportResizeEvent;
@@ -35,18 +36,15 @@ namespace oo
 {
     class RendererSystem : public Ecs::System
     {
-    private:
-        GraphicsWorld* m_graphicsWorld{nullptr};
-        //Ecs::ECSWorld* m_world{nullptr};
     public:
-        RendererSystem(GraphicsWorld* graphicsWorld);
+        RendererSystem(GraphicsWorld* graphicsWorld, Scene* scene);
         virtual ~RendererSystem();
 
         void Init();
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
-        void UpdateCameras();
+        void UpdateCameras(Scene::go_ptr& mainCamera);
         void SaveEditorCamera();
 
         inline static bool CameraDebugDraw = true;
@@ -64,8 +62,11 @@ namespace oo
         void RenderDebugDraws(Ecs::ECSWorld* world);
         void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
-        
+
     private:
+        GraphicsWorld* m_graphicsWorld{ nullptr };
+        Scene* m_scene;
+
         CameraController m_runtimeCC;
         Camera m_runtimeCamera;
         

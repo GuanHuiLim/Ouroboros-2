@@ -17,28 +17,23 @@ Technology is prohibited.
 #include "UISystem.h"
 
 #include "Ouroboros/ECS/GameObject.h"
-//#include "Ouroboros/Transform/Transform3D.h"
-//#include "Ouroboros/ECS/ECS_Manager.h"
-//
-//#include "Ouroboros/Renderer/Text.h"
-//#include "Ouroboros/Renderer/UIRenderingSystem.h"
-//#include "Ouroboros/Renderer/Renderer.h"
-//
-//#include "Ouroboros/Core/Input.h"
-//#include "Ouroboros/Renderer/SceneCamera.h"
-//#include "Ouroboros/Core/Application.h"
-//
-//#include "Ouroboros/Geometry/Shapes.h"
-//#include "Ouroboros/Geometry/Intersection2D.h"
 
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/ECS/ECS.h"
 #include "RectTransformComponent.h"
-#include "UIButtonComponent.h"
+#include "UIRaycastComponent.h"
 #include "UIImageComponent.h"
 #include "UICanvasComponent.h"
+#include "GraphicsRaycasterComponent.h"
+
+#include <OO_Vulkan/src/DebugDraw.h>
+#include "Ouroboros/Core/Input.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/Vulkan/CameraComponent.h"
+
+#include "Ouroboros/Geometry/Algorithms.h"
 
 namespace oo
 {
@@ -55,6 +50,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(UI_Editor, tracy::Color::Cyan);
         UpdateRectTransformAll();
+        DebugDrawUI();
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -64,8 +60,10 @@ namespace oo
         UpdateRectTransformAll();
         if (Application::Get().GetWindow().IsFocused())
         {
-            //UpdateButtonCallbackAll();
+            UpdateButtonCallbackAll();
             UpdateRectTransformAll();
+            
+            DebugDrawUI();
         }
         TRACY_PROFILE_SCOPE_END();
     }
@@ -84,24 +82,73 @@ namespace oo
 
     void UISystem::UpdateRectTransformAll()
     {
-        // Remember order of update matters!
-        // Update canvas here.
-        static Ecs::Query canvas_query = Ecs::make_query<UICanvasComponent, RectTransformComponent>();
-        m_world->for_each(canvas_query, [&](UICanvasComponent& canvas, RectTransformComponent& rectTransform)
+        // Remember order of update matters! (both order between calls and order internally!)
+
+        // Update canvas here. order does matter here. Assumes all rect transform has been updated already.
+        static Ecs::Query canvas_query = Ecs::make_query<GameObjectComponent, TransformComponent, UICanvasComponent, RectTransformComponent>();
+        m_world->for_each(canvas_query, [&](GameObjectComponent& goc, TransformComponent& tf, UICanvasComponent& canvas, RectTransformComponent& rectTransform)
             {
                 if (canvas.ScaleWithScreenSize)
                 {
                     auto windowSize = Application::Get().GetWindow().GetSize();
                     rectTransform.Size = { windowSize.first, windowSize.second };
                 }
+
+                // retrieve canvas gameobject
+                auto go = m_scene->FindWithInstanceID(goc.Id);
+                bool CanvasIsWorldSpace = canvas.RenderingMode == UICanvasComponent::RenderMode::WorldSpace;
+                for (auto& child : go->GetChildren(true))
+                {
+                    // skip all children that does not have rect transform
+                    if (child.HasComponent<RectTransformComponent>() == false)
+                        continue;
+                    
+                    RectTransformComponent& childRect = child.GetComponent<RectTransformComponent>();
+                    childRect.IsWorldSpace = CanvasIsWorldSpace;
+                    
+                    auto parent = child.GetParent();
+                    if (parent.HasComponent<RectTransformComponent>())
+                    {
+                        glm::vec2 parentSize = parent.GetComponent<RectTransformComponent>().Size;
+
+                        if (glm::length2(parentSize) > 0.f)
+                        {
+                            glm::vec2 anchorMin = childRect.AnchorMin;
+                            glm::vec2 anchorMax = childRect.AnchorMax;
+                            glm::vec2 anchorDiff = anchorMax - anchorMin;
+                            glm::vec2 anchor = anchorMin + (0.5f * anchorDiff) - glm::vec2{ 0.5f, 0.5f };
+                            // set size based on anchors
+                            if (fabsf(anchorDiff.x) > 0)
+                            {
+                                childRect.Size.x = anchorDiff.x * parentSize.x;
+                            }
+                            if (fabsf(anchorDiff.y) > 0)
+                            {
+                                childRect.Size.y = anchorDiff.y * parentSize.y;
+                            }
+                            // cache and set parent Offset used later in individual update
+                            childRect.ParentOffset = glm::vec3{ anchor.x * parentSize.x, anchor.y * parentSize.y, 0 };
+                        }
+                    }
+                }
+
             });
 
-        // Update Rect Transform here, order matters : might want to use scenegraph instead.
-        /*static Ecs::Query rect_transform_query = Ecs::make_query<RectTransformComponent>();
-        m_world->for_each(rect_transform_query, [&](RectTransformComponent& rectTransform)
+        // Update Individual Rect Transform here order of update between each other does not matter here.
+        static Ecs::Query rect_transform_query = Ecs::make_query<TransformComponent, RectTransformComponent>();
+        m_world->for_each(rect_transform_query, [&](TransformComponent& tf, RectTransformComponent& rectTransform)
             {
-                UpdateRectTransform(rectTransform);
-            });*/
+                if (rectTransform.IsDirty)
+                {
+                    UpdateIndividualRectTransform(&tf, &rectTransform);
+                    // mark rectTransform as no longer dirty
+                    rectTransform.IsDirty = false;
+                }
+
+                rectTransform.BoundingVolume.Center       = tf.GetGlobalPosition();
+                rectTransform.BoundingVolume.Orientation  = tf.GetGlobalRotationQuat();
+                rectTransform.BoundingVolume.HalfExtents  = tf.GetGlobalScale()  * (glm::vec3{ rectTransform.Size, 0 } * 0.5f);
+            });
 
         /*auto canvasView = m_ECS_Manager.GetComponentView<UICanvas>();
         for (auto [canvas] : canvasView)
@@ -139,226 +186,253 @@ namespace oo
         }*/
     }
 
-    //bool UISystem::UpdateRectTransform(RectTransform& rect)
-    //{
-    //    GameObject obj{ rect.GetEntity() };
-    //    //LOG_TRACE("RectTransform Update: {0}", obj.Name());
+    void UISystem::UpdateIndividualRectTransform(TransformComponent* tf, RectTransformComponent* rect)
+    {
+        // assumes parent Offset is properly set prior.
+        glm::vec3 pos = rect->AnchoredPosition + rect->ParentOffset;
 
-    //    Transform3D& trans = obj.GetComponent<Transform3D>();
-    //    // not dirty, no need to update
-    //    //if (!rect.m_dirty)
-    //    //    return false;
+        // update transform local data
+        tf->SetPosition(pos);
+        tf->SetRotation(rect->EulerAngles);
+        tf->SetScale(rect->Scale);
+    }
 
-    //    oom::vec3 pos = rect.m_anchoredPosition;
+    void UISystem::DebugDrawUI()
+    {
+        static Ecs::Query rect_transform_query = Ecs::make_query<TransformComponent, RectTransformComponent>();
+        m_world->for_each(rect_transform_query, [&](TransformComponent& tf, RectTransformComponent& rectTransform)
+            {
+                if (rectTransform.IsWorldSpace == false)
+                    return;
+                
+                // Only draw World Space UI Debug Draws for now..
 
-    //    // get parent rectTransform size
-    //    GameObject parent{ trans.GetParentId() };
-    //    oom::vec2 parentSize{ 0, 0 };
-    //    RectTransform* parentRect = parent.TryGetComponent<RectTransform>();
-    //    if (parentRect != nullptr)
-    //    {
-    //        parentSize = parentRect->GetSize();
-    //    }
+                glm::vec3 Center = rectTransform.BoundingVolume.Center; //tf.GetGlobalPosition();
+                //glm::vec3 GlobalScale = tf.GetGlobalScale();
+                glm::quat GlobalQuat = rectTransform.BoundingVolume.Orientation; // tf.GetGlobalRotationQuat().value;
+                glm::vec3 HalfExtents = rectTransform.BoundingVolume.HalfExtents; //GlobalScale * (glm::vec3{rectTransform.Size, 0} * 0.5f);
+                
+                glm::vec3 HalfExtentX = glm::rotate(GlobalQuat, glm::vec3{HalfExtents.x, 0, 0});
+                glm::vec3 HalfExtentY = glm::rotate(GlobalQuat, glm::vec3{0, HalfExtents.y, 0});
 
-    //    if (parentSize.Length2() > 0)
-    //    {
-    //        oom::vec2 anchorMin = rect.m_anchorMin;
-    //        oom::vec2 anchorMax = rect.m_anchorMax;
-    //        oom::vec2 anchorDiff = anchorMax - anchorMin;
-    //        oom::vec2 anchor = anchorMin + (0.5f * anchorDiff) - oom::vec2{ 0.5f, 0.5f };
-    //        // set size based on anchors
-    //        if (fabsf(anchorDiff.x) > 0)
-    //        {
-    //            rect.m_size.x = anchorDiff.x * parentSize.x;
-    //        }
-    //        if (fabsf(anchorDiff.y) > 0)
-    //        {
-    //            rect.m_size.y = anchorDiff.y * parentSize.y;
-    //        }
-    //        // set position based on anchors
-    //        pos += oom::vec3{ anchor.x * parentSize.x, anchor.y * parentSize.y, 0 };
-    //    }
+                glm::vec3 bottom_left = Center - HalfExtentX - HalfExtentY;
+                glm::vec3 top_right = Center + HalfExtentX + HalfExtentY;
+                glm::vec3 top_left = Center - HalfExtentX + HalfExtentY;
+                glm::vec3 bottom_right = Center + HalfExtentX -HalfExtentY;
+                
+                DebugDraw::AddLine(top_left, bottom_left);
+                DebugDraw::AddLine(bottom_left, bottom_right);
+                DebugDraw::AddLine(bottom_right, top_right);
+                DebugDraw::AddLine(top_right, top_left);
+            });
+    }
 
-    //    // update position based on pivot
-    //    oom::vec2 size{ rect.m_size.x * rect.m_scale.x, rect.m_size.y * rect.m_scale.y };
-    //    oom::vec2 pivot = rect.m_pivot - oom::vec2{ 0.5f, 0.5f };
-    //    oom::vec3 posOffset = oom::vec3{ size.x * pivot.x, size.y * pivot.y, 0 };
-    //    float sin = oom::sin(oom::radians(rect.m_angle));
-    //    float cos = oom::cos(oom::radians(rect.m_angle));
-    //    oom::vec3 rotatedOffset{ (posOffset.x * cos) - (posOffset.y * sin), (posOffset.x * sin) + (posOffset.y * cos), 0 };
-    //    pos -= rotatedOffset;
+    void UISystem::UpdateButtonCallbackAll()
+    {
+        if (m_scene->IsValid(m_previouslySelectedObject) && m_previouslySelectedObject.ActiveInHierarchy())
+        {
+            UpdateButtonCallback(m_previouslySelectedObject.GetInstanceID(), &m_previouslySelectedObject.GetComponent<UIRaycastComponent>(), false);
+            m_previouslySelectedObject = GameObject{}; //invalid gameobject
+        }
+        
+        auto camera = m_scene->GetMainCameraObject();
+        if (camera == nullptr)
+            return;
 
-    //    // update transform component
-    //    trans.SetPosition(pos);
-    //    //trans.SetRotationAngle(rect.GetRotationAngle());
-    //    trans.SetScale(rect.GetLocalScale());
+        Ray mouseWorldPos = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), oo::input::GetMouseX(), oo::input::GetMouseY());
+        //Point2D mouseWorldPoint{ mousePos };
 
-    //    // mark rectTransform as no longer dirty
-    //    rect.m_dirty = false;
-    //    return true;
-    //}
+        /*SceneCamera* cam = SceneCamera::MainCamera();
+        if (cam == nullptr)
+            return;
+        oom::vec2 mousePos = cam->MouseToGameScreen(Input::GetMouseX(), Input::GetMouseY());
+        mousePos.x -= Application::Get().GetWindow().GetWidth() / 2.0f;
+        mousePos.y -= Application::Get().GetWindow().GetHeight() / 2.0f;
+        Point2D mouseScreenPoint{ mousePos };
 
-    //void UISystem::UpdateButtonCallbackAll()
-    //{
-    //    if (GameObject::IsValid(selectedButton) && (!selectedButton.ActiveInHierarchy() || !selectedButton.GetComponent<UIButton>().IsInteractable()))
-    //    {
-    //        UIButton& button = selectedButton.GetComponent<UIButton>();
-    //        if (button.IsInteractable())
-    //            UpdateButtonCallback(button, false);
-    //        selectedButton = GameObject::NOTFOUND;
-    //    }
+        mousePos = cam->ScreenToWorld(Input::GetMouseX(), Input::GetMouseY());
+        Point2D mouseWorldPoint{ mousePos };*/
 
-    //    SceneCamera* cam = SceneCamera::MainCamera();
-    //    if (cam == nullptr)
-    //        return;
-    //    oom::vec2 mousePos = cam->MouseToGameScreen(Input::GetMouseX(), Input::GetMouseY());
-    //    mousePos.x -= Application::Get().GetWindow().GetWidth() / 2.0f;
-    //    mousePos.y -= Application::Get().GetWindow().GetHeight() / 2.0f;
-    //    Point2D mouseScreenPoint{ mousePos };
+        static Ecs::Query canvas_with_raycaster_query = Ecs::make_query<GameObjectComponent, TransformComponent, UICanvasComponent, GraphicsRaycasterComponent>();
+        m_world->for_each(canvas_with_raycaster_query, [&](GameObjectComponent& goc, TransformComponent& tf, UICanvasComponent& canvas, GraphicsRaycasterComponent& raycaster)
+            {
+                // retrieve canvas gameobject
+                auto go = m_scene->FindWithInstanceID(goc.Id);
 
-    //    mousePos = cam->ScreenToWorld(Input::GetMouseX(), Input::GetMouseY());
-    //    Point2D mouseWorldPoint{ mousePos };
+                // Iterate through and update all buttons
+                for (auto& child : go->GetChildren(true))
+                {
+                    if (child.ActiveInHierarchy() == false)
+                        continue;
 
-    //    std::vector<std::vector<UICanvas*>> canvasList(OO_MAX_2D_RENDERABLE_LAYERS + 2);
-    //    auto& transformDense = m_ECS_Manager.GetComponentDenseArray<Transform3D>();
-    //    for (auto iter = transformDense.rbegin(); iter != transformDense.rend(); ++iter)
-    //    {
-    //        GameObject iterObj{ iter->GetEntity() };
-    //        UICanvas* mainCanvas = iter->TryGetComponent<UICanvas>();
-    //        if (!iterObj.ActiveInHierarchy() || mainCanvas == nullptr)
-    //            continue;
-    //        switch (mainCanvas->GetRenderMode())
-    //        {
-    //        case UICanvas::RenderMode::Overlay:
-    //            canvasList[0].push_back(mainCanvas);
-    //            break;
-    //        case UICanvas::RenderMode::WorldSpace:
-    //            canvasList[mainCanvas->GetLayer() + 1UL].push_back(mainCanvas);
-    //            break;
-    //        }
-    //    }
+                    // skip all children that does not have rect transform nor raycast component
+                    if (child.HasComponent<RectTransformComponent>() == false && child.HasComponent<UIRaycastComponent>() == false)
+                        continue;
 
-    //    for (std::vector<UICanvas*>& list : canvasList)
-    //    {
-    //        for (UICanvas* canvas : list)
-    //        {
-    //            GameObject canvasObject{ canvas->GetEntity() };
-    //            std::vector<Entity> childList = canvasObject.GetChildren(true);
-    //            for (auto iter = childList.rbegin(); iter != childList.rend(); ++iter)
-    //            {
-    //                GameObject child = *iter;
-    //                if (!child.ActiveInHierarchy())
-    //                    continue;
+                    bool mouseOutside = true;
 
-    //                bool hasImage = child.HasComponent<UIImage>() && child.GetComponent<UIImage>().IsActive();
-    //                bool hasText = child.HasComponent<Text>() && child.GetComponent<Text>().IsActive();
-    //                if (!hasImage && !hasText)
-    //                    continue;
-    //                if (hasImage && !child.GetComponent<UIImage>().GetRaycastTarget())
-    //                    continue;
-    //                if (hasText && !child.GetComponent<Text>().GetRaycastTarget())
-    //                    continue;
+                    switch (canvas.RenderingMode)
+                    {
+                    case UICanvasComponent::RenderMode::Overlay:
+                        //mouseOutside = !Intersection2D::PointAABB(mouseScreenPoint, child.GetComponent<RectTransformComponent>().BoundingVolume);
+                        break;
+                    case UICanvasComponent::RenderMode::WorldSpace:
+                        //Shoot a ray
+                        auto obb = child.GetComponent<RectTransformComponent>().BoundingVolume;
+                        mouseOutside = !intersection::RayOBB(mouseWorldPos, obb);
+                        //mouseOutside = !Intersection2D::PointAABB(mouseWorldPoint, child.GetComponent<RectTransformComponent>().BoundingVolume);
+                        break;
+                    }
 
-    //                bool mouseOutside = true;
-    //                switch (canvas->GetRenderMode())
-    //                {
-    //                case UICanvas::RenderMode::Overlay:
-    //                    mouseOutside = !Intersection2D::PointAABB(mouseScreenPoint, child.GetComponent<RectTransform>().GetAABB2D());
-    //                    break;
-    //                case UICanvas::RenderMode::WorldSpace:
-    //                    mouseOutside = !Intersection2D::PointAABB(mouseWorldPoint, child.GetComponent<RectTransform>().GetAABB2D());
-    //                    break;
-    //                }
-    //                if (mouseOutside)
-    //                    continue;
+                    if (mouseOutside)
+                        continue;
 
-    //                GameObject selected = child.GetEntity();
-    //                while (!selected.HasComponent<UICanvas>() && !selected.HasComponent<UIButton>())
-    //                {
-    //                    selected = selected.GetParent();
-    //                }
+                    // we find the highest object that's currently selected (because what we're clicking on now does not OWN a raycast component!
+                    // [it'll either be a parent raycastComponent or be the canvas which means not found and terminate.]
+                    GameObject currentlySelected = child;
+                    while (currentlySelected.HasComponent<UICanvasComponent>() == false && currentlySelected.HasComponent<UIRaycastComponent>() == false)
+                    {
+                        currentlySelected = currentlySelected.GetParent();
+                    }
 
-    //                if (selected == selectedButton)
-    //                {
-    //                    UpdateButtonCallback(selectedButton.GetComponent<UIButton>(), true);
-    //                    return;
-    //                }
+                    // on stay event [ selected = current, selectedButton = previous ]
+                    if (currentlySelected == m_previouslySelectedObject)
+                    {
+                        UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
+                        return;
+                    }
 
-    //                if (GameObject::IsValid(selectedButton))
-    //                {
-    //                    UpdateButtonCallback(selectedButton.GetComponent<UIButton>(), false);
-    //                    selectedButton = GameObject::NOTFOUND;
-    //                }
-    //                UIButton* selectedButtonPointer = selected.TryGetComponent<UIButton>();
-    //                if (selectedButtonPointer != nullptr && selectedButtonPointer->IsInteractable())
-    //                {
-    //                    UpdateButtonCallback(*selectedButtonPointer, true);
-    //                    selectedButton = selected.GetEntity();
-    //                }
-    //                return;
-    //            }
-    //        }
-    //    }
+                    // the newly selected item is not what i previously selected, if i have previously selected something i deselct it first.
+                    // On exit.
+                    if (m_scene->IsValid(m_previouslySelectedObject))
+                    {
+                        UpdateButtonCallback(currentlySelected.GetInstanceID(), &m_previouslySelectedObject.GetComponent<UIRaycastComponent>(), false);
+                        m_previouslySelectedObject = GameObject{}; //invalid gameobject
+                    }
 
-    //    if (GameObject::IsValid(selectedButton))
-    //    {
-    //        UpdateButtonCallback(selectedButton.GetComponent<UIButton>(), false);
-    //        selectedButton = GameObject::NOTFOUND;
-    //    }
-    //}
+                    // On Enter
+                    //UIRaycastComponent* selectedButtonPointer = currentlySelected.TryGetComponent<UIRaycastComponent>();
+                    //if (selectedButtonPointer != nullptr /*&& selectedButtonPointer->IsInteractable()*/)
+                    //{
+                    //    UpdateButtonCallback(selectedButtonPointer, true);
+                    //    m_previouslySelectedObject = &currentlySelected;
+                    //}
+                    
+                    UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
+                    m_previouslySelectedObject = currentlySelected;
 
-    //bool UISystem::UpdateButtonCallback(UIButton& button, bool isInside, bool isUnderElement)
-    //{
-    //    // mouse was previously not in button, and also currently not in button
-    //    if (!button.hasEntered && !isInside)
-    //        return false;
+                    return;
+                }
 
-    //    // mouse was previously not in button, but is now in button
-    //    if (!button.hasEntered && isInside)
-    //    {
-    //        button.hasEntered = true;
-    //        button.InvokeButtonEvent("OnPointerEnter");
-    //        if (!button.IsInteractable()) // for if OnPointerEnter sets interactable false
-    //            return false;
-    //        return true;
-    //    }
-    //    // mouse was previously in button, but is not in button anymore
-    //    if (button.hasEntered && !isInside)
-    //    {
-    //        if (button.isPressed)
-    //        {
-    //            button.isPressed = false;
-    //            button.InvokeButtonEvent("OnRelease");
-    //            if (!button.IsInteractable()) // for if OnRelease sets interactable false
-    //                return false;
-    //        }
-    //        button.hasEntered = false;
-    //        button.InvokeButtonEvent("OnPointerExit");
-    //        return false;
-    //    }
+            });
 
-    //    // mouse was previously in button, and is still in button
+    }
 
-    //    if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft))
-    //    {
-    //        button.isPressed = true;
-    //        button.InvokeButtonEvent("OnPress");
-    //        if (!button.IsInteractable()) // for if OnRelease sets interactable false
-    //            return false;
-    //    }
-    //    if (button.isPressed && Input::IsMouseButtonReleased(MouseCode::ButtonLeft))
-    //    {
-    //        button.InvokeButtonEvent("OnClick");
-    //        // isInteractable check since OnClick could disable the button,
-    //        //if so OnRelease already invoked, shouldn't be invoked again after OnInteractDisabled
-    //        if (!button.IsInteractable())
-    //            return false;
+    bool UISystem::UpdateButtonCallback(UUID buttonId, UIRaycastComponent* raycastComp, bool isInside)
+    {
+        // mouse was previously not in raycast volume, and also currently not in raycast volume
+        if (!raycastComp->HasEntered && !isInside)
+            return false;
 
-    //        button.isPressed = false;
-    //        button.InvokeButtonEvent("OnRelease");
-    //        if (!button.IsInteractable()) // for if OnRelease sets interactable false
-    //            return false;
-    //    }
-    //    return true;
-    //}
+        // we are sure to launch an UIButton event now
+        UIButtonEvent e;
+        e.buttonID = buttonId;
+
+        // mouse was previously not in raycast volume, but is now in raycast volume
+        if (!raycastComp->HasEntered && isInside)
+        {
+            raycastComp->HasEntered = true;
+            e.Type = UIButtonEventType::ON_POINTER_ENTER;
+            EventManager::Broadcast<UIButtonEvent>(&e);
+            //raycastComp->InvokeButtonEvent("OnPointerEnter");
+            //if (!raycastComp->IsInteractable()) // for if OnPointerEnter sets interactable false
+            //    return false;
+            return true;
+        }
+        // mouse was previously in raycast volume, but is not in raycast volume anymore
+        if (raycastComp->HasEntered && !isInside)
+        {
+            if (raycastComp->IsPressed)
+            {
+                raycastComp->IsPressed = false;
+                e.Type = UIButtonEventType::ON_RELEASE;
+                EventManager::Broadcast<UIButtonEvent>(&e);
+                //raycastComp->InvokeButtonEvent("OnRelease");
+                //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
+                //    return false;
+            }
+            raycastComp->HasEntered = false;
+            e.Type = UIButtonEventType::ON_POINTER_EXIT;
+            EventManager::Broadcast<UIButtonEvent>(&e);
+            //raycastComp->InvokeButtonEvent("OnPointerExit");
+            return false;
+        }
+
+        // mouse was previously in raycast volume, and is still in raycast volume
+
+        if (oo::input::IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        {
+            raycastComp->IsPressed = true;
+            e.Type = UIButtonEventType::ON_PRESS;
+            EventManager::Broadcast<UIButtonEvent>(&e);
+            //raycastComp->InvokeButtonEvent("OnPress");
+            //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
+            //    return false;
+        }
+        if (raycastComp->IsPressed && oo::input::IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+        {
+            e.Type = UIButtonEventType::ON_CLICK;
+            EventManager::Broadcast<UIButtonEvent>(&e);
+            //raycastComp->InvokeButtonEvent("OnClick");
+            // isInteractable check since OnClick could disable the button,
+            //if so OnRelease already invoked, shouldn't be invoked again after OnInteractDisabled
+            /*if (!raycastComp->IsInteractable())
+                return false;*/
+
+            raycastComp->IsPressed = false;
+            e.Type = UIButtonEventType::ON_RELEASE;
+            EventManager::Broadcast<UIButtonEvent>(&e);
+            //raycastComp->InvokeButtonEvent("OnRelease");
+            //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
+            //    return false;
+        }
+
+        return true;
+    }
+
+    Ray UISystem::ScreenToWorld(Camera camera, TransformComponent* cameraTf, int32_t mouse_x, int32_t mouse_y)
+    {
+        auto [winx, winy] = Application::Get().GetWindow().GetSize();
+        int32_t viewport_x = static_cast<int32_t>(winx);
+        int32_t viewport_y = static_cast<int32_t>(winy);
+
+        // TODO : additional call to get viewport of window instead!
+        //editorGameViewCallback(viewport_x, viewport_y, mouse_x, mouse_y);
+
+        glm::vec3 worldpos{ static_cast<float>(mouse_x),static_cast<float>(mouse_y), 0 };
+        // convert to -1 to 1
+        worldpos.x = (worldpos.x / viewport_x) * 2.0f - 1.0f;
+        worldpos.y = -(worldpos.y / viewport_y) * 2.0f + 1.0f;
+
+        auto& transform = cameraTf;
+        // camera's Project Matrix
+        const auto& proj = camera.matrices.perspective;
+        //camera's transform in World Space
+        const auto& worldSpaceMatrix = transform->GetGlobalMatrix(); //transform->GetGlobalPosition();
+        
+        glm::vec3 point = worldSpaceMatrix * glm::inverse(proj) * glm::vec4{ worldpos, 1 };
+        // direction is calculated from camera global position to the newly found point
+        auto dir = point - cameraTf->GetGlobalPosition();
+        // we use the camera's Z as the starting point.
+        return { {point.x, point.y, cameraTf->GetGlobalPosition().z}, dir };
+
+        ////TODO: store the inverse of the camera
+        //float xProj = 1.0f / proj[0][0];
+        //float yProj = 1.0f / proj[1][1];
+        ////oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
+        //worldpos.x = pos.x + worldpos.x * xProj;
+        //worldpos.y = pos.y + worldpos.y * yProj;
+
+        //return worldpos;
+    }
 }

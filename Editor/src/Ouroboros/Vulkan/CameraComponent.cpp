@@ -21,8 +21,11 @@ namespace oo
 {
     RTTR_REGISTRATION
     {
-        using namespace rttr;
-        registration::class_<oo::CameraComponent>("Camera");
+            using namespace rttr;
+        registration::class_<oo::CameraComponent>("Camera")
+            .property("Main Camera", &CameraComponent::MainCamera)
+            .property_readonly("Graphics World Camera Index", &CameraComponent::GraphicsWorldIndex)
+            ;
         //.property("Color", &LightComponent::Color)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         //.property("Radius", &LightComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         //.property_readonly("Lighting ID", &LightComponent::Light_ID);

@@ -59,9 +59,10 @@ Technology is prohibited.
 #include <Ouroboros/Animation/AnimationComponent.h>
 
 #include <Ouroboros/UI/RectTransformComponent.h>
-#include <Ouroboros/UI/UIButtonComponent.h>
+#include <Ouroboros/UI/UIRaycastComponent.h>
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
+#include <Ouroboros/UI/GraphicsRaycasterComponent.h>
 
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
@@ -139,14 +140,14 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	ImGui::PushItemWidth(200.0f);
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	// display either rect transform or base transform
-	if (gameobject.HasComponent<oo::RectTransformComponent>())
-	{
+	//if (gameobject.HasComponent<oo::RectTransformComponent>())
+	//{
 		DisplayComponent<oo::RectTransformComponent>(gameobject);
-	}
-	else
-	{
+	//}
+	//else
+	//{
 		DisplayComponent<oo::TransformComponent>(gameobject);
-	}
+	//}
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
@@ -166,9 +167,10 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	DisplayComponent<oo::AnimationComponent>(gameobject);
 
-	DisplayComponent<oo::UIButtonComponent>(gameobject);
+	DisplayComponent<oo::UIRaycastComponent>(gameobject);
 	DisplayComponent<oo::UICanvasComponent>(gameobject);
 	DisplayComponent<oo::UIImageComponent>(gameobject);
+	DisplayComponent<oo::GraphicsRaycasterComponent>(gameobject);
 
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
@@ -215,8 +217,9 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
 
 			selected |= AddComponentSelectable<oo::RectTransformComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::UIButtonComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIRaycastComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::GraphicsRaycasterComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UIImageComponent>(gameobject);
 
 			selected |= AddScriptsSelectable(gameobject);
