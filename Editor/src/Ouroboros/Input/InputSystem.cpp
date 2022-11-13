@@ -29,7 +29,15 @@ namespace oo
         }
     }
     
-    float InputSystem::GetAxis(std::string const& axisName)
+    InputAxis& InputSystem::GetAxis(std::string const& axisName)
+    {
+        auto search = trackers.find(axisName);
+        if (search == trackers.end())
+            throw std::exception{ (std::string{ "Input Axis not found: " } + axisName).c_str() };
+        return search->second.GetAxis();
+    }
+
+    float InputSystem::GetAxisValue(std::string const& axisName)
     {
         auto search = trackers.find(axisName);
         if (search == trackers.end())

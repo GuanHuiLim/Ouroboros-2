@@ -156,7 +156,6 @@ namespace oo
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
             TRACY_PROFILE_SCOPE_END();
         }
-        GetWorld().Get_System<RendererSystem>()->UpdateCamerasRuntime();
         TRACY_PROFILE_SCOPE_END();
     }
 

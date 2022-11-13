@@ -1,27 +1,27 @@
 ﻿namespace Ouroboros
 {
-    public struct Colour
+    public struct Color
     {
         public float r;
         public float g;
         public float b;
         public float a;
 
-        public Colour(float r, float g, float b)
+        public Color(float r, float g, float b)
         {
             this.r = r;
             this.g = g;
             this.b = b;
             this.a = 1.0f;
         }
-        public Colour(float r, float g, float b, float a)
+        public Color(float r, float g, float b, float a)
         {
             this.r = r;
             this.g = g;
             this.b = b;
             this.a = a;
         }
-        public Colour (int r, int g, int b, int a)
+        public Color (int r, int g, int b, int a)
         {
             this.r = (float)r / 255.0f;
             this.g = (float)g / 255.0f;
@@ -53,23 +53,23 @@
                 }
             }
         }
-        public static Colour yellow { get { return new Colour(1.0f, 0.92f, 0.016f); } }
-        public static Colour clear { get { return new Colour(0.0f, 0.0f, 0.0f, 0.0f); } }
-        public static Colour grey { get { return new Colour(0.5f, 0.5f, 0.5f); } }
-        public static Colour gray { get { return new Colour(0.5f, 0.5f, 0.5f); } }
-        public static Colour magenta { get { return new Colour(1.0f, 0.0f, 1.0f); } }
-        public static Colour cyan { get { return new Colour(0.0f, 1.0f, 1.0f); } }
-        public static Colour red { get { return new Colour(1.0f, 0.0f, 0.0f); } }
-        public static Colour black { get { return new Colour(0.0f, 0.0f, 0.0f); } }
-        public static Colour white { get { return new Colour(1.0f, 1.0f, 1.0f); } }
-        public static Colour blue { get { return new Colour(0.0f, 0.0f, 1.0f); } }
-        public static Colour green { get { return new Colour(0.0f, 1.0f, 0.0f); } }
+        public static Color yellow { get { return new Color(1.0f, 0.92f, 0.016f); } }
+        public static Color clear { get { return new Color(0.0f, 0.0f, 0.0f, 0.0f); } }
+        public static Color grey { get { return new Color(0.5f, 0.5f, 0.5f); } }
+        public static Color gray { get { return new Color(0.5f, 0.5f, 0.5f); } }
+        public static Color magenta { get { return new Color(1.0f, 0.0f, 1.0f); } }
+        public static Color cyan { get { return new Color(0.0f, 1.0f, 1.0f); } }
+        public static Color red { get { return new Color(1.0f, 0.0f, 0.0f); } }
+        public static Color black { get { return new Color(0.0f, 0.0f, 0.0f); } }
+        public static Color white { get { return new Color(1.0f, 1.0f, 1.0f); } }
+        public static Color blue { get { return new Color(0.0f, 0.0f, 1.0f); } }
+        public static Color green { get { return new Color(0.0f, 1.0f, 0.0f); } }
 
-        // public static Colour HSVToRGB(float H, float S, float V);
-        // public static void RGBToHSV(Colour rgbColour, out float H, out float S, out float V);
-        public static Colour Lerp(Colour a, Colour b, float t)
+        // public static Color HSVToRGB(float H, float S, float V);
+        // public static void RGBToHSV(Color rgbColor, out float H, out float S, out float V);
+        public static Color Lerp(Color a, Color b, float t)
         {
-            return new Colour
+            return new Color
             (
                 Mathf.Lerp(a.r, b.r, t),
                 Mathf.Lerp(a.g, b.g, t),
@@ -77,9 +77,9 @@
                 Mathf.Lerp(a.a, b.a, t)
             );
         }
-        public static Colour LerpUnclamped(Colour a, Colour b, float t)
+        public static Color LerpUnclamped(Color a, Color b, float t)
         {
-            return new Colour
+            return new Color
             (
                 Mathf.LerpUnclamped(a.r, b.r, t),
                 Mathf.LerpUnclamped(a.g, b.g, t),
@@ -88,7 +88,7 @@
             );
         }
 
-        public bool Equals(Colour other)
+        public bool Equals(Color other)
         {
             return Mathf.Approximately(r, other.r) && Mathf.Approximately(g, other.g) 
                 && Mathf.Approximately(b, other.b) && Mathf.Approximately(a, other.a);
@@ -106,41 +106,41 @@
             return "RGBA(" + r + ", " + g + ", " + b + ", " + a + ")";
         }
 
-        public static Colour operator +(Colour a, Colour b)
+        public static Color operator +(Color a, Color b)
         {
-            return new Colour(a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a);
+            return new Color(a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a);
         }
-        public static Colour operator -(Colour a, Colour b)
+        public static Color operator -(Color a, Color b)
         {
-            return new Colour(a.r - b.r, a.g - b.g, a.b - b.b, a.a - b.a);
+            return new Color(a.r - b.r, a.g - b.g, a.b - b.b, a.a - b.a);
         }
-        public static Colour operator *(float b, Colour a)
+        public static Color operator *(float b, Color a)
         {
-            return new Colour(a.r * b, a.g * b, a.b * b, a.a * b);
+            return new Color(a.r * b, a.g * b, a.b * b, a.a * b);
         }
-        public static Colour operator *(Colour a, float b)
+        public static Color operator *(Color a, float b)
         {
-            return new Colour(a.r * b, a.g * b, a.b * b, a.a * b);
+            return new Color(a.r * b, a.g * b, a.b * b, a.a * b);
         }
-        public static Colour operator *(Colour a, Colour b)
+        public static Color operator *(Color a, Color b)
         {
-            return new Colour(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
+            return new Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
         }
-        public static Colour operator /(Colour a, float b)
+        public static Color operator /(Color a, float b)
         {
-            return new Colour(a.r / b, a.g / b, a.b / b, a.a / b);
+            return new Color(a.r / b, a.g / b, a.b / b, a.a / b);
         }
-        public static bool operator ==(Colour lhs, Colour rhs)
+        public static bool operator ==(Color lhs, Color rhs)
         {
             return Mathf.Approximately(lhs.r, rhs.r) && Mathf.Approximately(lhs.g, rhs.g)
                 && Mathf.Approximately(lhs.b, rhs.b) && Mathf.Approximately(lhs.a, rhs.a);
         }
-        public static bool operator !=(Colour lhs, Colour rhs)
+        public static bool operator !=(Color lhs, Color rhs)
         {
             return !(lhs == rhs);
         }
 
-        //public static implicit operator Colour(Vector4 v);
-        //public static implicit operator Vector4(Colour c);
+        //public static implicit operator Color(Vector4 v);
+        //public static implicit operator Vector4(Color c);
     }
 }

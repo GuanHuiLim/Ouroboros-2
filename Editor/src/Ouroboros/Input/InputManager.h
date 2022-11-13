@@ -55,8 +55,13 @@ namespace oo
         static inline void InitializeTrackers(std::unordered_map<std::string, InputAxis::Tracker>& trackers)
         {
             trackers.clear();
-            for (InputAxis const& axis : axes)
+            for (InputAxis& axis : axes)
             {
+                if (trackers.find(axis.GetName()) != trackers.end())
+                {
+                    LOG_WARN("Warning: Input Axis {0} has the same name as another, and will not be tracked", axis.GetName());
+                    continue;
+                }
                 trackers.emplace(axis.GetName(), InputAxis::Tracker{ axis });
             }
         }
