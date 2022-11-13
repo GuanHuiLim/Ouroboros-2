@@ -38,6 +38,9 @@ namespace oo
 
         RTTR_ENABLE();
     };
-
-    inline static GlobalRendererSettings RendererSettings;
+	class RendererSettings
+	{
+	public:
+		inline static GlobalRendererSettings setting;
+	};
 }

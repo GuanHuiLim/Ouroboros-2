@@ -280,8 +280,8 @@ void Project::SaveInputs(const std::filesystem::path& savepath)
 void Project::LoadRenderer(rapidjson::Value& val, rapidjson::Document& doc)
 {
 	SerializerLoadProperties loadProperties;
-	rttr::type t = oo::RendererSettings.Lighting.get_type();
-	auto& lighting = oo::RendererSettings.Lighting;
+	rttr::type t = oo::RendererSettings::setting.Lighting.get_type();
+	auto& lighting = oo::RendererSettings::setting.Lighting;
 	auto& lighting_val = val.FindMember(t.get_name().data())->value;
 	for (auto iter = lighting_val.MemberBegin(); iter != lighting_val.MemberEnd(); ++iter)
 	{
@@ -298,8 +298,8 @@ void Project::LoadRenderer(rapidjson::Value& val, rapidjson::Document& doc)
 		prop.set_value(lighting, v);
 	}
 	//----SSAO------//
-	t = oo::RendererSettings.SSAO.get_type();
-	auto& SSAO = oo::RendererSettings.SSAO;
+	t = oo::RendererSettings::setting.SSAO.get_type();
+	auto& SSAO = oo::RendererSettings::setting.SSAO;
 	auto& SSAO_val = val.FindMember(t.get_name().data())->value;
 	for (auto iter = SSAO_val.MemberBegin(); iter != SSAO_val.MemberEnd(); ++iter)
 	{
@@ -320,8 +320,8 @@ void Project::LoadRenderer(rapidjson::Value& val, rapidjson::Document& doc)
 void Project::SaveRenderer(rapidjson::Value& val,rapidjson::Document& doc)
 {
 	SerializerSaveProperties saveProperties;
-	rttr::type t = oo::RendererSettings.Lighting.get_type();
-	auto& lighting = oo::RendererSettings.Lighting;
+	rttr::type t = oo::RendererSettings::setting.Lighting.get_type();
+	auto& lighting = oo::RendererSettings::setting.Lighting;
 	rapidjson::Value lighting_val(rapidjson::kObjectType);
 	for (auto prop : t.get_properties())
 	{
@@ -335,8 +335,8 @@ void Project::SaveRenderer(rapidjson::Value& val,rapidjson::Document& doc)
 	}
 	val.AddMember(rapidjson::Value(t.get_name().data(), doc.GetAllocator()), lighting_val, doc.GetAllocator());
 	
-	t = oo::RendererSettings.SSAO.get_type();
-	auto& SSAO = oo::RendererSettings.SSAO;
+	t = oo::RendererSettings::setting.SSAO.get_type();
+	auto& SSAO = oo::RendererSettings::setting.SSAO;
 	rapidjson::Value SSAO_val(rapidjson::kObjectType);
 	for (auto prop : t.get_properties())
 	{
