@@ -240,7 +240,7 @@ namespace oo
             return;
 
         Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), oo::input::GetMouseX(), oo::input::GetMouseY());
-        LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
+        //LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
         DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 10.f);
         //Point2D mouseWorldPoint{ mousePos };
 
