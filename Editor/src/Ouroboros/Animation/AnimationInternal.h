@@ -129,6 +129,7 @@ namespace oo::Anim::internal
 	void RemoveConditionFromLink(Link& link, UID conditionID);
 
 	Animation* AddAnimationToNode(Node& node, Animation& anim);
+	Animation* AddAnimationToNode(Node& node, oo::Asset asset);
 
 	void RemoveNodeFromGroup(Group& group, UID node_ID);
 	void RemoveLinkFromGroup(Group& group, UID link_ID);
