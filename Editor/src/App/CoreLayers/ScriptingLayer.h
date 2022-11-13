@@ -46,6 +46,8 @@ namespace oo
 
             ScriptManager::RegisterComponent<RigidbodyComponent>("Ouroboros", "Rigidbody");
             ScriptManager::RegisterComponent<BoxColliderComponent>("Ouroboros", "BoxCollider");
+            ScriptManager::RegisterComponent<SphereColliderComponent>("Ouroboros", "SphereCollider");
+            ScriptManager::RegisterComponent<CapsuleColliderComponent>("Ouroboros", "CapsuleCollider");
 
 #if OO_EDITOR
             ScriptManager::s_SceneManager = &sceneManager;
