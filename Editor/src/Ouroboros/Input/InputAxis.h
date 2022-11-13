@@ -134,7 +134,7 @@ namespace oo
         class Tracker
         {
         public:
-            Tracker(InputAxis const& axis);
+            Tracker(InputAxis& axis);
             ~Tracker() = default;
 
             /*********************************************************************************//*!
@@ -145,6 +145,11 @@ namespace oo
             *//**********************************************************************************/
             void Update(float deltaTime);
 
+            inline InputAxis& GetAxis()
+            {
+                return axis;
+            }
+
             /*********************************************************************************//*!
             \brief      Used to get the current value of the input axis the tracker is looking at
                         based on how the tracked variables meet the input axis' conditions
@@ -154,7 +159,7 @@ namespace oo
             float GetValue();
 
         private:
-            InputAxis const& axis;
+            InputAxis& axis;
             float durationHeld;
             unsigned pressCount;
             float pressGapTimeLeft;
