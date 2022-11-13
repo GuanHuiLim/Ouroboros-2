@@ -160,6 +160,21 @@ namespace oo::Anim
 		assert(anim);
 		return *anim;
 	}
+	oo::Asset oo::Anim::Node::GetAnimationAsset()
+	{
+		return anim_asset;
+	}
+	AnimRef oo::Anim::Node::SetAnimationAsset(oo::Asset asset)
+	{
+		auto result = internal::AddAnimationToNode(*this, asset);
+		if (result == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("error, cannot add animation to node!!");
+			assert(false);
+			return {};
+		}
+		return internal::CreateAnimationReference(result->animation_ID);
+	}
 	bool oo::Anim::Node::HasAnimation()
 	{
 		return anim;

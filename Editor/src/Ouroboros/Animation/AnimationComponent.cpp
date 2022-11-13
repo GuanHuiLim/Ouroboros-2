@@ -574,16 +574,7 @@ namespace oo
 			return {};
 		}
 
-		auto anim = Anim::internal::RetrieveAnimation(info.anim_asset);
-		//animation should exist
-		if (anim == nullptr)
-		{
-			LOG_CORE_DEBUG_INFO("animation not found, cannot add animation to node!!");
-			assert(false);
-			return {};
-		}
-
-		auto result = Anim::internal::AddAnimationToNode(*node, *anim);
+		auto result = Anim::internal::AddAnimationToNode(*node, info.anim_asset);
 		if (result == nullptr)
 		{
 			LOG_CORE_DEBUG_INFO("error, cannot add animation to node!!");

@@ -1703,6 +1703,17 @@ namespace oo::Anim::internal
 		return &anim;
 	}
 
+	Animation* AddAnimationToNode(Node& node, oo::Asset asset)
+	{
+		auto anim = RetrieveAnimation(asset);
+		if (anim == nullptr)
+		{
+			return nullptr;
+		}
+		node.anim = CreateAnimationReference(anim->animation_ID);
+		node.anim_asset = asset;
+	}
+
 	void RemoveNodeFromGroup(Group& group, UID node_ID)
 	{
 		std::stack<UID> links_to_remove{};
