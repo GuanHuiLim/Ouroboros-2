@@ -570,8 +570,8 @@ void AnimatorControllerView::DisplayAnimationSelector(oo::Anim::Node* _anim_node
                 if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
                 {
                     //TODO: CHANGE ANIMATION HERE
-                    
-                    _anim_node->anim_asset = assets;
+                    _anim_node->SetAnimationAsset(assets);
+                    //_anim_node->anim_asset = assets;
                     openID = 0;
                 }
             }
