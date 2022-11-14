@@ -31,6 +31,7 @@ Technology is prohibited.
 //fwd declaration
 struct EditorViewportResizeEvent;
 struct PreviewWindowResizeEvent;
+struct UpdateRendererSettings;
 
 namespace oo
 {
@@ -52,7 +53,9 @@ namespace oo
     private:
         void OnScreenResize(WindowResizeEvent* e);
         void OnEditorViewportResize(EditorViewportResizeEvent* e);
-        void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
+        //void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
+
+        void OnUpdateRendererSettings(UpdateRendererSettings*);
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);

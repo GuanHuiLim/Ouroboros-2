@@ -50,7 +50,6 @@ void Project::LoadProject(std::filesystem::path& config)
     UpdateScriptingFiles();
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
 
-
 	//scenes to add to scene manager
 	oo::RuntimeController::container_type m_loadpaths;
 	auto scenes_settings = doc.FindMember("Scenes");
@@ -64,7 +63,7 @@ void Project::LoadProject(std::filesystem::path& config)
 	//load renderer settings
 	if (doc.HasMember("Renderer Settings"))
 	{
-		LoadRenderer(doc.FindMember("Renderer Settings")->value, doc);
+		LoadRenderer(doc.FindMember("Renderer Settings")->value);
 	}
 
 
@@ -78,6 +77,8 @@ void Project::LoadProject(std::filesystem::path& config)
 
 	//load input manager
 	LoadInputs(GetProjectFolder() / InputFileName);
+	//load script sequence
+	LoadScriptSequence(GetScriptSequencePath());
 }
 
 void Project::SaveProject()
@@ -145,8 +146,8 @@ void Project::SaveProject()
 		ofs.close();
 	}
 	ifs.close();
-
 	SaveInputs(GetProjectFolder() / (InputFileName));
+	SaveScriptSequence(GetScriptSequencePath());
 }
 
 void Project::LoadInputs(const std::filesystem::path& loadpath)
@@ -275,69 +276,109 @@ void Project::SaveInputs(const std::filesystem::path& savepath)
 	rapidjson::OStreamWrapper osw(ofs2);
 	rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
 	input_doc.Accept(writer);
+	ofs2.close();
 }
 
-void Project::LoadRenderer(rapidjson::Value& val, rapidjson::Document& doc)
+void Project::SaveScriptSequence(const std::filesystem::path& path)
 {
-	SerializerLoadProperties loadProperties;
-	rttr::type t = oo::RendererSettings::setting.Lighting.get_type();
-	auto& lighting = oo::RendererSettings::setting.Lighting;
-	auto& lighting_val = val.FindMember(t.get_name().data())->value;
-	for (auto iter = lighting_val.MemberBegin(); iter != lighting_val.MemberEnd(); ++iter)
-	{
-		rttr::property prop = t.get_property(iter->name.GetString());
-		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
-		if (typeiter == UI_RTTRType::types.end())
-			continue;
-		auto commanditer = loadProperties.m_load_commands.find(typeiter->second);
-		if (commanditer == loadProperties.m_load_commands.end())
-			continue;
-
-		rttr::variant v;
-		commanditer->second(v,std::move(iter->value));
-		prop.set_value(lighting, v);
-	}
-	//----SSAO------//
-	t = oo::RendererSettings::setting.SSAO.get_type();
-	auto& SSAO = oo::RendererSettings::setting.SSAO;
-	auto& SSAO_val = val.FindMember(t.get_name().data())->value;
-	for (auto iter = SSAO_val.MemberBegin(); iter != SSAO_val.MemberEnd(); ++iter)
-	{
-		rttr::property prop = t.get_property(iter->name.GetString());
-		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
-		if (typeiter == UI_RTTRType::types.end())
-			continue;
-		auto commanditer = loadProperties.m_load_commands.find(typeiter->second);
-		if (commanditer == loadProperties.m_load_commands.end())
-			continue;
-
-		rttr::variant v;
-		commanditer->second(v, std::move(iter->value));
-		prop.set_value(SSAO, v);
-	}
-}
-
-void Project::SaveRenderer(rapidjson::Value& val,rapidjson::Document& doc)
-{
-	SerializerSaveProperties saveProperties;
-	rttr::type t = oo::RendererSettings::setting.Lighting.get_type();
-	auto& lighting = oo::RendererSettings::setting.Lighting;
-	rapidjson::Value lighting_val(rapidjson::kObjectType);
-	for (auto prop : t.get_properties())
-	{
-		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
-		if (typeiter == UI_RTTRType::types.end())
-			continue;
-		auto commanditer = saveProperties.m_save_commands.find(typeiter->second);
-		if (commanditer == saveProperties.m_save_commands.end())
-			continue;
-		commanditer->second(doc, lighting_val, prop.get_value(lighting), prop);
-	}
-	val.AddMember(rapidjson::Value(t.get_name().data(), doc.GetAllocator()), lighting_val, doc.GetAllocator());
+	std::ofstream ofs(path);
+	if (!ofs)
+		return;
 	
-	t = oo::RendererSettings::setting.SSAO.get_type();
-	auto& SSAO = oo::RendererSettings::setting.SSAO;
-	rapidjson::Value SSAO_val(rapidjson::kObjectType);
+	rapidjson::Document input_doc;
+	auto& doc_object = input_doc.SetObject();
+
+	rapidjson::Value pre_arr(rapidjson::kArrayType);
+	for (auto& before : oo::ScriptManager::GetBeforeDefaultOrder())
+	{
+		pre_arr.PushBack(rapidjson::Value(before.ToString().c_str(),input_doc.GetAllocator())
+						, input_doc.GetAllocator());
+	}
+	doc_object.AddMember("Before Default Order", pre_arr, input_doc.GetAllocator());
+
+	rapidjson::Value post_arr(rapidjson::kArrayType);
+	for (auto& after : oo::ScriptManager::GetAfterDefaultOrder())
+	{
+		post_arr.PushBack(rapidjson::Value(after.ToString().c_str(), input_doc.GetAllocator())
+			, input_doc.GetAllocator());
+	}
+	doc_object.AddMember("After Default Order", post_arr, input_doc.GetAllocator());
+
+
+	rapidjson::OStreamWrapper osw(ofs);
+	rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+	input_doc.Accept(writer);
+	ofs.close();
+}
+
+void Project::LoadScriptSequence(const std::filesystem::path& path)
+{
+	oo::ScriptManager::ClearScriptExecutionOrder();
+	std::ifstream ifs2(path);
+	if (!ifs2)
+	{
+		return;
+	}
+	rapidjson::IStreamWrapper isw2(ifs2);
+	rapidjson::Document input_doc;
+	input_doc.ParseStream(isw2);
+	
+	rapidjson::Value& before_order = input_doc.GetObj().FindMember("Before Default Order")->value;
+	rapidjson::GenericArray before_arr = before_order.GetArray();
+	for (rapidjson::SizeType i = 0 ; i < before_arr.Size();++i)
+	{
+		oo::ScriptManager::InsertBeforeDefaultOrder(oo::ScriptClassInfo(before_arr[i].GetString()));
+	}
+
+	rapidjson::Value& after_order = input_doc.FindMember("After Default Order")->value;
+	rapidjson::GenericArray after_arr = after_order.GetArray();
+	for (rapidjson::SizeType i = 0; i < after_arr.Size(); ++i)
+	{
+		oo::ScriptManager::InsertAfterDefaultOrder(oo::ScriptClassInfo(after_arr[i].GetString()));
+	}
+	ifs2.close();
+}
+
+void Project::LoadRendererSetting(rapidjson::Value& setting_val, rttr::variant& v)
+{
+	static SerializerLoadProperties loadProperties;
+	rttr::type t = v.get_type();
+	for (auto iter = setting_val.MemberBegin(); iter != setting_val.MemberEnd(); ++iter)
+	{
+		rttr::property prop = t.get_property(iter->name.GetString());
+		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
+		if (typeiter == UI_RTTRType::types.end())
+			continue;
+		auto commanditer = loadProperties.m_load_commands.find(typeiter->second);
+		if (commanditer == loadProperties.m_load_commands.end())
+			continue;
+
+		rttr::variant variant;
+		commanditer->second(variant, std::move(iter->value));
+		prop.set_value(v, variant);
+	}
+}
+
+void Project::LoadRenderer(rapidjson::Value& val)
+{
+	rttr::type t = oo::RendererSettings::setting.get_type();
+	for (auto iter = val.MemberBegin(); iter != val.MemberEnd(); ++iter)
+	{
+		std::string name = iter->name.GetString();
+		rttr::property prop = t.get_property(name);
+		/*if (prop.is_valid() == false)
+			continue;*/
+		rttr::variant v = prop.get_value(oo::RendererSettings::setting);
+		LoadRendererSetting(iter->value, v);
+		prop.set_value(oo::RendererSettings::setting, v);
+	}
+}
+
+void Project::SaveRendererSetting(rapidjson::Value& val,rttr::property prop, rttr::variant v, rapidjson::Document& doc)
+{
+	static SerializerSaveProperties saveProperties;
+	rttr::type t = v.get_type();
+	rapidjson::Value setting_val(rapidjson::kObjectType);
 	for (auto prop : t.get_properties())
 	{
 		auto typeiter = UI_RTTRType::types.find(prop.get_type().get_id());
@@ -346,9 +387,18 @@ void Project::SaveRenderer(rapidjson::Value& val,rapidjson::Document& doc)
 		auto commanditer = saveProperties.m_save_commands.find(typeiter->second);
 		if (commanditer == saveProperties.m_save_commands.end())
 			continue;
-		commanditer->second(doc, SSAO_val, prop.get_value(SSAO), prop);
+		commanditer->second(doc, setting_val, prop.get_value(v), prop);
 	}
-	val.AddMember(rapidjson::Value(t.get_name().data(), doc.GetAllocator()), SSAO_val, doc.GetAllocator());
+	val.AddMember(rapidjson::Value(prop.get_name().data(), doc.GetAllocator()), setting_val, doc.GetAllocator());
+}
+
+void Project::SaveRenderer(rapidjson::Value& val, rapidjson::Document& doc)
+{
+	for (auto prop : oo::RendererSettings::setting.get_type().get_properties())
+	{
+		rttr::variant v = prop.get_value(oo::RendererSettings::setting);
+		SaveRendererSetting(val,prop,v, doc);
+	}
 }
 
 void Project::UpdateScriptingFiles()

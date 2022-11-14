@@ -116,3 +116,72 @@ void ObjectInstance::SetSkinned(bool s)
 		flags = flags& (~ObjectInstanceFlags::SKINNED);
 	}
 }
+
+void ObjectInstance::SetShadowEnabled(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SHADOW_ENABLED;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SHADOW_ENABLED);
+	}
+}
+
+void ObjectInstance::SetRenderEnabled(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::RENDER_ENABLED;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::RENDER_ENABLED);
+	}
+}
+
+bool ObjectInstance::isSkinned()
+{
+	return flags & ObjectInstanceFlags::SKINNED;
+}
+
+bool ObjectInstance::isShadowEnabled()
+{
+	return flags & ObjectInstanceFlags::SHADOW_ENABLED;
+}
+
+bool ObjectInstance::isRenderable()
+{
+	return flags & ObjectInstanceFlags::RENDER_ENABLED;
+}
+
+void SetCastsShadows(LocalLightInstance& l, bool s)
+{
+	l.info.x = s ? -1 : 1;
+}
+
+bool GetCastsShadows(LocalLightInstance& l)
+{
+	return l.info.x == -1;
+}
+
+void SetCastsShadows(OmniLightInstance& l, bool s)
+{
+	SetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l),s);
+}
+
+bool GetCastsShadows(OmniLightInstance& l)
+{
+	return GetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l));
+}
+
+void SetCastsShadows(SpotLightInstance& l, bool s)
+{
+	SetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l),s);
+}
+
+bool GetCastsShadows(SpotLightInstance& l)
+{
+	return GetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l));
+}

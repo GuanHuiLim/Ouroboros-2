@@ -68,6 +68,15 @@ EditorViewport::~EditorViewport()
 
 void EditorViewport::Show()
 {
+	// Update Editor Camera
+	// Camera controller updates editor camera
+	bool cameraFocus = false;
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_::ImGuiFocusedFlags_ChildWindows))
+	{
+		cameraFocus = true;
+	}
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	//menu bar for the viewport
 	MenuBar();
 
@@ -81,17 +90,32 @@ void EditorViewport::Show()
 	vMax.y += ImGui::GetWindowPos().y;
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
-
-	// Update Editor Camera
-	// Camera controller updates editor camera
-	bool cameraFocus = false;
-	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_::ImGuiFocusedFlags_ChildWindows))
+	if (vpDim.x < 10.0f || vpDim.y < 10.0f)
+		return;
+	ImVec2 m = ImGui::GetMousePos();
+	ImGui::GetForegroundDrawList()->AddRectFilled({ m.x - 20,m.y - 20 }, { m.x + 20,m.y + 20 },335226);
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && cameraFocus)
 	{
-		cameraFocus = true;
+		ImVec2 mousepos = ImGui::GetMousePos();
+		mousepos.x -= ImGui::GetWindowPos().x;
+		mousepos.y -= ImGui::GetWindowPos().y;
+
+		mousepos.x = mousepos.x / vpDim.x;
+		mousepos.y = mousepos.y / vpDim.y;
+		//mousepos.y = 1 - mousepos.y;
+		auto id = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x ,mousepos.y});
+		if (id > 0)
+		{
+			oo::GameObject go((Ecs::EntityID)id, *scene);
+			Hierarchy::GetSelectedNonConst().clear();
+			Hierarchy::GetSelectedNonConst().emplace(go.GetInstanceID());
+		}
 	}
+
+
+
 	m_cc.Update(oo::timer::dt(), cameraFocus);
 
-	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto graphicsworld = scene->GetGraphicsWorld();
 	auto& camera_matrices = EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();

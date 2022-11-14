@@ -29,7 +29,12 @@ layout( push_constant ) uniform lightpc
 
 #include "lightingEquations.shader"
 
-float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
+vec2 GetShadowMapRegion(int lightIndex, in vec2 uv)
+{
+	return uv;
+}
+
+float ShadowCalculation(int lightIndex, in vec4 fragPosLightSpace, float NdotL)
 {
 
 	// perspective divide
@@ -42,6 +47,9 @@ float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
 	float bias = max(mulBias * (1.0 - NdotL),maxbias);
 	// Flip y during sample
 	vec2 uvs = vec2(projCoords.x,1.0-projCoords.y);
+	uvs = GetShadowMapRegion(lightIndex,uvs);
+
+	// TODO: add more textures
 	float closestDepth = texture(samplerShadows,uvs).r;
 	float currDepth = projCoords.z;
 
@@ -108,10 +116,12 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 		result = diff+spec;
 	}
 
-	if(lightIndex == 0)
+	// calculate shadow if this is a shadow light
+	//if(Lights_SSBO[lightIndex].position.w < 0)
+	if(Lights_SSBO[lightIndex].info.x < 0)
 	{
 		vec4 outFragmentLightPos = Lights_SSBO[lightIndex].projection * Lights_SSBO[lightIndex].view * vec4(fragPos,1.0);
-		float shadow = ShadowCalculation(outFragmentLightPos,NdotL);
+		float shadow = ShadowCalculation(lightIndex,outFragmentLightPos,NdotL);
 		result *= shadow;
 	}
 
@@ -160,7 +170,7 @@ void main()
 	// Point Lights
 	for(int i = 0; i < PC.numLights; ++i)
 	{
-			result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
+		result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
 	}
 	
 

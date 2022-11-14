@@ -11,10 +11,12 @@ namespace Ouroboros
             set { Cursor_SetVisible(value); }
         }
 
+        [DllImport("__Internal")] private static extern bool Cursor_GetLocked();
         [DllImport("__Internal")] private static extern void Cursor_SetLocked(bool isVisible);
 
         public static bool locked
         {
+            get { return Cursor_GetLocked(); }
             set { Cursor_SetLocked(value); }
         }
     }
