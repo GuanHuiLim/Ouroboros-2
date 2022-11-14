@@ -75,6 +75,8 @@ void GBufferRenderPass::Draw()
     PROFILE_GPU_EVENT("GBuffer");
 
 	constexpr VkClearColorValue zeroFloat4 = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
+	VkClearColorValue rMinusOne = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
+	rMinusOne.int32[0] = -1;
 
 	// Clear values for all attachments written in the fragment shader
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
@@ -82,6 +84,7 @@ void GBufferRenderPass::Draw()
 	clearValues[GBufferAttachmentIndex::NORMAL]  .color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ALBEDO]  .color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
+	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 	
 	VkFramebuffer currentFB;
@@ -90,8 +93,12 @@ void GBufferRenderPass::Draw()
 		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
 		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
 		.Build(currentFB,renderpass_GBuffer);
+
+	// Manually set layout for blit reason
+	attachments[GBufferAttachmentIndex::ENTITY_ID].currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
 	renderPassBeginInfo.renderPass =  renderpass_GBuffer;
@@ -165,10 +172,13 @@ void GBufferRenderPass::SetupRenderpass()
 	//attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::NORMAL	].name = "GB_Normal";
 	attachments[GBufferAttachmentIndex::NORMAL	].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	// linear texture
 	attachments[GBufferAttachmentIndex::ALBEDO	].name = "GB_Albedo";
 	attachments[GBufferAttachmentIndex::ALBEDO	].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::MATERIAL].name = "GB_Material";
 	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::ENTITY_ID].name = "GB_Entity";
+	attachments[GBufferAttachmentIndex::ENTITY_ID].forFrameBuffer(&m_device, VK_FORMAT_R32_SINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::DEPTH	].name = "GB_DEPTH";
 	attachments[GBufferAttachmentIndex::DEPTH	].forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height);
 
@@ -200,13 +210,16 @@ void GBufferRenderPass::SetupRenderpass()
 	attachmentDescs[GBufferAttachmentIndex::NORMAL]  .format = attachments[GBufferAttachmentIndex::NORMAL]  .format;
 	attachmentDescs[GBufferAttachmentIndex::ALBEDO]  .format = attachments[GBufferAttachmentIndex::ALBEDO]  .format;
 	attachmentDescs[GBufferAttachmentIndex::MATERIAL].format = attachments[GBufferAttachmentIndex::MATERIAL].format;
+	attachmentDescs[GBufferAttachmentIndex::ENTITY_ID].format = attachments[GBufferAttachmentIndex::ENTITY_ID].format;
 	attachmentDescs[GBufferAttachmentIndex::DEPTH]   .format = attachments[GBufferAttachmentIndex::DEPTH]   .format;
+	
 
 	std::vector<VkAttachmentReference> colorReferences;
 	//colorReferences.push_back({ GBufferAttachmentIndex::POSITION, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::NORMAL,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::ALBEDO,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::MATERIAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	colorReferences.push_back({ GBufferAttachmentIndex::ENTITY_ID, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 	VkAttachmentReference depthReference = {};
 	depthReference.attachment = GBufferAttachmentIndex::DEPTH;
@@ -264,6 +277,7 @@ void GBufferRenderPass::SetupFramebuffer()
 		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
 		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
 		.Build(framebuffer_GBuffer,renderpass_GBuffer);
 
@@ -336,6 +350,7 @@ void GBufferRenderPass::CreatePipeline()
 	// won't see anything rendered to the attachment
 	std::array<VkPipelineColorBlendAttachmentState, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> blendAttachmentStates =
 	{
+		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),

@@ -128,6 +128,7 @@ void SSAORenderPass::Draw()
 	pc.sampleDim.y = 4;
 	pc.radius = vr.currWorld->ssaoSettings.radius;
 	pc.bias = vr.currWorld->ssaoSettings.bias;
+	pc.numSamples = std::clamp<uint32_t>(vr.currWorld->ssaoSettings.samples, 1, 64);
 	VkPushConstantRange range;
 	range.offset = 0;
 	range.size = sizeof(SSAOPC);

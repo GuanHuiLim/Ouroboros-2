@@ -194,6 +194,8 @@ public:
 	uint32_t renderTargetInUseID{ 0 };
 	float renderClock{ 0.0f };
 
+	int32_t GetPixelValue(uint32_t fbID, glm::vec2 uv);
+
 	GraphicsBatch batches;
 
 	bool deferredRendering = true;
@@ -298,6 +300,7 @@ public:
 	// - Synchronisation
 	std::vector<VkSemaphore> imageAvailable;
 	std::vector<VkSemaphore> renderFinished;
+	std::vector<VkSemaphore> readyForCopy;
 	std::vector<VkFence> drawFences;
 
 	// - Pipeline
