@@ -58,8 +58,16 @@ void GraphicsBatch::GenerateBatches()
 	int32_t cnt{ 0 };
 	for (auto& ent: entities)
 	{
-		auto& model = m_renderer->g_globalModels[ent.modelID];		
-		
+		auto& model = m_renderer->g_globalModels[ent.modelID];
+
+		// skip entities dont want to render
+		if (ent.isRenderable() == false)
+		{
+			// still increment instance
+			++cnt;
+			continue;
+		}
+
 		if (ent.modelID != currModelID) // check if we are using the same model
 		{
 			s_scratchBuffer.clear();

@@ -29,16 +29,18 @@ Technology is prohibited.
 #undef TRANSPARENT 
 enum ObjectInstanceFlags : uint32_t // fuck enum class
 {
-    STATIC_INSTANCE  = 0x1,  // Object will never change after initialization
-    DYNAMIC_INSTANCE = 0x2,  // Object is dynamic (spatial/property)
-    ACTIVE_FLAG      = 0x4,  // Object is inactive, skip for all render pass
-    SHADOW_CASTER    = 0x8,  // Object casts shadows (put it into shadow render pass)
-    SHADOW_RECEIVER  = 0x10, // Object receives shadows (a mask for lighting pass)
-    ENABLE_ZPREPASS  = 0x20, // Object is added to Z-Prepass
-    TRANSPARENT      = 0x40, // Object is added to forward pass
-    EMITTER          = 0x80, // Object is an emitter ??
-    SKINNED          = 0x100, // Object is added to skinned pass
-                             // etc
+    RENDER_ENABLED   = 0x1,  // Object will never change after initialization
+    STATIC_INSTANCE  = 0x2,  // Object is dynamic (spatial/property)
+    DYNAMIC_INSTANCE = 0x4,  // Object is inactive, skip for all render pass
+    ACTIVE_FLAG      = 0x8,  // Object casts shadows (put it into shadow render pass)
+    SHADOW_CASTER    = 0x10, // Object receives shadows (a mask for lighting pass)
+    SHADOW_RECEIVER  = 0x20, // Object is added to Z-Prepass
+    ENABLE_ZPREPASS  = 0x40, // Object is added to forward pass
+    TRANSPARENT      = 0x80, // Object is an emitter ??s
+    EMITTER          = 0x100, // Object is added to skinned pass
+    SKINNED          = 0x200, // Object can project shadows
+    SHADOW_ENABLED   = 0x400, // Object is rendered
+                                // etc
 };
 
 inline ObjectInstanceFlags operator|(ObjectInstanceFlags a, ObjectInstanceFlags b)
@@ -74,12 +76,18 @@ struct ObjectInstance
 
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
-    ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(SHADOW_RECEIVER | SHADOW_CASTER)};
+    ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(RENDER_ENABLED | SHADOW_RECEIVER | SHADOW_CASTER)};
 
     // helper functions
     void SetShadowCaster(bool s);
     void SetShadowReciever(bool s);
     void SetSkinned(bool s);
+    void SetShadowEnabled(bool s);
+    void SetRenderEnabled(bool s);
+
+    bool isSkinned();
+    bool isShadowEnabled();
+    bool isRenderable();
 
     std::vector<glm::mat4> bones;
 
@@ -88,6 +96,12 @@ struct ObjectInstance
     uint32_t entityID{}; // Unique ID for this entity instance
 };
 
+void SetCastsShadows(LocalLightInstance& l, bool s);
+bool GetCastsShadows(LocalLightInstance& l);
+void SetCastsShadows(OmniLightInstance& l, bool s);
+bool GetCastsShadows(OmniLightInstance& l);
+void SetCastsShadows(SpotLightInstance& l, bool s);
+bool GetCastsShadows(SpotLightInstance& l);
 
 
 struct DecalInstance
@@ -139,11 +153,12 @@ public:
     {
         float radius = 0.5f;
         float bias = 0.025f;
+        uint32_t samples = 8;
     }ssaoSettings{};
 
     struct LightingSettings
     {
-        float ambient = 0.2f;
+        float ambient = 0.002f;
         float maxBias = 0.0001f;
         float biasMultiplier = 0.002f;
     }lightSettings{};
