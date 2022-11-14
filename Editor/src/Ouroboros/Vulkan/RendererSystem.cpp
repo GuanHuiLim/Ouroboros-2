@@ -296,7 +296,8 @@ namespace oo
 
         //update graphics world side
         auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.GraphicsWorldID);
-        graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+		graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+		graphics_object.entityID = 1;
     }
 
     void RendererSystem::InitializeLight(LightComponent& lightComp, TransformComponent& transformComp)
