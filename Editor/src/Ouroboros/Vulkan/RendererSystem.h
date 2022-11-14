@@ -22,6 +22,7 @@ Technology is prohibited.
 #include "Archetypes_Ecs/src/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
+#include "Ouroboros/ECS/GameObjectComponent.h"
 
 #include "Ouroboros/Core/CameraController.h"
 
@@ -37,6 +38,7 @@ namespace oo
     private:
         GraphicsWorld* m_graphicsWorld{nullptr};
         //Ecs::ECSWorld* m_world{nullptr};
+        std::map<uint32_t, UUID> m_graphicsIdToUUID;
     public:
         RendererSystem(GraphicsWorld* graphicsWorld);
 
@@ -48,6 +50,7 @@ namespace oo
         void UpdateCamerasRuntime();
         void SaveEditorCamera();
 
+        UUID GetUUID(uint32_t graphicsID) const;
     private:
         void OnScreenResize(WindowResizeEvent* e);
         void OnEditorViewportResize(EditorViewportResizeEvent* e);
@@ -59,7 +62,7 @@ namespace oo
         void OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
 
         void RenderDebugDraws(Ecs::ECSWorld* world);
-        void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp);
+        void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
     
     private:

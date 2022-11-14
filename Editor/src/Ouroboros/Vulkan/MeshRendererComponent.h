@@ -34,6 +34,9 @@ namespace oo
         uint32_t model_handle{ 0 };
         uint32_t graphicsWorld_ID{};
 
+        bool CastShadows = false;
+        bool ReceiveShadows = false;
+
         MeshInfo GetMeshInfo();
         /*********************************************************************************//*!
         \brief      this function will only set the submeshbits

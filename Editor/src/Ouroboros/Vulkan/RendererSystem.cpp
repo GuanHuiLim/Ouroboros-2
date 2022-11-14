@@ -83,7 +83,8 @@ namespace oo
 
         auto& meshComp = evnt->component;
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
-        InitializeMesh(meshComp, transform_component);
+        auto& gameobject_component = m_world->get_component<GameObjectComponent>(evnt->entityID);
+        InitializeMesh(meshComp, transform_component, gameobject_component);
 
         // TODO: HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
         meshComp.model_handle = 0;
@@ -94,6 +95,8 @@ namespace oo
     {
         auto& comp = evnt->component;
         m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
+        // remove graphics id to uuid of gameobject
+        m_graphicsIdToUUID.erase(comp.graphicsWorld_ID);
     }
 
     oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld)
@@ -164,6 +167,14 @@ namespace oo
         //EditorController::EditorCamera  = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
     }
 
+    UUID RendererSystem::GetUUID(uint32_t graphicsID) const
+    {
+        if (m_graphicsIdToUUID.contains(graphicsID))
+            return m_graphicsIdToUUID.at(graphicsID);
+        
+        return UUID::Invalid;
+    }
+
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
         // Update Newly Duplicated Lights
@@ -174,10 +185,10 @@ namespace oo
         });
 
         // Update Newly Duplicated Mesh
-        static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, DuplicatedComponent>();
-        world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
+        world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
         { 
-            InitializeMesh(meshComp, transformComp);
+            InitializeMesh(meshComp, transformComp, goc);
         });
 
         // update meshes
@@ -193,6 +204,9 @@ namespace oo
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
+            
+            actualObject.SetShadowCaster(m_comp.CastShadows);
+            actualObject.SetShadowReciever(m_comp.ReceiveShadows);
             
             // update transform if this is the first frame of rendering
             if (m_firstFrame)
@@ -213,6 +227,8 @@ namespace oo
             graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
             graphics_light.color = glm::vec4{ lightComp.Color.r, lightComp.Color.g, lightComp.Color.b, lightComp.Color.a };
             graphics_light.radius = vec4{ lightComp.Radius, 0, 0, 0 };
+           
+            SetCastsShadows(graphics_light, lightComp.ProduceShadows);
         });
 
         // draw debug stuff
@@ -283,13 +299,16 @@ namespace oo
         });
     }
 
-    void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp)
+    void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc)
     {
         meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
 
         //update graphics world side
         auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
         graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+
+        // map graphics id to uuid of gameobject
+        m_graphicsIdToUUID.insert({ meshComp.graphicsWorld_ID, goc.Id });
     }
 
     void RendererSystem::InitializeLight(LightComponent& lightComp, TransformComponent& transformComp)
