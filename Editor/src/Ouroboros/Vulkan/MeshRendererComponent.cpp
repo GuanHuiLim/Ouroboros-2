@@ -28,12 +28,21 @@ namespace oo
     {
         using namespace rttr;
         registration::class_<MeshRendererComponent>("Mesh Renderer")
-        .property_readonly("Model Handle", &MeshRendererComponent::model_handle)
+        .property_readonly("Graphics World ID", &MeshRendererComponent::GraphicsWorldID)
+        .property_readonly("Model Handle", &MeshRendererComponent::ModelHandle)
         .property("Albedo", &MeshRendererComponent::GetAlbedoMap, &MeshRendererComponent::SetAlbedoMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
         )
         .property("Normal", &MeshRendererComponent::GetNormalMap, &MeshRendererComponent::SetNormalMap)
+        (
+            metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
+        )
+        .property("Metallic", &MeshRendererComponent::GetMetallicMap, &MeshRendererComponent::SetMetallicMap)
+        (
+            metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
+        )
+        .property("Roughness", &MeshRendererComponent::GetRoughnessMap, &MeshRendererComponent::SetRoughnessMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
         )
@@ -49,7 +58,7 @@ namespace oo
 
     MeshInfo MeshRendererComponent::GetMeshInfo()
     {
-        return meshInfo;
+        return MeshInformation;
     }
 
     /*********************************************************************************//*!
@@ -57,81 +66,101 @@ namespace oo
     *//**********************************************************************************/
     void MeshRendererComponent::SetMeshInfo(MeshInfo info)
     {
-        meshInfo.submeshBits = info.submeshBits;
+        MeshInformation.submeshBits = info.submeshBits;
     }
 
-    void MeshRendererComponent::GetModelHandle()
-    {
-        if (meshInfo.mesh_handle.HasData())
-            model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
-        else
-            model_handle = 0;
+    //void MeshRendererComponent::GetModelHandle()
+    //{
+    //    if (MeshInformation.mesh_handle.HasData())
+    //        ModelHandle = MeshInformation.mesh_handle.GetData<ModelFileResource*>()->meshResource;
+    //    else
+    //        ModelHandle = 0;
 
-        //model_handle /*= meshInfo.mesh_handle.GetData<ModelFileResource>().meshResource*/;
-    }
+    //    //ModelHandle /*= MeshInformation.mesh_handle.GetData<ModelFileResource>().meshResource*/;
+    //}
 
     //set a single model and asset
 
     void MeshRendererComponent::SetModelHandle(Asset _asset, uint32_t _submodel_id)
     {
-        meshInfo.submeshBits.reset();
-        meshInfo.submeshBits[_submodel_id] = true;
-        meshInfo.mesh_handle = _asset;
+        MeshInformation.submeshBits.reset();
+        MeshInformation.submeshBits[_submodel_id] = true;
+        MeshInformation.mesh_handle = _asset;
 
-        model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
+        ModelHandle = MeshInformation.mesh_handle.GetData<ModelFileResource*>()->meshResource;
     }
 
     Asset MeshRendererComponent::GetMesh()
     {
-        return meshInfo.mesh_handle;
+        return MeshInformation.mesh_handle;
     }
 
     void MeshRendererComponent::SetMesh(Asset _asset)
     {
         if (_asset.IsValid())
         {
-            meshInfo.mesh_handle = _asset;
-            model_handle = meshInfo.mesh_handle.GetData<ModelFileResource*>()->meshResource;
+            MeshInformation.mesh_handle = _asset;
+            ModelHandle = MeshInformation.mesh_handle.GetData<ModelFileResource*>()->meshResource;
             // HACK this is needed to render stuff under edit..
-            // meshInfo.submeshBits.reset();
-            // meshInfo.submeshBits[0] = true;
+            // MeshInformation.submeshBits.reset();
+            // MeshInformation.submeshBits[0] = true;
         }
-        /*if (albedo_handle.IsValid())
-        {
-            albedoID = albedo_handle.GetData<uint32_t>();
-        }
-        if (normal_handle.IsValid())
-        {
-            normalID = normal_handle.GetData<uint32_t>();
-        }*/
     }
 
     void oo::MeshRendererComponent::SetAlbedoMap(Asset albedoMap)
     {
-        albedo_handle = albedoMap;
-        if (albedo_handle.IsValid())
+        AlbedoHandle = albedoMap;
+        if (AlbedoHandle.IsValid())
         {
-            albedoID = albedo_handle.GetData<uint32_t>();
+            AlbedoID = AlbedoHandle.GetData<uint32_t>();
         }
     }
 
     Asset oo::MeshRendererComponent::GetAlbedoMap() const
     {
-        return albedo_handle;
+        return AlbedoHandle;
     }
 
     void oo::MeshRendererComponent::SetNormalMap(Asset normalMap)
     {
-        normal_handle = normalMap;
-        if (normal_handle.IsValid())
+        NormalHandle = normalMap;
+        if (NormalHandle.IsValid())
         {
-            normalID = normal_handle.GetData<uint32_t>();
+            NormalID = NormalHandle.GetData<uint32_t>();
         }
     }
 
     Asset oo::MeshRendererComponent::GetNormalMap() const
     {
-        return normal_handle;
+        return NormalHandle;
+    }
+
+    void oo::MeshRendererComponent::SetMetallicMap(Asset metallicMap)
+    {
+        MetallicHandle = metallicMap;
+        if (MetallicHandle.IsValid())
+        {
+            MetallicID = MetallicHandle.GetData<uint32_t>();
+        }
+    }
+
+    Asset oo::MeshRendererComponent::GetMetallicMap() const
+    {
+        return MetallicHandle;
+    }
+
+    void oo::MeshRendererComponent::SetRoughnessMap(Asset roughnessMap)
+    {
+        RoughnessHandle = roughnessMap;
+        if (RoughnessHandle.IsValid())
+        {
+            RoughnessID = RoughnessHandle.GetData<uint32_t>();
+        }
+    }
+
+    Asset oo::MeshRendererComponent::GetRoughnessMap() const
+    {
+        return RoughnessHandle;
     }
 
 }

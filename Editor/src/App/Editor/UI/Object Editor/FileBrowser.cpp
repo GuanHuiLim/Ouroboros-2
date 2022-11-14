@@ -33,6 +33,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/KeyCode.h"
 #include "Project.h"
 
+#include "Ouroboros/Animation/AnimationSystem.h"
 namespace
 {
 	bool isSubPath(const std::filesystem::path& base, const std::filesystem::path& destination)
@@ -266,13 +267,13 @@ void FileBrowser::PopupOptions()
 			FileBehaviour(result_path.parent_path());
 			Find_AndSelect(result_path);*/
 		}
-		if (ImGui::MenuItem("Create Animator"))
+		if (ImGui::MenuItem("Create Animation Tree"))
 		{
-			//oo::AnimatorController::CreateNewControllerAsset();
+			oo::Anim::AnimationSystem::CreateAnimationTree("New Animation Tree");
 		}
-		if (ImGui::MenuItem("Create Animation Clip"))
+		if (ImGui::MenuItem("Create Animation"))
 		{
-			//oo::AnimationClip::CreateNewAnimationClipAsset();
+			//oo::Anim::AnimationSystem::crea
 		}
 		ImGui::EndMenu();
 	}
@@ -502,6 +503,10 @@ void FileBrowser::BuildDirectoryList(const std::string& path)
 	
 	for (auto& directory : list)
 	{
+		if (directory.extension() == oo::Asset::EXT_META)
+		{
+			continue;
+		}
 		m_directoryList.emplace_back(DirectoryInfo{ GetIcon(directory.extension().string()),directory});
 	}
 }
@@ -608,11 +613,23 @@ bool FileBrowser::RenameFilePopup(DirectoryInfo& info)
 		}
 		else if (ImGui::InputText("##rename",&renameBuffer,ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue| ImGuiInputTextFlags_AutoSelectAll))
 		{
+			auto oldAssetPath = info.name;
+			auto oldMetaPath = oldAssetPath;
+			oldMetaPath += oo::Asset::EXT_META;
+
 			renameBuffer += info.name.extension().string();
-			std::filesystem::path temppath = info.name;
-			info.name.replace_filename(renameBuffer);
-			std::filesystem::rename(temppath,info.name);
+			std::string newAssetName = renameBuffer;
+			std::string newMetaName = renameBuffer + oo::Asset::EXT_META;
+
+			auto newAssetPath = info.name.replace_filename(newAssetName);
+			auto newMetaPath = newAssetPath;
+			newMetaPath += oo::Asset::EXT_META;
+
+			std::filesystem::rename(oldAssetPath, newAssetPath);
+			std::filesystem::rename(oldMetaPath, newMetaPath);
 			ImGui::CloseCurrentPopup();
+
+			Project::GetAssetManager()->Scan();
 		}
 		ImGui::EndPopup();
 	}

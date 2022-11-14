@@ -143,10 +143,14 @@ namespace oo::Anim
 		, name{ info.name }
 		, node_ID{ info.nodeID == internal::invalid_ID ? internal::generateUID() : info.nodeID }
 	{
-		assert(Animation::name_to_ID.contains(info.animation_name));
+		auto anim_ptr = internal::RetrieveAnimation(info.animation_name);
+		if (anim_ptr == nullptr)
+		{
+			return;
+		}
+
 		anim.anims = &(Animation::animation_storage);
-		anim.id = Animation::animation_storage[
-			Animation::name_to_ID[info.animation_name]].animation_ID;
+		anim.id = anim_ptr->animation_ID;
 		anim.Reload();
 	}
 
@@ -155,5 +159,24 @@ namespace oo::Anim
 	{
 		assert(anim);
 		return *anim;
+	}
+	oo::Asset oo::Anim::Node::GetAnimationAsset()
+	{
+		return anim_asset;
+	}
+	AnimRef oo::Anim::Node::SetAnimationAsset(oo::Asset asset)
+	{
+		auto result = internal::AddAnimationToNode(*this, asset);
+		if (result == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("error, cannot add animation to node!!");
+			assert(false);
+			return {};
+		}
+		return internal::CreateAnimationReference(result->animation_ID);
+	}
+	bool oo::Anim::Node::HasAnimation()
+	{
+		return anim;
 	}
 }

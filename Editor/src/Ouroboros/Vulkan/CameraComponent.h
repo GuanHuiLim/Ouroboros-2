@@ -18,9 +18,17 @@ Technology is prohibited.
 #include <rttr/type>
 namespace oo
 {
+    enum class CameraAspectRatio
+    {
+        SIXTEEN_BY_NINE,
+        SIXTEEN_BY_TEN,
+        FOUR_BY_THREE,
+    };
+
     class CameraComponent
     {
     public:
+        CameraAspectRatio AspectRatio;
         RTTR_ENABLE();
     };
 }

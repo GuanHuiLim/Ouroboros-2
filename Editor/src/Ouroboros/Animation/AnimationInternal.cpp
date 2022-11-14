@@ -40,6 +40,7 @@ std::unordered_map <rttr::type::type_id, StringHash::size_type> oo::Anim::intern
 	add(rttr::type::get<float>(), "float");
 	add(rttr::type::get<int>(), "int");
 	add(rttr::type::get<size_t>(), "size_t");
+	add(rttr::type::get<oo::Anim::UID>(), "UID");
 	add(rttr::type::get<std::string>(), "std::string");
 	add(rttr::type::get<glm::vec3>(), "glm::vec3");
 	add(rttr::type::get<glm::quat>(), "glm::quat");
@@ -72,7 +73,11 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 	{
 		writer.Uint64(val.get_value<size_t>());
 	};
-
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		writer.Uint64(val.get_value<oo::Anim::UID>());
+	};
 	//rttr types
 	map[rttr::type::get<rttr::variant>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
@@ -273,6 +278,16 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		writer.Uint64(val.get_value<size_t>());
 		writer.EndObject();
 	};
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		writer.StartObject();
+		writer.Key("Type Hash", static_cast<rapidjson::SizeType>(std::string("Type Hash").size()));
+		writer.Uint64(static_cast<uint64_t>(rttrType_to_hash[rttr::type::get<oo::Anim::UID>().get_id()]));
+		writer.Key("Value", static_cast<rapidjson::SizeType>(std::string("Value").size()));
+		writer.Uint64(val.get_value<oo::Anim::UID>());
+		writer.EndObject();
+	};
 	map[rttr::type::get<std::string>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -334,6 +349,11 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 		= [](rapidjson::Value& value)
 	{
 		return rttr::variant{ value.GetUint64() };
+	};
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		return rttr::variant{ oo::Anim::UID{value.GetUint64()} };
 	};
 	map[rttr::type::get<std::string>().get_id()]
 		= [](rapidjson::Value& value)
@@ -505,6 +525,13 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 	{
 		auto val = static_cast<size_t>(value.GetUint64());
 		return rttr::variant{ val };
+	};
+
+	map[rttr::type::get<oo::Anim::UID>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto val = static_cast<size_t>(value.GetUint64());
+		return rttr::variant{ oo::Anim::UID{val} };
 	};
 
 	map[rttr::type::get<std::string>().get_id()]
@@ -1110,26 +1137,42 @@ namespace oo::Anim::internal
 
 	}
 
-	void AssignAnimationTreeToComponent(IAnimationComponent& component)
+	/*void AssignAnimationTreeToComponent(IAnimationComponent& component)
 	{
-		component.animTree = &(AnimationTree::map[component.animTree_name]);
-	}
+		auto tree = internal::RetrieveAnimationTree(component.animTree_name);
+		assert(tree);
+		component.animTree = tree;
+	}*/
 
 	void AssignAnimationTreeToComponent(IAnimationComponent& component, std::string const& name)
 	{
 		//do nothing if name empty
 		if (name.empty()) return;
-		//assert(name.empty() == false);
-		
-		//retrieve tree
-		if (AnimationTree::map.contains(name) == false)
+
+		auto tree = internal::RetrieveAnimationTree(name);
+		if (tree == nullptr)
 		{
 			LOG_CORE_DEBUG_CRITICAL("cannot find animation tree {0}!!", name);
 			assert(false);
 			return;
 		}
-		component.animTree_name = name;
-		AssignAnimationTreeToComponent(component);
+		component.animTree_name = tree->name;
+		component.animTree = tree;
+	}
+
+	void AssignAnimationTreeToComponent(IAnimationComponent& component, size_t id)
+	{
+		if (id == internal::invalid_ID) return;
+
+		auto tree = internal::RetrieveAnimationTree(id);
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_CRITICAL("cannot find animation tree ID: {0}!!", id);
+			assert(false);
+			return;
+		}
+		component.animTree_name = tree->name;
+		component.animTree = tree;
 	}
 
 	Group* RetrieveGroupFromTree(AnimationTree& tree, std::string const& groupName)
@@ -1177,6 +1220,12 @@ namespace oo::Anim::internal
 		assert(false);
 		return nullptr;
 	}
+	Node* RetrieveNodeFromGroup(Group& group, UID node_ID)
+	{
+		if (group.nodes.contains(node_ID) == false) return nullptr;
+
+		return &(group.nodes[node_ID]);
+	}
 	//same as RetrieveNodeFromGroup but without error messages and asserts
 	Node* TryRetrieveNodeFromGroup(Group& group, std::string const& name)
 	{
@@ -1199,6 +1248,12 @@ namespace oo::Anim::internal
 		LOG_CORE_ERROR("could not find {0} link!!", linkName);
 		assert(false);
 		return nullptr;
+	}
+	Link* RetrieveLinkFromGroup(Group& group, UID link_ID)
+	{
+		if (group.links.contains(link_ID) == false) return nullptr;
+
+		return  &(group.links[link_ID]);
 	}
 
 	Parameter* RetrieveParameterFromTree(AnimationTree& tree, std::string const& param_name)
@@ -1273,18 +1328,57 @@ namespace oo::Anim::internal
 
 	}
 
+	Animation* RetrieveAnimation(size_t anim_id)
+	{
+		auto has_anim = Animation::animation_storage.contains(anim_id);
+		assert(has_anim);
+		if (has_anim)
+			return &(Animation::animation_storage[anim_id]);
+		else
+			return nullptr;
+	}
+
+	Animation* RetrieveAnimation(oo::Asset asset)
+	{
+		auto anim_id = asset.GetData<UID>();
+		auto has_anim = Animation::animation_storage.contains(anim_id);
+		assert(has_anim);
+		if (has_anim)
+			return &(Animation::animation_storage[anim_id]);
+		else
+			return nullptr;
+	}
+
+	AnimationTree* RetrieveAnimationTree(std::string const& name)
+	{
+		for (auto& [key, tree] : AnimationTree::map)
+		{
+			if (tree.name == name)
+				return &tree;
+		}
+
+		return nullptr;
+	}
+
+	AnimationTree* RetrieveAnimationTree(size_t id)
+	{
+		if (AnimationTree::map.contains(id) == false) return nullptr;
+
+		return &(AnimationTree::map[id]);
+	}
+
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
-
+		//allow nodes with same name
 		//if node already added to this group then just return it
-		for (auto& [key, node] : group.nodes)
+		/*for (auto& [key, node] : group.nodes)
 		{
 			if (node.name == info.name)
 			{
 				LOG_CORE_WARN("{0} Animation Node already exists in group!!", info.name);
 				return &node;
 			}
-		}
+		}*/
 
 		//create the node and add it to this group
 		Node node{ info };
@@ -1335,7 +1429,7 @@ namespace oo::Anim::internal
 	//	return AddNodeToGroup(*group, name, position);
 	//}
 
-	Timeline* AddTimelineToAnimation(Animation& animation, Anim::TimelineInfo const& info)
+	Timeline* AddTimelineToAnimation(Animation& animation, Anim::TimelineInfo& info)
 	{
 		Timeline* existing_timeline = TryRetrieveTimelineFromAnimation(animation, info.timeline_name);
 
@@ -1348,6 +1442,8 @@ namespace oo::Anim::internal
 		//detect gameobject hierarchy
 		if (info.hierarchy_provided == false)
 		{
+			info.timeline_name = info.target_object.Name() + "_" + info.rttr_property.get_name();
+
 			oo::UUID current = info.source_object.GetInstanceID();
 			oo::UUID target = info.target_object.GetInstanceID();
 			//if the target gameobject is not the root
@@ -1389,7 +1485,6 @@ namespace oo::Anim::internal
 			}
 
 		}
-
 		//create the new timeline
 		Timeline timeline{ createInfo };
 		return &(animation.timelines.emplace_back(std::move(timeline)));
@@ -1521,6 +1616,56 @@ namespace oo::Anim::internal
 		return &parameter;
 	}
 
+	void RemoveParameterFromTree(AnimationTree& tree, UID param_ID)
+	{
+		//find the parameter
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& param : tree.parameters)
+		{
+			if (param.paramID == param_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+
+		//remove conditions that reference the parameter
+		struct LinkCondition
+		{
+			Link* link{nullptr};
+			UID condition_ID{};
+		};
+		std::stack<LinkCondition> to_remove{};
+
+		for (auto& [groupID, group] : tree.groups)
+		{
+		for (auto& [linkID, link] : group.links)
+		{
+		for (auto& condition : link.conditions)
+		{
+			if (condition.paramID == param_ID)
+			{
+				to_remove.emplace(&link, condition.conditionID);
+			}
+		}
+		}
+		}
+		while (to_remove.empty() == false)
+		{
+			auto info = to_remove.top();
+			to_remove.pop();
+			RemoveConditionFromLink(*(info.link), info.condition_ID);
+		}
+
+		//remove the parameter
+		tree.parameters.erase(tree.parameters.begin() + index);
+
+
+	}
+
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info)
 	{
 		//verify there is a parameter available
@@ -1533,11 +1678,88 @@ namespace oo::Anim::internal
 		return &createdCondition;
 	}
 
+	void RemoveConditionFromLink(Link& link, UID conditionID)
+	{
+		uint index = 0;
+		bool found{false};
+		for (auto& condition : link.conditions)
+		{
+			if (condition.conditionID == conditionID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+		assert(index < link.conditions.size());
+		link.conditions.erase(link.conditions.begin() + index);
+	}
+
 	Animation* AddAnimationToNode(Node& node, Animation& anim)
 	{
 		node.anim = CreateAnimationReference(anim.animation_ID);
 
 		return &anim;
+	}
+
+	Animation* AddAnimationToNode(Node& node, oo::Asset asset)
+	{
+		auto anim = RetrieveAnimation(asset);
+		if (anim == nullptr)
+		{
+			return nullptr;
+		}
+		node.anim = CreateAnimationReference(anim->animation_ID);
+		node.anim_asset = asset;
+	}
+
+	void RemoveNodeFromGroup(Group& group, UID node_ID)
+	{
+		std::stack<UID> links_to_remove{};
+		//remove links to the node and links from the node to others
+		for (auto& [id, link] : group.links)
+		{
+			if (link.dst->node_ID == node_ID || link.src->node_ID == node_ID)
+			{
+				links_to_remove.emplace(link.linkID);
+			}
+		}
+		while (links_to_remove.empty() == false)
+		{
+			auto linkID = links_to_remove.top();
+			links_to_remove.pop();
+			RemoveLinkFromGroup(group, linkID);
+		}
+		//remove the node
+		group.nodes.erase(node_ID);
+
+	}
+
+	void RemoveLinkFromGroup(Group& group, UID link_ID)
+	{
+		auto link = RetrieveLinkFromGroup(group, link_ID);
+		if (link == nullptr) return;
+
+		//remove outgoing link from src node
+		auto& outgoingLinks = link->src->outgoingLinks;
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& linkref : outgoingLinks)
+		{
+			if (linkref->linkID == link_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		assert(found);
+		if (found == false) return;
+		outgoingLinks.erase(outgoingLinks.begin() + index);
+
+		//remove link
+		group.links.erase(link_ID);
 	}
 
 	void LoadFBX(std::string const& filepath, Animation* anim)
@@ -1755,5 +1977,19 @@ namespace oo::Anim::internal
 		assert(false);
 		LOG_CRITICAL("GetParameterIndex cannot find parameter {0}!!!", paramName);
 		return std::numeric_limits<uint>().max();
+	}
+	void ReInsertKeyFrame(Timeline& timeline, uint index, float time)
+	{
+		if (index >= timeline.keyframes.size())
+		{
+			assert(false);
+			return;
+		}
+
+		KeyFrame kf = timeline.keyframes[index];
+
+		timeline.keyframes.erase(timeline.keyframes.begin() + index);
+
+		AddKeyframeToTimeline(timeline, kf);
 	}
 }

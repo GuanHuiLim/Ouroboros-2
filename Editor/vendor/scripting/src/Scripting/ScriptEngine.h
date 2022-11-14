@@ -58,6 +58,7 @@ namespace oo
 
         static std::vector<MonoType*> GetTypeGenericTypes(MonoType* type);
         static std::vector<std::string> GetEnumOptions(MonoType* type);
+        static std::vector<int> GetEnumOptionValues(MonoType* type);
 
         // Checks
         static bool CheckClassExists(const char* aLibrary, const char* aNamespace, const char* aClassName);

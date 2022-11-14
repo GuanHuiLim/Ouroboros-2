@@ -52,9 +52,12 @@ Technology is prohibited.
 #include <App/Editor/Events/OpenPromtEvent.h>
 #include <App/Editor/Events/OpenFileEvent.h>
 #include <Ouroboros/EventSystem/EventManager.h>
-
+//networking
+#include <App/Editor/Networking/NetworkingEvent.h>
+#include <App/Editor/Networking/PacketUtils.h>
+//profiller
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-
+//other components
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 //#include <Ouroboros/Vulkan/RendererComponent.h>
@@ -70,6 +73,19 @@ Hierarchy::Hierarchy()
 {
 	oo::EventManager::Subscribe<CopyButtonEvent>(&CopyEvent);
 	oo::EventManager::Subscribe<PasteButtonEvent>(&PasteEvent);
+	oo::EventManager::Subscribe<NetworkingSelectionEvent>([] (NetworkingSelectionEvent* e){
+		auto iter = Hierarchy::GetSelected().find(e->gameobjID);
+		if (iter != s_selected.end())
+		{
+			if (Hierarchy::GetSelectedTime() > e->time_triggered)
+				Hierarchy::GetSelectedNonConst().erase(iter);
+			else
+				return;
+		}
+		s_networkUserSelection[e->header.name] = ItemSelectedTiming{ e->time_triggered,e->gameobjID };
+		});
+	oo::EventManager::Subscribe<DuplicateButtonEvent>(&DuplicateEvent);
+	oo::EventManager::Subscribe<DestroyGameObjectButtonEvent>(&DestroyEvent);
 
 }
 
@@ -97,10 +113,31 @@ void Hierarchy::Show()
 bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
+	//networking code////////////
+		bool networking_selected = false;
+		for (auto& p : s_networkUserSelection)
+		{
+			if (p.second.gameobjecID == handle)
+			{
+				networking_selected = true;
+				flags = (ImGuiTreeNodeFlags_) (flags |ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Selected);
+				break;
+			}
+		}
+	//end of networking code/////
 	ImGui::PushID(static_cast<int>(handle));
 	bool open = false;
 	if (!rename)
-		open = (ImGui::TreeNodeEx(name, flags));
+	{
+		if(networking_selected == false)
+			open = (ImGui::TreeNodeEx(name, flags));
+		else
+		{
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
+			open = (ImGui::TreeNodeEx(name, flags));
+			ImGui::PopStyleColor();
+		}
+	}
 	else
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -132,14 +169,26 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	if (hovered)
 	{
 		m_hovered = node.get_handle();
-		if ((clicked || keyenter))
+		if ((clicked || keyenter) && s_selected.contains(handle) == false) //always insert values that unique (avoid unnesscary checks)
 		{
+			for (auto other_handles : s_networkUserSelection)
+			{
+				if (other_handles.second.gameobjecID == handle)
+				{
+					WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG,
+						other_handles.first + " had this selected!");
+					return open;
+				}
+			}
 			if (ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LSHIFT)))
 				s_selected.emplace(handle);
 			else
 			{
+				using namespace std::chrono;
 				s_selected.clear();
 				s_selected.emplace(handle);
+				s_selectedTime_Epoc = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+				BroadcastSelection(handle);//networking part
 			}
 		}
 	}
@@ -215,6 +264,14 @@ const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 {
 	return s_selected;
 }
+std::set<scenenode::handle_type>& Hierarchy::GetSelectedNonConst()
+{
+	return s_selected;
+}
+const uint64_t Hierarchy::GetSelectedTime()
+{
+	return s_selectedTime_Epoc;
+}
 void Hierarchy::PreviewPrefab(const std::filesystem::path& p, const std::filesystem::path& currscene)
 {
 	PrefabSceneData data;
@@ -237,7 +294,10 @@ void Hierarchy::NormalView()
 		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
 		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
 		if (ImGui::Selectable("##parent to root", false, ImGuiSelectableFlags_AllowItemOverlap, ImGui::GetContentRegionAvail()))
+		{
 			s_selected.clear();
+			BroadcastSelection(oo::UUID::Invalid);
+		}
 		ImGui::SetCursorPos(temp);
 		ImGui::PopStyleColor(2);
 		if (ImGui::BeginDragDropTarget())
@@ -359,6 +419,7 @@ void Hierarchy::NormalView()
 		bool open = false;
 		if (source->GetIsPrefab())//prefab
 		{
+
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
 			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
@@ -454,14 +515,27 @@ void Hierarchy::FilteredView()
 		if (hovered)
 		{
 			m_hovered = handle;
-			if ((clicked || keyenter))
+			if ((clicked || keyenter) && s_selected.contains(handle) == false) //avoid unnessary checks
 			{
+				for (auto other_handles : s_networkUserSelection)
+				{
+					if (other_handles.second.gameobjecID == handle)
+					{
+						WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG,
+							other_handles.first + " had this selected!");
+						return;
+					}
+				}
+
 				if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
 					s_selected.emplace(handle);
 				else
 				{
 					s_selected.clear();
 					s_selected.emplace(handle);
+					using namespace std::chrono;
+					s_selectedTime_Epoc = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+					BroadcastSelection(handle);//networking part
 				}
 			}
 		}
@@ -520,24 +594,32 @@ void Hierarchy::RightClickOptions()
 			}
 			if(ImGui::MenuItem("Box"))
 			{
-				auto go = CreateGameObjectImmediate();
-				go->SetName("Box");
-				go->EnsureComponent<oo::MeshRendererComponent>();
-				go->EnsureComponent<oo::BoxColliderComponent>();
+				CreateGameObjectImmediate([](oo::GameObject& go) 
+					{
+						go.SetName("Box");
+						go.EnsureComponent<oo::MeshRendererComponent>();
+						go.EnsureComponent<oo::BoxColliderComponent>();
+					});
+			
 			}
 			if (ImGui::MenuItem("Light"))
 			{
-				auto go = CreateGameObjectImmediate();
-				go->SetName("Light");
-				go->EnsureComponent<oo::LightComponent>();
+				CreateGameObjectImmediate([](oo::GameObject& go) 
+					{
+						go.SetName("Light");
+						go.EnsureComponent<oo::LightComponent>();
+					});
+
 			}
 			if (ImGui::MenuItem("Camera"))
 			{
-				auto go = CreateGameObjectImmediate();
-				go->SetName("Camera");
-				go->EnsureComponent<oo::CameraComponent>();
-				// for now lets add a mesh to let us know where our camera is
-				go->EnsureComponent<oo::MeshRendererComponent>();
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Camera");
+						go.EnsureComponent<oo::CameraComponent>();
+						// for now lets add a mesh to let us know where our camera is
+						go.EnsureComponent<oo::MeshRendererComponent>();
+					});
 			}
 			ImGui::EndMenu();
 		}
@@ -553,6 +635,7 @@ void Hierarchy::RightClickOptions()
 				object->Destroy();
 			}
 			s_selected.clear();
+			BroadcastSelection(oo::UUID::Invalid);
 		}
 		if (ImGui::MenuItem("Duplicate GameObject"))
 		{
@@ -603,11 +686,14 @@ void Hierarchy::Filter_ByScript()
 {
 }
 
-std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate()
+std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate(std::function<void(oo::GameObject&)> modifications)
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto go = scene->CreateGameObjectImmediate();
 	go->SetName("New GameObject");
+	if (modifications)
+		modifications(*go);//for different types of presets
+
 	oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(go));
 	if (s_selected.size() == 1 && m_hovered == *(s_selected.begin()))
 	{
@@ -664,4 +750,50 @@ void Hierarchy::PasteEvent(PasteButtonEvent* pbe)
 
 void Hierarchy::DuplicateEvent(DuplicateButtonEvent* dbe)
 {
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+	if (rect.Contains(ImGui::GetMousePos()) == false)
+		return;
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto go : s_selected)
+	{
+		auto object = scene->FindWithInstanceID(go);
+		if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
+			continue;
+		oo::GameObject new_object = object->Duplicate();
+		//need the scene::go_ptr
+		auto goptr = scene->FindWithInstanceID(new_object.GetInstanceID());
+		oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(goptr));
+	}
+}
+
+void Hierarchy::DestroyEvent(DestroyGameObjectButtonEvent* dbe)
+{
+	ImRect rect = ImGui::FindWindowByName("Hierarchy")->InnerRect;
+	if (rect.Contains(ImGui::GetMousePos()) == false)
+		return;
+
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto go : s_selected)
+	{
+		auto object = scene->FindWithInstanceID(go);
+		if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
+			continue;
+		oo::CommandStackManager::AddCommand(new oo::Delete_ActionCommand(object));
+		object->Destroy();
+	}
+	s_selected.clear();
+}
+
+void Hierarchy::BroadcastSelection(oo::UUID gameobj)
+{
+	if (PacketUtilts::is_connected == false)
+		return;
+	using namespace std::chrono;
+	uint64_t currTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+	std::string data;
+	data += std::to_string(currTime);
+	data += PacketUtilts::SEPERATOR;
+	data += std::to_string(gameobj);
+	PacketUtilts::BroadCastCommand(CommandPacketType::Selected_Object, data);
 }

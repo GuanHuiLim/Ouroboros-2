@@ -29,28 +29,20 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/Input.h"
 
-#include "Ouroboros/Scene/EditorController.h"
+#include "App/Editor/UI/Object Editor/EditorViewport.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
 
 namespace oo
 {
-    Camera EditorController::EditorCamera = [&]()
-    {
-        Camera camera;
-        camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
-        camera.movementSpeed = 5.0f;
-        camera.SetPosition({ 0, 8, 8 });
-        camera.Rotate({ 45, 180, 0 });
-        return camera;
-    }();
-
     void RendererSystem::OnScreenResize(WindowResizeEvent* e)
     {
         auto w = e->GetHeight();
         auto h = e->GetWidth();
         auto ar = static_cast<float>(w) / h;
-        //EditorController::EditorCamera.SetAspectRatio(ar);
+        EditorViewport::EditorCamera.SetAspectRatio(ar);
+        m_graphicsWorld->cameras[1] = EditorViewport::EditorCamera;
         m_runtimeCamera.SetAspectRatio(ar);
+        m_graphicsWorld->cameras[0] = m_runtimeCamera;
     }
 
     void RendererSystem::OnEditorViewportResize(EditorViewportResizeEvent* e)
@@ -58,10 +50,19 @@ namespace oo
         auto w = e->X;
         auto h = e->Y;
         auto ar = static_cast<float>(w) / h;
-        EditorController::EditorCamera.SetAspectRatio(ar);
-        m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
-        //m_runtimeCamera.SetAspectRatio(ar);
+        EditorViewport::EditorCamera.SetAspectRatio(ar);
+        ASSERT_MSG(m_graphicsWorld == nullptr, "Graphics world shouldn't be null!");
+        m_graphicsWorld->cameras[1] = EditorViewport::EditorCamera;
     }
+
+    /*void RendererSystem::OnPreviewWindowResize(PreviewWindowResizeEvent* e)
+    {
+        auto w = e->X;
+        auto h = e->Y;
+        auto ar = static_cast<float>(w) / h;
+        m_runtimeCamera.SetAspectRatio(ar);
+        m_graphicsWorld->cameras[0] = m_runtimeCamera;
+    }*/
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
@@ -87,16 +88,16 @@ namespace oo
         InitializeMesh(meshComp, transform_component, gameobject_component);
 
         // TODO: HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
-        meshComp.model_handle = 0;
-        meshComp.meshInfo.submeshBits[0] = true;
+        meshComp.ModelHandle = 0;
+        meshComp.MeshInformation.submeshBits[0] = true;
     }
 
     void oo::RendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         auto& comp = evnt->component;
-        m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
+        m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
         // remove graphics id to uuid of gameobject
-        m_graphicsIdToUUID.erase(comp.graphicsWorld_ID);
+        m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
     }
 
     oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld)
@@ -105,36 +106,39 @@ namespace oo
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
     }
 
+    RendererSystem::~RendererSystem()
+    {
+        // unsubscribe or it'll crash
+        EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
+        //EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
+        EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
+    }
+
     void RendererSystem::Init()
     {
-        // set camera
-        oo::GetCurrentSceneStateEvent e;
-        oo::EventManager::Broadcast(&e);
-        switch (e.state)
+        // setup runtime camera
+        m_runtimeCamera = [&]()
         {
-        case oo::SCENE_STATE::EDITING:
-            EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
-            m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
-            break;
-        case oo::SCENE_STATE::RUNNING:
-            // setup cameras
+            Camera camera;
+            camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
+#if OO_EXECUTABLE
             auto [width, height] = Application::Get().GetWindow().GetSize();
-            m_runtimeCamera = [&]()
-            {
-                Camera camera;
-                camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
-                camera.SetAspectRatio((float)width / (float)height);
-                camera.movementSpeed = 5.0f;
-                //camera.SetPosition({ 0, 8, 8 });
-                //camera.Rotate({ 45, 180, 0 });
-                return camera;
-            }();
+            camera.SetAspectRatio((float)width / (float)height);
+#else 
+            /*GetPreviewWindowSizeEvent e;
+            EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
+            auto ar = e.Width / e.Height;
+            camera.SetAspectRatio(ar);*/
+            static constexpr float defaultAR = 16.0 / 9.0;
+            camera.SetAspectRatio(defaultAR);
+#endif
+            camera.movementSpeed = 5.0f;
+            //camera.SetPosition({ 0, 8, 8 });
+            //camera.Rotate({ 45, 180, 0 });
+            return camera;
+        }();
 
-            m_graphicsWorld->cameras[0] = m_runtimeCamera;
-            break;
-        }
-        auto& camera = m_graphicsWorld->cameras[0];
-        m_cc.SetCamera(&camera);
+        m_runtimeCC.SetCamera(&m_runtimeCamera);
 
         // Mesh Renderer
         m_world->SubscribeOnAddComponent<RendererSystem, MeshRendererComponent>(
@@ -150,6 +154,8 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<RendererSystem, LightComponent>(
             this, &RendererSystem::OnLightRemove);
 
+        //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
+        EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
     }
 
@@ -161,7 +167,7 @@ namespace oo
         switch (e.state)
         {
         case oo::SCENE_STATE::RUNNING:
-            EditorController::EditorCamera = m_graphicsWorld->cameras[0];
+            EditorViewport::EditorCamera = m_graphicsWorld->cameras[1];
             break;
         }
         //EditorController::EditorCamera  = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
@@ -196,11 +202,13 @@ namespace oo
         world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
         {
             //do nothing if transform did not change
-            auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
-            actualObject.modelID = m_comp.model_handle;
-            actualObject.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
-            actualObject.bindlessGlobalTextureIndex_Normal= m_comp.normalID;
-            actualObject.submesh = m_comp.meshInfo.submeshBits;
+            auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
+            actualObject.modelID = m_comp.ModelHandle;
+            actualObject.bindlessGlobalTextureIndex_Albedo      = m_comp.AlbedoID;
+            actualObject.bindlessGlobalTextureIndex_Normal      = m_comp.NormalID;
+            actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
+            actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
+            actualObject.submesh = m_comp.MeshInformation.submeshBits;
 
             if (transformComp.HasChangedThisFrame)
                 actualObject.localToWorld = transformComp.GlobalTransform;
@@ -235,53 +243,38 @@ namespace oo
         RenderDebugDraws(world);
     }
 
-    void RendererSystem::UpdateCamerasEditorMode()
-    {
-        m_cc.Update(oo::timer::dt());
-        EditorController::EditorCamera = *m_cc.GetCamera();
-        //auto pos = EditorController::EditorCamera.m_position; // m_cc.GetCamera()->m_position;
-        //LOG_TRACE("Editor Camera Position {0} {1} {2}", pos.x, pos.y, pos.z);
-    }
-
     // additional function that runs during runtime scene only.
-    void RendererSystem::UpdateCamerasRuntime()
+    void RendererSystem::UpdateCameras()
     {
-        static bool using_editor_camera = false;
-#ifdef OO_EDITOR
-        if (oo::input::IsKeyPressed(KEY_F8))
+        // Update Camera(s)
+        // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
+
+        Camera* camera = m_runtimeCC.GetCamera();
+        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
+        m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
         {
-            using_editor_camera = !using_editor_camera;
+            /*if (!transformComp.HasChangedThisFrame)
+                return;*/
 
-            if (using_editor_camera)
+            camera->SetPosition(transformComp.GetGlobalPosition());
+            camera->SetRotation(transformComp.GetGlobalRotationQuat());
+            switch (cameraComp.AspectRatio)
             {
-                m_runtimeCamera = m_graphicsWorld->cameras[0];
-                m_graphicsWorld->cameras[0] = EditorController::EditorCamera;
+            case CameraAspectRatio::FOUR_BY_THREE:
+                camera->SetAspectRatio(4.0/3.0);
+                break;
+            case CameraAspectRatio::SIXTEEN_BY_NINE:
+                camera->SetAspectRatio(16.0/9.0);
+                break;
+            case CameraAspectRatio::SIXTEEN_BY_TEN:
+                camera->SetAspectRatio(16.0/10.0);
+                break;
             }
-            else
-            {
-                m_graphicsWorld->cameras[0] = m_runtimeCamera;
-            }
-            m_cc.SetCamera(&m_graphicsWorld->cameras[0]);
-        }
-#endif
-        if (!using_editor_camera)
-        {
-            // TODO: debug draw the camera's view in editormode
-            //DebugDraw::AddLine();
+        });
+        m_runtimeCC.Update(oo::timer::dt(), false);
 
-            // Update Camera(s)
-            // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
-
-            Camera* camera = m_cc.GetCamera();
-            static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-            m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
-            {
-                camera->SetPosition(transformComp.GetGlobalPosition());
-                camera->SetRotation(transformComp.GetGlobalRotationQuat());
-            });
-        }
-
-        m_cc.Update(oo::timer::dt(), using_editor_camera);
+        m_graphicsWorld->cameras[0] = m_runtimeCamera;
+        m_graphicsWorld->cameras[1] = EditorViewport::EditorCamera;
     }
     
     void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)
@@ -297,18 +290,32 @@ namespace oo
             sphere.radius = 0.1f;
             DebugDraw::AddSphere(sphere, graphics_light.color);
         });
+
+        if (CameraDebugDraw)
+        {
+            // draws camera frustum if enabled.
+            static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
+            world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+            {
+                Camera camera;
+                camera.SetPosition(transformComp.GetGlobalPosition());
+                camera.SetRotation(transformComp.GetGlobalRotationQuat());
+                DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::ORANGE);
+            });
+        }
+
     }
 
     void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc)
     {
-        meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+        meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
 
         //update graphics world side
-        auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
+        auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.GraphicsWorldID);
         graphics_object.localToWorld = transformComp.GetGlobalMatrix();
 
         // map graphics id to uuid of gameobject
-        m_graphicsIdToUUID.insert({ meshComp.graphicsWorld_ID, goc.Id });
+        m_graphicsIdToUUID.insert({ meshComp.GraphicsWorldID, goc.Id });
     }
 
     void RendererSystem::InitializeLight(LightComponent& lightComp, TransformComponent& transformComp)

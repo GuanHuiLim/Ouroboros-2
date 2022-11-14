@@ -35,8 +35,9 @@ namespace oo
         registration::class_<SphereColliderComponent>("Sphere Collider")
             //.property("Is Trigger", &SphereColliderComponent::IsTrigger)
             //.property("Offset", &SphereColliderComponent::Offset)
-            .property("Local Bounds", &SphereColliderComponent::Bounds)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Radius", &SphereColliderComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f));
+            //.property("Local Bounds", &SphereColliderComponent::Bounds)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Radius", &SphereColliderComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property_readonly("Global Radius", &SphereColliderComponent::GlobalRadius);
 
         registration::class_<CapsuleColliderComponent>("Capsule Collider")
             //.property("Is Trigger", &CapsuleColliderComponent::IsTrigger)

@@ -33,6 +33,7 @@ Technology is prohibited.
 #include <Ouroboros/Scene/Scene.h>
 #include <Ouroboros/Prefab/PrefabManager.h>
 #include <Ouroboros/Commands/Script_ActionCommand.h>
+#include <Ouroboros/Commands/ScriptAR_ActionCommand.h>
 
 #include <Ouroboros/Audio/AudioListenerComponent.h>
 #include <Ouroboros/Audio/AudioSourceComponent.h>
@@ -56,6 +57,11 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
 #include <Ouroboros/ECS/GameObjectDisabledComponent.h>
 #include <Ouroboros/Animation/AnimationComponent.h>
+
+#include <Ouroboros/UI/RectTransformComponent.h>
+#include <Ouroboros/UI/UIButtonComponent.h>
+#include <Ouroboros/UI/UICanvasComponent.h>
+#include <Ouroboros/UI/UIImageComponent.h>
 
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
@@ -132,13 +138,20 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::PushItemWidth(200.0f);
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
-	DisplayComponent<oo::TransformComponent>(gameobject);
+	// display either rect transform or base transform
+	if (gameobject.HasComponent<oo::RectTransformComponent>())
+	{
+		DisplayComponent<oo::RectTransformComponent>(gameobject);
+	}
+	else
+	{
+		DisplayComponent<oo::TransformComponent>(gameobject);
+	}
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
 
 	DisplayComponent<oo::RigidbodyComponent>(gameobject);
-	//DisplayComponent<oo::ColliderComponent>(gameobject);
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
 	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
@@ -152,7 +165,11 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	DisplayComponent<oo::AnimationComponent>(gameobject);
-	
+
+	DisplayComponent<oo::UIButtonComponent>(gameobject);
+	DisplayComponent<oo::UICanvasComponent>(gameobject);
+	DisplayComponent<oo::UIImageComponent>(gameobject);
+
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
 }
@@ -178,20 +195,30 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::EndChild();
 		if (ImGui::BeginListBox("##AddComponents", { x,y }))
 		{
+			// Components that you're not supposed to be able to add
 			selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::DuplicatedComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+			
+			// Components that should be in the final version
 			selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
-			//selected |= AddComponentSelectable<oo::ColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
-			//selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
+
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
+
+			selected |= AddComponentSelectable<oo::RectTransformComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIButtonComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIImageComponent>(gameobject);
+
 			selected |= AddScriptsSelectable(gameobject);
 
 			ImGui::EndListBox();
@@ -226,6 +253,7 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
             auto ss = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetWorld().Get_System<oo::ScriptSystem>();
             ss->AddScript(go.GetInstanceID(), script.name_space.c_str(), script.name.c_str());
 			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
+			oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go.GetInstanceID(), script.name_space, script.name));
 			ImGui::PopStyleColor();
 			return true;
 		}
@@ -407,7 +435,7 @@ void Inspector::DisplayEnumView(rttr::property prop, rttr::variant& value, bool&
 	}
 	if (open_id == curr_id)
 	{
-		if (ImGui::BeginListBox("#enums"))
+		if (ImGui::BeginListBox("##enums"))
 		{
 			for (auto val : enumeration.get_values())
 			{
@@ -417,6 +445,7 @@ void Inspector::DisplayEnumView(rttr::property prop, rttr::variant& value, bool&
 					value = val;
 					open_id = 0;
 					endEdit = true;
+					edited = true;
 				}
 			}
 			ImGui::EndListBox();
@@ -441,6 +470,14 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 			if (ImGui::SmallButton("x"))
 			{
                 ss->RemoveScript(gameobject.GetInstanceID(), scriptInfo.second.classInfo.name_space.c_str(), scriptInfo.second.classInfo.name.c_str());
+				oo::CommandStackManager::AddCommand(
+					new oo::ScriptRemove_ActionCommand(
+						gameobject.GetInstanceID(),
+						scriptInfo.second.classInfo.name_space,
+						scriptInfo.second.classInfo.name
+					)
+				);
+
 				sc.RemoveScriptInfo(scriptInfo.second.classInfo);
 				ImGui::PopID();
 				return;

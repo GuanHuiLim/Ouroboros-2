@@ -74,7 +74,7 @@ namespace oo
         //// Setup Camera Internally, not used
         vr = VulkanRenderer::get();
         //auto& camera = vr->camera;
-        ////m_cc.SetCamera(&camera);
+        ////m_runtimeCC.SetCamera(&camera);
         //camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         //camera.movementSpeed = 5.0f;
         //camera.SetAspectRatio((float)m_window.m_width / (float)m_window.m_height);
@@ -221,7 +221,7 @@ namespace oo
         // Vulkan will call internally
 
         // temporarily shift here for better structuring
-        //m_cc.Update(oo::timer::dt());
+        //m_runtimeCC.Update(oo::timer::dt());
 
         if (vr->PrepareFrame() == true)        
         {

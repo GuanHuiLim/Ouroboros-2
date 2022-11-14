@@ -52,6 +52,14 @@ namespace oo::Anim
 	using P_TYPE = ParamType;
 	//using ParameterValueType = std::variant<bool, int, float>;
 
+	struct UID
+	{
+		size_t id{};
+		UID() = default;
+		operator size_t() const { return id; }
+		UID(size_t _id) : id{_id}{}
+	};
+
 	struct InvalidType {};
 	//variables that are defined within an AnimationTree that can be accessed and assigned values from scripts or editor
 	struct Parameter;	
@@ -211,14 +219,49 @@ namespace oo::Anim
 	------------*/
 	struct SetNodeAnimInfo
 	{
-		// name to identify target group
+		// name to identify group
 		std::string group_name;
-		// name to identify target node
-		std::string node_name;
-		// name to identify target animation
-		std::string anim_name;
+		// id of the node
+		size_t node_ID{ internal::invalid_ID };
+		// asset for the animation
+		oo::Asset anim_asset;
 	};
-	
+	struct TargetTimelineInfo
+	{
+		//id of the animation the timeline is located at
+		size_t anim_id{internal::invalid_ID};
+		//name of the timeline
+		std::string timeline_name{};
+
+	};
+	struct TargetNodeInfo
+	{
+		//name of the group
+		std::string group_name{};
+		//id of the node
+		size_t node_ID{internal::invalid_ID};
+	};
+	struct TargetLinkInfo
+	{
+		//name of the group
+		std::string group_name{};
+		//id of the link
+		size_t link_ID{ internal::invalid_ID };
+	};
+
+	struct TargetConditionInfo
+	{
+		//information of the link the condition is attached to
+		TargetLinkInfo link_info{};
+		//id of the condition
+		size_t condition_ID{ internal::invalid_ID };
+	};
+
+	struct TargetParameterInfo
+	{
+		//id of the parameter
+		size_t param_ID{ internal::invalid_ID };
+	};
 }
 
 

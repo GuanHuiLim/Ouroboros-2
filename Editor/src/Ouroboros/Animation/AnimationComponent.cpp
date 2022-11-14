@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "AnimationComponent.h"
 #include "AnimationInternal.h"
 
+#include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
 namespace oo
 {
@@ -23,7 +24,12 @@ namespace oo
     {
         using namespace rttr;
         registration::class_<AnimationComponent>("AnimationComponent")
-            .property("AnimationTreeName", &AnimationComponent::GetAnimationTreeName, &AnimationComponent::SetAnimationTree);
+            //.property("AnimationTreeName", &AnimationComponent::GetAnimationTreeName, static_cast<void (AnimationComponent::*)(std::string)>(&AnimationComponent::SetAnimationTree))
+            .property("Animation Tree", &AnimationComponent::GetAnimationTreeAsset, static_cast<void (AnimationComponent::*)(oo::Asset)>(&AnimationComponent::SetAnimationTree))
+			(
+				metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::AnimationTree))
+			)
+		;
     }
 
 
@@ -39,14 +45,38 @@ namespace oo
 
 	void AnimationComponent::SetAnimationTree(std::string name)
 	{
-		//animTree = _animTree;
 		actualComponent.Reset();
 		oo::Anim::internal::AssignAnimationTreeToComponent(actualComponent, name);
 	}
 
+	void oo::AnimationComponent::SetAnimationTree(size_t id)
+	{
+		actualComponent.Reset();
+		oo::Anim::internal::AssignAnimationTreeToComponent(actualComponent, id);
+	}
+
+	void oo::AnimationComponent::SetAnimationTree(oo::Asset asset)
+	{
+		if (asset.IsValid() == false) return;
+
+		auto treeID = asset.GetData<Anim::UID>();
+		SetAnimationTree(treeID);
+		//if failed to find animation tree
+		if (HasAnimationTree() == false) return;
+		//otherwise set it as asset
+		anim_tree_asset = asset;
+	}
+
 	std::string AnimationComponent::GetAnimationTreeName()
 	{
-		return actualComponent.animTree_name;
+		if (HasAnimationTree() == false) return {};
+
+		return actualComponent.animTree->name;
+	}
+
+	bool oo::AnimationComponent::HasAnimationTree()
+	{
+		return actualComponent.animTree != nullptr;
 	}
 
 	void AnimationComponent::SetParameter(std::string const& name, Anim::Parameter::DataType value)
@@ -90,6 +120,10 @@ namespace oo
 	Anim::AnimationTree* AnimationComponent::GetAnimationTree()
 	{
 		return actualComponent.animTree;
+	}
+	oo::Asset oo::AnimationComponent::GetAnimationTreeAsset()
+	{
+		return anim_tree_asset;
 	}
 	Anim::AnimationTracker& AnimationComponent::GetTracker()
 	{
@@ -150,6 +184,27 @@ namespace oo
 		return oo::Anim::internal::CreateNodeReference(*group,node->node_ID);
 	}
 
+	void oo::AnimationComponent::RemoveNode(Anim::TargetNodeInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.group_name);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot remove node!!", info.group_name);
+			assert(false);
+			return;
+		}
+		Anim::internal::RemoveNodeFromGroup(*group, info.node_ID);
+	}
+
 	Anim::LinkRef AnimationComponent::AddLink(std::string const& groupName, std::string const& src, std::string const& dst)
 	{
 		auto tree = GetAnimationTree();
@@ -192,6 +247,27 @@ namespace oo
 		return oo::Anim::internal::CreateLinkReference(*group,link->linkID);
 	}
 
+	void oo::AnimationComponent::RemoveLink(Anim::TargetLinkInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.group_name);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot remove link!!", info.group_name);
+			assert(false);
+			return;
+		}
+		Anim::internal::RemoveLinkFromGroup(*group, info.link_ID);
+	}
+
 	Anim::Parameter* AnimationComponent::AddParameter(Anim::ParameterInfo const& info)
 	{
 		if (GetAnimationTree() == nullptr)
@@ -210,6 +286,20 @@ namespace oo
 		}
 
 		return parameter;
+	}
+
+	void oo::AnimationComponent::RemoveParameter(Anim::TargetParameterInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return;
+		}
+
+		oo::Anim::internal::RemoveParameterFromTree(*tree, info.param_ID);
 	}
 
 	Anim::Condition* AnimationComponent::AddCondition(std::string const& groupName, std::string const& linkName, Anim::ConditionInfo info)
@@ -261,8 +351,39 @@ namespace oo
 		return condition;
 	}
 
+	void oo::AnimationComponent::RemoveCondition(Anim::TargetConditionInfo const& info)
+	{
+		auto tree = GetAnimationTree();
+		//tree should exist
+		if (tree == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
+			assert(false);
+			return;
+		}
+		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.link_info.group_name);
+		//group should exist
+		if (group == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} group not found, cannot remove condition!!", info.link_info.group_name);
+			assert(false);
+			return;
+		}
+		auto link = Anim::internal::RetrieveLinkFromGroup(*group, info.link_info.link_ID);
+		//link should exist
+		if (link == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} link not found, cannot remove condition!!", info.link_info.link_ID);
+			assert(false);
+			return;
+		}
+
+		oo::Anim::internal::RemoveConditionFromLink(*link, info.condition_ID);
+
+	}
+
 	Anim::TimelineRef AnimationComponent::AddTimeline(std::string const& groupName, std::string const& nodeName,
-		Anim::TimelineInfo const& info)
+		Anim::TimelineInfo& info)
 	{
 		auto tree = GetAnimationTree();
 		//tree should exist
@@ -368,7 +489,7 @@ namespace oo
 			return nullptr;
 		}
 		auto timeline = Anim::internal::RetrieveTimelineFromAnimation(node->GetAnimation(), timelineName);
-		//node should exist
+		//timeline should exist
 		if (timeline == nullptr)
 		{
 			LOG_CORE_DEBUG_INFO("{0} timeline not found, cannot add keyframe!!", timelineName);
@@ -444,25 +565,16 @@ namespace oo
 			assert(false);
 			return {};
 		}
-		auto node = Anim::internal::RetrieveNodeFromGroup(*group, info.node_name);
+		auto node = Anim::internal::RetrieveNodeFromGroup(*group, info.node_ID);
 		//node should exist
 		if (node == nullptr)
 		{
-			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add animation to node!!", info.node_name);
+			LOG_CORE_DEBUG_INFO("{0} node not found, cannot add animation to node!!", info.node_ID);
 			assert(false);
 			return {};
 		}
 
-		auto anim = Anim::internal::RetrieveAnimation(info.anim_name);
-		//animation should exist
-		if (anim == nullptr)
-		{
-			LOG_CORE_DEBUG_INFO("{0} animation not found, cannot add animation to node!!", info.anim_name);
-			assert(false);
-			return {};
-		}
-
-		auto result = Anim::internal::AddAnimationToNode(*node, *anim);
+		auto result = Anim::internal::AddAnimationToNode(*node, info.anim_asset);
 		if (result == nullptr)
 		{
 			LOG_CORE_DEBUG_INFO("error, cannot add animation to node!!");
@@ -470,6 +582,27 @@ namespace oo
 			return {};
 		}
 		return oo::Anim::internal::CreateAnimationReference(result->animation_ID);
+	}
+	void oo::AnimationComponent::ReInsertKeyFrame(Anim::TargetTimelineInfo info, uint keyframe_index, float new_time)
+	{
+		auto anim = Anim::internal::RetrieveAnimation(info.anim_id);
+		//animation should exist
+		if (anim == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} animation not found, cannot recalculate KeyFrames!!", info.anim_id);
+			assert(false);
+			return;
+		}
+		auto timeline = oo::Anim::internal::RetrieveTimelineFromAnimation(*anim, info.timeline_name);
+		//timeline should exist
+		if (timeline == nullptr)
+		{
+			LOG_CORE_DEBUG_INFO("{0} timeline not found, cannot recalculate KeyFrames!!", info.timeline_name);
+			assert(false);
+			return;
+		}
+
+		oo::Anim::internal::ReInsertKeyFrame(*timeline, keyframe_index, new_time);
 	}
 }
 
