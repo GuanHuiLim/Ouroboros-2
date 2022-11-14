@@ -31,6 +31,7 @@ Technology is prohibited.
 
 #include "App/Editor/UI/Object Editor/EditorViewport.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/Vulkan/GlobalRendererSettings.h"
 
 namespace oo
 {
@@ -63,6 +64,16 @@ namespace oo
         m_runtimeCamera.SetAspectRatio(ar);
         m_graphicsWorld->cameras[0] = m_runtimeCamera;
     }*/
+
+    void RendererSystem::OnUpdateRendererSettings(UpdateRendererSettings*)
+    {
+        m_graphicsWorld->ssaoSettings.bias = RendererSettings::setting.SSAO.Bias;
+        m_graphicsWorld->ssaoSettings.radius = RendererSettings::setting.SSAO.Radius;
+
+        m_graphicsWorld->lightSettings.ambient = RendererSettings::setting.Lighting.Ambient;
+        m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;
+        m_graphicsWorld->lightSettings.maxBias = RendererSettings::setting.Lighting.MaxBias;
+    }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
@@ -109,6 +120,8 @@ namespace oo
         EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         //EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
+
+        EventManager::Unsubscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
     }
 
     void RendererSystem::Init()
@@ -154,6 +167,12 @@ namespace oo
         //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
+        
+        EventManager::Subscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
+
+        // launch the event manually myself once.
+        UpdateRendererSettings e;
+        oo::EventManager::Broadcast<UpdateRendererSettings>(&e);
     }
 
     void RendererSystem::SaveEditorCamera()
