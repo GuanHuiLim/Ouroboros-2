@@ -6,6 +6,7 @@
 class Project
 {
 	static constexpr const char* InputFileName = "InputBindings";
+	static constexpr const char* ScriptSequenceFileName = "ScriptSequence";
 public:
 	static void LoadProject(std::filesystem::path& p);
 	static void SaveProject();
@@ -15,8 +16,12 @@ public:
 	//input
 	static void LoadInputs(const std::filesystem::path& loadpath);
 	static void SaveInputs(const std::filesystem::path& savepath);
-	static std::filesystem::path GetInputFilePath() { return GetProjectFolder() / InputFileName; };
+	//script sequence
+	static void SaveScriptSequence(const std::filesystem::path& path);
+	static void LoadScriptSequence(const std::filesystem::path& path);
 
+	static std::filesystem::path GetInputFilePath() { return GetProjectFolder() / InputFileName; };
+	static std::filesystem::path GetScriptSequencePath() { return GetProjectFolder() / ScriptSequenceFileName; };
 	static std::filesystem::path GetStartingScene() { return s_startingScene; };
 	static std::filesystem::path GetProjectFolder() { return s_projectFolder; };
 	static std::filesystem::path GetAssetFolder() { return s_projectFolder.string() + s_assetFolder.string(); };

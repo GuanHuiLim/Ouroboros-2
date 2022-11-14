@@ -50,7 +50,6 @@ void Project::LoadProject(std::filesystem::path& config)
     UpdateScriptingFiles();
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
 
-
 	//scenes to add to scene manager
 	oo::RuntimeController::container_type m_loadpaths;
 	auto scenes_settings = doc.FindMember("Scenes");
@@ -78,6 +77,8 @@ void Project::LoadProject(std::filesystem::path& config)
 
 	//load input manager
 	LoadInputs(GetProjectFolder() / InputFileName);
+	//load script sequence
+	LoadScriptSequence(GetScriptSequencePath());
 }
 
 void Project::SaveProject()
@@ -145,8 +146,8 @@ void Project::SaveProject()
 		ofs.close();
 	}
 	ifs.close();
-
 	SaveInputs(GetProjectFolder() / (InputFileName));
+	SaveScriptSequence(GetScriptSequencePath());
 }
 
 void Project::LoadInputs(const std::filesystem::path& loadpath)
@@ -275,6 +276,67 @@ void Project::SaveInputs(const std::filesystem::path& savepath)
 	rapidjson::OStreamWrapper osw(ofs2);
 	rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
 	input_doc.Accept(writer);
+	ofs2.close();
+}
+
+void Project::SaveScriptSequence(const std::filesystem::path& path)
+{
+	std::ofstream ofs(path);
+	if (!ofs)
+		return;
+	
+	rapidjson::Document input_doc;
+	auto& doc_object = input_doc.SetObject();
+
+	rapidjson::Value pre_arr(rapidjson::kArrayType);
+	for (auto& before : oo::ScriptManager::GetBeforeDefaultOrder())
+	{
+		pre_arr.PushBack(rapidjson::Value(before.ToString().c_str(),input_doc.GetAllocator())
+						, input_doc.GetAllocator());
+	}
+	doc_object.AddMember("Before Default Order", pre_arr, input_doc.GetAllocator());
+
+	rapidjson::Value post_arr(rapidjson::kArrayType);
+	for (auto& after : oo::ScriptManager::GetAfterDefaultOrder())
+	{
+		post_arr.PushBack(rapidjson::Value(after.ToString().c_str(), input_doc.GetAllocator())
+			, input_doc.GetAllocator());
+	}
+	doc_object.AddMember("After Default Order", post_arr, input_doc.GetAllocator());
+
+
+	rapidjson::OStreamWrapper osw(ofs);
+	rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+	input_doc.Accept(writer);
+	ofs.close();
+}
+
+void Project::LoadScriptSequence(const std::filesystem::path& path)
+{
+	oo::ScriptManager::ClearScriptExecutionOrder();
+	std::ifstream ifs2(path);
+	if (!ifs2)
+	{
+		return;
+	}
+	rapidjson::IStreamWrapper isw2(ifs2);
+	rapidjson::Document input_doc;
+	input_doc.ParseStream(isw2);
+	
+	rapidjson::Value& before_order = input_doc.GetObj().FindMember("Before Default Order")->value;
+	rapidjson::GenericArray before_arr = before_order.GetArray();
+	for (rapidjson::SizeType i = 0 ; i < before_arr.Size();++i)
+	{
+		oo::ScriptManager::InsertBeforeDefaultOrder(oo::ScriptClassInfo(before_arr[i].GetString()));
+	}
+
+	rapidjson::Value& after_order = input_doc.FindMember("After Default Order")->value;
+	rapidjson::GenericArray after_arr = after_order.GetArray();
+	for (rapidjson::SizeType i = 0; i < after_arr.Size(); ++i)
+	{
+		oo::ScriptManager::InsertAfterDefaultOrder(oo::ScriptClassInfo(after_arr[i].GetString()));
+	}
+	ifs2.close();
 }
 
 void Project::LoadRendererSetting(rapidjson::Value& setting_val, rttr::variant& v)
