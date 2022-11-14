@@ -27,8 +27,11 @@ public:
 	static std::filesystem::path GetScriptModulePath() { return s_projectFolder.string() + s_scriptmodulePath.string(); };
 	static std::filesystem::path GetScriptBuildPath() { return s_projectFolder.string() + s_scriptbuildPath.string(); };
 private:
+	
+	static void LoadRendererSetting(rapidjson::Value& val, rttr::variant& v);
+	static void LoadRenderer(rapidjson::Value& val);
 
-	static void LoadRenderer(rapidjson::Value& val, rapidjson::Document& doc);
+	static void SaveRendererSetting(rapidjson::Value& val, rttr::property prop ,rttr::variant v, rapidjson::Document& doc);
 	static void SaveRenderer(rapidjson::Value& val, rapidjson::Document& doc);
     
 	static void UpdateScriptingFiles();
