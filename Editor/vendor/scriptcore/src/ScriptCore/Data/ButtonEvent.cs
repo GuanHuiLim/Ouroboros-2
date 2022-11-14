@@ -12,7 +12,8 @@ namespace Ouroboros
 
         public void Invoke()
         {
-            foreach(ButtonAction action in actionList)
+            List<ButtonAction> copy = new List<ButtonAction>(actionList);
+            foreach(ButtonAction action in copy)
             {
                 action.Invoke();
             }
