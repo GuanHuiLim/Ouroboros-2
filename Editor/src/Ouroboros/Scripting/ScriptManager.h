@@ -143,6 +143,11 @@ namespace oo
         static void RemoveAfterDefaultOrder(ScriptClassInfo const& classInfo);
 
         static std::vector<MonoClass*> const GetScriptExecutionOrder();
+        static inline void ClearScriptExecutionOrder()
+        {
+            s_BeforeDefaultOrder.clear();
+            s_AfterDefaultOrder.clear();
+        }
 
         /*********************************************************************************//*!
         \brief      Helper function used to register C++ ECS components to the scripting
