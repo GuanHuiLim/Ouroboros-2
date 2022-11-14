@@ -397,6 +397,122 @@ namespace myPhysx
             m_collisionPairs.pop();
     }
 
+    RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance) {
+
+        RaycastHit hit{};
+        PxRaycastBuffer hitBuffer;
+
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_ANY;
+
+        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, hitFlags);
+
+        // HAVE INTERSECTION
+        if (hit.intersect) {
+
+            hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(hitBuffer.block.actor->userData);
+
+            hit.position = hitBuffer.block.position;
+            hit.normal = hitBuffer.block.normal;
+            hit.distance = hitBuffer.block.distance;
+ 
+            if (hitBuffer.block.actor->getType() == PxActorType::eRIGID_STATIC) 
+                hit.rigidID = rigid::rstatic;
+
+            else if (hitBuffer.block.actor->getType() == PxActorType::eRIGID_DYNAMIC)
+                hit.rigidID = rigid::rdynamic;
+
+            switch (hitBuffer.block.shape->getGeometryType()) {
+
+            case 0: //  PxGeometryType::eSPHERE
+                hit.shape = shape::sphere;
+                break;
+
+            case 1: //  PxGeometryType::ePLANE
+                hit.shape = shape::plane;
+                break;
+
+            case 2: //  PxGeometryType::eCAPSULE
+                hit.shape = shape::capsule;
+                break;
+
+            case 3: //  PxGeometryType::eBOX
+                hit.shape = shape::box;
+                break;
+
+            default:
+                break;
+            }
+
+        }
+
+        return hit;
+    }
+
+    std::vector<RaycastHit> PhysxWorld::raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance) {
+
+        const PxU32 bufferSize = 200;// 256;           // size of the buffer       
+        PxRaycastHit hitBuffer[bufferSize];            // storage of the buffer results
+        PxRaycastBuffer buffer(hitBuffer, bufferSize); // blocking and touching hits stored here
+
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
+        
+        scene->raycast(origin, direction, distance, buffer, hitFlags);
+        
+        // loop based on how many touches return by the query
+        for (PxU32 i = 0; i < buffer.nbTouches; i++)
+        {
+            RaycastHit hit{};
+
+            hit.intersect = buffer.hasBlock;
+
+            hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(buffer.touches[i].actor->userData);
+
+            hit.position = buffer.touches[i].position;
+            hit.normal = buffer.touches[i].normal;
+            hit.distance = buffer.touches[i].distance;
+
+            switch (buffer.touches[i].actor->getType()) {
+
+            case 0: //  PxActorType::eRIGID_STATIC
+                hit.rigidID = rigid::rstatic;
+                break;
+
+            case 1: //  PxActorType::eRIGID_DYNAMIC
+                hit.rigidID = rigid::rdynamic;
+                break;
+
+            default:
+                break;
+            }
+
+            switch (buffer.touches[i].shape->getGeometryType()) {
+
+            case 0: //  PxGeometryType::eSPHERE
+                hit.shape = shape::sphere;
+                break;
+
+            case 1: //  PxGeometryType::ePLANE
+                hit.shape = shape::plane;
+                break;
+
+            case 2: //  PxGeometryType::eCAPSULE
+                hit.shape = shape::capsule;
+                break;
+
+            case 3: //  PxGeometryType::eBOX
+                hit.shape = shape::box;
+                break;
+
+            default:
+                break;
+            }
+
+            hitAll.emplace_back(hit); // store each hit data into the container
+        }
+
+        return hitAll;
+    }
+
 /*-----------------------------------------------------------------------------*/
 /*                               PhysicsObject                                 */
 /*-----------------------------------------------------------------------------*/
