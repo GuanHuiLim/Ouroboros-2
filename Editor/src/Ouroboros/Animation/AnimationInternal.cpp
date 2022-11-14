@@ -930,7 +930,99 @@ namespace oo::Anim::internal
 	{
 		assert(info.progressTracker.type == Timeline::TYPE::FBX_ANIM);
 
+		auto& timeline = *(info.progressTracker.timeline);
 
+		//no keyframes so we return
+		if (timeline.keyframes.empty()) return;
+
+		//already hit last and animation not looping so we return
+		if (info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
+			info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
+		{
+			return;
+		}
+
+		////if looping, set the normalized time based on iterations
+		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
+		//{
+		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
+		//	{
+		//		currentTimer -= timeline.keyframes.back().time;
+		//		num_iterations += 1.f;
+		//	}
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
+		//}
+		//else
+		//{
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
+		//}
+
+
+		//find the correct gameobject
+		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
+		//traverse the hierarchy
+		for (auto& index : timeline.children_index)
+		{
+			auto name = go.Name();
+			auto children = go.GetDirectChilds();
+			go = children[index];
+		}
+		//if next keyframe within bounds increment index 
+		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
+		if (Withinbounds(updatedTimer, nextEvent.time))
+		{
+			info.progressTracker.index++;
+
+			//went past last keyframe so we set data to last and return
+			if (info.progressTracker.index >= (timeline.keyframes.size() - 1ul))
+			{
+				//get the instance
+				auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
+					go.GetEntity(), info.progressTracker.timeline->component_hash);
+				auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
+				//set the value
+				info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
+
+				//if animation is looping, reset keyframe index
+				if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
+				{
+					info.progressTracker.index = 0;
+				}
+				return;
+			}
+
+		}
+
+		/*--------------------------------
+		interpolate animation accordingly
+		--------------------------------*/
+		auto& prevKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index);
+		auto& nextKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index + 1u);
+		auto prevTime = prevKeyframe.time;
+		auto nextTime = nextKeyframe.time;
+
+		//current progress in keyframe over total time in between keyframes
+		float percentage = (updatedTimer - prevTime) / (nextTime - prevTime);
+
+		KeyFrame::DataType interpolated_value = GetInterpolatedValue(
+			info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
+
+		/*--------------------------------
+		set related game object's data
+		--------------------------------*/
+		//get a ptr to the component
+		auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
+			go.GetEntity(), info.progressTracker.timeline->component_hash);
+
+		//get the instance
+		auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
+		//set the value
+		info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
+
+		//SetComponentData(timeline, interpolated_value);
+		//assert(false);
 	}
 	//go through all progress trackers and call their update function
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer)

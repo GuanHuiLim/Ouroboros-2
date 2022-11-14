@@ -82,7 +82,7 @@ namespace oo::Anim
 					.SetParameter("Test float", 30.f);
 			}
 		}
-		return;
+		
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
