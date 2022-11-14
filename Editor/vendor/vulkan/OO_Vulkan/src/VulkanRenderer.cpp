@@ -892,14 +892,12 @@ int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
 	// Check if the device supports blitting from optimal images (the swapchain images are in optimal format)
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, target.format, &formatProps);
 	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
-		std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
 		supportsBlit = false;
 	}
 
 	// Check if the device supports blitting to linear images
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, VK_FORMAT_R32_SINT, &formatProps);
 	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
-		std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
 		supportsBlit = false;
 	}
 
