@@ -153,6 +153,16 @@ namespace oo
         return !IsTrigger();
     }
 
+    void oo::RigidbodyComponent::EnableCollider()
+    {
+        object.enableCollider(true);
+    }
+
+    void oo::RigidbodyComponent::DisableCollider()
+    {
+        object.enableCollider(false);
+    }
+
     void oo::RigidbodyComponent::SetTrigger(bool enable)
     {
         IsTriggerObject = enable;

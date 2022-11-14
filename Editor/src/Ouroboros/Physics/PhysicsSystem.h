@@ -38,7 +38,7 @@ namespace oo
         using Timestep = double;
 
         PhysicsSystem() = default;
-        virtual ~PhysicsSystem() = default;
+        virtual ~PhysicsSystem();
         virtual void Run(Ecs::ECSWorld*) override {};
 
         void Init(Scene* m_scene);
@@ -100,6 +100,10 @@ namespace oo
         void InitializeSphereCollider(RigidbodyComponent& rb);
 
         void AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc);
+
+        void OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e);
+        void OnGameObjectDisable(GameObjectComponent::OnDisableEvent* e);
+
     };
 
 
