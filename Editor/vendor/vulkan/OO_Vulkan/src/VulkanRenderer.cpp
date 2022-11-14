@@ -185,7 +185,6 @@ VulkanRenderer::~VulkanRenderer()
 		vkDestroyFence(m_device.logicalDevice, drawFences[i], nullptr);
 		vkDestroySemaphore(m_device.logicalDevice, renderFinished[i], nullptr);
 		vkDestroySemaphore(m_device.logicalDevice, imageAvailable[i], nullptr);
-		vkDestroySemaphore(m_device.logicalDevice, readyForCopy[i], nullptr);
 	}
 
 	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::defaultPSOLayout, nullptr);
@@ -1038,12 +1037,12 @@ int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &copyCmd;
-	submitInfo.waitSemaphoreCount = 1; //number of semaphores to wait on
-	submitInfo.pWaitSemaphores = &readyForCopy[(currentFrame+MAX_FRAME_DRAWS+1) % MAX_FRAME_DRAWS]; //list of semaphores to wait on
-	VkPipelineStageFlags waitStages[] = {
-		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-	};
-	submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
+	//submitInfo.waitSemaphoreCount = 1; //number of semaphores to wait on
+	//submitInfo.pWaitSemaphores = &readyForCopy[(currentFrame+MAX_FRAME_DRAWS+1) % MAX_FRAME_DRAWS]; //list of semaphores to wait on
+	//VkPipelineStageFlags waitStages[] = {
+	//	VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+	//};
+	//submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
 
 
 	vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
@@ -1072,7 +1071,7 @@ int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
 		//colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), swapChain.colorFormat) != formatsBGR.end());
 	}
 
-	glm::uvec2 pixels = glm::uvec2{ target.width * uv.x,target.height * (1.0-uv.y) };
+	glm::uvec2 pixels = glm::uvec2{ target.width * uv.x,target.height * (uv.y) };
 	pixels = glm::clamp(pixels, { 0,0 }, { target.width-1,target.height-1 });
 	uint32_t indx = (pixels.x + pixels.y * target.width);
 	int32_t value = ((int32_t*)data)[indx];
@@ -1158,7 +1157,6 @@ void VulkanRenderer::CreateSynchronisation()
 {
 	imageAvailable.resize(MAX_FRAME_DRAWS);
 	renderFinished.resize(MAX_FRAME_DRAWS);
-	readyForCopy.resize(MAX_FRAME_DRAWS);
 
 	drawFences.resize(MAX_FRAME_DRAWS);
 	//Semaphore creation information
@@ -1174,14 +1172,12 @@ void VulkanRenderer::CreateSynchronisation()
 	{
 		if (vkCreateSemaphore(m_device.logicalDevice, &semaphorecreateInfo, nullptr, &imageAvailable[i]) != VK_SUCCESS ||
 			vkCreateSemaphore(m_device.logicalDevice, &semaphorecreateInfo, nullptr, &renderFinished[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(m_device.logicalDevice, &semaphorecreateInfo, nullptr, &readyForCopy[i]) != VK_SUCCESS ||
 			vkCreateFence(m_device.logicalDevice, &fenceCreateInfo, nullptr,&drawFences[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create a Semaphore and/or Fence!");
 		}
 		VK_NAME(m_device.logicalDevice, "imageAvailable", imageAvailable[i]);
 		VK_NAME(m_device.logicalDevice, "renderFinished", renderFinished[i]);
-		VK_NAME(m_device.logicalDevice, "readyForCopy", readyForCopy[i]);
 		VK_NAME(m_device.logicalDevice, "drawFences", drawFences[i]);
 	}
 }
@@ -2098,7 +2094,7 @@ void VulkanRenderer::Present()
 	};
 
 	std::vector <VkSemaphore> frameSemaphores = { renderFinished[currentFrame],
-		readyForCopy[currentFrame],};
+	};
 
 	submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
 	submitInfo.commandBufferCount = 1;

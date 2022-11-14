@@ -30,8 +30,8 @@ void SSAORenderPass::Init()
 	auto& vr = *VulkanRenderer::get();
 	auto swapchainext = vr.m_swapchain.swapChainExtent;
 	SSAO_renderTarget.name = "SSAO_COL";
-	SSAO_renderTarget.forFrameBuffer(&vr.m_device, VK_FORMAT_R32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
-		swapchainext.width, swapchainext.height);
+	SSAO_renderTarget.forFrameBuffer(&vr.m_device, VK_FORMAT_R32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		swapchainext.width, swapchainext.height, true, 0.5f);
 
 	InitRandomFactors();
 
@@ -78,7 +78,9 @@ void SSAORenderPass::Draw()
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
 	renderPassBeginInfo.renderPass = renderpass_SSAO;                  //render pass to begin
 	renderPassBeginInfo.renderArea.offset = { 0,0 };                                     //start point of render pass in pixels
-	renderPassBeginInfo.renderArea.extent = vr.m_swapchain.swapChainExtent; //size of region to run render pass on (Starting from offset)
+	glm::uvec2 renderSize = glm::vec2{ SSAO_renderTarget.width,SSAO_renderTarget.height };
+	
+	renderPassBeginInfo.renderArea.extent = VkExtent2D{renderSize.x,renderSize.y}; //size of region to run render pass on (Starting from offset)
 	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
@@ -116,14 +118,15 @@ void SSAORenderPass::Draw()
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	rhi::CommandList cmd{ cmdlist };
-	cmd.SetDefaultViewportAndScissor();
+	std::array<VkViewport, 1>viewports{ VkViewport{0,renderSize.y*1.0f,renderSize.x*1.0f,renderSize.y*-1.0f} };
+	cmd.SetViewport(0,viewports.size(),viewports.data());
 
 	CreateDescriptors();
 	cmd.BindPSO(pso_SSAO);
 
 	SSAOPC pc{};
-	pc.screenDim.x = vr.m_swapchain.swapChainExtent.width;
-	pc.screenDim.y = vr.m_swapchain.swapChainExtent.height;
+	pc.screenDim.x = renderSize.x;
+	pc.screenDim.y = renderSize.y;
 	pc.sampleDim.x = 4;
 	pc.sampleDim.y = 4;
 	pc.radius = vr.currWorld->ssaoSettings.radius;
