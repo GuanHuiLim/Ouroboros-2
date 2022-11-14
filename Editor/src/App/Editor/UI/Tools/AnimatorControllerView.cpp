@@ -532,6 +532,10 @@ void AnimatorControllerView::DisplayInspector()
                         ImGui::Text("Fixed Duration");
                         ImGui::SameLine(textsize.x * 25);
                         ImGui::Checkbox("##fixedduration", &id->link->fixed_duration);
+                        ImGui::Text("Transition Duration");
+                        ImGui::SameLine(textsize.x * 25);
+                        ImGui::InputFloat("##transitionduration", &id->link->transition_duration, 0.0f, 0.0f, "%.2f");
+
                     }
                     ImGui::TreePop();
                 }
