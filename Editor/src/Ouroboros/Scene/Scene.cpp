@@ -83,7 +83,11 @@ namespace oo
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
             //rendering system initialization
             // temporarily initialize number of cameras to 2 [0 is Scene camera] [1 is Editor Camera]
+#if defined OO_EXECUTABLE
+            m_graphicsWorld->numCameras = 1;
+#elif OO_EDITOR
             m_graphicsWorld->numCameras = 2;
+#endif
             m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get(), this)->Init();
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
             m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
