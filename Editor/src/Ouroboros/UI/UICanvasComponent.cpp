@@ -32,7 +32,7 @@ namespace oo
 
         registration::class_<UICanvasComponent>("UI Canvas")
             .property("Render Mode", &UICanvasComponent::RenderingMode)
-            .property("Layer", &UICanvasComponent::Layer)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            //.property("Layer", &UICanvasComponent::Layer)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
             .property("Scale With Screen", &UICanvasComponent::ScaleWithScreenSize);
     }
 

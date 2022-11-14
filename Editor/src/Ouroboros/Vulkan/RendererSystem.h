@@ -27,10 +27,12 @@ Technology is prohibited.
 #include "Ouroboros/Core/CameraController.h"
 
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
+#include "Ouroboros/Scene/Scene.h"
 
 //fwd declaration
 struct EditorViewportResizeEvent;
 struct PreviewWindowResizeEvent;
+struct UpdateRendererSettings;
 
 namespace oo
 {
@@ -42,14 +44,14 @@ namespace oo
         //Ecs::ECSWorld* m_world{nullptr};
         std::map<uint32_t, UUID> m_graphicsIdToUUID;
     public:
-        RendererSystem(GraphicsWorld* graphicsWorld);
+        RendererSystem(GraphicsWorld* graphicsWorld, Scene* scene);
         virtual ~RendererSystem();
 
         void Init();
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
-        void UpdateCameras();
+        void UpdateCameras(Scene::go_ptr& mainCamera);
         void SaveEditorCamera();
 
         UUID GetUUID(uint32_t graphicsID) const;
@@ -58,7 +60,9 @@ namespace oo
     private:
         void OnScreenResize(WindowResizeEvent* e);
         void OnEditorViewportResize(EditorViewportResizeEvent* e);
-        void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
+        //void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
+
+        void OnUpdateRendererSettings(UpdateRendererSettings*);
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
@@ -69,8 +73,11 @@ namespace oo
         void RenderDebugDraws(Ecs::ECSWorld* world);
         void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
-        
+
     private:
+        GraphicsWorld* m_graphicsWorld{ nullptr };
+        Scene* m_scene;
+
         CameraController m_runtimeCC;
         Camera m_runtimeCamera;
         

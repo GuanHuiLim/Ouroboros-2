@@ -28,6 +28,8 @@ namespace oo
     class CameraComponent
     {
     public:
+        bool MainCamera = false;
+        int GraphicsWorldIndex = -1;
         CameraAspectRatio AspectRatio;
         RTTR_ENABLE();
     };

@@ -16,12 +16,18 @@ Technology is prohibited.
 #pragma once
 
 #include <Archetypes_Ecs/src/A_Ecs.h>
+#include "Utility/UUID.h"
+#include "Ouroboros/ECS/GameObject.h"
+#include "Ouroboros/Geometry/Shapes.h"
 
 namespace oo
 {
     // forward declaration
-    class RectTransform;
+    class TransformComponent;
+    class RectTransformComponent;
+    class UIRaycastComponent;
     class Scene;
+    class GameObject;
 
     class UISystem final : public Ecs::System
     {
@@ -29,6 +35,8 @@ namespace oo
 
         UISystem(Scene* scene);
         virtual ~UISystem() = default;
+
+        virtual void Run(Ecs::ECSWorld* world) override {};
 
         /*********************************************************************************//*!
         \brief      Update function called per frame in the Editor Scene. Used to perform
@@ -60,20 +68,16 @@ namespace oo
         *//**********************************************************************************/
         void UpdateRectTransformAll();
 
-        ///*********************************************************************************//*!
-        //\brief      recalculates a RectTransform's positional and size data and applies it
-        //            to the RectTransform's Transform3D component
 
-        //\param      rect
-        //        the RectTransform to update
-        //*//**********************************************************************************/
-        //bool UpdateRectTransform(RectTransform& rect);
+        void UpdateIndividualRectTransform(TransformComponent* tf, RectTransformComponent* rect);
+
+        void DebugDrawUI();
 
         ///*********************************************************************************//*!
         //\brief      For all interactable UI elements, check if any mouse events have been triggered
         //            and, if it has, invoke the corresponding C# functions tied to the mouse event
         //*//**********************************************************************************/
-        //void UpdateButtonCallbackAll();
+        void UpdateButtonCallbackAll();
 
         ///*********************************************************************************//*!
         //\brief      For a specific interactable UI element, check if any mouse events have been triggered
@@ -86,9 +90,13 @@ namespace oo
         //\param      isUnderElement
         //        boolean representing if another UI element is over this UI element
         //*//**********************************************************************************/
-        //bool UpdateButtonCallback(UIButton& button, bool isInside, bool isUnderElement = false);
-    
+        bool UpdateButtonCallback(UUID uuid, UIRaycastComponent* raycaster, bool isInside);
+
+        Ray ScreenToWorld(Camera camera, TransformComponent* cameraTf, int32_t mouse_x, int32_t mouse_y);
+        
+
     private:
         Scene* m_scene = nullptr;
+        GameObject m_prevSelectedUI;
     };
 }

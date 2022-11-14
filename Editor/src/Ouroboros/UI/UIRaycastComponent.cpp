@@ -16,7 +16,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 
-#include "UIButtonComponent.h"
+#include "UIRaycastComponent.h"
 #include <rttr/registration.h>
 
 namespace oo
@@ -24,9 +24,9 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<UIButtonComponent>("UI Button")
-        .property("Is Interactable", &UIButtonComponent::IsInteractable)
-        .property_readonly("Has Entered", &UIButtonComponent::HasEntered)
-        .property_readonly("Is Pressed", &UIButtonComponent::IsPressed);
+        registration::class_<UIRaycastComponent>("UI Raycast")
+        //.property("Is Interactable", &UIButtonComponent::IsInteractable)
+        .property_readonly("Has Entered", &UIRaycastComponent::HasEntered)
+        .property_readonly("Is Pressed", &UIRaycastComponent::IsPressed);
     }
 }

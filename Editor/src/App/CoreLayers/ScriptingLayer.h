@@ -46,9 +46,12 @@ namespace oo
 
             ScriptManager::RegisterComponent<RigidbodyComponent>("Ouroboros", "Rigidbody");
             ScriptManager::RegisterComponent<BoxColliderComponent>("Ouroboros", "BoxCollider");
+            ScriptManager::RegisterComponent<SphereColliderComponent>("Ouroboros", "SphereCollider");
+            ScriptManager::RegisterComponent<CapsuleColliderComponent>("Ouroboros", "CapsuleCollider");
+
+            ScriptManager::s_SceneManager = &sceneManager;
 
 #if OO_EDITOR
-            ScriptManager::s_SceneManager = &sceneManager;
             EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)
                 {
                     if (e->m_buttonType != ToolbarButtonEvent::ToolbarButton::COMPILE)
@@ -72,16 +75,25 @@ namespace oo
                     {
                         bool outdated = false;
                         std::filesystem::file_time_type dll_time = std::filesystem::last_write_time(Project::GetScriptBuildPath() / "Scripting.dll");
-                        for (std::filesystem::directory_entry const& dir : std::filesystem::recursive_directory_iterator(Project::GetProjectFolder() / "Scripts"))
+
+                        if (std::filesystem::last_write_time(Project::GetProjectFolder() / "Scripts") > dll_time)
                         {
-                            if (dir.is_directory())
-                                continue;
-                            if (dir.last_write_time() > dll_time)
+                            outdated = true;
+                        }
+                        else
+                        {
+                            for (std::filesystem::directory_entry const& dir : std::filesystem::recursive_directory_iterator(Project::GetProjectFolder() / "Scripts"))
                             {
-                                outdated = true;
-                                break;
+                                if (!dir.is_directory())
+                                    continue;
+                                if (dir.last_write_time() > dll_time)
+                                {
+                                    outdated = true;
+                                    break;
+                                }
                             }
                         }
+
                         if (!outdated)
                             return;
                     }

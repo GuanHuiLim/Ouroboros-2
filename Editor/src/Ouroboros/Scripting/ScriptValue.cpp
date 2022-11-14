@@ -1395,7 +1395,7 @@ namespace oo
     {
         if (className.size() <= 0 || functionName.size() <= 0)
         {
-            LOG_WARN("ScriptFunctionInfo Invoke failed, function not set");
+            //LOG_WARN("ScriptFunctionInfo Invoke failed, function not set");
             return;
         }
         std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();

@@ -52,14 +52,175 @@ namespace oo
         );
 
         registration::class_<RectTransformComponent>("Rect Transform")
-            .property("Preset", &RectTransformComponent::Preset)
-            .property("Anchored Position", &RectTransformComponent::AnchoredPosition)
-            .property("Rotation Angle", &RectTransformComponent::Angle)
-            .property("Scaling", &RectTransformComponent::Scale)
-            .property("Size", &RectTransformComponent::Size)
-            .property("Pivot", &RectTransformComponent::Pivot)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
-            .property("Anchor Min", &RectTransformComponent::AnchorMin)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
-            .property("Anchor Max", &RectTransformComponent::AnchorMax)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            .property("Preset", &RectTransformComponent::GetPreset, &RectTransformComponent::SetPreset)
+            .property("Anchored Position", &RectTransformComponent::GetAnchoredPosition, &RectTransformComponent::SetAnchoredPosition)
+            .property("Rotation Angles", &RectTransformComponent::GetEulerAngles, &RectTransformComponent::SetEulerAngles)
+            .property("Scaling", &RectTransformComponent::GetScale, & RectTransformComponent::SetScale)
+            .property("Size", &RectTransformComponent::GetSize, &RectTransformComponent::SetSize)
+            .property("Pivot", &RectTransformComponent::GetPivot, &RectTransformComponent::SetPivot)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            .property("Anchor Min", &RectTransformComponent::GetAnchorMin, &RectTransformComponent::SetAnchorMin)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            .property("Anchor Max", &RectTransformComponent::GetAnchorMax, &RectTransformComponent::SetAnchorMax)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            .property_readonly("Parent Offset", &RectTransformComponent::ParentOffset)
+            .property_readonly("IsDirty", &RectTransformComponent::IsDirty)
+            .property_readonly("Bounding Volume", &RectTransformComponent::BoundingVolume)
             ;
+    }
+
+    void oo::RectTransformComponent::SetPreset(AnchorPreset new_preset)
+    {
+        if (Preset == AnchorPreset::Custom || Preset == new_preset)
+            return;
+        
+        IsDirty = true;
+        Preset = new_preset;
+        //TODO do a bit more default settings here perhaps.
+        switch (Preset)
+        {
+        case AnchorPreset::AnchorTopLeft:
+            AnchorMin = AnchorMax = glm::vec2{ 0, 1 };
+            Pivot = glm::vec2{ 0.0f, 1.0f };
+            break;
+        case AnchorPreset::AnchorTopCentre:
+            AnchorMin = AnchorMax = glm::vec2{ 0.5f, 1 };
+            Pivot = glm::vec2{ 0.5f, 1.0f };
+            break;
+        case AnchorPreset::AnchorTopRight:
+            AnchorMin = AnchorMax = glm::vec2{ 1, 1 };
+            Pivot = glm::vec2{ 1.0f, 1.0f };
+            break;
+
+        case AnchorPreset::AnchorMiddleLeft:
+            AnchorMin = AnchorMax = glm::vec2{ 0, 0.5f };
+            Pivot = glm::vec2{ 0.0f, 0.5f };
+            break;
+        case AnchorPreset::AnchorMiddleCentre:
+            AnchorMin = AnchorMax = glm::vec2{ 0.5f, 0.5f };
+            Pivot = glm::vec2{ 0.5f, 0.5f };
+            break;
+        case AnchorPreset::AnchorMiddleRight:
+            AnchorMin = AnchorMax = glm::vec2{ 1, 0.5f };
+            Pivot = glm::vec2{ 1.0f, 0.5f };
+            break;
+
+        case AnchorPreset::AnchorBottomLeft:
+            AnchorMin = AnchorMax = glm::vec2{ 0, 0 };
+            Pivot = glm::vec2{ 0.0f, 0.0f };
+            break;
+        case AnchorPreset::AnchorBottomCentre:
+            AnchorMin = AnchorMax = glm::vec2{ 0.5f, 0 };
+            Pivot = glm::vec2{ 0.5f, 0.0f };
+            break;
+        case AnchorPreset::AnchorBottomRight:
+            AnchorMin = AnchorMax = glm::vec2{ 1, 0 };
+            Pivot = glm::vec2{ 1.0f, 0.0f };
+            break;
+
+        case AnchorPreset::StretchLeft:
+            AnchorMin = glm::vec2{ 0, 0 };
+            AnchorMax = glm::vec2{ 0, 1 };
+            Pivot = glm::vec2{ 0, 0.5f };
+            break;
+        case AnchorPreset::StretchCentre:
+            AnchorMin = glm::vec2{ 0.5f, 0 };
+            AnchorMax = glm::vec2{ 0.5f, 1 };
+            Pivot = glm::vec2{ 0.5f, 0.5f };
+            break;
+        case AnchorPreset::StretchRight:
+            AnchorMin = glm::vec2{ 1, 0 };
+            AnchorMax = glm::vec2{ 1, 1 };
+            Pivot = glm::vec2{ 1, 0.5f };
+            break;
+
+        case AnchorPreset::StretchTop:
+            AnchorMin = glm::vec2{ 0, 1 };
+            AnchorMax = glm::vec2{ 1, 1 };
+            Pivot = glm::vec2{ 0.5f, 1 };
+            break;
+        case AnchorPreset::StretchMiddle:
+            AnchorMin = glm::vec2{ 0, 0.5f };
+            AnchorMax = glm::vec2{ 1, 0.5f };
+            Pivot = glm::vec2{ 0.5f, 0.5f };
+            break;
+        case AnchorPreset::StretchBottom:
+            AnchorMin = glm::vec2{ 0, 0 };
+            AnchorMax = glm::vec2{ 1, 0 };
+            Pivot = glm::vec2{ 0.5f, 0 };
+            break;
+
+        case AnchorPreset::StretchWhole:
+            AnchorMin = glm::vec2{ 0, 0 };
+            AnchorMax = glm::vec2{ 1, 1 };
+            Pivot = glm::vec2{ 0.5f, 0.5f };
+            break;
+        }
+    }
+
+    RectTransformComponent::AnchorPreset oo::RectTransformComponent::GetPreset() const
+    {
+        return Preset;
+    }
+
+    void RectTransformComponent::SetAnchoredPosition(glm::vec3 new_anchor)
+    {
+        IsDirty = true;
+        AnchoredPosition = new_anchor;
+    }
+    void RectTransformComponent::SetEulerAngles(glm::vec3 new_euler)
+    {
+        IsDirty = true;
+        EulerAngles = new_euler;
+    }
+    void RectTransformComponent::SetScale(glm::vec3 new_scale)
+    {
+        IsDirty = true;
+        Scale = new_scale;
+    }
+    void RectTransformComponent::SetSize(glm::vec2 new_size)
+    {
+        IsDirty = true;
+        Size = new_size;
+    }
+    void RectTransformComponent::SetPivot(glm::vec2 new_pivot)
+    {
+        IsDirty = true;
+        Pivot = new_pivot;
+    }
+    void RectTransformComponent::SetAnchorMin(glm::vec2 new_min)
+    {
+        IsDirty = true;
+        AnchorMin = new_min;
+    }
+    void RectTransformComponent::SetAnchorMax(glm::vec2 new_max)
+    {
+        IsDirty = true;
+        AnchorMax = new_max;
+    }
+    glm::vec3 RectTransformComponent::GetAnchoredPosition() const
+    {
+        return AnchoredPosition;
+    }
+    glm::vec3 RectTransformComponent::GetEulerAngles() const
+    {
+        return EulerAngles;
+    }
+    glm::vec3 RectTransformComponent::GetScale() const
+    {
+        return Scale;
+    }
+    glm::vec2 RectTransformComponent::GetSize() const
+    {
+        return Size;
+    }
+    glm::vec2 RectTransformComponent::GetPivot() const
+    {
+        return Pivot;
+    }
+    glm::vec2 RectTransformComponent::GetAnchorMin() const
+    {
+        return AnchorMin;
+    }
+    glm::vec2 RectTransformComponent::GetAnchorMax() const
+    {
+        return AnchorMax;
     }
 }

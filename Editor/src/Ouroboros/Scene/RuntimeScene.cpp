@@ -28,6 +28,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/RendererSystem.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
+#include "Ouroboros/UI/UISystem.h"
 
 namespace oo
 {
@@ -51,6 +52,7 @@ namespace oo
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
 
             GetWorld().Add_System<PhysicsSystem>()->Init(this);
+            GetWorld().Add_System<oo::UISystem>(this);
 
             GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
@@ -127,6 +129,12 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE(physics_runtime_update);
             GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
+            TRACY_PROFILE_SCOPE_END();
+        }
+        
+        {
+            TRACY_PROFILE_SCOPE(UI_runtime_update);
+            GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
             TRACY_PROFILE_SCOPE_END();
         }
 

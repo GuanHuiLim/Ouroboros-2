@@ -31,8 +31,8 @@ namespace oo
         //bool m_hasChanged;          // UI elements have been recalculated, need to redraw
 
         RenderMode RenderingMode = RenderMode::Overlay;
-        std::uint32_t Layer = 0;
-        bool ScaleWithScreenSize = false;
+        //std::uint32_t Layer = 0;
+        bool ScaleWithScreenSize = true;    // true by default.
 
         RTTR_ENABLE();
     };

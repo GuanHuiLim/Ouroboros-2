@@ -30,7 +30,9 @@ namespace oo
         );
 
         registration::class_<oo::CameraComponent>("Camera")
-            .property("Aspect Ratio", &CameraComponent::AspectRatio);
-        //.property_readonly("Lighting ID", &LightComponent::Light_ID);
+            .property("Main Camera", &CameraComponent::MainCamera)
+            .property_readonly("Graphics World Camera Index", &CameraComponent::GraphicsWorldIndex)
+            .property("Aspect Ratio", &CameraComponent::AspectRatio)
+            ;
     }
 }
