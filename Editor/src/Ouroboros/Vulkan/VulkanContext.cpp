@@ -31,6 +31,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/WindowsWindow.h"
 #include <App/Editor/Utility/ImGuiManager.h>
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 namespace oo
 {
 
@@ -220,6 +221,8 @@ namespace oo
     {
         // Vulkan will call internally
 
+        TRACY_PROFILE_SCOPE_N(Vulkan_Render);
+
         // temporarily shift here for better structuring
         //m_runtimeCC.Update(oo::timer::dt());
 
@@ -285,19 +288,28 @@ namespace oo
                 lights[5]->position.z = 0.0f - cos(glm::radians(-360.0f * lightTimer - 45.0f)) * 10.0f;
             }
 
+            TRACY_PROFILE_SCOPE_N(Vulkan_UploadLights);
             // Upload CPU light data to GPU. Ideally this should only contain lights that intersects the camera frustum.
             vr->UploadLights();
+            TRACY_PROFILE_SCOPE_END();
 
+            TRACY_PROFILE_SCOPE_N(Vulkan_RenderFrame);
             // Render the frame
             vr->RenderFrame();
+            TRACY_PROFILE_SCOPE_END();
 
       
 
-        if(!m_minimized)
-            vr->DrawGUI();
+            if (!m_minimized)
+            {
+                TRACY_PROFILE_SCOPE_N(Vulkan_DrawGUI);
+                vr->DrawGUI();
+                TRACY_PROFILE_SCOPE_END();
+            }
 
         } // if prepare frame is true
 
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void VulkanContext::ResetImguiShutdown()

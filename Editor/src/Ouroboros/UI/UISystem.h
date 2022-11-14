@@ -97,6 +97,6 @@ namespace oo
 
     private:
         Scene* m_scene = nullptr;
-        GameObject m_previouslySelectedObject;
+        GameObject m_prevSelectedUI;
     };
 }

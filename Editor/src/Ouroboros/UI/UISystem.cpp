@@ -147,7 +147,7 @@ namespace oo
 
                 rectTransform.BoundingVolume.Center       = tf.GetGlobalPosition();
                 rectTransform.BoundingVolume.Orientation  = tf.GetGlobalRotationQuat();
-                rectTransform.BoundingVolume.HalfExtents  = tf.GetGlobalScale()  * (glm::vec3{ rectTransform.Size, 0 } * 0.5f);
+                rectTransform.BoundingVolume.HalfExtents  = tf.GetGlobalScale()  * (glm::vec3{ rectTransform.Size, 1.0 } * 0.5f);
             });
 
         /*auto canvasView = m_ECS_Manager.GetComponentView<UICanvas>();
@@ -229,10 +229,10 @@ namespace oo
 
     void UISystem::UpdateButtonCallbackAll()
     {
-        if (m_scene->IsValid(m_previouslySelectedObject) && m_previouslySelectedObject.ActiveInHierarchy())
+        if (m_scene->IsValid(m_prevSelectedUI) && !m_prevSelectedUI.ActiveInHierarchy())
         {
-            UpdateButtonCallback(m_previouslySelectedObject.GetInstanceID(), &m_previouslySelectedObject.GetComponent<UIRaycastComponent>(), false);
-            m_previouslySelectedObject = GameObject{}; //invalid gameobject
+            UpdateButtonCallback(m_prevSelectedUI.GetInstanceID(), &m_prevSelectedUI.GetComponent<UIRaycastComponent>(), false);
+            m_prevSelectedUI = GameObject{}; //invalid gameobject
         }
         
         auto camera = m_scene->GetMainCameraObject();
@@ -254,6 +254,8 @@ namespace oo
 
         mousePos = cam->ScreenToWorld(Input::GetMouseX(), Input::GetMouseY());
         Point2D mouseWorldPoint{ mousePos };*/
+
+        bool skip = false;
 
         static Ecs::Query canvas_with_raycaster_query = Ecs::make_query<GameObjectComponent, TransformComponent, UICanvasComponent, GraphicsRaycasterComponent>();
         m_world->for_each(canvas_with_raycaster_query, [&](GameObjectComponent& goc, TransformComponent& tf, UICanvasComponent& canvas, GraphicsRaycasterComponent& raycaster)
@@ -295,38 +297,42 @@ namespace oo
 
                     // we find the highest object that's currently selected (because what we're clicking on now does not OWN a raycast component!
                     // [it'll either be a parent raycastComponent or be the canvas which means not found and terminate.]
-                    GameObject currentlySelected = child;
-                    while (currentlySelected.HasComponent<UICanvasComponent>() == false && currentlySelected.HasComponent<UIRaycastComponent>() == false)
+                    GameObject currSelectedUI = child;
+                    while (currSelectedUI.HasComponent<UICanvasComponent>() == false && currSelectedUI.HasComponent<UIRaycastComponent>() == false)
                     {
-                        currentlySelected = currentlySelected.GetParent();
+                        currSelectedUI = currSelectedUI.GetParent();
                     }
 
                     // on stay event [ selected = current, selectedButton = previous ]
-                    if (currentlySelected == m_previouslySelectedObject)
+                    if (currSelectedUI == m_prevSelectedUI)
                     {
-                        UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
+                        UpdateButtonCallback(currSelectedUI.GetInstanceID(), &currSelectedUI.GetComponent<UIRaycastComponent>(), true);
+                        skip = true;
                         return;
                     }
 
                     // the newly selected item is not what i previously selected, if i have previously selected something i deselct it first.
                     // On exit.
-                    if (m_scene->IsValid(m_previouslySelectedObject))
+                    if (m_scene->IsValid(m_prevSelectedUI))
                     {
-                        UpdateButtonCallback(currentlySelected.GetInstanceID(), &m_previouslySelectedObject.GetComponent<UIRaycastComponent>(), false);
-                        m_previouslySelectedObject = GameObject{}; //invalid gameobject
+                        UpdateButtonCallback(m_prevSelectedUI.GetInstanceID(), &m_prevSelectedUI.GetComponent<UIRaycastComponent>(), false);
+                        m_prevSelectedUI = GameObject{}; //invalid gameobject
                     }
 
                     // On Enter : we try because currently Selected might still be a canvas.
-                    UIRaycastComponent* selectedButtonPointer = currentlySelected.TryGetComponent<UIRaycastComponent>();
+                    UIRaycastComponent* selectedButtonPointer = currSelectedUI.TryGetComponent<UIRaycastComponent>();
                     if (selectedButtonPointer != nullptr /*&& selectedButtonPointer->IsInteractable()*/)
                     {
-                        UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
-                        m_previouslySelectedObject = currentlySelected;
+                        auto& name = currSelectedUI.Name();
+                        LOG_TRACE("newly selected UI {0}", name);
+
+                        UpdateButtonCallback(currSelectedUI.GetInstanceID(), &currSelectedUI.GetComponent<UIRaycastComponent>(), true);
+                        m_prevSelectedUI = currSelectedUI;
                     }
                     
                     //UpdateButtonCallback(currentlySelected.GetInstanceID(), &currentlySelected.GetComponent<UIRaycastComponent>(), true);
                     //m_previouslySelectedObject = currentlySelected;
-
+                    skip = true;
                     return;
                 }
 
@@ -334,10 +340,10 @@ namespace oo
 
         // not hovering over any ui element
         // deselect what i'm previously selecting
-        if (m_scene->IsValid(m_previouslySelectedObject))
+        if (!skip && m_scene->IsValid(m_prevSelectedUI))
         {
-            UpdateButtonCallback(m_previouslySelectedObject.GetInstanceID(), &m_previouslySelectedObject.GetComponent<UIRaycastComponent>(), false);
-            m_previouslySelectedObject = GameObject{};  // set to null.
+            UpdateButtonCallback(m_prevSelectedUI.GetInstanceID(), &m_prevSelectedUI.GetComponent<UIRaycastComponent>(), false);
+            m_prevSelectedUI = GameObject{};  // set to null.
         }
     }
 
@@ -357,7 +363,7 @@ namespace oo
             raycastComp->HasEntered = true;
             e.Type = UIButtonEventType::ON_POINTER_ENTER;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            //LOG_TRACE("UI On pointer enter!");
+            LOG_TRACE("UI On pointer enter!");
             //raycastComp->InvokeButtonEvent("OnPointerEnter");
             //if (!raycastComp->IsInteractable()) // for if OnPointerEnter sets interactable false
             //    return false;
@@ -379,7 +385,7 @@ namespace oo
             raycastComp->HasEntered = false;
             e.Type = UIButtonEventType::ON_POINTER_EXIT;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            //LOG_TRACE("UI On Pointer Exit!");
+            LOG_TRACE("UI On Pointer Exit!");
             //raycastComp->InvokeButtonEvent("OnPointerExit");
             return false;
         }

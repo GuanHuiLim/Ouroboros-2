@@ -5,6 +5,12 @@
 
 namespace oo
 {
+    struct BoundingBox
+    {
+        glm::vec3 Center = glm::vec3{ 0 };
+        glm::vec3 HalfExtents = glm::vec3{ 0 };
+    };
+
     struct OrientedBoundingBox
     {
         glm::vec3 Center = glm::vec3{ 0 };
