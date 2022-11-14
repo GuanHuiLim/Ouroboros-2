@@ -185,6 +185,7 @@ VulkanRenderer::~VulkanRenderer()
 		vkDestroyFence(m_device.logicalDevice, drawFences[i], nullptr);
 		vkDestroySemaphore(m_device.logicalDevice, renderFinished[i], nullptr);
 		vkDestroySemaphore(m_device.logicalDevice, imageAvailable[i], nullptr);
+		vkDestroySemaphore(m_device.logicalDevice, readyForCopy[i], nullptr);
 	}
 
 	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::defaultPSOLayout, nullptr);
@@ -868,6 +869,226 @@ void VulkanRenderer::DestroyWorld(GraphicsWorld* world)
 	world->initialized = false;
 }
 
+int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
+{
+
+	uv = glm::clamp(uv, { 0.0,0.0 }, { 1.0,1.0 });
+
+	// Bad but only editor uses this
+	auto& physicalDevice = m_device.physicalDevice;
+	auto& device = m_device.logicalDevice;
+	vkQueueWaitIdle(m_device.graphicsQueue);
+	vkDeviceWaitIdle(device);
+
+
+
+	bool supportsBlit = true;
+	// Check blit support for source and destination
+	VkFormatProperties formatProps;
+
+	
+	auto& target = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments[GBufferAttachmentIndex::ENTITY_ID];
+
+	// Check if the device supports blitting from optimal images (the swapchain images are in optimal format)
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, target.format, &formatProps);
+	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+		std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+		supportsBlit = false;
+	}
+
+	// Check if the device supports blitting to linear images
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, VK_FORMAT_R32_SINT, &formatProps);
+	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+		std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+		supportsBlit = false;
+	}
+
+	// Source for the copy is the last rendered swapchain image
+	VkImage srcImage = target.image;
+
+	// Create the linear tiled destination image to copy to and to read the memory from
+	VkImageCreateInfo imageCreateCI(oGFX::vkutils::inits::imageCreateInfo());
+	imageCreateCI.imageType = VK_IMAGE_TYPE_2D;
+	// Note that vkCmdBlitImage (if supported) will also do format conversions if the swapchain color format would differ
+	imageCreateCI.format = VK_FORMAT_R32_SINT;
+	imageCreateCI.extent.width = target.width;
+	imageCreateCI.extent.height = target.height;
+	imageCreateCI.extent.depth = 1;
+	imageCreateCI.arrayLayers = 1;
+	imageCreateCI.mipLevels = 1;
+	imageCreateCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageCreateCI.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateCI.tiling = VK_IMAGE_TILING_LINEAR;
+	imageCreateCI.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	// Create the image
+	VkImage dstImage;
+	VK_CHK(vkCreateImage(device, &imageCreateCI, nullptr, &dstImage));
+	VK_NAME(device, "COPY_DST_EDITOR_ID", dstImage);
+	// Create memory to back up the image
+	VkMemoryRequirements memRequirements;
+	VkMemoryAllocateInfo memAllocInfo(oGFX::vkutils::inits::memoryAllocateInfo());
+	VkDeviceMemory dstImageMemory;
+	vkGetImageMemoryRequirements(device, dstImage, &memRequirements);
+	memAllocInfo.allocationSize = memRequirements.size;
+	// Memory must be host visible to copy from
+	memAllocInfo.memoryTypeIndex = oGFX::FindMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits
+		, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	VK_CHK(vkAllocateMemory(device, &memAllocInfo, nullptr, &dstImageMemory));
+	VK_CHK(vkBindImageMemory(device, dstImage, dstImageMemory, 0));
+
+	// Do the actual blit from the swapchain image to our host visible destination image
+	
+	VkCommandBuffer copyCmd = beginSingleTimeCommands();
+	VK_NAME(device, "COPY_DST_EDITOR_ID_CMD_LIST", copyCmd);
+	// Transition destination image to transfer destination layout
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		0,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// Transition swapchain image from present to transfer source layout
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		srcImage,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_TRANSFER_READ_BIT,
+		target.currentLayout,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// If source and destination support blit we'll blit as this also does automatic format conversion (e.g. from BGR to RGB)
+	if (supportsBlit)
+	{
+		// Define the region to blit (we will blit the whole swapchain image)
+		VkOffset3D blitSize;
+		blitSize.x = target.width;
+		blitSize.y = target.height;
+		blitSize.z = 1;
+		VkImageBlit imageBlitRegion{};
+		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.srcSubresource.layerCount = 1;
+		imageBlitRegion.srcOffsets[1] = blitSize;
+		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.dstSubresource.layerCount = 1;
+		imageBlitRegion.dstOffsets[1] = blitSize;
+
+		// Issue the blit command
+		vkCmdBlitImage(
+			copyCmd,
+			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageBlitRegion,
+			VK_FILTER_NEAREST);
+	}
+	else
+	{
+		// Otherwise use image copy (requires us to manually flip components)
+		VkImageCopy imageCopyRegion{};
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = target.width;
+		imageCopyRegion.extent.height = target.height;
+		imageCopyRegion.extent.depth = 1;
+
+		// Issue the copy command
+		vkCmdCopyImage(
+			copyCmd,
+			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageCopyRegion);
+	}
+
+	// Transition destination image to general layout, which is the required layout for mapping the image memory later on
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// Transition back the format after the blit is done
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		srcImage,
+		VK_ACCESS_TRANSFER_READ_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		target.currentLayout,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	vkEndCommandBuffer(copyCmd);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &copyCmd;
+	submitInfo.waitSemaphoreCount = 1; //number of semaphores to wait on
+	submitInfo.pWaitSemaphores = &readyForCopy[(currentFrame+MAX_FRAME_DRAWS+1) % MAX_FRAME_DRAWS]; //list of semaphores to wait on
+	VkPipelineStageFlags waitStages[] = {
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+	};
+	submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
+
+
+	vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(m_device.graphicsQueue);
+	vkFreeCommandBuffers(m_device.logicalDevice, m_device.commandPool, 1, &copyCmd);
+
+
+	// Get layout of the image (including row pitch)
+	VkImageSubresource subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
+	VkSubresourceLayout subResourceLayout;
+	vkGetImageSubresourceLayout(device, dstImage, &subResource, &subResourceLayout);
+
+	// Map image memory so we can start copying from it
+	const char* data;
+	VK_CHK(vkMapMemory(device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)& data));
+	data += subResourceLayout.offset;
+
+	
+	// If source is BGR (destination is always RGB) and we can't use blit (which does automatic conversion), we'll have to manually swizzle color components
+	bool colorSwizzle = false;
+	// Check if source is BGR
+	// Note: Not complete, only contains most common and basic BGR surface formats for demonstration purposes
+	if (!supportsBlit)
+	{
+		std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
+		//colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), swapChain.colorFormat) != formatsBGR.end());
+	}
+
+	glm::uvec2 pixels = glm::uvec2{ target.width * uv.x,target.height * (1.0-uv.y) };
+	pixels = glm::clamp(pixels, { 0,0 }, { target.width-1,target.height-1 });
+	uint32_t indx = (pixels.x + pixels.y * target.width);
+	int32_t value = ((int32_t*)data)[indx];
+	//uint32_t value = ((uint32_t*)data)[pixels.x * (pixels.y * subResourceLayout.rowPitch)];
+
+	// Clean up resources
+	vkUnmapMemory(device, dstImageMemory);
+	vkFreeMemory(device, dstImageMemory, nullptr);
+	vkDestroyImage(device, dstImage, nullptr);
+
+	return value;
+
+}
+
 void VulkanRenderer::CreateLightingBuffers()
 {
 	//oGFX::CreateBuffer(m_device.physicalDevice, m_device.logicalDevice, sizeof(CB::LightUBO), 
@@ -916,6 +1137,7 @@ void VulkanRenderer::UploadLights()
 	for (auto& e : lights)
 	{
 		SpotLightInstance si;
+		si.info = e.info;
 		si.position = e.position;
 		si.color = e.color;
 		si.radius = e.radius;
@@ -938,6 +1160,8 @@ void VulkanRenderer::CreateSynchronisation()
 {
 	imageAvailable.resize(MAX_FRAME_DRAWS);
 	renderFinished.resize(MAX_FRAME_DRAWS);
+	readyForCopy.resize(MAX_FRAME_DRAWS);
+
 	drawFences.resize(MAX_FRAME_DRAWS);
 	//Semaphore creation information
 	VkSemaphoreCreateInfo semaphorecreateInfo = {};
@@ -952,12 +1176,14 @@ void VulkanRenderer::CreateSynchronisation()
 	{
 		if (vkCreateSemaphore(m_device.logicalDevice, &semaphorecreateInfo, nullptr, &imageAvailable[i]) != VK_SUCCESS ||
 			vkCreateSemaphore(m_device.logicalDevice, &semaphorecreateInfo, nullptr, &renderFinished[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(m_device.logicalDevice, &semaphorecreateInfo, nullptr, &readyForCopy[i]) != VK_SUCCESS ||
 			vkCreateFence(m_device.logicalDevice, &fenceCreateInfo, nullptr,&drawFences[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create a Semaphore and/or Fence!");
 		}
 		VK_NAME(m_device.logicalDevice, "imageAvailable", imageAvailable[i]);
 		VK_NAME(m_device.logicalDevice, "renderFinished", renderFinished[i]);
+		VK_NAME(m_device.logicalDevice, "readyForCopy", readyForCopy[i]);
 		VK_NAME(m_device.logicalDevice, "drawFences", drawFences[i]);
 	}
 }
@@ -1583,6 +1809,7 @@ void VulkanRenderer::UploadInstanceData()
 			}
 			// skined mesh
 			GPUObjectInformation oi;
+			oi.entityID = ent.entityID;
 			oi.materialIdx = 7; // tem,p
 			if ((ent.flags & ObjectInstanceFlags::SKINNED) == ObjectInstanceFlags::SKINNED)
 			{
@@ -1598,7 +1825,7 @@ void VulkanRenderer::UploadInstanceData()
 				}
 				
 				oi.boneStartIdx = static_cast<uint32_t>(boneMatrices.size());
-				oi.boneCnt = static_cast<uint32_t>(ent.bones.size());
+				//oi.boneCnt = static_cast<uint32_t>(ent.bones.size());
 
 				for (size_t i = 0; i < ent.bones.size(); i++)
 				{
@@ -1871,11 +2098,15 @@ void VulkanRenderer::Present()
 	VkPipelineStageFlags waitStages[] = {
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
 	};
+
+	std::vector <VkSemaphore> frameSemaphores = { renderFinished[currentFrame],
+		readyForCopy[currentFrame],};
+
 	submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffers[swapchainIdx];	// command buffer to submit
-	submitInfo.signalSemaphoreCount = 1;						// number of semaphores to signal
-	submitInfo.pSignalSemaphores = &renderFinished[currentFrame];				// semphores to signal when command buffer finished
+	submitInfo.signalSemaphoreCount = static_cast<uint32_t>(frameSemaphores.size());						// number of semaphores to signal
+	submitInfo.pSignalSemaphores = frameSemaphores.data();				// semphores to signal when command buffer finished
 
 																				//submit command buffer to queue
 	result = vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, drawFences[currentFrame]);
