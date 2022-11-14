@@ -38,7 +38,7 @@ namespace oo::Anim
 
 		float animation_length{ 0.f };
 
-		size_t animation_ID{ internal::generateUID() };
+		UID animation_ID{ internal::generateUID() };
 
 		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
 

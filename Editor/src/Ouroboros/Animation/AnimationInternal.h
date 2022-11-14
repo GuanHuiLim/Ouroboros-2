@@ -149,6 +149,7 @@ namespace oo::Anim::internal
 
 
 	void CalculateAnimationLength(AnimationTree& tree);
+	void CalculateAnimationLength(Animation& anim);
 
 	void ReloadReferences(AnimationTree& tree);
 

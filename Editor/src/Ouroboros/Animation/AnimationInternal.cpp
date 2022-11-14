@@ -928,7 +928,9 @@ namespace oo::Anim::internal
 	//void UpdateFBX_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
 	void UpdateFBX_Animation(UpdateProgressTrackerInfo& info, float updatedTimer)
 	{
-		//assert(progressTracker.type == Timeline::TYPE::FBX_ANIM);
+		assert(info.progressTracker.type == Timeline::TYPE::FBX_ANIM);
+
+
 	}
 	//go through all progress trackers and call their update function
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer)
@@ -1712,6 +1714,8 @@ namespace oo::Anim::internal
 		}
 		node.anim = CreateAnimationReference(anim->animation_ID);
 		node.anim_asset = asset;
+
+		return anim;
 	}
 
 	void RemoveNodeFromGroup(Group& group, UID node_ID)
@@ -1883,6 +1887,20 @@ namespace oo::Anim::internal
 				animation.animation_length = longest_time;
 			}
 		}
+	}
+	void CalculateAnimationLength(Animation& anim)
+	{
+		float longest_time{ 0.f };
+		auto& timelines = anim.timelines;
+		for (auto& timeline : timelines)
+		{
+			if (timeline.keyframes.empty()) continue;
+
+			if (longest_time < timeline.keyframes.back().time)
+				longest_time = timeline.keyframes.back().time;
+		}
+
+		anim.animation_length = longest_time;
 	}
 
 	void ReloadReferences(AnimationTree& tree)
