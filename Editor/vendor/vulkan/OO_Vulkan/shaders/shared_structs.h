@@ -17,12 +17,16 @@ using vec2 = glm::vec2;
 using uvec4 = glm::uvec4;
 using uvec3 = glm::uvec3;
 using uvec2 = glm::uvec2;
+using ivec4 = glm::uvec4;
+using ivec3 = glm::uvec3;
+using ivec2 = glm::uvec2;
 using mat4 = glm::mat4;
 using uint = unsigned int;
 #endif
 
 struct LocalLightInstance
 {
+    ivec4 info;
     vec4 position;
     vec4 color;
     vec4 radius;
@@ -32,7 +36,8 @@ struct LocalLightInstance
 
 struct OmniLightInstance
 {
-    vec4 position;
+    ivec4 info; // TODO: does this take up too much space?
+    vec4 position; // XYZ
     vec4 color; // RGB Intensity
     vec4 radius; // Inner rad outer rad etc..
     mat4 projection;
@@ -41,6 +46,7 @@ struct OmniLightInstance
 
 struct SpotLightInstance
 {
+    ivec4 info;
     vec4 position;
     vec3 color;
     vec4 radius; // x inner, y outer
@@ -79,7 +85,7 @@ struct GPUTransform
 struct GPUObjectInformation
 {
     uint boneStartIdx;
-    uint boneCnt;
+    int entityID;
     uint materialIdx;
     uint unused;
 };
