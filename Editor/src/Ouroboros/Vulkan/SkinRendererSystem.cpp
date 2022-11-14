@@ -53,12 +53,14 @@ namespace oo
 				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] =  transformComp.GetGlobalMatrix() * boneComp.inverseBindPose_info.transform;
 			});
 
+	}
+
+	void SkinMeshRendererSystem::AssignGraphicsWorldID_to_BoneComponents(Ecs::ECSWorld* world)
+	{
+		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+		static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
 
 
-
-		
-
-		
 	}
 
 	void SkinMeshRendererSystem::OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)

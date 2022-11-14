@@ -59,6 +59,12 @@ namespace oo
 		oGFX::BoneInverseBindPoseInfo inverseBindPose_info{};
 		uint32_t graphicsWorld_ID;
 
+		void SetInverseBindPoseInfo_BoneIdx(uint32_t boneIdx);
+		uint32_t GetInverseBindPoseInfo_BoneIdx();
+
+		void SetInverseBindPoseInfo_Transform(glm::mat4 transform);
+		glm::mat4 GetInverseBindPoseInfo_Transform();
+
 		RTTR_ENABLE();
 	};
 

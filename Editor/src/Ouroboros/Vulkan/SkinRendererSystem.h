@@ -18,6 +18,7 @@ namespace oo
 
 		virtual void Run(Ecs::ECSWorld* world) override;
 
+		void AssignGraphicsWorldID_to_BoneComponents(Ecs::ECSWorld* world);
 	private:
 		void OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt);
 	};

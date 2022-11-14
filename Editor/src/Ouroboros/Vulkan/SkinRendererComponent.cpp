@@ -25,6 +25,12 @@ namespace oo
 		)
 			
 		;
+
+		registration::class_<SkinMeshBoneComponent>("Skinned Mesh Bone Component")
+		.property("bone_name", &SkinMeshBoneComponent::bone_name)
+		.property("inverseBindPose_info->boneIdx",	 &SkinMeshBoneComponent::GetInverseBindPoseInfo_BoneIdx, &SkinMeshBoneComponent::SetInverseBindPoseInfo_BoneIdx)
+		.property("inverseBindPose_info->transform", &SkinMeshBoneComponent::GetInverseBindPoseInfo_Transform, &SkinMeshBoneComponent::SetInverseBindPoseInfo_Transform)
+		;
 	};
 
 
@@ -84,5 +90,25 @@ namespace oo
 	void oo::SkinMeshRendererComponent::SetMeshInfo(MeshInfo info)
 	{
 		meshInfo.submeshBits = info.submeshBits;
+	}
+
+
+	void SkinMeshBoneComponent::SetInverseBindPoseInfo_BoneIdx(uint32_t boneIdx)
+	{
+		inverseBindPose_info.boneIdx = boneIdx;
+	}
+	void SkinMeshBoneComponent::SetInverseBindPoseInfo_Transform(glm::mat4 transform)
+	{
+		inverseBindPose_info.transform = transform;
+	}
+
+
+	uint32_t SkinMeshBoneComponent::GetInverseBindPoseInfo_BoneIdx()
+	{
+		return inverseBindPose_info.boneIdx;
+	}
+	glm::mat4 SkinMeshBoneComponent::GetInverseBindPoseInfo_Transform()
+	{
+		return inverseBindPose_info.transform;
 	}
 }
