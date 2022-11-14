@@ -89,7 +89,7 @@ void Inspector::Show()
 
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		auto gameobject = scene->FindWithInstanceID(*selected_items.begin());//first item
+		auto gameobject = scene->FindWithInstanceID(*selected_items.begin()); //first item
 		if (gameobject == nullptr)
 			return;
 		
@@ -140,14 +140,14 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	ImGui::PushItemWidth(200.0f);
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
 	// display either rect transform or base transform
-	//if (gameobject.HasComponent<oo::RectTransformComponent>())
-	//{
+	if (gameobject.HasComponent<oo::RectTransformComponent>())
+	{
 		DisplayComponent<oo::RectTransformComponent>(gameobject);
-	//}
-	//else
-	//{
+	}
+	else
+	{
 		DisplayComponent<oo::TransformComponent>(gameobject);
-	//}
+	}
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
