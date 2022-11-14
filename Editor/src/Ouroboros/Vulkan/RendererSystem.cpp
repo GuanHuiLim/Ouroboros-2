@@ -112,6 +112,8 @@ namespace oo
         EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         //EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
+        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
     }
 
     void RendererSystem::Init()
@@ -157,6 +159,10 @@ namespace oo
         //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
+        
+        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+
     }
 
     void RendererSystem::SaveEditorCamera()
@@ -198,8 +204,8 @@ namespace oo
         });
 
         // update meshes
-        static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent>();
-        world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp) 
+        static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
+        world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc) 
         {
             //do nothing if transform did not change
             auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
@@ -318,6 +324,7 @@ namespace oo
 
         // map graphics id to uuid of gameobject
         m_graphicsIdToUUID.insert({ meshComp.GraphicsWorldID, goc.Id });
+        m_uuidToGraphicsID.insert({ goc.Id, meshComp.GraphicsWorldID });
     }
 
     void RendererSystem::InitializeLight(LightComponent& lightComp, TransformComponent& transformComp)
@@ -326,6 +333,34 @@ namespace oo
         //update graphics world side to prevent wrong initial placement
         auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
         graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+    }
+
+    void RendererSystem::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
+    {
+        if (m_uuidToGraphicsID.contains(e->Id))
+        {
+            auto& gid = m_uuidToGraphicsID.at(e->Id);
+            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
+            actualObject.SetRenderEnabled(true);
+        }
+        else
+        {
+            LOG_TRACE("invalid graphics ID on gameobject enable {0}", e->Id);
+        }
+    }
+
+    void RendererSystem::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
+    {
+        if (m_uuidToGraphicsID.contains(e->Id))
+        {
+            auto& gid = m_uuidToGraphicsID.at(e->Id);
+            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
+            actualObject.SetRenderEnabled(false);
+        }
+        else
+        {
+            LOG_TRACE("invalid graphics ID on gameobject disable {0}", e->Id);
+        }
     }
 
 }

@@ -41,6 +41,7 @@ namespace oo
         GraphicsWorld* m_graphicsWorld{nullptr};
         //Ecs::ECSWorld* m_world{nullptr};
         std::map<uint32_t, UUID> m_graphicsIdToUUID;
+        std::map<UUID, uint32_t> m_uuidToGraphicsID;
     public:
         RendererSystem(GraphicsWorld* graphicsWorld);
         virtual ~RendererSystem();
@@ -70,6 +71,8 @@ namespace oo
         void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
         
+        void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
+        void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
     private:
         CameraController m_runtimeCC;
         Camera m_runtimeCamera;
