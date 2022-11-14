@@ -102,13 +102,14 @@ void EditorViewport::Show()
 
 		mousepos.x = mousepos.x / vpDim.x;
 		mousepos.y = mousepos.y / vpDim.y;
-		//mousepos.y = 1 - mousepos.y;
-		auto id = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x ,mousepos.y});
-		if (id > 0)
+		
+		auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y});
+		if (graphicsID >= 0)
 		{
-			oo::GameObject go((Ecs::EntityID)id, *scene);
+			LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
+			auto uuid = scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
 			Hierarchy::GetSelectedNonConst().clear();
-			Hierarchy::GetSelectedNonConst().emplace(go.GetInstanceID());
+			Hierarchy::GetSelectedNonConst().emplace(uuid);
 		}
 	}
 

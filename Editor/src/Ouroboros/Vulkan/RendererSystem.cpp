@@ -314,6 +314,8 @@ namespace oo
         auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.GraphicsWorldID);
         graphics_object.localToWorld = transformComp.GetGlobalMatrix();
 
+        graphics_object.entityID = meshComp.GraphicsWorldID;
+
         // map graphics id to uuid of gameobject
         m_graphicsIdToUUID.insert({ meshComp.GraphicsWorldID, goc.Id });
     }

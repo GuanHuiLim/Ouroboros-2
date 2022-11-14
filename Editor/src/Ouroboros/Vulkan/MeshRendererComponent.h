@@ -40,7 +40,7 @@ namespace oo
 
         //no need to serialize
         uint32_t ModelHandle{ 0 };
-        uint32_t GraphicsWorldID{};
+        int32_t GraphicsWorldID{};
 
         bool CastShadows = false;
         bool ReceiveShadows = false;
