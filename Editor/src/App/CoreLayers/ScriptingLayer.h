@@ -49,8 +49,9 @@ namespace oo
             ScriptManager::RegisterComponent<SphereColliderComponent>("Ouroboros", "SphereCollider");
             ScriptManager::RegisterComponent<CapsuleColliderComponent>("Ouroboros", "CapsuleCollider");
 
-#if OO_EDITOR
             ScriptManager::s_SceneManager = &sceneManager;
+
+#if OO_EDITOR
             EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)
                 {
                     if (e->m_buttonType != ToolbarButtonEvent::ToolbarButton::COMPILE)
