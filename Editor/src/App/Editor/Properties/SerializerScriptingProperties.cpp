@@ -67,18 +67,18 @@ SerializerScriptingSaveProperties::SerializerScriptingSaveProperties()
 			data.PushBack(data_value.z, doc.GetAllocator());
 			val.AddMember(name, data, doc.GetAllocator());
 		});
-    m_ScriptSave.emplace(oo::ScriptValue::type_enum::COLOR, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
-        {
-            rapidjson::Value name;
-            name.SetString(sfi.name.c_str(), doc.GetAllocator());
-            rapidjson::Value data(rapidjson::kArrayType);
-            auto data_value = sfi.value.GetValue<oo::Color>();
-            data.PushBack(data_value.r, doc.GetAllocator());
-            data.PushBack(data_value.g, doc.GetAllocator());
-            data.PushBack(data_value.b, doc.GetAllocator());
-            data.PushBack(data_value.a, doc.GetAllocator());
-            val.AddMember(name, data, doc.GetAllocator());
-        });
+	m_ScriptSave.emplace(oo::ScriptValue::type_enum::COLOR, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
+		{
+			rapidjson::Value name;
+			name.SetString(sfi.name.c_str(), doc.GetAllocator());
+			rapidjson::Value data(rapidjson::kArrayType);
+			auto data_value = sfi.value.GetValue<oo::Color>();
+			data.PushBack(data_value.r, doc.GetAllocator());
+			data.PushBack(data_value.g, doc.GetAllocator());
+			data.PushBack(data_value.b, doc.GetAllocator());
+			data.PushBack(data_value.a, doc.GetAllocator());
+			val.AddMember(name, data, doc.GetAllocator());
+		});
 	m_ScriptSave.emplace(oo::ScriptValue::type_enum::ENUM, [](rapidjson::Document& doc, rapidjson::Value& val, oo::ScriptFieldInfo& sfi)
 		{
 			rapidjson::Value name;
@@ -229,7 +229,6 @@ SerializerScriptingLoadProperties::SerializerScriptingLoadProperties()
         {
             auto arr = val.GetArray();
             oo::Color color(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat(), arr[3].GetFloat());
-            //glm::vec3 vec(arr[0].GetFloat(), arr[1].GetFloat(), arr[2].GetFloat());
             sfi.value.SetValue(color);
         });
 	m_ScriptLoad.emplace(oo::ScriptValue::type_enum::ENUM, [](rapidjson::Value&& val, oo::ScriptFieldInfo& sfi)

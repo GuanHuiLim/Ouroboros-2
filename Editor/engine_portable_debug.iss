@@ -55,7 +55,6 @@ Source: "tracy_server\*"; DestDir: "{app}\tracy_server"; Flags: ignoreversion re
 
 ;dll
 Source:"assimp-vc142-mt.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source:"fmod.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"fmodL.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"discord_game_sdk.dll"; DestDir: "{app}"; Flags: ignoreversion

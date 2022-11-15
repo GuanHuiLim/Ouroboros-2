@@ -22,14 +22,19 @@ layout(std430, set = 0, binding = 7) readonly buffer Lights
 	SpotLightInstance Lights_SSBO[];
 };
 
-layout( push_constant ) uniform pc
+layout( push_constant ) uniform lightpc
 {
-	LightPC lightPC;
+	LightPC PC;
 };
 
 #include "lightingEquations.shader"
 
-float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
+vec2 GetShadowMapRegion(int lightIndex, in vec2 uv)
+{
+	return uv;
+}
+
+float ShadowCalculation(int lightIndex, in vec4 fragPosLightSpace, float NdotL)
 {
 
 	// perspective divide
@@ -37,11 +42,14 @@ float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
 	//normalization [0,1] tex coords only.. FOR VULKAN DONT DO Z
 	projCoords.xy = projCoords.xy* 0.5 + 0.5;
 
-	float maxbias =  0.0001;
-	float mulBias = 0.002;
+	float maxbias =  PC.maxBias;
+	float mulBias = PC.mulBias;
 	float bias = max(mulBias * (1.0 - NdotL),maxbias);
 	// Flip y during sample
 	vec2 uvs = vec2(projCoords.x,1.0-projCoords.y);
+	uvs = GetShadowMapRegion(lightIndex,uvs);
+
+	// TODO: add more textures
 	float closestDepth = texture(samplerShadows,uvs).r;
 	float currDepth = projCoords.z;
 
@@ -83,31 +91,37 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 
 	//if(dist < Lights_SSBO[lightIndex].radius.x)
 	{
-	    float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
+		//SpotLightInstance light = SpotLightInstance(Omni_LightSSBO[lightIndex]); 
+	    
+		float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
 		float r2 = Lights_SSBO[lightIndex].radius.x;
+		vec3 lCol = Lights_SSBO[lightIndex].color.xyz;
 
     		// Attenuation
 		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);		 
 	
 		// Diffuse part
 		
-		vec3 diff = Lights_SSBO[lightIndex].color.xyz * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
+		vec3 diff = lCol * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
 
 
 		// Specular part
 		// Specular map values are stored in alpha of albedo mrt
-		//vec3 R = -reflect(L, N);
-		//float RdotV = max(0.0, dot(R, V));
-		//vec3 spec = ubo.lights[lightIndex].color.xyz * specular * pow(RdotV, 16.0) * atten;
+		vec3 R = -reflect(L, N);
+		float RdotV = max(0.0, dot(R, V));
+		//vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
+		vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
 	
 		//result = diff;// + spec;	
-		result = diff;
+		result = diff+spec;
 	}
 
-	if(lightIndex == 0)
+	// calculate shadow if this is a shadow light
+	//if(Lights_SSBO[lightIndex].position.w < 0)
+	if(Lights_SSBO[lightIndex].info.x < 0)
 	{
-		vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
-		float shadow = ShadowCalculation(outFragmentLightPos,NdotL);
+		vec4 outFragmentLightPos = Lights_SSBO[lightIndex].projection * Lights_SSBO[lightIndex].view * vec4(fragPos,1.0);
+		float shadow = ShadowCalculation(lightIndex,outFragmentLightPos,NdotL);
 		result *= shadow;
 	}
 
@@ -133,11 +147,11 @@ void main()
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
 	float SSAO = texture(samplerSSAO, inUV).r;
-	float specular = material.b;
+	float specular = material.g;
 	float roughness = material.r;
 
 	// Render-target composition
-	float ambient = uboFrameContext.vector4_values5.x;
+	float ambient = PC.ambient;
 	if (DecodeFlags(material.z) == 0x1)
 	{
 		ambient = 1.0;
@@ -148,26 +162,15 @@ void main()
 
 	// Ambient part
 	vec3 result = albedo.rgb  * ambient;
-	
-	
+
+	if(PC.useSSAO != 0){
+		result *=  SSAO;
+	}
 	
 	// Point Lights
-	for(int i = 0; i < lightPC.numLights.x; ++i)
+	for(int i = 0; i < PC.numLights; ++i)
 	{
-		//if(i==0)
-		//{
-		//	vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
-		//	float shadow = ShadowCalculation(outFragmentLightPos);
-		//	result += (shadow)*EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, shadow);
-		//}
-		//else
-		{
-			result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
-		}
-	}
-
-	if(lightPC.useSSAO.x > 0.5){
-		result *=  SSAO;
+		result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
 	}
 	
 

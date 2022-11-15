@@ -443,7 +443,8 @@ namespace oo
 
     void WindowsWindow::SetMouseLockState(bool lock)
     {
-        SDL_SetRelativeMouseMode((SDL_bool)lock);
+        auto result = SDL_SetRelativeMouseMode((SDL_bool)lock);
+        ASSERT(result != 0);
     }
 
     std::pair<int, int> WindowsWindow::GetWindowPos() const

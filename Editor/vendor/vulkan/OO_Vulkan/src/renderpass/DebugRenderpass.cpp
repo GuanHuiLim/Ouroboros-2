@@ -86,7 +86,7 @@ void DebugDrawRenderpass::Draw()
 		cmdlist,
 		gbuffer->attachments[GBufferAttachmentIndex::DEPTH].image,
 		VK_ACCESS_MEMORY_READ_BIT,
-		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -96,6 +96,7 @@ void DebugDrawRenderpass::Draw()
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	rhi::CommandList cmd{ cmdlist };
+	if (dodebugRendering)
 	{
 		cmd.SetDefaultViewportAndScissor();
 
