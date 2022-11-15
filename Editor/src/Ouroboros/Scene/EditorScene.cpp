@@ -46,6 +46,7 @@ namespace oo
         {
             // Unlock the mouse if it was locked in play mode
             Application::Get().GetWindow().SetMouseLockState(false);
+            oo::timer::set_timescale(1.0);
         }
 
         Scene::Init();

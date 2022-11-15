@@ -235,11 +235,6 @@ namespace oo
         GetWorld().Get_System<oo::ScriptSystem>()->StopPlay();
         //GetWorld().GetSystem<oo::ScriptSystem>()->StopPlay();
 
-        //{
-        //    // Reset Timescale
-        //    oo::Timestep::TimeScale = 1.0;
-        //}
-
         TRACY_PROFILE_SCOPE_END();
     }
 
