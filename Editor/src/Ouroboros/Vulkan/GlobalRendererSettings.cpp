@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "GlobalRendererSettings.h"
-
+#include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration>
 namespace oo
 {
@@ -23,14 +23,17 @@ namespace oo
     {
         using namespace rttr;
         registration::class_<GlobalRendererSettings::SSAOSettings>("SSAO Settings")
-            .property("Radius", &GlobalRendererSettings::SSAOSettings::Radius)
-            .property("Bias", &GlobalRendererSettings::SSAOSettings::Bias);
+            .property("Radius", &GlobalRendererSettings::SSAOSettings::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Bias", &GlobalRendererSettings::SSAOSettings::Bias)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            ;
         registration::class_<GlobalRendererSettings::LightingSettings>("Light Settings")
-            .property("Ambient", &GlobalRendererSettings::LightingSettings::Ambient)
-            .property("Max Bias", &GlobalRendererSettings::LightingSettings::MaxBias)
-            .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier);
+            .property("Ambient", &GlobalRendererSettings::LightingSettings::Ambient)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Max Bias", &GlobalRendererSettings::LightingSettings::MaxBias)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            ;
         registration::class_<GlobalRendererSettings>("Renderer Settings")
             .property("SSAO Configuration", &GlobalRendererSettings::SSAO)
-            .property("Light Configuration", &GlobalRendererSettings::Lighting);
+            .property("Light Configuration", &GlobalRendererSettings::Lighting)
+            ;
     }
 }

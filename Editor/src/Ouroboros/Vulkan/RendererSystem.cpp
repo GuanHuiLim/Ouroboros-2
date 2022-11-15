@@ -31,6 +31,8 @@ Technology is prohibited.
 
 #include "App/Editor/UI/Object Editor/EditorViewport.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/ECS/GameObjectComponent.h"
+#include "Ouroboros/Vulkan/GlobalRendererSettings.h"
 
 namespace oo
 {
@@ -63,6 +65,16 @@ namespace oo
         m_runtimeCamera.SetAspectRatio(ar);
         m_graphicsWorld->cameras[0] = m_runtimeCamera;
     }*/
+
+    void RendererSystem::OnUpdateRendererSettings(UpdateRendererSettings*)
+    {
+        m_graphicsWorld->ssaoSettings.bias = RendererSettings::setting.SSAO.Bias;
+        m_graphicsWorld->ssaoSettings.radius = RendererSettings::setting.SSAO.Radius;
+
+        m_graphicsWorld->lightSettings.ambient = RendererSettings::setting.Lighting.Ambient;
+        m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;
+        m_graphicsWorld->lightSettings.maxBias = RendererSettings::setting.Lighting.MaxBias;
+    }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
     {
@@ -100,8 +112,9 @@ namespace oo
         m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
     }
 
-    oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld)
+    oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld, Scene* scene)
         : m_graphicsWorld { graphicsWorld }
+        , m_scene { scene }
     {
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
     }
@@ -114,6 +127,7 @@ namespace oo
         EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
         EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
         EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+        EventManager::Unsubscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
     }
 
     void RendererSystem::Init()
@@ -159,10 +173,13 @@ namespace oo
         //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
-        
         EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
         EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
-
+        
+        EventManager::Subscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
+        // launch the event manually myself once.
+        UpdateRendererSettings e;
+        oo::EventManager::Broadcast<UpdateRendererSettings>(&e);
     }
 
     void RendererSystem::SaveEditorCamera()
@@ -250,17 +267,24 @@ namespace oo
     }
 
     // additional function that runs during runtime scene only.
-    void RendererSystem::UpdateCameras()
+    void RendererSystem::UpdateCameras(Scene::go_ptr& mainCamera)
     {
         // Update Camera(s)
         // TODO : for the time being only updates 1 global Editor Camera and only occurs in runtime mode.
 
         Camera* camera = m_runtimeCC.GetCamera();
-        static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-        m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+        static Ecs::Query camera_query = Ecs::make_query<GameObjectComponent, CameraComponent, TransformComponent>();
+        m_world->for_each(camera_query, [&](GameObjectComponent& goc, CameraComponent& cameraComp, TransformComponent& transformComp)
         {
             /*if (!transformComp.HasChangedThisFrame)
                 return;*/
+            // set this to be the main scene camera!
+            if (cameraComp.MainCamera)
+            {
+                mainCamera = m_scene->FindWithInstanceID(goc.Id);
+                // TODO : for the time being this will always be hard coded to be 0.
+                cameraComp.GraphicsWorldIndex = 0;
+            }
 
             camera->SetPosition(transformComp.GetGlobalPosition());
             camera->SetRotation(transformComp.GetGlobalRotationQuat());

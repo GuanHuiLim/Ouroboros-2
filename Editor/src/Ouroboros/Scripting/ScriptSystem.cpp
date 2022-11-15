@@ -463,6 +463,12 @@ namespace oo
         MonoObject* obj = componentDatabase.TryRetrieveDerivedObject(e->TriggerID, "Ouroboros", "Collider");
         MonoObject* other = componentDatabase.TryRetrieveDerivedObject(e->OtherID, "Ouroboros", "Collider");
 
+        if (obj == nullptr || other == nullptr)
+        {
+            LOG_CORE_ERROR("ScriptSystem Error: TriggerEvent Broadcasted, but Collider involved not supported in C#");
+            return;
+        }
+
         void* objParams[1];
         objParams[0] = other;
         void* otherParams[1];
@@ -521,6 +527,15 @@ namespace oo
             ScriptValue::vec3_type impulse;
         };
 
+        MonoObject* col1 = componentDatabase.TryRetrieveDerivedObject(e->Collider1, "Ouroboros", "Collider");
+        MonoObject* col2 = componentDatabase.TryRetrieveDerivedObject(e->Collider2, "Ouroboros", "Collider");
+
+        if (col1 == nullptr || col2 == nullptr)
+        {
+            LOG_CORE_ERROR("ScriptSystem Error: CollisionEvent Broadcasted, but Collider involved not supported in C#");
+            return;
+        }
+
         MonoClass* dataClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Collision");
         MonoClassField* field = nullptr;
 
@@ -544,7 +559,7 @@ namespace oo
         field = mono_class_get_field_from_name(dataClass, "m_rigidbody");
         mono_field_set_value(collisionData1, field, componentDatabase.TryRetrieveDerivedObject(e->Collider1, "Ouroboros", "Rigidbody"));
         field = mono_class_get_field_from_name(dataClass, "m_collider");
-        mono_field_set_value(collisionData1, field, componentDatabase.TryRetrieveDerivedObject(e->Collider1, "Ouroboros", "Collider"));
+        mono_field_set_value(collisionData1, field, col1);
 
         field = mono_class_get_field_from_name(dataClass, "m_contacts");
         mono_field_set_value(collisionData1, field, arr);
@@ -558,7 +573,7 @@ namespace oo
         field = mono_class_get_field_from_name(dataClass, "m_rigidbody");
         mono_field_set_value(collisionData2, field, componentDatabase.TryRetrieveDerivedObject(e->Collider2, "Ouroboros", "Rigidbody"));
         field = mono_class_get_field_from_name(dataClass, "m_collider");
-        mono_field_set_value(collisionData2, field, componentDatabase.TryRetrieveDerivedObject(e->Collider2, "Ouroboros", "Collider"));
+        mono_field_set_value(collisionData2, field, col2);
 
         field = mono_class_get_field_from_name(dataClass, "m_contacts");
         mono_field_set_value(collisionData2, field, arr);

@@ -24,6 +24,7 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
 #include "Ouroboros/Core/Application.h"
+#include "Ouroboros/UI/UISystem.h"
 
 //optick
 #include "optick.h"
@@ -56,6 +57,7 @@ namespace oo
             TRACY_PROFILE_SCOPE_N(editor_registration);
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
+            GetWorld().Add_System<oo::UISystem>(this);
             //bool wantDebug = true;
 
             //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
@@ -106,6 +108,7 @@ namespace oo
         GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
         GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
         GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
+        GetWorld().Get_System<oo::UISystem>()->EditorUpdate();
 
         {
             //TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);

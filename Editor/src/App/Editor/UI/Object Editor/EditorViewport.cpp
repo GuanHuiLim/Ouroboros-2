@@ -90,26 +90,27 @@ void EditorViewport::Show()
 	vMax.y += ImGui::GetWindowPos().y;
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
-	if (vpDim.x < 10.0f || vpDim.y < 10.0f)
-		return;
-	ImVec2 m = ImGui::GetMousePos();
-	ImGui::GetForegroundDrawList()->AddRectFilled({ m.x - 20,m.y - 20 }, { m.x + 20,m.y + 20 },335226);
+	
 	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && cameraFocus)
 	{
 		ImVec2 mousepos = ImGui::GetMousePos();
-		mousepos.x -= ImGui::GetWindowPos().x;
-		mousepos.y -= ImGui::GetWindowPos().y;
-
-		mousepos.x = mousepos.x / vpDim.x;
-		mousepos.y = mousepos.y / vpDim.y;
+		ImVec2 cursor_screenpos = ImGui::GetCursorScreenPos();
+		mousepos.x -= cursor_screenpos.x;
+		mousepos.y -= cursor_screenpos.y;
 		
-		auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y});
-		if (graphicsID >= 0)
+		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+		mousepos.x = mousepos.x / contentRegion.x;
+		mousepos.y = mousepos.y / contentRegion.y;
+		if (mousepos.x > 0 && mousepos.y > 0 && mousepos.x < 1 && mousepos.y < 1)
 		{
-			LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-			auto uuid = scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
-			Hierarchy::GetSelectedNonConst().clear();
-			Hierarchy::GetSelectedNonConst().emplace(uuid);
+			auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y});
+			if (graphicsID >= 0)
+			{
+				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
+				auto uuid = scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+				Hierarchy::GetSelectedNonConst().clear();
+				Hierarchy::GetSelectedNonConst().emplace(uuid);
+			}
 		}
 	}
 
