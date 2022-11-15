@@ -451,7 +451,10 @@ namespace oo
     RaycastResult PhysicsSystem::Raycast(Ray ray, float distance)
     {
         auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
-        ASSERT_MSG(m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
+        
+        if(result.intersect)
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
+        
         return { result.intersect, m_physicsToGameObjectLookup.at(result.object_ID), {result.position.x,result.position.y, result.position.z}, 
             { result.normal.x, result.normal.y, result.normal.z }, result.distance };
     }
@@ -464,6 +467,9 @@ namespace oo
 
         for (auto& hit : allHits)
         {
+            if (hit.intersect == false)
+                continue;
+
             ASSERT_MSG(m_physicsToGameObjectLookup.contains(hit.object_ID) == false, "Why am i hitting something that's not in the current world?");
 
             RaycastResult new_entry = 
