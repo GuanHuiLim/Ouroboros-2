@@ -595,7 +595,8 @@ void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
-		sf->second(doc,arrayValue, sqv.get_value(i), prop);
+		rttr::variant v = sqv.get_value(i);
+		sf->second(doc,arrayValue, v, prop);
 	}
 	std::string temp = prop.get_name().data();
 	rapidjson::Value name;
