@@ -154,7 +154,7 @@ namespace oo
             rb.object.lockRotationZ(rb.LockZAxisRotation);
 
             auto pos = rb.GetPositionInPhysicsWorld();
-            auto delta_position = pos - tf.GetGlobalPosition();
+            auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
             tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
