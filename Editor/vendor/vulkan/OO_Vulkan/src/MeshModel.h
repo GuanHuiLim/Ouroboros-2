@@ -122,7 +122,7 @@ struct SubMesh
 
 struct gfxModel
 {
-    std::string name;
+    std::string name{"GARBAGE"};
 
     // Whole range of mesh
     uint32_t baseVertex{};

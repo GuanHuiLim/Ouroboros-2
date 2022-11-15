@@ -79,6 +79,7 @@ void main()
 //----------------------------------------------------------------------------------------------------
 #if defined(PIXEL_SHADER)
 
+#define DECAL_DEBUG_UV
 //#define DECAL_SUPPORT_NORMALS
 
 layout(location = 0) in float4 inClipPosition;
@@ -126,7 +127,8 @@ float3 CalcuilateWorldPositionFromDepth(float2 screen_pos, float ndc_depth)
 void main()
 {
     const float2 screenPosition = inClipPosition.xy / inClipPosition.w;
-    const float2 texCoords = screenPosition * 0.5f + 0.5f;
+    float2 texCoords = screenPosition * 0.5f + 0.5f;
+    texCoords.y = 1.0f - texCoords.y;
 
 #if 0
     // Reconstruct world position from depth
@@ -141,14 +143,18 @@ void main()
     ndcPosition.xyz /= ndcPosition.w;
     ndcPosition.xy *= u_DecalAspectRatio;
 
-    if (ndcPosition.x < -1.0f || ndcPosition.x > 1.0f || ndcPosition.y < -1.0f || ndcPosition.y > 1.0f)
+    const float bounds = 0.5;
+    if (ndcPosition.x < -bounds || ndcPosition.y < -bounds || ndcPosition.z < -bounds ||
+        ndcPosition.x >  bounds || ndcPosition.y >  bounds || ndcPosition.z >  bounds)
         discard;
 
-    float2 decalTexCoord = ndcPosition.xy * 0.5f + 0.5f;
-
+    float2 decalUV = ndcPosition.xy + 0.5f;
     float4 albedo = float4(s_DecalAlbedo, 1.0) * u_DecalOverlayColor;
-    albedo.xy = decalTexCoord; // For now just color the UV to check for decal correctness.
+
+#if defined (DECAL_DEBUG_UV)
+    albedo.xy = decalUV; // For now output the decal UV to check for correctness.
     albedo.z = 0.0;
+#endif
 
     // TODO: Handle alpha clip?
     //if (albedo.a < 0.1)
@@ -160,6 +166,14 @@ void main()
 #elif defined (DECALS_FORWARD)
     // TODO: Forward lit/unlit?
     outColor.xyz = albedo.rgb;
+
+    // THIS IS A HACK!! TODO: FIX ME... Find a proper fix. Stencil? Mask?
+    // - Use the magnitude of the normal to determine there are no sky or uninitialized pixels
+    // - Possibility of unintended side effects, is normals are bad...
+    float3 normal = texture(samplerNormal, texCoords).xyz;
+    float factor = length(normal);
+    outColor *= factor;
+
 #endif
 }
 

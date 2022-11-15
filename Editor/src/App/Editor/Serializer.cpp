@@ -36,6 +36,7 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
+#include <Ouroboros/Vulkan/ParticleEmitterComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
@@ -73,6 +74,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
+	AddLoadComponent<oo::ParticleEmitterComponent>();
 	AddLoadComponent<oo::LightComponent>();
 	AddLoadComponent<oo::CameraComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
@@ -400,6 +402,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
+	SaveComponent<oo::ParticleEmitterComponent>(go, val, doc);
 	SaveComponent<oo::LightComponent>(go, val, doc);
 	SaveComponent<oo::CameraComponent>(go, val, doc);
 
@@ -621,6 +624,16 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 			{
 				ASSERT_MSG(true, "you are pushing it too far buddy.");
 			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant enum_data = prop.get_value(var);
+				//rttr::enumeration enuma = prop_type.get_enumeration();
+				//std::string value = enuma.value_to_name(enum_data);
+				int value = enum_data.to_int();
+				//saves all enum data as int
+				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+				m_SaveProperties.m_save_commands.find(rttrType->second)->second(doc,sub_component,value,prop);
+			}
 			continue;//not supported
 		}
 		auto sf = m_SaveProperties.m_save_commands.find(iter->second);
@@ -779,6 +792,15 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 			else if (prop_type.is_class())
 			{
 				ASSERT_MSG(true, "you are pushing it too far buddy.");
+			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant enum_data = prop.get_value(variant);
+				//saves all enum data as int
+				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+				m_LoadProperties.m_load_commands.find(rttrType->second)->second(enum_data, std::move(iter->value));
+				rttr::enumeration enuma = prop_type.get_enumeration();		
+				prop.set_value(variant, enuma.name_to_value(enuma.value_to_name(enum_data)));
 			}
 			continue;//not supported
 		}

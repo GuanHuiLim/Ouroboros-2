@@ -50,6 +50,7 @@ Technology is prohibited.
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
+#include <Ouroboros/Vulkan/ParticleEmitterComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/CameraComponent.h>
 
@@ -159,6 +160,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
+	DisplayComponent<oo::ParticleEmitterComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
 	DisplayComponent<oo::CameraComponent>(gameobject);
@@ -210,6 +212,7 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 			selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
 
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::ParticleEmitterComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
@@ -305,7 +308,7 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 				rttr::variant v = prop.get_value(value);
 				bool set_edited = false;
 				bool end_edit = false;
-				DisplayEnumView(prop, value, set_edited, end_edit);
+				DisplayEnumView(prop, v, set_edited, end_edit);
 				if (end_edit)
 					endEdit = true;
 				if (set_edited == true)
