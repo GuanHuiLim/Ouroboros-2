@@ -322,9 +322,10 @@ namespace oo::Anim
 
 						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
+
+						os << y << "- Keyframe Position: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << std::endl;
 					}
 
-					os << "KEyframe Position" << 
 				}
 				/*--------
 				rotation
@@ -348,6 +349,7 @@ namespace oo::Anim
 
 						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
+						os << y << "- Keyframe rotation: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << "," << key.mValue.w << std::endl;
 					}
 				}
 				/*--------
