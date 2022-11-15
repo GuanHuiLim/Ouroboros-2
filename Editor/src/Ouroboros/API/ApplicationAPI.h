@@ -42,6 +42,12 @@ namespace oo
         #endif
     }
 
+    SCRIPT_API ScriptDatabase::IntPtr Application_GetAssetPath()
+    {
+        MonoString* str = ScriptEngine::CreateString(Project::GetAssetFolder().string().c_str());
+        return mono_gchandle_new((MonoObject*)str, false);
+    }
+
     /*-----------------------------------------------------------------------------*/
     /* Cursor Functions for C#                                                     */
     /*-----------------------------------------------------------------------------*/
