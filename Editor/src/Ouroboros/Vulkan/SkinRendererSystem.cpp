@@ -5,8 +5,9 @@
 
 namespace oo
 {
-	SkinMeshRendererSystem::SkinMeshRendererSystem(GraphicsWorld* graphicsWorld)
-		: m_graphicsWorld{ graphicsWorld }
+	SkinMeshRendererSystem::SkinMeshRendererSystem(GraphicsWorld* graphicsWorld, oo::Scene* _scene)
+		: m_graphicsWorld{ graphicsWorld },
+		scene{_scene}
 	{
 	}
 	void SkinMeshRendererSystem::Init()
@@ -15,12 +16,48 @@ namespace oo
 			this, &SkinMeshRendererSystem::OnMeshAssign);
 
 	}
+
+	void RecurseChildren_AssignRootBoneGlobalInverse_to_BoneComponents(GameObject obj, glm::mat4 rootbone_global_inverse)
+	{
+		auto children = obj.GetChildren();
+		if (children.empty()) return;
+
+		for (auto& child : children)
+		{
+			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
+
+			child.GetComponent<SkinMeshBoneComponent>().rootbone_global_inverse = rootbone_global_inverse;
+		}
+	}
 	void SkinMeshRendererSystem::Run(Ecs::ECSWorld* world)
 	{
 		
 		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
 		
 		static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
+		
+		world->for_each_entity(skin_mesh_query,
+			[&](Ecs::EntityID entity)
+			{
+				oo::GameObject go{ entity,*scene };
+
+				auto graphicsID = go.GetComponent<SkinMeshRendererComponent>().graphicsWorld_ID;
+
+				auto parent = go.GetParent();
+				auto children = parent.GetDirectChilds();
+				auto uid = go.GetInstanceID();
+				oo::GameObject rootbone{};
+				for (auto& child : children)
+				{
+					if (child.GetInstanceID() == uid) continue;
+
+					rootbone = child;
+				}
+				auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
+				RecurseChildren_AssignRootBoneGlobalInverse_to_BoneComponents(rootbone, rootbone_global_inverse);
+
+			});
+
 
 		world->for_each(skin_mesh_query,
 			[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
@@ -51,7 +88,7 @@ namespace oo
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(boneComp.graphicsWorld_ID);
 				
 				//set bone matrix to inverse bind pose * matrix
-				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] =  transformComp.GetGlobalMatrix() * boneComp.inverseBindPose_info.transform;
+				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] = boneComp.rootbone_global_inverse * transformComp.GetLocalMatrix() * boneComp.inverseBindPose_info.transform;
 			});
 
 	}

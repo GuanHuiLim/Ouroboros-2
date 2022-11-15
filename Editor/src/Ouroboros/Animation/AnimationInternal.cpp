@@ -784,11 +784,13 @@ namespace oo::Anim::internal
 		if (rttr_type == rttr::type::get< glm::vec3>())
 		{
 			return (1.f - percentage) * prev.get_value< glm::vec3 >() + (percentage * next.get_value< glm::vec3 >());
+			return next;
 		}
 		else if (rttr_type == rttr::type::get< glm::quat>())
 		{
-			return glm::slerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
+			//return glm::slerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
 			//return (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
+			return next;
 		}
 		else if (rttr_type == rttr::type::get< bool>())
 		{
@@ -1019,6 +1021,8 @@ namespace oo::Anim::internal
 		//get the instance
 		auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
 		//set the value
+		//if (interpolated_value.get_type() == rttr::type::get< glm::vec3>()) return;
+
 		info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
 
 		//SetComponentData(timeline, interpolated_value);
