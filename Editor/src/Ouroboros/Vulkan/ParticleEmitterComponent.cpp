@@ -30,34 +30,6 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<ParticleEmitterComponent>("Particle Emitter")
-		.property_readonly("Graphics World ID", &ParticleEmitterComponent::GraphicsWorldID)
-        .property("Particle properties", &ParticleEmitterComponent::GetParticleProperties, &ParticleEmitterComponent::SetParticleProperties)
-        .property("Particle renderer", &ParticleEmitterComponent::GetParticleRendererProperties, &ParticleEmitterComponent::SetParticleRendererProperties)
-        .property("Particle shape", &ParticleEmitterComponent::GetParticleShapeProperties, &ParticleEmitterComponent::SetParticleShapeProperties)
-        .property("Max particles", &ParticleEmitterComponent::GetMaxParticles, &ParticleEmitterComponent::SetMaxParticles)
-        .property("Particle rate", &ParticleEmitterComponent::GetParticleRate, &ParticleEmitterComponent::SetParticleRate)
-		(
-			metadata(UI_metadata::DRAG_SPEED, 0.5f)
-		)
-		.property("Max lifetime", &ParticleEmitterComponent::GetMaxLifetime, &ParticleEmitterComponent::SetMaxLifetime)
-		(
-			metadata(UI_metadata::DRAG_SPEED, 0.1f)
-		)
-		.property("Duration", &ParticleEmitterComponent::GetDuration, &ParticleEmitterComponent::SetDuration)
-		(
-			metadata(UI_metadata::DRAG_SPEED, 0.1f)
-		)
-		//.property("Particle rate", &ParticleSystem::GetParticleRate, &ParticleSystem::SetParticleRate)
-		.property("Looping", &ParticleEmitterComponent::GetLooping, &ParticleEmitterComponent::SetLooping)
-		.property("Prewarm", &ParticleEmitterComponent::GetPrewarm, &ParticleEmitterComponent::SetPrewarm)
-		.property("Prewarm Baked", &ParticleEmitterComponent::GetPrewarmBaked, &ParticleEmitterComponent::SetPrewarmBaked)
-		.property("Bake", &ParticleEmitterComponent::GetPrewarmBaked, &ParticleEmitterComponent::BakePrewarm)
-		.property("RO_BakedData", &ParticleEmitterComponent::GetPrewarmBakedData, &ParticleEmitterComponent::SetPrewarmBakedData)
-		(
-			metadata(UI_metadata::HIDDEN, true)
-		)
-    ; 
 
     registration::class_<ParticleProperties>("Particle properties")
         .property("Local simulation", &ParticleProperties::GetLocalSpace, &ParticleProperties::SetLocalSpace)
@@ -110,7 +82,6 @@ namespace oo
         // TODO: EMISSION
 		//.property("Emission", &ParticlePropsRenderer::GetEmission, &ParticlePropsRenderer::SetEmission)
         ;
-
     registration::enumeration<ParticleShape>("ParticleShape")(
         value("Cone",ParticleShape::Cone),
         value("Circle", ParticleShape::Circle)
@@ -126,6 +97,35 @@ namespace oo
         .property("Size", &ParticlePropsShape::GetSize, &ParticlePropsShape::SetSize)
         .property("Angle", &ParticlePropsShape::GetAngle, &ParticlePropsShape::SetAngle)
         ;
+
+		registration::class_<ParticleEmitterComponent>("Particle Emitter")
+		.property_readonly("Graphics World ID", &ParticleEmitterComponent::GraphicsWorldID)
+		.property("Particle properties", &ParticleEmitterComponent::GetParticleProperties, &ParticleEmitterComponent::SetParticleProperties)
+		.property("Particle renderer", &ParticleEmitterComponent::GetParticleRendererProperties, &ParticleEmitterComponent::SetParticleRendererProperties)
+		.property("Particle shape", &ParticleEmitterComponent::GetParticleShapeProperties, &ParticleEmitterComponent::SetParticleShapeProperties)
+		.property("Max particles", &ParticleEmitterComponent::GetMaxParticles, &ParticleEmitterComponent::SetMaxParticles)
+		.property("Particle rate", &ParticleEmitterComponent::GetParticleRate, &ParticleEmitterComponent::SetParticleRate)
+		(
+			metadata(UI_metadata::DRAG_SPEED, 0.5f)
+		)
+		.property("Max lifetime", &ParticleEmitterComponent::GetMaxLifetime, &ParticleEmitterComponent::SetMaxLifetime)
+		(
+			metadata(UI_metadata::DRAG_SPEED, 0.1f)
+		)
+		.property("Duration", &ParticleEmitterComponent::GetDuration, &ParticleEmitterComponent::SetDuration)
+		(
+			metadata(UI_metadata::DRAG_SPEED, 0.1f)
+		)
+		//.property("Particle rate", &ParticleSystem::GetParticleRate, &ParticleSystem::SetParticleRate)
+		.property("Looping", &ParticleEmitterComponent::GetLooping, &ParticleEmitterComponent::SetLooping)
+		.property("Prewarm", &ParticleEmitterComponent::GetPrewarm, &ParticleEmitterComponent::SetPrewarm)
+		.property("Prewarm Baked", &ParticleEmitterComponent::GetPrewarmBaked, &ParticleEmitterComponent::SetPrewarmBaked)
+		.property("Bake", &ParticleEmitterComponent::GetPrewarmBaked, &ParticleEmitterComponent::BakePrewarm)
+		.property("RO_BakedData", &ParticleEmitterComponent::GetPrewarmBakedData, &ParticleEmitterComponent::SetPrewarmBakedData)
+		(
+			metadata(UI_metadata::HIDDEN, true)
+		)
+		; 
 
     }
 

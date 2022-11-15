@@ -163,7 +163,7 @@ namespace oo
 
         //particle.colour = partProps.col_b.asV() * t + partProps.col_a.asV() * t_1;
         particle.colour = interp.col;
-        particle.texIndex = 1u;
+        particle.instanceData.x = 1u;
         // TODO get entity somehow
         //particle.entityID = trans.GetEntity();
 
