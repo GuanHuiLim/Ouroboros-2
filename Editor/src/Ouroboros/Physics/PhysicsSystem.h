@@ -23,6 +23,8 @@ Technology is prohibited.
 #include <bitset>
 #include "Ouroboros/ECS/GameObjectComponent.h"
 
+#include "Ouroboros/Geometry/Shapes.h"
+
 namespace oo
 {
     class Scene;
@@ -31,6 +33,17 @@ namespace oo
     using LayerField    = std::bitset<s_MaxLayerCount>;
     using LayerMask     = LayerField;
     using LayerMatrix   = std::unordered_map<LayerField, LayerMask>;
+
+    struct RaycastResult
+    {
+        bool intersect = false;
+
+        oo::UUID uuid;
+
+        glm::vec3 Position;
+        glm::vec3 Normal;
+        float Distance;
+    };
 
     class PhysicsSystem final : public Ecs::System
     {
@@ -57,7 +70,8 @@ namespace oo
         // Manupilating Fixed DT
         static void SetFixedDeltaTime(Timestep NewFixedTime);
         static Timestep GetFixedDeltaTime();
-    
+        
+        std::vector<> Raycast(Ray ray , float distance);
     private:
         inline static std::uint64_t MaxIterations = 100;
         inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 100 fps
