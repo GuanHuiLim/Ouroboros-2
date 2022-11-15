@@ -436,7 +436,7 @@ namespace oo
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->Reload();
                     store.tree.insert(FP);
-                    LOG_INFO("Move {0}", FP.filename());
+                    //LOG_INFO("Move {0}", FP.filename());
                 }
                 else if (tLast < WRITE_TIME && WRITE_TIME <= t)
                 {
@@ -445,7 +445,7 @@ namespace oo
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->timeLoaded = t;
                     store.at(meta.id)->Reload();
-                    LOG_INFO("Modified asset {0}", FP.filename());
+                    //LOG_INFO("Modified asset {0}", FP.filename());
                 }
             }
         }
@@ -486,7 +486,7 @@ namespace oo
 
                         // Remove
                         toRemove.emplace_back(asset.second->id);
-                        LOG_INFO("Un-indexed asset {0}", ASS_FP.filename());
+                        //LOG_INFO("Un-indexed asset {0}", ASS_FP.filename());
                     }
                 }
                 for (const auto& i : toRemove)
@@ -513,7 +513,7 @@ namespace oo
             meta.id = Asset::GenerateSnowflake();
             std::ofstream ofs = std::ofstream(fpMeta);
             BinaryIO::Write(ofs, meta);
-            LOG_INFO("Created meta {0}", fpMeta.filename());
+            //LOG_INFO("Created meta {0}", fpMeta.filename());
         }
         else
         {
@@ -569,7 +569,7 @@ namespace oo
         info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
         info->timeLoaded = std::chrono::file_clock::now();
         info->type = info->GetType();
-        LOG_INFO("Indexed asset {0}", fp.filename());
+        //LOG_INFO("Indexed asset {0}", fp.filename());
         return Asset(store.emplace(info->id, info));
     }
 }
