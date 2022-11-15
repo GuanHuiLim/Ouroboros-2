@@ -142,6 +142,41 @@ void GraphicsBatch::GenerateBatches()
 		//});
 	}
 
+	auto& allEmitters = m_world->GetAllEmitterInstances();
+	m_particleList.clear();
+	m_particleCommands.clear();
+	/// Create parciles batch
+	uint32_t emitterCnt = 0;
+	for (auto& emitter:allEmitters)
+	{
+		// note to support multiple textures permesh we have to do this per submesh
+		m_particleList.insert(m_particleList.end(), emitter.particles.begin(), emitter.particles.end());
+
+		auto& model = m_renderer->g_globalModels[emitter.modelID];
+		// set up the commands and number of particles
+		oGFX::IndirectCommand cmd{};
+
+		cmd.instanceCount = emitter.particles.size();
+		// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
+		// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
+		cmd.firstInstance = emitterCnt;
+		for (size_t i = 0; i < emitter.submesh.size(); i++)
+		{
+			// create a draw call for each submesh using the same instance data
+			if (emitter.submesh[i] == true)
+			{
+				const auto& subMesh = model.m_subMeshes[i];
+				cmd.firstIndex = model.baseIndices + subMesh.baseIndices;
+				cmd.indexCount = subMesh.indicesCount;
+				cmd.vertexOffset = model.baseVertex + subMesh.baseVertex;
+				m_particleCommands.push_back(cmd);
+			}
+		}	
+		//increment instance data
+		emitterCnt += cmd.instanceCount;
+		//setup instance data		
+	}
+
 }
 
 const std::vector<oGFX::IndirectCommand>& GraphicsBatch::GetBatch(int32_t batchIdx)
@@ -149,4 +184,14 @@ const std::vector<oGFX::IndirectCommand>& GraphicsBatch::GetBatch(int32_t batchI
 	assert(batchIdx > -1 && batchIdx < GraphicsBatch::MAX_NUM);
 
 	return m_batches[batchIdx];
+}
+
+const std::vector<oGFX::IndirectCommand>& GraphicsBatch::GetParticlesBatch()
+{
+	return m_particleCommands;
+}
+
+const std::vector<ParticleData>& GraphicsBatch::GetParticlesData()
+{
+	return m_particleList;
 }

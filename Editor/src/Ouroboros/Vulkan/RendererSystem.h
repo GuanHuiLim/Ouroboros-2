@@ -28,6 +28,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/Scene/Scene.h"
 
+
 //fwd declaration
 struct EditorViewportResizeEvent;
 struct PreviewWindowResizeEvent;
@@ -68,6 +69,7 @@ namespace oo
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
 
     private:
+
         GraphicsWorld* m_graphicsWorld{ nullptr };
         Scene* m_scene;
 

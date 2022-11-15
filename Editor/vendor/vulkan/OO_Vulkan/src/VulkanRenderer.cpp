@@ -45,6 +45,7 @@ Technology is prohibited.
 #include "renderpass/DebugRenderpass.h"
 #include "renderpass/ShadowPass.h"
 #include "renderpass/SSAORenderPass.h"
+#include "renderpass/GbufferParticlePass.h"
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 	#include "renderpass/ForwardDecalRenderpass.h"
 #endif
@@ -274,6 +275,8 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		 ptr = new DeferredCompositionRenderpass;
 		rpd->RegisterRenderPass(ptr);
 		ptr = new SSAORenderPass;
+		rpd->RegisterRenderPass(ptr);
+		ptr = new GbufferParticlePass;
 		rpd->RegisterRenderPass(ptr);
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 		ptr = new ForwardDecalRenderpass;
@@ -1622,6 +1625,15 @@ void VulkanRenderer::InitializeRenderBuffers()
 	g_GlobalMeshBuffers.VtxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 	g_GlobalMeshBuffers.IdxBuffer.reserve(8 * 1000 * 1000);
 	g_GlobalMeshBuffers.VtxBuffer.reserve(8 * 1000 * 1000);
+	
+	g_particleCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+	g_particleCommandsBuffer.reserve(1024); // commands are generally per emitter. shouldnt have so many..
+
+	for (size_t i = 0; i < g_particleDatas.size(); i++)
+	{
+		g_particleDatas[i].Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		g_particleDatas[i].reserve(100000*10); // 10 max particle systems
+	}
 
 	// TODO: Move other global GPU buffer initialization here...
 }
@@ -1635,6 +1647,12 @@ void VulkanRenderer::DestroyRenderBuffers()
 	globalLightBuffer.destroy();
 	gpuBoneMatrixBuffer.destroy();
 	skinningVertexBuffer.destroy();
+
+	g_particleCommandsBuffer.destroy();
+	for (size_t i = 0; i < g_particleDatas.size(); i++)
+	{
+		g_particleDatas[i].destroy();
+	}
 }
 
 void VulkanRenderer::GenerateCPUIndirectDrawCommands()
@@ -1701,6 +1719,16 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		}
 		shadowCasterCommandsBuffer.clear();
 		shadowCasterCommandsBuffer.writeTo(shadowObjects.size(), (void*)shadowObjects.data(), 0);
+	}
+
+	{
+		auto& particleCommands = batches.GetParticlesBatch();
+		auto& particleData = batches.GetParticlesData();
+		g_particleCommandsBuffer.clear();
+		g_particleDatas[currentFrame].clear();
+
+		g_particleCommandsBuffer.writeTo(particleCommands.size(), particleCommands.data());
+		g_particleDatas[currentFrame].writeTo(particleData.size(), particleData.data());
 	}
 
 }
@@ -2017,6 +2045,7 @@ void VulkanRenderer::RenderFrame()
 				RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
+				RenderPassDatabase::GetRenderPass<GbufferParticlePass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<SSAORenderPass>()->Draw();
 
