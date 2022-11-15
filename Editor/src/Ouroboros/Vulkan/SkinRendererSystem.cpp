@@ -17,16 +17,21 @@ namespace oo
 
 	}
 
-	void RecurseChildren_AssignRootBoneGlobalInverse_to_BoneComponents(GameObject obj, glm::mat4 rootbone_global_inverse)
+	void RecurseChildren_AssignparentTransform_to_BoneComponents(GameObject obj, glm::mat4 parentTransform)
 	{
-		auto children = obj.GetChildren();
+		auto children = obj.GetDirectChilds();
 		if (children.empty()) return;
+
+		//auto localTransform = obj.GetComponent<TransformComponent>().GetLocalMatrix();
 
 		for (auto& child : children)
 		{
 			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
 
-			child.GetComponent<SkinMeshBoneComponent>().rootbone_global_inverse = rootbone_global_inverse;
+			auto const transform = parentTransform * child.GetComponent<TransformComponent>().GetLocalMatrix();
+			child.GetComponent<SkinMeshBoneComponent>().globalTransform = transform;
+
+			RecurseChildren_AssignparentTransform_to_BoneComponents(child, transform);
 		}
 	}
 	void SkinMeshRendererSystem::Run(Ecs::ECSWorld* world)
@@ -52,9 +57,10 @@ namespace oo
 					if (child.GetInstanceID() == uid) continue;
 
 					rootbone = child;
+					break;
 				}
-				auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
-				RecurseChildren_AssignRootBoneGlobalInverse_to_BoneComponents(rootbone, rootbone_global_inverse);
+				//auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
+				RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>());
 
 			});
 
@@ -88,7 +94,7 @@ namespace oo
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(boneComp.graphicsWorld_ID);
 				
 				//set bone matrix to inverse bind pose * matrix
-				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] = boneComp.rootbone_global_inverse * transformComp.GetLocalMatrix() * boneComp.inverseBindPose_info.transform;
+				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] = boneComp.globalTransform * boneComp.inverseBindPose_info.transform;
 			});
 
 	}

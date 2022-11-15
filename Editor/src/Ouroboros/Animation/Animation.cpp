@@ -27,7 +27,7 @@ Technology is prohibited.
 #include <rttr/registration>
 
 
-constexpr bool DEBUG_PRINT = false;
+constexpr bool DEBUG_PRINT = true;
 
 namespace oo::Anim::internal
 {
@@ -323,6 +323,8 @@ namespace oo::Anim
 						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
 					}
+
+					os << "KEyframe Position" << 
 				}
 				/*--------
 				rotation
