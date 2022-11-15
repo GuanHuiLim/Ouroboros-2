@@ -1945,6 +1945,7 @@ bool VulkanRenderer::ResizeSwapchain()
 
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
+	std::ostringstream os;
 	// new model loader
 	Assimp::Importer importer;
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
@@ -1979,7 +1980,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 
 	
 
-	std::cout <<"[Loading] " << file << std::endl;
+	os <<"[Loading] " << file << std::endl;
 	//if (scene->mNumAnimations && scene->mAnimations[0]->mNumMorphMeshChannels)
 	//{
 	//	std::stringstream ss{"Morphs\n"};
@@ -1997,17 +1998,17 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	//		}
 	//		ss << std::endl;
 	//	}
-	//	std::cout << ss.str() << std::endl;
+	//	os << ss.str() << std::endl;
 	//}
 
 	size_t count{ 0 };
-	std::cout << "Meshes" << scene->mNumMeshes << std::endl;
+	os << "Meshes" << scene->mNumMeshes << std::endl;
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
 		auto& mesh = scene->mMeshes[i];
-		std::cout << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
-		std::cout << "\t\tverts:"  << mesh->mNumVertices << std::endl;
-		std::cout << "\t\tbones:"  << mesh->mNumBones << std::endl;
+		os << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
+		os << "\t\tverts:"  << mesh->mNumVertices << std::endl;
+		os << "\t\tbones:"  << mesh->mNumBones << std::endl;
 		/*
 		for (size_t anim = 0; anim < mesh->mNumAnimMeshes; anim++)
 		{
@@ -2023,16 +2024,16 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 					ss << "\tPos:"<< pos<< "[" << v.x << "," << v.y << "," << v.z <<"]" << std::endl;
 				}
 			}
-		std::cout << ss.str() << std::endl;
+		os << ss.str() << std::endl;
 		}
-		std::cout << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
+		os << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
 		*/
 		
 		//int sum = 0;
 		//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
 		//{
 		//	std::map<uint32_t, float> wts;
-		//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
+		//	os << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
 		//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
 		//	{
 		//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
@@ -2041,39 +2042,39 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//	}
 		//	for (auto [v,w] :wts)
 		//	{
-		//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
+		//		os << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
 		//	}
 		//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
 		//}
-		//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
+		//os << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
 
 #if 0
 	if (scene->HasAnimations())
 	{
-		std::cout << "Animated scene\n";
+		os << "Animated scene\n";
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
-			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
-			std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
-			std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
+			os << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+			os << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
+			os << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
+			os << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
+			os << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
+				os << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
 				for (size_t y = 0; y < channel->mNumPositionKeys; y++)
 				{
-					std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
+					os << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
 					auto& pos = channel->mPositionKeys[y].mValue;
-					std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
+					os << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
 				}
 			}
 		}
-		std::cout << std::endl;
+		os << std::endl;
 	}
 #endif
 
@@ -2125,12 +2126,12 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		for (size_t i = 0; i < mdl.skeleton->boneWeights.size(); i++)
 		{
 			//auto& ref = mdl.skeleton->boneWeights[i];
-			//std::cout << i;
+			//os << i;
 			//for (size_t x = 0; x < 4; x++)
 			//{
-			//	std::cout << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
+			//	os << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
 			//}
-			//std::cout << std::endl;
+			//os << std::endl;
 		}
 
 	}
@@ -2153,8 +2154,9 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		LoadMeshFromBuffers(modelFile->vertices, modelFile->indices, &mdl);
 	}
 
-	std::cout << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
+	os << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
 
+	std::cout << os.str();
 	return modelFile;
 }
 
