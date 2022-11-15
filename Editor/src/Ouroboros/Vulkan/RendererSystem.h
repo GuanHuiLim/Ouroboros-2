@@ -40,7 +40,7 @@ namespace oo
     class RendererSystem : public Ecs::System
     {
     private:
-        GraphicsWorld* m_graphicsWorld{nullptr};
+        //GraphicsWorld* m_graphicsWorld{nullptr};
         //Ecs::ECSWorld* m_world{nullptr};
         std::map<uint32_t, UUID> m_graphicsIdToUUID;
     public:
