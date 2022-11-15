@@ -13,5 +13,10 @@
             if (type != Type.Texture)
                 throw new System.ArgumentException("given path (" + path + ") is not a texture");
         }
+
+        public static Texture[] GetAll()
+        {
+            return GetByType<Texture>(Type.Texture);
+        }
     }
 }
