@@ -88,7 +88,7 @@ void GraphicsWorld::ClearLightInstances()
 
 int32_t GraphicsWorld::CreateEmitterInstance()
 {
-	return CreateLightInstance(OmniLightInstance());
+	return CreateEmitterInstance(EmitterInstance());
 }
 
 int32_t GraphicsWorld::CreateEmitterInstance(EmitterInstance obj)

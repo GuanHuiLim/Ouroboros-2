@@ -4,7 +4,7 @@
 
 layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec2 inUV;
-layout(location = 2) in vec3 inColor;
+layout(location = 2) in vec4 inColor;
 layout(location = 3) in flat uvec4 inInstanceData;
 
 layout(location = 7) in struct
@@ -49,36 +49,10 @@ vec2 GenerateRandom_RoughnessMetallic(in uint seed)
     return vec2(roughness, metallic);
 }
 
-// !! DANGER !! - Dont ever learn this... Look at assembly/performance first.
-void Jump(inout uint perInstanceData, inout float3 albedo)
-{
-    switch (perInstanceData)
-    {
-        case 1:
-        {
-            albedo.rgb *= (0.5f * uboFrameContext.renderTimer.y + 0.5f);
-            break;
-        }
-        case 2:
-        {
-            const float sine_normalized = 0.5f * sin(uboFrameContext.renderTimer.x * 3.14159f * 15.0f) + 0.5f;
-            albedo.rgb *= float3(1.0f * sine_normalized);
-            perInstanceData = 1; // Hack
-            break;
-        }
-        case 3:
-        {
-            albedo.rgb = main_voronoi(uboFrameContext.renderTimer.x, inUV.xy).xyz;
-            perInstanceData = 1; // Hack
-            break;
-        }
-    }
-}
-
 void main()
 {
     outEntityID = int(inInstanceData.z);
-    outAlbedo = vec4(inColor, 1.0);
+    outAlbedo = vec4(inColor.rgb, 1.0);
     
     //outPosition = inPosition;
     // implicit depthOut will reconstruct the position
@@ -98,12 +72,8 @@ void main()
     uint perInstanceData              = inInstanceData.y & 0xFF;
    
 
-    {
-        outAlbedo.rgb = texture(textureDescriptorArray[textureIndex_Albedo], inUV.xy).rgb;
-        
-        // !! DANGER !! - Dont ever learn this... Look at assembly/performance first.
-        Jump(perInstanceData, outAlbedo.rgb);
-    }
+    outAlbedo.rgb = texture(textureDescriptorArray[textureIndex_Albedo], inUV.xy).rgb;
+    outAlbedo *= inColor;
 	
     {
         outNormal = vec4(inLightData.btn[2], 0.0);
