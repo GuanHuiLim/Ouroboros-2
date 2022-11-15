@@ -18,7 +18,7 @@ layout(location = 10) in uvec4 inInstanceData;
 // Note: Sending too much stuff from VS to FS can result in bottleneck...
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec2 outUV;
-layout(location = 2) out vec3 outColor;
+layout(location = 2) out vec4 outColor;
 layout(location = 3) out flat uvec4 outInstanceData;
 layout(location = 7) out struct
 {
@@ -48,7 +48,7 @@ layout(std430, set = 0, binding = 5) readonly buffer GPUobject
 void main()
 {
 	outUV = inUV;
-	outColor = inColor;
+	outColor = inCol;
 	outInstanceData = inInstanceData;
 	
 	mat3 L2W = mat3(inXform);

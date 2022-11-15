@@ -1725,10 +1725,11 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		auto& particleCommands = batches.GetParticlesBatch();
 		auto& particleData = batches.GetParticlesData();
 		g_particleCommandsBuffer.clear();
-		g_particleDatas[currentFrame].clear();
+		g_particleDatas[swapchainIdx].clear();
 
-		g_particleCommandsBuffer.writeTo(particleCommands.size(), particleCommands.data());
-		g_particleDatas[currentFrame].writeTo(particleData.size(), particleData.data());
+		g_particleCommandsBuffer.writeTo(particleCommands.size(), particleCommands.data());		
+		g_particleDatas[swapchainIdx].writeTo(particleData.size(), particleData.data());
+		
 	}
 
 }
@@ -1955,7 +1956,7 @@ void VulkanRenderer::BeginDraw()
 				if (currWorld->imguiID[x])
 				{
 					write_desc[0].pImageInfo = desc_image;
-					vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
+				//	vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
 				}
 								
 			}		

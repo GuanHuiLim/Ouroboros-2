@@ -174,9 +174,9 @@ namespace oo
             pos = trans.GetGlobalPosition() + pD.m_startOffset + (glm::mat3(trans.GetGlobalRotationMatrix())* pD.m_posDelta);
 
             glm::mat4 fxform = glm::mat4(1.0f);
-            glm::translate(fxform,pos);
-            glm::rotate(fxform, trans.GetGlobalRotationRad().x + pD.m_rotationOffset + interp.rotation, glm::vec3{0.0f,1.0f,0.0f});
-            glm::scale(fxform,pSize);
+            fxform= glm::translate(fxform,pos);
+            fxform= glm::rotate(fxform, trans.GetGlobalRotationRad().x + pD.m_rotationOffset + interp.rotation, glm::vec3{0.0f,1.0f,0.0f});
+            fxform= glm::scale(fxform,pSize);
             particle.transform = fxform;
             return;
         }
@@ -185,10 +185,10 @@ namespace oo
         pos = pD.m_startPos + pD.m_startOffset + (glm::mat3(trans.GetGlobalRotationMatrix())*pD.m_posDelta);
 
         glm::mat4 fxform = glm::mat4(1.0f);
-        glm::translate(fxform,pos);
+        fxform= glm::translate(fxform,pos);
         //TODO: FIX QUATERNION
-        glm::rotate(fxform, trans.GetGlobalRotationRad().x + pD.m_rotationOffset + interp.rotation, glm::vec3{0.0f,1.0f,0.0f});
-        glm::scale(fxform,pSize);
+        fxform= glm::rotate(fxform, trans.GetGlobalRotationRad().x + pD.m_rotationOffset + interp.rotation, glm::vec3{0.0f,1.0f,0.0f});
+        fxform= glm::scale(fxform,pSize);
         particle.transform = fxform;
     }
 
@@ -316,8 +316,8 @@ namespace oo
 
     void ParticleRendererSystem::OnEmitterRemove(Ecs::ComponentEvent<ParticleEmitterComponent>* evnt)
     {
-        //auto& comp = evnt->component;
-        //m_graphicsWorld->DestroyEmitterInstance(comp.GraphicsWorldID);
+        auto& comp = evnt->component;
+        m_graphicsWorld->DestroyEmitterInstance(comp.GraphicsWorldID);
     }
 
 
@@ -342,9 +342,6 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<ParticleRendererSystem, ParticleEmitterComponent>(
             this, &ParticleRendererSystem::OnEmitterRemove);
 
-        // launch the event manually myself once.
-        UpdateRendererSettings e;
-        oo::EventManager::Broadcast<UpdateRendererSettings>(&e);
     }
 
     void ParticleRendererSystem::SaveEditorCamera()
@@ -374,6 +371,7 @@ namespace oo
         static Ecs::Query emitter_query = Ecs::make_query<ParticleEmitterComponent, TransformComponent>();
         world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp) 
         {
+            emitter.m_partRenderer.MeshInformation.submeshBits[0] = true;
             //do nothing if transform did not change
             auto& actualObject = m_graphicsWorld->GetEmitterInstance(emitter.GraphicsWorldID);
             actualObject.modelID = emitter.m_partRenderer.ModelHandle;
@@ -443,18 +441,18 @@ namespace oo
            
         world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp)
         {
-            m_graphicsWorld->SubmitParticles(emitter.m_particles, emitter.m_liveParticles, emitter.m_partRenderer.ModelHandle);
+            m_graphicsWorld->SubmitParticles(emitter.m_particles, emitter.m_liveParticles, emitter.GraphicsWorldID);
         });
     }
 
     void ParticleRendererSystem::InitializeEmitter(ParticleEmitterComponent& emitterComp, TransformComponent& transformComp)
     {
-        //emitterComp.GraphicsWorldID = m_graphicsWorld->CreateEmitterInstance();
+        emitterComp.GraphicsWorldID = m_graphicsWorld->CreateEmitterInstance();
         
         // update graphics world side
-        // auto& graphics_object = m_graphicsWorld->GetEmitterInstance(emitterComp.GraphicsWorldID);
-        // graphics_object.localToWorld = transformComp.GetGlobalMatrix();
-        // graphics_object.entityID = 1;
+        auto& graphics_object = m_graphicsWorld->GetEmitterInstance(emitterComp.GraphicsWorldID);
+        graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+        graphics_object.entityID = 1;
     }
 
 }
