@@ -39,6 +39,8 @@ namespace oo
     {
         EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
         EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
+        EventManager::Unsubscribe<PhysicsSystem, RaycastEvent>(this, &PhysicsSystem::OnRaycastEvent);
+        EventManager::Unsubscribe<PhysicsSystem, RaycastAllEvent>(this, &PhysicsSystem::OnRaycastAllEvent);
     }
 
     void PhysicsSystem::Init(Scene* scene)
@@ -47,6 +49,8 @@ namespace oo
 
         EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
         EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
+        EventManager::Subscribe<PhysicsSystem, RaycastEvent>(this, &PhysicsSystem::OnRaycastEvent);
+        EventManager::Subscribe<PhysicsSystem, RaycastAllEvent>(this, &PhysicsSystem::OnRaycastAllEvent);
 
         m_world->SubscribeOnAddComponent<PhysicsSystem, RigidbodyComponent>(
             this, &PhysicsSystem::OnRigidbodyAdd);
@@ -444,6 +448,38 @@ namespace oo
         return FixedDeltaTime; 
     }
 
+    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance)
+    {
+        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+        ASSERT_MSG(m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
+        return { result.intersect, m_physicsToGameObjectLookup.at(result.object_ID), {result.position.x,result.position.y, result.position.z}, 
+            { result.normal.x, result.normal.y, result.normal.z }, result.distance };
+    }
+
+    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
+    {
+        std::vector<RaycastResult> result;
+
+        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+
+        for (auto& hit : allHits)
+        {
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(hit.object_ID) == false, "Why am i hitting something that's not in the current world?");
+
+            RaycastResult new_entry = 
+            { hit.intersect
+                , m_physicsToGameObjectLookup.at(hit.object_ID)
+                , { hit.position.x,hit.position.y, hit.position.z }
+                , { hit.normal.x, hit.normal.y, hit.normal.z }
+                , hit.distance 
+            };
+
+            result.emplace_back(new_entry);
+        }
+
+        return result;
+    }
+
     void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
         InitializeRigidbody(rb->component);
@@ -596,6 +632,16 @@ namespace oo
             auto& rb = go->GetComponent<RigidbodyComponent>();
             rb.DisableCollider();
         }
+    }
+
+    void PhysicsSystem::OnRaycastEvent(RaycastEvent* e)
+    {
+        e->Results = Raycast(e->ray, e->distance);
+    }
+
+    void PhysicsSystem::OnRaycastAllEvent(RaycastAllEvent* e)
+    {
+        e->Results = RaycastAll(e->ray, e->distance);
     }
 
 

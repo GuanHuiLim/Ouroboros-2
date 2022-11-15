@@ -24,6 +24,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObjectComponent.h"
 
 #include "Ouroboros/Geometry/Shapes.h"
+#include "Ouroboros/Physics/Raycast.h"
 
 namespace oo
 {
@@ -33,17 +34,6 @@ namespace oo
     using LayerField    = std::bitset<s_MaxLayerCount>;
     using LayerMask     = LayerField;
     using LayerMatrix   = std::unordered_map<LayerField, LayerMask>;
-
-    struct RaycastResult
-    {
-        bool intersect = false;
-
-        oo::UUID uuid;
-
-        glm::vec3 Position;
-        glm::vec3 Normal;
-        float Distance;
-    };
 
     class PhysicsSystem final : public Ecs::System
     {
@@ -71,7 +61,9 @@ namespace oo
         static void SetFixedDeltaTime(Timestep NewFixedTime);
         static Timestep GetFixedDeltaTime();
         
-        std::vector<> Raycast(Ray ray , float distance);
+        RaycastResult Raycast(Ray ray , float distance = std::numeric_limits<float>::max());
+        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max());
+
     private:
         inline static std::uint64_t MaxIterations = 100;
         inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 100 fps
@@ -118,6 +110,8 @@ namespace oo
         void OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e);
         void OnGameObjectDisable(GameObjectComponent::OnDisableEvent* e);
 
+        void OnRaycastEvent(RaycastEvent* e);
+        void OnRaycastAllEvent(RaycastAllEvent* e);
     };
 
 
