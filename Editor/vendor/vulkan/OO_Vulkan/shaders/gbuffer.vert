@@ -20,6 +20,7 @@ layout(location = 15) in uvec4 inInstanceData;
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec2 outUV;
 layout(location = 2) out vec3 outColor;
+layout(location = 3) out flat int outEntityID;
 layout(location = 7) out struct
 {
 	mat3 btn;
@@ -52,6 +53,7 @@ void main()
 	const uint instanceIndex = inInstanceData.x;
 
 	GPUObjectInformation objectInfo = GPUobjectInfo[inInstanceData.x];
+	outEntityID = objectInfo.entityID;
 	//decode the matrix into transform matrix
 	mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[instanceIndex]);
 	

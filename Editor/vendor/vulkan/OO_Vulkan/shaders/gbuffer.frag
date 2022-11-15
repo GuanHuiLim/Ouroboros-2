@@ -5,7 +5,7 @@
 layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inColor;
-
+layout(location = 3) in flat int inEntityID;
 
 layout(location = 15) in flat uvec4 inInstanceData;
 layout(location = 7) in struct
@@ -17,6 +17,7 @@ layout(location = 7) in struct
 layout(location = 0) out vec4 outNormal;
 layout(location = 1) out vec4 outAlbedo;
 layout(location = 2) out vec4 outMaterial;
+layout(location = 3) out int outEntityID;
 
 #include "shader_utility.shader"
 
@@ -77,6 +78,7 @@ void Jump(inout uint perInstanceData, inout float3 albedo)
 
 void main()
 {
+    outEntityID = inEntityID;
     outAlbedo = vec4(inColor, 1.0);
     
     //outPosition = inPosition;

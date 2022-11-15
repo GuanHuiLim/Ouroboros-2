@@ -109,16 +109,18 @@ void DeferredCompositionRenderpass::Draw()
 	CreateDescriptors();
 
 	LightPC pc{};
-	pc.useSSAO.x = vr.useSSAO ? 1.0f:0.0f;
+	pc.useSSAO = vr.useSSAO ? 1 : 0;
+	pc.ambient = vr.currWorld->lightSettings.ambient;
+	pc.maxBias = vr.currWorld->lightSettings.maxBias;
+	pc.mulBias = vr.currWorld->lightSettings.biasMultiplier;
 	
-	pc.numLights[0] = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
+	pc.numLights = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
 	VkPushConstantRange range;
 	range.offset = 0;
 	range.size = sizeof(LightPC);
-	if (pc.numLights[0])
+	if (pc.numLights)
 	{
 		auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
-		pc.lightMat = light.projection * light.view[0];
 	}
 	cmd.SetPushConstant(PSOLayoutDB::deferredLightingCompositionPSOLayout,range,&pc);
 

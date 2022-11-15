@@ -91,6 +91,8 @@ namespace oo
         scenegraph const GetGraph() const;
         go_ptr GetRoot() const;
         GraphicsWorld* GetGraphicsWorld() const;
+        go_ptr GetMainCameraObject() const;
+        Camera MainCamera() const;
 
     protected:
         void SetFilePath(std::string_view filepath);
@@ -130,6 +132,8 @@ namespace oo
         std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
         go_ptr m_rootGo;
+
+        go_ptr m_mainCamera;
 
         // scripting stuff
         std::unique_ptr<ScriptDatabase> m_scriptDatabase;

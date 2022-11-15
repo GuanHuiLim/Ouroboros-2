@@ -59,7 +59,6 @@ private:
 	std::vector<glm::vec4> ssaoNoise;
 	std::vector<glm::vec3> ssaoKernel;
 	void SetupRenderpass();
-	void SetupFramebuffer();
 	void CreatePipeline();
 
 };

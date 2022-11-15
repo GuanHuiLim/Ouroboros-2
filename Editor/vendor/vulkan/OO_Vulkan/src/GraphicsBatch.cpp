@@ -17,6 +17,7 @@ Technology is prohibited.
 #include "GraphicsWorld.h"
 #include "gpuCommon.h"
 #include <cassert>
+#include "Profiling.h"
 
 GraphicsBatch GraphicsBatch::Init(GraphicsWorld* gw, VulkanRenderer* renderer, size_t maxObjects)
 {
@@ -43,6 +44,7 @@ void AppendBatch(std::vector<oGFX::IndirectCommand>& dest, std::vector<oGFX::Ind
 
 void GraphicsBatch::GenerateBatches()
 {
+	PROFILE_SCOPED("Generate graphics batch");
 	using Batch = GraphicsBatch::DrawBatch;
 	using Flags = ObjectInstanceFlags;
 
@@ -58,8 +60,16 @@ void GraphicsBatch::GenerateBatches()
 	int32_t cnt{ 0 };
 	for (auto& ent: entities)
 	{
-		auto& model = m_renderer->g_globalModels[ent.modelID];		
-		
+		auto& model = m_renderer->g_globalModels[ent.modelID];
+
+		// skip entities dont want to render
+		if (ent.isRenderable() == false)
+		{
+			// still increment instance
+			++cnt;
+			continue;
+		}
+
 		if (ent.modelID != currModelID) // check if we are using the same model
 		{
 			s_scratchBuffer.clear();
@@ -110,6 +120,12 @@ void GraphicsBatch::GenerateBatches()
 		if (ent.flags & Flags::EMITTER)
 		{
 			AppendBatch(m_batches[Batch::LIGHT_SPOT], s_scratchBuffer);
+		}
+
+		if (ent.flags & Flags::SHADOW_ENABLED)
+		{
+			// get shadow enabled lights
+			AppendBatch(m_batches[Batch::SHADOW_LIGHT], s_scratchBuffer);
 		}
 
 		// append to the batches

@@ -65,6 +65,11 @@ Technology is prohibited.
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include <Ouroboros/Vulkan/CameraComponent.h>
 
+#include <Ouroboros/UI/GraphicsRaycasterComponent.h>
+#include <Ouroboros/UI/RectTransformComponent.h>
+#include <Ouroboros/UI/UICanvasComponent.h>
+#include <Ouroboros/UI/UIImageComponent.h>
+#include <Ouroboros/UI/UIRaycastComponent.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -619,6 +624,27 @@ void Hierarchy::RightClickOptions()
 						go.EnsureComponent<oo::CameraComponent>();
 						// for now lets add a mesh to let us know where our camera is
 						go.EnsureComponent<oo::MeshRendererComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Canvas"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Canvas");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UICanvasComponent>();
+						go.EnsureComponent<oo::GraphicsRaycasterComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Image"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("UI Image");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UICanvasComponent>();
+						go.EnsureComponent<oo::UIRaycastComponent>();
+						go.EnsureComponent<oo::UIImageComponent>();
 					});
 			}
 			ImGui::EndMenu();

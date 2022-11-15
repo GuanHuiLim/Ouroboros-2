@@ -35,9 +35,18 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 namespace oo
 {
+    PhysicsSystem::~PhysicsSystem()
+    {
+        EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
+        EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
+    }
+
     void PhysicsSystem::Init(Scene* scene)
     {
         m_scene = scene;
+
+        EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
+        EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
 
         m_world->SubscribeOnAddComponent<PhysicsSystem, RigidbodyComponent>(
             this, &PhysicsSystem::OnRigidbodyAdd);
@@ -540,6 +549,7 @@ namespace oo
         //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
         //default initialize material
         rb.object.setMaterial(PhysicsMaterial{});
+
     }
 
     void PhysicsSystem::InitializeBoxCollider(RigidbodyComponent& rb)
@@ -565,6 +575,26 @@ namespace oo
         if (m_physicsToGameObjectLookup.contains(rb.object.id) == false)
         {
             m_physicsToGameObjectLookup.insert({ rb.object.id, goc.Id });
+        }
+    }
+
+    void PhysicsSystem::OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e)
+    {
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go->HasComponent<RigidbodyComponent>())
+        {
+            auto& rb = go->GetComponent<RigidbodyComponent>();
+            rb.EnableCollider();
+        }
+    }
+
+    void PhysicsSystem::OnGameObjectDisable(GameObjectComponent::OnDisableEvent* e)
+    {
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go->HasComponent<RigidbodyComponent>())
+        {
+            auto& rb = go->GetComponent<RigidbodyComponent>();
+            rb.DisableCollider();
         }
     }
 

@@ -58,6 +58,12 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObjectDisabledComponent.h>
 #include <Ouroboros/Animation/AnimationComponent.h>
 
+#include <Ouroboros/UI/RectTransformComponent.h>
+#include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/UI/UICanvasComponent.h>
+#include <Ouroboros/UI/UIImageComponent.h>
+#include <Ouroboros/UI/GraphicsRaycasterComponent.h>
+
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
@@ -83,7 +89,7 @@ void Inspector::Show()
 
 	{
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		auto gameobject = scene->FindWithInstanceID(*selected_items.begin());//first item
+		auto gameobject = scene->FindWithInstanceID(*selected_items.begin()); //first item
 		if (gameobject == nullptr)
 			return;
 		
@@ -133,7 +139,15 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::PushItemWidth(200.0f);
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
-	DisplayComponent<oo::TransformComponent>(gameobject);
+	// display either rect transform or base transform
+	if (gameobject.HasComponent<oo::RectTransformComponent>())
+	{
+		DisplayComponent<oo::RectTransformComponent>(gameobject);
+	}
+	else
+	{
+		DisplayComponent<oo::TransformComponent>(gameobject);
+	}
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
@@ -152,7 +166,12 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	DisplayComponent<oo::AnimationComponent>(gameobject);
-	
+
+	DisplayComponent<oo::UIRaycastComponent>(gameobject);
+	DisplayComponent<oo::UICanvasComponent>(gameobject);
+	DisplayComponent<oo::UIImageComponent>(gameobject);
+	DisplayComponent<oo::GraphicsRaycasterComponent>(gameobject);
+
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
 }
@@ -178,19 +197,30 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::EndChild();
 		if (ImGui::BeginListBox("##AddComponents", { x,y }))
 		{
+			// Components that you're not supposed to be able to add
 			selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::DuplicatedComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+			
+			// Components that should be in the final version
 			selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
+
+			selected |= AddComponentSelectable<oo::RectTransformComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIRaycastComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::GraphicsRaycasterComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIImageComponent>(gameobject);
 
 			selected |= AddScriptsSelectable(gameobject);
 
