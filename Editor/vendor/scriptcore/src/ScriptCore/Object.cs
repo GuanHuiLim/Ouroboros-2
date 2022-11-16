@@ -5,15 +5,35 @@ namespace Ouroboros
 {
     public class Object
     {
-        //[DllImport("__Internal")] private static extern IntPtr InstantiateEntity(int src);
+        [DllImport("__Internal")] private static extern IntPtr DuplicateGameObject(uint sceneID, ulong uuid);
 
-        //public static GameObject Instantiate(GameObject original, Transform parent)
-        //{
-        //    IntPtr ptr = InstantiateEntity(original.GetInstanceID());
-        //    GameObject instance = GCHandle.FromIntPtr(ptr).Target as GameObject;
-        //    instance.transform.SetParent(parent);
-        //    return instance;
-        //}
+        public static GameObject Instantiate(GameObject original)
+        {
+            System.IntPtr ptr = DuplicateGameObject(SceneManager.GetActiveScene(), original.GetInstanceID());
+            if (ptr == System.IntPtr.Zero)
+                return null;
+            return GCHandle.FromIntPtr(ptr).Target as GameObject;
+        }
+
+        public static GameObject Instantiate(GameObject original, Transform parent)
+        {
+            System.IntPtr ptr = DuplicateGameObject(SceneManager.GetActiveScene(), original.GetInstanceID());
+            if (ptr == System.IntPtr.Zero)
+                return null;
+            GameObject instance = GCHandle.FromIntPtr(ptr).Target as GameObject;
+            instance.transform.SetParent(parent);
+            return instance;
+        }
+
+        public static GameObject Instantiate(Prefab original)
+        {
+            return original.Instantiate();
+        }
+
+        public static GameObject Instantiate(Prefab original, Transform parent)
+        {
+            return original.Instantiate(parent);
+        }
 
         [DllImport("__Internal")] private static extern void DestroyEntity(UInt32 sceneID, UInt64 uuid);
         [DllImport("__Internal")] private static extern void RemoveScript(UInt32 sceneID, UInt64 uuid, string name_space, string name);
