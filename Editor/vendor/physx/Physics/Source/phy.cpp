@@ -332,13 +332,13 @@ namespace myPhysx
 
             int index = all_objects.at(id);
 
-            PhysxObject* oldObj = &m_objects.at(index); // retrieve the object data
-            oldObj->id = std::make_unique<phy_uuid::UUID>(); // assign new uuid
+            m_objects.emplace_back(std::move(m_objects.at(index))); // retrieve the object data and store directly into the vector
 
-            phy_uuid::UUID generated_uuid = *oldObj->id;
-
+            m_objects.at(m_objects.size()-1).id = std::make_unique<phy_uuid::UUID>(); // assign new uuid
+    
+            phy_uuid::UUID generated_uuid = *m_objects.at(m_objects.size() - 1).id;
+    
             // store the object
-            m_objects.emplace_back(std::move(oldObj));
             all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
 
             return PhysicsObject{ generated_uuid, this }; // a copy
