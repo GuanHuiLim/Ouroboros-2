@@ -47,6 +47,7 @@ namespace myPhysx {
     class PVD;
     struct PhysxObject;
     struct PhysicsObject;
+    struct RaycastHit;
 
     enum class rigid { none, rstatic, rdynamic };
     enum class shape { none, box, sphere, capsule, plane };
@@ -69,6 +70,20 @@ namespace myPhysx {
         void onTrigger(PxTriggerPair* pairs, PxU32 count) override;
 
         void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
+    };
+
+    struct RaycastHit {
+
+        bool intersect = false;
+        
+        phy_uuid::UUID object_ID;
+
+        PxVec3 position;
+        PxVec3 normal;
+        PxF32 distance;
+
+        shape shape = shape::none;
+        rigid rigidID = rigid::none;
     };
 
     struct LockingAxis {
@@ -167,6 +182,8 @@ namespace myPhysx {
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
         
+        std::vector<RaycastHit> hitAll; // store all the raycast hit
+
         std::queue<TriggerManifold> m_triggerCollisionPairs; // queue to store the trigger collision pairs
 
         std::queue<ContactManifold> m_collisionPairs; // queue to store the collision pairs
@@ -188,6 +205,10 @@ namespace myPhysx {
 
         // MAP OF OBJECTS
         std::map<phy_uuid::UUID, int>* getAllObject();
+
+        // RAYCAST
+        RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
+        std::vector<RaycastHit> raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance);
 
         // TRIGGER
         void updateTriggerState(phy_uuid::UUID id); // function to update objects for OnTriggerStay
