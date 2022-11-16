@@ -297,7 +297,14 @@ void GbufferParticlePass::CreatePipeline()
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
-	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_TRUE); // we want blending 
+	blendAttachmentState.blendEnable = VK_TRUE;
+	blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+	blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
 	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
 	VkPipelineViewportStateCreateInfo viewportState = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1, 1, 0);
@@ -347,11 +354,18 @@ void GbufferParticlePass::CreatePipeline()
 	std::array<VkPipelineColorBlendAttachmentState, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> blendAttachmentStates =
 	{
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE), // albedo blend
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
 	};
+	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].blendEnable = VK_TRUE; 
+	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].colorBlendOp = VK_BLEND_OP_ADD;
+	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].alphaBlendOp = VK_BLEND_OP_ADD;
 
 	colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 	colorBlendState.pAttachments = blendAttachmentStates.data();

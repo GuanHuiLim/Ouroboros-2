@@ -82,7 +82,7 @@ void GBufferRenderPass::Draw()
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
 	//clearValues[GBufferAttachmentIndex::POSITION].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::NORMAL]  .color = zeroFloat4;
-	clearValues[GBufferAttachmentIndex::ALBEDO]  .color = zeroFloat4;
+	clearValues[GBufferAttachmentIndex::ALBEDO].color =	  zeroFloat4;
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };

@@ -1,5 +1,6 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : require
+#extension GL_ARB_shader_draw_parameters : require
 
 #include "shared_structs.h"
 #include "instancing.shader"
@@ -62,8 +63,29 @@ void main()
 	vec3 N = normalize(L2W * vec3(NN)).xyz;
 
 	outLightData.btn = (mat3(T,B,N));
+
+	if((inInstanceData.y & 0x0f)>0) // billboard
+	{
+		vec2 fragOffset = inPosition.xy;
+		vec3 CameraRight_worldspace = vec3(uboFrameContext.view[0][0], uboFrameContext.view[1][0], uboFrameContext.view[2][0]);
+		vec3 CameraUp_worldspace = vec3(uboFrameContext.view[0][1], uboFrameContext.view[1][1], uboFrameContext.view[2][1]);
+		CameraUp_worldspace = -CameraUp_worldspace; // flip y for rendering
+
+		vec3 vertexPosition_worldspace =
+		vec3(inXform[3][0],inXform[3][1],inXform[3][2])
+		+ CameraRight_worldspace * inXform[0][0] * fragOffset.x
+		+ CameraUp_worldspace * inXform[1][1] * fragOffset.y;
+		
+		outPosition = vec4(vertexPosition_worldspace,1.0);
+		outLightData.btn = mat3(CameraRight_worldspace,CameraUp_worldspace,cross(CameraUp_worldspace,CameraRight_worldspace));
+	}
+	else
+	{
+		outPosition = inXform*vec4(inPosition,1.0);
+	}
 	
-	outPosition = inXform * vec4(inPosition,1.0);
 	gl_Position = uboFrameContext.viewProjection * outPosition;
+	//float idx = float(gl_VertexIndex); // this is the vertex id
+	//float ins = float(gl_InstanceIndex); // this is the draw call number
 	
 }
