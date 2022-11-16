@@ -81,9 +81,6 @@ namespace myPhysx {
         PxVec3 position;
         PxVec3 normal;
         PxF32 distance;
-
-        shape shape = shape::none;
-        rigid rigidID = rigid::none;
     };
 
     struct LockingAxis {
@@ -182,8 +179,6 @@ namespace myPhysx {
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
         
-        std::vector<RaycastHit> hitAll; // store all the raycast hit
-
         std::queue<TriggerManifold> m_triggerCollisionPairs; // queue to store the trigger collision pairs
 
         std::queue<ContactManifold> m_collisionPairs; // queue to store the collision pairs
@@ -202,6 +197,9 @@ namespace myPhysx {
         // RIGIDBODY
         PhysicsObject createInstance();
         void removeInstance(PhysicsObject obj);
+
+        // DUPLICATE OBJECT
+        PhysicsObject duplicateObject(phy_uuid::UUID id);
 
         // MAP OF OBJECTS
         std::map<phy_uuid::UUID, int>* getAllObject();

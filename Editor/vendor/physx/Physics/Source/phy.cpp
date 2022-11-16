@@ -326,6 +326,27 @@ namespace myPhysx
         }
     }
 
+    PhysicsObject PhysxWorld::duplicateObject(phy_uuid::UUID id) {
+
+        if (all_objects.contains(id)) {
+
+            int index = all_objects.at(id);
+
+            PhysxObject* oldObj = &m_objects.at(index); // retrieve the object data
+            oldObj->id = std::make_unique<phy_uuid::UUID>(); // assign new uuid
+
+            phy_uuid::UUID generated_uuid = *oldObj->id;
+
+            // store the object
+            m_objects.emplace_back(std::move(oldObj));
+            all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
+
+            return PhysicsObject{ generated_uuid, this }; // a copy
+        }
+
+        return PhysicsObject{}; // return empty
+    }
+
     void PhysxWorld::updateTriggerState(phy_uuid::UUID id) {
 
         std::queue<TriggerManifold>* temp = &m_triggerCollisionPairs;
@@ -414,35 +435,6 @@ namespace myPhysx
             hit.position = hitBuffer.block.position;
             hit.normal = hitBuffer.block.normal;
             hit.distance = hitBuffer.block.distance;
- 
-            if (hitBuffer.block.actor->getType() == PxActorType::eRIGID_STATIC) 
-                hit.rigidID = rigid::rstatic;
-
-            else if (hitBuffer.block.actor->getType() == PxActorType::eRIGID_DYNAMIC)
-                hit.rigidID = rigid::rdynamic;
-
-            switch (hitBuffer.block.shape->getGeometryType()) {
-
-            case 0: //  PxGeometryType::eSPHERE
-                hit.shape = shape::sphere;
-                break;
-
-            case 1: //  PxGeometryType::ePLANE
-                hit.shape = shape::plane;
-                break;
-
-            case 2: //  PxGeometryType::eCAPSULE
-                hit.shape = shape::capsule;
-                break;
-
-            case 3: //  PxGeometryType::eBOX
-                hit.shape = shape::box;
-                break;
-
-            default:
-                break;
-            }
-
         }
 
         return hit;
@@ -453,6 +445,8 @@ namespace myPhysx
         const PxU32 bufferSize = 200;// 256;           // size of the buffer       
         PxRaycastHit hitBuffer[bufferSize];            // storage of the buffer results
         PxRaycastBuffer buffer(hitBuffer, bufferSize); // blocking and touching hits stored here
+
+        std::vector<RaycastHit> hitAll{}; // store all the raycast hit
 
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
         
@@ -470,42 +464,6 @@ namespace myPhysx
             hit.position = buffer.touches[i].position;
             hit.normal = buffer.touches[i].normal;
             hit.distance = buffer.touches[i].distance;
-
-            switch (buffer.touches[i].actor->getType()) {
-
-            case 0: //  PxActorType::eRIGID_STATIC
-                hit.rigidID = rigid::rstatic;
-                break;
-
-            case 1: //  PxActorType::eRIGID_DYNAMIC
-                hit.rigidID = rigid::rdynamic;
-                break;
-
-            default:
-                break;
-            }
-
-            switch (buffer.touches[i].shape->getGeometryType()) {
-
-            case 0: //  PxGeometryType::eSPHERE
-                hit.shape = shape::sphere;
-                break;
-
-            case 1: //  PxGeometryType::ePLANE
-                hit.shape = shape::plane;
-                break;
-
-            case 2: //  PxGeometryType::eCAPSULE
-                hit.shape = shape::capsule;
-                break;
-
-            case 3: //  PxGeometryType::eBOX
-                hit.shape = shape::box;
-                break;
-
-            default:
-                break;
-            }
 
             hitAll.emplace_back(hit); // store each hit data into the container
         }
@@ -558,7 +516,7 @@ namespace myPhysx
             else if (type == rigid::rdynamic) {
                 underlying_obj->rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
                 underlying_obj->rb.rigidDynamic->userData = underlying_obj->id.get();
-                //hprintf("DYNA: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
+                //printf("DYNA: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
                 world->scene->addActor(*underlying_obj->rb.rigidDynamic);
             }
 
@@ -1353,17 +1311,17 @@ namespace myPhysx
 /*                           EVENT CALLBACK                                    */
 /*-----------------------------------------------------------------------------*/
     void EventCallBack::onConstraintBreak(PxConstraintInfo* /*constraints*/, PxU32 /*count*/) {
-        printf("CALLBACK: onConstraintBreak\n");
+        //printf("CALLBACK: onConstraintBreak\n");
     }
     void EventCallBack::onWake(PxActor** /*actors*/, PxU32 /*count*/) {
-        printf("CALLBACK: onWake\n");
+        //printf("CALLBACK: onWake\n");
     }
     void EventCallBack::onSleep(PxActor** /*actors*/, PxU32 /*count*/) {
-        printf("CALLBACK: onSleep\n");
+        //printf("CALLBACK: onSleep\n");
     }
     void EventCallBack::onContact(const PxContactPairHeader& /*pairHeader*/, const PxContactPair* pairs, PxU32 count) {
-        printf("CALLBACK: onContact -- ");
-        printf("PAIRS: %d\n", count);
+        //printf("CALLBACK: onContact -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1398,17 +1356,17 @@ namespace myPhysx
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
                 state = collision::onCollisionEnter;
-                printf("Shape is ENTERING CONTACT volume\n");
+                //printf("Shape is ENTERING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
                 state = collision::onCollisionStay;
-                printf("Shape is STAYING CONTACT volume\n");
+                //printf("Shape is STAYING CONTACT volume\n");
             }
 
             if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
                 state = collision::onCollisionExit;
-                printf("Shape is LEAVING CONTACT volume\n");
+                //printf("Shape is LEAVING CONTACT volume\n");
             }
 
             // Store all the ID of the actors that collided
@@ -1423,8 +1381,8 @@ namespace myPhysx
 
     }
     void EventCallBack::onTrigger(PxTriggerPair* pairs, PxU32 count) {
-        printf("CALLBACK: onTrigger -- ");
-        printf("PAIRS: %d\n", count);
+        //printf("CALLBACK: onTrigger -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1439,13 +1397,13 @@ namespace myPhysx
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
                 //stayTrigger = true;
                 state = trigger::onTriggerEnter;
-                printf("Shape is ENTERING TRIGGER volume\n");
+                //printf("Shape is ENTERING TRIGGER volume\n");
             }
             if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
                 //stayTrigger = false;
                 state = trigger::onTriggerExit;
                 //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
-                printf("Shape is LEAVING TRIGGER volume\n");
+                //printf("Shape is LEAVING TRIGGER volume\n");
             }
 
             // Store all the ID of the actors that collided with trigger)
@@ -1479,6 +1437,6 @@ namespace myPhysx
         }
     }
     void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
-        printf("CALLBACK: onAdvance\n");
+        //printf("CALLBACK: onAdvance\n");
     }
 }
