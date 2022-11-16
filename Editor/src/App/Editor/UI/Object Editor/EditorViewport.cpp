@@ -325,7 +325,7 @@ void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)
 
 void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay && s_windowStates.empty() == false)
 	{
 		int i = 0;
 		for (auto& window : ImGuiManager::s_GUIContainer)
