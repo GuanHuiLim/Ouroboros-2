@@ -33,7 +33,10 @@ namespace oo
         .property("Color", &LightComponent::Color)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         .property("Radius", &LightComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         .property("Type", &LightComponent::LightType)
-        .property_readonly("Lighting ID", &LightComponent::Light_ID);
+        .property("Produce Shadows", &LightComponent::ProduceShadows)
+        .property_readonly("Lighting ID", &LightComponent::Light_ID)
+
+            ;
         
     }
 }

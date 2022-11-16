@@ -28,5 +28,10 @@ namespace Ouroboros
         {
             get { return AudioClip_GetLength(soundID); }
         }
+
+        public static AudioClip[] GetAll()
+        {
+            return GetByType<AudioClip>(Type.Audio);
+        }
     }
 }
