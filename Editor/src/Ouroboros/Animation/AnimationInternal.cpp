@@ -784,13 +784,13 @@ namespace oo::Anim::internal
 		if (rttr_type == rttr::type::get< glm::vec3>())
 		{
 			return (1.f - percentage) * prev.get_value< glm::vec3 >() + (percentage * next.get_value< glm::vec3 >());
-			return next;
+			//return next;
 		}
 		else if (rttr_type == rttr::type::get< glm::quat>())
 		{
 			//return glm::slerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
-			//return (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
-			return next;
+			return (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
+			//return next;
 		}
 		else if (rttr_type == rttr::type::get< bool>())
 		{
