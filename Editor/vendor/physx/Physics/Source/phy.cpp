@@ -331,14 +331,35 @@ namespace myPhysx
         if (all_objects.contains(id)) {
 
             int index = all_objects.at(id);
+            
+            // Create new object then retrieve and assign all the old data
+            PhysxObject newObj;
+            newObj.id = std::make_unique<phy_uuid::UUID>();
+            newObj.matID = m_objects.at(index).matID;
 
-            m_objects.emplace_back(std::move(m_objects.at(index))); // retrieve the object data and store directly into the vector
+            newObj.m_shape = m_objects.at(index).m_shape;
+            newObj.shape = m_objects.at(index).shape;
 
-            m_objects.at(m_objects.size()-1).id = std::make_unique<phy_uuid::UUID>(); // assign new uuid
-    
-            phy_uuid::UUID generated_uuid = *m_objects.at(m_objects.size() - 1).id;
+            newObj.rigidID = m_objects.at(index).rigidID;
+
+            if (newObj.rigidID == rigid::rstatic)
+                newObj.rb.rigidStatic = m_objects.at(index).rb.rigidStatic;
+            else if (newObj.rigidID == rigid::rdynamic)
+                newObj.rb.rigidDynamic = m_objects.at(index).rb.rigidDynamic;
+
+            newObj.lockPositionAxis = m_objects.at(index).lockPositionAxis;
+            newObj.lockRotationAxis = m_objects.at(index).lockRotationAxis;
+
+            newObj.trigger = m_objects.at(index).trigger;
+            newObj.gravity = m_objects.at(index).gravity;
+            newObj.kinematic = m_objects.at(index).kinematic;
+            newObj.collider = m_objects.at(index).collider;
+
+            // Assign to UUID
+            phy_uuid::UUID generated_uuid = *newObj.id;
     
             // store the object
+            m_objects.emplace_back(std::move(newObj));
             all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
 
             return PhysicsObject{ generated_uuid, this }; // a copy
