@@ -406,6 +406,14 @@ namespace myPhysx
        //
        //m_triggerCollisionPairs = temp;
     }
+
+    bool PhysxWorld::hasObject(phy_uuid::UUID id) {
+
+        if (all_objects.contains(id))
+            return true;
+
+        return false;
+    }
     
     std::map<phy_uuid::UUID, int>* PhysxWorld::getAllObject() {
 
@@ -671,14 +679,6 @@ namespace myPhysx
 
             // need check whether need release shape need or not
         }
-    }
-
-    bool PhysicsObject::hasObject(phy_uuid::UUID id) {
-
-        if (world->all_objects.contains(id))
-            return true;
-
-        return false;
     }
 
     void PhysicsObject::lockPositionX(bool lock) {

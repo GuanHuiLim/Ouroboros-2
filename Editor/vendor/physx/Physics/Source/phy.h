@@ -203,6 +203,7 @@ namespace myPhysx {
 
         // MAP OF OBJECTS
         std::map<phy_uuid::UUID, int>* getAllObject();
+        bool hasObject(phy_uuid::UUID id);
 
         // RAYCAST
         RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
@@ -266,7 +267,6 @@ namespace myPhysx {
         bool useGravity() const;
         bool isKinematic() const;
         bool isColliderEnabled() const;
-        bool hasObject(phy_uuid::UUID id);
 
         // SETTERS
         void setRigidType(rigid type);
