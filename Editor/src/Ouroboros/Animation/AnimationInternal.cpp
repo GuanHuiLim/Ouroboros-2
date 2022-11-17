@@ -783,12 +783,22 @@ namespace oo::Anim::internal
 	{
 		if (rttr_type == rttr::type::get< glm::vec3>())
 		{
-			return (1.f - percentage) * prev.get_value< glm::vec3 >() + (percentage * next.get_value< glm::vec3 >());
+			//return (1.f - percentage) * prev.get_value< glm::vec3 >() + (percentage * next.get_value< glm::vec3 >());
+			return next;
 		}
-		else if (rttr_type == rttr::type::get< glm::quat>())
+		else if (rttr_type == rttr::type::get< oo::TransformComponent::quat>())
 		{
-			return glm::slerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
-			//return (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
+			KeyFrame::DataType quat;
+
+			quat = (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
+			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
+			return result;
+
+			/*quat = glm::lerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
+			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
+			return result;*/
+
+			return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
 		}
 		else if (rttr_type == rttr::type::get< bool>())
 		{
@@ -959,6 +969,20 @@ namespace oo::Anim::internal
 		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
 		//}
 
+		//update index to the correct keyframe
+		/*size_t prev_index = info.progressTracker.index;
+		if (timeline.keyframes[info.progressTracker.index + 1u].time < updatedTimer)
+		{
+			size_t increment{ 1 };
+			for (auto iter = timeline.keyframes.begin() + (info.progressTracker.index + 1u); iter != timeline.keyframes.end(); ++iter)
+			{
+				if (iter->time > updatedTimer)
+					break;
+
+				++increment;
+			}
+			info.progressTracker.index += increment;
+		}*/
 
 		//find the correct gameobject
 		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
@@ -973,17 +997,31 @@ namespace oo::Anim::internal
 		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
 		if (Withinbounds(updatedTimer, nextEvent.time))
 		{
-			info.progressTracker.index++;
+			++info.progressTracker.index;
+			//check if passed more than 1 keyframe
+			auto max_index = (timeline.keyframes.size() - 1ul);
+			while(info.progressTracker.index < max_index &&
+				Withinbounds(updatedTimer, timeline.keyframes[info.progressTracker.index + 1ul].time))
+				++info.progressTracker.index;
 
 			//went past last keyframe so we set data to last and return
-			if (info.progressTracker.index >= (timeline.keyframes.size() - 1ul))
+			if (info.progressTracker.index >= max_index)
 			{
 				//get the instance
 				auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
 					go.GetEntity(), info.progressTracker.timeline->component_hash);
 				auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
 				//set the value
-				info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
+				if (timeline.keyframes.back().data.get_type() == rttr::type::get<oo::TransformComponent::quat>())
+				{
+					KeyFrame::DataType data = oo::TransformComponent::quat{ timeline.keyframes.back().data.get_value<glm::quat>() };
+					info.progressTracker.timeline->rttr_property.set_value(rttr_instance, 
+						data);
+				}
+				else
+				{
+					info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
+				}
 
 				//if animation is looping, reset keyframe index
 				if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
@@ -1019,8 +1057,17 @@ namespace oo::Anim::internal
 		//get the instance
 		auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
 		//set the value
-		info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
+		//if (interpolated_value.get_type() == rttr::type::get< glm::vec3>()) return;
 
+		auto result = info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
+		if (result == false)
+		{
+			auto type_name = interpolated_value.get_type().get_name();
+			auto correct_Type_name = info.progressTracker.timeline->rttr_property.get_type().get_name();
+			auto temp = rttr::type::get<oo::TransformComponent::quat>().get_name();
+			assert(result);
+		}
+		
 		//SetComponentData(timeline, interpolated_value);
 		//assert(false);
 	}

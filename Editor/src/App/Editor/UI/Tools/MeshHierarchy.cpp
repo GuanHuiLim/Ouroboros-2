@@ -115,7 +115,9 @@ void MeshHierarchy::Show()
 				continue;
 		}
 		node_parent.push_back({ node });
-		for (auto data : node->children)
+		auto reversed_node = node->children;	// intentional copy
+		std::reverse(reversed_node.begin(), reversed_node.end());
+		for (auto data : reversed_node)
 		{
 			node_list.push(data);
 		}
@@ -194,7 +196,9 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 
 		}
 		node_parent.push_back({ node, gameobject });
-		for (auto data : node->children)
+		auto reversed_node = node->children;	// intentional copy
+		std::reverse(reversed_node.begin(), reversed_node.end());
+		for (auto data : reversed_node)
 		{
 			node_list.push(data);
 		}
@@ -244,7 +248,9 @@ std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(ModelFileResource*
 		all_nodes.push_back(std::pair{ bone, bonenode });
 		if (bonenode->mChildren.size())
 		{
-			for (auto data : bonenode->mChildren)
+			auto reversed_node = bonenode->mChildren;	// intentional copy
+			std::reverse(reversed_node.begin(), reversed_node.end());
+			for (auto data : reversed_node)
 			{
 				node_list.push(data);
 			}

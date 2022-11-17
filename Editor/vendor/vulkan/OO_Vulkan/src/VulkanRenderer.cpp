@@ -50,6 +50,8 @@ Technology is prohibited.
 	#include "renderpass/ForwardDecalRenderpass.h"
 #endif
 
+#include "DefaultMeshCreator.h"
+
 #include "GraphicsBatch.h"
 #include "FramebufferBuilder.h"
 #include "DelayedDeleter.h"
@@ -307,6 +309,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		InitDebugBuffers();
 		
+		InitDefaultPrimatives();
 
 		PROFILE_INIT_VULKAN(&m_device.logicalDevice, &m_device.physicalDevice, &m_device.graphicsQueue, (uint32_t*)&m_device.queueIndices.graphicsFamily, 1, nullptr);
 	}
@@ -1371,6 +1374,7 @@ void VulkanRenderer::InitImGUI()
 	};
 
 	VkDescriptorPoolCreateInfo dpci = oGFX::vkutils::inits::descriptorPoolCreateInfo(pool_sizes,1000);
+	dpci.flags = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 	vkCreateDescriptorPool(m_device.logicalDevice, &dpci, nullptr, &m_imguiConfig.descriptorPools);
 	VK_NAME(m_device.logicalDevice, "imguiConfig_descriptorPools", m_imguiConfig.descriptorPools);
 
@@ -1724,6 +1728,7 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 	{
 		auto& particleCommands = batches.GetParticlesBatch();
 		auto& particleData = batches.GetParticlesData();
+
 		g_particleCommandsBuffer.clear();
 		g_particleDatas[swapchainIdx].clear();
 
@@ -1796,7 +1801,7 @@ void VulkanRenderer::UploadInstanceData()
 						const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
 						const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
 						const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
-						auto res = ent.flags & ObjectInstanceFlags::SKINNED;
+						auto res = ent.flags & ObjectInstanceFlags::SKINNED; 
 						auto isSkin = (res== ObjectInstanceFlags::SKINNED);
 						const uint32_t unused = (uint32_t)perInstanceData | isSkin << 8; //matCnt;
 
@@ -1933,33 +1938,6 @@ void VulkanRenderer::BeginDraw()
 
 		if (currWorld)
 		{
-			for (size_t x = 0; x < currWorld->numCameras; x++)
-			{
-				const auto targetID = currWorld->targetIDs[x];
-				auto& image = renderTargets[targetID].texture;
-				VkDescriptorImageInfo desc_image[1] = {};
-				desc_image[0].sampler = image.sampler;
-				desc_image[0].imageView = image.view;
-				desc_image[0].imageLayout = image.imageLayout;
-				VkWriteDescriptorSet write_desc[1] = {};
-				write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
-				write_desc[0].descriptorCount = 1;
-				if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-				{
-					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-				}
-				else
-				{
-					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				}
-				if (currWorld->imguiID[x])
-				{
-					write_desc[0].pImageInfo = desc_image;
-				//	vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
-				}
-								
-			}		
 			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
 			batches.GenerateBatches();
 		}
@@ -2196,7 +2174,53 @@ bool VulkanRenderer::ResizeSwapchain()
 
 	ResizeGUIBuffers();
 
+	// update imgui shit
+	if (currWorld)
+	{
+		for (size_t x = 0; x < currWorld->numCameras; x++)
+		{
+			const auto targetID = currWorld->targetIDs[x];
+			auto& image = renderTargets[targetID].texture;
+			VkDescriptorImageInfo desc_image[1] = {};
+			desc_image[0].sampler = image.sampler;
+			desc_image[0].imageView = image.view;
+			desc_image[0].imageLayout = image.imageLayout;
+			VkWriteDescriptorSet write_desc[1] = {};
+			write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
+			write_desc[0].descriptorCount = 1;
+			if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+			{
+				write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			}
+			else
+			{
+				write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			}
+			if (currWorld->imguiID[x])
+			{
+				write_desc[0].pImageInfo = desc_image;
+				vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
+			}
+		}		
+	}
+
 	return true;
+}
+
+uint32_t VulkanRenderer::GetDefaultCubeID()
+{
+	return def_cube->meshResource;
+}
+
+uint32_t VulkanRenderer::GetDefaultPlaneID()
+{
+	return def_plane->meshResource;
+}
+
+uint32_t VulkanRenderer::GetDefaultSpriteID()
+{
+	return def_sprite->meshResource;
 }
 
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
@@ -3005,6 +3029,23 @@ uint32_t VulkanRenderer::AddBindlessGlobalTexture(vkutils::Texture2D texture)
 	vkUpdateDescriptorSets(m_device.logicalDevice, static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 
 	return index;
+}
+
+void VulkanRenderer::InitDefaultPrimatives()
+{
+	{
+		DefaultMesh dm = CreateDefaultCubeMesh();
+		def_cube.reset(LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr));
+	}
+	{
+		DefaultMesh pm = CreateDefaultPlaneXZMesh();
+		def_plane.reset(LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
+	}
+	{
+		DefaultMesh sm = CreateDefaultPlaneXYMesh();
+		def_sprite.reset(LoadMeshFromBuffers(sm.m_VertexBuffer, sm.m_IndexBuffer, nullptr));
+	}
+	
 }
 
 ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)

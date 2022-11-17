@@ -58,6 +58,7 @@ namespace oo
 		//uint32_t gfxbones_index{ std::numeric_limits<decltype(gfxbones_index)>().max() };
 		oGFX::BoneInverseBindPoseInfo inverseBindPose_info{};
 		uint32_t graphicsWorld_ID;
+		glm::mat4 globalTransform{};
 
 		void SetInverseBindPoseInfo_BoneIdx(uint32_t boneIdx);
 		uint32_t GetInverseBindPoseInfo_BoneIdx();

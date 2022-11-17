@@ -51,9 +51,12 @@ vec2 GenerateRandom_RoughnessMetallic(in uint seed)
 
 void main()
 {
-    outEntityID = int(inInstanceData.z);
-    outAlbedo = vec4(inColor.rgb, 1.0);
+    outEntityID = int(inInstanceData.x);
+    outAlbedo = vec4(inColor.rgba);
     
+    if(inColor.a < 0.0001) discard;
+    
+
     //outPosition = inPosition;
     // implicit depthOut will reconstruct the position
 
@@ -72,7 +75,8 @@ void main()
     uint perInstanceData              = inInstanceData.y & 0xFF;
    
 
-    outAlbedo.rgb = texture(textureDescriptorArray[textureIndex_Albedo], inUV.xy).rgb;
+    outAlbedo.rgba = texture(textureDescriptorArray[textureIndex_Albedo], inUV.xy).rgba;
+     if(outAlbedo.a < 0.0001) discard;
     outAlbedo *= inColor;
 	
     {

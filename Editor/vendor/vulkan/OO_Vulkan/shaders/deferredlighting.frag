@@ -175,5 +175,5 @@ void main()
 	
 
 	result = pow(result, vec3(1.0/gamma));
-	outFragcolor = vec4(result, 1.0);	
+	outFragcolor = vec4(result, albedo.a);	
 }

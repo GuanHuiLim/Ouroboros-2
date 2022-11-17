@@ -10,9 +10,9 @@ namespace oo
 	{
 	private:
 		GraphicsWorld* m_graphicsWorld{nullptr};
-		//Ecs::ECSWorld* m_world{nullptr};
+		oo::Scene* scene{nullptr};
 	public:
-		SkinMeshRendererSystem(GraphicsWorld* graphicsWorld);
+		SkinMeshRendererSystem(GraphicsWorld* graphicsWorld, oo::Scene* _scene);
 
 		void Init();
 
