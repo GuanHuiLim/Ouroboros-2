@@ -50,6 +50,8 @@ Technology is prohibited.
 	#include "renderpass/ForwardDecalRenderpass.h"
 #endif
 
+#include "DefaultMeshCreator.h"
+
 #include "GraphicsBatch.h"
 #include "FramebufferBuilder.h"
 #include "DelayedDeleter.h"
@@ -307,6 +309,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 		InitDebugBuffers();
 		
+		InitDefaultPrimatives();
 
 		PROFILE_INIT_VULKAN(&m_device.logicalDevice, &m_device.physicalDevice, &m_device.graphicsQueue, (uint32_t*)&m_device.queueIndices.graphicsFamily, 1, nullptr);
 	}
@@ -1371,6 +1374,7 @@ void VulkanRenderer::InitImGUI()
 	};
 
 	VkDescriptorPoolCreateInfo dpci = oGFX::vkutils::inits::descriptorPoolCreateInfo(pool_sizes,1000);
+	dpci.flags = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 	vkCreateDescriptorPool(m_device.logicalDevice, &dpci, nullptr, &m_imguiConfig.descriptorPools);
 	VK_NAME(m_device.logicalDevice, "imguiConfig_descriptorPools", m_imguiConfig.descriptorPools);
 
@@ -1724,6 +1728,7 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 	{
 		auto& particleCommands = batches.GetParticlesBatch();
 		auto& particleData = batches.GetParticlesData();
+
 		g_particleCommandsBuffer.clear();
 		g_particleDatas[swapchainIdx].clear();
 
@@ -1796,7 +1801,7 @@ void VulkanRenderer::UploadInstanceData()
 						const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
 						const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
 						const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
-						auto res = ent.flags & ObjectInstanceFlags::SKINNED;
+						auto res = ent.flags & ObjectInstanceFlags::SKINNED; 
 						auto isSkin = (res== ObjectInstanceFlags::SKINNED);
 						const uint32_t unused = (uint32_t)perInstanceData | isSkin << 8; //matCnt;
 
@@ -1933,33 +1938,6 @@ void VulkanRenderer::BeginDraw()
 
 		if (currWorld)
 		{
-			for (size_t x = 0; x < currWorld->numCameras; x++)
-			{
-				const auto targetID = currWorld->targetIDs[x];
-				auto& image = renderTargets[targetID].texture;
-				VkDescriptorImageInfo desc_image[1] = {};
-				desc_image[0].sampler = image.sampler;
-				desc_image[0].imageView = image.view;
-				desc_image[0].imageLayout = image.imageLayout;
-				VkWriteDescriptorSet write_desc[1] = {};
-				write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
-				write_desc[0].descriptorCount = 1;
-				if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-				{
-					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-				}
-				else
-				{
-					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				}
-				if (currWorld->imguiID[x])
-				{
-					write_desc[0].pImageInfo = desc_image;
-				//	vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
-				}
-								
-			}		
 			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
 			batches.GenerateBatches();
 		}
@@ -2196,11 +2174,58 @@ bool VulkanRenderer::ResizeSwapchain()
 
 	ResizeGUIBuffers();
 
+	// update imgui shit
+	if (currWorld)
+	{
+		for (size_t x = 0; x < currWorld->numCameras; x++)
+		{
+			const auto targetID = currWorld->targetIDs[x];
+			auto& image = renderTargets[targetID].texture;
+			VkDescriptorImageInfo desc_image[1] = {};
+			desc_image[0].sampler = image.sampler;
+			desc_image[0].imageView = image.view;
+			desc_image[0].imageLayout = image.imageLayout;
+			VkWriteDescriptorSet write_desc[1] = {};
+			write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
+			write_desc[0].descriptorCount = 1;
+			if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+			{
+				write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			}
+			else
+			{
+				write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			}
+			if (currWorld->imguiID[x])
+			{
+				write_desc[0].pImageInfo = desc_image;
+				vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
+			}
+		}		
+	}
+
 	return true;
+}
+
+uint32_t VulkanRenderer::GetDefaultCubeID()
+{
+	return def_cube->meshResource;
+}
+
+uint32_t VulkanRenderer::GetDefaultPlaneID()
+{
+	return def_plane->meshResource;
+}
+
+uint32_t VulkanRenderer::GetDefaultSpriteID()
+{
+	return def_sprite->meshResource;
 }
 
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
+	std::ostringstream os;
 	// new model loader
 	Assimp::Importer importer;
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
@@ -2235,7 +2260,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 
 	
 
-	std::cout <<"[Loading] " << file << std::endl;
+	os <<"[Loading] " << file << std::endl;
 	//if (scene->mNumAnimations && scene->mAnimations[0]->mNumMorphMeshChannels)
 	//{
 	//	std::stringstream ss{"Morphs\n"};
@@ -2253,17 +2278,17 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	//		}
 	//		ss << std::endl;
 	//	}
-	//	std::cout << ss.str() << std::endl;
+	//	os << ss.str() << std::endl;
 	//}
 
 	size_t count{ 0 };
-	std::cout << "Meshes" << scene->mNumMeshes << std::endl;
+	os << "Meshes" << scene->mNumMeshes << std::endl;
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
 		auto& mesh = scene->mMeshes[i];
-		std::cout << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
-		std::cout << "\t\tverts:"  << mesh->mNumVertices << std::endl;
-		std::cout << "\t\tbones:"  << mesh->mNumBones << std::endl;
+		os << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
+		os << "\t\tverts:"  << mesh->mNumVertices << std::endl;
+		os << "\t\tbones:"  << mesh->mNumBones << std::endl;
 		/*
 		for (size_t anim = 0; anim < mesh->mNumAnimMeshes; anim++)
 		{
@@ -2279,16 +2304,16 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 					ss << "\tPos:"<< pos<< "[" << v.x << "," << v.y << "," << v.z <<"]" << std::endl;
 				}
 			}
-		std::cout << ss.str() << std::endl;
+		os << ss.str() << std::endl;
 		}
-		std::cout << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
+		os << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
 		*/
 		
 		//int sum = 0;
 		//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
 		//{
 		//	std::map<uint32_t, float> wts;
-		//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
+		//	os << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
 		//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
 		//	{
 		//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
@@ -2297,39 +2322,39 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//	}
 		//	for (auto [v,w] :wts)
 		//	{
-		//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
+		//		os << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
 		//	}
 		//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
 		//}
-		//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
+		//os << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
 
 #if 0
 	if (scene->HasAnimations())
 	{
-		std::cout << "Animated scene\n";
+		os << "Animated scene\n";
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
-			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
-			std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
-			std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
+			os << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+			os << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
+			os << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
+			os << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
+			os << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
+				os << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
 				for (size_t y = 0; y < channel->mNumPositionKeys; y++)
 				{
-					std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
+					os << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
 					auto& pos = channel->mPositionKeys[y].mValue;
-					std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
+					os << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
 				}
 			}
 		}
-		std::cout << std::endl;
+		os << std::endl;
 	}
 #endif
 
@@ -2381,12 +2406,12 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		for (size_t i = 0; i < mdl.skeleton->boneWeights.size(); i++)
 		{
 			//auto& ref = mdl.skeleton->boneWeights[i];
-			//std::cout << i;
+			//os << i;
 			//for (size_t x = 0; x < 4; x++)
 			//{
-			//	std::cout << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
+			//	os << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
 			//}
-			//std::cout << std::endl;
+			//os << std::endl;
 		}
 
 	}
@@ -2409,8 +2434,9 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		LoadMeshFromBuffers(modelFile->vertices, modelFile->indices, &mdl);
 	}
 
-	std::cout << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
+	os << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
 
+	std::cout << os.str();
 	return modelFile;
 }
 
@@ -3003,6 +3029,23 @@ uint32_t VulkanRenderer::AddBindlessGlobalTexture(vkutils::Texture2D texture)
 	vkUpdateDescriptorSets(m_device.logicalDevice, static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 
 	return index;
+}
+
+void VulkanRenderer::InitDefaultPrimatives()
+{
+	{
+		DefaultMesh dm = CreateDefaultCubeMesh();
+		def_cube.reset(LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr));
+	}
+	{
+		DefaultMesh pm = CreateDefaultPlaneXZMesh();
+		def_plane.reset(LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
+	}
+	{
+		DefaultMesh sm = CreateDefaultPlaneXYMesh();
+		def_sprite.reset(LoadMeshFromBuffers(sm.m_VertexBuffer, sm.m_IndexBuffer, nullptr));
+	}
+	
 }
 
 ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)

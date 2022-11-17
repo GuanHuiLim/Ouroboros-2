@@ -200,6 +200,7 @@ namespace myPhysx {
 
         // DUPLICATE OBJECT
         PhysicsObject duplicateObject(phy_uuid::UUID id);
+        void createPhysicsObjectFromPhysxObject(PhysicsObject& phyiscsNewObject, PhysxObject& objectToCopyFrom);
 
         // MAP OF OBJECTS
         std::map<phy_uuid::UUID, int>* getAllObject();
@@ -223,11 +224,15 @@ namespace myPhysx {
     // associated to each object in the physics world (me store)
     struct PhysxObject {
 
+        PhysxObject() = default; // default constructor
+        PhysxObject(const PhysxObject& object); // copy constructor
+        PhysxObject& operator=(const PhysxObject& object);
+
         std::unique_ptr<phy_uuid::UUID> id = nullptr;
         phy_uuid::UUID matID = 0;
 
         // shape
-        PxShape* m_shape = nullptr; // prob no need this
+        PxShape* m_shape = nullptr;
         shape shape = shape::none;
 
         // ensure at least static or dynamic is init
@@ -303,6 +308,9 @@ namespace myPhysx {
         // set default value for each type of shape & can change shape too
         template<typename Type>
         void reAttachShape(rigid rigidType, Type data);
+
+        template<typename Type>
+        void reCreateRigidbody(PhysxObject& obj, PxTransform transform, rigid rigidType, Type data);
 
         void setShape(shape shape);
         void removeShape();
