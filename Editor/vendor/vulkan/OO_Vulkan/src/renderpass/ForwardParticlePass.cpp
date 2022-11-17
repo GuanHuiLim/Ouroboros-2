@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           GbufferParticlePass.cpp
+\file           ForwardParticlePass.cpp
 \project        Ouroboros
 \author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
 \par            email: j.kong\@digipen.edu
@@ -11,7 +11,7 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
-#include "GbufferParticlePass.h"
+#include "ForwardParticlePass.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_vulkan.h"
@@ -25,26 +25,26 @@ Technology is prohibited.
 #include "../shaders/shared_structs.h"
 #include "MathCommon.h"
 
-#include "GBufferRenderPass.h"
 #include "GraphicsWorld.h"
 #include "DeferredCompositionRenderpass.h"
+#include "GBufferRenderPass.h"
 
 #include <array>
 
-DECLARE_RENDERPASS(GbufferParticlePass);
+DECLARE_RENDERPASS(ForwardParticlePass);
 
-void GbufferParticlePass::Init()
+void ForwardParticlePass::Init()
 {
 	SetupRenderpass();
 	SetupFramebuffer();
 }
 
-void GbufferParticlePass::CreatePSO()
+void ForwardParticlePass::CreatePSO()
 {
 	CreatePipeline();
 }
 
-bool GbufferParticlePass::SetupDependencies()
+bool ForwardParticlePass::SetupDependencies()
 {
 	// TODO: If gbuffer rendering is disabled, return false.
 
@@ -60,7 +60,7 @@ bool GbufferParticlePass::SetupDependencies()
 	return true;
 }
 
-void GbufferParticlePass::Draw()
+void ForwardParticlePass::Draw()
 {
 	auto& vr = *VulkanRenderer::get();
 	if (!vr.deferredRendering)
@@ -74,11 +74,24 @@ void GbufferParticlePass::Draw()
 
     const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
     PROFILE_GPU_CONTEXT(cmdlist);
-    PROFILE_GPU_EVENT("GBufferParticles");
+    PROFILE_GPU_EVENT("ForwardParticles");
 
 	constexpr VkClearColorValue zeroFloat4 = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
 	VkClearColorValue rMinusOne = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
 	rMinusOne.int32[0] = -1;
+
+	auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
+
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmdlist,
+		attachments[GBufferAttachmentIndex::DEPTH].image,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 });
 
 	// Clear values for all attachments written in the fragment shader
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
@@ -89,20 +102,15 @@ void GbufferParticlePass::Draw()
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 
-	auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
 
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
-		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
-		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
-		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].texture)
 		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
-		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
+		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH])
 		.Build(currentFB,renderpass_GbufferSecondsPass);
 
 	// Manually set layout for blit reason
-	attachments[GBufferAttachmentIndex::ENTITY_ID].currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
 	renderPassBeginInfo.renderPass =  renderpass_GbufferSecondsPass;
@@ -149,7 +157,7 @@ void GbufferParticlePass::Draw()
 	vkCmdEndRenderPass(cmdlist);
 }
 
-void GbufferParticlePass::Shutdown()
+void ForwardParticlePass::Shutdown()
 {
 	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
 
@@ -157,7 +165,7 @@ void GbufferParticlePass::Shutdown()
 	vkDestroyPipeline(device, pso_GBufferParticles, nullptr);
 }
 
-void GbufferParticlePass::SetupRenderpass()
+void ForwardParticlePass::SetupRenderpass()
 {
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
@@ -167,47 +175,48 @@ void GbufferParticlePass::SetupRenderpass()
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
 	// Set up separate renderpass with references to the color and depth attachments
-	auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
-	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};
+	std::array<VkAttachmentDescription, 3> attachmentDescs = {};
 
 	// Init attachment properties
-	for (uint32_t i = 0; i < GBufferAttachmentIndex::MAX_ATTACHMENTS; ++i)
-	{
-		attachmentDescs[i].samples = VK_SAMPLE_COUNT_1_BIT;
-		attachmentDescs[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		attachmentDescs[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachmentDescs[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachmentDescs[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		if (i == GBufferAttachmentIndex::DEPTH)
-		{
-			attachmentDescs[i].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			attachmentDescs[i].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		}
-		else
-		{
-			attachmentDescs[i].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			attachmentDescs[i].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		}
-	}
+		attachmentDescs[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachmentDescs[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachmentDescs[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachmentDescs[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachmentDescs[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachmentDescs[0].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		attachmentDescs[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+		attachmentDescs[1].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachmentDescs[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachmentDescs[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachmentDescs[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachmentDescs[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachmentDescs[1].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		attachmentDescs[1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		
+		attachmentDescs[2].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachmentDescs[2].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachmentDescs[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachmentDescs[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachmentDescs[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachmentDescs[2].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachmentDescs[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
 	// Formats
 	//attachmentDescs[GBufferAttachmentIndex::POSITION].format = attachments[GBufferAttachmentIndex::POSITION].format;
-	attachmentDescs[GBufferAttachmentIndex::NORMAL]  .format = attachments[GBufferAttachmentIndex::NORMAL]  .format;
-	attachmentDescs[GBufferAttachmentIndex::ALBEDO]  .format = attachments[GBufferAttachmentIndex::ALBEDO]  .format;
-	attachmentDescs[GBufferAttachmentIndex::MATERIAL].format = attachments[GBufferAttachmentIndex::MATERIAL].format;
-	attachmentDescs[GBufferAttachmentIndex::ENTITY_ID].format = attachments[GBufferAttachmentIndex::ENTITY_ID].format;
-	attachmentDescs[GBufferAttachmentIndex::DEPTH]   .format = attachments[GBufferAttachmentIndex::DEPTH]   .format;
+	attachmentDescs[0]  .format = m_swapchain.swapChainImageFormat;
+	attachmentDescs[1]  .format = attachments[GBufferAttachmentIndex::ENTITY_ID].format;
+	attachmentDescs[2]  .format = vr.G_DEPTH_FORMAT;
 	
 
 	std::vector<VkAttachmentReference> colorReferences;
 	//colorReferences.push_back({ GBufferAttachmentIndex::POSITION, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
-	colorReferences.push_back({ GBufferAttachmentIndex::NORMAL,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
-	colorReferences.push_back({ GBufferAttachmentIndex::ALBEDO,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
-	colorReferences.push_back({ GBufferAttachmentIndex::MATERIAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
-	colorReferences.push_back({ GBufferAttachmentIndex::ENTITY_ID, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	colorReferences.push_back({ 0,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	colorReferences.push_back(	{ 1,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 	VkAttachmentReference depthReference = {};
-	depthReference.attachment = GBufferAttachmentIndex::DEPTH;
+	depthReference.attachment = 2;
 	depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription subpass = {};
@@ -245,10 +254,10 @@ void GbufferParticlePass::SetupRenderpass()
 	renderPassInfo.pDependencies = dependencies.data();
 
 	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassInfo, nullptr, &renderpass_GbufferSecondsPass));
-	VK_NAME(m_device.logicalDevice, "GbufferParticlePass", renderpass_GbufferSecondsPass);
+	VK_NAME(m_device.logicalDevice, "ForwardParticlePass", renderpass_GbufferSecondsPass);
 }
 
-void GbufferParticlePass::SetupFramebuffer()
+void ForwardParticlePass::SetupFramebuffer()
 {
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
@@ -261,11 +270,9 @@ void GbufferParticlePass::SetupFramebuffer()
 
 	FramebufferBuilder::Begin(&vr.fbCache)
 		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
-		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
-		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
-		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&m_swapchain.swapChainImages[0])
 		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
-		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
+		.BindImage(&m_swapchain.depthAttachment)
 		.Build(framebuffer_GBufferSecondPass,renderpass_GbufferSecondsPass);
 
 	//VkFramebufferCreateInfo fbufCreateInfo = {};
@@ -282,13 +289,13 @@ void GbufferParticlePass::SetupFramebuffer()
 }
 
 
-void GbufferParticlePass::CreatePipeline()
+void ForwardParticlePass::CreatePipeline()
 {
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
 
-	const char* shaderVS = "Shaders/bin/gbufferParticles.vert.spv";
-	const char* shaderPS = "Shaders/bin/gbufferParticles.frag.spv";
+	const char* shaderVS = "Shaders/bin/forwardParticles.vert.spv";
+	const char* shaderPS = "Shaders/bin/forwardParticles.frag.spv";
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
 	{
 		vr.LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
@@ -298,13 +305,6 @@ void GbufferParticlePass::CreatePipeline()
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_TRUE); // we want blending 
-	blendAttachmentState.blendEnable = VK_TRUE;
-	blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-	blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-	blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Optional
-	blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-	blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-	blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
 	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
 	VkPipelineViewportStateCreateInfo viewportState = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1, 1, 0);
@@ -351,27 +351,28 @@ void GbufferParticlePass::CreatePipeline()
 	// Blend attachment states required for all color attachments
 	// This is important, as color write mask will otherwise be 0x0 and you
 	// won't see anything rendered to the attachment
-	std::array<VkPipelineColorBlendAttachmentState, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> blendAttachmentStates =
+	std::array<VkPipelineColorBlendAttachmentState, 2> blendAttachmentStates =
 	{
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE), // albedo blend
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE), // albedo blend
+		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
 	};
-	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].blendEnable = VK_TRUE; 
-	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].colorBlendOp = VK_BLEND_OP_ADD;
-	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	blendAttachmentStates[GBufferAttachmentIndex::ALBEDO].alphaBlendOp = VK_BLEND_OP_ADD;
+	blendAttachmentStates[0].blendEnable = VK_TRUE; 
+	blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	blendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	blendAttachmentStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+	blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // save background albedo as well
+	blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
 
 	colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 	colorBlendState.pAttachments = blendAttachmentStates.data();
 
 	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_GBufferParticles));
-	VK_NAME(m_device.logicalDevice, "GBufferParticlesPSO", pso_GBufferParticles);
+	VK_NAME(m_device.logicalDevice, "forwardParticlesPSO", pso_GBufferParticles);
 
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);

@@ -67,8 +67,8 @@ namespace oo
                 {
                 case ParticleShape::Cone:
                 {
-                    float halfAngle = glm::radians(shape.angle)/ 2.0f;
-                    float val = random::generate<float>(-std::move(halfAngle),std::move(halfAngle));
+                    float verticalHalfAngle = glm::radians(shape.angle)/ 2.0f;
+                    float val = random::generate<float>(-std::move(verticalHalfAngle),std::move(verticalHalfAngle));
                     glm::vec2 dir = glm::vec2{val,cosf(val)};	
                     pd.m_rotationOffset = -val;
                     glm::mat2 rotMat = trans.GetGlobalRotationMatrix();

@@ -100,8 +100,8 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 		auto kvp = bufferCache.extract(target);
 		auto& framebufferInfo = kvp.key();
 
-		framebufferInfo.createInfo.width = width;
-		framebufferInfo.createInfo.height = height;
+		framebufferInfo.createInfo.width = target.textures.front()->width;
+		framebufferInfo.createInfo.height = target.textures.front()->height;
 		bufferCache.insert(std::move(kvp));
 
 		std::vector<VkImageView> attachment;

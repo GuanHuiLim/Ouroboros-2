@@ -45,7 +45,7 @@ Technology is prohibited.
 #include "renderpass/DebugRenderpass.h"
 #include "renderpass/ShadowPass.h"
 #include "renderpass/SSAORenderPass.h"
-#include "renderpass/GbufferParticlePass.h"
+#include "renderpass/ForwardParticlePass.h"
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 	#include "renderpass/ForwardDecalRenderpass.h"
 #endif
@@ -278,7 +278,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		rpd->RegisterRenderPass(ptr);
 		ptr = new SSAORenderPass;
 		rpd->RegisterRenderPass(ptr);
-		ptr = new GbufferParticlePass;
+		ptr = new ForwardParticlePass;
 		rpd->RegisterRenderPass(ptr);
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 		ptr = new ForwardDecalRenderpass;
@@ -2024,11 +2024,11 @@ void VulkanRenderer::RenderFrame()
 				RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
-				RenderPassDatabase::GetRenderPass<GbufferParticlePass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<SSAORenderPass>()->Draw();
 
 				RenderPassDatabase::GetRenderPass<DeferredCompositionRenderpass>()->Draw();
+				RenderPassDatabase::GetRenderPass<ForwardParticlePass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<ForwardRenderpass>()->Draw();
 #if defined		(ENABLE_DECAL_IMPLEMENTATION)
 				RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();

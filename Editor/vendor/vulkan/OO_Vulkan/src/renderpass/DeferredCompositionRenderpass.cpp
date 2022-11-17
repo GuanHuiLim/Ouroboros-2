@@ -75,8 +75,6 @@ void DeferredCompositionRenderpass::Draw()
 	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
-	renderPassBeginInfo.framebuffer =  vr.swapChainFramebuffers[swapchainIdx];
-
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
 		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].texture)
