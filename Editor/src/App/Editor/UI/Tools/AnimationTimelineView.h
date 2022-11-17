@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <imgui/imgui_internal.h>
 #include <Ouroboros/Animation/Anim.h>
 #include <Ouroboros/Animation/AnimationComponent.h>
+#include <Ouroboros/Scripting/ScriptComponent.h>
 
 
 class AnimationTimelineView
@@ -32,8 +33,15 @@ private:
 	oo::AnimationComponent* animator = nullptr;
 	oo::Anim::Node* node = nullptr;
 	oo::Anim::Animation* animation = nullptr;
+	oo::Anim::ScriptEvent* scriptevent = nullptr;
 	oo::Anim::Timeline* timeline = nullptr;
-	
+	oo::Anim::KeyFrame* keyframe = nullptr;
+	std::vector<oo::ScriptValue::function_info> fnInfo;
+
+	//to be used to apply data to gameObject, for previewing
+	std::vector<oo::Anim::Timeline*> timelines;	//if there are multiple timelines that has a keyframe at that currentKeyFrame, store them both in here
+	std::vector<oo::Anim::KeyFrame*> keyframes;	//Since there are multiple timeline that may have a keyframe at this currentKeyFrame, invoke both keyframes
+
 	static int currentKeyFrame;
 	static float unitPerFrame;
 	static float currentTime;
@@ -67,7 +75,7 @@ private:
 	void DrawNodeSelector(oo::AnimationComponent* _animator);
 	void DrawTimeLine(oo::Anim::Animation* _animation, float headerYPadding, float headerHeight = 24.0f);
 	void DrawTimeLineContent();
-	void DrawKeyFrame(int _currentKeyFrame, ImU32 colour);
+	void DrawKeyFrame(int _currentKeyFrame, const ImVec4& colour, float ypos = 0.0f, const std::string& label = "");
 
 	int GetFrameFromTimelinePos(float pos);
 	float GetTimelinePosFromFrame(int frame);
