@@ -82,6 +82,7 @@ void ForwardParticlePass::Draw()
 
 	auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
 
+	assert(attachments[GBufferAttachmentIndex::DEPTH].currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	oGFX::vkutils::tools::insertImageMemoryBarrier(
 		cmdlist,
 		attachments[GBufferAttachmentIndex::DEPTH].image,
@@ -92,6 +93,8 @@ void ForwardParticlePass::Draw()
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
 		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 });
+	attachments[GBufferAttachmentIndex::DEPTH].currentLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 
 	// Clear values for all attachments written in the fragment shader
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
@@ -102,6 +105,18 @@ void ForwardParticlePass::Draw()
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 
+	assert(vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout == VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmdlist,
+		vr.renderTargets[vr.renderTargetInUseID].texture.image,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT,
+		vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
@@ -113,7 +128,7 @@ void ForwardParticlePass::Draw()
 	// Manually set layout for blit reason
 
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass =  renderpass_GbufferSecondsPass;
+	renderPassBeginInfo.renderPass =  renderpass_GbufferSecondsPass.pass;
 	renderPassBeginInfo.framebuffer = currentFB;
 	renderPassBeginInfo.renderArea.extent.width = swapchain.swapChainExtent.width;
 	renderPassBeginInfo.renderArea.extent.height = swapchain.swapChainExtent.height;
@@ -161,7 +176,7 @@ void ForwardParticlePass::Shutdown()
 {
 	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
 
-	vkDestroyRenderPass(device,renderpass_GbufferSecondsPass, nullptr);
+	renderpass_GbufferSecondsPass.destroy();
 	vkDestroyPipeline(device, pso_GBufferParticles, nullptr);
 }
 
@@ -253,8 +268,8 @@ void ForwardParticlePass::SetupRenderpass()
 	renderPassInfo.dependencyCount = 2;
 	renderPassInfo.pDependencies = dependencies.data();
 
-	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassInfo, nullptr, &renderpass_GbufferSecondsPass));
-	VK_NAME(m_device.logicalDevice, "ForwardParticlePass", renderpass_GbufferSecondsPass);
+	renderpass_GbufferSecondsPass.name = "ForwardParticlePass";
+	renderpass_GbufferSecondsPass.Init(m_device, renderPassInfo);
 }
 
 void ForwardParticlePass::SetupFramebuffer()
@@ -268,12 +283,12 @@ void ForwardParticlePass::SetupFramebuffer()
 
 	auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
 
-	FramebufferBuilder::Begin(&vr.fbCache)
-		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
-		.BindImage(&m_swapchain.swapChainImages[0])
-		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
-		.BindImage(&m_swapchain.depthAttachment)
-		.Build(framebuffer_GBufferSecondPass,renderpass_GbufferSecondsPass);
+	//FramebufferBuilder::Begin(&vr.fbCache)
+	//	//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
+	//	.BindImage(&m_swapchain.swapChainImages[0])
+	//	.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
+	//	.BindImage(&m_swapchain.depthAttachment)
+	//	.Build(framebuffer_GBufferSecondPass,renderpass_GbufferSecondsPass);
 
 	//VkFramebufferCreateInfo fbufCreateInfo = {};
 	//fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -285,7 +300,7 @@ void ForwardParticlePass::SetupFramebuffer()
 	//fbufCreateInfo.height = vr.m_swapchain.swapChainExtent.height;
 	//fbufCreateInfo.layers = 1;
 	//VK_CHK(vkCreateFramebuffer(vr.m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
-	VK_NAME(vr.m_device.logicalDevice, "particlesFB", framebuffer_GBufferSecondPass);
+	//VK_NAME(vr.m_device.logicalDevice, "particlesFB", framebuffer_GBufferSecondPass);
 }
 
 
@@ -312,7 +327,7 @@ void ForwardParticlePass::CreatePipeline()
 	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, renderpass_GbufferSecondsPass);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, renderpass_GbufferSecondsPass.pass);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -346,7 +361,7 @@ void ForwardParticlePass::CreatePipeline()
 	pipelineCI.pVertexInputState = &vertexInputCreateInfo;
 
 	// Separate render pass
-	pipelineCI.renderPass = renderpass_GbufferSecondsPass;
+	pipelineCI.renderPass = renderpass_GbufferSecondsPass.pass;
 
 	// Blend attachment states required for all color attachments
 	// This is important, as color write mask will otherwise be 0x0 and you

@@ -101,7 +101,7 @@ void GBufferRenderPass::Draw()
 	attachments[GBufferAttachmentIndex::ENTITY_ID].currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass =  renderpass_GBuffer;
+	renderPassBeginInfo.renderPass =  renderpass_GBuffer.pass;
 	renderPassBeginInfo.framebuffer = currentFB;
 	renderPassBeginInfo.renderArea.extent.width = swapchain.swapChainExtent.width;
 	renderPassBeginInfo.renderArea.extent.height = swapchain.swapChainExtent.height;
@@ -155,7 +155,7 @@ void GBufferRenderPass::Shutdown()
 		att.destroy();
 	}
 
-	vkDestroyRenderPass(device,renderpass_GBuffer, nullptr);
+	renderpass_GBuffer.destroy();
 	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
 }
 
@@ -259,8 +259,8 @@ void GBufferRenderPass::SetupRenderpass()
 	renderPassInfo.dependencyCount = 2;
 	renderPassInfo.pDependencies = dependencies.data();
 
-	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassInfo, nullptr, &renderpass_GBuffer));
-	VK_NAME(m_device.logicalDevice, "deferredPass", renderpass_GBuffer);
+	renderpass_GBuffer.name = "deferredPass";
+	renderpass_GBuffer.Init(m_device, renderPassInfo);
 }
 
 void GBufferRenderPass::SetupFramebuffer()
@@ -272,14 +272,14 @@ void GBufferRenderPass::SetupFramebuffer()
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 	
-	FramebufferBuilder::Begin(&vr.fbCache)
-		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
-		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
-		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
-		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
-		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
-		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
-		.Build(framebuffer_GBuffer,renderpass_GBuffer);
+	//FramebufferBuilder::Begin(&vr.fbCache)
+	//	//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
+	//	.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
+	//	.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
+	//	.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+	//	.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
+	//	.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
+	//	.Build(framebuffer_GBuffer,renderpass_GBuffer);
 
 	//VkFramebufferCreateInfo fbufCreateInfo = {};
 	//fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -291,7 +291,7 @@ void GBufferRenderPass::SetupFramebuffer()
 	//fbufCreateInfo.height = vr.m_swapchain.swapChainExtent.height;
 	//fbufCreateInfo.layers = 1;
 	//VK_CHK(vkCreateFramebuffer(vr.m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
-	VK_NAME(vr.m_device.logicalDevice, "deferredFB", framebuffer_GBuffer);
+	//VK_NAME(vr.m_device.logicalDevice, "deferredFB", framebuffer_GBuffer);
 
 	//deferredImg[GBufferAttachmentIndex::POSITION] = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::POSITION].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	deferredImg[GBufferAttachmentIndex::NORMAL]   = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), attachments[GBufferAttachmentIndex::NORMAL  ].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -324,7 +324,7 @@ void GBufferRenderPass::CreatePipeline()
 	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default.pass);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -343,7 +343,7 @@ void GBufferRenderPass::CreatePipeline()
 	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 
 	// Separate render pass
-	pipelineCI.renderPass = renderpass_GBuffer;
+	pipelineCI.renderPass = renderpass_GBuffer.pass;
 
 	// Blend attachment states required for all color attachments
 	// This is important, as color write mask will otherwise be 0x0 and you

@@ -32,7 +32,7 @@ struct ForwardParticlePass : public GfxRenderpass
 
 	void CreatePSO() override;
 
-	VkRenderPass renderpass_GbufferSecondsPass{};
+	VulkanRenderpass renderpass_GbufferSecondsPass{};
 	VkFramebuffer framebuffer_GBufferSecondPass{};
 
 	//VkPushConstantRange pushConstantRange;

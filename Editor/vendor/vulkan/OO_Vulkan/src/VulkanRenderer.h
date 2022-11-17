@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "VulkanSwapchain.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
+#include "VulkanRenderpass.h"
 #include "GpuVector.h"
 #include "gpuCommon.h"
 #include "DescriptorBuilder.h"
@@ -309,8 +310,8 @@ public:
 	std::vector<VkFence> drawFences;
 
 	// - Pipeline
-	VkRenderPass renderPass_default{};
-	VkRenderPass renderPass_default_noDepth{};
+	VulkanRenderpass renderPass_default{};
+	VulkanRenderpass renderPass_default_noDepth{};
 
 	vkutils::Buffer indirectCommandsBuffer{};
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};

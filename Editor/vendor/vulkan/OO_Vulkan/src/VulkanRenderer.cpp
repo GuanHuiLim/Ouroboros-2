@@ -192,16 +192,9 @@ VulkanRenderer::~VulkanRenderer()
 
 	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::defaultPSOLayout, nullptr);
 	
-	if (renderPass_default)
-	{
-		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
-		renderPass_default = VK_NULL_HANDLE;
-	}
-	if (renderPass_default_noDepth)
-	{
-		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default_noDepth, nullptr);
-		renderPass_default_noDepth = VK_NULL_HANDLE;
-	}
+	renderPass_default.destroy();
+	renderPass_default_noDepth.destroy();
+	
 }
 
 VulkanRenderer* VulkanRenderer::get()
@@ -376,11 +369,9 @@ void VulkanRenderer::SetupSwapchain()
 
 void VulkanRenderer::CreateDefaultRenderpass()
 {
-	if (renderPass_default)
+	if (renderPass_default.pass)
 	{
 		return;
-		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
-		renderPass_default = VK_NULL_HANDLE;
 	}
 
 	// ATTACHMENTS
@@ -469,21 +460,15 @@ void VulkanRenderer::CreateDefaultRenderpass()
 	renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependancies.size());
 	renderPassCreateInfo.pDependencies = subpassDependancies.data();
 
-	VkResult result = vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default);
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create Render Pass");
-	}
-	VK_NAME(m_device.logicalDevice, "defaultRenderPass",renderPass_default);
-	//VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default2));
+	renderPass_default.name = "defaultRenderPass";
+	renderPass_default.Init(m_device, renderPassCreateInfo);
 
-	
+
 	subpass.pDepthStencilAttachment = VK_NULL_HANDLE;
 	renderPassCreateInfo.attachmentCount = 1; // colour only
 	renderPassCreateInfo.dependencyCount = 0; // colour only
-	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default_noDepth));
-	VK_NAME(m_device.logicalDevice, "defaultRenderPass_default_noDepth",renderPass_default_noDepth);
-
+	renderPass_default_noDepth.name = "defaultRenderPass_noDepth";
+	renderPass_default_noDepth.Init(m_device, renderPassCreateInfo);
 }
 
 void VulkanRenderer::CreateDefaultDescriptorSetLayout()
@@ -745,7 +730,7 @@ void VulkanRenderer::CreateFramebuffers()
 
 		VkFramebufferCreateInfo framebufferCreateInfo = {};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass_default; //render pass layout the frame buffer will be used with
+		framebufferCreateInfo.renderPass = renderPass_default.pass; //render pass layout the frame buffer will be used with
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferCreateInfo.pAttachments = attachments.data(); //list of attachments (1:1 with render pass)
 		framebufferCreateInfo.width = m_swapchain.swapChainExtent.width;
@@ -895,6 +880,8 @@ int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
 
 	
 	auto& target = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments[GBufferAttachmentIndex::ENTITY_ID];
+	if (target.currentLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+		return -1;
 
 	// Check if the device supports blitting from optimal images (the swapchain images are in optimal format)
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, target.format, &formatProps);
