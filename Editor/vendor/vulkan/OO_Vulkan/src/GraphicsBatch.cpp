@@ -147,9 +147,37 @@ void GraphicsBatch::GenerateBatches()
 	m_particleCommands.clear();
 	/// Create parciles batch
 	uint32_t emitterCnt = 0;
+	auto* vr = VulkanRenderer::get();
 	for (auto& emitter:allEmitters)
 	{
-		// note to support multiple textures permesh we have to do this per submesh
+		// note to support multiple textures permesh we have to do this per submesh 
+		//setup instance data	
+		// TODO: this is really bad fix this
+		// This is per entity. Should be per material.
+		uint32_t albedo = emitter.bindlessGlobalTextureIndex_Albedo;
+		uint32_t normal = emitter.bindlessGlobalTextureIndex_Normal;
+		uint32_t roughness = emitter.bindlessGlobalTextureIndex_Roughness;
+		uint32_t metallic = emitter.bindlessGlobalTextureIndex_Metallic;
+		constexpr uint32_t invalidIndex = 0xFFFFFFFF;
+		if (albedo == invalidIndex)
+			albedo = vr->whiteTextureID; 
+		if (normal == invalidIndex)
+			normal = vr->blackTextureID;
+		if (roughness == invalidIndex)
+			roughness = vr->whiteTextureID; 
+		if (metallic == invalidIndex)
+			metallic = vr->blackTextureID;
+
+		// Important: Make sure this index packing matches the unpacking in the shader
+		const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
+		const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
+		for (auto& pd : emitter.particles)
+		{
+			pd.instanceData.z=albedo_normal;
+			pd.instanceData.w=roughness_metallic;
+		}
+
+		// copy list
 		m_particleList.insert(m_particleList.end(), emitter.particles.begin(), emitter.particles.end());
 
 		auto& model = m_renderer->g_globalModels[emitter.modelID];
@@ -174,7 +202,9 @@ void GraphicsBatch::GenerateBatches()
 		}	
 		//increment instance data
 		emitterCnt += cmd.instanceCount;
-		//setup instance data		
+
+		// clear this so next draw we dont care
+		emitter.particles.clear();
 	}
 
 }
