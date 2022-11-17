@@ -673,6 +673,14 @@ namespace myPhysx
         }
     }
 
+    bool PhysicsObject::hasObject(phy_uuid::UUID id) {
+
+        if (world->all_objects.contains(id))
+            return true;
+
+        return false;
+    }
+
     void PhysicsObject::lockPositionX(bool lock) {
 
         if (world->all_objects.contains(id)) {
