@@ -56,16 +56,15 @@ namespace oo::Anim::internal
 	void TriggerEvent(UpdateProgressTrackerInfo& info, ScriptEvent& event);
 	KeyFrame::DataType GetInterpolatedValue(rttr::type rttr_type, KeyFrame::DataType prev, KeyFrame::DataType next, float percentage);
 
-	//void UpdateEvent(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
-	void UpdateEvent(UpdateProgressTrackerInfo& info, float updatedTimer);
 
-	//void UpdateProperty_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
+
 	void UpdateProperty_Animation(UpdateProgressTrackerInfo& info, float updatedTimer);
 
-	//void UpdateFBX_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
 	void UpdateFBX_Animation(UpdateProgressTrackerInfo& info, float updatedTimer);
 	//go through all progress trackers and call their update function
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer);
+
+	void UpdateScriptEventProgress(UpdateTrackerInfo& info, float updatedTimer);
 
 	KeyFrame* GetCurrentKeyFrame(ProgressTracker& tracker);
 

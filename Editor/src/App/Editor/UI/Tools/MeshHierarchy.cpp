@@ -33,6 +33,8 @@ Technology is prohibited.
 #include "SceneManagement/include/SceneManager.h"
 #include "Ouroboros/Vulkan/SkinRendererComponent.h"
 #include "Ouroboros/Transform/TransformSystem.h"
+#include "Ouroboros/Animation/Animation.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
 MeshHierarchy::MeshHierarchy()
 {
 	oo::EventManager::Subscribe<MeshHierarchy, OpenFileEvent>(this, &MeshHierarchy::OpenFileCallBack);
@@ -132,6 +134,11 @@ void MeshHierarchy::Show()
 	if(ImGui::Button("Add Whole Mesh"))
 	{
 		CreateObject(modeldata->sceneInfo,m_current_id);
+	}
+	if (ImGui::Button("Generate Animation"))
+	{
+		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
+
 	}
 }
 

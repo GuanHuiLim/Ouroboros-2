@@ -55,6 +55,9 @@ namespace oo::Anim
 		static bool SaveAllAnimationTree(std::string filepath);
 		static AnimationTree* LoadAnimationTree(std::string filepath);
 		static Animation* LoadAnimation(std::string filepath);
+		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
+		static bool DeleteAnimation(std::string const& name);
+
 		static bool LoadAssets(std::string filepath);
 		static void OpenFileCallback(OpenFileEvent* evnt);
 		static void CloseProjectCallback(CloseProjectEvent* evnt);

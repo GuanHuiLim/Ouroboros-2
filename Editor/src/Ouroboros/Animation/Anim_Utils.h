@@ -83,6 +83,7 @@ namespace oo::Anim
 	struct AnimationTree; 
 	struct AnimationTracker; //tracks a user's progress in an animation tree
 	struct ProgressTracker;
+	struct ScriptEventTracker;
 	class IAnimationComponent;
 	class AnimationSystem;
 
@@ -102,6 +103,12 @@ namespace oo::Anim
 		{
 			UpdateTrackerInfo& tracker_info;
 			ProgressTracker& progressTracker;
+		};
+
+		struct UpdateScriptEventInfo
+		{
+			UpdateTrackerInfo& tracker_info;
+			std::vector<ScriptEvent>& events;
 		};
 
 		constexpr char  serialize_method_name[] = "Serialize";

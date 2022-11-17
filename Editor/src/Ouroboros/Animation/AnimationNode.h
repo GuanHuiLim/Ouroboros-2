@@ -40,6 +40,7 @@ namespace oo::Anim
 
 		//trackers to be given to the animation component 
 		//upon reaching this node
+		ScriptEventTracker scripteventTracker{};
 		std::vector<ProgressTracker> trackers{};
 		//outgoing links to other nodes
 		std::vector<LinkRef> outgoingLinks{};

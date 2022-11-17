@@ -86,4 +86,11 @@ namespace oo::Anim
 		ProgressTracker(const Timeline::TYPE _type);
 		static ProgressTracker Create(Timeline::TYPE type);
 	};
+
+	//trcks progress in 1 script event "timeline"
+	struct ScriptEventTracker
+	{
+		size_t nextEvent_index{ 0ul };	//index of next script event to call
+		std::vector<ScriptEvent>* events{nullptr};
+	};
 }
