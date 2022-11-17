@@ -476,8 +476,6 @@ void AnimatorControllerView::DisplayInspector()
     int nodeCount = ed::GetSelectedNodes(m_nodesId.data(), num_selected_objects);
     int linkCount = ed::GetSelectedLinks(m_linksId.data(), num_selected_objects);
 
-    
-
     if (ImGui::Begin("Animator Inspector"))
     {
         if (nodeCount != 0)
@@ -496,12 +494,11 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Text("Name");
                 ImVec2 textsize = ImGui::CalcTextSize("a");
                 ImGui::SameLine(textsize.x * 8);
-                ImGui::InputText("##name", const_cast<char*>(id->anim_node->name.c_str()), 256);
+                ImGui::InputText("##name", &id->anim_node->name);
                 ImGui::Separator();
                 ImGui::Text("Animation");
                 ImGui::SameLine(textsize.x * 12);
-                ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 
-                                 256, ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputText("##animation", &id->anim_node->GetAnimation().name, ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
                 ImGui::SameLine();
                 DisplayAnimationSelector(id->anim_node, open);
                 ImGui::Text("Speed");
@@ -515,8 +512,8 @@ void AnimatorControllerView::DisplayInspector()
             {
                 ed::LinkId temp = m_linksId[i];
                 auto id = std::find_if(m_links_.begin(), m_links_.end(), [temp](auto& link) {return link.id == temp; });
-                std::string linkRelation = id->link->name;
-                ImGui::Text(linkRelation.c_str());
+                //std::string linkRelation = id->link->name;
+                //ImGui::Text(linkRelation.c_str());
                 ImVec2 textsize = ImGui::CalcTextSize("a");
                 ImGui::Text("Has Exit Time");
                 ImGui::SameLine(textsize.x * 25);
