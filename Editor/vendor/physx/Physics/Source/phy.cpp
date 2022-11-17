@@ -478,7 +478,7 @@ namespace myPhysx
         std::vector<RaycastHit> hitAll{}; // store all the raycast hit
 
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
-        PxQueryFlags queryFlags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eANY_HIT;
+        PxQueryFlags queryFlags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eNO_BLOCK;
 
         scene->raycast(origin, direction, distance, buffer, hitFlags, PxQueryFilterData(queryFlags));
 
