@@ -326,21 +326,26 @@ namespace myPhysx
         }
     }
 
-    PhysxObject::PhysxObject(const PhysxObject& object) {
-
+    PhysxObject::PhysxObject(const PhysxObject& object) : matID(object.matID),
+                                                          shape(object.shape),
+                                                          rigidID(object.rigidID),
+                                                          lockPositionAxis(object.lockPositionAxis),
+                                                          lockRotationAxis(object.lockRotationAxis),
+                                                          trigger(object.trigger),
+                                                          gravity(object.gravity),
+                                                          kinematic(object.kinematic),
+                                                          collider(object.collider)
+    {
         // Create new UUID
         id = std::make_unique<phy_uuid::UUID>();
+    }
 
-        // Assign all the old data over
-        matID = object.matID;
-        shape = object.shape;
-        rigidID = object.rigidID;
-        lockPositionAxis = object.lockPositionAxis;
-        lockRotationAxis = object.lockRotationAxis;
-        trigger = object.trigger;
-        gravity = object.gravity;
-        kinematic = object.kinematic;
-        collider = object.collider;
+    PhysxObject& PhysxObject::operator=(const PhysxObject& object) {
+
+        PhysxObject copy{ object };
+        std::swap(*this, copy);
+
+        return *this;
     }
 
     PhysicsObject PhysxWorld::duplicateObject(phy_uuid::UUID id) {
@@ -349,24 +354,11 @@ namespace myPhysx
 
             int index = all_objects.at(id);
 
-            // Create new physics object
-            PhysicsObject physicsNewObject{};
+            PhysicsObject physicsNewObject;
 
-            // Create new object then retrieve and assign all the old data
-            PhysxObject newObj { m_objects.at(index) };
-
-            // Assign to UUID & world into the physics object
-            physicsNewObject.id = *newObj.id;
-            physicsNewObject.world = this;
+            // Copy old data and create new object
+            createPhysicsObjectFromPhysxObject(physicsNewObject, m_objects.at(index));
     
-            // Store the object
-            m_objects.emplace_back(std::move(newObj));
-            all_objects.insert({ physicsNewObject.id, m_objects.size() - 1 }); // add back the m_objects last element
-
-            // Create new shape and rigidbody data 
-            physicsNewObject.setShape(m_objects.at(index).shape);
-            physicsNewObject.setRigidType(m_objects.at(index).rigidID);
-
             return physicsNewObject; // a copy
         }
 
@@ -450,6 +442,37 @@ namespace myPhysx
 
         while (!m_collisionPairs.empty())
             m_collisionPairs.pop();
+    }
+
+    void PhysxWorld::createPhysicsObjectFromPhysxObject(PhysicsObject& phyiscsNewObject, PhysxObject& objectToCopyFrom)
+    {
+        // Create new PhysxObject - copy and assign all the old data
+        PhysxObject newPhysxObject = objectToCopyFrom;
+
+        // Assign PhysicsObject with new UUID and the world
+        phyiscsNewObject.id = *newPhysxObject.id;
+        phyiscsNewObject.world= physx_system::currentWorld;
+
+        // Retrieve old rigidbody data (transform)
+        PxTransform trans;
+        if (newPhysxObject.rigidID == rigid::rstatic)
+            trans = newPhysxObject.rb.rigidStatic->getGlobalPose();
+        else if (newPhysxObject.rigidID == rigid::rdynamic)
+            trans = newPhysxObject.rb.rigidDynamic->getGlobalPose();
+
+        // Create new shape and rigidbody data 
+        if (newPhysxObject.shape == shape::box)
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().box());
+        else if (newPhysxObject.shape == shape::sphere)
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().sphere());
+        else if (newPhysxObject.shape == shape::capsule)
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().capsule());
+        else if (newPhysxObject.shape == shape::plane)
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().plane());
+        
+        // Store the new duplicate objects into vector/map
+        m_objects.emplace_back(std::move(newPhysxObject));
+        all_objects.insert({ phyiscsNewObject.id,m_objects.size() - 1 });
     }
 
     RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance) {
@@ -606,6 +629,32 @@ namespace myPhysx
 
             physx_system::setupFiltering(underlying_obj->m_shape);
         }
+    }
+
+    template<typename Type>
+    void PhysicsObject::reCreateRigidbody(PhysxObject& obj, PxTransform transform, rigid rigidType, Type data) {
+
+        PxMaterial* material = world->mat.at(obj.matID); // might need check if this set or not
+
+        obj.m_shape = physx_system::getPhysics()->createShape(data, *material, true);
+
+        // ATTACH THE SHAPE TO THE OBJECT
+        if (rigidType == rigid::rstatic) {
+            obj.rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(transform);
+            obj.rb.rigidStatic->userData = obj.id.get();
+            obj.rb.rigidStatic->attachShape(*obj.m_shape);
+
+            world->scene->addActor(*obj.rb.rigidStatic);
+        }
+        else if (rigidType == rigid::rdynamic) {
+            obj.rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(transform);
+            obj.rb.rigidDynamic->userData = obj.id.get();
+            obj.rb.rigidDynamic->attachShape(*obj.m_shape);
+
+            world->scene->addActor(*obj.rb.rigidDynamic);
+        }
+    
+        physx_system::setupFiltering(obj.m_shape);
     }
 
     void PhysicsObject::setShape(shape shape) {
@@ -789,9 +838,12 @@ namespace myPhysx
 
             if (underlying_obj->rigidID != rigid::none) {
 
-                underlying_obj->m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collide);
+                if (underlying_obj->m_shape) {
 
-                underlying_obj->collider = collide;
+                    underlying_obj->m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collide);
+
+                    underlying_obj->collider = collide;
+                }
             }
         }
     }
