@@ -279,6 +279,7 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 	ImGui::PushID(static_cast<int>(class_type.get_id()));
 	int sameline_next = 0;
 	float UI_sameline_size = 0;
+	float itemsize_sameline = 0;
 	for (rttr::property prop : class_type.get_properties())
 	{
 		bool propReadonly = prop.is_readonly();
@@ -291,8 +292,9 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 			{
 				sameline_next = same_linewith.get_value<int>();
 				float area = ImGui::GetContentRegionAvail().x;
-				float textlen = ImGui::CalcTextSize(prop.get_name().data()).x;
-				UI_sameline_size = (area) / sameline_next - (textlen + 10);//10 is padding
+				constexpr float textlen = 50 + 10;
+				itemsize_sameline = ImGui::GetCurrentWindow()->DC.ItemWidth;
+				UI_sameline_size = (area) / sameline_next - (textlen);//10 is padding
 			}
 		}
 		if (sameline_next)
@@ -338,6 +340,7 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 				if (sameline_next)
 				{
 					ImGui::EndGroup();
+					ImGui::PopItemWidth();
 					sameline_next = 0;
 					UI_sameline_size = 0;
 				}
@@ -350,7 +353,13 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 				ImGui::EndGroup();
 				ImGui::PopItemWidth();
 				if (sameline_next)
+				{
 					ImGui::SameLine();
+				}
+				else
+				{
+					ImGui::GetCurrentWindow()->DC.ItemWidth = itemsize_sameline;
+				}
 			}
 			continue;
 		}
@@ -390,7 +399,13 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 			ImGui::EndGroup();
 			ImGui::PopItemWidth();
 			if (sameline_next)
+			{
 				ImGui::SameLine();
+			}
+			else
+			{
+				ImGui::GetCurrentWindow()->DC.ItemWidth = itemsize_sameline;
+			}
 		}
 	}
 	ImGui::PopID();
