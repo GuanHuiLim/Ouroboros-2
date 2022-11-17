@@ -149,6 +149,8 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 		return;
 
 	ImGui::PushID(static_cast<int>(type.get_id()));
+	int sameline_next = 0;
+	float UI_sameline_size = 0;
 	for (rttr::property prop : type.get_properties())
 	{
 		bool propReadonly = prop.is_readonly();
@@ -158,7 +160,22 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 
 		if (propReadonly && m_showReadonly == false)
 			continue;
+		{
+			rttr::variant same_linewith = prop.get_metadata(UI_metadata::SAME_LINE_WITH_NEXT);
+			if (same_linewith.is_valid())
+			{
+				sameline_next = same_linewith.get_value<int>();
+				float area = ImGui::GetContentRegionAvail().x;
+				constexpr float textlen = 30 + 10;//10 is padding
 
+				UI_sameline_size = (area) / sameline_next - (textlen);
+			}		
+		}
+		if (sameline_next)
+		{
+			ImGui::PushItemWidth(UI_sameline_size);
+			ImGui::BeginGroup();
+		}
 		rttr::type prop_type = prop.get_type();
 
 		auto ut = UI_RTTRType::types.find(prop_type.get_id());
@@ -190,13 +207,35 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 				SaveComponentDataHelper(component, prop, pre_edited, std::move(value), gameobject.GetInstanceID(), edited, end_edit);
 
 			}
+			else//not found
+			{
+				if (sameline_next)
+				{
+					ImGui::EndGroup();
+					sameline_next = 0;
+					UI_sameline_size = 0;
+				}
+				continue;
+			}
+			//found
+			if (sameline_next)
+			{
+				--sameline_next;
+				ImGui::EndGroup();
+				ImGui::PopItemWidth();
+				if (sameline_next)
+					ImGui::SameLine();
+			}
 			continue;
 		}
 
 		auto iter = m_inspectorProperties.m_InspectorUI.find(ut->second);
 		//special cases
 		if (iter == m_inspectorProperties.m_InspectorUI.end())
+		{
+			ASSERT_MSG(true, "this means u nvr ask me to support your type before putting in. -jx");
 			continue;
+		}
 
 		rttr::variant v = prop.get_value(component);
 		bool set_value = false;
@@ -217,6 +256,14 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 			SaveComponentDataHelper(component, prop, pre_edited, std::move(v), gameobject.GetInstanceID(), set_value, end_edit);
 		}
 		ImGui::Dummy({ 0,5.0f });
+		if (sameline_next)
+		{
+			--sameline_next;
+			ImGui::EndGroup();
+			ImGui::PopItemWidth();
+			if(sameline_next)
+				ImGui::SameLine();
+		}
 	}
 	ImGui::PopID();
 	ImGui::Separator();

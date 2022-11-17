@@ -277,13 +277,29 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 	ImGui::BeginGroup();
 	ImGui::Separator();
 	ImGui::PushID(static_cast<int>(class_type.get_id()));
-
+	int sameline_next = 0;
+	float UI_sameline_size = 0;
 	for (rttr::property prop : class_type.get_properties())
 	{
 		bool propReadonly = prop.is_readonly();
 		if (propReadonly && m_showReadonly == false)
 			continue;
 
+		{
+			rttr::variant same_linewith = prop.get_metadata(UI_metadata::SAME_LINE_WITH_NEXT);
+			if (same_linewith.is_valid())
+			{
+				sameline_next = same_linewith.get_value<int>();
+				float area = ImGui::GetContentRegionAvail().x;
+				float textlen = ImGui::CalcTextSize(prop.get_name().data()).x;
+				UI_sameline_size = (area) / sameline_next - (textlen + 10);//10 is padding
+			}
+		}
+		if (sameline_next)
+		{
+			ImGui::PushItemWidth(UI_sameline_size);
+			ImGui::BeginGroup();
+		}
 		rttr::type prop_type = prop.get_type();
 
 		auto ut = UI_RTTRType::types.find(prop_type.get_id());
@@ -317,6 +333,25 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 					prop.set_value(value, v);//set value to variant
 				}
 			}
+			else//not found
+			{
+				if (sameline_next)
+				{
+					ImGui::EndGroup();
+					sameline_next = 0;
+					UI_sameline_size = 0;
+				}
+				continue;
+			}
+			//found
+			if (sameline_next)
+			{
+				--sameline_next;
+				ImGui::EndGroup();
+				ImGui::PopItemWidth();
+				if (sameline_next)
+					ImGui::SameLine();
+			}
 			continue;
 		}
 
@@ -349,6 +384,14 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 			}
 		}
 		ImGui::Dummy({ 0,5.0f });
+		if (sameline_next)
+		{
+			--sameline_next;
+			ImGui::EndGroup();
+			ImGui::PopItemWidth();
+			if (sameline_next)
+				ImGui::SameLine();
+		}
 	}
 	ImGui::PopID();
 	ImGui::Separator();
@@ -379,14 +422,16 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 	constexpr size_t min_arrSize = 0;
 	constexpr size_t max_arrSize = 30;
 
+	ImVec2 cursorpos = ImGui::GetCursorPos();
 	//Size Slider
-
 	if (ImGui::DragScalarN("##Size", ImGuiDataType_::ImGuiDataType_U64, &size, 1,0.3f,&min_arrSize,&max_arrSize))
 		edited = endEdit = sqv.set_size(size);
-	ImGui::SameLine();
+	ImGui::SetItemAllowOverlap();
+	float width = ImGui::CalcItemWidth();
+	ImGui::SetCursorPos(cursorpos);
 	if (ImGui::ArrowButton("reduceSize", ImGuiDir_::ImGuiDir_Left))
 		edited = endEdit = sqv.set_size(size - 1);
-	ImGui::SameLine();
+	ImGui::SetCursorPos({ cursorpos.x + width - 17, cursorpos.y});//15 = arrowbuttonsize
 	if (ImGui::ArrowButton("increaseSize", ImGuiDir_::ImGuiDir_Right))
 		edited = endEdit = sqv.set_size(size + 1);
 	ImGui::SameLine();
