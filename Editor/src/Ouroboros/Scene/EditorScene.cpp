@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
@@ -47,6 +48,7 @@ namespace oo
         {
             // Unlock the mouse if it was locked in play mode
             Application::Get().GetWindow().SetMouseLockState(false);
+            oo::timer::set_timescale(1.0);
         }
 
         Scene::Init();
@@ -95,6 +97,7 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
 
         TRACY_PROFILE_SCOPE_END();
     }

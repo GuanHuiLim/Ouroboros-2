@@ -58,6 +58,23 @@ namespace oo
 		//uint32_t gfxbones_index{ std::numeric_limits<decltype(gfxbones_index)>().max() };
 		oGFX::BoneInverseBindPoseInfo inverseBindPose_info{};
 		uint32_t graphicsWorld_ID;
+		glm::mat4 globalTransform{};
+
+		void SetInverseBindPoseInfo_BoneIdx(uint32_t boneIdx);
+		uint32_t GetInverseBindPoseInfo_BoneIdx();
+
+		void SetInverseBindPoseInfo_Transform_X(glm::vec4 transform);
+		glm::vec4 GetInverseBindPoseInfo_Transform_X();
+
+
+		void SetInverseBindPoseInfo_Transform_Y(glm::vec4 transform);
+		glm::vec4 GetInverseBindPoseInfo_Transform_Y();
+
+		void SetInverseBindPoseInfo_Transform_Z(glm::vec4 transform);
+		glm::vec4 GetInverseBindPoseInfo_Transform_Z();
+
+		void SetInverseBindPoseInfo_Transform_W(glm::vec4 transform);
+		glm::vec4 GetInverseBindPoseInfo_Transform_W();
 
 		RTTR_ENABLE();
 	};

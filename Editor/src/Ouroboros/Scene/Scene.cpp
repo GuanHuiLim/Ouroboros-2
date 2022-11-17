@@ -36,6 +36,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Vulkan/RendererSystem.h"
 #include "Ouroboros/Vulkan/SkinRendererSystem.h"
+#include "Ouroboros/Vulkan/ParticleRendererSystem.h"
 
 #include "Ouroboros/Audio/AudioSystem.h"
 
@@ -89,8 +90,9 @@ namespace oo
             m_graphicsWorld->numCameras = 2;
 #endif
             m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get(), this)->Init();
+            m_ecsWorld->Add_System<oo::ParticleRendererSystem>(m_graphicsWorld.get(), this)->Init();
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
-            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
+            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get(), this)->Init();
         }
 
         PRINT(m_name);
@@ -123,6 +125,7 @@ namespace oo
 
         GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
         GetWorld().Get_System<oo::SkinMeshRendererSystem>()->Run(m_ecsWorld.get());
+        GetWorld().Get_System<oo::ParticleRendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
         TRACY_PROFILE_SCOPE_END();

@@ -43,6 +43,7 @@ enum ObjectInstanceFlags : uint32_t // fuck enum class
                                 // etc
 };
 
+
 inline ObjectInstanceFlags operator|(ObjectInstanceFlags a, ObjectInstanceFlags b)
 {
     return static_cast<ObjectInstanceFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
@@ -96,6 +97,29 @@ struct ObjectInstance
     uint32_t entityID{}; // Unique ID for this entity instance
 };
 
+struct ParticleData
+{
+    glm::mat4 transform{1.0f};
+    glm::vec4 colour{1.0f};
+    glm::ivec4 instanceData; // EntityID, flags  ,abledo norm, roughness metal
+};
+
+struct EmitterInstance
+{
+    uint32_t bindlessGlobalTextureIndex_Albedo{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Normal{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Roughness{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Metallic{ 0xFFFFFFFF };
+
+    glm::mat4x4 localToWorld{ 1.0f };
+
+    uint32_t modelID{}; // Index for the mesh
+    std::bitset<MAX_SUBMESH>submesh;// submeshes to draw
+    uint32_t entityID{}; // Unique ID for this entity instance
+
+    std::vector<ParticleData> particles;
+};
+
 void SetCastsShadows(LocalLightInstance& l, bool s);
 bool GetCastsShadows(LocalLightInstance& l);
 void SetCastsShadows(OmniLightInstance& l, bool s);
@@ -128,6 +152,7 @@ public:
 
     auto& GetAllObjectInstances() { return m_ObjectInstances; }
     auto& GetAllOmniLightInstances() { return m_OmniLightInstances; }
+    auto& GetAllEmitterInstances() { return m_EmitterInstances; }
 
     int32_t CreateObjectInstance();
     int32_t CreateObjectInstance(ObjectInstance obj);
@@ -140,6 +165,14 @@ public:
     OmniLightInstance& GetLightInstance(int32_t id);
     void DestroyLightInstance(int32_t id);
     void ClearLightInstances();
+
+    int32_t CreateEmitterInstance();
+    int32_t CreateEmitterInstance(EmitterInstance obj);
+    EmitterInstance& GetEmitterInstance(int32_t id);
+    void DestroyEmitterInstance(int32_t id);
+    void ClearEmitterInstances();
+
+    void SubmitParticles(std::vector<ParticleData>& particleData, uint32_t cnt, int32_t modelID);
 
     uint32_t numCameras = 1;
     std::array<Camera, 2>cameras;
@@ -169,6 +202,8 @@ private:
     BitContainer<ObjectInstance> m_ObjectInstances;
     int32_t m_lightCount{};
     BitContainer<OmniLightInstance> m_OmniLightInstances;
+    int32_t m_emitterCount{};
+    BitContainer<EmitterInstance> m_EmitterInstances;
     bool initialized = false;
     //etc
 
