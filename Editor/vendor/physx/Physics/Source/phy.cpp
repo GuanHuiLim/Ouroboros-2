@@ -478,16 +478,16 @@ namespace myPhysx
         std::vector<RaycastHit> hitAll{}; // store all the raycast hit
 
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
-        
-        scene->raycast(origin, direction, distance, buffer, hitFlags);
-        
+        PxQueryFlags queryFlags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eANY_HIT;
+
+        scene->raycast(origin, direction, distance, buffer, hitFlags, PxQueryFilterData(queryFlags));
+
         // loop based on how many touches return by the query
         for (PxU32 i = 0; i < buffer.nbTouches; i++)
         {
             RaycastHit hit{};
 
-            hit.intersect = buffer.hasBlock;
-
+            hit.intersect = true;
             hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(buffer.touches[i].actor->userData);
 
             hit.position = buffer.touches[i].position;
