@@ -586,11 +586,17 @@ namespace oo
 
     void PhysicsSystem::InitializeRigidbody(RigidbodyComponent& rb)
     {
-        rb.object = m_physicsWorld.createInstance();
-        rb.SetStatic(true); // default to static objects. Most things in the world should be static.
-        //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
-        //default initialize material
-        rb.object.setMaterial(PhysicsMaterial{});
+        // we duplicate instead if this is an existing object
+        if(m_physicsWorld.hasObject(rb.object.id))
+            rb.object = m_physicsWorld.duplicateObject(rb.object.id);
+        else
+        {
+            rb.object = m_physicsWorld.createInstance();
+            rb.SetStatic(true); // default to static objects. Most things in the world should be static.
+            //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
+            //default initialize material
+            rb.object.setMaterial(PhysicsMaterial{});
+        }
 
     }
 
