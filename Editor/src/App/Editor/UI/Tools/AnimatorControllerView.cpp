@@ -14,6 +14,8 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #include "pch.h"
+#include "Project.h"
+#include "../Object Editor/AssetBrowser.h"
 #include "AnimatorControllerView.h"
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
@@ -82,6 +84,7 @@ uintptr_t AnimatorControllerView::GetAvailableNodeID()
 
 void AnimatorControllerView::Show()
 {
+    return;
     //Get Info From the GameObject
     auto& selected_items = Hierarchy::GetSelected();    //temporary fix, ideally wanna get from animatorcontroller file
     auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -479,6 +482,7 @@ void AnimatorControllerView::DisplayInspector()
     {
         if (nodeCount != 0)
         {
+            static ImGuiID open = 0;
             for (int i = 0; i < nodeCount; ++i)
             {
                 ed::NodeId temp = m_nodesId[i];
@@ -496,7 +500,10 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Separator();
                 ImGui::Text("Animation");
                 ImGui::SameLine(textsize.x * 12);
-                ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 256);
+                ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 
+                                 256, ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+                ImGui::SameLine();
+                DisplayAnimationSelector(id->anim_node, open);
                 ImGui::Text("Speed");
                 ImGui::SameLine(textsize.x * 12);
                 ImGui::InputFloat("##speed", &id->anim_node->speed);
@@ -526,6 +533,10 @@ void AnimatorControllerView::DisplayInspector()
                         ImGui::Text("Fixed Duration");
                         ImGui::SameLine(textsize.x * 25);
                         ImGui::Checkbox("##fixedduration", &id->link->fixed_duration);
+                        ImGui::Text("Transition Duration");
+                        ImGui::SameLine(textsize.x * 25);
+                        ImGui::InputFloat("##transitionduration", &id->link->transition_duration, 0.0f, 0.0f, "%.2f");
+
                     }
                     ImGui::TreePop();
                 }
@@ -534,6 +545,43 @@ void AnimatorControllerView::DisplayInspector()
             }
         }
         ImGui::End();
+    }
+}
+
+void AnimatorControllerView::DisplayAnimationSelector(oo::Anim::Node* _anim_node, ImGuiID& openID)
+{
+    ImGui::PushID(_anim_node->name.c_str());
+    ImGuiID tempID = ImGui::GetItemID();
+    if (ImGui::Button("Edit"))
+    {
+        if (openID == tempID)
+            openID = 0;
+        else
+        {
+            openID = tempID;
+        }
+    }
+    ImGui::PopID();
+    if (openID == tempID)
+    {
+        //display the animations
+        ImVec2 windowSize = ImGui::GetContentRegionAvail();
+        ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
+
+        if (ImGui::BeginChild("Select Animation", windowSize, true))
+        {
+            for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation))
+            {
+                if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
+                {
+                    //TODO: CHANGE ANIMATION HERE
+                    _anim_node->SetAnimationAsset(assets);
+                    //_anim_node->anim_asset = assets;
+                    openID = 0;
+                }
+            }
+            ImGui::EndChild();
+        }
     }
 }
 

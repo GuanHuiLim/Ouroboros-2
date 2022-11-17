@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "SkinRendererSystem.h"
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
+#include "Ouroboros/ECS/GameObject.h"
 
 namespace oo
 {
@@ -53,12 +54,75 @@ namespace oo
 				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] =  transformComp.GetGlobalMatrix() * boneComp.inverseBindPose_info.transform;
 			});
 
+	}
+
+	void SkinMeshRendererSystem::PostLoadScene(oo::Scene& scene)
+	{
+		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+
+		//resize bones container beforehand
+		scene.GetWorld().for_each(skin_mesh_query,
+			[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
+			{
+				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
+				
+				if (gfx_Object.bones.size() != m_comp.num_bones)
+					gfx_Object.bones.resize(m_comp.num_bones);
+			});
+
+		AssignGraphicsWorldID_to_BoneComponents(scene);
+	}
+
+	void RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(GameObject obj, uint32_t graphicsID)
+	{
+		auto children = obj.GetChildren();
+		if (children.empty()) return;
+
+		for (auto& child : children)
+		{
+			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
+
+			child.GetComponent<SkinMeshBoneComponent>().graphicsWorld_ID = graphicsID;
+		}
+	}
+
+	void SkinMeshRendererSystem::AssignGraphicsWorldID_to_BoneComponents(oo::Scene& scene)
+	{
+		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+		//static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
+
+		scene.GetWorld().for_each_entity(skin_mesh_query,
+			[&](Ecs::EntityID entity)
+			{
+				oo::GameObject go{ entity,scene };
+
+				auto graphicsID = go.GetComponent<SkinMeshRendererComponent>().graphicsWorld_ID;
+
+				auto parent = go.GetParent();
+				auto children = parent.GetDirectChilds();
+				auto name = go.Name();
+				oo::GameObject the_one_with_bones{};
+				for (auto& child : children)
+				{
+					if (child.Name() == name) continue;
+
+					the_one_with_bones = child;
+				}
 
 
+				RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(the_one_with_bones, graphicsID);
+				/*auto children = go.GetChildren();
 
-		
+				for (auto& child : children)
+				{
+					if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
+					child.GetComponent< SkinMeshBoneComponent>().graphicsWorld_ID = graphicsID;
 
-		
+
+				}*/
+
+			});
+
 	}
 
 	void SkinMeshRendererSystem::OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)

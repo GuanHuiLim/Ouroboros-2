@@ -154,7 +154,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	uint32_t gfx_ID{ std::numeric_limits<uint32_t>().max()};
 
 
-	//no skeleton
+	
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();
@@ -179,7 +179,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 				auto skeleton = CreateSkeleton(modeldata, gfx_ID);
 				containing_gameobj->AddChild(*skeleton);
 			}
-			else
+			else //no skeleton
 			{
 				auto& renderer = gameobject->EnsureComponent<oo::MeshRendererComponent>();
 				renderer.SetModelHandle(asset, node->meshRef);

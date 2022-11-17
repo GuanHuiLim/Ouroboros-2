@@ -26,6 +26,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
 #include "Ouroboros/UI/UISystem.h"
@@ -96,7 +97,7 @@ namespace oo
         }
         //post load file processes
         GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
-
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
 
         StartSimulation();
 

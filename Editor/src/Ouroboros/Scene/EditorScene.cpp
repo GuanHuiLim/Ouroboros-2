@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
@@ -96,6 +97,7 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
 
         TRACY_PROFILE_SCOPE_END();
     }
