@@ -128,7 +128,7 @@ namespace oo
         {
             result = ps->Raycast(oo::Ray{ origin, dir });
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
@@ -146,7 +146,7 @@ namespace oo
         {
             result = ps->Raycast(oo::Ray{ origin, dir }, maxDistance);
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
@@ -164,7 +164,7 @@ namespace oo
         {
             result = ps->RaycastAll(oo::Ray{ origin, dir });
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
@@ -180,7 +180,7 @@ namespace oo
         {
             result = ps->RaycastAll(oo::Ray{ origin, dir }, maxDistance);
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
