@@ -326,43 +326,48 @@ namespace myPhysx
         }
     }
 
+    PhysxObject::PhysxObject(const PhysxObject& object) {
+
+        // Create new UUID
+        id = std::make_unique<phy_uuid::UUID>();
+
+        // Assign all the old data over
+        matID = object.matID;
+        shape = object.shape;
+        rigidID = object.rigidID;
+        lockPositionAxis = object.lockPositionAxis;
+        lockRotationAxis = object.lockRotationAxis;
+        trigger = object.trigger;
+        gravity = object.gravity;
+        kinematic = object.kinematic;
+        collider = object.collider;
+    }
+
     PhysicsObject PhysxWorld::duplicateObject(phy_uuid::UUID id) {
 
         if (all_objects.contains(id)) {
 
             int index = all_objects.at(id);
-            
+
+            // Create new physics object
+            PhysicsObject physicsNewObject{};
+
             // Create new object then retrieve and assign all the old data
-            PhysxObject newObj;
-            newObj.id = std::make_unique<phy_uuid::UUID>();
-            newObj.matID = m_objects.at(index).matID;
+            PhysxObject newObj { m_objects.at(index) };
 
-            newObj.m_shape = m_objects.at(index).m_shape;
-            newObj.shape = m_objects.at(index).shape;
-
-            newObj.rigidID = m_objects.at(index).rigidID;
-
-            if (newObj.rigidID == rigid::rstatic)
-                newObj.rb.rigidStatic = m_objects.at(index).rb.rigidStatic;
-            else if (newObj.rigidID == rigid::rdynamic)
-                newObj.rb.rigidDynamic = m_objects.at(index).rb.rigidDynamic;
-
-            newObj.lockPositionAxis = m_objects.at(index).lockPositionAxis;
-            newObj.lockRotationAxis = m_objects.at(index).lockRotationAxis;
-
-            newObj.trigger = m_objects.at(index).trigger;
-            newObj.gravity = m_objects.at(index).gravity;
-            newObj.kinematic = m_objects.at(index).kinematic;
-            newObj.collider = m_objects.at(index).collider;
-
-            // Assign to UUID
-            phy_uuid::UUID generated_uuid = *newObj.id;
+            // Assign to UUID & world into the physics object
+            physicsNewObject.id = *newObj.id;
+            physicsNewObject.world = this;
     
-            // store the object
+            // Store the object
             m_objects.emplace_back(std::move(newObj));
-            all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
+            all_objects.insert({ physicsNewObject.id, m_objects.size() - 1 }); // add back the m_objects last element
 
-            return PhysicsObject{ generated_uuid, this }; // a copy
+            // Create new shape and rigidbody data 
+            physicsNewObject.setShape(m_objects.at(index).shape);
+            physicsNewObject.setRigidType(m_objects.at(index).rigidID);
+
+            return physicsNewObject; // a copy
         }
 
         return PhysicsObject{}; // return empty

@@ -223,11 +223,14 @@ namespace myPhysx {
     // associated to each object in the physics world (me store)
     struct PhysxObject {
 
+        PhysxObject() = default; // default constructor
+        PhysxObject(const PhysxObject& object); // copy constructor
+
         std::unique_ptr<phy_uuid::UUID> id = nullptr;
         phy_uuid::UUID matID = 0;
 
         // shape
-        PxShape* m_shape = nullptr; // prob no need this
+        PxShape* m_shape = nullptr;
         shape shape = shape::none;
 
         // ensure at least static or dynamic is init
