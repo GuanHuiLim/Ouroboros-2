@@ -43,5 +43,18 @@ namespace Ouroboros
             result.Free();
             return true;
         }
+
+        [DllImport("__Internal")] private static extern RaycastHit[] Physics_RaycastAllBasic(Vector3 origin, Vector3 dir);
+        [DllImport("__Internal")] private static extern RaycastHit[] Physics_RaycastAll(Vector3 origin, Vector3 dir, float maxDistance);
+
+        public static RaycastHit[] RaycastAll(Vector3 origin, Vector3 direction)
+        {
+            return Physics_RaycastAllBasic(origin, direction);
+        }
+
+        public static RaycastHit[] RaycastAll(Vector3 origin, Vector3 direction, float maxDistance)
+        {
+            return Physics_RaycastAll(origin, direction, maxDistance);
+        }
     }
 }
