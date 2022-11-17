@@ -266,6 +266,7 @@ namespace myPhysx {
         bool useGravity() const;
         bool isKinematic() const;
         bool isColliderEnabled() const;
+        bool hasObject(phy_uuid::UUID id);
 
         // SETTERS
         void setRigidType(rigid type);
