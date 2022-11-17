@@ -2328,6 +2328,8 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//}
 		//os << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
+	std::cout << os.str();
+	os.clear();
 
 #if 0
 	if (scene->HasAnimations())
