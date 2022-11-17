@@ -337,7 +337,26 @@ namespace myPhysx
                                                           collider(object.collider)
     {
         // Create new UUID
-        id = std::make_unique<phy_uuid::UUID>();
+        //id = std::make_unique<phy_uuid::UUID>();
+
+        PhysicsObject physicsObject = physx_system::currentWorld->createInstance();
+
+        // Retrieve old rigidbody data (transform)
+        PxTransform trans;
+        if (object.rigidID == rigid::rstatic)
+            trans = object.rb.rigidStatic->getGlobalPose();
+        else if (object.rigidID == rigid::rdynamic)
+            trans = object.rb.rigidDynamic->getGlobalPose();
+
+        // Create new shape and rigidbody data 
+        if (object.shape == shape::box)
+            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().box());
+        else if (object.shape == shape::sphere)
+            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().sphere());
+        else if (object.shape == shape::capsule)
+            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().capsule());
+        else if (object.shape == shape::plane)
+            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().plane());
     }
 
     PhysxObject& PhysxObject::operator=(const PhysxObject& object) {
@@ -354,10 +373,12 @@ namespace myPhysx
 
             int index = all_objects.at(id);
 
-            PhysicsObject physicsNewObject;
+            PhysxObject physxObject{ m_objects.at(index) };
+
+            PhysicsObject physicsNewObject { *physxObject.id, this };
 
             // Copy old data and create new object
-            createPhysicsObjectFromPhysxObject(physicsNewObject, m_objects.at(index));
+            //createPhysicsObjectFromPhysxObject(physicsNewObject, m_objects.at(index));
     
             return physicsNewObject; // a copy
         }
@@ -456,19 +477,19 @@ namespace myPhysx
         // Retrieve old rigidbody data (transform)
         PxTransform trans;
         if (newPhysxObject.rigidID == rigid::rstatic)
-            trans = newPhysxObject.rb.rigidStatic->getGlobalPose();
+            trans = objectToCopyFrom.rb.rigidStatic->getGlobalPose();
         else if (newPhysxObject.rigidID == rigid::rdynamic)
-            trans = newPhysxObject.rb.rigidDynamic->getGlobalPose();
+            trans = objectToCopyFrom.rb.rigidDynamic->getGlobalPose();
 
         // Create new shape and rigidbody data 
         if (newPhysxObject.shape == shape::box)
-            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().box());
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, objectToCopyFrom.m_shape->getGeometry().box());
         else if (newPhysxObject.shape == shape::sphere)
-            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().sphere());
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, objectToCopyFrom.m_shape->getGeometry().sphere());
         else if (newPhysxObject.shape == shape::capsule)
-            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().capsule());
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, objectToCopyFrom.m_shape->getGeometry().capsule());
         else if (newPhysxObject.shape == shape::plane)
-            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, newPhysxObject.m_shape->getGeometry().plane());
+            phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigidID, objectToCopyFrom.m_shape->getGeometry().plane());
         
         // Store the new duplicate objects into vector/map
         m_objects.emplace_back(std::move(newPhysxObject));
