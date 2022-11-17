@@ -108,13 +108,9 @@ void EditorViewport::Show()
 			{
 				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
 				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
-				if (uuid == oo::UUID::Invalid)
-					LOG_ERROR(" attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid); 
-				else
-				{
-					Hierarchy::GetSelectedNonConst().clear();
-					Hierarchy::GetSelectedNonConst().emplace(uuid);
-				}
+				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid ); 
+				Hierarchy::GetSelectedNonConst().clear();
+				Hierarchy::GetSelectedNonConst().emplace(uuid);
 			}
 		}
 	}
