@@ -623,7 +623,7 @@ namespace oo
     {
         auto graphicsWorldID = m_graphicsWorld->CreateObjectInstance();
         
-        auto graphicsObj = m_graphicsWorld->GetObjectInstance(graphicsWorldID);
+        auto& graphicsObj = m_graphicsWorld->GetObjectInstance(graphicsWorldID);
         // set entity ID to graphics world ID for now. should be good enough for the time being
         graphicsObj.entityID = graphicsWorldID;     
 
