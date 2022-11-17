@@ -154,7 +154,7 @@ namespace myPhysx {
 
         bool isTriggerShape(PxShape* shape);
 
-        void provideCurrentWorld(PhysxWorld* world);
+        void setCurrentWorld(PhysxWorld* world);
         
         PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
                                                 PxFilterObjectAttributes attributes1, PxFilterData filterData1,
@@ -169,13 +169,14 @@ namespace myPhysx {
 
     private:
 
+        friend struct PhysxObject;
         friend struct PhysicsObject;
 
         PxScene* scene = nullptr;
         std::map<phy_uuid::UUID, PxMaterial*> mat;
         PxVec3 gravity;
 
-        std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
+        std::map<phy_uuid::UUID, std::size_t> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
         
@@ -203,7 +204,7 @@ namespace myPhysx {
         void createPhysicsObjectFromPhysxObject(PhysicsObject& phyiscsNewObject, PhysxObject& objectToCopyFrom);
 
         // MAP OF OBJECTS
-        std::map<phy_uuid::UUID, int>* getAllObject();
+        std::map<phy_uuid::UUID, std::size_t>* getAllObject();
         bool hasObject(phy_uuid::UUID id);
 
         // RAYCAST
