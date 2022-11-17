@@ -110,7 +110,7 @@ namespace myPhysx
             return false;
         }
 
-        void provideCurrentWorld(PhysxWorld* world) {
+        void setCurrentWorld(PhysxWorld* world) {
 
             // retrieving the current world for me to access (get/set) neccessary data
             currentWorld = world;
@@ -285,7 +285,7 @@ namespace myPhysx
         // release rigidstatic or rigiddynamic
         if (all_objects.contains(obj.id)) {
 
-            int current_index = all_objects.at(obj.id);
+            std::size_t current_index = all_objects.at(obj.id);
 
             PhysxObject* underlying_obj = &m_objects[all_objects.at(obj.id)];
 
@@ -305,7 +305,7 @@ namespace myPhysx
             for (auto i = all_objects.begin(); i != all_objects.end(); i++) {
 
                 if (i->second > current_index) {
-                    int current = i->second;
+                    std::size_t current = i->second;
                     i->second = current - 1;
                 }
             }
@@ -326,37 +326,36 @@ namespace myPhysx
         }
     }
 
-    PhysxObject::PhysxObject(const PhysxObject& object) : matID(object.matID),
-                                                          shape(object.shape),
-                                                          rigidID(object.rigidID),
-                                                          lockPositionAxis(object.lockPositionAxis),
-                                                          lockRotationAxis(object.lockRotationAxis),
-                                                          trigger(object.trigger),
-                                                          gravity(object.gravity),
-                                                          kinematic(object.kinematic),
-                                                          collider(object.collider)
+    PhysxObject::PhysxObject(const PhysxObject& other) : matID(other.matID),
+                                                          shape(other.shape),
+                                                          rigidID(other.rigidID),
+                                                          lockPositionAxis(other.lockPositionAxis),
+                                                          lockRotationAxis(other.lockRotationAxis),
+                                                          trigger(other.trigger),
+                                                          gravity(other.gravity),
+                                                          kinematic(other.kinematic),
+                                                          collider(other.collider)
     {
         // Create new UUID
-        //id = std::make_unique<phy_uuid::UUID>();
+        id = std::make_unique<phy_uuid::UUID>();
 
-        PhysicsObject physicsObject = physx_system::currentWorld->createInstance();
 
-        // Retrieve old rigidbody data (transform)
-        PxTransform trans;
-        if (object.rigidID == rigid::rstatic)
-            trans = object.rb.rigidStatic->getGlobalPose();
-        else if (object.rigidID == rigid::rdynamic)
-            trans = object.rb.rigidDynamic->getGlobalPose();
+        //// Retrieve old rigidbody data (transform)
+        //PxTransform trans;
+        //if (object.rigidID == rigid::rstatic)
+        //    trans = object.rb.rigidStatic->getGlobalPose();
+        //else if (object.rigidID == rigid::rdynamic)
+        //    trans = object.rb.rigidDynamic->getGlobalPose();
 
-        // Create new shape and rigidbody data 
-        if (object.shape == shape::box)
-            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().box());
-        else if (object.shape == shape::sphere)
-            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().sphere());
-        else if (object.shape == shape::capsule)
-            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().capsule());
-        else if (object.shape == shape::plane)
-            physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().plane());
+        //// Create new shape and rigidbody data 
+        //if (object.shape == shape::box)
+        //    physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().box());
+        //else if (object.shape == shape::sphere)
+        //    physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().sphere());
+        //else if (object.shape == shape::capsule)
+        //    physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().capsule());
+        //else if (object.shape == shape::plane)
+        //    physicsObject.reCreateRigidbody(*this, trans, object.rigidID, object.m_shape->getGeometry().plane());
     }
 
     PhysxObject& PhysxObject::operator=(const PhysxObject& object) {
@@ -371,11 +370,23 @@ namespace myPhysx
 
         if (all_objects.contains(id)) {
 
-            int index = all_objects.at(id);
+            std::size_t index = all_objects.at(id);
 
             PhysxObject physxObject{ m_objects.at(index) };
 
             PhysicsObject physicsNewObject { *physxObject.id, this };
+            
+            // we insert into the list now after constructing the objects properly.
+            m_objects.emplace_back(physxObject);
+            all_objects.insert({ *physxObject.id, m_objects.size() - 1 }); // add back the m_objects last element
+
+            // we set this object's properties to be equal to the object we are copying from.
+            // does order matter?
+            // are they allocating memory at the back in physX
+            /*physicsNewObject.setShape();
+            physicsNewObject.setRigidType();
+            physicsNewObject.getLockPositionAxis();
+            physicsNewObject.enableCollider();*/
 
             // Copy old data and create new object
             //createPhysicsObjectFromPhysxObject(physicsNewObject, m_objects.at(index));
@@ -433,7 +444,7 @@ namespace myPhysx
         return false;
     }
     
-    std::map<phy_uuid::UUID, int>* PhysxWorld::getAllObject() {
+    std::map<phy_uuid::UUID, std::size_t>* PhysxWorld::getAllObject() {
 
         return &all_objects;
     }
