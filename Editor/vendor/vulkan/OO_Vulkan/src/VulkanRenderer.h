@@ -270,6 +270,8 @@ public:
 	};
 
 	IndexedVertexBuffer g_GlobalMeshBuffers;
+	std::array<GpuVector<ParticleData>,3> g_particleDatas;
+	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer{};
 
 	GpuVector<oGFX::DebugVertex> g_DebugDrawVertexBufferGPU;
 	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU;
@@ -300,7 +302,6 @@ public:
 	// - Synchronisation
 	std::vector<VkSemaphore> imageAvailable;
 	std::vector<VkSemaphore> renderFinished;
-	std::vector<VkSemaphore> readyForCopy;
 	std::vector<VkFence> drawFences;
 
 	// - Pipeline
