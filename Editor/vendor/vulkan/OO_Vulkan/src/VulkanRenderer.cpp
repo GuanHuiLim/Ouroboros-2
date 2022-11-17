@@ -290,6 +290,8 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		CreateCommandBuffers();
 		CreateDescriptorPool();
 
+		g_Textures.reserve(2048);
+
 		uint32_t whiteTexture = 0xFFFFFFFF; // ABGR
 		uint32_t blackTexture = 0xFF000000; // ABGR
 		uint32_t normalTexture = 0xFFFF8080; // ABGR
