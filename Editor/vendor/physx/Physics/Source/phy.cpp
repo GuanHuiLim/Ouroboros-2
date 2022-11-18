@@ -384,26 +384,26 @@ namespace myPhysx
             // RIGID
             physicsNewObject.setRigidType(initialized_object.rigid_type);
 
-            // SHAPE
-            //physicsNewObject.setShape(initialized_object.shape_type);
-           
-            if (initialized_object.shape_type == shape::box) {
-                PxBoxGeometry box = m_objects.at(index).m_shape->getGeometry().box();
-                physicsNewObject.reAttachShape(initialized_object.rigid_type, box);
-
-                //PxVec3 boxProp = m_objects.at(index).m_shape->getGeometry().box().halfExtents;
-                //physicsNewObject.setBoxProperty(boxProp.x, boxProp.y, boxProp.z);
+            if (initialized_object.rigid_type == rigid::rdynamic) {
+                PxRigidDynamic* oldDynamicData = m_objects.at(index).rb.rigidDynamic;
+                physicsNewObject.setMass(oldDynamicData->getMass());
+                physicsNewObject.setMassSpaceInertia(oldDynamicData->getMassSpaceInertiaTensor());
+                physicsNewObject.setAngularDamping(oldDynamicData->getAngularDamping());
+                physicsNewObject.setAngularVelocity(oldDynamicData->getAngularVelocity());
+                physicsNewObject.setLinearDamping(oldDynamicData->getLinearDamping());
+                physicsNewObject.setLinearVelocity(oldDynamicData->getLinearVelocity());
             }
-            else if (initialized_object.shape_type == shape::sphere) {
+
+            // SHAPE
+            if (initialized_object.shape_type == shape::box)
+                physicsNewObject.reAttachShape(initialized_object.rigid_type, m_objects.at(index).m_shape->getGeometry().box());
+            
+            else if (initialized_object.shape_type == shape::sphere)
                 physicsNewObject.reAttachShape(initialized_object.rigid_type, m_objects.at(index).m_shape->getGeometry().sphere());
-                //PxReal rad = m_objects.at(index).m_shape->getGeometry().sphere().radius;
-                //physicsNewObject.setSphereProperty(rad);
-            } 
-            else if (initialized_object.shape_type == shape::capsule) {
+
+            else if (initialized_object.shape_type == shape::capsule)
                 physicsNewObject.reAttachShape(initialized_object.rigid_type, m_objects.at(index).m_shape->getGeometry().capsule());
-                //PxCapsuleGeometry cap = m_objects.at(index).m_shape->getGeometry().capsule();
-                //physicsNewObject.setCapsuleProperty(cap.radius, cap.halfHeight);
-            } 
+            
             //else if (initialized_object.shape_type == shape::plane) {
             //    PxPlaneGeometry plane = m_objects.at(index).m_shape->getGeometry().plane();
             //    physicsNewObject.setPlaneProperty();
