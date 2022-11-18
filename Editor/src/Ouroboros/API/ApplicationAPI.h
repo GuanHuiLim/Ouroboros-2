@@ -66,15 +66,20 @@ namespace oo
         Application::Get().GetWindow().SetMouseLockState(isLocked);
     }
 
+    SCRIPT_API void Cursor_SetPosition(int x, int y)
+    {
+        Application::Get().GetWindow().SetCursorPosition(x, y);
+    }
+
     /*-----------------------------------------------------------------------------*/
     /* Screen Functions for C#                                                     */
     /*-----------------------------------------------------------------------------*/
-    SCRIPT_API unsigned int Screen_GetWidth()
+    SCRIPT_API int Screen_GetWidth()
     {
         return Application::Get().GetWindow().GetWidth();
     }
 
-    SCRIPT_API unsigned int Screen_GetHeight()
+    SCRIPT_API int Screen_GetHeight()
     {
         return Application::Get().GetWindow().GetHeight();
     }
