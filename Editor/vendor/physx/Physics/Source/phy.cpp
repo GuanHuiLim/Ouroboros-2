@@ -1494,55 +1494,58 @@ namespace myPhysx
             collision state = collision::none;
             const PxContactPair& current = *pairs++;
 
-            auto shape1_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[0]->getActor()->userData);
-            auto shape2_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[1]->getActor()->userData);
-            //printf("shape1 actor %llu, shape2 actor %llu \n", shape1_id, shape2_id);
+            if (current.shapes[0]->getActor() != nullptr && current.shapes[1]->getActor() != nullptr) {
 
-            //current.shapes[0]->getGeometryType() // PxGeometryType::eBOX;
-            
-            const PxU32 bufferSize = 64;
-            PxContactPairPoint contacts[bufferSize];
-            PxU32 nbContacts = current.extractContacts(contacts, bufferSize);
-            
-            std::vector<ContactPoint> tempCP = {};
-            PxU8 contactCount = current.contactCount;
+                auto shape1_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[0]->getActor()->userData);
+                auto shape2_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[1]->getActor()->userData);
+                //printf("shape1 actor %llu, shape2 actor %llu \n", shape1_id, shape2_id);
 
-            for (PxU32 j = 0; j < nbContacts; j++) {
+                //current.shapes[0]->getGeometryType() // PxGeometryType::eBOX;
 
-                PxVec3 normal = contacts[j].normal;
-                PxVec3 point = contacts[j].position;
-                PxVec3 impulse = contacts[j].impulse;
+                const PxU32 bufferSize = 64;
+                PxContactPairPoint contacts[bufferSize];
+                PxU32 nbContacts = current.extractContacts(contacts, bufferSize);
 
-                ContactPoint cp = { normal, point, impulse };
-                tempCP.emplace_back(cp);
-                //printf("%d - NORMAL: %f - X, %f - Y, %f - Z\n", j, normal.x, normal.y, normal.z);
-                //printf("%d - POINT: %f - X, %f - Y, %f - Z\n", j, point.x, point.y, point.z);
-                //printf("%d - IMPUSLE: %f - X, %f - Y, %f - Z\n", j, impulse.x, impulse.y, impulse.z);
+                std::vector<ContactPoint> tempCP = {};
+                PxU8 contactCount = current.contactCount;
+
+                for (PxU32 j = 0; j < nbContacts; j++) {
+
+                    PxVec3 normal = contacts[j].normal;
+                    PxVec3 point = contacts[j].position;
+                    PxVec3 impulse = contacts[j].impulse;
+
+                    ContactPoint cp = { normal, point, impulse };
+                    tempCP.emplace_back(cp);
+                    //printf("%d - NORMAL: %f - X, %f - Y, %f - Z\n", j, normal.x, normal.y, normal.z);
+                    //printf("%d - POINT: %f - X, %f - Y, %f - Z\n", j, point.x, point.y, point.z);
+                    //printf("%d - IMPUSLE: %f - X, %f - Y, %f - Z\n", j, impulse.x, impulse.y, impulse.z);
+                }
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
+                    state = collision::onCollisionEnter;
+                    //printf("Shape is ENTERING CONTACT volume\n");
+                }
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
+                    state = collision::onCollisionStay;
+                    //printf("Shape is STAYING CONTACT volume\n");
+                }
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
+                    state = collision::onCollisionExit;
+                    //printf("Shape is LEAVING CONTACT volume\n");
+                }
+
+                // Store all the ID of the actors that collided
+                std::queue<ContactManifold>* collision_data = physx_system::currentWorld->getCollisionData();
+
+                // Add new ContactManifold data into the queue
+                collision_data->emplace(ContactManifold{ shape1_id, shape2_id, state, tempCP, contactCount });
+
+                //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
+                //    printf("Trigger-trigger overlap detected\n");
             }
-
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
-                state = collision::onCollisionEnter;
-                //printf("Shape is ENTERING CONTACT volume\n");
-            }
-
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
-                state = collision::onCollisionStay;
-                //printf("Shape is STAYING CONTACT volume\n");
-            }
-
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
-                state = collision::onCollisionExit;
-                //printf("Shape is LEAVING CONTACT volume\n");
-            }
-
-            // Store all the ID of the actors that collided
-            std::queue<ContactManifold>* collision_data = physx_system::currentWorld->getCollisionData();
-
-            // Add new ContactManifold data into the queue
-            collision_data->emplace(ContactManifold{ shape1_id, shape2_id, state, tempCP, contactCount });
-
-            //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
-            //    printf("Trigger-trigger overlap detected\n");
         }
 
     }
@@ -1556,50 +1559,53 @@ namespace myPhysx
             trigger state = trigger::none;
             const PxTriggerPair& current = *pairs++;
 
-            auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
-            auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
-            //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
+            if (current.triggerActor != nullptr && current.otherActor != nullptr) {
 
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
-                //stayTrigger = true;
-                state = trigger::onTriggerEnter;
-                //printf("Shape is ENTERING TRIGGER volume\n");
+                auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
+                auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
+                //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
+
+                if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
+                    //stayTrigger = true;
+                    state = trigger::onTriggerEnter;
+                    //printf("Shape is ENTERING TRIGGER volume\n");
+                }
+                if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
+                    //stayTrigger = false;
+                    state = trigger::onTriggerExit;
+                    //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
+                    //printf("Shape is LEAVING TRIGGER volume\n");
+                }
+
+                // Store all the ID of the actors that collided with trigger)
+                std::queue<TriggerManifold>* trigger_data = physx_system::currentWorld->getTriggerData();
+
+                // Add new TriggerManifold data into the queue
+                trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
+
+                //// Check object exist
+                //std::map<phy_uuid::UUID, int>* all_object = physx_system::currentWorld->getAllObject();
+                //
+                //if (all_object->contains(trigger_id) && all_object->contains(other_id)) {
+                //
+                //    // Add new TriggerManifold data into the queue
+                //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
+                //}
+                //
+                //if (!all_object->contains(trigger_id) || !all_object->contains(other_id))
+                //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, trigger::onTriggerExit, true });
+
+
+                //int msize = temp->size();
+                //while(!temp->empty()) {
+                //
+                //    TriggerManifold val = temp->front();
+                //    std::cout << "TRI: " << val.triggerID << " OTH: " << val.otherID;
+                //    printf(" STATE: %d\n", val.status);
+                //    
+                //    temp->pop();
+                //}
             }
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
-                //stayTrigger = false;
-                state = trigger::onTriggerExit;
-                //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
-                //printf("Shape is LEAVING TRIGGER volume\n");
-            }
-
-            // Store all the ID of the actors that collided with trigger)
-            std::queue<TriggerManifold>* trigger_data = physx_system::currentWorld->getTriggerData();
-
-            // Add new TriggerManifold data into the queue
-            trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
-
-            //// Check object exist
-            //std::map<phy_uuid::UUID, int>* all_object = physx_system::currentWorld->getAllObject();
-            //
-            //if (all_object->contains(trigger_id) && all_object->contains(other_id)) {
-            //
-            //    // Add new TriggerManifold data into the queue
-            //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
-            //}
-            //
-            //if (!all_object->contains(trigger_id) || !all_object->contains(other_id))
-            //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, trigger::onTriggerExit, true });
-
-
-            //int msize = temp->size();
-            //while(!temp->empty()) {
-            //
-            //    TriggerManifold val = temp->front();
-            //    std::cout << "TRI: " << val.triggerID << " OTH: " << val.otherID;
-            //    printf(" STATE: %d\n", val.status);
-            //    
-            //    temp->pop();
-            //}
         }
     }
     void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
