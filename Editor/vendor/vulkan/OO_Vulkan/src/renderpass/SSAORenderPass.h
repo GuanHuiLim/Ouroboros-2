@@ -42,7 +42,7 @@ struct SSAORenderPass : public GfxRenderpass
 	// This is for ImGui
 	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
 
-	VkRenderPass renderpass_SSAO{};
+	VulkanRenderpass renderpass_SSAO{};
 	VkFramebuffer framebuffer_SSAO{};
 
 	//VkPushConstantRange pushConstantRange;

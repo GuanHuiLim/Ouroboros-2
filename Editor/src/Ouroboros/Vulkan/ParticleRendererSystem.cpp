@@ -67,8 +67,8 @@ namespace oo
                 {
                 case ParticleShape::Cone:
                 {
-                    float halfAngle = glm::radians(shape.angle)/ 2.0f;
-                    float val = random::generate<float>(-std::move(halfAngle),std::move(halfAngle));
+                    float verticalHalfAngle = glm::radians(shape.angle)/ 2.0f;
+                    float val = random::generate<float>(-std::move(verticalHalfAngle),std::move(verticalHalfAngle));
                     glm::vec2 dir = glm::vec2{val,cosf(val)};	
                     pd.m_rotationOffset = -val;
                     glm::mat2 rotMat = trans.GetGlobalRotationMatrix();
@@ -163,9 +163,17 @@ namespace oo
 
         //particle.colour = partProps.col_b.asV() * t + partProps.col_a.asV() * t_1;
         particle.colour = interp.col;
-        particle.instanceData.x = 1u;
         // TODO get entity somehow
         //particle.entityID = trans.GetEntity();
+        particle.instanceData.x = emitter.m_partRenderer.entityID;
+        if (emitter.m_partRenderer.m_renderType == ParticlePropsRenderer::ParticleType::BILLBOARD)
+        {
+            particle.instanceData.y = 0x0f; // just a random flag can expand more
+        }
+        else
+        {
+            particle.instanceData.y = 0;
+        }
 
         if (emitter.m_partProperties.localSpace == true)
         {
@@ -174,7 +182,7 @@ namespace oo
             pos = trans.GetGlobalPosition() + pD.m_startOffset + (glm::mat3(trans.GetGlobalRotationMatrix())* pD.m_posDelta);
 
             glm::mat4 fxform = glm::mat4(1.0f);
-            fxform= glm::translate(fxform,pos);
+            fxform= glm::translate(fxform,pos); 
             fxform= glm::rotate(fxform, trans.GetGlobalRotationRad().x + pD.m_rotationOffset + interp.rotation, glm::vec3{0.0f,1.0f,0.0f});
             fxform= glm::scale(fxform,pSize);
             particle.transform = fxform;
@@ -310,7 +318,7 @@ namespace oo
         InitializeEmitter(emitterComp, transform_component);
 
         // TODO: HARDCODED DEFAULTS : CURRENTLY ASSIGNED CUBE, TO BE REMOVED LATER
-        emitterComp.m_partRenderer.ModelHandle = 0;
+        emitterComp.m_partRenderer.ModelHandle = default_sprite_id;
         emitterComp.m_partRenderer.MeshInformation.submeshBits[0] = true;
     }
 
@@ -342,6 +350,7 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<ParticleRendererSystem, ParticleEmitterComponent>(
             this, &ParticleRendererSystem::OnEmitterRemove);
 
+        default_sprite_id = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->GetDefaultSpriteID();
     }
 
     void ParticleRendererSystem::SaveEditorCamera()
@@ -374,7 +383,14 @@ namespace oo
             emitter.m_partRenderer.MeshInformation.submeshBits[0] = true;
             //do nothing if transform did not change
             auto& actualObject = m_graphicsWorld->GetEmitterInstance(emitter.GraphicsWorldID);
-            actualObject.modelID = emitter.m_partRenderer.ModelHandle;
+            if (emitter.m_partRenderer.m_renderType == ParticlePropsRenderer::ParticleType::BILLBOARD)
+            {
+                actualObject.modelID = default_sprite_id;
+            }
+            else
+            {
+                actualObject.modelID = emitter.m_partRenderer.ModelHandle;
+            }
             actualObject.bindlessGlobalTextureIndex_Albedo      = emitter.m_partRenderer.AlbedoID;
             actualObject.bindlessGlobalTextureIndex_Normal      = emitter.m_partRenderer.NormalID;
             actualObject.bindlessGlobalTextureIndex_Metallic    = emitter.m_partRenderer.MetallicID;
@@ -440,7 +456,7 @@ namespace oo
         });
            
         world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp)
-        {
+        {                
             m_graphicsWorld->SubmitParticles(emitter.m_particles, emitter.m_liveParticles, emitter.GraphicsWorldID);
         });
     }

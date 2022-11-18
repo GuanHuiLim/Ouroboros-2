@@ -80,6 +80,40 @@ namespace oo
         return ss->GetGameObject(uuid);
     }
 
+    SCRIPT_API ComponentDatabase::IntPtr DuplicateGameObject(Scene::ID_type sceneID, UUID uuid)
+    {
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        ScriptSystem* ss = scene->GetWorld().Get_System<ScriptSystem>();
+
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        GameObject dup = obj->Duplicate();
+
+        std::vector<UUID> children = dup.GetChildrenUUID(true);
+
+        // set up all C# stuff for all objects first, may be relied on in inspector variables, Awake and Start
+        for (UUID childUUID : children)
+        {
+            ss->SetUpObject(childUUID);
+        }
+        // update all C# inspector fields, may be relied on in Awake and Start
+        for (UUID childUUID : children)
+        {
+            ss->UpdateObjectFieldsWithInfo(childUUID);
+        }
+        // Invoke all Awake first, Start may rely on Awake running first
+        for (UUID childUUID : children)
+        {
+            ss->InvokeForObject(childUUID, "Awake");
+        }
+        // Invoke all Start last
+        for (UUID childUUID : children)
+        {
+            ss->InvokeForObject(childUUID, "Start");
+        }
+
+        return ss->GetGameObject(dup.GetInstanceID());
+    }
+
     //SCRIPT_API uint32_t InstantiateEntity(Entity src)
     //{
     //    GameObject source{ src };

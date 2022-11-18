@@ -51,6 +51,7 @@ Technology is prohibited.
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include <Ouroboros/Vulkan/ParticleEmitterComponent.h>
+#include <Ouroboros/Vulkan/SkinRendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/CameraComponent.h>
 
@@ -166,6 +167,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::ParticleEmitterComponent>(gameobject);
+	DisplayComponent<oo::SkinMeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
 	DisplayComponent<oo::CameraComponent>(gameobject);
@@ -218,6 +220,7 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::ParticleEmitterComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::SkinMeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);

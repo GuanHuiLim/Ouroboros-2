@@ -113,13 +113,13 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
 
     std::vector<const char*>deviceExtensions{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
     };
 
     if (si.debug && si.renderDoc)
     {
 #ifdef _DEBUG
-        deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+        deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME); 
 #endif // DEBUG
     }
 
@@ -140,8 +140,16 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     deviceFeatures.multiDrawIndirect = VK_TRUE;
 
     deviceFeatures.fillModeNonSolid = VK_TRUE;  //wireframe drawing
-    
+    deviceFeatures.drawIndirectFirstInstance = VK_TRUE;
+    deviceFeatures.independentBlend = VK_TRUE;
+
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
+
+    // required for instance base vertex
+    VkPhysicalDeviceShaderDrawParametersFeatures shaderDrawFeatures{};
+    shaderDrawFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+    shaderDrawFeatures.shaderDrawParameters = VK_TRUE;
 
     // Bindless design requirement Descriptor indexing for descriptors
     VkPhysicalDeviceDescriptorIndexingFeatures descriptor_indexing_features{};
@@ -153,6 +161,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     descriptor_indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
 
     deviceCreateInfo.pNext = &descriptor_indexing_features;
+    descriptor_indexing_features.pNext = &shaderDrawFeatures;
 
     this->enabledFeatures = deviceFeatures;
 
@@ -217,7 +226,7 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
     if (extensionCount == 0)
     {
         return false;
-    }
+    } 
 
     //populate list of extensions
     std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -227,7 +236,7 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
     { 
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME
         //        ,   VK_NV_GLSL_SHADER_EXTENSION_NAME  // nVidia useful extension to be able to load GLSL shaders
     };
     // TODO BETTER

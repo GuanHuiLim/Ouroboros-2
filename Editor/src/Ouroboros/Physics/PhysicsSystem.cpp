@@ -39,6 +39,8 @@ namespace oo
     {
         EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
         EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
+        EventManager::Unsubscribe<PhysicsSystem, RaycastEvent>(this, &PhysicsSystem::OnRaycastEvent);
+        EventManager::Unsubscribe<PhysicsSystem, RaycastAllEvent>(this, &PhysicsSystem::OnRaycastAllEvent);
     }
 
     void PhysicsSystem::Init(Scene* scene)
@@ -47,6 +49,8 @@ namespace oo
 
         EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
         EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
+        EventManager::Subscribe<PhysicsSystem, RaycastEvent>(this, &PhysicsSystem::OnRaycastEvent);
+        EventManager::Subscribe<PhysicsSystem, RaycastAllEvent>(this, &PhysicsSystem::OnRaycastAllEvent);
 
         m_world->SubscribeOnAddComponent<PhysicsSystem, RigidbodyComponent>(
             this, &PhysicsSystem::OnRigidbodyAdd);
@@ -163,7 +167,7 @@ namespace oo
             rb.object.lockRotationZ(rb.LockZAxisRotation);
 
             auto pos = rb.GetPositionInPhysicsWorld();
-            auto delta_position = pos - tf.GetGlobalPosition();
+            auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
             tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
@@ -395,8 +399,40 @@ namespace oo
             auto pos = rb.GetPositionInPhysicsWorld();
             auto quat = rb.GetOrientationInPhysicsWorld();
 
+            glm::vec3 rotatedX = glm::rotate(quat, glm::vec3{bc.GlobalHalfExtents.x, 0, 0});
+            glm::vec3 rotatedY = glm::rotate(quat, glm::vec3{0, bc.GlobalHalfExtents.y, 0});
+            glm::vec3 rotatedZ = glm::rotate(quat, glm::vec3{0, 0, bc.GlobalHalfExtents.z});
+
+            //glm::vec3 rotatedVal = glm::conjugate(quat) * bc.GlobalHalfExtents * quat;
+            ////glm::vec3 rotatedVal = glm::mat4_cast(quat) * glm::vec4{ bc.HalfExtents, 0 };
+            //rotatedVal *= bc.Size * tf.GetGlobalScale();
+
+            auto bottom_left_back   = pos - rotatedX - rotatedY - rotatedZ;
+            auto bottom_right_back  = pos + rotatedX - rotatedY - rotatedZ;
+            auto top_left_back      = pos - rotatedX + rotatedY - rotatedZ;
+            auto top_right_back     = pos + rotatedX + rotatedY - rotatedZ;
+            auto bottom_left_front  = pos - rotatedX - rotatedY + rotatedZ;
+            auto bottom_right_front = pos + rotatedX - rotatedY + rotatedZ;
+            auto top_left_front     = pos - rotatedX + rotatedY + rotatedZ;
+            auto top_right_front    = pos + rotatedX + rotatedY + rotatedZ;
+
             //Debug draw the bounds
-            DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_back, bottom_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_front, bottom_right_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_front, bottom_right_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
+
+            DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
+
+            DebugDraw::AddLine(bottom_left_back, top_left_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_front, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_front, top_right_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_back, top_right_back, oGFX::Colors::GREEN);
+
+            //DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing
@@ -442,6 +478,44 @@ namespace oo
     PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()
     {
         return FixedDeltaTime; 
+    }
+
+    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance)
+    {
+        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+        
+        if(result.intersect)
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
+        
+        return { result.intersect, m_physicsToGameObjectLookup.at(result.object_ID), {result.position.x,result.position.y, result.position.z}, 
+            { result.normal.x, result.normal.y, result.normal.z }, result.distance };
+    }
+
+    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
+    {
+        std::vector<RaycastResult> result;
+
+        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+
+        for (auto& hit : allHits)
+        {
+            if (hit.intersect == false)
+                continue;
+
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(hit.object_ID) == false, "Why am i hitting something that's not in the current world?");
+
+            RaycastResult new_entry = 
+            { hit.intersect
+                , m_physicsToGameObjectLookup.at(hit.object_ID)
+                , { hit.position.x,hit.position.y, hit.position.z }
+                , { hit.normal.x, hit.normal.y, hit.normal.z }
+                , hit.distance 
+            };
+
+            result.emplace_back(new_entry);
+        }
+
+        return result;
     }
 
     void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
@@ -596,6 +670,16 @@ namespace oo
             auto& rb = go->GetComponent<RigidbodyComponent>();
             rb.DisableCollider();
         }
+    }
+
+    void PhysicsSystem::OnRaycastEvent(RaycastEvent* e)
+    {
+        e->Results = Raycast(e->ray, e->distance);
+    }
+
+    void PhysicsSystem::OnRaycastAllEvent(RaycastAllEvent* e)
+    {
+        e->Results = RaycastAll(e->ray, e->distance);
     }
 
 

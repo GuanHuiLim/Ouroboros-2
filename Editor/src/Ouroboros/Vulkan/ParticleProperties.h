@@ -95,6 +95,7 @@ struct ParticlePropsRenderer
 
 	// no need to serialize
 	uint32_t ModelHandle{ 0 };
+	uint32_t entityID;
 
 	MeshInfo MeshInformation;
 
