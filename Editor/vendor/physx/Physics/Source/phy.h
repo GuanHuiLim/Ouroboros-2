@@ -85,9 +85,9 @@ namespace myPhysx {
 
     struct LockingAxis {
 
-        bool x_axis;
-        bool y_axis;
-        bool z_axis;
+        bool x_axis = false;
+        bool y_axis = false;
+        bool z_axis = false;
     };
 
     struct ContactPoint {
@@ -234,20 +234,20 @@ namespace myPhysx {
 
         // shape
         PxShape* m_shape = nullptr;
-        shape shape = shape::none;
+        shape shape_type = shape::none;
 
         // ensure at least static or dynamic is init
         RigidBody rb{};
-        rigid rigidID = rigid::none;
+        rigid rigid_type = rigid::none;
 
         // lock and unlock pos/rot axis
-        LockingAxis lockPositionAxis{ false };
-        LockingAxis lockRotationAxis{ false };
+        LockingAxis lockPositionAxis{};
+        LockingAxis lockRotationAxis{};
 
-        bool trigger = false;
-        bool gravity = true; // static should be false
-        bool kinematic = false;
-        bool collider = true;
+        bool is_trigger = false;
+        bool gravity_enabled = true; // static should be false
+        bool is_kinematic = false;
+        bool is_collider = true;
     };
 
     struct PhysicsObject { // you store
@@ -270,7 +270,7 @@ namespace myPhysx {
         PxVec3 getLinearVelocity() const;
 
         bool isTrigger() const;
-        bool useGravity() const;
+        bool isGravityEnabled() const;
         bool isKinematic() const;
         bool isColliderEnabled() const;
 
@@ -286,9 +286,9 @@ namespace myPhysx {
         void setLinearDamping(PxReal linearDamping);
         void setLinearVelocity(PxVec3 linearVelocity);
 
-        void disableGravity(bool gravity);
-        void enableKinematic(bool kine);
-        void enableCollider(bool collide);
+        void enableGravity(bool enable);
+        void enableKinematic(bool enable);
+        void enableCollider(bool enable);
 
         // AXIS LOCKING
         void lockPositionX(bool lock);
