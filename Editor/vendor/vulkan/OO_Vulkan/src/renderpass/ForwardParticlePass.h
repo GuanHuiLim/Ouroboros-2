@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           GbufferParticlePass.h
+\file           ForwardParticlePass.h
 \project        Ouroboros
 \author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
 \par            email: j.kong\@digipen.edu
@@ -20,9 +20,9 @@ Technology is prohibited.
 
 #include <array>
 
-struct GbufferParticlePass : public GfxRenderpass
+struct ForwardParticlePass : public GfxRenderpass
 {
-	//DECLARE_RENDERPASS_SINGLETON(GbufferParticlePass)
+	//DECLARE_RENDERPASS_SINGLETON(ForwardParticlePass)
 
 	void Init() override;
 	void Draw() override;
@@ -32,7 +32,7 @@ struct GbufferParticlePass : public GfxRenderpass
 
 	void CreatePSO() override;
 
-	VkRenderPass renderpass_GbufferSecondsPass{};
+	VulkanRenderpass renderpass_GbufferSecondsPass{};
 	VkFramebuffer framebuffer_GBufferSecondPass{};
 
 	//VkPushConstantRange pushConstantRange;
