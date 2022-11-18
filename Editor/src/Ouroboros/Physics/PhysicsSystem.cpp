@@ -629,7 +629,7 @@ namespace oo
     void PhysicsSystem::OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e)
     {
         auto go = m_scene->FindWithInstanceID(e->Id);
-        if (go->HasComponent<RigidbodyComponent>())
+        if (go && go->HasComponent<RigidbodyComponent>())
         {
             auto& rb = go->GetComponent<RigidbodyComponent>();
             rb.EnableCollider();
@@ -639,7 +639,7 @@ namespace oo
     void PhysicsSystem::OnGameObjectDisable(GameObjectComponent::OnDisableEvent* e)
     {
         auto go = m_scene->FindWithInstanceID(e->Id);
-        if (go->HasComponent<RigidbodyComponent>())
+        if (go && go->HasComponent<RigidbodyComponent>())
         {
             auto& rb = go->GetComponent<RigidbodyComponent>();
             rb.DisableCollider();
