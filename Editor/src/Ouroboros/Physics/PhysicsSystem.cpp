@@ -196,7 +196,7 @@ namespace oo
         static Ecs::Query duplicated_rb_query = Ecs::make_raw_query<RigidbodyComponent, GameObjectComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_query, [&](RigidbodyComponent& rbComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
             {
-                InitializeRigidbody(rbComp);
+                DuplicateRigidbody(rbComp);
                 AddToLookUp(rbComp, goc);
             });
 
@@ -586,17 +586,11 @@ namespace oo
 
     void PhysicsSystem::InitializeRigidbody(RigidbodyComponent& rb)
     {
-        // we duplicate instead if this is an existing object
-        if(m_physicsWorld.hasObject(rb.object.id))
-            rb.object = m_physicsWorld.duplicateObject(rb.object.id);
-        else
-        {
-            rb.object = m_physicsWorld.createInstance();
-            rb.SetStatic(true); // default to static objects. Most things in the world should be static.
-            //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
-            //default initialize material
-            rb.object.setMaterial(PhysicsMaterial{});
-        }
+        rb.object = m_physicsWorld.createInstance();
+        rb.SetStatic(true); // default to static objects. Most things in the world should be static.
+        //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
+        //default initialize material
+        rb.object.setMaterial(PhysicsMaterial{});
     }
 
     void PhysicsSystem::InitializeBoxCollider(RigidbodyComponent& rb)
@@ -615,6 +609,13 @@ namespace oo
     {
         // create sphere
         rb.object.setShape(myPhysx::shape::sphere);
+    }
+
+    void PhysicsSystem::DuplicateRigidbody(RigidbodyComponent& rb)
+    {
+        // we duplicate instead if this is an existing object
+        if (m_physicsWorld.hasObject(rb.object.id))
+            rb.object = m_physicsWorld.duplicateObject(rb.object.id);
     }
 
     void PhysicsSystem::AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc)

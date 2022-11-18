@@ -105,6 +105,9 @@ namespace oo
         void InitializeCapsuleCollider(RigidbodyComponent& rb);
         void InitializeSphereCollider(RigidbodyComponent& rb);
 
+        void DuplicateRigidbody(RigidbodyComponent& rb);
+
+
         void AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc);
 
         void OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e);

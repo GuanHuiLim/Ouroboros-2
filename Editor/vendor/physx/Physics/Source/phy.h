@@ -228,6 +228,8 @@ namespace myPhysx {
         PhysxObject() = default; // default constructor
         PhysxObject(const PhysxObject& object); // copy constructor
         PhysxObject& operator=(const PhysxObject& object);
+        PhysxObject(PhysxObject&& object) = default;
+        PhysxObject& operator=(PhysxObject&& object) = default;
 
         std::unique_ptr<phy_uuid::UUID> id = nullptr;
         phy_uuid::UUID matID = 0;
