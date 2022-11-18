@@ -96,7 +96,7 @@ namespace oo
             m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get(), this)->Init();
             m_ecsWorld->Add_System<oo::ParticleRendererSystem>(m_graphicsWorld.get(), this)->Init();
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
-            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
+            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get(), this)->Init();
         }
 
         PRINT(m_name);

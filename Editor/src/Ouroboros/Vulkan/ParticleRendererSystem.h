@@ -68,6 +68,7 @@ namespace oo
         inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
 
         GraphicsWorld* m_graphicsWorld{ nullptr };
+        uint32_t default_sprite_id{ static_cast<uint32_t>(-1) };
         Scene* m_scene;
 
         bool m_firstFrame = true; // potentially improvable if this can be run once per creation

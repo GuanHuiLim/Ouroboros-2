@@ -82,7 +82,7 @@ namespace oo::Anim
 					.SetParameter("Test float", 30.f);
 			}
 		}
-
+		
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
@@ -267,16 +267,63 @@ namespace oo::Anim
 
 	}
 
+	void AnimationSystem::TestDemoObject()
+	{
+		auto anim_assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation);
+		oo::Asset animation_asset{};
+		for (auto& asset : anim_assets)
+		{
+			auto name = asset.GetData<std::string>();
+			if (name == "MainChar_Idle_Take 001")
+			{
+				animation_asset = asset;
+				break;
+			}
+		}
+		assert(animation_asset.IsValid());
+
+		constexpr size_t treeID = 1234647030338911234ull;
+		auto tree = internal::RetrieveAnimationTree("Demo Animation Tree");
+		assert(tree);
+		auto animation = internal::RetrieveAnimation("MainChar_Idle_Take 001");
+
+		test_obj = scene->CreateGameObjectImmediate();
+		test_obj->Name() = "AnimationTestObject";
+		auto& comp = test_obj->AddComponent<oo::AnimationComponent>();
+		comp.SetAnimationTree(tree->treeID);
+		assert(comp.HasAnimationTree());
+
+		//{//add conditions
+		//	ConditionInfo condition_info{
+		//	.comparison{Condition::CompareType::EQUAL},
+		//	.parameter_name{"bool"},
+		//	.value{true}
+		//	};
+		//	auto result = comp.AddCondition("Group 1", "Start Node -> Idle Node", condition_info);
+		//	assert(result);
+		//}
+		//{//set animation
+		//	SetNodeAnimInfo info{
+		//	.group_name{"Group 1"},
+		//	.node_ID{3935255677567460564ull},
+		//	.anim_asset{ animation_asset },
+		//	};
+		//	auto result = comp.SetNodeAnimation(info);
+		//	assert(result);
+		//}
+		
+	}
+
 	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
 	{
 		if constexpr (DEBUG_ANIMATION == false) return nullptr;
 
 		else
 		{
-			auto animationfbx_fp = Project::GetAssetFolder().string();
+			/*auto animationfbx_fp = Project::GetAssetFolder().string();
 			TestObject();
-			auto obj_children = scene->GetRoot()->GetChildren();
-
+			auto obj_children = scene->GetRoot()->GetChildren();*/
+			TestDemoObject();
 
 			return nullptr;
 		}

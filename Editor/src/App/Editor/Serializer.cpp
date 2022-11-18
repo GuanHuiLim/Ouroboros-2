@@ -37,6 +37,7 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include <Ouroboros/Vulkan/ParticleEmitterComponent.h>
+#include <Ouroboros/Vulkan/SkinRendererComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
@@ -75,6 +76,8 @@ void Serializer::Init()
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
 	AddLoadComponent<oo::ParticleEmitterComponent>();
+	AddLoadComponent<oo::SkinMeshRendererComponent>();
+	AddLoadComponent<oo::SkinMeshBoneComponent>();
 	AddLoadComponent<oo::LightComponent>();
 	AddLoadComponent<oo::CameraComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
@@ -403,6 +406,8 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
 	SaveComponent<oo::ParticleEmitterComponent>(go, val, doc);
+	SaveComponent<oo::SkinMeshRendererComponent>(go, val, doc);
+	SaveComponent<oo::SkinMeshBoneComponent>(go, val, doc);
 	SaveComponent<oo::LightComponent>(go, val, doc);
 	SaveComponent<oo::CameraComponent>(go, val, doc);
 

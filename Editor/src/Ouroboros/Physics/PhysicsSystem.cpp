@@ -76,7 +76,7 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, SphereColliderComponent>(
             this, &PhysicsSystem::OnSphereColliderRemove);
 
-        myPhysx::physx_system::provideCurrentWorld(&m_physicsWorld);
+        myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -597,7 +597,6 @@ namespace oo
             //default initialize material
             rb.object.setMaterial(PhysicsMaterial{});
         }
-
     }
 
     void PhysicsSystem::InitializeBoxCollider(RigidbodyComponent& rb)

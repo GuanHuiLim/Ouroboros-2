@@ -201,8 +201,27 @@ void EditorViewport::Show()
 
 	//ImGuizmo::RecomposeMatrixFromComponents(glm::value_ptr(mTrans), glm::value_ptr(mRot), glm::value_ptr(mScale), glm::value_ptr(m_matrix));
 	static rttr::variant before_edit;
+	float* snapping = nullptr;
+	float snapping_offset[3] = {0.0,0.0,0.0};
+	ImGuizmo::OPERATION op = (ImGuizmo::OPERATION)m_gizmoOperation;
+	if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+	{
+		switch (op)
+		{
+		case ImGuizmo::OPERATION::SCALE:
+			snapping_offset[0] = 1.0f;snapping_offset[1] = 1.0f;snapping_offset[2] = 1.0f;
+			break;
+		case ImGuizmo::OPERATION::ROTATE:
+			snapping_offset[0] = 45.0f;snapping_offset[1] = 45.0f;snapping_offset[2] = 45.0f;
+			break;
+		case ImGuizmo::OPERATION::TRANSLATE:
+			snapping_offset[0] = 1.0f;snapping_offset[1] = 1.0f;snapping_offset[2] = 1.0f;
+			break;
+		}
+		snapping = snapping_offset;
+	}
 
-	if (ImGuizmo::Manipulate(view, projection, (ImGuizmo::OPERATION)m_gizmoOperation, (ImGuizmo::MODE)m_gizmoMode, glm::value_ptr(m_matrix)))
+	if (ImGuizmo::Manipulate(view, projection, op, (ImGuizmo::MODE)m_gizmoMode, glm::value_ptr(m_matrix),0, snapping))
 	{
 		if (before_edit.is_valid() == false)
 		{
@@ -307,7 +326,7 @@ void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)
 
 void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay && s_windowStates.empty() == false)
 	{
 		int i = 0;
 		for (auto& window : ImGuiManager::s_GUIContainer)
