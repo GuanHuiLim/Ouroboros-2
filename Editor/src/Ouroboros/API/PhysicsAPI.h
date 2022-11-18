@@ -8,13 +8,11 @@
 
 namespace oo
 {
-    // Helper Function to create a C# RaycastHit from a C++ RaycastResult
-    MonoObject* CreateRaycastHit(RaycastResult& result)
+    // Helper Functions to create a C# RaycastHit from a C++ RaycastResult
+    void FillRaycastHit(RaycastResult& result, MonoObject* hitInfo)
     {
         ScriptSystem* ss = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<ScriptSystem>();
-
         MonoClass* dataClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "RaycastHit");
-        MonoObject* hitInfo = ScriptEngine::CreateObject(dataClass);
 
         MonoClassField* field = mono_class_get_field_from_name(dataClass, "transform");
         ComponentDatabase::IntPtr ptr = ss->GetComponent(result.UUID, "Ouroboros", "Transform");
@@ -47,18 +45,63 @@ namespace oo
 
         field = mono_class_get_field_from_name(dataClass, "distance");
         mono_field_set_value(hitInfo, field, &(result.Distance));
+    }
 
+    MonoObject* CreateRaycastHit(RaycastResult& result)
+    {
+        MonoClass* dataClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "RaycastHit");
+        MonoObject* hitInfo = ScriptEngine::CreateObject(dataClass);
+        FillRaycastHit(result, hitInfo);
         return hitInfo;
     }
 
     MonoArray* CreateRaycastHitArray(std::vector<RaycastResult> resultList)
     {
+        ScriptSystem* ss = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<ScriptSystem>();
         MonoClass* dataClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "RaycastHit");
+
         MonoArray* arr = ScriptEngine::CreateArray(dataClass, resultList.size());
+        int32_t size = mono_class_array_element_size(dataClass);
         for (size_t i = 0; i < resultList.size(); ++i)
         {
-            mono_array_set(arr, MonoObject*, i, CreateRaycastHit(resultList[i]));
-        }
+            char* element = reinterpret_cast<char*>(mono_array_addr_with_size(arr, size, i));
+            RaycastResult& result = resultList[i];
+            
+            MonoObject** setter = reinterpret_cast<MonoObject**>(element);
+            ComponentDatabase::IntPtr ptr = ss->GetComponent(result.UUID, "Ouroboros", "Transform");
+            if (ptr == ComponentDatabase::InvalidPtr)
+                *setter = nullptr;
+            else
+                *setter = mono_gchandle_get_target(ptr);
+
+            element += sizeof(MonoObject*);
+            setter = reinterpret_cast<MonoObject**>(element);
+            ptr = ss->GetComponent(result.UUID, "Ouroboros", "Rigidbody");
+            if (ptr == ComponentDatabase::InvalidPtr)
+                *setter = nullptr;
+            else
+                *setter = mono_gchandle_get_target(ptr);
+
+            element += sizeof(MonoObject*);
+            setter = reinterpret_cast<MonoObject**>(element);
+            ptr = ss->GetComponent(result.UUID, "Ouroboros", "Collider");
+            if (ptr == ComponentDatabase::InvalidPtr)
+                *setter = nullptr;
+            else
+                *setter = mono_gchandle_get_target(ptr);
+
+            element += sizeof(MonoObject*);
+            glm::vec3* vecSetter = reinterpret_cast<glm::vec3*>(element);
+            *vecSetter = result.Position;
+
+            element += sizeof(float) * 3;
+            vecSetter = reinterpret_cast<glm::vec3*>(element);
+            *vecSetter = result.Normal;
+
+            element += sizeof(float) * 3;
+            float* floatSetter = reinterpret_cast<float*>(element);
+            *floatSetter = result.Distance;
+;        }
         return arr;
     }
 
@@ -85,7 +128,7 @@ namespace oo
         {
             result = ps->Raycast(oo::Ray{ origin, dir });
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
@@ -103,7 +146,7 @@ namespace oo
         {
             result = ps->Raycast(oo::Ray{ origin, dir }, maxDistance);
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
@@ -121,7 +164,7 @@ namespace oo
         {
             result = ps->RaycastAll(oo::Ray{ origin, dir });
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
@@ -137,7 +180,7 @@ namespace oo
         {
             result = ps->RaycastAll(oo::Ray{ origin, dir }, maxDistance);
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             // most likely invalid map key, do nothing
         }
