@@ -201,7 +201,7 @@ namespace myPhysx {
 
         // DUPLICATE OBJECT
         PhysicsObject duplicateObject(phy_uuid::UUID id);
-        void createPhysicsObjectFromPhysxObject(PhysicsObject& phyiscsNewObject, PhysxObject& objectToCopyFrom);
+        //void createPhysicsObjectFromPhysxObject(PhysicsObject& phyiscsNewObject, PhysxObject& objectToCopyFrom);
 
         // MAP OF OBJECTS
         std::map<phy_uuid::UUID, std::size_t>* getAllObject();
