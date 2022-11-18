@@ -29,10 +29,17 @@ namespace phy_uuid
     class UUID final
     {
     public:
-        using value_type = uint64_t;
+        using value_type = std::uint64_t;
+        static constexpr value_type Invalid = std::numeric_limits<value_type>::max();
 
         UUID();
         UUID(UUID const& other) = default;
+        UUID(UUID&& other) : m_uuid(other.m_uuid) {
+            
+        }
+        UUID& operator=(const UUID& other) = default;
+        UUID& operator=(UUID&& other) = default;
+
 
         // Conversion constructor
         UUID(value_type uuid) : m_uuid{ uuid } {};
@@ -44,8 +51,8 @@ namespace phy_uuid
         value_type GetUUID() const { return m_uuid; }
 
     private:
-        value_type m_uuid;
-    };    
+        value_type m_uuid = Invalid;
+    };
 }
 
 // hashing overload for UUID with std lib

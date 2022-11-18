@@ -107,9 +107,10 @@ namespace oo
     void oo::RendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         auto& comp = evnt->component;
-        m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
-        // remove graphics id to uuid of gameobject
-        m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
+        m_scene->DestroyGraphicsInstance(comp.GraphicsWorldID);
+        //m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
+        //// remove graphics id to uuid of gameobject
+        //m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
     }
 
     oo::RendererSystem::RendererSystem(GraphicsWorld* graphicsWorld, Scene* scene)
@@ -125,8 +126,8 @@ namespace oo
         EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         //EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
-        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
-        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+        //EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        //EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
         EventManager::Unsubscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
     }
 
@@ -173,8 +174,8 @@ namespace oo
         //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
-        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
-        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+        //EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        //EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
         
         EventManager::Subscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
         // launch the event manually myself once.
@@ -196,13 +197,13 @@ namespace oo
         //EditorController::EditorCamera  = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->camera;
     }
 
-    UUID RendererSystem::GetUUID(uint32_t graphicsID) const
+    /*UUID RendererSystem::GetUUID(uint32_t graphicsID) const
     {
         if (m_graphicsIdToUUID.contains(graphicsID))
             return m_graphicsIdToUUID.at(graphicsID);
         
         return UUID::Invalid;
-    }
+    }*/
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
@@ -338,17 +339,16 @@ namespace oo
 
     void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc)
     {
-        meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
-
+        meshComp.GraphicsWorldID = m_scene->CreateGraphicsInstance(goc.Id);
+        //meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
+        
         //update graphics world side
         auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.GraphicsWorldID);
         graphics_object.localToWorld = transformComp.GetGlobalMatrix();
 
-        graphics_object.entityID = meshComp.GraphicsWorldID;
-
-        // map graphics id to uuid of gameobject
-        m_graphicsIdToUUID.insert({ meshComp.GraphicsWorldID, goc.Id });
-        m_uuidToGraphicsID.insert({ goc.Id, meshComp.GraphicsWorldID });
+        //// map graphics id to uuid of gameobject
+        //m_graphicsIdToUUID.insert({ meshComp.GraphicsWorldID, goc.Id });
+        //m_uuidToGraphicsID.insert({ goc.Id, meshComp.GraphicsWorldID });
     }
 
     void RendererSystem::InitializeLight(LightComponent& lightComp, TransformComponent& transformComp)
@@ -359,7 +359,7 @@ namespace oo
         graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
     }
 
-    void RendererSystem::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
+    /*void RendererSystem::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
     {
         if (m_uuidToGraphicsID.contains(e->Id))
         {
@@ -385,7 +385,7 @@ namespace oo
         {
             LOG_TRACE("invalid graphics ID on gameobject disable {0}", e->Id);
         }
-    }
+    }*/
 
 }
 

@@ -29,10 +29,13 @@ Technology is prohibited.
 #include <Scripting/ScriptDatabase.h>
 #include <Scripting/ComponentDatabase.h>
 
+#include "Ouroboros/ECS/GameObjectComponent.h"
+
 namespace oo
 {
     //forward declare
     class GameObject;
+    
 
     class Scene : public IScene
     {
@@ -94,6 +97,11 @@ namespace oo
         go_ptr GetMainCameraObject() const;
         Camera MainCamera() const;
 
+        // Graphics Specific code
+        UUID GetUUIDFromGraphicsId(std::int32_t graphicsId);
+        std::int32_t CreateGraphicsInstance(UUID uuid);
+        void DestroyGraphicsInstance(std::int32_t graphicsId);
+
     protected:
         void SetFilePath(std::string_view filepath);
         void SetSceneName(std::string_view name);
@@ -112,6 +120,9 @@ namespace oo
 
         oo::UUID GetInstanceID(GameObject const& go) const;
 
+        void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
+        void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
+
         // Variables
     private:
         std::string m_name;
@@ -126,6 +137,10 @@ namespace oo
         std::map<oo::UUID, std::shared_ptr<oo::GameObject>> m_lookupTable;
         // direct copy of all gameobjects in the scene
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
+
+        // graphics related ids
+        std::unordered_map<std::int32_t, UUID> m_graphicsIdToUUID;
+        std::unordered_map<UUID, std::int32_t> m_uuidToGraphicsID;
 
         //TODO : temporarily only have one graphics world
         inline static std::unique_ptr<GraphicsWorld> m_graphicsWorld;

@@ -107,7 +107,8 @@ void EditorViewport::Show()
 			if (graphicsID >= 0)
 			{
 				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-				auto uuid = scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid ); 
 				Hierarchy::GetSelectedNonConst().clear();
 				Hierarchy::GetSelectedNonConst().emplace(uuid);
 			}
@@ -347,9 +348,9 @@ void EditorViewport::MenuBar()
 			{
 				oo::PhysicsSystem::ColliderDebugDraw = !oo::PhysicsSystem::ColliderDebugDraw;
 			}
-			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessges))
+			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessages))
 			{
-				oo::PhysicsSystem::DebugMessges = !oo::PhysicsSystem::DebugMessges;
+				oo::PhysicsSystem::DebugMessages = !oo::PhysicsSystem::DebugMessages;
 			}
 			if (ImGui::MenuItem("Camera Debug Draw", 0, oo::RendererSystem::CameraDebugDraw))
 			{
