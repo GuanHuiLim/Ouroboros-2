@@ -79,21 +79,26 @@ void Inspector::Show()
 		ImGui::EndMenuBar();
 	}
 	auto& selected_items = Hierarchy::GetSelected();
-	size_t size = selected_items.size();
+	std::vector<std::shared_ptr<oo::GameObject>> selected_list;
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto items : selected_items)
+	{
+		auto gameobject = scene->FindWithInstanceID(items); //first item
+		if (gameobject == nullptr)
+			continue;
+		selected_list.push_back(gameobject);
+	}
+	size_t size = selected_list.size();
 	if (size == 0)
 		return;
 	if (size > 1)
 	{
-
+		DisplayAddComponents(selected_list, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 		return;
 	}
 
 	{
-		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		auto gameobject = scene->FindWithInstanceID(*selected_items.begin()); //first item
-		if (gameobject == nullptr)
-			return;
-		
+		auto gameobject = selected_list.back();
 		//bool active = gameobject->ActiveInHierarchy();
 		bool active = gameobject->IsActive();
 
@@ -127,7 +132,7 @@ void Inspector::Show()
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);
-		DisplayAddComponents(*gameobject, ImGui::GetContentRegionAvail().x * 0.7f, 150);
+		DisplayAddComponents(selected_list, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 
 		//if (disable_prefabEdit)
 		//{
@@ -177,7 +182,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
 }
-void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
+void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameObject>>& gameobject, float x , float y)
 {
 	float offset = (ImGui::GetContentRegionAvail().x - x) * 0.5f;
 	//LOG_CORE_INFO(ImGui::FindWindowByID(4029469480)->Name);
@@ -238,7 +243,8 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 	ImGui::EndGroup();
 	ImGui::PopID();
 }
-bool Inspector::AddScriptsSelectable(oo::GameObject& go)
+
+bool Inspector::AddScriptsSelectable(const std::vector<std::shared_ptr<oo::GameObject>>& go_list)
 {	
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.7f, 0.7f, 1.0f));
 	for (auto& script : oo::ScriptManager::GetScriptList())
@@ -257,9 +263,12 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 		if (ImGui::Selectable(name.c_str(), false))
 		{
             auto ss = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetWorld().Get_System<oo::ScriptSystem>();
-            ss->AddScript(go.GetInstanceID(), script.name_space.c_str(), script.name.c_str());
-			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
-			oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go.GetInstanceID(), script.name_space, script.name));
+			for (auto go : go_list)
+			{
+				ss->AddScript(go->GetInstanceID(), script.name_space.c_str(), script.name.c_str());
+				go->GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
+				oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go->GetInstanceID(), script.name_space, script.name));
+			}
 			ImGui::PopStyleColor();
 			return true;
 		}

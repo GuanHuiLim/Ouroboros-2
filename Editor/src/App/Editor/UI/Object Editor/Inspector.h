@@ -47,10 +47,13 @@ public:
 	void Show();
 private:
 	void DisplayAllComponents(oo::GameObject& gameobject);
-	void DisplayAddComponents(oo::GameObject& gameobject,float x,float y);
+	void DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameObject>>& gameobject,float x,float y);
+	//template <typename Component>
+	//bool AddComponentSelectable(oo::GameObject& go);
 	template <typename Component>
-	bool AddComponentSelectable(oo::GameObject& go);
-	bool AddScriptsSelectable(oo::GameObject& go);
+	bool AddComponentSelectable(const std::vector<std::shared_ptr<oo::GameObject>>& go_list);
+
+	bool AddScriptsSelectable(const std::vector<std::shared_ptr<oo::GameObject>>& go_list);
 private: 
 	ToggleButton m_AddComponentButton;
 	std::string m_filterComponents = "";
@@ -87,8 +90,31 @@ inline void Inspector::SaveComponentDataHelper(Component& component, rttr::prope
 		pre_value.clear();//reset this variant
 	}
 }
+//template<typename Component>
+//inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
+//{
+//	std::string name = rttr::type::get<Component>().get_name().data();
+//	auto iter = std::search(name.begin(), name.end(),
+//		m_filterComponents.begin(), m_filterComponents.end(), [](char ch1, char ch2)
+//		{
+//			return std::toupper(ch1) == std::toupper(ch2);
+//		});
+//	if (iter == name.end())
+//		return false;//not found
+//	if (ImGui::Selectable(name.c_str(), false))
+//	{
+//		if (go.HasComponent<Component>() == false)
+//		{
+//			go.AddComponent<Component>();
+//			oo::CommandStackManager::AddCommand(new oo::AddComponent_ActionCommand<Component>(go));
+//		}
+//		return true;
+//	}
+//	ImGui::Separator();
+//	return false;
+//}
 template<typename Component>
-inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
+inline bool Inspector::AddComponentSelectable(const std::vector<std::shared_ptr<oo::GameObject>>& go)
 {
 	std::string name = rttr::type::get<Component>().get_name().data();
 	auto iter = std::search(name.begin(), name.end(),
@@ -100,10 +126,13 @@ inline bool Inspector::AddComponentSelectable(oo::GameObject& go)
 		return false;//not found
 	if (ImGui::Selectable(name.c_str(), false))
 	{
-		if (go.HasComponent<Component>() == false)
+		for (auto gameobj : go)
 		{
-			go.AddComponent<Component>();
-			oo::CommandStackManager::AddCommand(new oo::AddComponent_ActionCommand<Component>(go));
+			if (gameobj->HasComponent<Component>() == false)
+			{
+				gameobj->AddComponent<Component>();
+				oo::CommandStackManager::AddCommand(new oo::AddComponent_ActionCommand<Component>(*gameobj));
+			}
 		}
 		return true;
 	}
