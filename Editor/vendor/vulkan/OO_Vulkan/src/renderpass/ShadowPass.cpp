@@ -84,7 +84,7 @@ void ShadowPass::Draw()
 		.Build(fb_shadow,renderpass_Shadow);
 
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass =  renderpass_Shadow;
+	renderPassBeginInfo.renderPass =  renderpass_Shadow.pass;
 	renderPassBeginInfo.framebuffer = fb_shadow;
 	renderPassBeginInfo.renderArea.extent.width = shadowmapSize.width;
 	renderPassBeginInfo.renderArea.extent.height = shadowmapSize.height;
@@ -156,7 +156,7 @@ void ShadowPass::Shutdown()
 	auto& device = vr.m_device.logicalDevice;
 
 	shadow_depth.destroy();
-	vkDestroyRenderPass(device, renderpass_Shadow, nullptr);
+	renderpass_Shadow.destroy();
 	vkDestroyPipeline(device, pso_ShadowDefault, nullptr);
 }
 
@@ -227,8 +227,8 @@ void ShadowPass::SetupRenderpass()
 	renderPassInfo.dependencyCount = 2;
 	renderPassInfo.pDependencies = dependencies.data();
 
-	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassInfo, nullptr, &renderpass_Shadow));
-	VK_NAME(m_device.logicalDevice, "ShadowPass", renderpass_Shadow);
+	renderpass_Shadow.name = "ShadowPass";
+	renderpass_Shadow.Init(m_device, renderPassInfo);
 }
 
 void ShadowPass::SetupFramebuffer()
@@ -239,9 +239,9 @@ void ShadowPass::SetupFramebuffer()
 	VkImageView depthView = shadow_depth.view;
 
 	VkFramebuffer fb;
-	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&shadow_depth)
-		.Build(fb,renderpass_Shadow);
+	//FramebufferBuilder::Begin(&vr.fbCache)
+	//	.BindImage(&shadow_depth)
+	//	.Build(fb,renderpass_Shadow);
 
 	// TODO: Fix imgui depth rendering
 	//deferredImg[GBufferAttachmentIndex::DEPTH]    = ImGui_ImplVulkan_AddTexture(GfxSamplerManager::GetSampler_Deferred(), att_depth.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -265,7 +265,7 @@ void ShadowPass::CreatePipeline()
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default.pass);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -300,7 +300,7 @@ void ShadowPass::CreatePipeline()
 	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/shadow.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Separate render pass
-	pipelineCI.renderPass = renderpass_Shadow;
+	pipelineCI.renderPass = renderpass_Shadow.pass;
 
 	// Blend attachment states required for all color attachments
 	// This is important, as color write mask will otherwise be 0x0 and you

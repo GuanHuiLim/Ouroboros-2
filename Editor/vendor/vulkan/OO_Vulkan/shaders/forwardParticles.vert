@@ -66,15 +66,17 @@ void main()
 
 	if((inInstanceData.y & 0x0f)>0) // billboard
 	{
-		vec2 fragOffset = inPosition.xy;
+		vec3 fragOffset = inPosition.xyz;
 		vec3 CameraRight_worldspace = vec3(uboFrameContext.view[0][0], uboFrameContext.view[1][0], uboFrameContext.view[2][0]);
 		vec3 CameraUp_worldspace = vec3(uboFrameContext.view[0][1], uboFrameContext.view[1][1], uboFrameContext.view[2][1]);
+		vec3 CameraForward_worldspace = vec3(uboFrameContext.view[0][2], uboFrameContext.view[1][2], uboFrameContext.view[2][2]);
 		CameraUp_worldspace = -CameraUp_worldspace; // flip y for rendering
 
 		vec3 vertexPosition_worldspace =
 		vec3(inXform[3][0],inXform[3][1],inXform[3][2])
 		+ CameraRight_worldspace * inXform[0][0] * fragOffset.x
 		+ CameraUp_worldspace * inXform[1][1] * fragOffset.y;
+		+ CameraForward_worldspace * inXform[3][3] * fragOffset.z;
 		
 		outPosition = vec4(vertexPosition_worldspace,1.0);
 		outLightData.btn = mat3(CameraRight_worldspace,CameraUp_worldspace,cross(CameraUp_worldspace,CameraRight_worldspace));

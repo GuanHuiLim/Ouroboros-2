@@ -141,8 +141,10 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
 
     deviceFeatures.fillModeNonSolid = VK_TRUE;  //wireframe drawing
     deviceFeatures.drawIndirectFirstInstance = VK_TRUE;
+    deviceFeatures.independentBlend = VK_TRUE;
 
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
 
     // required for instance base vertex
     VkPhysicalDeviceShaderDrawParametersFeatures shaderDrawFeatures{};

@@ -399,8 +399,40 @@ namespace oo
             auto pos = rb.GetPositionInPhysicsWorld();
             auto quat = rb.GetOrientationInPhysicsWorld();
 
+            glm::vec3 rotatedX = glm::rotate(quat, glm::vec3{bc.GlobalHalfExtents.x, 0, 0});
+            glm::vec3 rotatedY = glm::rotate(quat, glm::vec3{0, bc.GlobalHalfExtents.y, 0});
+            glm::vec3 rotatedZ = glm::rotate(quat, glm::vec3{0, 0, bc.GlobalHalfExtents.z});
+
+            //glm::vec3 rotatedVal = glm::conjugate(quat) * bc.GlobalHalfExtents * quat;
+            ////glm::vec3 rotatedVal = glm::mat4_cast(quat) * glm::vec4{ bc.HalfExtents, 0 };
+            //rotatedVal *= bc.Size * tf.GetGlobalScale();
+
+            auto bottom_left_back   = pos - rotatedX - rotatedY - rotatedZ;
+            auto bottom_right_back  = pos + rotatedX - rotatedY - rotatedZ;
+            auto top_left_back      = pos - rotatedX + rotatedY - rotatedZ;
+            auto top_right_back     = pos + rotatedX + rotatedY - rotatedZ;
+            auto bottom_left_front  = pos - rotatedX - rotatedY + rotatedZ;
+            auto bottom_right_front = pos + rotatedX - rotatedY + rotatedZ;
+            auto top_left_front     = pos - rotatedX + rotatedY + rotatedZ;
+            auto top_right_front    = pos + rotatedX + rotatedY + rotatedZ;
+
             //Debug draw the bounds
-            DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_back, bottom_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_front, bottom_right_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_front, bottom_right_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
+
+            DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
+
+            DebugDraw::AddLine(bottom_left_back, top_left_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_front, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_front, top_right_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_back, top_right_back, oGFX::Colors::GREEN);
+
+            //DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing

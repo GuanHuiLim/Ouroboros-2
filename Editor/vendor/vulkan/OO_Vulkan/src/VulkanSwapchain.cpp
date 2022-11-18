@@ -141,6 +141,7 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 	for (size_t i = 0; i < images.size(); i++)
 	{
 		//store image handles
+		swapChainImages[i].name = "SwapchainImage_" + std::to_string(i);
 		swapChainImages[i].image = images[i];
 		swapChainImages[i].view = CreateImageView(device,images[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		swapChainImages[i].width = swapChainExtent.width;

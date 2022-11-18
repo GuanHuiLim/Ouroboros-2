@@ -29,6 +29,7 @@ namespace oGFX::vkutils::tools
 	std::string VkResultString(VkResult value);
 	std::string VkFormatString(VkFormat value);
 	std::string VkColorSpaceKHRString(VkColorSpaceKHR value);
+	std::string VkImageLayoutString(VkImageLayout value);
 };
 
 #ifndef MESSAGE_BOX_ONCE
