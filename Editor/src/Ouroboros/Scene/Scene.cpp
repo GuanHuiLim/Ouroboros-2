@@ -555,29 +555,23 @@ namespace oo
 
     void Scene::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
     {
+        // graphics specific logic
         if (m_uuidToGraphicsID.contains(e->Id))
         {
             auto& gid = m_uuidToGraphicsID.at(e->Id);
             auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
             actualObject.SetRenderEnabled(true);
         }
-        else
-        {
-            LOG_TRACE("invalid graphics ID on gameobject enable {0}", e->Id);
-        }
     }
 
     void Scene::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
     {
+        // graphics specific logic
         if (m_uuidToGraphicsID.contains(e->Id))
         {
             auto& gid = m_uuidToGraphicsID.at(e->Id);
             auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
             actualObject.SetRenderEnabled(false);
-        }
-        else
-        {
-            LOG_TRACE("invalid graphics ID on gameobject disable {0}", e->Id);
         }
     }
 

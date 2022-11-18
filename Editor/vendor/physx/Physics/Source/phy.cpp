@@ -1494,7 +1494,7 @@ namespace myPhysx
             collision state = collision::none;
             const PxContactPair& current = *pairs++;
 
-            if (current.shapes[0]->getActor() != nullptr && current.shapes[1]->getActor() != nullptr) {
+            if (current.contactCount > 0) {
 
                 auto shape1_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[0]->getActor()->userData);
                 auto shape2_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[1]->getActor()->userData);
