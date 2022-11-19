@@ -40,8 +40,9 @@ namespace oo::Anim
 
 		InTransitionInfo transition_info{};
 
-		//event tracker, then FBX animations, then properties
-		//these track the various timelines in a single animation
+		//event tracker
+		ScriptEventTracker scripteventTracker{};
+		//these track the various timelines in a single animation for FBX and properties
 		std::vector<ProgressTracker> trackers;
 		//a copy of the animation tree's parameters to be used for this
 		//component only

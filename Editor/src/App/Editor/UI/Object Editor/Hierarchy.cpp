@@ -670,16 +670,26 @@ void Hierarchy::RightClickOptions()
 		if (ImGui::MenuItem("Duplicate GameObject"))
 		{
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			decltype(s_selected) created_list;
 			for (auto go : s_selected)
 			{
 				auto object = scene->FindWithInstanceID(go);
 				if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
 					continue;
 				oo::GameObject new_object = object->Duplicate();
+				created_list.emplace(new_object.GetInstanceID());
 				//need the scene::go_ptr
 				auto goptr = scene->FindWithInstanceID(new_object.GetInstanceID());
 				oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(goptr));
+				if (object->HasValidParent())
+				{
+					oo::GameObject object_parent = object->GetParent();
+					oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(goptr,object_parent.GetInstanceID()));
+					object_parent.AddChild(new_object);
+				}
 			}
+			s_selected.clear();
+			s_selected = created_list;
 		}
 		ImGui::EndPopup();
 	}

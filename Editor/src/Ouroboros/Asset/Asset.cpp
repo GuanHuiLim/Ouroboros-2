@@ -132,13 +132,13 @@ namespace oo
                     auto sp = std::shared_ptr<ModelFileResource>(vr->LoadModelFromFile(self.contentPath.string()));
                     self.data.emplace_back(sp);
 
-                    auto anims = Anim::Animation::LoadAnimationFromFBX(self.contentPath.string(), sp.get());
+                    /*auto anims = Anim::LoadAnimationFromFBX::LoadAnimationFromFBX(self.contentPath.string(), sp.get());
                     auto v = std::vector<std::string>();
                     for (auto& anim : anims)
                     {
                         v.emplace_back(anim->name);
                     }
-                    self.data.emplace_back(v);
+                    self.data.emplace_back(v);*/
                 };
                 onAssetDestroy = [](AssetInfo& self) {};
                 break;

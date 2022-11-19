@@ -106,7 +106,14 @@ namespace oo::Anim
 			return _query;
 		}();
 
-
+		//set all animation data 
+		for (auto& [key, tree] : AnimationTree::map)
+		{
+			internal::BindConditionsToParameters(tree);
+			internal::BindNodesToAnimations(tree);
+			internal::CalculateAnimationLength(tree);
+			internal::ReloadReferences(tree);
+		}
 
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 
@@ -115,14 +122,7 @@ namespace oo::Anim
 
 			});
 
-		//set all condition's parameter index 
-		for (auto& [key, tree] : AnimationTree::map)
-		{
-			internal::BindConditionsToParameters(tree);
-			internal::BindNodesToAnimations(tree);
-			internal::CalculateAnimationLength(tree);
-			internal::ReloadReferences(tree);
-		}
+		
 	}
 
 	void AnimationSystem::TestObject()
@@ -499,6 +499,35 @@ namespace oo::Anim
 
 		return Animation::AddAnimation(std::move(anim));
 
+	}
+
+	std::vector<Animation*> AnimationSystem::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
+	{
+		auto anims = Animation::LoadAnimationFromFBX(filepath, resource);
+
+		for (auto& anim_ptr : anims)
+		{
+			if (anim_ptr == nullptr)
+			{
+				assert(false);
+				continue;
+			}
+			auto anim_name = anim_ptr->name;
+			auto anim_filepath = std::filesystem::path{ filepath }.parent_path().string() + "/" + anim_ptr->name + ".anim";
+			SaveAnimation(*anim_ptr, anim_filepath);
+			DeleteAnimation(anim_name);
+			/*auto asset = */Project::GetAssetManager()->GetOrLoadPath(std::filesystem::path{ anim_filepath });
+		}
+
+
+		return anims;
+	}
+
+	bool AnimationSystem::DeleteAnimation(std::string const& name)
+	{
+		Animation::RemoveAnimation(name);
+
+		return true;
 	}
 
 	Animation* AnimationSystem::AddAnimation(std::string const& name)

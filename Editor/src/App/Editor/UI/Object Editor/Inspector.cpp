@@ -80,21 +80,26 @@ void Inspector::Show()
 		ImGui::EndMenuBar();
 	}
 	auto& selected_items = Hierarchy::GetSelected();
-	size_t size = selected_items.size();
+	std::vector<std::shared_ptr<oo::GameObject>> selected_list;
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto items : selected_items)
+	{
+		auto gameobject = scene->FindWithInstanceID(items); //first item
+		if (gameobject == nullptr)
+			continue;
+		selected_list.push_back(gameobject);
+	}
+	size_t size = selected_list.size();
 	if (size == 0)
 		return;
 	if (size > 1)
 	{
-
+		DisplayAddComponents(selected_list, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 		return;
 	}
 
 	{
-		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		auto gameobject = scene->FindWithInstanceID(*selected_items.begin()); //first item
-		if (gameobject == nullptr)
-			return;
-		
+		auto gameobject = selected_list.back();
 		//bool active = gameobject->ActiveInHierarchy();
 		bool active = gameobject->IsActive();
 
@@ -128,7 +133,7 @@ void Inspector::Show()
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);
-		DisplayAddComponents(*gameobject, ImGui::GetContentRegionAvail().x * 0.7f, 150);
+		DisplayAddComponents(selected_list, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 
 		//if (disable_prefabEdit)
 		//{
@@ -179,7 +184,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
 }
-void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
+void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameObject>>& gameobject, float x , float y)
 {
 	float offset = (ImGui::GetContentRegionAvail().x - x) * 0.5f;
 	//LOG_CORE_INFO(ImGui::FindWindowByID(4029469480)->Name);
@@ -241,7 +246,8 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 	ImGui::EndGroup();
 	ImGui::PopID();
 }
-bool Inspector::AddScriptsSelectable(oo::GameObject& go)
+
+bool Inspector::AddScriptsSelectable(const std::vector<std::shared_ptr<oo::GameObject>>& go_list)
 {	
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.7f, 0.7f, 1.0f));
 	for (auto& script : oo::ScriptManager::GetScriptList())
@@ -260,9 +266,12 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 		if (ImGui::Selectable(name.c_str(), false))
 		{
             auto ss = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetWorld().Get_System<oo::ScriptSystem>();
-            ss->AddScript(go.GetInstanceID(), script.name_space.c_str(), script.name.c_str());
-			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
-			oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go.GetInstanceID(), script.name_space, script.name));
+			for (auto go : go_list)
+			{
+				ss->AddScript(go->GetInstanceID(), script.name_space.c_str(), script.name.c_str());
+				go->GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
+				oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go->GetInstanceID(), script.name_space, script.name));
+			}
 			ImGui::PopStyleColor();
 			return true;
 		}
@@ -280,13 +289,31 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 	ImGui::BeginGroup();
 	ImGui::Separator();
 	ImGui::PushID(static_cast<int>(class_type.get_id()));
-
+	int sameline_next = 0;
+	float UI_sameline_size = 0;
+	float itemsize_sameline = 0;
 	for (rttr::property prop : class_type.get_properties())
 	{
 		bool propReadonly = prop.is_readonly();
 		if (propReadonly && m_showReadonly == false)
 			continue;
 
+		{
+			rttr::variant same_linewith = prop.get_metadata(UI_metadata::SAME_LINE_WITH_NEXT);
+			if (same_linewith.is_valid())
+			{
+				sameline_next = same_linewith.get_value<int>();
+				float area = ImGui::GetContentRegionAvail().x;
+				constexpr float textlen = 50 + 10;
+				itemsize_sameline = ImGui::GetCurrentWindow()->DC.ItemWidth;
+				UI_sameline_size = (area) / sameline_next - (textlen);//10 is padding
+			}
+		}
+		if (sameline_next)
+		{
+			ImGui::PushItemWidth(UI_sameline_size);
+			ImGui::BeginGroup();
+		}
 		rttr::type prop_type = prop.get_type();
 
 		auto ut = UI_RTTRType::types.find(prop_type.get_id());
@@ -318,6 +345,32 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 				{
 					edited = true;
 					prop.set_value(value, v);//set value to variant
+				}
+			}
+			else//not found
+			{
+				if (sameline_next)
+				{
+					ImGui::EndGroup();
+					ImGui::PopItemWidth();
+					sameline_next = 0;
+					UI_sameline_size = 0;
+				}
+				continue;
+			}
+			//found
+			if (sameline_next)
+			{
+				--sameline_next;
+				ImGui::EndGroup();
+				ImGui::PopItemWidth();
+				if (sameline_next)
+				{
+					ImGui::SameLine();
+				}
+				else
+				{
+					ImGui::GetCurrentWindow()->DC.ItemWidth = itemsize_sameline;
 				}
 			}
 			continue;
@@ -352,6 +405,20 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 			}
 		}
 		ImGui::Dummy({ 0,5.0f });
+		if (sameline_next)
+		{
+			--sameline_next;
+			ImGui::EndGroup();
+			ImGui::PopItemWidth();
+			if (sameline_next)
+			{
+				ImGui::SameLine();
+			}
+			else
+			{
+				ImGui::GetCurrentWindow()->DC.ItemWidth = itemsize_sameline;
+			}
+		}
 	}
 	ImGui::PopID();
 	ImGui::Separator();
@@ -382,14 +449,16 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 	constexpr size_t min_arrSize = 0;
 	constexpr size_t max_arrSize = 30;
 
+	ImVec2 cursorpos = ImGui::GetCursorPos();
 	//Size Slider
-
 	if (ImGui::DragScalarN("##Size", ImGuiDataType_::ImGuiDataType_U64, &size, 1,0.3f,&min_arrSize,&max_arrSize))
 		edited = endEdit = sqv.set_size(size);
-	ImGui::SameLine();
+	ImGui::SetItemAllowOverlap();
+	float width = ImGui::CalcItemWidth();
+	ImGui::SetCursorPos(cursorpos);
 	if (ImGui::ArrowButton("reduceSize", ImGuiDir_::ImGuiDir_Left))
 		edited = endEdit = sqv.set_size(size - 1);
-	ImGui::SameLine();
+	ImGui::SetCursorPos({ cursorpos.x + width - 17, cursorpos.y});//15 = arrowbuttonsize
 	if (ImGui::ArrowButton("increaseSize", ImGuiDir_::ImGuiDir_Right))
 		edited = endEdit = sqv.set_size(size + 1);
 	ImGui::SameLine();

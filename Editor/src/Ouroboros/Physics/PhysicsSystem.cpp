@@ -76,7 +76,7 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, SphereColliderComponent>(
             this, &PhysicsSystem::OnSphereColliderRemove);
 
-        myPhysx::physx_system::provideCurrentWorld(&m_physicsWorld);
+        myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -196,7 +196,7 @@ namespace oo
         static Ecs::Query duplicated_rb_query = Ecs::make_raw_query<RigidbodyComponent, GameObjectComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_query, [&](RigidbodyComponent& rbComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
             {
-                InitializeRigidbody(rbComp);
+                DuplicateRigidbody(rbComp);
                 AddToLookUp(rbComp, goc);
             });
 
@@ -292,9 +292,20 @@ namespace oo
         while (!trigger_queue->empty())
         {
             myPhysx::TriggerManifold trigger_manifold = trigger_queue->front();
-            
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false, "This should never happen");
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false, "This should never happen");
+
+            // if either objects are already removed, we skip them
+            if (m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false
+                || m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false)
+            {
+                if (DebugMessages)
+                    LOG_WARN("Skipped Trigger Callback because one of these pair of (Physics)UUID died ({0}), ({1}) ", trigger_manifold.triggerID, trigger_manifold.otherID);
+
+                trigger_queue->pop();
+                continue;
+            }
+
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false, "This should never happen");
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false, "This should never happen");
 
             // retrieve their gameobject id counterpart.
             UUID trigger_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.triggerID);
@@ -310,17 +321,17 @@ namespace oo
                 pte.State = PhysicsEventState::NONE;
                 break;
             case myPhysx::trigger::onTriggerEnter:
-                if(DebugMessges)
+                if(DebugMessages)
                     LOG_TRACE("Trigger Enter Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::trigger::onTriggerStay:
-                if (DebugMessges)
+                if (DebugMessages)
                     LOG_TRACE("Trigger Stay Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::trigger::onTriggerExit:
-                if (DebugMessges) 
+                if (DebugMessages) 
                     LOG_TRACE("Trigger Exit Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::EXIT;
                 break;
@@ -337,8 +348,18 @@ namespace oo
         {
             myPhysx::ContactManifold contact_manifold = collision_queue->front();
 
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false, "This should never happen");
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape2_ID) == false, "This should never happen");
+            // if either objects are already removed, we skip them
+            if (m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false
+                || m_physicsToGameObjectLookup.contains(contact_manifold.shape2_ID) == false)
+            {
+                if (DebugMessages)
+                    LOG_WARN("Skipped Physics Collision Callback because one of these pair of (Physics)UUID died ({0}), ({1}) ", contact_manifold.shape1_ID, contact_manifold.shape2_ID);
+
+                collision_queue->pop();
+                continue;
+            }
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false, "This should never happen");
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape2_ID) == false, "This should never happen");
 
             // retrieve their gameobject id counterpart.
             UUID collider1_go_id = m_physicsToGameObjectLookup.at(contact_manifold.shape1_ID);
@@ -358,15 +379,15 @@ namespace oo
                 pce.State = PhysicsEventState::NONE;
                 break;
             case myPhysx::collision::onCollisionEnter:
-                if (DebugMessges)LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if (DebugMessages)LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::collision::onCollisionStay:
-                if(DebugMessges) LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if(DebugMessages) LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::collision::onCollisionExit:
-                if (DebugMessges) LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if (DebugMessages) LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::EXIT;
                 break;
             }
@@ -623,7 +644,6 @@ namespace oo
         //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
         //default initialize material
         rb.object.setMaterial(PhysicsMaterial{});
-
     }
 
     void PhysicsSystem::InitializeBoxCollider(RigidbodyComponent& rb)
@@ -644,6 +664,13 @@ namespace oo
         rb.object.setShape(myPhysx::shape::sphere);
     }
 
+    void PhysicsSystem::DuplicateRigidbody(RigidbodyComponent& rb)
+    {
+        // we duplicate instead if this is an existing object
+        if (m_physicsWorld.hasObject(rb.object.id))
+            rb.object = m_physicsWorld.duplicateObject(rb.object.id);
+    }
+
     void PhysicsSystem::AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc)
     {
         if (m_physicsToGameObjectLookup.contains(rb.object.id) == false)
@@ -655,7 +682,7 @@ namespace oo
     void PhysicsSystem::OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e)
     {
         auto go = m_scene->FindWithInstanceID(e->Id);
-        if (go->HasComponent<RigidbodyComponent>())
+        if (go && go->HasComponent<RigidbodyComponent>())
         {
             auto& rb = go->GetComponent<RigidbodyComponent>();
             rb.EnableCollider();
@@ -665,7 +692,7 @@ namespace oo
     void PhysicsSystem::OnGameObjectDisable(GameObjectComponent::OnDisableEvent* e)
     {
         auto go = m_scene->FindWithInstanceID(e->Id);
-        if (go->HasComponent<RigidbodyComponent>())
+        if (go && go->HasComponent<RigidbodyComponent>())
         {
             auto& rb = go->GetComponent<RigidbodyComponent>();
             rb.DisableCollider();

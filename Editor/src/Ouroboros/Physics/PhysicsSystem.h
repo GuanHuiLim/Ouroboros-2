@@ -53,7 +53,7 @@ namespace oo
         vec3 Gravity = { 0, -9.81f, 0 };
         
         inline static bool ColliderDebugDraw = true;
-        inline static bool DebugMessges = false;
+        inline static bool DebugMessages = false;
 
         // Layering Bitmask Determines collision
         static LayerMatrix PhysicsBitMask;
@@ -104,6 +104,9 @@ namespace oo
         void InitializeBoxCollider(RigidbodyComponent& rb);
         void InitializeCapsuleCollider(RigidbodyComponent& rb);
         void InitializeSphereCollider(RigidbodyComponent& rb);
+
+        void DuplicateRigidbody(RigidbodyComponent& rb);
+
 
         void AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc);
 

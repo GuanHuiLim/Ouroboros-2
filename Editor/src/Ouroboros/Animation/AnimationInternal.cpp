@@ -807,29 +807,6 @@ namespace oo::Anim::internal
 		else return prev;
 	}
 
-	//void UpdateEvent(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
-	void UpdateEvent(UpdateProgressTrackerInfo& info, float updatedTimer)
-	{
-		//it should be an event tracker
-		assert(info.progressTracker.type == Timeline::TYPE::SCRIPT_EVENT);
-
-		auto& timeline = info.tracker_info.tracker.currentNode->GetAnimation().events;
-		//no events in timeline
-		if (timeline.empty()) return;
-		//already hit last so we return
-		if (info.progressTracker.index >= (timeline.size() - 1ul))
-			return;
-
-		auto& nextEvent = *(timeline.begin() + info.progressTracker.index + 1ul);
-
-		//if next event not within bounds
-		if (Withinbounds(updatedTimer, nextEvent.time) == false) return;
-
-		TriggerEvent(info, nextEvent);
-		info.progressTracker.index++;
-
-		//TODO: if went past more than 1 event, trigger those as well
-	}
 
 	//void UpdateProperty_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
 	void UpdateProperty_Animation(UpdateProgressTrackerInfo& info, float updatedTimer)
@@ -1084,6 +1061,34 @@ namespace oo::Anim::internal
 		}
 	}
 
+	void UpdateScriptEventProgress(UpdateTrackerInfo& info, float updatedTimer)
+	{
+		auto& tracker = info.tracker.scripteventTracker;
+		if (tracker.events == nullptr)
+		{
+			assert(false);
+			return;
+		}
+		if (tracker.events->empty()) return;
+
+		auto& events = *tracker.events;
+		auto last_index = events.size() - 1ull;
+
+		//already hit last event
+		if (tracker.nextEvent_index > last_index) return;
+
+
+		//catch up on all script events to be called & update index
+		while (	tracker.nextEvent_index <= last_index &&
+				events[tracker.nextEvent_index].time < updatedTimer)
+		{
+			//invoke script event
+			events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			//update index
+			++tracker.nextEvent_index;
+		}
+	}
+
 	KeyFrame* GetCurrentKeyFrame(ProgressTracker& tracker)
 	{
 		return &(tracker.timeline->keyframes[tracker.index]);
@@ -1144,6 +1149,8 @@ namespace oo::Anim::internal
 		animTracker.num_iterations = 0;
 		//track all timelines in node's animations with trackers
 		animTracker.trackers = node->trackers;
+		//script event as well
+		animTracker.scripteventTracker = node->scripteventTracker;
 	}
 
 	//copy animation tree's parameters to the tracker
@@ -1161,7 +1168,9 @@ namespace oo::Anim::internal
 		node.trackers.clear();
 		//add script event tracker
 		{
-			auto progressTracker = ProgressTracker::Create(Timeline::TYPE::SCRIPT_EVENT);
+			//auto progressTracker = ProgressTracker::Create(Timeline::TYPE::SCRIPT_EVENT);
+			node.scripteventTracker.nextEvent_index = 0;
+			node.scripteventTracker.events = &(node.GetAnimation().events);
 		}
 
 		//add timeline trackers
@@ -1260,6 +1269,8 @@ namespace oo::Anim::internal
 		//not in transition
 		if (info.tracker.transition_info.in_transition == false)
 		{
+			//check if we passed a script event and invoke
+			UpdateScriptEventProgress(info, updatedTimer);
 			//check if we passed a keyframe and update
 			UpdateTrackerKeyframeProgress(info, updatedTimer);
 		}

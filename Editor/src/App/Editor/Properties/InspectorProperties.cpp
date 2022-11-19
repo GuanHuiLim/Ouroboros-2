@@ -119,7 +119,20 @@ InspectorProperties::InspectorProperties()
 	m_InspectorUI[UI_RTTRType::UItypes::COLOR_TYPE] = [](rttr::property& prop, std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
 		auto value = v.get_value<oo::Color>();
-		edited = ImGui::ColorPicker4(name.c_str(), &value.r, ImGuiColorEditFlags_::ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_::ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_::ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_::ImGuiColorEditFlags_InputRGB);
+		bool picker = false;
+		{
+			rttr::variant metadata = prop.get_metadata(UI_metadata::COLOR_PICKER);
+			if(metadata.is_valid())
+				picker = metadata.get_value<bool>();
+		}
+		if (picker)
+		{
+			edited = ImGui::ColorPicker4(name.c_str(), &value.r, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_InputRGB);
+		}
+		else
+		{
+			edited = ImGui::ColorEdit4(name.c_str(), &value.r, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_InputRGB);
+		}
 		if (edited) { v = value; };
 		endEdit = ImGui::IsItemDeactivatedAfterEdit();
 	};

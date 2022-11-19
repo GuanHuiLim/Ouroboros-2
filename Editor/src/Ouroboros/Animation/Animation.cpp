@@ -398,6 +398,9 @@ namespace oo::Anim
 		//remove existing dupe
 		if (Animation::name_to_ID.contains(anim.name))
 		{
+			auto old_anim = internal::RetrieveAnimation(Animation::name_to_ID[anim.name]);
+			assert(old_anim);
+			//anim.animation_ID = old_anim->animation_ID;
 			RemoveAnimation(anim.name);
 		}
 

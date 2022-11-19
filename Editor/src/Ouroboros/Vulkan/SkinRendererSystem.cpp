@@ -15,6 +15,9 @@ namespace oo
 		m_world->SubscribeOnAddComponent<SkinMeshRendererSystem, SkinMeshRendererComponent>(
 			this, &SkinMeshRendererSystem::OnMeshAssign);
 
+
+		m_world->SubscribeOnRemoveComponent<SkinMeshRendererSystem, SkinMeshRendererComponent>(
+			this, &SkinMeshRendererSystem::OnMeshRemove);
 	}
 
 	void RecurseChildren_AssignparentTransform_to_BoneComponents(GameObject obj, glm::mat4 parentTransform)
@@ -109,6 +112,11 @@ namespace oo
 			{
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
 				
+				gfx_Object.modelID = m_comp.meshResource;
+				gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
+				gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
+				gfx_Object.submesh = m_comp.meshInfo.submeshBits;
+
 				if (gfx_Object.bones.size() != m_comp.num_bones)
 					gfx_Object.bones.resize(m_comp.num_bones);
 			});
@@ -180,8 +188,15 @@ namespace oo
 		//update initial position
 		auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
 		graphics_object.localToWorld = transform_component.GetGlobalMatrix();
-		graphics_object.flags = ObjectInstanceFlags::SKINNED;
+		graphics_object.flags = ObjectInstanceFlags::SKINNED | ObjectInstanceFlags::RENDER_ENABLED;
 
 		meshComp.gfx_Object = &graphics_object;
+	}
+	void SkinMeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)
+	{
+		auto& comp = evnt->component;
+		m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
+		// remove graphics id to uuid of gameobject
+		//m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
 	}
 }

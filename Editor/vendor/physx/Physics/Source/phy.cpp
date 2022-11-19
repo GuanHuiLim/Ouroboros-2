@@ -64,7 +64,8 @@ namespace myPhysx
         PxFoundation* createFoundation() {
 
             mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
-            if (!mFoundation) throw("PxCreateFoundation failed!");
+            if (!mFoundation) 
+                throw("PxCreateFoundation failed!");
 
             return mFoundation;
         }
@@ -85,7 +86,7 @@ namespace myPhysx
 
         // detects a trigger using the shape's simulation filter data
         bool isTrigger(const PxFilterData& data) {
-
+            
             if (data.word0 != 0xffffffff || data.word1 != 0xffffffff || 
                 data.word2 != 0xffffffff || data.word3 != 0xffffffff)
                 return false;
@@ -100,7 +101,7 @@ namespace myPhysx
                 return true;
 
             // detects our emulated triggers using the simulation filter data
-            if (physx_system::isTrigger(shape->getSimulationFilterData()))
+            if (isTrigger(shape->getSimulationFilterData()))
                 return true;
 
             // detects our emulated triggers using the simulation filter callback
@@ -110,7 +111,7 @@ namespace myPhysx
             return false;
         }
 
-        void provideCurrentWorld(PhysxWorld* world) {
+        void setCurrentWorld(PhysxWorld* world) {
 
             // retrieving the current world for me to access (get/set) neccessary data
             currentWorld = world;
@@ -156,7 +157,7 @@ namespace myPhysx
 
             if constexpr (use_debugger) {
                 printf("DEBUGGER ON\n");
-                myPVD.createPvd(getFoundation(), "172.28.68.41");
+                myPVD.createPvd(mFoundation, "172.28.68.41");
             }
             else {
                 printf("DEBUGGER OFF\n");
@@ -167,7 +168,7 @@ namespace myPhysx
 
         void shutdown() {
 
-            getPhysics()->release();
+            mPhysics->release();
 
             // pvd release here
             if constexpr (use_debugger) {
@@ -177,7 +178,7 @@ namespace myPhysx
                 myPVD.getTransport()->release();
             }
 
-            getFoundation()->release();
+            mFoundation->release();
         }
 
     }
@@ -188,7 +189,7 @@ namespace myPhysx
     PhysxWorld::PhysxWorld(PxVec3 grav)
     {
         // Setup scene description
-        PxSceneDesc sceneDesc(physx_system::getPhysics()->getTolerancesScale());
+        PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
         sceneDesc.gravity = grav; // PxVec3(0.0f, -9.81f, 0.0f);
         gravity = sceneDesc.gravity;
 
@@ -206,7 +207,10 @@ namespace myPhysx
         sceneDesc.simulationEventCallback = &mEventCallback;
         sceneDesc.filterShader = physx_system::contactReportFilterShader;
 
-        scene = physx_system::getPhysics()->createScene(sceneDesc);
+        scene = mPhysics->createScene(sceneDesc);
+
+        // just take note we have 5000 objects reserved.
+        m_objects.reserve(5000);
     }
 
     PhysxWorld::~PhysxWorld()
@@ -226,10 +230,10 @@ namespace myPhysx
 
             underlying_obj->m_shape->release();
 
-            if (underlying_obj->rigidID == rigid::rstatic)
+            if (underlying_obj->rigid_type == rigid::rstatic)
                 underlying_obj->rb.rigidStatic->release();
 
-            else if (underlying_obj->rigidID == rigid::rdynamic)
+            else if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->release();
         }
         */
@@ -276,6 +280,7 @@ namespace myPhysx
         m_objects.emplace_back(std::move(obj));
         all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
         
+        
         // return the object i created
         return PhysicsObject{ generated_uuid, this }; // a copy
     }
@@ -285,14 +290,14 @@ namespace myPhysx
         // release rigidstatic or rigiddynamic
         if (all_objects.contains(obj.id)) {
 
-            int current_index = all_objects.at(obj.id);
+            std::size_t current_index = all_objects.at(obj.id);
 
             PhysxObject* underlying_obj = &m_objects[all_objects.at(obj.id)];
 
-            if (underlying_obj->rigidID == rigid::rstatic)
+            if (underlying_obj->rigid_type == rigid::rstatic)
                 underlying_obj->rb.rigidStatic->release();
 
-            else if (underlying_obj->rigidID == rigid::rdynamic)
+            else if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->release();
 
             // release shape
@@ -305,7 +310,7 @@ namespace myPhysx
             for (auto i = all_objects.begin(); i != all_objects.end(); i++) {
 
                 if (i->second > current_index) {
-                    int current = i->second;
+                    std::size_t current = i->second;
                     i->second = current - 1;
                 }
             }
@@ -324,6 +329,120 @@ namespace myPhysx
 
             m_objects.erase(begin);
         }
+    }
+
+    PhysxObject::PhysxObject(const PhysxObject& other) : matID(other.matID),
+                                                          shape_type(other.shape_type),
+                                                          rigid_type(other.rigid_type),
+                                                          lockPositionAxis(other.lockPositionAxis),
+                                                          lockRotationAxis(other.lockRotationAxis),
+                                                          is_trigger(other.is_trigger),
+                                                          gravity_enabled(other.gravity_enabled),
+                                                          is_kinematic(other.is_kinematic),
+                                                          is_collider(other.is_collider),
+        m_shape{nullptr},
+        rb {},
+        // Create new UUID when u attempt to make a copy
+        id { std::make_unique<phy_uuid::UUID>() }
+    {
+    }
+
+    PhysxObject& PhysxObject::operator=(const PhysxObject& object) {
+
+        PhysxObject copy{ object };
+        std::swap(*this, copy);
+
+        return *this;
+    }
+
+    PhysicsObject PhysxWorld::duplicateObject(phy_uuid::UUID id) {
+
+        if (all_objects.contains(id)) {
+
+            std::size_t index = all_objects.at(id);
+
+            PhysxObject physxObject{ m_objects.at(index) };
+
+            PhysicsObject physicsNewObject { *physxObject.id, this };
+
+            // we insert into the list now after constructing the objects properly.
+            m_objects.emplace_back(std::move(physxObject));
+            
+            // IMPORTANT
+            PhysxObject& initialized_object = m_objects.back();
+
+            all_objects.insert({ *initialized_object.id, m_objects.size() - 1 }); // add back the m_objects last element
+            
+            // we set this object's properties to be equal to the object we are copying from.
+            // does order matter?
+            // are they allocating memory at the back in physX
+
+            // MATERIAL
+            PxMaterial* material = physx_system::currentWorld->mat.at(initialized_object.matID);
+            physicsNewObject.setMaterial(Material{ material->getStaticFriction(), material->getDynamicFriction(), material->getRestitution() });
+
+            // RIGID
+            physicsNewObject.setRigidType(initialized_object.rigid_type);
+
+            if (initialized_object.rigid_type == rigid::rdynamic) {
+                PxRigidDynamic* oldDynamicData = m_objects.at(index).rb.rigidDynamic;
+                physicsNewObject.setMass(oldDynamicData->getMass());
+                physicsNewObject.setMassSpaceInertia(oldDynamicData->getMassSpaceInertiaTensor());
+                physicsNewObject.setAngularDamping(oldDynamicData->getAngularDamping());
+                physicsNewObject.setAngularVelocity(oldDynamicData->getAngularVelocity());
+                physicsNewObject.setLinearDamping(oldDynamicData->getLinearDamping());
+                physicsNewObject.setLinearVelocity(oldDynamicData->getLinearVelocity());
+            }
+
+            // SHAPE
+            if (initialized_object.shape_type == shape::box)
+                physicsNewObject.reAttachShape(initialized_object.rigid_type, m_objects.at(index).m_shape->getGeometry().box());
+            
+            else if (initialized_object.shape_type == shape::sphere)
+                physicsNewObject.reAttachShape(initialized_object.rigid_type, m_objects.at(index).m_shape->getGeometry().sphere());
+
+            else if (initialized_object.shape_type == shape::capsule)
+                physicsNewObject.reAttachShape(initialized_object.rigid_type, m_objects.at(index).m_shape->getGeometry().capsule());
+            
+            //else if (initialized_object.shape_type == shape::plane) {
+            //    PxPlaneGeometry plane = m_objects.at(index).m_shape->getGeometry().plane();
+            //    physicsNewObject.setPlaneProperty();
+            //}
+
+            // LOCK POSTION AXIS
+            LockingAxis posLock = initialized_object.lockPositionAxis;
+            if (posLock.x_axis)
+                physicsNewObject.lockPositionX(true);
+            if (posLock.y_axis)
+                physicsNewObject.lockPositionY(true);
+            if (posLock.z_axis)
+                physicsNewObject.lockPositionZ(true);
+
+            // LOCK ROTATION AXIS
+            LockingAxis rotLock = initialized_object.lockRotationAxis;
+            if (rotLock.x_axis)
+                physicsNewObject.lockRotationX(true);
+            if (rotLock.y_axis)
+                physicsNewObject.lockRotationY(true);
+            if (rotLock.z_axis)
+                physicsNewObject.lockRotationZ(true);
+
+            // TRIGGER
+            physicsNewObject.setTriggerShape(initialized_object.is_trigger);
+
+            // GRAVITY
+            physicsNewObject.enableGravity(initialized_object.gravity_enabled);
+
+            // KINEMATIC
+            physicsNewObject.enableKinematic(initialized_object.is_kinematic);
+
+            // COLLIDER
+            physicsNewObject.enableCollider(initialized_object.is_collider);
+            
+            return physicsNewObject; // a copy
+        }
+
+        return PhysicsObject{}; // return empty
     }
 
     void PhysxWorld::updateTriggerState(phy_uuid::UUID id) {
@@ -364,8 +483,16 @@ namespace myPhysx
        //
        //m_triggerCollisionPairs = temp;
     }
+
+    bool PhysxWorld::hasObject(phy_uuid::UUID id) {
+
+        if (all_objects.contains(id))
+            return true;
+
+        return false;
+    }
     
-    std::map<phy_uuid::UUID, int>* PhysxWorld::getAllObject() {
+    std::map<phy_uuid::UUID, std::size_t>* PhysxWorld::getAllObject() {
 
         return &all_objects;
     }
@@ -397,6 +524,37 @@ namespace myPhysx
             m_collisionPairs.pop();
     }
 
+    //void PhysxWorld::createPhysicsObjectFromPhysxObject(PhysicsObject& phyiscsNewObject, PhysxObject& objectToCopyFrom)
+    //{
+    //    // Create new PhysxObject - copy and assign all the old data
+    //    PhysxObject newPhysxObject = objectToCopyFrom;
+    //
+    //    // Assign PhysicsObject with new UUID and the world
+    //    phyiscsNewObject.id = *newPhysxObject.id;
+    //    phyiscsNewObject.world= physx_system::currentWorld;
+    //
+    //    // Retrieve old rigidbody data (transform)
+    //    PxTransform trans;
+    //    if (newPhysxObject.rigid_type == rigid::rstatic)
+    //        trans = objectToCopyFrom.rb.rigidStatic->getGlobalPose();
+    //    else if (newPhysxObject.rigid_type == rigid::rdynamic)
+    //        trans = objectToCopyFrom.rb.rigidDynamic->getGlobalPose();
+    //
+    //    // Create new shape and rigidbody data 
+    //    if (newPhysxObject.shape_type == shape::box)
+    //        phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigid_type, objectToCopyFrom.m_shape->getGeometry().box());
+    //    else if (newPhysxObject.shape_type == shape::sphere)
+    //        phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigid_type, objectToCopyFrom.m_shape->getGeometry().sphere());
+    //    else if (newPhysxObject.shape_type == shape::capsule)
+    //        phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigid_type, objectToCopyFrom.m_shape->getGeometry().capsule());
+    //    else if (newPhysxObject.shape_type == shape::plane)
+    //        phyiscsNewObject.reCreateRigidbody(newPhysxObject, trans, newPhysxObject.rigid_type, objectToCopyFrom.m_shape->getGeometry().plane());
+    //    
+    //    // Store the new duplicate objects into vector/map
+    //    m_objects.emplace_back(std::move(newPhysxObject));
+    //    all_objects.insert({ phyiscsNewObject.id,m_objects.size() - 1 });
+    //}
+
     RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance) {
 
         RaycastHit hit{};
@@ -414,35 +572,6 @@ namespace myPhysx
             hit.position = hitBuffer.block.position;
             hit.normal = hitBuffer.block.normal;
             hit.distance = hitBuffer.block.distance;
- 
-            if (hitBuffer.block.actor->getType() == PxActorType::eRIGID_STATIC) 
-                hit.rigidID = rigid::rstatic;
-
-            else if (hitBuffer.block.actor->getType() == PxActorType::eRIGID_DYNAMIC)
-                hit.rigidID = rigid::rdynamic;
-
-            switch (hitBuffer.block.shape->getGeometryType()) {
-
-            case 0: //  PxGeometryType::eSPHERE
-                hit.shape = shape::sphere;
-                break;
-
-            case 1: //  PxGeometryType::ePLANE
-                hit.shape = shape::plane;
-                break;
-
-            case 2: //  PxGeometryType::eCAPSULE
-                hit.shape = shape::capsule;
-                break;
-
-            case 3: //  PxGeometryType::eBOX
-                hit.shape = shape::box;
-                break;
-
-            default:
-                break;
-            }
-
         }
 
         return hit;
@@ -454,58 +583,24 @@ namespace myPhysx
         PxRaycastHit hitBuffer[bufferSize];            // storage of the buffer results
         PxRaycastBuffer buffer(hitBuffer, bufferSize); // blocking and touching hits stored here
 
+        std::vector<RaycastHit> hitAll{}; // store all the raycast hit
+
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
-        
-        scene->raycast(origin, direction, distance, buffer, hitFlags);
-        
+        PxQueryFlags queryFlags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eNO_BLOCK;
+
+        scene->raycast(origin, direction, distance, buffer, hitFlags, PxQueryFilterData(queryFlags));
+
         // loop based on how many touches return by the query
         for (PxU32 i = 0; i < buffer.nbTouches; i++)
         {
             RaycastHit hit{};
 
-            hit.intersect = buffer.hasBlock;
-
+            hit.intersect = true;
             hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(buffer.touches[i].actor->userData);
 
             hit.position = buffer.touches[i].position;
             hit.normal = buffer.touches[i].normal;
             hit.distance = buffer.touches[i].distance;
-
-            switch (buffer.touches[i].actor->getType()) {
-
-            case 0: //  PxActorType::eRIGID_STATIC
-                hit.rigidID = rigid::rstatic;
-                break;
-
-            case 1: //  PxActorType::eRIGID_DYNAMIC
-                hit.rigidID = rigid::rdynamic;
-                break;
-
-            default:
-                break;
-            }
-
-            switch (buffer.touches[i].shape->getGeometryType()) {
-
-            case 0: //  PxGeometryType::eSPHERE
-                hit.shape = shape::sphere;
-                break;
-
-            case 1: //  PxGeometryType::ePLANE
-                hit.shape = shape::plane;
-                break;
-
-            case 2: //  PxGeometryType::eCAPSULE
-                hit.shape = shape::capsule;
-                break;
-
-            case 3: //  PxGeometryType::eBOX
-                hit.shape = shape::box;
-                break;
-
-            default:
-                break;
-            }
 
             hitAll.emplace_back(hit); // store each hit data into the container
         }
@@ -546,7 +641,7 @@ namespace myPhysx
             }
 
             // ASSIGN TO THE NEW RIGID TYPE
-            underlying_obj->rigidID = type;
+            underlying_obj->rigid_type = type;
 
             // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
             if (type == rigid::rstatic) {
@@ -558,7 +653,7 @@ namespace myPhysx
             else if (type == rigid::rdynamic) {
                 underlying_obj->rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
                 underlying_obj->rb.rigidDynamic->userData = underlying_obj->id.get();
-                //hprintf("DYNA: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
+                //printf("DYNA: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
                 world->scene->addActor(*underlying_obj->rb.rigidDynamic);
             }
 
@@ -571,16 +666,16 @@ namespace myPhysx
                     //printf("SHAPE TYPE: %d", underlying_obj->shape);
                     
                     // ATTACH THE NEW SHAPE BASED THE SHAPE TYPE
-                    if (underlying_obj->shape == shape::box) 
+                    if (underlying_obj->shape_type == shape::box) 
                         reAttachShape(type, underlying_obj->m_shape->getGeometry().box());
 
-                    else if (underlying_obj->shape == shape::sphere) 
+                    else if (underlying_obj->shape_type == shape::sphere) 
                         reAttachShape(type, underlying_obj->m_shape->getGeometry().sphere());
 
-                    else if (underlying_obj->shape == shape::plane) 
+                    else if (underlying_obj->shape_type == shape::plane) 
                         reAttachShape(type, underlying_obj->m_shape->getGeometry().plane());
 
-                    else if (underlying_obj->shape == shape::capsule) 
+                    else if (underlying_obj->shape_type == shape::capsule) 
                         reAttachShape(type, underlying_obj->m_shape->getGeometry().capsule());
                 }
             }
@@ -616,6 +711,32 @@ namespace myPhysx
         }
     }
 
+    template<typename Type>
+    void PhysicsObject::reCreateRigidbody(PhysxObject& obj, PxTransform transform, rigid rigidType, Type data) {
+
+        PxMaterial* material = world->mat.at(obj.matID); // might need check if this set or not
+
+        obj.m_shape = physx_system::getPhysics()->createShape(data, *material, true);
+
+        // ATTACH THE SHAPE TO THE OBJECT
+        if (rigidType == rigid::rstatic) {
+            obj.rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(transform);
+            obj.rb.rigidStatic->userData = obj.id.get();
+            obj.rb.rigidStatic->attachShape(*obj.m_shape);
+
+            world->scene->addActor(*obj.rb.rigidStatic);
+        }
+        else if (rigidType == rigid::rdynamic) {
+            obj.rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(transform);
+            obj.rb.rigidDynamic->userData = obj.id.get();
+            obj.rb.rigidDynamic->attachShape(*obj.m_shape);
+
+            world->scene->addActor(*obj.rb.rigidDynamic);
+        }
+    
+        physx_system::setupFiltering(obj.m_shape);
+    }
+
     void PhysicsObject::setShape(shape shape) {
 
         //PxRigidActorExt::createExclusiveShape (another method)
@@ -626,17 +747,18 @@ namespace myPhysx
             PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
 
             // CHECK IF HAVE SHAPE CREATED OR NOT
-            if (underlying_obj->shape != shape::none) {
+            if (underlying_obj->m_shape) {
+            //if (underlying_obj->shape != shape::none) {
 
                 // DETACH OLD SHAPE
-                if (underlying_obj->rigidID == rigid::rstatic)
+                if (underlying_obj->rigid_type == rigid::rstatic)
                     underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
 
-                else if (underlying_obj->rigidID == rigid::rdynamic)
+                else if (underlying_obj->rigid_type == rigid::rdynamic)
                     underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
             }
 
-            underlying_obj->shape = shape; // set new shape enum
+            underlying_obj->shape_type = shape; // set new shape enum
 
             // CHECK AGAINST THE TYPE OF SHAPE
             if (shape == shape::box) {
@@ -659,10 +781,10 @@ namespace myPhysx
             }
             
             // ATTACH THE SHAPE TO THE OBJECT
-            if (underlying_obj->rigidID == rigid::rstatic)
+            if (underlying_obj->rigid_type == rigid::rstatic)
                 underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
 
-            else if (underlying_obj->rigidID == rigid::rdynamic)
+            else if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
 
             // later check where need to release shape
@@ -678,19 +800,18 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->shape != shape::none) {
+            if (underlying_obj->shape_type != shape::none) {
 
-                if (underlying_obj->rigidID == rigid::rstatic)
+                if (underlying_obj->rigid_type == rigid::rstatic)
                     underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
 
-                else if (underlying_obj->rigidID == rigid::rdynamic)
+                else if (underlying_obj->rigid_type == rigid::rdynamic)
                     underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
 
-                underlying_obj->m_shape = nullptr;
-                underlying_obj->shape = shape::none; // set new shape enum
+                // release shape
+                underlying_obj->m_shape->release();
+                underlying_obj->shape_type = shape::none; // set new shape enum
             }
-
-            // need check whether need release shape need or not
         }
     }
 
@@ -700,7 +821,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 //// ROTATE IN Z
                 //PxRigidDynamicLockFlag::eLOCK_LINEAR_Z | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y;
@@ -720,7 +841,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lock);
 
@@ -735,7 +856,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lock);
 
@@ -750,7 +871,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lock);
 
@@ -765,7 +886,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lock);
 
@@ -780,7 +901,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lock);
 
@@ -795,11 +916,14 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID != rigid::none) {
+            if (underlying_obj->rigid_type != rigid::none) {
 
-                underlying_obj->m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collide);
+                if (underlying_obj->m_shape) {
 
-                underlying_obj->collider = collide;
+                    underlying_obj->m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collide);
+
+                    underlying_obj->is_collider = collide;
+                }
             }
         }
     }
@@ -810,24 +934,24 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 underlying_obj->rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
 
-                underlying_obj->kinematic = kine;
+                underlying_obj->is_kinematic = kine;
             }
         }
     }
 
-    void PhysicsObject::disableGravity(bool grav) {
+    void PhysicsObject::enableGravity(bool enable) {
 
         if (world->all_objects.contains(id)) {
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+            
+            underlying_obj->rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !enable);
 
-            underlying_obj->rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, grav);
-
-            underlying_obj->gravity = grav;
+            underlying_obj->gravity_enabled = enable;
         }
     }
 
@@ -839,7 +963,7 @@ namespace myPhysx
 
             if (underlying_obj->m_shape) {
 
-                underlying_obj->trigger = trigger;
+                underlying_obj->is_trigger = trigger;
 
                 if (trigger)
                     underlying_obj->m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
@@ -855,7 +979,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->shape == shape::box)
+            if (underlying_obj->shape_type == shape::box)
                 underlying_obj->m_shape->setGeometry(PxBoxGeometry(halfextent_width, halfextent_height, halfextent_depth));
             //underlying_obj->m_shape->getGeometry().box().halfExtents = PxVec3{ halfextent_width , halfextent_height, halfextent_depth };
         }
@@ -867,7 +991,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->shape == shape::sphere)
+            if (underlying_obj->shape_type == shape::sphere)
                 underlying_obj->m_shape->setGeometry(PxSphereGeometry(radius));
             //underlying_obj->m_shape->getGeometry().sphere().radius = radius;
         }
@@ -878,7 +1002,7 @@ namespace myPhysx
         if (world->all_objects.contains(id)) {
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            if (underlying_obj->shape == shape::capsule) {
+            if (underlying_obj->shape_type == shape::capsule) {
                 underlying_obj->m_shape->setGeometry(PxCapsuleGeometry(radius, halfHeight));
                 //underlying_obj->m_shape->getGeometry().capsule().radius = radius;
                 //underlying_obj->m_shape->getGeometry().capsule().halfHeight = halfHeight;
@@ -955,8 +1079,8 @@ namespace myPhysx
 
                 // CREATE NEW MATERIAL
                 PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
-                    material.dynamicFriction,
-                    material.restitution);
+                                                                                material.dynamicFriction,
+                                                                                material.restitution);
 
                 phy_uuid::UUID UUID = phy_uuid::UUID{};
 
@@ -978,13 +1102,13 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rstatic) {
+            if (underlying_obj->rigid_type == rigid::rstatic) {
 
                 return PxVec3{ underlying_obj->rb.rigidStatic->getGlobalPose().p.x,
                                underlying_obj->rb.rigidStatic->getGlobalPose().p.y,
                                underlying_obj->rb.rigidStatic->getGlobalPose().p.z };
             }
-            else if (underlying_obj->rigidID == rigid::rdynamic) {
+            else if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 return PxVec3{ underlying_obj->rb.rigidDynamic->getGlobalPose().p.x,
                                underlying_obj->rb.rigidDynamic->getGlobalPose().p.y,
@@ -1006,10 +1130,10 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rstatic)
+            if (underlying_obj->rigid_type == rigid::rstatic)
                 underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ pos, quat });
 
-            else if (underlying_obj->rigidID == rigid::rdynamic)
+            else if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ pos, quat });
         }
     }
@@ -1022,10 +1146,10 @@ namespace myPhysx
             
             //underlying_obj->rb.rigidStatic->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, true);
 
-            if (underlying_obj->rigidID == rigid::rstatic)
+            if (underlying_obj->rigid_type == rigid::rstatic)
                 return underlying_obj->rb.rigidStatic->getGlobalPose().q;
 
-            else if (underlying_obj->rigidID == rigid::rdynamic)
+            else if (underlying_obj->rigid_type == rigid::rdynamic)
                 return underlying_obj->rb.rigidDynamic->getGlobalPose().q;
         }
 
@@ -1039,7 +1163,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 return underlying_obj->rb.rigidDynamic->getMass();
         }
 
@@ -1053,7 +1177,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 return underlying_obj->rb.rigidDynamic->getInvMass();
         }
 
@@ -1067,7 +1191,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 return underlying_obj->rb.rigidDynamic->getAngularDamping();
         }
 
@@ -1081,7 +1205,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 return underlying_obj->rb.rigidDynamic->getAngularVelocity();
         }
 
@@ -1095,7 +1219,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 return underlying_obj->rb.rigidDynamic->getLinearDamping();
         }
 
@@ -1109,7 +1233,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 return underlying_obj->rb.rigidDynamic->getLinearVelocity();
         }
 
@@ -1123,21 +1247,21 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            return underlying_obj->trigger;
+            return underlying_obj->is_trigger;
         }
 
         // default return.
         return false;
     }
 
-    bool PhysicsObject::useGravity() const {
+    bool PhysicsObject::isGravityEnabled() const {
 
         if (world->all_objects.contains(id)) {
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->gravity;
+            if (underlying_obj->rigid_type == rigid::rdynamic)
+                return underlying_obj->gravity_enabled;
         }
 
         // default return.
@@ -1150,8 +1274,8 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
-                return underlying_obj->kinematic;
+            if (underlying_obj->rigid_type == rigid::rdynamic)
+                return underlying_obj->is_kinematic;
         }
 
         // default return.
@@ -1164,8 +1288,8 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID != rigid::none)
-                return underlying_obj->collider;
+            if (underlying_obj->rigid_type != rigid::none)
+                return underlying_obj->is_collider;
         }
 
         // default return.
@@ -1178,7 +1302,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->setMass(mass);
         }
     }
@@ -1189,7 +1313,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->setMassSpaceInertiaTensor(mass);
         }
     }
@@ -1200,7 +1324,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->setAngularDamping(angularDamping);
         }
     }
@@ -1211,7 +1335,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->setAngularVelocity(angularVelocity);
         }
     }
@@ -1222,7 +1346,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->setLinearDamping(linearDamping);
         }
     }
@@ -1233,7 +1357,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic)
+            if (underlying_obj->rigid_type == rigid::rdynamic)
                 underlying_obj->rb.rigidDynamic->setLinearVelocity(linearVelocity);
         }
     }
@@ -1244,7 +1368,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 switch (type) {
                 case force::force:
@@ -1276,7 +1400,7 @@ namespace myPhysx
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigidID == rigid::rdynamic) {
+            if (underlying_obj->rigid_type == rigid::rdynamic) {
 
                 switch (type) {
                 case force::force:
@@ -1353,78 +1477,81 @@ namespace myPhysx
 /*                           EVENT CALLBACK                                    */
 /*-----------------------------------------------------------------------------*/
     void EventCallBack::onConstraintBreak(PxConstraintInfo* /*constraints*/, PxU32 /*count*/) {
-        printf("CALLBACK: onConstraintBreak\n");
+        //printf("CALLBACK: onConstraintBreak\n");
     }
     void EventCallBack::onWake(PxActor** /*actors*/, PxU32 /*count*/) {
-        printf("CALLBACK: onWake\n");
+        //printf("CALLBACK: onWake\n");
     }
     void EventCallBack::onSleep(PxActor** /*actors*/, PxU32 /*count*/) {
-        printf("CALLBACK: onSleep\n");
+        //printf("CALLBACK: onSleep\n");
     }
     void EventCallBack::onContact(const PxContactPairHeader& /*pairHeader*/, const PxContactPair* pairs, PxU32 count) {
-        printf("CALLBACK: onContact -- ");
-        printf("PAIRS: %d\n", count);
+        //printf("CALLBACK: onContact -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
             collision state = collision::none;
             const PxContactPair& current = *pairs++;
 
-            auto shape1_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[0]->getActor()->userData);
-            auto shape2_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[1]->getActor()->userData);
-            //printf("shape1 actor %llu, shape2 actor %llu \n", shape1_id, shape2_id);
+            if (current.contactCount > 0) {
 
-            //current.shapes[0]->getGeometryType() // PxGeometryType::eBOX;
-            
-            const PxU32 bufferSize = 64;
-            PxContactPairPoint contacts[bufferSize];
-            PxU32 nbContacts = current.extractContacts(contacts, bufferSize);
-            
-            std::vector<ContactPoint> tempCP = {};
-            PxU8 contactCount = current.contactCount;
+                auto shape1_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[0]->getActor()->userData);
+                auto shape2_id = *reinterpret_cast<phy_uuid::UUID*>(current.shapes[1]->getActor()->userData);
+                //printf("shape1 actor %llu, shape2 actor %llu \n", shape1_id, shape2_id);
 
-            for (PxU32 j = 0; j < nbContacts; j++) {
+                //current.shapes[0]->getGeometryType() // PxGeometryType::eBOX;
 
-                PxVec3 normal = contacts[j].normal;
-                PxVec3 point = contacts[j].position;
-                PxVec3 impulse = contacts[j].impulse;
+                const PxU32 bufferSize = 64;
+                PxContactPairPoint contacts[bufferSize];
+                PxU32 nbContacts = current.extractContacts(contacts, bufferSize);
 
-                ContactPoint cp = { normal, point, impulse };
-                tempCP.emplace_back(cp);
-                //printf("%d - NORMAL: %f - X, %f - Y, %f - Z\n", j, normal.x, normal.y, normal.z);
-                //printf("%d - POINT: %f - X, %f - Y, %f - Z\n", j, point.x, point.y, point.z);
-                //printf("%d - IMPUSLE: %f - X, %f - Y, %f - Z\n", j, impulse.x, impulse.y, impulse.z);
+                std::vector<ContactPoint> tempCP = {};
+                PxU8 contactCount = current.contactCount;
+
+                for (PxU32 j = 0; j < nbContacts; j++) {
+
+                    PxVec3 normal = contacts[j].normal;
+                    PxVec3 point = contacts[j].position;
+                    PxVec3 impulse = contacts[j].impulse;
+
+                    ContactPoint cp = { normal, point, impulse };
+                    tempCP.emplace_back(cp);
+                    //printf("%d - NORMAL: %f - X, %f - Y, %f - Z\n", j, normal.x, normal.y, normal.z);
+                    //printf("%d - POINT: %f - X, %f - Y, %f - Z\n", j, point.x, point.y, point.z);
+                    //printf("%d - IMPUSLE: %f - X, %f - Y, %f - Z\n", j, impulse.x, impulse.y, impulse.z);
+                }
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
+                    state = collision::onCollisionEnter;
+                    //printf("Shape is ENTERING CONTACT volume\n");
+                }
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
+                    state = collision::onCollisionStay;
+                    //printf("Shape is STAYING CONTACT volume\n");
+                }
+
+                if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
+                    state = collision::onCollisionExit;
+                    //printf("Shape is LEAVING CONTACT volume\n");
+                }
+
+                // Store all the ID of the actors that collided
+                std::queue<ContactManifold>* collision_data = physx_system::currentWorld->getCollisionData();
+
+                // Add new ContactManifold data into the queue
+                collision_data->emplace(ContactManifold{ shape1_id, shape2_id, state, tempCP, contactCount });
+
+                //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
+                //    printf("Trigger-trigger overlap detected\n");
             }
-
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
-                state = collision::onCollisionEnter;
-                printf("Shape is ENTERING CONTACT volume\n");
-            }
-
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
-                state = collision::onCollisionStay;
-                printf("Shape is STAYING CONTACT volume\n");
-            }
-
-            if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
-                state = collision::onCollisionExit;
-                printf("Shape is LEAVING CONTACT volume\n");
-            }
-
-            // Store all the ID of the actors that collided
-            std::queue<ContactManifold>* collision_data = physx_system::currentWorld->getCollisionData();
-
-            // Add new ContactManifold data into the queue
-            collision_data->emplace(ContactManifold{ shape1_id, shape2_id, state, tempCP, contactCount });
-
-            //if (physx_system::isTriggerShape(current.shapes[0]) && physx_system::isTriggerShape(current.shapes[1]))
-            //    printf("Trigger-trigger overlap detected\n");
         }
 
     }
     void EventCallBack::onTrigger(PxTriggerPair* pairs, PxU32 count) {
-        printf("CALLBACK: onTrigger -- ");
-        printf("PAIRS: %d\n", count);
+        //printf("CALLBACK: onTrigger -- ");
+        //printf("PAIRS: %d\n", count);
 
         while (count--) {
 
@@ -1432,53 +1559,56 @@ namespace myPhysx
             trigger state = trigger::none;
             const PxTriggerPair& current = *pairs++;
 
-            auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
-            auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
-            //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
+            if (current.triggerActor != nullptr && current.otherActor != nullptr) {
 
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
-                //stayTrigger = true;
-                state = trigger::onTriggerEnter;
-                printf("Shape is ENTERING TRIGGER volume\n");
+                auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
+                auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
+                //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
+
+                if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
+                    //stayTrigger = true;
+                    state = trigger::onTriggerEnter;
+                    //printf("Shape is ENTERING TRIGGER volume\n");
+                }
+                if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
+                    //stayTrigger = false;
+                    state = trigger::onTriggerExit;
+                    //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
+                    //printf("Shape is LEAVING TRIGGER volume\n");
+                }
+
+                // Store all the ID of the actors that collided with trigger)
+                std::queue<TriggerManifold>* trigger_data = physx_system::currentWorld->getTriggerData();
+
+                // Add new TriggerManifold data into the queue
+                trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
+
+                //// Check object exist
+                //std::map<phy_uuid::UUID, int>* all_object = physx_system::currentWorld->getAllObject();
+                //
+                //if (all_object->contains(trigger_id) && all_object->contains(other_id)) {
+                //
+                //    // Add new TriggerManifold data into the queue
+                //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
+                //}
+                //
+                //if (!all_object->contains(trigger_id) || !all_object->contains(other_id))
+                //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, trigger::onTriggerExit, true });
+
+
+                //int msize = temp->size();
+                //while(!temp->empty()) {
+                //
+                //    TriggerManifold val = temp->front();
+                //    std::cout << "TRI: " << val.triggerID << " OTH: " << val.otherID;
+                //    printf(" STATE: %d\n", val.status);
+                //    
+                //    temp->pop();
+                //}
             }
-            if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
-                //stayTrigger = false;
-                state = trigger::onTriggerExit;
-                //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
-                printf("Shape is LEAVING TRIGGER volume\n");
-            }
-
-            // Store all the ID of the actors that collided with trigger)
-            std::queue<TriggerManifold>* trigger_data = physx_system::currentWorld->getTriggerData();
-
-            // Add new TriggerManifold data into the queue
-            trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
-
-            //// Check object exist
-            //std::map<phy_uuid::UUID, int>* all_object = physx_system::currentWorld->getAllObject();
-            //
-            //if (all_object->contains(trigger_id) && all_object->contains(other_id)) {
-            //
-            //    // Add new TriggerManifold data into the queue
-            //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, state });
-            //}
-            //
-            //if (!all_object->contains(trigger_id) || !all_object->contains(other_id))
-            //    trigger_data->emplace(TriggerManifold{ trigger_id, other_id, trigger::onTriggerExit, true });
-
-
-            //int msize = temp->size();
-            //while(!temp->empty()) {
-            //
-            //    TriggerManifold val = temp->front();
-            //    std::cout << "TRI: " << val.triggerID << " OTH: " << val.otherID;
-            //    printf(" STATE: %d\n", val.status);
-            //    
-            //    temp->pop();
-            //}
         }
     }
     void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
-        printf("CALLBACK: onAdvance\n");
+        //printf("CALLBACK: onAdvance\n");
     }
 }
