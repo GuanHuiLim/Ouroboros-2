@@ -401,6 +401,95 @@ namespace oo::Anim
 		stream.close();
 		return true;
 	}
+
+	oo::Asset AnimationSystem::GetAnimationAsset(UID anim_ID)
+	{
+		auto assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation);
+		for (auto& asset : assets)
+		{
+			if (asset.GetData<UID>() == anim_ID)
+				return asset;
+		}
+		return {};
+	}
+
+	oo::Asset AnimationSystem::AddAnimationAsset(Animation&& anim, std::string const& filepath)
+	{
+		SaveAnimation(anim, filepath);
+		return Project::GetAssetManager()->GetOrLoadPath(std::filesystem::path{ filepath });
+	}
+
+	bool AnimationSystem::SplitAnimation(SplitAnimationInfo& info, Animation& anim)
+	{
+		bool result{ false };
+		auto new_anim = Animation::ExtractAnimation(info.start_time, info.end_time, anim, result);
+		if (result == false)
+		{
+			assert(false);//extract animation failed
+			return false;
+		}
+		new_anim.name = info.split_animation_name;
+
+		auto filepath = info.filepath;
+		//use original animation's filepath
+		if (filepath.empty())
+		{
+			auto asset = GetAnimationAsset(info.anim_ID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);//original animation's asset doesn't exist
+				return false;
+			}
+
+			filepath = asset.GetFilePath().parent_path().string() + "/" + new_anim.name + ".anim";
+		}
+		//add the animation as an asset
+		auto asset = AddAnimationAsset(std::move(new_anim), filepath);
+		if (asset.IsValid() == false)
+		{
+			assert(false); // animation asset invalid, did animation fail to load?
+			return false;
+		}
+
+		return true;
+	}
+
+	bool AnimationSystem::SplitAnimation(SplitAnimationInfo& info)
+	{
+		
+		auto anim_ptr = internal::RetrieveAnimation(info.anim_ID);
+		if (anim_ptr == nullptr)
+		{
+			assert(false);//animation dont exist or not sotred
+			return false;
+		}
+		if (info.split_animation_name.empty())
+		{
+			assert(false);//no name specified for split animation
+			return false;
+		}
+
+		auto& anim = *anim_ptr;
+
+		if (info.in_frames)
+		{
+			//if start_frame == end_frame do nothing
+			if (info.start_frame == info.end_frame) return false;
+			//convert to time
+			info.start_time = anim.TimeFromFrame(info.start_frame);
+			info.start_time = anim.TimeFromFrame(info.end_frame);
+		}
+		else
+		{
+			//if start_time == end_time do nothing
+			if (internal::Equal(info.start_time, info.end_time))
+				return false;
+		}
+
+		return SplitAnimation(info, anim);
+	}
+
+
 	bool AnimationSystem::SaveAnimation(std::string name, std::string filepath)
 	{
 		//map should contain the animation tree
