@@ -76,6 +76,7 @@ namespace oo::Anim::internal
 	//update a node's trackers to reflect its animation timelines
 	void UpdateNodeTrackers(Node& node);
 	//checks if a node is available for transition
+	Link* CheckNodeTransitions(UpdateTrackerInfo& info, Node& node);
 	Link* CheckNodeTransitions(UpdateTrackerInfo& info);
 
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link);
@@ -130,7 +131,7 @@ namespace oo::Anim::internal
 	Animation* AddAnimationToNode(Node& node, Animation& anim);
 	Animation* AddAnimationToNode(Node& node, oo::Asset asset);
 
-	void RemoveNodeFromGroup(Group& group, UID node_ID);
+	bool RemoveNodeFromGroup(Group& group, UID node_ID);
 	void RemoveLinkFromGroup(Group& group, UID link_ID);
 
 

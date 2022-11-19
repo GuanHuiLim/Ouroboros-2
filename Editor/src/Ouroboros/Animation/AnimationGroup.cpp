@@ -109,6 +109,7 @@ namespace oo::Anim
 		registration::class_<Group>("Animation Group")
 			.property("name", &Group::name)
 			.property("startNode", &Group::startNode)
+			.property("any_state_Node", &Group::any_state_Node)
 			.property("groupID", &Group::groupID)
 			.method(internal::serialize_method_name, &internal::SerializeGroup)
 			.method(internal::load_method_name, &internal::LoadGroup)
