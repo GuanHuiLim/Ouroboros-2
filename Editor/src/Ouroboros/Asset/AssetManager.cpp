@@ -511,14 +511,14 @@ namespace oo
         {
             // Create meta file
             meta.id = Asset::GenerateSnowflake();
-            std::ofstream ofs = std::ofstream(fpMeta);
+            std::ofstream ofs = std::ofstream(fpMeta, std::ios::binary);
             BinaryIO::Write(ofs, meta);
             //LOG_INFO("Created meta {0}", fpMeta.filename());
         }
         else
         {
             // Read meta file
-            std::ifstream ifs = std::ifstream(fpMeta);
+            std::ifstream ifs = std::ifstream(fpMeta, std::ios::binary);
             BinaryIO::Read(ifs, meta);
         }
         return meta;
