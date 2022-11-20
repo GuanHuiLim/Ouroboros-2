@@ -43,6 +43,7 @@ Technology is prohibited.
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
 
+
 // Default settings for editor camera
 Camera EditorViewport::EditorCamera = [&]()
 {
@@ -53,7 +54,6 @@ Camera EditorViewport::EditorCamera = [&]()
 	camera.Rotate({ 45, 180, 0 });
 	return camera;
 }();
-
 EditorViewport::EditorViewport()
 {
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnPlayEvent);
@@ -90,30 +90,6 @@ void EditorViewport::Show()
 	vMax.y += ImGui::GetWindowPos().y;
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
-	
-	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && cameraFocus)
-	{
-		ImVec2 mousepos = ImGui::GetMousePos();
-		ImVec2 cursor_screenpos = ImGui::GetCursorScreenPos();
-		mousepos.x -= cursor_screenpos.x;
-		mousepos.y -= cursor_screenpos.y;
-		
-		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
-		mousepos.x = mousepos.x / contentRegion.x;
-		mousepos.y = mousepos.y / contentRegion.y;
-		if (mousepos.x > 0 && mousepos.y > 0 && mousepos.x < 1 && mousepos.y < 1)
-		{
-			auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y});
-			if (graphicsID >= 0)
-			{
-				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
-				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid ); 
-				Hierarchy::SetItemSelected(uuid);
-			}
-		}
-	}
-
 
 
 	m_cc.Update(oo::timer::dt(), cameraFocus);
@@ -146,9 +122,29 @@ void EditorViewport::Show()
 	ImGui::Image(graphicsworld->imguiID[1], ImGui::GetContentRegionAvail());
 	ImGui::SetCursorPos(prevpos);
 
+	ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+	ImVec2 cursor_screenpos = ImGui::GetCursorScreenPos();
 	//ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && cameraFocus && Hierarchy::GetSelected().empty())
+	{
+		ImVec2 mousepos = ImGui::GetMousePos();
+		mousepos.x -= cursor_screenpos.x;
+		mousepos.y -= cursor_screenpos.y;
 
-
+		mousepos.x = mousepos.x / contentRegion.x;
+		mousepos.y = mousepos.y / contentRegion.y;
+		if (mousepos.x > 0 && mousepos.y > 0 && mousepos.x < 1 && mousepos.y < 1)
+		{
+			auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y });
+			if (graphicsID >= 0)
+			{
+				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
+				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
+				Hierarchy::SetItemSelected(uuid);
+			}
+		}
+	}
 
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
@@ -251,6 +247,31 @@ void EditorViewport::Show()
 			
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
 			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.
+		}
+	}
+	else
+	{
+		
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && cameraFocus)
+		{
+			ImVec2 mousepos = ImGui::GetMousePos();
+			
+			mousepos.x -= cursor_screenpos.x;
+			mousepos.y -= cursor_screenpos.y;
+
+			mousepos.x = mousepos.x / contentRegion.x;
+			mousepos.y = mousepos.y / contentRegion.y;
+			if (mousepos.x > 0 && mousepos.y > 0 && mousepos.x < 1 && mousepos.y < 1)
+			{
+				auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y });
+				if (graphicsID >= 0)
+				{
+					LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
+					auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+					ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
+					Hierarchy::SetItemSelected(uuid);
+				}
+			}
 		}
 	}
 	if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)&& before_edit.is_valid())
