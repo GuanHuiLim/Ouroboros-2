@@ -40,8 +40,8 @@ void AnimationTimelineView::Show()
     if (gameObject == nullptr || gameObject->HasComponent<oo::AnimationComponent>() == false)
         return;
 
-    go = gameObject;
-    animator = &go.get()->GetComponent<oo::AnimationComponent>();
+    source_go = gameObject;
+    animator = &source_go.get()->GetComponent<oo::AnimationComponent>();
 
     DisplayAnimationTimeline(animator);
 }
@@ -97,18 +97,13 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
                 if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
                 {
                     //apply it according to the rttr_property
-                    timelines[i]->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
+                    timelines[i]->rttr_property.set_value(source_go.get()->GetComponent<oo::TransformComponent>(),
                                                           keyframes[i]->data.get_value<glm::vec3>());
                 }
-                else if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::QUAT)
-                {
-                    timelines[i]->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
-                                                          keyframes[i]->data.get_value<glm::quat>());
-                }
-                else if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
-                {
+                //else if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+                //{
 
-                }
+                //}
             }
 
             //for (int i = 0; i < animation->events.size(); ++i)
@@ -194,12 +189,18 @@ void AnimationTimelineView::DrawToolbar()
 
         if (timeline != nullptr)
         {
-            oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(glm::vec3{ 0.f,0.f,0.f }, currentTime);
-
-            auto& temp = animator->GetActualComponent().animTree->groups;
-            for (auto it = temp.begin(); it != temp.end(); ++it)
+            if (timeline->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
             {
-                auto newKeyFrame = animator->AddKeyFrame(it->second.name, node->name, timeline->name, newkf);
+                oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(glm::vec3{ 0.f,0.f,0.f }, currentTime);
+
+                auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
+                assert(newKeyFrame);
+            }
+            if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+            {
+                oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(false, currentTime);
+
+                auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
                 assert(newKeyFrame);
             }
         }
@@ -516,35 +517,10 @@ void AnimationTimelineView::DrawTimeLineContent()
 
             if (ImGui::BeginPopup("##addtimeline"))
             {
-                //need to get the available gameobject from the heirarchy and get all its properties
-                //if (ImGui::MenuItem("Add Example Timeline"))
-                //{
-                //    auto& temp = animator->GetActualComponent().animTree->groups;
-
-                //    for (auto it = temp.begin(); it != temp.end(); ++it)
-                //    {
-                //        oo::Anim::TimelineInfo exampleTimeline{
-                //        .type{oo::Anim::Timeline::TYPE::PROPERTY},
-                //        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
-                //        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
-                //        .timeline_name{"Example Timeline " + std::to_string(currentTimeLineCount)},
-                //        .target_object{*(go.get())},
-                //        .source_object{*(go.get())}
-                //        };
-                //        auto exampleTL = animator->AddTimeline(it->second.name, node->name, exampleTimeline);
-                //        timeline = exampleTL.operator->();
-                //    }
-                //    ++currentTimeLineCount;
-                //}
-
-                DrawTimeLineSelector(go.get());
-
-                
-
+                DrawTimeLineSelector(source_go.get());
                 ImGui::EndPopup();
             }
         }
-
         ImGui::EndChild();
     }
     DisplayInspector();
@@ -563,7 +539,7 @@ void AnimationTimelineView::DisplayInspector()
                 //ImGui Dropdown of all the invokable events 
 
                 fnInfo.clear();
-                oo::ScriptComponent::map_type& scriptMap = go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
+                oo::ScriptComponent::map_type& scriptMap = source_go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
 
                 for (auto it = scriptMap.begin(); it != scriptMap.end(); ++it)
                 {
@@ -660,27 +636,30 @@ void AnimationTimelineView::DisplayInspector()
                             ImGui::DragFloat("Z", &keyframe->data.get_value<glm::vec3>().z);
 
                             //need to support applying to child object
-                            timeline->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
+                            timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::TransformComponent>(),
                                                               keyframe->data.get_value<glm::vec3>());
                         }
-                        else if (timeline->datatype == oo::Anim::Timeline::DATATYPE::QUAT)
-                        {
-                            ImGui::Text(timeline->name.c_str());
-                            ImGui::SameLine();
-                            std::string label = "##" + timeline->name;
-                            ImGui::DragFloat4(label.c_str(), glm::value_ptr(keyframe->data.get_value<glm::quat>()), 0.01f);
-
-                            //apply it to the object property
-                            timeline->rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
-                                                              keyframe->data.get_value<glm::quat>());
-
-                        }
-                        else if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
-                        {
-                            ImGui::Checkbox(timeline->name.c_str(), &keyframe->data.get_value<bool>());
-                            
-                            //apply it to the object property
-                        }
+                        //else if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+                        //{
+                        //    ImGui::Checkbox(timeline->name.c_str(), &keyframe->data.get_value<bool>());
+                        //    
+                        //    if (source_go.get()->TryGetComponent<oo::SphereColliderComponent>())
+                        //    {
+                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::SphereColliderComponent>(),
+                        //            keyframe->data.get_value<bool>());
+                        //    }
+                        //    if (source_go.get()->TryGetComponent<oo::BoxColliderComponent>())
+                        //    {
+                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::BoxColliderComponent>(),
+                        //            keyframe->data.get_value<bool>());
+                        //    }
+                        //    if (source_go.get()->TryGetComponent<oo::CapsuleColliderComponent>())
+                        //    {
+                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::CapsuleColliderComponent>(),
+                        //            keyframe->data.get_value<bool>());
+                        //    }
+                        //    //apply it to the object property
+                        //}
                     }
                 }
             }
@@ -690,30 +669,55 @@ void AnimationTimelineView::DisplayInspector()
 
 void AnimationTimelineView::DrawTimeLineSelector(oo::GameObject* go)
 {
-    for (oo::GameObject& child : go->GetDirectChilds())
+    //create recursive tree instead(?)
+    if (ImGui::MenuItem("Position"))
     {
-        if (ImGui::BeginMenu(child.Name().c_str()))
-        {
-            if (ImGui::MenuItem("Position"))
-            {
-
-            }
-            else if (ImGui::MenuItem("Rotation"))
-            {
-
-            }
-            else if (ImGui::MenuItem("Scale"))
-            {
-
-            }
-            else if (child.GetChildCount() > 0)
-            {
-                //recursively get children
-                DrawTimeLineSelector(&child);
-            }
-            ImGui::EndMenu();
-        }
+        oo::Anim::TimelineInfo positionTimeline{
+        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
+        .timeline_name{go->Name() + " Position"},
+        .target_object{*go},
+        .source_object{*source_go.get()}
+        };
+        auto posTL = animator->AddTimeline(node->group->name, node->name, positionTimeline);
+        timeline = posTL.operator->();
     }
+    if (ImGui::MenuItem("Rotation"))
+    {
+        oo::Anim::TimelineInfo rotationTimeline{
+        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Euler Angles")},
+        .timeline_name{go->Name() + " Rotation"},
+        .target_object{*go},
+        .source_object{*source_go.get()}
+        };
+        auto rotTL = animator->AddTimeline(node->group->name, node->name, rotationTimeline);
+        timeline = rotTL.operator->();
+    }
+    if (ImGui::MenuItem("Scale"))
+    {
+        oo::Anim::TimelineInfo scaleTimeline{
+        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Scale")},
+        .timeline_name{go->Name() + " Scale"},
+        .target_object{*go},
+        .source_object{*source_go.get()}
+        };
+        auto scaTL = animator->AddTimeline(node->group->name, node->name, scaleTimeline);
+        timeline = scaTL.operator->();
+    }
+    //if (go->TryGetComponent<oo::SphereColliderComponent>()
+    //        || go->TryGetComponent<oo::BoxColliderComponent>()
+    //        || go->TryGetComponent<oo::CapsuleColliderComponent>())
+    //{
+    //    if (ImGui::MenuItem("Collider"))
+    //    {
+    //        //enable or disable that component
+    //    }
+    //}
 }
 
 void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, const ImVec4& colour, float ypos, const std::string& label)
@@ -724,8 +728,6 @@ void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, const ImVec4& col
 
     cursorPos.x += GetTimelinePosFromFrame(_currentKeyFrame) + (halfKeyFrameSize + 22);
     cursorPos.y -= 2;
-
-    //ImVec2 size = ImVec2(keyFrameSize, keyFrameSize + 4);
 
     float screenx = cursorPos.x;
     float x = ImGui::GetCursorPosX();

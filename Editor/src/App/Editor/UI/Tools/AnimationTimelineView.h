@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <imgui/imgui_internal.h>
 #include <Ouroboros/Animation/Anim.h>
 #include <Ouroboros/Animation/AnimationComponent.h>
+#include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Scripting/ScriptComponent.h>
 
 
@@ -29,7 +30,7 @@ public:
 	void Show();
 
 private:
-	oo::Scene::go_ptr go;
+	oo::Scene::go_ptr source_go;
 	oo::AnimationComponent* animator = nullptr;
 	oo::Anim::Node* node = nullptr;
 	oo::Anim::Animation* animation = nullptr;
@@ -80,5 +81,4 @@ private:
 
 	int GetFrameFromTimelinePos(float pos);
 	float GetTimelinePosFromFrame(int frame);
-
 };
