@@ -176,6 +176,9 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		auto str = rttr::type::get <oo::Anim::P_TYPE>().get_enumeration().value_to_name(val);
 		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
 	};
+	/*
+	* Timeline
+	*/
 	map[rttr::type::get<oo::Anim::Timeline::TYPE>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -188,6 +191,16 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		auto str = rttr::type::get <oo::Anim::Timeline::DATATYPE>().get_enumeration().value_to_name(val);
 		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
 	};
+	/*
+	* Node
+	*/
+	map[rttr::type::get<oo::Anim::Node::TYPE>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto str = rttr::type::get <oo::Anim::Node::TYPE>().get_enumeration().value_to_name(val);
+		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
+	};
+
 	map[rttr::type::get<oo::ScriptValue::function_info>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -427,7 +440,9 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 		auto enum_value = rttr::type::get <oo::Anim::P_TYPE>().get_enumeration().name_to_value(value.GetString());
 		return rttr::variant{ enum_value };
 	};
-
+	/*
+	* Timeline
+	*/
 	map[rttr::type::get<oo::Anim::Timeline::TYPE>().get_id()]
 		= [](rapidjson::Value& value)
 	{
@@ -442,7 +457,16 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 		auto enum_value = rttr::type::get <oo::Anim::Timeline::DATATYPE>().get_enumeration().name_to_value(value.GetString());
 		return rttr::variant{ enum_value };
 	};
-
+	/*
+	* Node
+	*/
+	map[rttr::type::get<oo::Anim::Node::TYPE>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto temp = std::string{ value.GetString() };
+		auto enum_variant = rttr::type::get <oo::Anim::Node::TYPE>().get_enumeration().name_to_value(value.GetString());
+		return rttr::variant{ enum_variant };
+	};
 	map[rttr::type::get<oo::ScriptValue::function_info>().get_id()]
 		= [](rapidjson::Value& value)
 	{
@@ -1183,10 +1207,10 @@ namespace oo::Anim::internal
 			node.trackers.emplace_back(std::move(progressTracker));
 		}
 	}
-	//checks if a node is available for transition
-	Link* CheckNodeTransitions(UpdateTrackerInfo& info)
+
+	Link* CheckNodeTransitions(UpdateTrackerInfo& info, Node& node)
 	{
-		for (auto& link : info.tracker.currentNode->outgoingLinks)
+		for (auto& link : node.outgoingLinks)
 		{
 			if (link->has_exit_time)
 			{
@@ -1228,6 +1252,13 @@ namespace oo::Anim::internal
 
 		return nullptr;
 	}
+	//checks if a node is available for transition
+	Link* CheckNodeTransitions(UpdateTrackerInfo& info)
+	{
+		if (info.tracker.currentNode == false) return nullptr;
+
+		return CheckNodeTransitions(info, *(info.tracker.currentNode));
+	}
 
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link)
 	{
@@ -1253,13 +1284,28 @@ namespace oo::Anim::internal
 		{
 			assert(false);
 		}
-
-
-		auto result = CheckNodeTransitions(info);
-		if (result)
+		//check transitions for any state node
+		bool has_transitioned = false;
 		{
-			ActivateTransition(info, result);
+			auto& any_state_node = *(info.tracker.currentNode->group->any_state_Node);
+			auto result = CheckNodeTransitions(info, any_state_node);
+			if (result)
+			{
+				ActivateTransition(info, result);
+				has_transitioned = true;
+			}
 		}
+		
+		//check transitions for current node if any state node no transition
+		if (has_transitioned == false)
+		{
+			auto result = CheckNodeTransitions(info);
+			if (result)
+			{
+				ActivateTransition(info, result);
+			}
+		}
+		
 		float updatedTimer = info.tracker.timer + info.tracker.currentNode->speed * info.dt;
 		//update tracker timer and global timer
 		info.tracker.timer = updatedTimer;
@@ -1551,17 +1597,38 @@ namespace oo::Anim::internal
 		assert(result == true);
 		auto& group = tree.groups[key];
 		//create the starting node
-		NodeInfo n_info{
-			.name{ "Start Node" },
+		{
+			NodeInfo start_node_info{
+			.name{ start_node_name },
 			.animation_name{ Animation::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
 			.group{ internal::CreateGroupReference(tree,group.groupID)},
-			.nodeID{internal::generateUID() }
-		};
-		auto node = Anim::internal::AddNodeToGroup(group, n_info);
-		assert(node);
-		group.startNode = internal::CreateNodeReference(group, n_info.nodeID);
+			.nodeID{internal::generateUID() },
+			.type{Node::TYPE::START}
+			};
+			auto node = Anim::internal::AddNodeToGroup(group, start_node_info);
+			assert(node);
+			group.startNode = internal::CreateNodeReference(group, node->node_ID);
+		}
+		
+		//create the any state node
+		{
+			NodeInfo any_state_node_info{
+			.name{ any_state_node_name },
+			.animation_name{ Animation::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f},
+			.group{ internal::CreateGroupReference(tree,group.groupID)},
+			.nodeID{internal::generateUID() },
+			.type{Node::TYPE::ANY_STATE}
+			};
+			auto node = Anim::internal::AddNodeToGroup(group, any_state_node_info);
+			assert(node);
+			group.any_state_Node = internal::CreateNodeReference(group, node->node_ID);
+		}
+		
+		
 
 		return &group;
 	}
@@ -1868,8 +1935,14 @@ namespace oo::Anim::internal
 		return anim;
 	}
 
-	void RemoveNodeFromGroup(Group& group, UID node_ID)
+	bool RemoveNodeFromGroup(Group& group, UID node_ID)
 	{
+		auto node_ptr = RetrieveNodeFromGroup(group, node_ID);
+		if (node_ptr == nullptr) return false;
+		if (node_ptr->name == start_node_name) return false;	 //dont remove start node
+		if (node_ptr->name == any_state_node_name) return false; //dont remove any state node
+
+
 		std::stack<UID> links_to_remove{};
 		//remove links to the node and links from the node to others
 		for (auto& [id, link] : group.links)
@@ -1887,7 +1960,7 @@ namespace oo::Anim::internal
 		}
 		//remove the node
 		group.nodes.erase(node_ID);
-
+		return true;
 	}
 
 	void RemoveLinkFromGroup(Group& group, UID link_ID)
@@ -1992,12 +2065,6 @@ namespace oo::Anim::internal
 				for (auto& condition : link.conditions)
 				{
 					BindConditionToParameter(tree, condition);
-					////set param index
-					//assert(tree.paramIDtoIndexMap.contains(condition.paramID));
-					//condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
-
-					////set condition comparison function
-					//internal::AssignComparisonFunctionToCondition(condition);
 				}
 			}
 		}

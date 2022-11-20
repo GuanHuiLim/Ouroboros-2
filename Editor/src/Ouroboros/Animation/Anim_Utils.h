@@ -113,6 +113,8 @@ namespace oo::Anim
 
 		constexpr char  serialize_method_name[] = "Serialize";
 		constexpr char  load_method_name[] = "Load";
+		constexpr char	start_node_name[] = "Start Node";
+		constexpr char	any_state_node_name[] = "Any State Node";
 	}
 
 	struct GroupRef

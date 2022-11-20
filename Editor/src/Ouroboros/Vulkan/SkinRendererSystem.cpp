@@ -71,19 +71,18 @@ namespace oo
 		world->for_each(skin_mesh_query,
 			[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
 			{
-				//do nothing if transform did not change
-				if (transformComp.HasChangedThisFrame == false) return;
-
-
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
-
-				if (gfx_Object.bones.size() != m_comp.num_bones)
-					gfx_Object.bones.resize(m_comp.num_bones);
-
 				gfx_Object.modelID = m_comp.meshResource;
 				gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
 				gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
 				gfx_Object.submesh = m_comp.meshInfo.submeshBits;
+
+				//do nothing if transform did not change
+				if (transformComp.HasChangedThisFrame == false) return;
+
+				if (gfx_Object.bones.size() != m_comp.num_bones)
+					gfx_Object.bones.resize(m_comp.num_bones);
+
 
 				gfx_Object.localToWorld = transformComp.GetGlobalMatrix();
 			});

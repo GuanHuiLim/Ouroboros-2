@@ -77,7 +77,8 @@ namespace oo
 		Anim::NodeRef AddNode(std::string const& groupName, Anim::NodeInfo& info);
 
 		//removes a node from a group
-		void RemoveNode(Anim::TargetNodeInfo const& info);
+		//returns false if no removal happened
+		bool RemoveNode(Anim::TargetNodeInfo const& info);
 
 		//adds a link between two nodes
 		//returns nullptr if link was not added due to error(src or dst not found)
