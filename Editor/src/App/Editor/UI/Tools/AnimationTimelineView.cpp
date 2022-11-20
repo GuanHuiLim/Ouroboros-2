@@ -517,25 +517,30 @@ void AnimationTimelineView::DrawTimeLineContent()
             if (ImGui::BeginPopup("##addtimeline"))
             {
                 //need to get the available gameobject from the heirarchy and get all its properties
-                if (ImGui::MenuItem("Add Example Timeline"))
-                {
-                    auto& temp = animator->GetActualComponent().animTree->groups;
+                //if (ImGui::MenuItem("Add Example Timeline"))
+                //{
+                //    auto& temp = animator->GetActualComponent().animTree->groups;
 
-                    for (auto it = temp.begin(); it != temp.end(); ++it)
-                    {
-                        oo::Anim::TimelineInfo exampleTimeline{
-                        .type{oo::Anim::Timeline::TYPE::PROPERTY},
-                        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
-                        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
-                        .timeline_name{"Example Timeline " + std::to_string(currentTimeLineCount)},
-                        .target_object{*(go.get())},
-                        .source_object{*(go.get())}
-                        };
-                        auto exampleTL = animator->AddTimeline(it->second.name, node->name, exampleTimeline);
-                        timeline = exampleTL.operator->();
-                    }
-                    ++currentTimeLineCount;
-                }
+                //    for (auto it = temp.begin(); it != temp.end(); ++it)
+                //    {
+                //        oo::Anim::TimelineInfo exampleTimeline{
+                //        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+                //        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+                //        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
+                //        .timeline_name{"Example Timeline " + std::to_string(currentTimeLineCount)},
+                //        .target_object{*(go.get())},
+                //        .source_object{*(go.get())}
+                //        };
+                //        auto exampleTL = animator->AddTimeline(it->second.name, node->name, exampleTimeline);
+                //        timeline = exampleTL.operator->();
+                //    }
+                //    ++currentTimeLineCount;
+                //}
+
+                DrawTimeLineSelector(go.get());
+
+                
+
                 ImGui::EndPopup();
             }
         }
@@ -681,6 +686,34 @@ void AnimationTimelineView::DisplayInspector()
             }
             ImGui::End();
         }
+}
+
+void AnimationTimelineView::DrawTimeLineSelector(oo::GameObject* go)
+{
+    for (oo::GameObject& child : go->GetDirectChilds())
+    {
+        if (ImGui::BeginMenu(child.Name().c_str()))
+        {
+            if (ImGui::MenuItem("Position"))
+            {
+
+            }
+            else if (ImGui::MenuItem("Rotation"))
+            {
+
+            }
+            else if (ImGui::MenuItem("Scale"))
+            {
+
+            }
+            else if (child.GetChildCount() > 0)
+            {
+                //recursively get children
+                DrawTimeLineSelector(&child);
+            }
+            ImGui::EndMenu();
+        }
+    }
 }
 
 void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, const ImVec4& colour, float ypos, const std::string& label)

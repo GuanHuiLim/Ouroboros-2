@@ -75,6 +75,7 @@ private:
 	void DrawNodeSelector(oo::AnimationComponent* _animator);
 	void DrawTimeLine(oo::Anim::Animation* _animation, float headerYPadding, float headerHeight = 24.0f);
 	void DrawTimeLineContent();
+	void DrawTimeLineSelector(oo::GameObject* go);
 	void DrawKeyFrame(int _currentKeyFrame, const ImVec4& colour, float ypos = 0.0f, const std::string& label = "");
 
 	int GetFrameFromTimelinePos(float pos);
