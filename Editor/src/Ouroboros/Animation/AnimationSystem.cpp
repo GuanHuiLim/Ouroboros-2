@@ -82,7 +82,7 @@ namespace oo::Anim
 					.SetParameter("Test float", 30.f);
 			}
 		}
-
+		
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
@@ -106,7 +106,14 @@ namespace oo::Anim
 			return _query;
 		}();
 
-
+		//set all animation data 
+		for (auto& [key, tree] : AnimationTree::map)
+		{
+			internal::BindConditionsToParameters(tree);
+			internal::BindNodesToAnimations(tree);
+			internal::CalculateAnimationLength(tree);
+			internal::ReloadReferences(tree);
+		}
 
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 
@@ -115,14 +122,7 @@ namespace oo::Anim
 
 			});
 
-		//set all condition's parameter index 
-		for (auto& [key, tree] : AnimationTree::map)
-		{
-			internal::BindConditionsToParameters(tree);
-			internal::BindNodesToAnimations(tree);
-			internal::CalculateAnimationLength(tree);
-			internal::ReloadReferences(tree);
-		}
+		
 	}
 
 	void AnimationSystem::TestObject()
@@ -267,16 +267,63 @@ namespace oo::Anim
 
 	}
 
+	void AnimationSystem::TestDemoObject()
+	{
+		auto anim_assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation);
+		oo::Asset animation_asset{};
+		for (auto& asset : anim_assets)
+		{
+			auto name = asset.GetData<std::string>();
+			if (name == "MainChar_Idle_Take 001")
+			{
+				animation_asset = asset;
+				break;
+			}
+		}
+		assert(animation_asset.IsValid());
+
+		constexpr size_t treeID = 1234647030338911234ull;
+		auto tree = internal::RetrieveAnimationTree("Demo Animation Tree");
+		assert(tree);
+		auto animation = internal::RetrieveAnimation("MainChar_Idle_Take 001");
+
+		test_obj = scene->CreateGameObjectImmediate();
+		test_obj->Name() = "AnimationTestObject";
+		auto& comp = test_obj->AddComponent<oo::AnimationComponent>();
+		comp.SetAnimationTree(tree->treeID);
+		assert(comp.HasAnimationTree());
+
+		//{//add conditions
+		//	ConditionInfo condition_info{
+		//	.comparison{Condition::CompareType::EQUAL},
+		//	.parameter_name{"bool"},
+		//	.value{true}
+		//	};
+		//	auto result = comp.AddCondition("Group 1", "Start Node -> Idle Node", condition_info);
+		//	assert(result);
+		//}
+		//{//set animation
+		//	SetNodeAnimInfo info{
+		//	.group_name{"Group 1"},
+		//	.node_ID{3935255677567460564ull},
+		//	.anim_asset{ animation_asset },
+		//	};
+		//	auto result = comp.SetNodeAnimation(info);
+		//	assert(result);
+		//}
+		
+	}
+
 	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
 	{
 		if constexpr (DEBUG_ANIMATION == false) return nullptr;
 
 		else
 		{
-			auto animationfbx_fp = Project::GetAssetFolder().string();
+			/*auto animationfbx_fp = Project::GetAssetFolder().string();
 			TestObject();
-			auto obj_children = scene->GetRoot()->GetChildren();
-
+			auto obj_children = scene->GetRoot()->GetChildren();*/
+			TestDemoObject();
 
 			return nullptr;
 		}
@@ -452,6 +499,35 @@ namespace oo::Anim
 
 		return Animation::AddAnimation(std::move(anim));
 
+	}
+
+	std::vector<Animation*> AnimationSystem::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
+	{
+		auto anims = Animation::LoadAnimationFromFBX(filepath, resource);
+
+		for (auto& anim_ptr : anims)
+		{
+			if (anim_ptr == nullptr)
+			{
+				assert(false);
+				continue;
+			}
+			auto anim_name = anim_ptr->name;
+			auto anim_filepath = std::filesystem::path{ filepath }.parent_path().string() + "/" + anim_ptr->name + ".anim";
+			SaveAnimation(*anim_ptr, anim_filepath);
+			DeleteAnimation(anim_name);
+			/*auto asset = */Project::GetAssetManager()->GetOrLoadPath(std::filesystem::path{ anim_filepath });
+		}
+
+
+		return anims;
+	}
+
+	bool AnimationSystem::DeleteAnimation(std::string const& name)
+	{
+		Animation::RemoveAnimation(name);
+
+		return true;
 	}
 
 	Animation* AnimationSystem::AddAnimation(std::string const& name)

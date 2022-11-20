@@ -16,8 +16,8 @@ Technology is prohibited.
 #include "gpuCommon.h"
 #include <vector>
 #include <array>
+#include "GraphicsWorld.h"
 
-class GraphicsWorld;
 class VulkanRenderer;
 
 class GraphicsBatch
@@ -41,6 +41,8 @@ public:
 	static GraphicsBatch Init(GraphicsWorld* gw,VulkanRenderer* renderer ,size_t maxObjects);
 	void GenerateBatches();
 	const std::vector<oGFX::IndirectCommand>& GetBatch(int32_t batchIdx);
+	const std::vector<oGFX::IndirectCommand>& GetParticlesBatch();
+	const std::vector<ParticleData>& GetParticlesData();
 	
 
 private:
@@ -48,6 +50,8 @@ private:
 	VulkanRenderer* m_renderer{nullptr};
 
 	std::array<std::vector<oGFX::IndirectCommand> , DrawBatch::MAX_NUM> m_batches;
+	std::vector<ParticleData>m_particleList;
+	std::vector<oGFX::IndirectCommand>m_particleCommands;
 
 	static inline std::vector<oGFX::IndirectCommand> s_scratchBuffer;
 

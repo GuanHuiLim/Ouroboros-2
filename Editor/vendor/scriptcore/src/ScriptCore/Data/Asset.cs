@@ -85,5 +85,16 @@ namespace Ouroboros
         {
             return new Asset(Asset_LoadAssetAtPath(path));
         }
+
+        [DllImport("__Internal")] protected static extern object[] Asset_GetByType(Type assetType, string name_space, string name);
+
+        public static T[] GetByType<T>(Type type)
+        {
+            string name_space = "";
+            if (typeof(T).Namespace != null)
+                name_space = typeof(T).Namespace;
+
+            return Asset_GetByType(type, name_space, typeof(T).Name) as T[];
+        }
     }
 }

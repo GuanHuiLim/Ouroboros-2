@@ -4,15 +4,15 @@ namespace Ouroboros
 {
     public static class Screen
     {
-        [DllImport("__Internal")] private static extern uint Screen_GetWidth();
-        [DllImport("__Internal")] private static extern uint Screen_GetHeight();
+        [DllImport("__Internal")] private static extern int Screen_GetWidth();
+        [DllImport("__Internal")] private static extern int Screen_GetHeight();
 
-        public static float width
+        public static int width
         {
             get { return Screen_GetWidth(); }
         }
 
-        public static float height
+        public static int height
         {
             get { return Screen_GetHeight(); }
         }

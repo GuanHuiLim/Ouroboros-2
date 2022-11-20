@@ -83,6 +83,7 @@ namespace oo::Anim
 	struct AnimationTree; 
 	struct AnimationTracker; //tracks a user's progress in an animation tree
 	struct ProgressTracker;
+	struct ScriptEventTracker;
 	class IAnimationComponent;
 	class AnimationSystem;
 
@@ -104,8 +105,16 @@ namespace oo::Anim
 			ProgressTracker& progressTracker;
 		};
 
+		struct UpdateScriptEventInfo
+		{
+			UpdateTrackerInfo& tracker_info;
+			std::vector<ScriptEvent>& events;
+		};
+
 		constexpr char  serialize_method_name[] = "Serialize";
 		constexpr char  load_method_name[] = "Load";
+		constexpr char	start_node_name[] = "Start Node";
+		constexpr char	any_state_node_name[] = "Any State Node";
 	}
 
 	struct GroupRef

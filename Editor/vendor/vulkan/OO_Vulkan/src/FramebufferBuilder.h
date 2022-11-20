@@ -14,6 +14,7 @@ Technology is prohibited.
 #pragma once
 #include "vulkan/vulkan.h"
 #include "VulkanTexture.h"
+#include "VulkanRenderpass.h"
 #include <vector>
 
 class FramebufferCache;
@@ -24,7 +25,7 @@ public:
 
 	FramebufferBuilder& BindImage(vkutils::Texture2D* tex);
 
-	bool Build(VkFramebuffer& framebuffer, VkRenderPass renderPass);
+	bool Build(VkFramebuffer& framebuffer, const VulkanRenderpass& renderPass);
 private:
 
 	std::vector<vkutils::Texture2D*> textures;

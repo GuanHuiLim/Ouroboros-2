@@ -1,3 +1,8 @@
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
 /************************************************************************************//*!
 \file           GraphicsWorld.cpp
 \project        Ouroboros
@@ -79,6 +84,46 @@ void GraphicsWorld::ClearLightInstances()
 {
 	m_OmniLightInstances.Clear();
 	m_lightCount = 0;
+}
+
+int32_t GraphicsWorld::CreateEmitterInstance()
+{
+	return CreateEmitterInstance(EmitterInstance());
+}
+
+int32_t GraphicsWorld::CreateEmitterInstance(EmitterInstance obj)
+{
+	++m_emitterCount;
+	return m_EmitterInstances.Add(obj);
+}
+
+EmitterInstance& GraphicsWorld::GetEmitterInstance(int32_t id)
+{
+	return m_EmitterInstances.Get(id);
+}
+
+void GraphicsWorld::DestroyEmitterInstance(int32_t id)
+{
+	m_EmitterInstances.Remove(id);
+	--m_emitterCount;
+}
+
+void GraphicsWorld::ClearEmitterInstances()
+{
+	m_EmitterInstances.Clear();
+	m_emitterCount = 0;
+}
+
+void GraphicsWorld::SubmitParticles(std::vector<ParticleData>& particleData, uint32_t cnt, int32_t eID)
+{
+	if (cnt == 0) return;
+
+	auto& emitter = GetEmitterInstance(eID);
+
+	emitter.particles.resize(cnt);
+	
+	memcpy(emitter.particles.data(), particleData.data(), cnt * sizeof(ParticleData));
+
 }
 
 void ObjectInstance::SetShadowCaster(bool s)

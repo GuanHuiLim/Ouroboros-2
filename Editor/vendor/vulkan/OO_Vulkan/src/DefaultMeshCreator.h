@@ -29,3 +29,5 @@ DefaultMesh CreateDefaultCubeMesh();
 
 // We must be explicit by saying this is a XZ-plane, because a plane can mean anything, is it XY, XZ, or YZ...?
 DefaultMesh CreateDefaultPlaneXZMesh();
+
+DefaultMesh CreateDefaultPlaneXYMesh();

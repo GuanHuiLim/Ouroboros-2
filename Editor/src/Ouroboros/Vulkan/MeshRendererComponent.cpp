@@ -50,7 +50,10 @@ namespace oo
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
         )
-        .property("MeshInfo", &MeshRendererComponent::GetMeshInfo, &MeshRendererComponent::SetMeshInfo);
+        .property("MeshInfo", &MeshRendererComponent::GetMeshInfo, &MeshRendererComponent::SetMeshInfo)
+        .property("Cast Shadows", &MeshRendererComponent::CastShadows)
+        .property("Receive Shadows", &MeshRendererComponent::ReceiveShadows)
+            ;
     }
 
     MeshInfo MeshRendererComponent::GetMeshInfo()

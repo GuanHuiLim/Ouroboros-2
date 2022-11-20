@@ -143,7 +143,7 @@ bool VulkanInstance::Init(const oGFX::SetupInfo& setupSpecs)
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);	//custom version of the application
 	appInfo.pEngineName = "Engine";							//custom engine name
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);		//custom engine version
-	appInfo.apiVersion = VK_API_VERSION_1_2;				//vulkan version, might need to change
+	appInfo.apiVersion = VK_API_VERSION_1_3;				//vulkan version, might need to change
 
 	//create list to hold instance extensions
 	std::vector<const char *> requiredExtensions = setupSpecs.extensions;

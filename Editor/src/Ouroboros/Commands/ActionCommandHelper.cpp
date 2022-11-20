@@ -17,6 +17,8 @@
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
+#include <Ouroboros/Vulkan/ParticleEmitterComponent.h>
+#include <Ouroboros/Vulkan/SkinRendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/CameraComponent.h>
 
@@ -35,6 +37,9 @@ namespace oo
 		AddCommandToMap<oo::BoxColliderComponent>();
 		AddCommandToMap<oo::GameObjectDebugComponent>();
 		AddCommandToMap<oo::MeshRendererComponent>();
+		AddCommandToMap<oo::ParticleEmitterComponent>();
+		AddCommandToMap<oo::SkinMeshRendererComponent>();
+		AddCommandToMap<oo::SkinMeshBoneComponent>();
 		AddCommandToMap<oo::DeferredComponent>();
 		AddCommandToMap<oo::LightComponent>();
 		AddCommandToMap<oo::CameraComponent>();

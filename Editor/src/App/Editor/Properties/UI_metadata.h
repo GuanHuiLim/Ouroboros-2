@@ -22,10 +22,18 @@ public:
 	//just declare and put some data (declare means its not removable)
 	//for Component types 
 	static const constexpr unsigned char NOT_REMOVABLE = 1;
+	//set the UI to be on the same_line with the next UI
+	//int = sameline with next #amount of UI 
+	static const constexpr unsigned char SAME_LINE_WITH_NEXT = 3;
 	//for Drag bars (int, float, vec2, vec3, vec4, etc...)
 	//takes in float
 	static const constexpr unsigned char DRAG_SPEED = 100;
+	//for oo::color
+	//takes in bool
+	//enable the color wheel
+	static const constexpr unsigned char COLOR_PICKER = 101;
 	//for oo::Asset (affects asset browser)
 	//takes in an integer corresponding to the AssetInfo::Type enum
 	static const constexpr unsigned char ASSET_TYPE = 255;
+
 };

@@ -39,7 +39,7 @@ struct ShadowPass : public GfxRenderpass
 
 	VkExtent2D shadowmapSize = { 1024, 1024 };
 
-	VkRenderPass renderpass_Shadow{};
+	VulkanRenderpass renderpass_Shadow{};
 
 	VkPipeline pso_ShadowDefault{};
 

@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "VulkanSwapchain.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
+#include "VulkanRenderpass.h"
 #include "GpuVector.h"
 #include "gpuCommon.h"
 #include "DescriptorBuilder.h"
@@ -270,6 +271,8 @@ public:
 	};
 
 	IndexedVertexBuffer g_GlobalMeshBuffers;
+	std::array<GpuVector<ParticleData>,3> g_particleDatas;
+	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer{};
 
 	GpuVector<oGFX::DebugVertex> g_DebugDrawVertexBufferGPU;
 	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU;
@@ -297,15 +300,18 @@ public:
 	uint32_t normalTextureID = static_cast<uint32_t>(-1);
 	uint32_t pinkTextureID = static_cast<uint32_t>(-1);
 
+	uint32_t GetDefaultCubeID();
+	uint32_t GetDefaultPlaneID();
+	uint32_t GetDefaultSpriteID();
+
 	// - Synchronisation
 	std::vector<VkSemaphore> imageAvailable;
 	std::vector<VkSemaphore> renderFinished;
-	std::vector<VkSemaphore> readyForCopy;
 	std::vector<VkFence> drawFences;
 
 	// - Pipeline
-	VkRenderPass renderPass_default{};
-	VkRenderPass renderPass_default_noDepth{};
+	VulkanRenderpass renderPass_default{};
+	VulkanRenderpass renderPass_default_noDepth{};
 
 	vkutils::Buffer indirectCommandsBuffer{};
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};
@@ -442,7 +448,11 @@ public:
 		uint32_t CreateTextureImage(const std::string& fileName);
 		uint32_t AddBindlessGlobalTexture(vkutils::Texture2D texture);		
 
-		
+		void InitDefaultPrimatives();
+		std::unique_ptr<ModelFileResource>def_cube;
+		std::unique_ptr<ModelFileResource>def_sprite;
+		std::unique_ptr<ModelFileResource>def_plane;
+		std::unique_ptr<ModelFileResource>def_sphere;
 
 };
 

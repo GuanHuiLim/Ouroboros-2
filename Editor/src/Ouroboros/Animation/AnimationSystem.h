@@ -32,8 +32,9 @@ namespace oo::Anim
 		~AnimationSystem();
 		//to be run before main gameplay loop
 		void Init(Ecs::ECSWorld* world, Scene* scene);
-		//to be run before main gameplay loop and after objects are created
+		//to be run before main gameplay loop and after objects are created/loaded
 		void BindPhase();
+		//update function to be run every frame
 		void Run(Ecs::ECSWorld* world) override;
 
 		Ecs::ECSWorld* Get_Ecs_World()
@@ -45,7 +46,7 @@ namespace oo::Anim
 			assert(scene);
 			return *scene;
 		}
-
+		//test function
 		Scene::go_ptr CreateAnimationTestObject();
 
 		static bool SaveAnimationTree(size_t id, std::string filepath);
@@ -54,6 +55,9 @@ namespace oo::Anim
 		static bool SaveAllAnimationTree(std::string filepath);
 		static AnimationTree* LoadAnimationTree(std::string filepath);
 		static Animation* LoadAnimation(std::string filepath);
+		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
+		static bool DeleteAnimation(std::string const& name);
+
 		static bool LoadAssets(std::string filepath);
 		static void OpenFileCallback(OpenFileEvent* evnt);
 		static void CloseProjectCallback(CloseProjectEvent* evnt);
@@ -64,6 +68,7 @@ namespace oo::Anim
 		static bool SaveAnimation(Animation& anim, std::string filepath);
 		static bool SaveAnimationTree(AnimationTree& tree, std::string filepath);
 		void TestObject();
+		void TestDemoObject();
 	};
 
 

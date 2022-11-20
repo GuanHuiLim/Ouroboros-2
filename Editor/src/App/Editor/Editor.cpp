@@ -237,9 +237,9 @@ void Editor::MenuBar()
 			{
 				oo::PhysicsSystem::ColliderDebugDraw = !oo::PhysicsSystem::ColliderDebugDraw;
 			}
-			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessges))
+			if (ImGui::MenuItem("Physics Debug Messages", 0, oo::PhysicsSystem::DebugMessages))
 			{
-				oo::PhysicsSystem::DebugMessges = !oo::PhysicsSystem::DebugMessges;
+				oo::PhysicsSystem::DebugMessages = !oo::PhysicsSystem::DebugMessages;
 			}
 			if (ImGui::MenuItem("Camera Debug Draw", 0, oo::RendererSystem::CameraDebugDraw))
 			{

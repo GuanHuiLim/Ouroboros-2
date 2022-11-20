@@ -26,6 +26,9 @@ Technology is prohibited.
 
 #include <rttr/registration>
 
+
+constexpr bool DEBUG_PRINT = false;
+
 namespace oo::Anim::internal
 {
 	void SerializeAnimation(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, Animation& anim)
@@ -175,16 +178,20 @@ namespace oo::Anim
 
 	void PrintNodeHierarchy(const aiScene* scene)
 	{
-		std::cout << "----------|Node Hierarchy|----------" << std::endl;
+		if constexpr (DEBUG_PRINT)
+		{
+			std::cout << "----------|Node Hierarchy|----------" << std::endl;
 
-		auto node = scene->mRootNode;
-		PrintRecusive(node);
+			auto node = scene->mRootNode;
+			PrintRecusive(node);
+		}
+		
 		
 	}
 
 	std::vector<Animation*> Animation::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
 	{
-
+		std::ostringstream os;
 
 		Assimp::Importer importer;
 		uint flags = 0;
@@ -210,7 +217,7 @@ namespace oo::Anim
 
 		
 
-		std::cout << "--------------|Bone hierarchy|--------------" << std::endl;
+		os << "--------------|Bone hierarchy|--------------" << std::endl;
 		//generate hierarchy map
 		std::unordered_map<std::string, std::vector<int>> bone_hierarchy_map{};
 		{
@@ -233,10 +240,10 @@ namespace oo::Anim
 					bone_hierarchy_map[child->mName] = children_index;
 
 					//debugging print
-					for (size_t i = 0; i < children_index.size(); ++i) std::cout << " |";
-					std::cout << child->mName + "  hierarchy: ";
-					for (auto& index : children_index) std::cout << index << ',';
-					std::cout << std::endl;
+					for (size_t i = 0; i < children_index.size(); ++i) os << " |";
+					os << child->mName + "  hierarchy: ";
+					for (auto& index : children_index) os << index << ',';
+					os << std::endl;
 
 					//recurse
 					traverse_recursive(child);
@@ -248,7 +255,7 @@ namespace oo::Anim
 
 			auto current = resource->skeleton->m_boneNodes;
 
-			std::cout << "Root bone: " << current->mName << std::endl;
+			os << "Root bone: " << current->mName << std::endl;
 
 			std::vector<int> children_idx{};
 			bone_hierarchy_map[current->mName] = children_idx;
@@ -257,24 +264,24 @@ namespace oo::Anim
 
 		std::string prefix_name = std::filesystem::path{ filepath }.stem().string() + "_";
 
-		std::cout << "Animated scene\n";
+		os << "Animated scene\n";
 		std::vector<Animation*> anims;
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
-			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
-			std::cout << "Anim frames: " << scene->mAnimations[i]->mDuration << std::endl;
-			std::cout << "Anim ticksPerSecond: " << scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim duration: " << static_cast<float>(scene->mAnimations[i]->mDuration) / scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim numChannels: " << scene->mAnimations[i]->mNumChannels << std::endl;
-			std::cout << "Anim numMeshChannels: " << scene->mAnimations[i]->mNumMeshChannels << std::endl;
-			std::cout << "-------------------------------------------------------" << std::endl;
+			os << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+			os << "Anim frames: " << scene->mAnimations[i]->mDuration << std::endl;
+			os << "Anim ticksPerSecond: " << scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim duration: " << static_cast<float>(scene->mAnimations[i]->mDuration) / scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim numChannels: " << scene->mAnimations[i]->mNumChannels << std::endl;
+			os << "Anim numMeshChannels: " << scene->mAnimations[i]->mNumMeshChannels << std::endl;
+			os << "-------------------------------------------------------" << std::endl;
 
 			Animation anim{};
 			anim.name = prefix_name + scene->mAnimations[i]->mName.C_Str();
 
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
-				std::cout << "Anim channel: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
+				os << "Anim channel: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
 
 				auto& channel = scene->mAnimations[i]->mChannels[x];
 				//oGFX::BoneNode* curr = resource->skeleton->m_boneNodes;
@@ -283,7 +290,7 @@ namespace oo::Anim
 				//assert(resource->strToBone.contains(boneName));
 				if (resource->strToBone.contains(boneName) == false)
 				{
-					std::cout << "Skipped: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
+					os << "Skipped: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
 					continue;
 				}
 
@@ -315,7 +322,10 @@ namespace oo::Anim
 
 						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
+
+						os << y << "- Keyframe Position: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << std::endl;
 					}
+
 				}
 				/*--------
 				rotation
@@ -339,6 +349,7 @@ namespace oo::Anim
 
 						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
+						os << y << "- Keyframe rotation: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << "," << key.mValue.w << std::endl;
 					}
 				}
 				/*--------
@@ -366,14 +377,17 @@ namespace oo::Anim
 						assert(keyframe);
 					}
 				}
-				std::cout << "Loaded: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
+				os << "Loaded: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
 			}
 
 			auto createdAnim = Animation::AddAnimation(std::move(anim));
 			assert(createdAnim);
 			anims.emplace_back(createdAnim);
 		}
-
+		if constexpr (DEBUG_PRINT)
+		{
+			std::cout << os.str();
+		}
 
 		return anims;
 	}
@@ -384,6 +398,9 @@ namespace oo::Anim
 		//remove existing dupe
 		if (Animation::name_to_ID.contains(anim.name))
 		{
+			auto old_anim = internal::RetrieveAnimation(Animation::name_to_ID[anim.name]);
+			assert(old_anim);
+			//anim.animation_ID = old_anim->animation_ID;
 			RemoveAnimation(anim.name);
 		}
 
