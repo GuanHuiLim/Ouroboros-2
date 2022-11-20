@@ -14,6 +14,7 @@ Technology is prohibited.
 #include "GraphicsBatch.h"
 
 #include "VulkanRenderer.h"
+#include "MathCommon.h"
 #include "GraphicsWorld.h"
 #include "gpuCommon.h"
 #include <cassert>
@@ -140,6 +141,23 @@ void GraphicsBatch::GenerateBatches()
 		//	[x = uint32_t{ 0 }](oGFX::IndirectCommand& c) mutable { 
 		//	c.firstInstance = c.firstInstance == 0 ? x++ : x - 1;
 		//});
+	}
+
+	for (auto& light : m_world->GetAllOmniLightInstances())
+	{
+		constexpr glm::vec3 up{ 0.0f,1.0f,0.0f };
+		constexpr glm::vec3 right{ 1.0f,0.0f,0.0f };
+		constexpr glm::vec3 forward{ 0.0f,0.0f,-1.0f };
+
+		light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+-up ,		glm::vec3{ 0.0f, 0.0f,-1.0f });
+		light.view[1] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+up,		glm::vec3{ 0.0f, 0.0f, 1.0f });
+		light.view[2] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+-right,	glm::vec3{ 0.0f,1.0f, 0.0f });
+		light.view[3] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+right,		glm::vec3{ 0.0f,1.0f, 0.0f });
+		light.view[4] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+-forward,	glm::vec3{ 0.0f,-1.0f, 0.0f });
+		light.view[5] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+forward,	glm::vec3{ 0.0f,-1.0f, 0.0f });
+
+		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
+		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
 	}
 
 	auto& allEmitters = m_world->GetAllEmitterInstances();
