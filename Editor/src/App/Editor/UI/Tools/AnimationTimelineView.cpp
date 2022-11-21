@@ -445,7 +445,7 @@ void AnimationTimelineView::DrawTimeLineContent()
                     {
                         if ((k * unitPerFrame) == animation->timelines[i].keyframes[j].time)
                         {
-                            DrawKeyFrame(k, { 0, 0, 0, 255 }, i * 20.0f, "K");
+                            DrawKeyFrame(k, { 0, 0, 0, 255 }, 15.0f + i * 20.0f, "K");
                             if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
                             {
                                 keyframe = &animation->timelines[i].keyframes[j];
@@ -484,7 +484,7 @@ void AnimationTimelineView::DrawTimeLineContent()
             for (int i = 0; i < animation->timelines.size(); ++i)
             {
                 ImGui::PushID(i);
-                ImGui::SetCursorPosY(5.0f + (i * 20.0f));
+                ImGui::SetCursorPosY(20.0f + (i * 20.0f));
                 bool requestDelete = false;
                 if (ImGui::SmallButton("X"))
                 {
