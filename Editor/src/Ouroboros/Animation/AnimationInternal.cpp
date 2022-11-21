@@ -1772,6 +1772,13 @@ namespace oo::Anim::internal
 		size_t index = 0;
 		for (auto& kf : timeline.keyframes)
 		{
+			//overwrite if same time as a current keyframe
+			if (Equal(kf.time, keyframe.time))
+			{
+				kf.data = keyframe.data;
+				return &kf;
+			}
+			//first keyframe that is past the inserted keyframe time
 			if (kf.time > keyframe.time)
 			{
 				break;
