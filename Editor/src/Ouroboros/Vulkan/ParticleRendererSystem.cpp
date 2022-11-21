@@ -68,22 +68,50 @@ namespace oo
                 {
                 case ParticleShape::Cone:
                 {
-                    float verticalHalfAngle = glm::radians(shape.angle)/ 2.0f;
-                    float val = random::generate<float>(-std::move(verticalHalfAngle),std::move(verticalHalfAngle));
-                    glm::vec2 dir = glm::vec2{val,cosf(val)};	
-                    pd.m_rotationOffset = -val;
-                    glm::mat2 rotMat = trans.GetGlobalRotationMatrix();
+                    //float verticalHalfAngle = glm::radians(shape.angle)/ 2.0f;
+                    //float val = random::generate<float>(-std::move(verticalHalfAngle),std::move(verticalHalfAngle));
+                    //glm::vec2 dir = glm::vec2{val,cosf(val)};	
+                    //pd.m_rotationOffset = -val;
+                    //glm::mat2 rotMat = trans.GetGlobalRotationMatrix();
+                    //float halfDist = shape.size / 2.0f;
+                    //float dist = random::generate<float>(-std::move(halfDist), std::move(halfDist));
+                    //pd.m_startOffset = glm::vec3((rotMat * glm::vec2(dist, 0.0f)),0.0f);
+                    //pd.m_startDirection = glm::vec3{ dir, 0.0f };
+
+                    float verticalHalfAngle = glm::radians(shape.angle) / 2.0f;
+                    float x_angle_rads = random::generate<float>(-verticalHalfAngle, verticalHalfAngle);
+                    float z_angle_rads = random::generate<float>(-verticalHalfAngle, verticalHalfAngle);
+                    auto rotation_matrix = glm::rotate(0.f, glm::vec3{ 0, 1, 0 });
+                    rotation_matrix = glm::rotate(rotation_matrix, x_angle_rads, glm::vec3{ 1, 0, 0 });
+                    rotation_matrix = glm::rotate(rotation_matrix, z_angle_rads, glm::vec3{ 0, 0, 1 });
+                    pd.m_startDirection = glm::vec3{ rotation_matrix * glm::vec4{0, 1, 0, 0} };
+                    //glm::extractEulerAngleZXY(rotation_matrix, pd.m_startDirection.x, pd.m_startDirection.y, pd.m_startDirection.z);
+                    //LOG_TRACE("Angles {0},{1},{2}", pd.m_startDirection.x, pd.m_startDirection.y, pd.m_startDirection.z);
+                    
+                    //pd.m_startDirection = glm::normalize(pd.m_startDirection);
+
+                    //glm::mat2 rotMat = trans.GetGlobalRotationMatrix();
                     float halfDist = shape.size / 2.0f;
-                    float dist = random::generate<float>(-std::move(halfDist), std::move(halfDist));
-                    pd.m_startOffset = glm::vec3((rotMat * glm::vec2(dist, 0.0f)),0.0f);
-                    pd.m_startDirection = glm::vec3{ dir, 0.0f };
+                    //float dist = random::generate<float>(halfDist, halfDist + halfDist);
+                    pd.m_startOffset = glm::vec3(halfDist * pd.m_startDirection);
                 }
                 break;
                 case ParticleShape::Circle:
                 {
-                    float val = random::generate<float>(0.0f,2*glm::pi<float>());
-                    pd.m_startDirection = glm::vec3{cosf(val),sinf(val),0.0f};	
-                    pd.m_rotationOffset= val - glm::pi<float>()/2.0f;	
+                    float x = random::generate<float>(-1.f, 1.f);
+                    float y = random::generate<float>(-1.f, 1.f);
+                    float z = random::generate<float>(-1.f, 1.f);
+                    pd.m_startDirection = glm::normalize(glm::vec3{ x, y, z });
+                    
+                    //LOG_TRACE("particle direction {0}{1}{2}", pd.m_startDirection.x, pd.m_startDirection.y, pd.m_startDirection.z);
+
+                    /*std::copysign(pd.m_startDirection.x, x);
+                    std::copysign(pd.m_startDirection.y, y);
+                    std::copysign(pd.m_startDirection.z, z);*/
+
+                    //float val = random::generate<float>(0.0f,2*glm::pi<float>());
+                    //pd.m_startDirection = glm::vec3{cosf(val),sinf(val),0.0f};	
+                    //pd.m_rotationOffset = val - glm::pi<float>()/2.0f;	
                     glm::mat3 rotMat = trans.GetGlobalRotationMatrix();
                     pd.m_startOffset = rotMat* pd.m_startDirection * shape.size;
                 }
