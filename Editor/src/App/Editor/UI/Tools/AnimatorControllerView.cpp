@@ -503,6 +503,9 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Text("Speed");
                 ImGui::SameLine(textsize.x * 12);
                 ImGui::InputFloat("##speed", &id->anim_node->speed);
+                ImGui::Text("Looping");
+                ImGui::SameLine(textsize.x * 12);
+                ImGui::Checkbox("##looping", &id->anim_node->GetAnimation().looping);
             }
         }
         else if (linkCount != 0)
