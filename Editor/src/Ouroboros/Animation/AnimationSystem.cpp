@@ -504,6 +504,18 @@ namespace oo::Anim
 			return false;
 		}
 		new_anim.name = info.split_animation_name;
+		new_anim.animation_length = (info.end_frame - info.start_frame) / new_anim.frames_per_second;
+
+		auto existing = internal::RetrieveAnimation(new_anim.name);
+		if (existing)
+		{
+			new_anim.animation_ID = existing->animation_ID;
+			new_anim.looping = existing->looping;
+			new_anim.events = existing->events;
+			*existing = new_anim;
+			return true;
+		}
+
 
 		auto filepath = info.filepath;
 		//use original animation's filepath

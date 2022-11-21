@@ -1538,9 +1538,9 @@ namespace oo::Anim::internal
 
 	Animation* RetrieveAnimation(std::string const& anim_name)
 	{
-		assert(Animation::name_to_ID.contains(anim_name));
+		if (Animation::name_to_ID.contains(anim_name) == false) return nullptr;
 		auto id = Animation::name_to_ID[anim_name];
-		assert(Animation::animation_storage.contains(id));
+		if (Animation::animation_storage.contains(id) == false) return nullptr;
 		return &(Animation::animation_storage[id]);
 
 	}

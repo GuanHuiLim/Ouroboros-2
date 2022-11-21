@@ -139,62 +139,106 @@ void MeshHierarchy::Show()
 	{
 		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
 
-		
-
 		if constexpr(true)
 		{
 			auto anim = anims.front();
-			std::string prefix = "Char_";
-			auto const split = [&](size_t start, size_t end, std::string const& split_anim_name)
-			{
+
+			auto const fn = [&](size_t start, size_t end, std::string name) {
+				
 				oo::Anim::SplitAnimationInfo info{
 					.in_frames{true},
 					.start_frame{start},
 					.end_frame{end},
 					.anim_ID{anim->animation_ID},
-					.split_animation_name{prefix + split_anim_name }
+					.split_animation_name{name}
 				};
 				auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
-				assert(true);
+				assert(result);
+				return result;
 			};
-			if (anim->name == "MainChar_FullAnimSet_Take 001")
-			{
-				prefix = "Char_";
-				split(1, 397, "Idle");
-				split(399, 442, "Jump");
-				split(442, 480, "Land");
-				split(481, 550, "Falling");
-				split(552, 600, "Running");
 
-				split(602, 700, "Punch1");
-				split(602, 630, "Punch1_HIT");
+			//{//Idle
+			//	auto result = fn(1, 71, "GruntEnemy_Idle");
+			//}
 
-
-				split(702, 780, "Punch2");
-				split(702, 717, "Punch2_HIT");
-
-				split(782, 867, "Punch3");
-
-				split(869, 1045, "KeyHit1");
-				split(1047, 1328, "KeyHit2");
-				split(1330, 1526, "KeyHit3");
+			{//Idle
+				auto result = fn(1, 397, "Char_Idle");
 			}
-			else if (anim->name == "Key_FullAnimSet_Take 001")
-			{
-				prefix = "Key_";
-
-				split(0, 60, "Open");
-				split(64, 120, "Close");
+			{//Jump
+				auto result = fn(399, 436, "Char_Jump");
 			}
-			else if (anim->name == "GruntEnemy_FullAnimSet_Take 001")
-			{
-				prefix = "Grunt_";
-
-				split(1, 71, "Idle");
-				split(73, 123, "Run");
-				split(125, 240, "Attack");
-				split(242, 297, "Stagger");
+			{//Land
+				auto result = fn(439, 455, "Char_Land");
 			}
+			{//KeyHit2
+				auto result = fn(1047, 1234, "Char_KeyHit2");
+			}
+			{//KeyAim
+				auto result = fn(1528, 1582, "Char_KeyAim");
+			}
+			{//KeyIdle
+				auto result = fn(1583, 1660, "Char_KeyIdle");
+			}
+			{//KeyThrow
+				auto result = fn(1662, 1700, "Char_KeyThrow");
+			}
+			{//KeyAim WalkForward
+				auto result = fn(1702, 1750, "Char_KeyAim_WalkForward");
+			}
+			{//KeyAim Strafe Left
+				auto result = fn(1752, 1800, "Char_KeyAim_StrafeLeft");
+			}
+			{//KeyAim Strafe Right
+				auto result = fn(1802, 1850, "Char_KeyAim_StrafeRight");
+			}
+			{//KeyAim Walk Back
+				auto result = fn(1852, 1900, "Char_KeyAim_Walk_Back");
+			}
+			{//Key Calling
+				auto result = fn(1902, 1961, "Char_Key_Calling");
+			}
+			{//Key Retrieval
+				auto result = fn(1963, 2069, "Char_Key_Retrieval");
+			}
+			{//KeyAim Jump
+				auto result = fn(2071, 2092, "Char_KeyAim_Jump");
+			}
+			{//KeyAim Land
+				auto result = fn(2105, 2120, "Char_KeyAim_Land");
+			}
+			{//KeyAim Falling
+				auto result = fn(2122, 2150, "Char_KeyAim_Falling");
+			}
+			{//Falling KeyThrow
+				auto result = fn(2152, 2200, "Char_Falling_KeyThrow");
+			}
+			{//Falling Key Calling
+				auto result = fn(2202, 2262, "Char_Falling_Key_Calling");
+			}
+			{//Falling Key Retrieval
+				auto result = fn(2262, 2320, "Char_Falling_Key_Retrieval");
+			}
+			{//Dash
+				auto result = fn(2322, 2360, "Char_Dash");
+			}
+			{//Sprint
+				auto result = fn(2362, 2396, "Char_Sprint");
+			}
+			{//Stagger1
+				auto result = fn(2398, 2420, "Char_Stagger1");
+			}
+			{//Stagger2
+				auto result = fn(2422, 2444, "Char_Stagger2");
+			}
+			{//Stagger3
+				auto result = fn(2446, 2468, "Char_Stagger3");
+			}
+			{//Death
+				auto result = fn(2470, 2600, "Char_Death");
+			}
+
+
+
 		}
 	}
 }
