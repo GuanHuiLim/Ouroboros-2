@@ -778,7 +778,7 @@ namespace oo::Anim::internal
 		//	condition->parameter->SetWithoutChecking(false);
 		assert(condition.compareFn);
 		if (condition.compareFn)
-			return condition.compareFn(condition.value, tracker.parameters[condition.parameterIndex].value);
+			return condition.compareFn(tracker.parameters[condition.parameterIndex].value, condition.value);
 
 		return false;
 	}

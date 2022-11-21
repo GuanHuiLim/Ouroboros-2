@@ -84,7 +84,6 @@ uintptr_t AnimatorControllerView::GetAvailableNodeID()
 
 void AnimatorControllerView::Show()
 {
-    //return;
     //Get Info From the GameObject
     auto& selected_items = Hierarchy::GetSelected();    //temporary fix, ideally wanna get from animatorcontroller file
     auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();

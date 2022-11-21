@@ -439,7 +439,7 @@ namespace oo::Anim
 	}
 	float Animation::TimeFromFrame(size_t frame)
 	{
-		return frames_per_second * static_cast<float>(frame);
+		return (1.f / frames_per_second) * static_cast<float>(frame);
 	}
 
 	Animation Animation::ExtractAnimation(float start_time, float end_time, Animation& anim, bool& result)
@@ -497,9 +497,9 @@ namespace oo::Anim
 					if (internal::Equal(kf.time, end_time))
 						break;
 
-					if (kf.time > start_time)
+					if (kf.time > end_time)
 					{
-						if (index != 0ull)
+						if (index == 0ull)
 						{
 							assert(false);//end keyframe cant be the first keyframe!
 							result = false;
@@ -526,7 +526,7 @@ namespace oo::Anim
 
 				new_timeline.keyframes.emplace_back(keyframe);
 			}
-
+			assert(new_timeline.keyframes.size() > 1ull);
 			new_anim.timelines.emplace_back(std::move(new_timeline));
 		}
 
