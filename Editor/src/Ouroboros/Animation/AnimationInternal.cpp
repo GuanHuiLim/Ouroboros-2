@@ -485,7 +485,8 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 	{
 		GroupRef ref;
 		auto load_fn = rttr::type::get<GroupRef>().get_method(internal::load_method_name);
-		load_fn.invoke({}, value, ref);
+		auto result = load_fn.invoke({}, value, ref);
+		assert(result.is_valid());
 		return rttr::variant{ ref };
 	};
 
@@ -2125,6 +2126,7 @@ namespace oo::Anim::internal
 		for (auto& [group_id, group] : tree.groups)
 		{
 			group.startNode.Reload();
+			group.any_state_Node.Reload();
 			for (auto& [node_id, node] : group.nodes)
 			{
 				node.group.Reload();
@@ -2144,6 +2146,7 @@ namespace oo::Anim::internal
 		for (auto& [group_id, group] : tree.groups)
 		{
 			group.startNode.nodes = &group.nodes;
+			group.any_state_Node.nodes = &group.nodes;
 			for (auto& [node_id, node] : group.nodes)
 			{
 				node.group.groups = &tree.groups;
