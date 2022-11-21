@@ -38,6 +38,10 @@ namespace oo
 
         void Init();
 
+        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
+
+        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
+
         virtual void Run(Ecs::ECSWorld* world) override;
 
         void SaveEditorCamera();

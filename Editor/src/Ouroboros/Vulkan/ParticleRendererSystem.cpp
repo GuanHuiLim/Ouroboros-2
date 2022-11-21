@@ -35,6 +35,7 @@ Technology is prohibited.
 #include "App/Editor/UI/Object Editor/EditorViewport.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
 #include "Ouroboros/ECS/GameObjectComponent.h"
+#include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Vulkan/GlobalRendererSettings.h"
 
 namespace oo
@@ -335,6 +336,9 @@ namespace oo
         , m_scene { scene }
     {
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
+
+        EventManager::Subscribe<ParticleRendererSystem, GameObjectComponent::OnEnableEvent>(this, &ParticleRendererSystem::OnObjectEnabled);
+        EventManager::Subscribe<ParticleRendererSystem, GameObjectComponent::OnDisableEvent>(this, &ParticleRendererSystem::OnObjectDisabled);
     }
 
     ParticleRendererSystem::~ParticleRendererSystem()
@@ -350,7 +354,26 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<ParticleRendererSystem, ParticleEmitterComponent>(
             this, &ParticleRendererSystem::OnEmitterRemove);
 
+
         default_sprite_id = Application::Get().GetWindow().GetVulkanContext()->getRenderer()->GetDefaultSpriteID();
+    }
+
+    void ParticleRendererSystem::OnObjectEnabled(GameObjectComponent::OnEnableEvent* e)
+    {
+        auto ptr = m_scene->FindWithInstanceID(e->Id);
+        if (ptr)
+        {
+            auto pemt = ptr->TryGetComponent<ParticleEmitterComponent>();
+            if (pemt)
+            {
+                pemt->ResetSystem();
+            }
+        }
+       
+    }
+    void ParticleRendererSystem::OnObjectDisabled(GameObjectComponent::OnDisableEvent* e)
+    {
+       
     }
 
     void ParticleRendererSystem::SaveEditorCamera()

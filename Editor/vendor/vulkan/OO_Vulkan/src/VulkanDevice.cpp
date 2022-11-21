@@ -63,6 +63,22 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
     std::vector<VkPhysicalDevice> deviceList(deviceCount);
     vkEnumeratePhysicalDevices(instance.instance, &deviceCount, deviceList.data());
 
+    uint32_t best = 0;
+    uint32_t memory = 0;
+    for (size_t i = 0; i < deviceList.size(); i++)
+    {
+        auto& device = deviceList[i];
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(device, &props);
+        std::cout << props.deviceName << " " << props.vendorID << " :" << props.limits.maxMemoryAllocationCount << std::endl;
+        if (props.limits.maxMemoryAllocationCount > memory)
+        {
+            memory = props.limits.maxMemoryAllocationCount;
+            std::swap(deviceList[i], deviceList[best]);
+            best = i;
+        }
+    }
+
     // find a suitable device
     for (const auto &device : deviceList)
     {
