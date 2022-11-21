@@ -69,7 +69,10 @@ namespace oo::Anim::internal
 			for (auto& prop : properties)
 			{
 				auto& value = object.FindMember(prop.get_name().data())->value;
-
+				if (prop.get_name() == "any_state_Node")
+				{
+					int i = 0;
+				}
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
 				prop.set_value(obj, val);
@@ -109,6 +112,7 @@ namespace oo::Anim
 		registration::class_<Group>("Animation Group")
 			.property("name", &Group::name)
 			.property("startNode", &Group::startNode)
+			.property("any_state_Node", &Group::any_state_Node)
 			.property("groupID", &Group::groupID)
 			.method(internal::serialize_method_name, &internal::SerializeGroup)
 			.method(internal::load_method_name, &internal::LoadGroup)
@@ -172,6 +176,7 @@ namespace oo::Anim
 	{
 		name = std::move(other.name);
 		startNode = std::move(other.startNode);
+		any_state_Node = std::move(other.any_state_Node);
 		//tree = std::move(other.tree);
 		groupID = std::move(other.groupID);
 

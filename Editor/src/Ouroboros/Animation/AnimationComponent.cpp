@@ -184,7 +184,7 @@ namespace oo
 		return oo::Anim::internal::CreateNodeReference(*group,node->node_ID);
 	}
 
-	void oo::AnimationComponent::RemoveNode(Anim::TargetNodeInfo const& info)
+	bool oo::AnimationComponent::RemoveNode(Anim::TargetNodeInfo const& info)
 	{
 		auto tree = GetAnimationTree();
 		//tree should exist
@@ -192,7 +192,7 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("No animation tree loaded for this Animation Component!!");
 			assert(false);
-			return;
+			return false;
 		}
 		auto group = Anim::internal::RetrieveGroupFromTree(*tree, info.group_name);
 		//group should exist
@@ -200,9 +200,10 @@ namespace oo
 		{
 			LOG_CORE_DEBUG_INFO("{0} group not found, cannot remove node!!", info.group_name);
 			assert(false);
-			return;
+			return false;
 		}
-		Anim::internal::RemoveNodeFromGroup(*group, info.node_ID);
+		auto result = Anim::internal::RemoveNodeFromGroup(*group, info.node_ID);
+		return result;
 	}
 
 	Anim::LinkRef AnimationComponent::AddLink(std::string const& groupName, std::string const& src, std::string const& dst)

@@ -192,6 +192,7 @@ public:
 	void DestroyWorld(GraphicsWorld* world);
 	GraphicsWorld* currWorld{ nullptr };
 	uint32_t renderIteration{ 0};
+	int32_t m_numShadowcastLights{0};
 	uint32_t renderTargetInUseID{ 0 };
 	float renderClock{ 0.0f };
 
@@ -318,7 +319,7 @@ public:
 	uint32_t indirectDrawCount{};
 
 	GpuVector<oGFX::BoneWeight> skinningVertexBuffer{};
-	GpuVector<SpotLightInstance> globalLightBuffer{};
+	GpuVector<LocalLightInstance> globalLightBuffer{};
 
 	// - Descriptors
 

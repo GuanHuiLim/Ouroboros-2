@@ -31,6 +31,8 @@ struct DebugDraw
 	static void AddSphere(const Sphere& sphere, const oGFX::Color& col = oGFX::Colors::WHITE);
 	static void AddTriangle(const Triangle& tri, const oGFX::Color& col = oGFX::Colors::WHITE);
 
+	static void AddArrow(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Color& col = oGFX::Colors::WHITE);
+
 	static void DrawCameraFrustrum(const Camera&, const oGFX::Color& col = oGFX::Colors::WHITE);
 	static void DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& view, float ar,float fov ,float znear, float zfar, const oGFX::Color& col = oGFX::Colors::WHITE);
 

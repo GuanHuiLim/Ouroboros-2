@@ -25,6 +25,7 @@ namespace oo::Anim
 
 		std::string name{ "Unnamed Group" };
 		NodeRef startNode{};
+		NodeRef any_state_Node{};
 		//contains the nodes and their positions to be displayed in the editor
 		std::map<size_t, Node> nodes{};
 		std::map<size_t, Link> links{};

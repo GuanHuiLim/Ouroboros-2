@@ -205,6 +205,7 @@ private:
     int32_t m_emitterCount{};
     BitContainer<EmitterInstance> m_EmitterInstances;
     bool initialized = false;
+
     //etc
 
     // + Spatial Acceleration Structures

@@ -156,6 +156,34 @@ void DebugDraw::AddTriangle(const Triangle& tri, const oGFX::Color& col)
     vr->g_DebugDrawIndexBufferCPU.emplace_back(0 + sz); // E2
 }
 
+void DebugDraw::AddArrow(const glm::vec3& p0, const glm::vec3& p1, const oGFX::Color& col)
+{
+    auto p0v4 = glm::vec4{ p0 ,1.0f };
+    auto p1v4 = glm::vec4{ p1 ,1.0f };
+
+    auto mag = glm::length(p0v4 - p1v4);
+    auto revDir = glm::normalize(p0v4 - p1v4);
+
+    //main line
+    AddLine(p0v4, p1v4, col);
+
+    {
+        static const auto  posRot = glm::rotate(glm::mat4(1.0f),glm::radians( 30.0f),glm::vec3(1.0f,0.0f,0.0f));
+        static const auto  negRot = glm::rotate(glm::mat4(1.0f),glm::radians(-30.0f),glm::vec3(1.0f,0.0f,0.0f));
+
+        //head
+        AddLine(p1v4, posRot * revDir * (mag / 4.0f) + p1v4, col);
+        AddLine(p1v4, negRot * revDir * (mag / 4.0f) + p1v4, col);
+    }
+
+    static const auto  posRot = glm::rotate(glm::mat4(1.0f),glm::radians( 30.0f),glm::vec3(0.0f,0.0f,1.0f));
+    static const auto  negRot = glm::rotate(glm::mat4(1.0f),glm::radians(-30.0f),glm::vec3(0.0f,0.0f,1.0f));
+    //head
+    AddLine(p1v4, posRot * revDir * (mag / 4.0f) + p1v4, col);
+    AddLine(p1v4, negRot * revDir * (mag / 4.0f) + p1v4, col);
+
+}
+
 void DebugDraw::DrawCameraFrustrum(const Camera& camera, const oGFX::Color& col)
 {
     DrawCameraFrustrum(camera.m_position, camera.matrices.view, camera.GetAspectRatio() , camera.GetFov(), camera.GetNearClip(), camera.GetFarClip(), col);

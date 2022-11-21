@@ -624,7 +624,30 @@ void Hierarchy::RightClickOptions()
 						go.EnsureComponent<oo::MeshRendererComponent>();
 						go.EnsureComponent<oo::BoxColliderComponent>();
 					});
-			
+			}
+			if (ImGui::MenuItem("Sphere"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Sphere");
+						go.EnsureComponent<oo::MeshRendererComponent>();
+						go.EnsureComponent<oo::SphereColliderComponent>();
+					});
+			}
+			if (ImGui::MenuItem("Capsule"))
+			{
+				auto go_collider = CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Capsule");
+						go.EnsureComponent<oo::CapsuleColliderComponent>();
+					});
+				auto go_mesh = CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Capsule Mesh");
+						go.EnsureComponent<oo::MeshRendererComponent>();
+					});
+				go_collider->AddChild(*go_mesh);
+				go_mesh->GetComponent<oo::TransformComponent>().SetGlobalScale({ 1, 2, 1 });
 			}
 			if (ImGui::MenuItem("Light"))
 			{

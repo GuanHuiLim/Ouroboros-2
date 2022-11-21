@@ -266,7 +266,7 @@ namespace oo
                 cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
 
                 // set capsule size
-                rb.object.setCapsuleProperty(cc.GlobalRadius * 2, cc.GlobalHalfHeight * 2);
+                rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
             });
 
         //Updating sphere collider's bounds 
@@ -468,7 +468,7 @@ namespace oo
             glm::vec3 GlobalHalfExtents = { cc.GlobalRadius, cc.GlobalHalfHeight , cc.GlobalRadius };
             
             //Debug draw the bounds
-            DebugDraw::AddAABB({ pos + GlobalHalfExtents  , pos - GlobalHalfExtents }, oGFX::Colors::GREEN);
+            DebugDraw::AddAABB({ pos - GlobalHalfExtents  , pos + GlobalHalfExtents }, oGFX::Colors::GREEN);
             // draw top sphere
             DebugDraw::AddSphere({ pos + vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
             // draw bottom sphere

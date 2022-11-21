@@ -84,12 +84,19 @@ namespace oo::Anim
 	{
 		using namespace rttr;
 		registration::class_<Node>("Animation Node")
+			.enumeration<Node::TYPE>("TYPE")
+			(
+				value("START",		Node::TYPE::START),
+				value("ANY_STATE",	Node::TYPE::ANY_STATE),
+				value("NORMAL",		Node::TYPE::NORMAL)
+			)
 			.property("group", &Node::group)
 			.property("name", &Node::name)
 			.property("anim", &Node::anim)
 			.property("speed", &Node::speed)
 			.property("position", &Node::position)
 			.property("node_ID", &Node::node_ID)
+			.property("node_type", &Node::node_type)
 			.method(internal::serialize_method_name, &internal::SerializeNode)
 			.method(internal::load_method_name, &internal::LoadNode)
 			;
