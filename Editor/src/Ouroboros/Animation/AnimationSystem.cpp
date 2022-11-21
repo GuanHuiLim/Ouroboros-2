@@ -374,6 +374,10 @@ namespace oo::Anim
 	{
 		for (auto& [treeID, tree] : AnimationTree::map)
 		{
+			internal::CalculateAnimationLength(tree);
+			internal::ReAssignReferences(tree);
+			internal::ReloadReferences(tree);
+
 			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
 			if (result == false)
 				return false;
@@ -477,7 +481,7 @@ namespace oo::Anim
 			if (info.start_frame == info.end_frame) return false;
 			//convert to time
 			info.start_time = anim.TimeFromFrame(info.start_frame);
-			info.start_time = anim.TimeFromFrame(info.end_frame);
+			info.end_time = anim.TimeFromFrame(info.end_frame);
 		}
 		else
 		{
@@ -504,11 +508,11 @@ namespace oo::Anim
 	{
 		if (evnt->m_type != OpenFileEvent::FileType::FBX) return;
 
-		auto relativepath = std::filesystem::relative(evnt->m_filepath, Project::GetAssetFolder());
-		auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
-		auto resource = asset.GetData<ModelFileResource*>();
+		//auto relativepath = std::filesystem::relative(evnt->m_filepath, Project::GetAssetFolder());
+		//auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
+		//auto resource = asset.GetData<ModelFileResource*>();
 
-		Animation::LoadAnimationFromFBX(evnt->m_filepath.string(), resource);
+		//Animation::LoadAnimationFromFBX(evnt->m_filepath.string(), resource);
 	}
 
 	void AnimationSystem::CloseProjectCallback(CloseProjectEvent* evnt)
@@ -602,10 +606,13 @@ namespace oo::Anim
 				continue;
 			}
 			auto anim_name = anim_ptr->name;
+			auto anim_ID = anim_ptr->animation_ID;
 			auto anim_filepath = std::filesystem::path{ filepath }.parent_path().string() + "/" + anim_ptr->name + ".anim";
 			SaveAnimation(*anim_ptr, anim_filepath);
 			DeleteAnimation(anim_name);
 			/*auto asset = */Project::GetAssetManager()->GetOrLoadPath(std::filesystem::path{ anim_filepath });
+
+			anim_ptr = internal::RetrieveAnimation(anim_ID);
 		}
 
 
