@@ -377,7 +377,14 @@ namespace oo::Anim
 			internal::CalculateAnimationLength(tree);
 			internal::ReAssignReferences(tree);
 			internal::ReloadReferences(tree);
-
+			
+			auto asset = GetAnimationTreeAsset(treeID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			tree.name = asset.GetFilePath().stem().string();
 			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
 			if (result == false)
 				return false;
@@ -409,6 +416,17 @@ namespace oo::Anim
 	oo::Asset AnimationSystem::GetAnimationAsset(UID anim_ID)
 	{
 		auto assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation);
+		for (auto& asset : assets)
+		{
+			if (asset.GetData<UID>() == anim_ID)
+				return asset;
+		}
+		return {};
+	}
+
+	oo::Asset AnimationSystem::GetAnimationTreeAsset(UID anim_ID)
+	{
+		auto assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::AnimationTree);
 		for (auto& asset : assets)
 		{
 			if (asset.GetData<UID>() == anim_ID)

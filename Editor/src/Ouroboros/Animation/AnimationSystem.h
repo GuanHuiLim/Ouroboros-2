@@ -56,6 +56,7 @@ namespace oo::Anim
 		static bool SaveAnimationTree(size_t id, std::string filepath);
 		static bool SaveAllAnimationTree(std::string filepath);
 		static AnimationTree* LoadAnimationTree(std::string filepath);
+		static oo::Asset GetAnimationTreeAsset(UID anim_ID);
 		/*---------
 		animation
 		---------*/
