@@ -374,6 +374,10 @@ namespace oo::Anim
 	{
 		for (auto& [treeID, tree] : AnimationTree::map)
 		{
+			internal::CalculateAnimationLength(tree);
+			internal::ReAssignReferences(tree);
+			internal::ReloadReferences(tree);
+
 			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
 			if (result == false)
 				return false;
