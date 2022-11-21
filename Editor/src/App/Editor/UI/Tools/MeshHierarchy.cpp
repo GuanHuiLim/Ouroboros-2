@@ -139,6 +139,23 @@ void MeshHierarchy::Show()
 	{
 		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
 
+		if constexpr(true)
+		{
+			auto anim = anims.front();
+
+			{//Idle
+				oo::Anim::SplitAnimationInfo info{
+				.in_frames{true},
+				.start_frame{1ull},
+				.end_frame{397ull},
+				.anim_ID{anim->animation_ID},
+				.split_animation_name{"Idle_Char"}
+				};
+				auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
+				assert(true);
+			}
+			
+		}
 	}
 }
 
