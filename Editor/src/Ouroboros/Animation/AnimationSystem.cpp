@@ -377,9 +377,6 @@ namespace oo::Anim
 			internal::CalculateAnimationLength(tree);
 			internal::ReAssignReferences(tree);
 			internal::ReloadReferences(tree);
-			auto asset = GetAnimationAsset(treeID);
-			tree.name = asset.GetFilePath().stem().string();
-
 
 			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
 			if (result == false)
@@ -565,7 +562,7 @@ namespace oo::Anim
 
 		auto load_fn = rttr::type::get< AnimationTree>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, tree);
-
+		tree.name = std::filesystem::path{ filepath }.stem().string();
 		auto loaded_tree = AnimationTree::Add(std::move(tree));
 
 		internal::ReAssignReferences(*loaded_tree);
