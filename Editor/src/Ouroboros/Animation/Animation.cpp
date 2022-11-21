@@ -465,17 +465,28 @@ namespace oo::Anim
 
 			size_t start_keyframe_index{ 0 };
 			size_t end_keyframe_index{ keyframes.size() };
-
+			float start_keyframe_timing{ 0.f};
 
 			{//find starting keyframe index
 				size_t index{ 0ull };
 				for (auto& kf : keyframes)
 				{
 					if (internal::Equal(kf.time, start_time))
+					{
 						break;
+					}
 					if (kf.time > start_time)
+					{
+						start_keyframe_timing = kf.time - start_time;
 						break;
+					}
 					++index;
+				}
+				if (index == keyframes.size())
+				{
+					assert(false);//start keyframe not found!
+					result = false;
+					return {};
 				}
 				start_keyframe_index = index;
 			}
@@ -502,10 +513,18 @@ namespace oo::Anim
 				end_keyframe_index = index;
 			}
 			assert(end_keyframe_index != keyframes.size());//this shouldnt happen
-
+			auto keyframe_timing = start_keyframe_timing;
 			for (size_t index = start_keyframe_index; index < end_keyframe_index; ++index)
 			{
-				new_timeline.keyframes.emplace_back(keyframes[index]);
+				//if keyframe isnt the first
+				if (index > start_keyframe_index)
+				{//increment start keyframe time by difference between previous and current keyframe
+					keyframe_timing += keyframes[index].time - keyframes[index - 1ull].time;
+				}
+				auto keyframe = keyframes[index];
+				keyframe.time = keyframe_timing;
+
+				new_timeline.keyframes.emplace_back(keyframe);
 			}
 
 			new_anim.timelines.emplace_back(std::move(new_timeline));
