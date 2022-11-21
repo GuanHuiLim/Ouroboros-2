@@ -133,7 +133,7 @@ ScriptingProperties::ScriptingProperties()
 			ImGui::DragInt(v.name.c_str(), &size);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
-
+			ImGui::PushID(v.name.c_str());
 			float itemwidth = ImGui::CalcItemWidth();
 			ImGui::SetCursorPos(cursorPos);
 			if (ImGui::ArrowButton("##listenumleft", ImGuiDir_::ImGuiDir_Left))
@@ -145,6 +145,7 @@ ScriptingProperties::ScriptingProperties()
 					data.valueList.resize(size);
 					editing = true; edited = true;
 					v.TrySetRuntimeValue(oo::ScriptValue{ data });
+					ImGui::PopID();
 					return;
 				}
 			}
@@ -157,6 +158,7 @@ ScriptingProperties::ScriptingProperties()
 				data.Push();
 				editing = true; edited = true;
 				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+				ImGui::PopID();
 				return;
 			}
 
@@ -187,6 +189,7 @@ ScriptingProperties::ScriptingProperties()
 				ImGui::SameLine(0,5.0f);
 				ImGui::TextColored(ImVec4(1.0f,0,0,1.0f), "End of list");
 			}
+			ImGui::PopID();
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
