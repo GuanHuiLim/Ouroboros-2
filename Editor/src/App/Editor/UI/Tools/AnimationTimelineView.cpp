@@ -56,7 +56,7 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
-        DrawToolbar();
+        DrawToolbar(_animator);
         
         DrawNodeSelector(_animator);
 
@@ -144,7 +144,7 @@ void AnimationTimelineView::DrawTimeLineInfo()
     ImGui::SameLine();
 }
 
-void AnimationTimelineView::DrawToolbar()
+void AnimationTimelineView::DrawToolbar(oo::AnimationComponent* _animator)
 {
     if (ImGui::Button("<<"))
     {
@@ -217,8 +217,9 @@ void AnimationTimelineView::DrawToolbar()
 
             newEvent.script_function_info = oo::ScriptValue::function_info() ;
             newEvent.time = currentTime;
-
-            animation->events.push_back(newEvent);
+            
+            _animator->AddScriptEvent(node->group->name, node->name, timeline->name, newEvent);
+            //animation->events.push_back(newEvent);
         }
     }
 
@@ -537,7 +538,7 @@ void AnimationTimelineView::DisplayInspector()
                 ImGui::Text("Invoke: ");
                 ImGui::SameLine();
                 //ImGui Dropdown of all the invokable events 
-
+                eventName = scriptevent->script_function_info.className + "." + scriptevent->script_function_info.functionName;
                 fnInfo.clear();
                 oo::ScriptComponent::map_type& scriptMap = source_go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
 
