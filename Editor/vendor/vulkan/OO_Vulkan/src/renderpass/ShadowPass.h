@@ -37,7 +37,7 @@ struct ShadowPass : public GfxRenderpass
 	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
 	ImTextureID shadowImg{};
 
-	VkExtent2D shadowmapSize = { 1024, 1024 };
+	VkExtent2D shadowmapSize = { 4096, 4096};
 
 	VulkanRenderpass renderpass_Shadow{};
 

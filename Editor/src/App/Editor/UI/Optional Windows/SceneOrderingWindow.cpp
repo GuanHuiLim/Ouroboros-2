@@ -50,6 +50,7 @@ void SceneOrderingWindow::Show()
 	
 	auto loadpaths = runtimeController->GetLoadPaths();
 	int counter = 0;
+	std::string remove_scene;
 	for (auto& scenes : loadpaths)
 	{
 		ImGui::PushID(counter);
@@ -61,9 +62,14 @@ void SceneOrderingWindow::Show()
 
 		ImGui::BeginGroup();
 		ImGui::Text(scenes.SceneName.c_str());
+		if (ImGui::SmallButton("x"))
+		{
+			remove_scene = scenes.LoadPath;
+		}
 		ImGui::EndGroup();
 
-		ImGui::SameLine();
+		
+		ImGui::SameLine(ImGui::GetContentRegionAvail().x - 30);//30 for spacing
 		ImGui::BeginGroup();
 		bool up_enabled = (counter != 0);
 		bool down_enabled = (counter < loadpaths.size() - 1);
@@ -82,7 +88,7 @@ void SceneOrderingWindow::Show()
 			ImGui::PopStyleColor();
 			ImGui::PopItemFlag();
 		}
-
+		ImGui::Dummy({ 0,5.0f });
 		if (down_enabled == false)
 		{
 			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
@@ -103,4 +109,6 @@ void SceneOrderingWindow::Show()
 		++counter;
 	}
 	ImGui::EndChild();
+	if (remove_scene.empty() == false)
+		runtimeController->RemoveLoadPathByPath(remove_scene);
 }
