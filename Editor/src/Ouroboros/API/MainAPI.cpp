@@ -26,3 +26,5 @@ Technology is prohibited.
 
 #include "PhysicsAPI.h"
 #include "RigidbodyAPI.h"
+
+#include "ParticleEmitterAPI.h"
