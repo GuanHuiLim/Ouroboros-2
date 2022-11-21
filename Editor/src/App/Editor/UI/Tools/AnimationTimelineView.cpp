@@ -696,13 +696,13 @@ void AnimationTimelineView::DrawTimeLineSelector(oo::GameObject* go)
         auto rotTL = animator->AddTimeline(node->group->name, node->name, rotationTimeline);
         timeline = rotTL.operator->();
     }
-    if (ImGui::MenuItem("Scale"))
+    if (ImGui::MenuItem("Scaling"))
     {
         oo::Anim::TimelineInfo scaleTimeline{
         .type{oo::Anim::Timeline::TYPE::PROPERTY},
         .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
-        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Scale")},
-        .timeline_name{go->Name() + " Scale"},
+        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Scaling")},
+        .timeline_name{go->Name() + " Scaling"},
         .target_object{*go},
         .source_object{*source_go.get()}
         };
