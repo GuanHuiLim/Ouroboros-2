@@ -28,3 +28,4 @@ Technology is prohibited.
 #include "RigidbodyAPI.h"
 
 #include "ParticleEmitterAPI.h"
+#include "AnimationAPI.h"
