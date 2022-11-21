@@ -17,9 +17,9 @@ using vec2 = glm::vec2;
 using uvec4 = glm::uvec4;
 using uvec3 = glm::uvec3;
 using uvec2 = glm::uvec2;
-using ivec4 = glm::uvec4;
-using ivec3 = glm::uvec3;
-using ivec2 = glm::uvec2;
+using ivec4 = glm::ivec4;
+using ivec3 = glm::ivec3;
+using ivec2 = glm::ivec2;
 using mat4 = glm::mat4;
 using uint = unsigned int;
 #endif
@@ -58,10 +58,11 @@ struct LightPC
 {
     uint numLights;
     uint useSSAO;
+    vec2 shadowMapGridDim;
     float ambient;
     float maxBias;
     float mulBias;
-    vec3 PADDING;
+    uint PADDING;
 };
 
 struct SSAOPC

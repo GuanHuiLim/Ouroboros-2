@@ -74,6 +74,13 @@ namespace oo::Anim::internal
 		return distrib(mt);
 	};
 	
+	bool Equal(float lhs, float rhs)
+	{
+		return (
+			lhs > (rhs - internal::EPSILON) &&
+			lhs < (rhs + internal::EPSILON)
+			);
+	}
 }
 
 namespace oo::Anim

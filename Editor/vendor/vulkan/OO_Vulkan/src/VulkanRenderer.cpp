@@ -1123,19 +1123,44 @@ void VulkanRenderer::UploadLights()
 	//// Only lights that are inside/intersecting the camera frustum should be uploaded.
 	//memcpy(lightsBuffer.mapped, &lightUBO, sizeof(CB::LightUBO));
 
-	std::vector<SpotLightInstance> spotLights;
+	m_numShadowcastLights = 0;
+	int32_t gridIdx = 0;
+
+	std::vector<LocalLightInstance> spotLights;
 	auto& lights = currWorld->GetAllOmniLightInstances();
 	spotLights.reserve(lights.size());
+	int viewIter{};
 	for (auto& e : lights)
 	{
-		SpotLightInstance si;
+		LocalLightInstance si;
+		if (e.info.x > 0)
+		{
+			
+			e.info.y = gridIdx;			
+			if (e.info.x == 1)
+			{
+				// loop through all faces
+				for (size_t i = 0; i < 6; i++)
+				{
+					++m_numShadowcastLights;
+					si.view[i] = e.view[i];
+					++gridIdx;
+				}
+			}
+			else
+			{
+				++m_numShadowcastLights;
+				si.view[0] = e.view[++viewIter%6];		
+				++gridIdx;
+			}
+		}
+
 		si.info = e.info;
 		si.position = e.position;
 		si.color = e.color;
 		si.radius = e.radius;
 		si.projection = e.projection;
-		si.view = e.view[0];
-
+		
 		spotLights.emplace_back(si);
 	}
 

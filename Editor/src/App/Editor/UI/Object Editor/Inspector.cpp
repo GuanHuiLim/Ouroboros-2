@@ -101,7 +101,6 @@ void Inspector::Show()
 	{
 		auto gameobject = selected_list.back();
 		//bool active = gameobject->ActiveInHierarchy();
-		bool active = gameobject->IsActive();
 
 		//bool disable_prefabEdit = gameobject->GetIsPrefab() && gameobject->HasComponent<oo::PrefabComponent>() == false;
 		//if (disable_prefabEdit)
@@ -111,11 +110,21 @@ void Inspector::Show()
 		//	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, ImGui_StylePresets::disabled_color);
 		//	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, ImGui_StylePresets::disabled_color);
 		//}
-
-		ImGui::InputText("Name:",&gameobject->Name(),ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue);
+		bool active = gameobject->IsActive();
+		std::string temp_name = gameobject->Name();
+		if (ImGui::InputText("Name:", &temp_name, ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::GameObjectComponent>
+				(gameobject->Name(), temp_name, rttr::type::get<oo::GameObjectComponent>().get_property("Name"), gameobject->GetInstanceID()));
+			gameobject->Name() = temp_name;
+		}
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Active", &active))
+		{
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::GameObjectComponent>
+				(gameobject->IsActive(), active, rttr::type::get<oo::GameObjectComponent>().get_property("Active"), gameobject->GetInstanceID()));
 			gameobject->SetActive(active);
+		}
 		if (gameobject->HasComponent<oo::PrefabComponent>())
 		{
 			if (ImGui::Button("Break Prefab"))

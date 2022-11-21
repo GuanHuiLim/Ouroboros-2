@@ -22,6 +22,7 @@ Technology is prohibited.
 #include "ShadowPass.h"
 
 #include <array>
+#include <iostream>
 
 DECLARE_RENDERPASS(DeferredCompositionRenderpass);
 
@@ -109,18 +110,20 @@ void DeferredCompositionRenderpass::Draw()
 
 	LightPC pc{};
 	pc.useSSAO = vr.useSSAO ? 1 : 0;
+	
+	pc.numLights = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
+
+	// calculate shadowmap grid dims
+	float gridSize = ceilf(sqrtf(vr.m_numShadowcastLights));
+	pc.shadowMapGridDim = glm::vec2{gridSize,gridSize};
+
 	pc.ambient = vr.currWorld->lightSettings.ambient;
 	pc.maxBias = vr.currWorld->lightSettings.maxBias;
 	pc.mulBias = vr.currWorld->lightSettings.biasMultiplier;
 	
-	pc.numLights = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
 	VkPushConstantRange range;
 	range.offset = 0;
 	range.size = sizeof(LightPC);
-	if (pc.numLights)
-	{
-		auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
-	}
 	cmd.SetPushConstant(PSOLayoutDB::deferredLightingCompositionPSOLayout,range,&pc);
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
