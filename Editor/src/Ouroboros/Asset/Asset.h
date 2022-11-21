@@ -51,7 +51,7 @@ namespace oo
     /// </summary>
     struct AssetMetaContent
     {
-        AssetID id;
+        AssetID id = 0;
     };
 
     /// <summary>

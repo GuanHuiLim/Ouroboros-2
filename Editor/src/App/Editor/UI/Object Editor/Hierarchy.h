@@ -30,6 +30,7 @@ public:
 	void Show();
 	static const std::set<scenenode::handle_type>& GetSelected();
 	static std::set<scenenode::handle_type>& GetSelectedNonConst();
+	static void SetItemSelected(scenenode::handle_type id);
 	static const uint64_t GetSelectedTime();
 	void PreviewPrefab(const std::filesystem::path& p,const std::filesystem::path& currscene);
 	void PopBackPrefabStack();

@@ -48,15 +48,23 @@ namespace oo::Anim
 		}
 		//test function
 		Scene::go_ptr CreateAnimationTestObject();
-
-		static bool SaveAnimationTree(size_t id, std::string filepath);
-		static bool SaveAnimation(std::string name, std::string filepath);
+		
 		static bool SaveAllAnimations(std::string filepath);
+		/*------------
+		animation tree
+		------------*/
+		static bool SaveAnimationTree(size_t id, std::string filepath);
 		static bool SaveAllAnimationTree(std::string filepath);
 		static AnimationTree* LoadAnimationTree(std::string filepath);
+		/*---------
+		animation
+		---------*/
+		static bool SaveAnimation(std::string name, std::string filepath);
 		static Animation* LoadAnimation(std::string filepath);
 		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
 		static bool DeleteAnimation(std::string const& name);
+		static bool SplitAnimation(SplitAnimationInfo& info);
+		static oo::Asset GetAnimationAsset(UID anim_ID);
 
 		static bool LoadAssets(std::string filepath);
 		static void OpenFileCallback(OpenFileEvent* evnt);
@@ -66,6 +74,9 @@ namespace oo::Anim
 		static AnimationTree* CreateAnimationTree(std::string const& name);
 	private:
 		static bool SaveAnimation(Animation& anim, std::string filepath);
+		static oo::Asset AddAnimationAsset(Animation&& anim, std::string const& filepath);
+		static bool SplitAnimation(SplitAnimationInfo& info, Animation& anim);
+
 		static bool SaveAnimationTree(AnimationTree& tree, std::string filepath);
 		void TestObject();
 		void TestDemoObject();

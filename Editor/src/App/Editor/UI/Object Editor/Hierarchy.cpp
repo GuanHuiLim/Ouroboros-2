@@ -48,6 +48,7 @@ Technology is prohibited.
 #include <Ouroboros/Commands/CommandStackManager.h>
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 #include <Ouroboros/Commands/Ordering_ActionCommand.h>
+#include <Ouroboros/Commands/Component_ActionCommand.h>
 //events
 #include <App/Editor/Events/OpenPromtEvent.h>
 #include <App/Editor/Events/OpenFileEvent.h>
@@ -149,8 +150,14 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 		auto source = scene->FindWithInstanceID(node.get_handle());
 		ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("##rename", &source->Name(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+		std::string curr_name = source->Name();
+		if (ImGui::InputText("##rename", &curr_name, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::GameObjectComponent>
+				(source->Name(), curr_name, rttr::type::get<oo::GameObjectComponent>().get_property("Name"), source->GetInstanceID()));
+			source->Name() = curr_name;
 			m_isRename = false;
+		}
 	}
 	//nothing should parent over it if no_interaction == false
 	if (ImGui::BeginDragDropTarget() && no_Interaction == false)
@@ -189,7 +196,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 				}
 			}
 			if ((mousedown && !clicked) || ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
-				s_selected.emplace(handle);
+				s_selected.emplace(handle);//this is hard to broadcast
 			else
 			{
 				using namespace std::chrono;
@@ -226,6 +233,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 {
+	if (node.get_handle() == m_dragged)
+		return;
 	ImGui::PushID(static_cast<int>(node.get_handle()));
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,1.0f });
 	ImVec2 pos = ImGui::GetCursorPos();
@@ -275,6 +284,12 @@ const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 std::set<scenenode::handle_type>& Hierarchy::GetSelectedNonConst()
 {
 	return s_selected;
+}
+void Hierarchy::SetItemSelected(scenenode::handle_type id)
+{
+	s_selected.clear();
+	s_selected.emplace(id);
+	BroadcastSelection(id);
 }
 const uint64_t Hierarchy::GetSelectedTime()
 {
