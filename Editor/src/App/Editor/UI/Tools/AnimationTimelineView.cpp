@@ -291,6 +291,9 @@ void AnimationTimelineView::DrawNodeSelector(oo::AnimationComponent* _animator)
                             node = &it2->second;
                             animation = &node->GetAnimation();
                             currentKeyFrame = 0;
+                            timeline = nullptr;
+                            keyframe = nullptr;
+                            scriptevent = nullptr;
                             animopen = !animopen;
                         }
                     }
