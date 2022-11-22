@@ -512,7 +512,10 @@ namespace oo::Anim
 				}
 				end_keyframe_index = index;
 			}
-			assert(end_keyframe_index != keyframes.size());//this shouldnt happen
+			if (end_keyframe_index == keyframes.size()) //end frame is the end
+			{
+				end_keyframe_index = keyframes.size() - 1ull;
+			}
 			auto keyframe_timing = start_keyframe_timing;
 			for (size_t index = start_keyframe_index; index < end_keyframe_index; ++index)
 			{
