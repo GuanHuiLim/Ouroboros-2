@@ -228,8 +228,13 @@ namespace oo
         auto filtered = store.filter(type);
         if (filtered.empty())
             return v;
-        std::transform(filtered.begin(), filtered.end(), std::back_inserter(v), [this](const decltype(filtered)::value_type& e)
+        std::for_each(filtered.begin(), filtered.end(), [&v](const decltype(filtered)::value_type& e)
         {
+            auto asset = Asset(e.second);
+            v.insert(std::upper_bound(v.begin(), v.end(), asset, [](const Asset& a, const Asset& b)
+            {
+                return a.GetFilePath().filename().string() < b.GetFilePath().filename().string();
+            }), asset);
             return Asset(e.second);
         });
         return v;

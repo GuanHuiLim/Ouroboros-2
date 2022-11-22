@@ -31,6 +31,7 @@ Technology is prohibited.
 #include "Ouroboros/Commands/CommandStackManager.h"
 #include "Ouroboros/Commands/Component_ActionCommand.h"
 #include "App/Editor/Events/GizmoOperationEvent.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Input.h"
 
@@ -333,6 +334,8 @@ void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)
 {
 	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY && s_maximizeOnPlay)
 	{
+		if (s_windowStates.size())
+			return;
 		s_windowStates.clear();
 		for (auto& window : ImGuiManager::s_GUIContainer)
 		{
