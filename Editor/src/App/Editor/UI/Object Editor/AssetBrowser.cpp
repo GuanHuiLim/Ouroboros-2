@@ -77,7 +77,8 @@ void AssetBrowser::TextureUI(rttr::variant& data, bool& edited)
 	{
 		if (m_filter.empty() == false)
 		{
-			bool result = SearchFilter(assets.GetFilePath().stem().string());
+			std::string name = assets.GetFilePath().stem().string();
+			bool result = SearchFilter(name);
 			if (result == false)
 				continue;
 		}
@@ -187,59 +188,6 @@ void AssetBrowser::MeshUI(rttr::variant& data, bool& edited)
 			data = assets;
 			edited = true;
 		}
-		/*auto* modeldata = assets.GetData<ModelFileResource*>();
-		auto* node = modeldata->sceneInfo;
-		size_t childSize = node->children.size();
-		ImGuiTreeNodeFlags_ flag = childSize ? ImGuiTreeNodeFlags_OpenOnArrow : ImGuiTreeNodeFlags_Bullet;
-		bool opened = ImGui::TreeNodeEx(node->name.c_str(), flag);
-		if (opened == false)
-			continue;
-		if(ImGui::IsItemClicked() && childSize == 0)
-		{
-			data.clear();
-			data = assets;
-			edited = true;
-		}
-		std::stack<Node*> node_list;
-		std::vector<Node*> node_parent;
-		node_list.push(node);
-
-		while (node_list.empty() == false)
-		{
-			node = node_list.top();
-			node_list.pop();
-			if (node->meshRef != static_cast<uint32_t>(-1))
-			{
-				while ((node_parent.empty() == false) && (node->parent != node_parent.back()))
-				{
-					node_parent.pop_back();
-					ImGui::TreePop();
-				}
-				childSize = node->children.size();
-				flag = childSize ? ImGuiTreeNodeFlags_OpenOnArrow : ImGuiTreeNodeFlags_Bullet;
-				opened = ImGui::TreeNodeEx(node->name.c_str(), flag);
-				
-				if (opened == false)
-					continue;
-				if (ImGui::IsItemClicked() && childSize == 0)
-				{
-					
-					data.clear();
-					data = assets;
-					edited = true;
-				}
-			}
-			node_parent.push_back({ node });
-			for (auto data : node->children)
-			{
-				node_list.push(data);
-			}
-		}
-		while (node_parent.empty() == false)
-		{
-			node_parent.pop_back();
-			ImGui::TreePop();
-		}*/
 	}
 
 }
@@ -274,7 +222,7 @@ bool AssetBrowser::SearchFilter(const std::string& name)
 		{
 			return std::toupper(ch1) == std::toupper(ch2);
 		});
-	if (iter != name.end())
+	if (iter == name.end())
 		return false;
 
 	return true;
