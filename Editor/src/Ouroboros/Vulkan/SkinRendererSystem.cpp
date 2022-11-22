@@ -20,21 +20,22 @@ namespace oo
 			this, &SkinMeshRendererSystem::OnMeshRemove);
 	}
 
-	void RecurseChildren_AssignparentTransform_to_BoneComponents(GameObject obj, glm::mat4 parentTransform)
+	void RecurseChildren_AssignparentTransform_to_BoneComponents(GameObject obj, glm::mat4 parentTransform, UUID uid)
 	{
 		auto children = obj.GetDirectChilds();
 		if (children.empty()) return;
-
 		//auto localTransform = obj.GetComponent<TransformComponent>().GetLocalMatrix();
 
 		for (auto& child : children)
 		{
 			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
+			auto& bonecomp = child.GetComponent<SkinMeshBoneComponent>();
+			if (bonecomp.skin_mesh_object != uid) continue;
 
 			auto const transform = parentTransform * child.GetComponent<TransformComponent>().GetLocalMatrix();
-			child.GetComponent<SkinMeshBoneComponent>().globalTransform = transform;
+			bonecomp.globalTransform = transform;
 
-			RecurseChildren_AssignparentTransform_to_BoneComponents(child, transform);
+			RecurseChildren_AssignparentTransform_to_BoneComponents(child, transform, uid);
 		}
 	}
 	void SkinMeshRendererSystem::Run(Ecs::ECSWorld* world)
@@ -63,7 +64,7 @@ namespace oo
 					break;
 				}
 				//auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
-				RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>());
+				RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>(), rootbone.GetInstanceID());
 
 			});
 
