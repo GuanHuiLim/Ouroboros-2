@@ -61,16 +61,31 @@ Technology is prohibited.
 #include <Scripting/Scripting.h>
 
 // Should only let guan hui change these variables.
-static constexpr const char* const EditorVersionNumber = "2.00";
+//static constexpr const char* const EditorVersionNumber = "2.00";
 static constexpr const char* const GameVersionNumber = "1.00";
+static constexpr const char* const EditorVersionFile = "version.txt";
 
 class EditorApp final : public oo::Application
 {
 public:
     EditorApp(oo::CommandLineArgs args)
-        : Application{ std::string{"Ouroboros v"} + EditorVersionNumber, args }
+        : Application{ "Unset Default Name", args }
         , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
+        std::ifstream ifs{ EditorVersionFile };
+        if (ifs.is_open())
+        {
+            std::string define, version, name;
+            ifs >> define >> version >> name;
+            name = name.substr(1, name.size() - 2);
+            GetWindow().SetTitle("Ouroboros2 v" + name);
+        }
+        else
+        {
+            std::string error_msg = "Could not find file " + std::string{ EditorVersionFile } + " thus editor name was not set.";
+            LOG_ERROR(error_msg);
+        }
+
         //Debug Test Layers
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
         //m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
