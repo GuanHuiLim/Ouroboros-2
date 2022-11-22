@@ -447,10 +447,10 @@ namespace oo::Anim
 			assert(false);
 			return false;
 		}
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		rapidjson::OStreamWrapper osw(stream);
 		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
-
 		//writer.Key("AnimationTree", static_cast<rapidjson::SizeType>(std::string("AnimationTree").size()));
 		auto serialize_fn = rttr::type::get<Animation>().get_method(internal::serialize_method_name);
 		serialize_fn.invoke({}, writer, anim);
@@ -652,7 +652,7 @@ namespace oo::Anim
 		auto obj = doc.GetObj();
 		auto load_fn = rttr::type::get< Animation>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, anim);
-
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		return Animation::AddAnimation(std::move(anim));
 
