@@ -29,6 +29,7 @@ Technology is prohibited.
 #include "App/Editor/UI/Tools/MeshHierarchy.h"
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #define DEBUG_ANIMATION false
 namespace oo::Anim
@@ -83,13 +84,14 @@ namespace oo::Anim
 			}
 		}
 		
+		TRACY_PROFILE_SCOPE_NC(Animation_Update, 0x00E0E3);
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
 			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), 0.016f };
 			internal::UpdateTracker(info);
 			});
-
+		TRACY_PROFILE_SCOPE_END();
 		/*world->for_each(query, [&](AnimationComponent& animationComp) {
 			internal::UpdateTracker(*this, animationComp, animationComp.GetTracker(), 0.016f);
 			});*/
