@@ -1642,7 +1642,7 @@ void VulkanRenderer::InitializeRenderBuffers()
 	g_GlobalMeshBuffers.IdxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 	g_GlobalMeshBuffers.VtxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 	g_GlobalMeshBuffers.IdxBuffer.reserve(8 * 1000 * 1000);
-	g_GlobalMeshBuffers.VtxBuffer.reserve(8 * 1000 * 1000);
+	g_GlobalMeshBuffers.VtxBuffer.reserve(1 * 1000 * 1000);
 	
 	g_particleCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 	g_particleCommandsBuffer.reserve(1024); // commands are generally per emitter. shouldnt have so many..
