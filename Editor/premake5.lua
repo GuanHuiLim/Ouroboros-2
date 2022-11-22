@@ -197,6 +197,9 @@ project "Editor"
             {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
             -- optick server copy
             {"{COPY} \"%{AppDir}/optick_server\" \"" .. binApp .. "/optick_server\""}, 
+			-- copy dds converter
+			{ "mkdir \"" .. binApp .. "/converter\"" },
+			{"{COPY} \"%{AppDir}/converter\" \"" .. binApp .. "/converter\"" },
 
 			-- vulkan shaders copy
             { "mkdir \"" .. binApp .. "/shaders/bin\"" },

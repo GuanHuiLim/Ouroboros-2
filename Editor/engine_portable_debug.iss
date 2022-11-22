@@ -52,6 +52,7 @@ Source: "Data\*"; DestDir: "{app}\Data"; Flags: ignoreversion recursesubdirs cre
 Source: "mono\*"; DestDir: "{app}\mono"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "Icons\*"; DestDir: "{app}\Icons"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "tracy_server\*"; DestDir: "{app}\tracy_server"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "converter\*"; DestDir: "{app}\converter"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ;dll
 Source:"assimp-vc142-mt.dll"; DestDir: "{app}"; Flags: ignoreversion
