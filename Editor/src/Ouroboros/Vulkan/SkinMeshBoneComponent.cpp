@@ -9,6 +9,8 @@ namespace oo
 	{
 		using namespace rttr;
 	registration::class_<SkinMeshBoneComponent>("SkinMeshBoneComponent")
-		.property("bone_name", &SkinMeshBoneComponent::bone_name);
+		.property("bone_name", &SkinMeshBoneComponent::bone_name)
+		.property("skin_mesh_object", &SkinMeshBoneComponent::skin_mesh_object)
+		;
 	};
 }
