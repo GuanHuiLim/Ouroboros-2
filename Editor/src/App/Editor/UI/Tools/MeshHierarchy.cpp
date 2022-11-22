@@ -157,7 +157,7 @@ void MeshHierarchy::Show()
 				auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
 				assert(true);
 			};
-			if (anim->name == "MainChar_Idle_Take 001")
+			if (anim->name == "MainChar_FullAnimSet_Take 001")
 			{
 				prefix = "Char_";
 				split(1, 397, "Idle");
