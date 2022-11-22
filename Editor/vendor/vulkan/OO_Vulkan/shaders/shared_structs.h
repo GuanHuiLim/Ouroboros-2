@@ -71,6 +71,7 @@ struct SSAOPC
     vec2 sampleDim; // screenDim_sampleDim
     float radius;
     float bias;
+    vec2 intensity;
     uint numSamples;
 };
 

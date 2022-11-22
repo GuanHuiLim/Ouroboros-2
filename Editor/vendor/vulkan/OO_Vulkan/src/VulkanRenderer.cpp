@@ -2239,7 +2239,7 @@ uint32_t VulkanRenderer::GetDefaultSpriteID()
 
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
-	std::ostringstream os;
+	std::stringstream os;
 	// new model loader
 	Assimp::Importer importer;
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);

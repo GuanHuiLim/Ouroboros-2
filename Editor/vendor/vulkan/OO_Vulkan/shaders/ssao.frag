@@ -65,7 +65,11 @@ void main()
 	} 
 
 	// normalize
-	occlusion = 1.0 - (occlusion / kernelSize);
+	occlusion = (occlusion / kernelSize);
+	occlusion = 1.0 - occlusion;
+	occlusion = pow(occlusion,PC.intensity.x);
+	//occlusion = smoothstep(occlusion,0.0,PC.intensity.x);
+	
 	outFragcolor = vec4(occlusion);
 
 }

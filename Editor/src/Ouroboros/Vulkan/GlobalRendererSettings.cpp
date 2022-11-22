@@ -23,13 +23,14 @@ namespace oo
     {
         using namespace rttr;
         registration::class_<GlobalRendererSettings::SSAOSettings>("SSAO Settings")
-            .property("Radius", &GlobalRendererSettings::SSAOSettings::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Bias", &GlobalRendererSettings::SSAOSettings::Bias)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Radius", &GlobalRendererSettings::SSAOSettings::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            .property("Bias", &GlobalRendererSettings::SSAOSettings::Bias)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Intensity", &GlobalRendererSettings::SSAOSettings::intensity)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
             ;
         registration::class_<GlobalRendererSettings::LightingSettings>("Light Settings")
-            .property("Ambient", &GlobalRendererSettings::LightingSettings::Ambient)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Max Bias", &GlobalRendererSettings::LightingSettings::MaxBias)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Ambient", &GlobalRendererSettings::LightingSettings::Ambient)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Max Bias", &GlobalRendererSettings::LightingSettings::MaxBias)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             ;
         registration::class_<GlobalRendererSettings>("Renderer Settings")
             .property("SSAO Configuration", &GlobalRendererSettings::SSAO)

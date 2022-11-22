@@ -70,6 +70,7 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout ForwardDecal;
 
 	inline static VkDescriptorSetLayout SSAO;
+	inline static VkDescriptorSetLayout SSAOBlur;
 };
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
@@ -79,6 +80,7 @@ struct PSOLayoutDB
 	inline static VkPipelineLayout deferredLightingCompositionPSOLayout;
 	inline static VkPipelineLayout forwardDecalPSOLayout;
 	inline static VkPipelineLayout SSAOPSOLayout;
+	inline static VkPipelineLayout SSAOBlurLayout;
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -182,6 +184,7 @@ public:
 	VkDescriptorSet descriptorSet_objInfos;
 
 	VkDescriptorSet descriptorSet_SSAO;
+	VkDescriptorSet descriptorSet_SSAOBlur;
 	// For UBO with the corresponding swap chain image
 	std::vector<VkDescriptorSet> descriptorSets_uniform;
 

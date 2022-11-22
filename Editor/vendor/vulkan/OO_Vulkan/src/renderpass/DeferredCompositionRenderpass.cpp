@@ -200,7 +200,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
 		shadowTex.view,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	auto& ssaoTex = ssao->SSAO_renderTarget;
+	auto& ssaoTex = ssao->SSAO_finalTarget;
 	VkDescriptorImageInfo texDescriptorSSAO = oGFX::vkutils::inits::descriptorImageInfo(
 		GfxSamplerManager::GetSampler_Deferred(),
 		ssaoTex.view,
