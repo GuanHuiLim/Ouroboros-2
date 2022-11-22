@@ -730,12 +730,7 @@ void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, const ImVec4& col
     float keyFrameSize = 7.0f;
     int halfKeyFrameSize = static_cast<int>(std::floor(keyFrameSize / 2));
 
-    cursorPos.x += GetTimelinePosFromFrame(_currentKeyFrame) + (halfKeyFrameSize + 22);
-    cursorPos.y -= 2;
-
-    float screenx = cursorPos.x;
-    float x = ImGui::GetCursorPosX();
-    ImGui::SetCursorPosX(screenx - (1.635f * x));
+    ImGui::SetCursorPosX(250.0f + GetTimelinePosFromFrame(_currentKeyFrame) + (halfKeyFrameSize));
     ImGui::SetCursorPosY(ypos);
     ImGui::PushStyleColor(ImGuiCol_Button, colour);
     ImGui::Button(label.c_str());
