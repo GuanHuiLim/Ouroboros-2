@@ -195,7 +195,7 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 					return open;
 				}
 			}
-			if ((mousedown && !clicked) || ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
+			if ((mousedown && !clicked) && ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
 				s_selected.emplace(handle);//this is hard to broadcast
 			else
 			{
@@ -551,7 +551,7 @@ void Hierarchy::FilteredView()
 					}
 				}
 
-				if ((mousedown && !clicked) || ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LCTRL)))
+				if ((mousedown && !clicked) && ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LCTRL)))
 					s_selected.emplace(handle);
 				else
 				{
