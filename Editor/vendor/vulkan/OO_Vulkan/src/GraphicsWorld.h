@@ -186,7 +186,7 @@ public:
     {
         float radius = 0.5f;
         float bias = 0.025f;
-        glm::vec2 intensity = {0.02f,0.6f};
+        float intensity = 1.0f;
         uint32_t samples = 8;
     }ssaoSettings{};
 

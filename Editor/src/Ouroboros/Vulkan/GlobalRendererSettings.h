@@ -23,7 +23,7 @@ namespace oo
         {
             float Radius = 0.5f;
             float Bias = 0.025f;
-            glm::vec2 intensity = {0.4f,0.6f};
+            float intensity = {1.0f};
             RTTR_ENABLE();
         }
         SSAO{};
