@@ -72,6 +72,9 @@ public:
         : Application{ "Unset Default Name", args }
         , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
+#ifdef OO_EXECUTABLE
+        GetWindow().SetFullScreen(true);
+#endif
         std::ifstream ifs{ EditorVersionFile };
         if (ifs.is_open())
         {
@@ -164,7 +167,15 @@ class EndProduct final : public oo::Application
 public:
     EndProduct(oo::CommandLineArgs args)
         : Application{ std::string{"Minute v"} + GameVersionNumber, args }
+        , m_prefab_controller{ m_sceneManager }
     {
+        //GetWindow().SetFullScreen(true);
+
+        // for now
+        ImGuiManager::s_scenemanager = &m_sceneManager;
+        ImGuiManager::s_prefab_controller = &m_prefab_controller;
+        //ImGuiManager::s_runtime_controller = 
+
         //Debug Layers
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
 
@@ -177,7 +188,7 @@ public:
         m_layerset.PushLayer(std::make_shared<oo::CoreLinkingLayer>());
 
         // only for the end product we do this instead
-        std::filesystem::path p("./Project/Config.json");
+        std::filesystem::path p("./Minute/Config.json");
         Project::LoadProject(p);
     }
 
@@ -194,6 +205,9 @@ private:
     // main scene manager
     SceneManager m_sceneManager;
     oo::LayerSet m_layerset;
+
+
+    oo::PrefabSceneController m_prefab_controller;
 };
 
 oo::Application* oo::CreateApplication(oo::CommandLineArgs args)
