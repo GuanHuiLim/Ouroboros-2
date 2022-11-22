@@ -44,7 +44,7 @@ namespace oo
             static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, DeferredComponent>();
             world->for_each(query, [&](GameObjectComponent& gocomp, DeferredComponent& deferredComp)
                 {
-                    LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);
+                    //LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);
                     uuids.emplace_back(gocomp.Id);
                 });
 

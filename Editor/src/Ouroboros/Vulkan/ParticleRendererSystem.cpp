@@ -371,6 +371,8 @@ namespace oo
 
     ParticleRendererSystem::~ParticleRendererSystem()
     {
+        EventManager::Unsubscribe<ParticleRendererSystem, GameObjectComponent::OnEnableEvent>(this, &ParticleRendererSystem::OnObjectEnabled);
+        EventManager::Unsubscribe<ParticleRendererSystem, GameObjectComponent::OnDisableEvent>(this, &ParticleRendererSystem::OnObjectDisabled);
     }
 
     void ParticleRendererSystem::Init()
