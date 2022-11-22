@@ -87,7 +87,7 @@ void FileBrowser::Show()
 				std::stringstream ss;
 				ss << ".\\converter\\crunch_x64.exe -file ";
 				ss << std::filesystem::canonical(m_currentpath);
-				ss << " -timestamp -ignoreerrors -fileformat dds -dxt1 -outsamedir";
+				ss << " -timestamp -ignoreerrors -fileformat dds -dxt1a -outsamedir";
 				LOG_INFO("Running command {0}", ss.str());
 				std::system(ss.str().c_str());
 				LOG_INFO("Converted assets to dds in {0}", m_currentpath);
