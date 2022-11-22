@@ -359,11 +359,51 @@ namespace oo::Anim
 
 		return SaveAnimationTree(tree, filepath);
 	}
+	bool AnimationSystem::SaveAllAnimations()
+	{
+		for (auto& [id, anim] : Animation::animation_storage)
+		{
+			auto asset = GetAnimationAsset(id);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			anim.name = asset.GetFilePath().stem().string();
+			auto result = AnimationSystem::SaveAnimation(anim, asset.GetFilePath().string());
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
 	bool AnimationSystem::SaveAllAnimations(std::string filepath)
 	{
 		for (auto& [id, anim] : Animation::animation_storage)
 		{
 			auto result = AnimationSystem::SaveAnimation(anim, filepath + "/" + anim.name + ".anim");
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
+	bool AnimationSystem::SaveAllAnimationTree()
+	{
+		for (auto& [treeID, tree] : AnimationTree::map)
+		{
+			internal::CalculateAnimationLength(tree);
+			internal::ReAssignReferences(tree);
+			internal::ReloadReferences(tree);
+
+			auto asset = GetAnimationTreeAsset(treeID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			tree.name = asset.GetFilePath().stem().string(); 
+			auto result = AnimationSystem::SaveAnimationTree(tree, asset.GetFilePath().string());
 			if (result == false)
 				return false;
 		}
@@ -535,9 +575,8 @@ namespace oo::Anim
 
 	void AnimationSystem::CloseProjectCallback(CloseProjectEvent* evnt)
 	{
-		auto asset_folder = Project::GetAssetFolder().string();
-		SaveAllAnimations(asset_folder);
-		SaveAllAnimationTree(asset_folder);
+		SaveAllAnimations();
+		SaveAllAnimationTree();
 
 	}
 
