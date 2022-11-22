@@ -141,7 +141,8 @@ namespace oo::Anim
 
 		//create empty animation
 		Animation empty_anim{};
-		empty_anim.name = Animation::empty_animation_name;
+		empty_anim.name			= internal::empty_animation_name;
+		empty_anim.animation_ID	= internal::empty_animation_UID;
 
 		Animation::name_to_ID[empty_anim.name] = empty_anim.animation_ID;
 		//Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());

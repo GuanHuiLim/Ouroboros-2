@@ -184,7 +184,7 @@ namespace oo::Anim
 
 		NodeInfo nodeinfo{
 			.name{ "Test Node" },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f}
 		};
@@ -365,6 +365,8 @@ namespace oo::Anim
 	{
 		for (auto& [id, anim] : Animation::animation_storage)
 		{
+			if (anim.animation_ID == internal::empty_animation_UID) continue;
+
 			auto asset = GetAnimationAsset(id);
 			if (asset.IsValid() == false)
 			{
@@ -436,6 +438,9 @@ namespace oo::Anim
 
 	bool AnimationSystem::SaveAnimation(Animation& anim, std::string filepath)
 	{
+		//dont save empty animation
+		if (anim.animation_ID == internal::empty_animation_UID) return true;
+
 		std::ofstream stream{ filepath ,std::ios::trunc };
 		if (!stream)
 		{

@@ -252,7 +252,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 {
                     oo::Anim::NodeInfo nodeinfo{
                         .name{ "New Node" /*+ std::to_string(uniqueId)*/ },
-                        .animation_name{ oo::Anim::Animation::empty_animation_name },
+                        .animation_name{ oo::Anim::internal::empty_animation_name },
                         .speed{ 1.f },
                         .position{0.f,0.f,0.f}
                     };

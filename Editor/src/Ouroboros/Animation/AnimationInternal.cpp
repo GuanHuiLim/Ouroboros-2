@@ -1601,7 +1601,7 @@ namespace oo::Anim::internal
 		{
 			NodeInfo start_node_info{
 			.name{ start_node_name },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
 			.group{ internal::CreateGroupReference(tree,group.groupID)},
@@ -1617,7 +1617,7 @@ namespace oo::Anim::internal
 		{
 			NodeInfo any_state_node_info{
 			.name{ any_state_node_name },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
 			.group{ internal::CreateGroupReference(tree,group.groupID)},

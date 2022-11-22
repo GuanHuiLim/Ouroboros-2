@@ -23,7 +23,7 @@ namespace oo::Anim
 	{
 		friend class AnimationSystem;
 
-		static constexpr const char* empty_animation_name = "empty animation";
+		
 		static std::unordered_map< std::string, size_t> name_to_ID;
 		static std::map<size_t, Animation> animation_storage;
 
