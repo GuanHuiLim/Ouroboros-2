@@ -123,7 +123,7 @@ namespace oo
 		AssignGraphicsWorldID_to_BoneComponents(scene);
 	}
 
-	void RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(GameObject obj, uint32_t graphicsID)
+	void RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(GameObject obj, uint32_t graphicsID, UUID uid)
 	{
 		auto children = obj.GetChildren();
 		if (children.empty()) return;
@@ -132,7 +132,10 @@ namespace oo
 		{
 			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
 
-			child.GetComponent<SkinMeshBoneComponent>().graphicsWorld_ID = graphicsID;
+			auto& bonecomp = child.GetComponent<SkinMeshBoneComponent>();
+			if (bonecomp.skin_mesh_object != uid) continue;
+
+			bonecomp.graphicsWorld_ID = graphicsID;
 		}
 	}
 
@@ -160,7 +163,7 @@ namespace oo
 				}
 
 
-				RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(the_one_with_bones, graphicsID);
+				RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(the_one_with_bones, graphicsID, go.GetComponent<GameObjectComponent>().Id);
 				/*auto children = go.GetChildren();
 
 				for (auto& child : children)

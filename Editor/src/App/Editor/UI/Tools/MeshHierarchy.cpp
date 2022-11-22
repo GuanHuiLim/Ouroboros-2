@@ -185,7 +185,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 				renderer.num_bones = modeldata->skeleton->inverseBindPose.size();
 
 				//load Skeleton
-				auto skeleton = CreateSkeleton(modeldata, gfx_ID);
+				auto skeleton = CreateSkeleton(modeldata, gfx_ID, gameobject->GetComponent<oo::GameObjectComponent>().Id);
 				containing_gameobj->AddChild(*skeleton);
 			}
 			else //no skeleton
@@ -215,7 +215,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	
 }
 
-std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(ModelFileResource* resource, uint32_t gfx_ID)
+std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(ModelFileResource* resource, uint32_t gfx_ID, oo::UUID uid)
 {
 	decltype(ModelFileResource::skeleton) skele = resource->skeleton;
 	assert(skele);
@@ -289,6 +289,7 @@ std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(ModelFileResource*
 		bonecomponent.bone_name = curr_bone->mName;
 		bonecomponent.inverseBindPose_info = skele->inverseBindPose[curr_bone->m_BoneIndex];
 		bonecomponent.graphicsWorld_ID = gfx_ID;
+		bonecomponent.skin_mesh_object = uid;
 		//bonecomponent.gfxbones_index = curr_bone->m_BoneIndex;
 
 	   ++node_index;
