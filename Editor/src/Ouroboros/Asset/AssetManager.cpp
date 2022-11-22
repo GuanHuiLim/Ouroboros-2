@@ -228,8 +228,13 @@ namespace oo
         auto filtered = store.filter(type);
         if (filtered.empty())
             return v;
-        std::transform(filtered.begin(), filtered.end(), std::back_inserter(v), [this](const decltype(filtered)::value_type& e)
+        std::for_each(filtered.begin(), filtered.end(), [&v](const decltype(filtered)::value_type& e)
         {
+            auto asset = Asset(e.second);
+            v.insert(std::upper_bound(v.begin(), v.end(), asset, [](const Asset& a, const Asset& b)
+            {
+                return a.GetFilePath().filename().string() < b.GetFilePath().filename().string();
+            }), asset);
             return Asset(e.second);
         });
         return v;
@@ -340,12 +345,52 @@ namespace oo
         std::chrono::file_clock::time_point tLast = ev->time;
         if (std::filesystem::exists(root))
         {
+            iterateDirectoryOrphans(root, tLast);
             iterateDirectoryAdditions(root, tLast);
             iterateDirectoryOmissions(root, tLast);
         }
         lastReloadTime = std::chrono::file_clock::now();
 
         TRACY_PROFILE_SCOPE_END();
+    }
+
+    void AssetManager::iterateDirectoryOrphans(const std::filesystem::path& dir,
+                                               const std::chrono::file_clock::time_point& tLast,
+                                               const std::chrono::file_clock::time_point& t)
+    {
+        const std::filesystem::path DIR = std::filesystem::canonical(dir);
+        std::list<std::filesystem::path> toRemove;
+
+        // Iterate directory contents
+        for (auto& fp : std::filesystem::directory_iterator(DIR))
+        {
+            const std::filesystem::path FP = std::filesystem::canonical(fp.path());
+
+            // Recurse
+            if (std::filesystem::is_directory(FP))
+                iterateDirectoryOrphans(FP, tLast, t);
+
+            // Check if meta file
+            if (!isMetaPath(FP))
+                continue;
+
+            // Convert to asset path
+            std::filesystem::path fpContent = FP;
+            fpContent.replace_extension();
+
+            // Check if item exists
+            if (std::filesystem::exists(fpContent))
+                continue;
+
+            toRemove.emplace_back(FP);
+        }
+
+        // Remove orphans
+        for (const auto& fp : toRemove)
+        {
+            std::filesystem::remove(fp);
+            LOG_WARN("Removed orphaned meta file {0}", fp.filename());
+        }
     }
 
     void AssetManager::iterateDirectoryAdditions(const std::filesystem::path& dir,
@@ -396,7 +441,7 @@ namespace oo
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->Reload();
                     store.tree.insert(FP);
-                    LOG_INFO("Move {0}", FP.filename());
+                    //LOG_INFO("Move {0}", FP.filename());
                 }
                 else if (tLast < WRITE_TIME && WRITE_TIME <= t)
                 {
@@ -405,7 +450,7 @@ namespace oo
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->timeLoaded = t;
                     store.at(meta.id)->Reload();
-                    LOG_INFO("Modified asset {0}", FP.filename());
+                    //LOG_INFO("Modified asset {0}", FP.filename());
                 }
             }
         }
@@ -446,7 +491,7 @@ namespace oo
 
                         // Remove
                         toRemove.emplace_back(asset.second->id);
-                        LOG_INFO("Un-indexed asset {0}", ASS_FP.filename());
+                        //LOG_INFO("Un-indexed asset {0}", ASS_FP.filename());
                     }
                 }
                 for (const auto& i : toRemove)
@@ -471,14 +516,14 @@ namespace oo
         {
             // Create meta file
             meta.id = Asset::GenerateSnowflake();
-            std::ofstream ofs = std::ofstream(fpMeta);
+            std::ofstream ofs = std::ofstream(fpMeta, std::ios::binary);
             BinaryIO::Write(ofs, meta);
-            LOG_INFO("Created meta {0}", fpMeta.filename());
+            //LOG_INFO("Created meta {0}", fpMeta.filename());
         }
         else
         {
             // Read meta file
-            std::ifstream ifs = std::ifstream(fpMeta);
+            std::ifstream ifs = std::ifstream(fpMeta, std::ios::binary);
             BinaryIO::Read(ifs, meta);
         }
         return meta;
@@ -529,7 +574,7 @@ namespace oo
         info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
         info->timeLoaded = std::chrono::file_clock::now();
         info->type = info->GetType();
-        LOG_INFO("Indexed asset {0}", fp.filename());
+        //LOG_INFO("Indexed asset {0}", fp.filename());
         return Asset(store.emplace(info->id, info));
     }
 }

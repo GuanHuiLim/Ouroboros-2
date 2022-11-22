@@ -44,9 +44,13 @@ Technology is prohibited.
 #include "renderpass/GBufferRenderPass.h"
 #include "renderpass/DebugRenderpass.h"
 #include "renderpass/ShadowPass.h"
+#include "renderpass/SSAORenderPass.h"
+#include "renderpass/ForwardParticlePass.h"
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 	#include "renderpass/ForwardDecalRenderpass.h"
 #endif
+
+#include "DefaultMeshCreator.h"
 
 #include "GraphicsBatch.h"
 #include "FramebufferBuilder.h"
@@ -81,7 +85,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		int x;
 		std::cerr << pCallbackData->pMessage << std::endl<< std::endl;
 		//assert(false); temp comment out
-		x= 5; // for breakpoint
+		x=5; // for breakpoint
 	}
 
 	return VK_FALSE;
@@ -188,16 +192,9 @@ VulkanRenderer::~VulkanRenderer()
 
 	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::defaultPSOLayout, nullptr);
 	
-	if (renderPass_default)
-	{
-		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
-		renderPass_default = VK_NULL_HANDLE;
-	}
-	if (renderPass_default2)
-	{
-		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default2, nullptr);
-		renderPass_default2 = VK_NULL_HANDLE;
-	}
+	renderPass_default.destroy();
+	renderPass_default_noDepth.destroy();
+	
 }
 
 VulkanRenderer* VulkanRenderer::get()
@@ -272,17 +269,21 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		rpd->RegisterRenderPass(ptr);
 		 ptr = new DeferredCompositionRenderpass;
 		rpd->RegisterRenderPass(ptr);
+		ptr = new SSAORenderPass;
+		rpd->RegisterRenderPass(ptr);
+		ptr = new ForwardParticlePass;
+		rpd->RegisterRenderPass(ptr);
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 		ptr = new ForwardDecalRenderpass;
 		rpd->RegisterRenderPass(ptr);
 #endif
 
-		RenderPassDatabase::InitAllRegisteredPasses();
-
 		CreateFramebuffers();
 
 		CreateCommandBuffers();
 		CreateDescriptorPool();
+
+		g_Textures.reserve(2048);
 
 		uint32_t whiteTexture = 0xFFFFFFFF; // ABGR
 		uint32_t blackTexture = 0xFF000000; // ABGR
@@ -294,16 +295,16 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		normalTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&normalTexture));
 		pinkTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&pinkTexture));
 		
+		RenderPassDatabase::InitAllRegisteredPasses();
+
 		auto& shadowTexture =RenderPassDatabase::GetRenderPass<ShadowPass>()->shadow_depth;
 		shadowTexture.updateDescriptor();
-		auto shadowLoc = AddBindlessGlobalTexture(shadowTexture);
-		auto dummy = g_imguiIDs.size(); // dummy because external engine users have 1:1 access to globalTex and imguiID
-		g_imguiIDs.push_back({});
 
 		CreateSynchronisation();
 
 		InitDebugBuffers();
 		
+		InitDefaultPrimatives();
 
 		PROFILE_INIT_VULKAN(&m_device.logicalDevice, &m_device.physicalDevice, &m_device.graphicsQueue, (uint32_t*)&m_device.queueIndices.graphicsFamily, 1, nullptr);
 	}
@@ -368,11 +369,9 @@ void VulkanRenderer::SetupSwapchain()
 
 void VulkanRenderer::CreateDefaultRenderpass()
 {
-	if (renderPass_default)
+	if (renderPass_default.pass)
 	{
 		return;
-		vkDestroyRenderPass(m_device.logicalDevice, renderPass_default, nullptr);
-		renderPass_default = VK_NULL_HANDLE;
 	}
 
 	// ATTACHMENTS
@@ -461,22 +460,15 @@ void VulkanRenderer::CreateDefaultRenderpass()
 	renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependancies.size());
 	renderPassCreateInfo.pDependencies = subpassDependancies.data();
 
-	VkResult result = vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default);
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create Render Pass");
-	}
-	VK_NAME(m_device.logicalDevice, "defaultRenderPass",renderPass_default);
+	renderPass_default.name = "defaultRenderPass";
+	renderPass_default.Init(m_device, renderPassCreateInfo);
 
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-	//VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass_default2));
-	VK_NAME(m_device.logicalDevice, "defaultRenderPass_2",renderPass_default2);
-	//depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	//result = vkCreateRenderPass(m_device.logicalDevice, &renderPassCreateInfo, nullptr, &compositionPass);
-	//if (result != VK_SUCCESS)
-	//{
-	//	throw std::runtime_error("Failed to create Render Pass");
-	//}
+
+	subpass.pDepthStencilAttachment = VK_NULL_HANDLE;
+	renderPassCreateInfo.attachmentCount = 1; // colour only
+	renderPassCreateInfo.dependencyCount = 0; // colour only
+	renderPass_default_noDepth.name = "defaultRenderPass_noDepth";
+	renderPass_default_noDepth.Init(m_device, renderPassCreateInfo);
 }
 
 void VulkanRenderer::CreateDefaultDescriptorSetLayout()
@@ -738,7 +730,7 @@ void VulkanRenderer::CreateFramebuffers()
 
 		VkFramebufferCreateInfo framebufferCreateInfo = {};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass_default; //render pass layout the frame buffer will be used with
+		framebufferCreateInfo.renderPass = renderPass_default.pass; //render pass layout the frame buffer will be used with
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferCreateInfo.pAttachments = attachments.data(); //list of attachments (1:1 with render pass)
 		framebufferCreateInfo.width = m_swapchain.swapChainExtent.width;
@@ -869,6 +861,226 @@ void VulkanRenderer::DestroyWorld(GraphicsWorld* world)
 	world->initialized = false;
 }
 
+int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
+{
+
+	uv = glm::clamp(uv, { 0.0,0.0 }, { 1.0,1.0 });
+
+	// Bad but only editor uses this
+	auto& physicalDevice = m_device.physicalDevice;
+	auto& device = m_device.logicalDevice;
+	vkQueueWaitIdle(m_device.graphicsQueue);
+	vkDeviceWaitIdle(device);
+
+
+
+	bool supportsBlit = true;
+	// Check blit support for source and destination
+	VkFormatProperties formatProps;
+
+	
+	auto& target = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments[GBufferAttachmentIndex::ENTITY_ID];
+	if (target.currentLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+		return -1;
+
+	// Check if the device supports blitting from optimal images (the swapchain images are in optimal format)
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, target.format, &formatProps);
+	if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+		supportsBlit = false;
+	}
+
+	// Check if the device supports blitting to linear images
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, VK_FORMAT_R32_SINT, &formatProps);
+	if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+		supportsBlit = false;
+	}
+
+	// Source for the copy is the last rendered swapchain image
+	VkImage srcImage = target.image;
+
+	// Create the linear tiled destination image to copy to and to read the memory from
+	VkImageCreateInfo imageCreateCI(oGFX::vkutils::inits::imageCreateInfo());
+	imageCreateCI.imageType = VK_IMAGE_TYPE_2D;
+	// Note that vkCmdBlitImage (if supported) will also do format conversions if the swapchain color format would differ
+	imageCreateCI.format = VK_FORMAT_R32_SINT;
+	imageCreateCI.extent.width = target.width;
+	imageCreateCI.extent.height = target.height;
+	imageCreateCI.extent.depth = 1;
+	imageCreateCI.arrayLayers = 1;
+	imageCreateCI.mipLevels = 1;
+	imageCreateCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageCreateCI.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateCI.tiling = VK_IMAGE_TILING_LINEAR;
+	imageCreateCI.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	// Create the image
+	VkImage dstImage;
+	VK_CHK(vkCreateImage(device, &imageCreateCI, nullptr, &dstImage));
+	VK_NAME(device, "COPY_DST_EDITOR_ID", dstImage);
+	// Create memory to back up the image
+	VkMemoryRequirements memRequirements;
+	VkMemoryAllocateInfo memAllocInfo(oGFX::vkutils::inits::memoryAllocateInfo());
+	VkDeviceMemory dstImageMemory;
+	vkGetImageMemoryRequirements(device, dstImage, &memRequirements);
+	memAllocInfo.allocationSize = memRequirements.size;
+	// Memory must be host visible to copy from
+	memAllocInfo.memoryTypeIndex = oGFX::FindMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits
+		, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	VK_CHK(vkAllocateMemory(device, &memAllocInfo, nullptr, &dstImageMemory));
+	VK_CHK(vkBindImageMemory(device, dstImage, dstImageMemory, 0));
+
+	// Do the actual blit from the swapchain image to our host visible destination image
+	
+	VkCommandBuffer copyCmd = beginSingleTimeCommands();
+	VK_NAME(device, "COPY_DST_EDITOR_ID_CMD_LIST", copyCmd);
+	// Transition destination image to transfer destination layout
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		0,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// Transition swapchain image from present to transfer source layout
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		srcImage,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_TRANSFER_READ_BIT,
+		target.currentLayout,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// If source and destination support blit we'll blit as this also does automatic format conversion (e.g. from BGR to RGB)
+	if (supportsBlit)
+	{
+		// Define the region to blit (we will blit the whole swapchain image)
+		VkOffset3D blitSize;
+		blitSize.x = target.width;
+		blitSize.y = target.height;
+		blitSize.z = 1;
+		VkImageBlit imageBlitRegion{};
+		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.srcSubresource.layerCount = 1;
+		imageBlitRegion.srcOffsets[1] = blitSize;
+		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.dstSubresource.layerCount = 1;
+		imageBlitRegion.dstOffsets[1] = blitSize;
+
+		// Issue the blit command
+		vkCmdBlitImage(
+			copyCmd,
+			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageBlitRegion,
+			VK_FILTER_NEAREST);
+	}
+	else
+	{
+		// Otherwise use image copy (requires us to manually flip components)
+		VkImageCopy imageCopyRegion{};
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = target.width;
+		imageCopyRegion.extent.height = target.height;
+		imageCopyRegion.extent.depth = 1;
+
+		// Issue the copy command
+		vkCmdCopyImage(
+			copyCmd,
+			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageCopyRegion);
+	}
+
+	// Transition destination image to general layout, which is the required layout for mapping the image memory later on
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	// Transition back the format after the blit is done
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		copyCmd,
+		srcImage,
+		VK_ACCESS_TRANSFER_READ_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		target.currentLayout,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	vkEndCommandBuffer(copyCmd);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &copyCmd;
+	//submitInfo.waitSemaphoreCount = 1; //number of semaphores to wait on
+	//submitInfo.pWaitSemaphores = &readyForCopy[(currentFrame+MAX_FRAME_DRAWS+1) % MAX_FRAME_DRAWS]; //list of semaphores to wait on
+	//VkPipelineStageFlags waitStages[] = {
+	//	VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+	//};
+	//submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
+
+
+	vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(m_device.graphicsQueue);
+	vkFreeCommandBuffers(m_device.logicalDevice, m_device.commandPool, 1, &copyCmd);
+
+
+	// Get layout of the image (including row pitch)
+	VkImageSubresource subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
+	VkSubresourceLayout subResourceLayout;
+	vkGetImageSubresourceLayout(device, dstImage, &subResource, &subResourceLayout);
+
+	// Map image memory so we can start copying from it
+	const char* data;
+	VK_CHK(vkMapMemory(device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)& data));
+	data += subResourceLayout.offset;
+
+	
+	// If source is BGR (destination is always RGB) and we can't use blit (which does automatic conversion), we'll have to manually swizzle color components
+	bool colorSwizzle = false;
+	// Check if source is BGR
+	// Note: Not complete, only contains most common and basic BGR surface formats for demonstration purposes
+	if (!supportsBlit)
+	{
+		std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
+		//colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), swapChain.colorFormat) != formatsBGR.end());
+	}
+
+	glm::uvec2 pixels = glm::uvec2{ target.width * uv.x,target.height * (uv.y) };
+	pixels = glm::clamp(pixels, { 0,0 }, { target.width-1,target.height-1 });
+	uint32_t indx = (pixels.x + pixels.y * target.width);
+	int32_t value = ((int32_t*)data)[indx];
+	//uint32_t value = ((uint32_t*)data)[pixels.x * (pixels.y * subResourceLayout.rowPitch)];
+
+	// Clean up resources
+	vkUnmapMemory(device, dstImageMemory);
+	vkFreeMemory(device, dstImageMemory, nullptr);
+	vkDestroyImage(device, dstImage, nullptr);
+
+	return value;
+
+}
+
 void VulkanRenderer::CreateLightingBuffers()
 {
 	//oGFX::CreateBuffer(m_device.physicalDevice, m_device.logicalDevice, sizeof(CB::LightUBO), 
@@ -911,18 +1123,44 @@ void VulkanRenderer::UploadLights()
 	//// Only lights that are inside/intersecting the camera frustum should be uploaded.
 	//memcpy(lightsBuffer.mapped, &lightUBO, sizeof(CB::LightUBO));
 
-	std::vector<SpotLightInstance> spotLights;
+	m_numShadowcastLights = 0;
+	int32_t gridIdx = 0;
+
+	std::vector<LocalLightInstance> spotLights;
 	auto& lights = currWorld->GetAllOmniLightInstances();
 	spotLights.reserve(lights.size());
+	int viewIter{};
 	for (auto& e : lights)
 	{
-		SpotLightInstance si;
+		LocalLightInstance si;
+		if (e.info.x > 0)
+		{
+			
+			e.info.y = gridIdx;			
+			if (e.info.x == 1)
+			{
+				// loop through all faces
+				for (size_t i = 0; i < 6; i++)
+				{
+					++m_numShadowcastLights;
+					si.view[i] = e.view[i];
+					++gridIdx;
+				}
+			}
+			else
+			{
+				++m_numShadowcastLights;
+				si.view[0] = e.view[++viewIter%6];		
+				++gridIdx;
+			}
+		}
+
+		si.info = e.info;
 		si.position = e.position;
 		si.color = e.color;
 		si.radius = e.radius;
 		si.projection = e.projection;
-		si.view = e.view[0];
-
+		
 		spotLights.emplace_back(si);
 	}
 
@@ -939,6 +1177,7 @@ void VulkanRenderer::CreateSynchronisation()
 {
 	imageAvailable.resize(MAX_FRAME_DRAWS);
 	renderFinished.resize(MAX_FRAME_DRAWS);
+
 	drawFences.resize(MAX_FRAME_DRAWS);
 	//Semaphore creation information
 	VkSemaphoreCreateInfo semaphorecreateInfo = {};
@@ -1149,6 +1388,7 @@ void VulkanRenderer::InitImGUI()
 	};
 
 	VkDescriptorPoolCreateInfo dpci = oGFX::vkutils::inits::descriptorPoolCreateInfo(pool_sizes,1000);
+	dpci.flags = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 	vkCreateDescriptorPool(m_device.logicalDevice, &dpci, nullptr, &m_imguiConfig.descriptorPools);
 	VK_NAME(m_device.logicalDevice, "imguiConfig_descriptorPools", m_imguiConfig.descriptorPools);
 
@@ -1402,7 +1642,16 @@ void VulkanRenderer::InitializeRenderBuffers()
 	g_GlobalMeshBuffers.IdxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 	g_GlobalMeshBuffers.VtxBuffer.Init(&m_device,VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_TRANSFER_SRC_BIT| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 	g_GlobalMeshBuffers.IdxBuffer.reserve(8 * 1000 * 1000);
-	g_GlobalMeshBuffers.VtxBuffer.reserve(8 * 1000 * 1000);
+	g_GlobalMeshBuffers.VtxBuffer.reserve(1 * 1000 * 1000);
+	
+	g_particleCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+	g_particleCommandsBuffer.reserve(1024); // commands are generally per emitter. shouldnt have so many..
+
+	for (size_t i = 0; i < g_particleDatas.size(); i++)
+	{
+		g_particleDatas[i].Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		g_particleDatas[i].reserve(100000*10); // 10 max particle systems
+	}
 
 	// TODO: Move other global GPU buffer initialization here...
 }
@@ -1416,6 +1665,12 @@ void VulkanRenderer::DestroyRenderBuffers()
 	globalLightBuffer.destroy();
 	gpuBoneMatrixBuffer.destroy();
 	skinningVertexBuffer.destroy();
+
+	g_particleCommandsBuffer.destroy();
+	for (size_t i = 0; i < g_particleDatas.size(); i++)
+	{
+		g_particleDatas[i].destroy();
+	}
 }
 
 void VulkanRenderer::GenerateCPUIndirectDrawCommands()
@@ -1484,6 +1739,18 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		shadowCasterCommandsBuffer.writeTo(shadowObjects.size(), (void*)shadowObjects.data(), 0);
 	}
 
+	{
+		auto& particleCommands = batches.GetParticlesBatch();
+		auto& particleData = batches.GetParticlesData();
+
+		g_particleCommandsBuffer.clear();
+		g_particleDatas[swapchainIdx].clear();
+
+		g_particleCommandsBuffer.writeTo(particleCommands.size(), particleCommands.data());		
+		g_particleDatas[swapchainIdx].writeTo(particleData.size(), particleData.data());
+		
+	}
+
 }
 
 void VulkanRenderer::UploadInstanceData()
@@ -1536,19 +1803,19 @@ void VulkanRenderer::UploadInstanceData()
 						const uint8_t perInstanceData = ent.instanceData;
 						constexpr uint32_t invalidIndex = 0xFFFFFFFF;
 						if (albedo == invalidIndex)
-							albedo = 0; // TODO: Dont hardcode this bindless texture index
+							albedo = whiteTextureID; // TODO: Dont hardcode this bindless texture index
 						if (normal == invalidIndex)
-							normal = 1; // TODO: Dont hardcode this bindless texture index
+							normal = blackTextureID; // TODO: Dont hardcode this bindless texture index
 						if (roughness == invalidIndex)
-							roughness = 0; // TODO: Dont hardcode this bindless texture index
+							roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
 						if (metallic == invalidIndex)
-							metallic = 1; // TODO: Dont hardcode this bindless texture index
+							metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
 
-										  // Important: Make sure this index packing matches the unpacking in the shader
+						// Important: Make sure this index packing matches the unpacking in the shader
 						const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
 						const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
 						const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
-						auto res = ent.flags & ObjectInstanceFlags::SKINNED;
+						auto res = ent.flags & ObjectInstanceFlags::SKINNED; 
 						auto isSkin = (res== ObjectInstanceFlags::SKINNED);
 						const uint32_t unused = (uint32_t)perInstanceData | isSkin << 8; //matCnt;
 
@@ -1584,6 +1851,7 @@ void VulkanRenderer::UploadInstanceData()
 			}
 			// skined mesh
 			GPUObjectInformation oi;
+			oi.entityID = ent.entityID;
 			oi.materialIdx = 7; // tem,p
 			if ((ent.flags & ObjectInstanceFlags::SKINNED) == ObjectInstanceFlags::SKINNED)
 			{
@@ -1599,7 +1867,7 @@ void VulkanRenderer::UploadInstanceData()
 				}
 				
 				oi.boneStartIdx = static_cast<uint32_t>(boneMatrices.size());
-				oi.boneCnt = static_cast<uint32_t>(ent.bones.size());
+				//oi.boneCnt = static_cast<uint32_t>(ent.bones.size());
 
 				for (size_t i = 0; i < ent.bones.size(); i++)
 				{
@@ -1684,33 +1952,6 @@ void VulkanRenderer::BeginDraw()
 
 		if (currWorld)
 		{
-			for (size_t x = 0; x < currWorld->numCameras; x++)
-			{
-				const auto targetID = currWorld->targetIDs[x];
-				auto& image = renderTargets[targetID].texture;
-				VkDescriptorImageInfo desc_image[1] = {};
-				desc_image[0].sampler = image.sampler;
-				desc_image[0].imageView = image.view;
-				desc_image[0].imageLayout = image.imageLayout;
-				VkWriteDescriptorSet write_desc[1] = {};
-				write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
-				write_desc[0].descriptorCount = 1;
-				if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-				{
-					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-				}
-				else
-				{
-					write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				}
-				if (currWorld->imguiID[x])
-				{
-					write_desc[0].pImageInfo = desc_image;
-					vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
-				}
-								
-			}		
 			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
 			batches.GenerateBatches();
 		}
@@ -1798,13 +2039,17 @@ void VulkanRenderer::RenderFrame()
 				//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
+				RenderPassDatabase::GetRenderPass<SSAORenderPass>()->Draw();
+
 				RenderPassDatabase::GetRenderPass<DeferredCompositionRenderpass>()->Draw();
+				RenderPassDatabase::GetRenderPass<ForwardParticlePass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<ForwardRenderpass>()->Draw();
 #if defined		(ENABLE_DECAL_IMPLEMENTATION)
 				RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();
 #endif				
-				if (shouldRunDebugDraw)
+				//if (shouldRunDebugDraw) // for now need to run regardless because of transition.. TODO: FIX IT ONE DAY
 				{
+					RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->dodebugRendering = shouldRunDebugDraw;
 					RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->Draw();
 				}
 
@@ -1869,11 +2114,15 @@ void VulkanRenderer::Present()
 	VkPipelineStageFlags waitStages[] = {
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
 	};
+
+	std::vector <VkSemaphore> frameSemaphores = { renderFinished[currentFrame],
+	};
+
 	submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffers[swapchainIdx];	// command buffer to submit
-	submitInfo.signalSemaphoreCount = 1;						// number of semaphores to signal
-	submitInfo.pSignalSemaphores = &renderFinished[currentFrame];				// semphores to signal when command buffer finished
+	submitInfo.signalSemaphoreCount = static_cast<uint32_t>(frameSemaphores.size());						// number of semaphores to signal
+	submitInfo.pSignalSemaphores = frameSemaphores.data();				// semphores to signal when command buffer finished
 
 																				//submit command buffer to queue
 	result = vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, drawFences[currentFrame]);
@@ -1939,11 +2188,58 @@ bool VulkanRenderer::ResizeSwapchain()
 
 	ResizeGUIBuffers();
 
+	// update imgui shit
+	if (currWorld)
+	{
+		for (size_t x = 0; x < currWorld->numCameras; x++)
+		{
+			const auto targetID = currWorld->targetIDs[x];
+			auto& image = renderTargets[targetID].texture;
+			VkDescriptorImageInfo desc_image[1] = {};
+			desc_image[0].sampler = image.sampler;
+			desc_image[0].imageView = image.view;
+			desc_image[0].imageLayout = image.imageLayout;
+			VkWriteDescriptorSet write_desc[1] = {};
+			write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
+			write_desc[0].descriptorCount = 1;
+			if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+			{
+				write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			}
+			else
+			{
+				write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			}
+			if (currWorld->imguiID[x])
+			{
+				write_desc[0].pImageInfo = desc_image;
+				vkUpdateDescriptorSets(m_device.logicalDevice, 1, write_desc, 0, NULL);
+			}
+		}		
+	}
+
 	return true;
+}
+
+uint32_t VulkanRenderer::GetDefaultCubeID()
+{
+	return def_cube->meshResource;
+}
+
+uint32_t VulkanRenderer::GetDefaultPlaneID()
+{
+	return def_plane->meshResource;
+}
+
+uint32_t VulkanRenderer::GetDefaultSpriteID()
+{
+	return def_sprite->meshResource;
 }
 
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
+	std::ostringstream os;
 	// new model loader
 	Assimp::Importer importer;
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
@@ -1978,7 +2274,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 
 	
 
-	std::cout <<"[Loading] " << file << std::endl;
+	os <<"[Loading] " << file << std::endl;
 	//if (scene->mNumAnimations && scene->mAnimations[0]->mNumMorphMeshChannels)
 	//{
 	//	std::stringstream ss{"Morphs\n"};
@@ -1996,17 +2292,17 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	//		}
 	//		ss << std::endl;
 	//	}
-	//	std::cout << ss.str() << std::endl;
+	//	os << ss.str() << std::endl;
 	//}
 
 	size_t count{ 0 };
-	std::cout << "Meshes" << scene->mNumMeshes << std::endl;
+	os << "Meshes" << scene->mNumMeshes << std::endl;
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
 		auto& mesh = scene->mMeshes[i];
-		std::cout << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
-		std::cout << "\t\tverts:"  << mesh->mNumVertices << std::endl;
-		std::cout << "\t\tbones:"  << mesh->mNumBones << std::endl;
+		os << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
+		os << "\t\tverts:"  << mesh->mNumVertices << std::endl;
+		os << "\t\tbones:"  << mesh->mNumBones << std::endl;
 		/*
 		for (size_t anim = 0; anim < mesh->mNumAnimMeshes; anim++)
 		{
@@ -2022,16 +2318,16 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 					ss << "\tPos:"<< pos<< "[" << v.x << "," << v.y << "," << v.z <<"]" << std::endl;
 				}
 			}
-		std::cout << ss.str() << std::endl;
+		os << ss.str() << std::endl;
 		}
-		std::cout << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
+		os << "Takes huge amount of data : " << (float)(sizeof(glm::vec3) * count) / (1024) << "Kb" << std::endl;
 		*/
 		
 		//int sum = 0;
 		//for (size_t x = 0; x <  scene->mMeshes[i]->mNumBones; x++)
 		//{
 		//	std::map<uint32_t, float> wts;
-		//	std::cout << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
+		//	os << "\t\t\tweights:"  << scene->mMeshes[i]->mBones[x]->mNumWeights << std::endl;
 		//	for (size_t y = 0; y < scene->mMeshes[i]->mBones[x]->mNumWeights; y++)
 		//	{
 		//		auto& weight = scene->mMeshes[i]->mBones[x]->mWeights[y];
@@ -2040,39 +2336,41 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//	}
 		//	for (auto [v,w] :wts)
 		//	{
-		//		std::cout << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
+		//		os << "\t\t\t\t"  <<":["<<v <<"," << w << "]" << std::endl;
 		//	}
 		//	sum += scene->mMeshes[i]->mBones[x]->mNumWeights;
 		//}
-		//std::cout << "\t\t\t|sum weights:"  << sum << std::endl;
+		//os << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
+	std::cout << os.str();
+	os.clear();
 
 #if 0
 	if (scene->HasAnimations())
 	{
-		std::cout << "Animated scene\n";
+		os << "Animated scene\n";
 		for (size_t i = 0; i < scene->mNumAnimations; i++)
 		{
-			std::cout << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
-			std::cout << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
-			std::cout << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
-			std::cout << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
-			std::cout << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
+			os << "Anim name: " << scene->mAnimations[i]->mName.C_Str() << std::endl;
+			os << "Anim frames: "<< scene->mAnimations[i]->mDuration << std::endl;
+			os << "Anim ticksPerSecond: "<< scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim duration: "<< static_cast<float>(scene->mAnimations[i]->mDuration)/scene->mAnimations[i]->mTicksPerSecond << std::endl;
+			os << "Anim numChannels: "<< scene->mAnimations[i]->mNumChannels << std::endl;
+			os << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMeshChannels << std::endl;
+			os << "Anim numMeshChannels: "<< scene->mAnimations[i]->mNumMorphMeshChannels << std::endl;
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				auto& channel = scene->mAnimations[i]->mChannels[x];
-				std::cout << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
+				os << "\tKeys name: " << channel->mNodeName.C_Str() << std::endl;
 				for (size_t y = 0; y < channel->mNumPositionKeys; y++)
 				{
-					std::cout << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
+					os << "\t Key_"<< std::to_string(y)<<" time: " << channel->mPositionKeys[y].mTime << std::endl;
 					auto& pos = channel->mPositionKeys[y].mValue;
-					std::cout << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
+					os << "\t Key_"<< std::to_string(y)<<" value: " <<pos.x <<", " << pos.y<<", " << pos.z << std::endl;
 				}
 			}
 		}
-		std::cout << std::endl;
+		os << std::endl;
 	}
 #endif
 
@@ -2124,12 +2422,12 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		for (size_t i = 0; i < mdl.skeleton->boneWeights.size(); i++)
 		{
 			//auto& ref = mdl.skeleton->boneWeights[i];
-			//std::cout << i;
+			//os << i;
 			//for (size_t x = 0; x < 4; x++)
 			//{
-			//	std::cout << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
+			//	os << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
 			//}
-			//std::cout << std::endl;
+			//os << std::endl;
 		}
 
 	}
@@ -2152,8 +2450,9 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		LoadMeshFromBuffers(modelFile->vertices, modelFile->indices, &mdl);
 	}
 
-	std::cout << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
+	os << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
 
+	std::cout << os.str();
 	return modelFile;
 }
 
@@ -2746,6 +3045,23 @@ uint32_t VulkanRenderer::AddBindlessGlobalTexture(vkutils::Texture2D texture)
 	vkUpdateDescriptorSets(m_device.logicalDevice, static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 
 	return index;
+}
+
+void VulkanRenderer::InitDefaultPrimatives()
+{
+	{
+		DefaultMesh dm = CreateDefaultCubeMesh();
+		def_cube.reset(LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr));
+	}
+	{
+		DefaultMesh pm = CreateDefaultPlaneXZMesh();
+		def_plane.reset(LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
+	}
+	{
+		DefaultMesh sm = CreateDefaultPlaneXYMesh();
+		def_sprite.reset(LoadMeshFromBuffers(sm.m_VertexBuffer, sm.m_IndexBuffer, nullptr));
+	}
+	
 }
 
 ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)

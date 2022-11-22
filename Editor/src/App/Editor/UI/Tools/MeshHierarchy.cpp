@@ -33,6 +33,8 @@ Technology is prohibited.
 #include "SceneManagement/include/SceneManager.h"
 #include "Ouroboros/Vulkan/SkinRendererComponent.h"
 #include "Ouroboros/Transform/TransformSystem.h"
+#include "Ouroboros/Animation/Animation.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
 MeshHierarchy::MeshHierarchy()
 {
 	oo::EventManager::Subscribe<MeshHierarchy, OpenFileEvent>(this, &MeshHierarchy::OpenFileCallBack);
@@ -115,7 +117,9 @@ void MeshHierarchy::Show()
 				continue;
 		}
 		node_parent.push_back({ node });
-		for (auto data : node->children)
+		auto reversed_node = node->children;	// intentional copy
+		std::reverse(reversed_node.begin(), reversed_node.end());
+		for (auto data : reversed_node)
 		{
 			node_list.push(data);
 		}
@@ -130,6 +134,11 @@ void MeshHierarchy::Show()
 	if(ImGui::Button("Add Whole Mesh"))
 	{
 		CreateObject(modeldata->sceneInfo,m_current_id);
+	}
+	if (ImGui::Button("Generate Animation"))
+	{
+		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
+
 	}
 }
 
@@ -154,7 +163,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 	uint32_t gfx_ID{ std::numeric_limits<uint32_t>().max()};
 
 
-	//no skeleton
+	
 	while (node_list.empty() == false)
 	{
 		node = node_list.top();
@@ -179,7 +188,7 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 				auto skeleton = CreateSkeleton(modeldata, gfx_ID);
 				containing_gameobj->AddChild(*skeleton);
 			}
-			else
+			else //no skeleton
 			{
 				auto& renderer = gameobject->EnsureComponent<oo::MeshRendererComponent>();
 				renderer.SetModelHandle(asset, node->meshRef);
@@ -194,7 +203,9 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 
 		}
 		node_parent.push_back({ node, gameobject });
-		for (auto data : node->children)
+		auto reversed_node = node->children;	// intentional copy
+		std::reverse(reversed_node.begin(), reversed_node.end());
+		for (auto data : reversed_node)
 		{
 			node_list.push(data);
 		}
@@ -244,7 +255,9 @@ std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(ModelFileResource*
 		all_nodes.push_back(std::pair{ bone, bonenode });
 		if (bonenode->mChildren.size())
 		{
-			for (auto data : bonenode->mChildren)
+			auto reversed_node = bonenode->mChildren;	// intentional copy
+			std::reverse(reversed_node.begin(), reversed_node.end());
+			for (auto data : reversed_node)
 			{
 				node_list.push(data);
 			}

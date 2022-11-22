@@ -47,6 +47,7 @@ namespace myPhysx {
     class PVD;
     struct PhysxObject;
     struct PhysicsObject;
+    struct RaycastHit;
 
     enum class rigid { none, rstatic, rdynamic };
     enum class shape { none, box, sphere, capsule, plane };
@@ -71,11 +72,22 @@ namespace myPhysx {
         void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
     };
 
+    struct RaycastHit {
+
+        bool intersect = false;
+        
+        phy_uuid::UUID object_ID;
+
+        PxVec3 position;
+        PxVec3 normal;
+        PxF32 distance;
+    };
+
     struct LockingAxis {
 
-        bool x_axis;
-        bool y_axis;
-        bool z_axis;
+        bool x_axis = false;
+        bool y_axis = false;
+        bool z_axis = false;
     };
 
     struct ContactPoint {
@@ -142,7 +154,7 @@ namespace myPhysx {
 
         bool isTriggerShape(PxShape* shape);
 
-        void provideCurrentWorld(PhysxWorld* world);
+        void setCurrentWorld(PhysxWorld* world);
         
         PxFilterFlags contactReportFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0,
                                                 PxFilterObjectAttributes attributes1, PxFilterData filterData1,
@@ -157,13 +169,14 @@ namespace myPhysx {
 
     private:
 
+        friend struct PhysxObject;
         friend struct PhysicsObject;
 
         PxScene* scene = nullptr;
         std::map<phy_uuid::UUID, PxMaterial*> mat;
         PxVec3 gravity;
 
-        std::map<phy_uuid::UUID, int> all_objects; // store all the index of the objects (lookups for keys / check if empty)
+        std::map<phy_uuid::UUID, std::size_t> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
         
@@ -186,8 +199,17 @@ namespace myPhysx {
         PhysicsObject createInstance();
         void removeInstance(PhysicsObject obj);
 
+        // DUPLICATE OBJECT
+        PhysicsObject duplicateObject(phy_uuid::UUID id);
+        void setAllOldData(PhysicsObject& physicsObj, PhysxObject& iniObj, size_t index);
+
         // MAP OF OBJECTS
-        std::map<phy_uuid::UUID, int>* getAllObject();
+        std::map<phy_uuid::UUID, std::size_t>* getAllObject();
+        bool hasObject(phy_uuid::UUID id);
+
+        // RAYCAST
+        RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
+        std::vector<RaycastHit> raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance);
 
         // TRIGGER
         void updateTriggerState(phy_uuid::UUID id); // function to update objects for OnTriggerStay
@@ -203,24 +225,31 @@ namespace myPhysx {
     // associated to each object in the physics world (me store)
     struct PhysxObject {
 
+        PhysxObject() = default; // default constructor
+        PhysxObject(const PhysxObject& object); // copy constructor
+        PhysxObject& operator=(const PhysxObject& object);
+        PhysxObject(PhysxObject&& object) = default;
+        PhysxObject& operator=(PhysxObject&& object) = default;
+
         std::unique_ptr<phy_uuid::UUID> id = nullptr;
         phy_uuid::UUID matID = 0;
 
         // shape
-        PxShape* m_shape = nullptr; // prob no need this
-        shape shape = shape::none;
+        PxShape* m_shape = nullptr;
+        shape shape_type = shape::none;
 
         // ensure at least static or dynamic is init
         RigidBody rb{};
-        rigid rigidID = rigid::none;
+        rigid rigid_type = rigid::none;
 
         // lock and unlock pos/rot axis
-        LockingAxis lockPositionAxis{ false };
-        LockingAxis lockRotationAxis{ false };
+        LockingAxis lockPositionAxis{};
+        LockingAxis lockRotationAxis{};
 
-        bool trigger = false;
-        bool gravity = true; // static should be false
-        bool kinematic = false;
+        bool is_trigger = false;
+        bool gravity_enabled = true; // static should be false
+        bool is_kinematic = false;
+        bool is_collider = true;
     };
 
     struct PhysicsObject { // you store
@@ -243,8 +272,9 @@ namespace myPhysx {
         PxVec3 getLinearVelocity() const;
 
         bool isTrigger() const;
-        bool useGravity() const;
+        bool isGravityEnabled() const;
         bool isKinematic() const;
+        bool isColliderEnabled() const;
 
         // SETTERS
         void setRigidType(rigid type);
@@ -258,8 +288,9 @@ namespace myPhysx {
         void setLinearDamping(PxReal linearDamping);
         void setLinearVelocity(PxVec3 linearVelocity);
 
-        void disableGravity(bool gravity);
-        void enableKinematic(bool kine);
+        void enableGravity(bool enable);
+        void enableKinematic(bool enable);
+        void enableCollider(bool enable);
 
         // AXIS LOCKING
         void lockPositionX(bool lock);

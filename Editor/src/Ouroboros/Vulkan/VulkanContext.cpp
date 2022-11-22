@@ -24,13 +24,13 @@ Technology is prohibited.
 #include <sdl2/SDL.h>
 #include <sdl2/SDL_vulkan.h>
 
-#include "OO_Vulkan/src/DefaultMeshCreator.h"
 
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/Core/WindowsWindow.h"
 #include <App/Editor/Utility/ImGuiManager.h>
 
+#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 namespace oo
 {
 
@@ -74,7 +74,7 @@ namespace oo
         //// Setup Camera Internally, not used
         vr = VulkanRenderer::get();
         //auto& camera = vr->camera;
-        ////m_cc.SetCamera(&camera);
+        ////m_runtimeCC.SetCamera(&camera);
         //camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
         //camera.movementSpeed = 5.0f;
         //camera.SetAspectRatio((float)m_window.m_width / (float)m_window.m_height);
@@ -118,11 +118,6 @@ namespace oo
         //auto tex = vr->CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&white));
         uint32_t tex = vr->whiteTextureID;
 
-        DefaultMesh dm = CreateDefaultCubeMesh();
-        cubeMesh.reset(vr->LoadMeshFromBuffers(dm.m_VertexBuffer, dm.m_IndexBuffer, nullptr));
-        DefaultMesh pm = CreateDefaultPlaneXZMesh();
-        planeMesh.reset(vr->LoadMeshFromBuffers(pm.m_VertexBuffer, pm.m_IndexBuffer, nullptr));
-
         /// This is an example of how to load in a full scene from FBX.. should work..
         //std::unique_ptr<ModelFileResource> loadedModel{vr->LoadModelFromFile("Model/Filename.fbx")};
         //std::function<void(ModelFileResource*,Node*)> EntityHelper = [&](ModelFileResource* model,Node* node) {
@@ -151,7 +146,7 @@ namespace oo
 
         {
             auto& myObj = gw.GetObjectInstance(obj); 
-            myObj.modelID = cubeMesh->meshResource;
+            myObj.modelID = vr->GetDefaultCubeID();
             myObj.scale = glm::vec3{ 2.1f,1.1f,1.1f };
             myObj.rotVec = glm::vec3{ 1.1f,1.1f,1.1f };
             myObj.rot = 35.0f;
@@ -165,7 +160,7 @@ namespace oo
        
         {
             auto& myPlane = gw.GetObjectInstance(plane);
-            myPlane.modelID = planeMesh->meshResource;
+            myPlane.modelID = vr->GetDefaultPlaneID();
             myPlane.position = { 0.0f,-1.0f,0.0f };
             myPlane.scale = { 15.0f,1.0f,15.0f };
             myPlane.localToWorld = glm::mat4(1.0f);
@@ -220,8 +215,10 @@ namespace oo
     {
         // Vulkan will call internally
 
+        TRACY_PROFILE_SCOPE_N(Vulkan_Render);
+
         // temporarily shift here for better structuring
-        //m_cc.Update(oo::timer::dt());
+        //m_runtimeCC.Update(oo::timer::dt());
 
         if (vr->PrepareFrame() == true)        
         {
@@ -285,19 +282,28 @@ namespace oo
                 lights[5]->position.z = 0.0f - cos(glm::radians(-360.0f * lightTimer - 45.0f)) * 10.0f;
             }
 
+            TRACY_PROFILE_SCOPE_N(Vulkan_UploadLights);
             // Upload CPU light data to GPU. Ideally this should only contain lights that intersects the camera frustum.
             vr->UploadLights();
+            TRACY_PROFILE_SCOPE_END();
 
+            TRACY_PROFILE_SCOPE_N(Vulkan_RenderFrame);
             // Render the frame
             vr->RenderFrame();
+            TRACY_PROFILE_SCOPE_END();
 
       
 
-        if(!m_minimized)
-            vr->DrawGUI();
+            if (!m_minimized)
+            {
+                TRACY_PROFILE_SCOPE_N(Vulkan_DrawGUI);
+                vr->DrawGUI();
+                TRACY_PROFILE_SCOPE_END();
+            }
 
         } // if prepare frame is true
 
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void VulkanContext::ResetImguiShutdown()

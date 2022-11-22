@@ -26,8 +26,10 @@ Technology is prohibited.
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
+#include "Ouroboros/UI/UISystem.h"
 
 namespace oo
 {
@@ -51,6 +53,7 @@ namespace oo
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
 
             GetWorld().Add_System<PhysicsSystem>()->Init(this);
+            GetWorld().Add_System<oo::UISystem>(this);
 
             GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
@@ -94,7 +97,7 @@ namespace oo
         }
         //post load file processes
         GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
-
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
 
         StartSimulation();
 
@@ -129,6 +132,12 @@ namespace oo
             GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
             TRACY_PROFILE_SCOPE_END();
         }
+        
+        {
+            TRACY_PROFILE_SCOPE(UI_runtime_update);
+            GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         /*{
             TRACY_PROFILE_SCOPE(physics_runtime_update);
@@ -156,7 +165,6 @@ namespace oo
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
             TRACY_PROFILE_SCOPE_END();
         }
-        GetWorld().Get_System<RendererSystem>()->UpdateCamerasRuntime();
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -235,11 +243,6 @@ namespace oo
 
         GetWorld().Get_System<oo::ScriptSystem>()->StopPlay();
         //GetWorld().GetSystem<oo::ScriptSystem>()->StopPlay();
-
-        //{
-        //    // Reset Timescale
-        //    oo::Timestep::TimeScale = 1.0;
-        //}
 
         TRACY_PROFILE_SCOPE_END();
     }

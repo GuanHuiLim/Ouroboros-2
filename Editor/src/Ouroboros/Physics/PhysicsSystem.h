@@ -23,6 +23,9 @@ Technology is prohibited.
 #include <bitset>
 #include "Ouroboros/ECS/GameObjectComponent.h"
 
+#include "Ouroboros/Geometry/Shapes.h"
+#include "Ouroboros/Physics/Raycast.h"
+
 namespace oo
 {
     class Scene;
@@ -38,7 +41,7 @@ namespace oo
         using Timestep = double;
 
         PhysicsSystem() = default;
-        virtual ~PhysicsSystem() = default;
+        virtual ~PhysicsSystem();
         virtual void Run(Ecs::ECSWorld*) override {};
 
         void Init(Scene* m_scene);
@@ -50,14 +53,17 @@ namespace oo
         vec3 Gravity = { 0, -9.81f, 0 };
         
         inline static bool ColliderDebugDraw = true;
-        inline static bool DebugMessges = false;
+        inline static bool DebugMessages = false;
 
         // Layering Bitmask Determines collision
         static LayerMatrix PhysicsBitMask;
         // Manupilating Fixed DT
         static void SetFixedDeltaTime(Timestep NewFixedTime);
         static Timestep GetFixedDeltaTime();
-    
+        
+        RaycastResult Raycast(Ray ray , float distance = std::numeric_limits<float>::max());
+        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max());
+
     private:
         inline static std::uint64_t MaxIterations = 100;
         inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 100 fps
@@ -99,7 +105,16 @@ namespace oo
         void InitializeCapsuleCollider(RigidbodyComponent& rb);
         void InitializeSphereCollider(RigidbodyComponent& rb);
 
+        void DuplicateRigidbody(RigidbodyComponent& rb);
+
+
         void AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc);
+
+        void OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e);
+        void OnGameObjectDisable(GameObjectComponent::OnDisableEvent* e);
+
+        void OnRaycastEvent(RaycastEvent* e);
+        void OnRaycastAllEvent(RaycastAllEvent* e);
     };
 
 

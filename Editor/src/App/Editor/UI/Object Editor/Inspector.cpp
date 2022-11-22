@@ -50,6 +50,8 @@ Technology is prohibited.
 #include <Ouroboros/Scripting/ScriptSystem.h>
 #include <Ouroboros/Scripting/ScriptManager.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
+#include <Ouroboros/Vulkan/ParticleEmitterComponent.h>
+#include <Ouroboros/Vulkan/SkinRendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/CameraComponent.h>
 
@@ -57,6 +59,12 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObjectDebugComponent.h>
 #include <Ouroboros/ECS/GameObjectDisabledComponent.h>
 #include <Ouroboros/Animation/AnimationComponent.h>
+
+#include <Ouroboros/UI/RectTransformComponent.h>
+#include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/UI/UICanvasComponent.h>
+#include <Ouroboros/UI/UIImageComponent.h>
+#include <Ouroboros/UI/GraphicsRaycasterComponent.h>
 
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
@@ -72,23 +80,27 @@ void Inspector::Show()
 		ImGui::EndMenuBar();
 	}
 	auto& selected_items = Hierarchy::GetSelected();
-	size_t size = selected_items.size();
+	std::vector<std::shared_ptr<oo::GameObject>> selected_list;
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto items : selected_items)
+	{
+		auto gameobject = scene->FindWithInstanceID(items); //first item
+		if (gameobject == nullptr)
+			continue;
+		selected_list.push_back(gameobject);
+	}
+	size_t size = selected_list.size();
 	if (size == 0)
 		return;
 	if (size > 1)
 	{
-
+		DisplayAddComponents(selected_list, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 		return;
 	}
 
 	{
-		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		auto gameobject = scene->FindWithInstanceID(*selected_items.begin());//first item
-		if (gameobject == nullptr)
-			return;
-		
+		auto gameobject = selected_list.back();
 		//bool active = gameobject->ActiveInHierarchy();
-		bool active = gameobject->IsActive();
 
 		//bool disable_prefabEdit = gameobject->GetIsPrefab() && gameobject->HasComponent<oo::PrefabComponent>() == false;
 		//if (disable_prefabEdit)
@@ -98,11 +110,21 @@ void Inspector::Show()
 		//	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, ImGui_StylePresets::disabled_color);
 		//	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, ImGui_StylePresets::disabled_color);
 		//}
-
-		ImGui::InputText("Name:",&gameobject->Name(),ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue);
+		bool active = gameobject->IsActive();
+		std::string temp_name = gameobject->Name();
+		if (ImGui::InputText("Name:", &temp_name, ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::GameObjectComponent>
+				(gameobject->Name(), temp_name, rttr::type::get<oo::GameObjectComponent>().get_property("Name"), gameobject->GetInstanceID()));
+			gameobject->Name() = temp_name;
+		}
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Active", &active))
+		{
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::GameObjectComponent>
+				(gameobject->IsActive(), active, rttr::type::get<oo::GameObjectComponent>().get_property("Active"), gameobject->GetInstanceID()));
 			gameobject->SetActive(active);
+		}
 		if (gameobject->HasComponent<oo::PrefabComponent>())
 		{
 			if (ImGui::Button("Break Prefab"))
@@ -120,7 +142,7 @@ void Inspector::Show()
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);
-		DisplayAddComponents(*gameobject, ImGui::GetContentRegionAvail().x * 0.7f, 150);
+		DisplayAddComponents(selected_list, ImGui::GetContentRegionAvail().x * 0.7f, 150);
 
 		//if (disable_prefabEdit)
 		//{
@@ -133,7 +155,15 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::PushItemWidth(200.0f);
 	DisplayComponent<oo::GameObjectComponent>(gameobject);
-	DisplayComponent<oo::TransformComponent>(gameobject);
+	// display either rect transform or base transform
+	if (gameobject.HasComponent<oo::RectTransformComponent>())
+	{
+		DisplayComponent<oo::RectTransformComponent>(gameobject);
+	}
+	else
+	{
+		DisplayComponent<oo::TransformComponent>(gameobject);
+	}
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
@@ -145,6 +175,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 
 	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
+	DisplayComponent<oo::ParticleEmitterComponent>(gameobject);
+	DisplayComponent<oo::SkinMeshRendererComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
 	DisplayComponent<oo::CameraComponent>(gameobject);
@@ -152,11 +184,16 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::AudioListenerComponent>(gameobject);
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	DisplayComponent<oo::AnimationComponent>(gameobject);
-	
+
+	DisplayComponent<oo::UIRaycastComponent>(gameobject);
+	DisplayComponent<oo::UICanvasComponent>(gameobject);
+	DisplayComponent<oo::UIImageComponent>(gameobject);
+	DisplayComponent<oo::GraphicsRaycasterComponent>(gameobject);
+
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();
 }
-void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float y)
+void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameObject>>& gameobject, float x , float y)
 {
 	float offset = (ImGui::GetContentRegionAvail().x - x) * 0.5f;
 	//LOG_CORE_INFO(ImGui::FindWindowByID(4029469480)->Name);
@@ -178,19 +215,32 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 		ImGui::EndChild();
 		if (ImGui::BeginListBox("##AddComponents", { x,y }))
 		{
+			// Components that you're not supposed to be able to add
 			selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::DuplicatedComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+			
+			// Components that should be in the final version
 			selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::ParticleEmitterComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::SkinMeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::LightComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CameraComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioListenerComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
+
+			selected |= AddComponentSelectable<oo::RectTransformComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIRaycastComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::GraphicsRaycasterComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIImageComponent>(gameobject);
 
 			selected |= AddScriptsSelectable(gameobject);
 
@@ -205,7 +255,8 @@ void Inspector::DisplayAddComponents(oo::GameObject& gameobject, float x , float
 	ImGui::EndGroup();
 	ImGui::PopID();
 }
-bool Inspector::AddScriptsSelectable(oo::GameObject& go)
+
+bool Inspector::AddScriptsSelectable(const std::vector<std::shared_ptr<oo::GameObject>>& go_list)
 {	
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.7f, 0.7f, 1.0f));
 	for (auto& script : oo::ScriptManager::GetScriptList())
@@ -224,9 +275,12 @@ bool Inspector::AddScriptsSelectable(oo::GameObject& go)
 		if (ImGui::Selectable(name.c_str(), false))
 		{
             auto ss = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetWorld().Get_System<oo::ScriptSystem>();
-            ss->AddScript(go.GetInstanceID(), script.name_space.c_str(), script.name.c_str());
-			go.GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
-			oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go.GetInstanceID(), script.name_space, script.name));
+			for (auto go : go_list)
+			{
+				ss->AddScript(go->GetInstanceID(), script.name_space.c_str(), script.name.c_str());
+				go->GetComponent<oo::ScriptComponent>().AddScriptInfo(script);
+				oo::CommandStackManager::AddCommand(new oo::ScriptAdd_ActionCommand(go->GetInstanceID(), script.name_space, script.name));
+			}
 			ImGui::PopStyleColor();
 			return true;
 		}
@@ -244,13 +298,31 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 	ImGui::BeginGroup();
 	ImGui::Separator();
 	ImGui::PushID(static_cast<int>(class_type.get_id()));
-
+	int sameline_next = 0;
+	float UI_sameline_size = 0;
+	float itemsize_sameline = 0;
 	for (rttr::property prop : class_type.get_properties())
 	{
 		bool propReadonly = prop.is_readonly();
 		if (propReadonly && m_showReadonly == false)
 			continue;
 
+		{
+			rttr::variant same_linewith = prop.get_metadata(UI_metadata::SAME_LINE_WITH_NEXT);
+			if (same_linewith.is_valid())
+			{
+				sameline_next = same_linewith.get_value<int>();
+				float area = ImGui::GetContentRegionAvail().x;
+				constexpr float textlen = 50 + 10;
+				itemsize_sameline = ImGui::GetCurrentWindow()->DC.ItemWidth;
+				UI_sameline_size = (area) / sameline_next - (textlen);//10 is padding
+			}
+		}
+		if (sameline_next)
+		{
+			ImGui::PushItemWidth(UI_sameline_size);
+			ImGui::BeginGroup();
+		}
 		rttr::type prop_type = prop.get_type();
 
 		auto ut = UI_RTTRType::types.find(prop_type.get_id());
@@ -275,13 +347,39 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 				rttr::variant v = prop.get_value(value);
 				bool set_edited = false;
 				bool end_edit = false;
-				DisplayEnumView(prop, value, set_edited, end_edit);
+				DisplayEnumView(prop, v, set_edited, end_edit);
 				if (end_edit)
 					endEdit = true;
 				if (set_edited == true)
 				{
 					edited = true;
 					prop.set_value(value, v);//set value to variant
+				}
+			}
+			else//not found
+			{
+				if (sameline_next)
+				{
+					ImGui::EndGroup();
+					ImGui::PopItemWidth();
+					sameline_next = 0;
+					UI_sameline_size = 0;
+				}
+				continue;
+			}
+			//found
+			if (sameline_next)
+			{
+				--sameline_next;
+				ImGui::EndGroup();
+				ImGui::PopItemWidth();
+				if (sameline_next)
+				{
+					ImGui::SameLine();
+				}
+				else
+				{
+					ImGui::GetCurrentWindow()->DC.ItemWidth = itemsize_sameline;
 				}
 			}
 			continue;
@@ -316,6 +414,20 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 			}
 		}
 		ImGui::Dummy({ 0,5.0f });
+		if (sameline_next)
+		{
+			--sameline_next;
+			ImGui::EndGroup();
+			ImGui::PopItemWidth();
+			if (sameline_next)
+			{
+				ImGui::SameLine();
+			}
+			else
+			{
+				ImGui::GetCurrentWindow()->DC.ItemWidth = itemsize_sameline;
+			}
+		}
 	}
 	ImGui::PopID();
 	ImGui::Separator();
@@ -346,14 +458,16 @@ void Inspector::DisplayArrayView(rttr::property main_property, rttr::type variab
 	constexpr size_t min_arrSize = 0;
 	constexpr size_t max_arrSize = 30;
 
+	ImVec2 cursorpos = ImGui::GetCursorPos();
 	//Size Slider
-
 	if (ImGui::DragScalarN("##Size", ImGuiDataType_::ImGuiDataType_U64, &size, 1,0.3f,&min_arrSize,&max_arrSize))
 		edited = endEdit = sqv.set_size(size);
-	ImGui::SameLine();
+	ImGui::SetItemAllowOverlap();
+	float width = ImGui::CalcItemWidth();
+	ImGui::SetCursorPos(cursorpos);
 	if (ImGui::ArrowButton("reduceSize", ImGuiDir_::ImGuiDir_Left))
 		edited = endEdit = sqv.set_size(size - 1);
-	ImGui::SameLine();
+	ImGui::SetCursorPos({ cursorpos.x + width - 17, cursorpos.y});//15 = arrowbuttonsize
 	if (ImGui::ArrowButton("increaseSize", ImGuiDir_::ImGuiDir_Right))
 		edited = endEdit = sqv.set_size(size + 1);
 	ImGui::SameLine();

@@ -34,8 +34,9 @@ public:
 
 	bool SetupDependencies() override;
 
-	VkRenderPass debugRenderpass{};
+	VulkanRenderpass debugRenderpass{};
 
+	bool dodebugRendering = true;
 private:
 
 	void CreateDebugRenderpass();

@@ -35,9 +35,22 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 namespace oo
 {
+    PhysicsSystem::~PhysicsSystem()
+    {
+        EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
+        EventManager::Unsubscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
+        EventManager::Unsubscribe<PhysicsSystem, RaycastEvent>(this, &PhysicsSystem::OnRaycastEvent);
+        EventManager::Unsubscribe<PhysicsSystem, RaycastAllEvent>(this, &PhysicsSystem::OnRaycastAllEvent);
+    }
+
     void PhysicsSystem::Init(Scene* scene)
     {
         m_scene = scene;
+
+        EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnEnableEvent>(this, &PhysicsSystem::OnGameObjectEnable);
+        EventManager::Subscribe<PhysicsSystem, GameObjectComponent::OnDisableEvent>(this, &PhysicsSystem::OnGameObjectDisable);
+        EventManager::Subscribe<PhysicsSystem, RaycastEvent>(this, &PhysicsSystem::OnRaycastEvent);
+        EventManager::Subscribe<PhysicsSystem, RaycastAllEvent>(this, &PhysicsSystem::OnRaycastAllEvent);
 
         m_world->SubscribeOnAddComponent<PhysicsSystem, RigidbodyComponent>(
             this, &PhysicsSystem::OnRigidbodyAdd);
@@ -63,7 +76,7 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, SphereColliderComponent>(
             this, &PhysicsSystem::OnSphereColliderRemove);
 
-        myPhysx::physx_system::provideCurrentWorld(&m_physicsWorld);
+        myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -154,7 +167,7 @@ namespace oo
             rb.object.lockRotationZ(rb.LockZAxisRotation);
 
             auto pos = rb.GetPositionInPhysicsWorld();
-            auto delta_position = pos - tf.GetGlobalPosition();
+            auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
             tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
@@ -183,7 +196,7 @@ namespace oo
         static Ecs::Query duplicated_rb_query = Ecs::make_raw_query<RigidbodyComponent, GameObjectComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_query, [&](RigidbodyComponent& rbComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
             {
-                InitializeRigidbody(rbComp);
+                DuplicateRigidbody(rbComp);
                 AddToLookUp(rbComp, goc);
             });
 
@@ -253,7 +266,7 @@ namespace oo
                 cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
 
                 // set capsule size
-                rb.object.setCapsuleProperty(cc.GlobalRadius * 2, cc.GlobalHalfHeight * 2);
+                rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
             });
 
         //Updating sphere collider's bounds 
@@ -279,9 +292,20 @@ namespace oo
         while (!trigger_queue->empty())
         {
             myPhysx::TriggerManifold trigger_manifold = trigger_queue->front();
-            
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false, "This should never happen");
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false, "This should never happen");
+
+            // if either objects are already removed, we skip them
+            if (m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false
+                || m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false)
+            {
+                if (DebugMessages)
+                    LOG_WARN("Skipped Trigger Callback because one of these pair of (Physics)UUID died ({0}), ({1}) ", trigger_manifold.triggerID, trigger_manifold.otherID);
+
+                trigger_queue->pop();
+                continue;
+            }
+
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false, "This should never happen");
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(trigger_manifold.otherID) == false, "This should never happen");
 
             // retrieve their gameobject id counterpart.
             UUID trigger_go_id = m_physicsToGameObjectLookup.at(trigger_manifold.triggerID);
@@ -297,17 +321,17 @@ namespace oo
                 pte.State = PhysicsEventState::NONE;
                 break;
             case myPhysx::trigger::onTriggerEnter:
-                if(DebugMessges)
+                if(DebugMessages)
                     LOG_TRACE("Trigger Enter Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::trigger::onTriggerStay:
-                if (DebugMessges)
+                if (DebugMessages)
                     LOG_TRACE("Trigger Stay Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::trigger::onTriggerExit:
-                if (DebugMessges) 
+                if (DebugMessages) 
                     LOG_TRACE("Trigger Exit Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::EXIT;
                 break;
@@ -324,8 +348,18 @@ namespace oo
         {
             myPhysx::ContactManifold contact_manifold = collision_queue->front();
 
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false, "This should never happen");
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape2_ID) == false, "This should never happen");
+            // if either objects are already removed, we skip them
+            if (m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false
+                || m_physicsToGameObjectLookup.contains(contact_manifold.shape2_ID) == false)
+            {
+                if (DebugMessages)
+                    LOG_WARN("Skipped Physics Collision Callback because one of these pair of (Physics)UUID died ({0}), ({1}) ", contact_manifold.shape1_ID, contact_manifold.shape2_ID);
+
+                collision_queue->pop();
+                continue;
+            }
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false, "This should never happen");
+            //ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape2_ID) == false, "This should never happen");
 
             // retrieve their gameobject id counterpart.
             UUID collider1_go_id = m_physicsToGameObjectLookup.at(contact_manifold.shape1_ID);
@@ -345,15 +379,15 @@ namespace oo
                 pce.State = PhysicsEventState::NONE;
                 break;
             case myPhysx::collision::onCollisionEnter:
-                if (DebugMessges)LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if (DebugMessages)LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::ENTER;
                 break;
             case myPhysx::collision::onCollisionStay:
-                if(DebugMessges) LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if(DebugMessages) LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::STAY;
                 break;
             case myPhysx::collision::onCollisionExit:
-                if (DebugMessges) LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
+                if (DebugMessages) LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::EXIT;
                 break;
             }
@@ -386,8 +420,40 @@ namespace oo
             auto pos = rb.GetPositionInPhysicsWorld();
             auto quat = rb.GetOrientationInPhysicsWorld();
 
+            glm::vec3 rotatedX = glm::rotate(quat, glm::vec3{bc.GlobalHalfExtents.x, 0, 0});
+            glm::vec3 rotatedY = glm::rotate(quat, glm::vec3{0, bc.GlobalHalfExtents.y, 0});
+            glm::vec3 rotatedZ = glm::rotate(quat, glm::vec3{0, 0, bc.GlobalHalfExtents.z});
+
+            //glm::vec3 rotatedVal = glm::conjugate(quat) * bc.GlobalHalfExtents * quat;
+            ////glm::vec3 rotatedVal = glm::mat4_cast(quat) * glm::vec4{ bc.HalfExtents, 0 };
+            //rotatedVal *= bc.Size * tf.GetGlobalScale();
+
+            auto bottom_left_back   = pos - rotatedX - rotatedY - rotatedZ;
+            auto bottom_right_back  = pos + rotatedX - rotatedY - rotatedZ;
+            auto top_left_back      = pos - rotatedX + rotatedY - rotatedZ;
+            auto top_right_back     = pos + rotatedX + rotatedY - rotatedZ;
+            auto bottom_left_front  = pos - rotatedX - rotatedY + rotatedZ;
+            auto bottom_right_front = pos + rotatedX - rotatedY + rotatedZ;
+            auto top_left_front     = pos - rotatedX + rotatedY + rotatedZ;
+            auto top_right_front    = pos + rotatedX + rotatedY + rotatedZ;
+
             //Debug draw the bounds
-            DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_back, bottom_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_front, bottom_right_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_front, bottom_right_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
+
+            DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
+
+            DebugDraw::AddLine(bottom_left_back, top_left_back, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_left_front, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_front, top_right_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(bottom_right_back, top_right_back, oGFX::Colors::GREEN);
+
+            //DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing
@@ -402,7 +468,7 @@ namespace oo
             glm::vec3 GlobalHalfExtents = { cc.GlobalRadius, cc.GlobalHalfHeight , cc.GlobalRadius };
             
             //Debug draw the bounds
-            DebugDraw::AddAABB({ pos + GlobalHalfExtents  , pos - GlobalHalfExtents }, oGFX::Colors::GREEN);
+            DebugDraw::AddAABB({ pos - GlobalHalfExtents  , pos + GlobalHalfExtents }, oGFX::Colors::GREEN);
             // draw top sphere
             DebugDraw::AddSphere({ pos + vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
             // draw bottom sphere
@@ -433,6 +499,44 @@ namespace oo
     PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()
     {
         return FixedDeltaTime; 
+    }
+
+    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance)
+    {
+        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+        
+        if(result.intersect)
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
+        
+        return { result.intersect, m_physicsToGameObjectLookup.at(result.object_ID), {result.position.x,result.position.y, result.position.z}, 
+            { result.normal.x, result.normal.y, result.normal.z }, result.distance };
+    }
+
+    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
+    {
+        std::vector<RaycastResult> result;
+
+        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+
+        for (auto& hit : allHits)
+        {
+            if (hit.intersect == false)
+                continue;
+
+            ASSERT_MSG(m_physicsToGameObjectLookup.contains(hit.object_ID) == false, "Why am i hitting something that's not in the current world?");
+
+            RaycastResult new_entry = 
+            { hit.intersect
+                , m_physicsToGameObjectLookup.at(hit.object_ID)
+                , { hit.position.x,hit.position.y, hit.position.z }
+                , { hit.normal.x, hit.normal.y, hit.normal.z }
+                , hit.distance 
+            };
+
+            result.emplace_back(new_entry);
+        }
+
+        return result;
     }
 
     void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
@@ -560,12 +664,49 @@ namespace oo
         rb.object.setShape(myPhysx::shape::sphere);
     }
 
+    void PhysicsSystem::DuplicateRigidbody(RigidbodyComponent& rb)
+    {
+        // we duplicate instead if this is an existing object
+        if (m_physicsWorld.hasObject(rb.object.id))
+            rb.object = m_physicsWorld.duplicateObject(rb.object.id);
+    }
+
     void PhysicsSystem::AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc)
     {
         if (m_physicsToGameObjectLookup.contains(rb.object.id) == false)
         {
             m_physicsToGameObjectLookup.insert({ rb.object.id, goc.Id });
         }
+    }
+
+    void PhysicsSystem::OnGameObjectEnable(GameObjectComponent::OnEnableEvent* e)
+    {
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go && go->HasComponent<RigidbodyComponent>())
+        {
+            auto& rb = go->GetComponent<RigidbodyComponent>();
+            rb.EnableCollider();
+        }
+    }
+
+    void PhysicsSystem::OnGameObjectDisable(GameObjectComponent::OnDisableEvent* e)
+    {
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go && go->HasComponent<RigidbodyComponent>())
+        {
+            auto& rb = go->GetComponent<RigidbodyComponent>();
+            rb.DisableCollider();
+        }
+    }
+
+    void PhysicsSystem::OnRaycastEvent(RaycastEvent* e)
+    {
+        e->Results = Raycast(e->ray, e->distance);
+    }
+
+    void PhysicsSystem::OnRaycastAllEvent(RaycastAllEvent* e)
+    {
+        e->Results = RaycastAll(e->ray, e->distance);
     }
 
 

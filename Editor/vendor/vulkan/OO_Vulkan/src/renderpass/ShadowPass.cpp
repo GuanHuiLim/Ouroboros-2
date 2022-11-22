@@ -22,6 +22,8 @@ Technology is prohibited.
 #include "VulkanTexture.h"
 #include "FramebufferCache.h"
 #include "FramebufferBuilder.h"
+#include <iostream>
+#include "DebugDraw.h"
 
 #include "../shaders/shared_structs.h"
 #include "MathCommon.h"
@@ -84,7 +86,7 @@ void ShadowPass::Draw()
 		.Build(fb_shadow,renderpass_Shadow);
 
 	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass =  renderpass_Shadow;
+	renderPassBeginInfo.renderPass =  renderpass_Shadow.pass;
 	renderPassBeginInfo.framebuffer = fb_shadow;
 	renderPassBeginInfo.renderArea.extent.width = shadowmapSize.width;
 	renderPassBeginInfo.renderArea.extent.height = shadowmapSize.height;
@@ -98,9 +100,6 @@ void ShadowPass::Draw()
 	rhi::CommandList cmd{ cmdlist };
 	cmd.BindPSO(pso_ShadowDefault);
 
-	cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
-	cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
-
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
@@ -112,30 +111,86 @@ void ShadowPass::Draw()
 		},
 		1, &dynamicOffset
 	);
-	
+
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	if (vr.currWorld->GetAllOmniLightInstances().size())
+	// calculate shadowmap grid dim
+	float smGridDim = ceilf(sqrtf(vr.m_numShadowcastLights));
+	
+	glm::vec2 increment{ vpWidth, vpHeight};
+	if (smGridDim)
 	{
-		auto& light = *vr.currWorld->GetAllOmniLightInstances().begin();
-		light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3{ 0.0f,0.0f,0.0f }, glm::vec3{ 0.0f,1.0f,0.0f });
-		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
-		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
-		glm::mat4 viewproj = light.projection * light.view[0];
+		increment /= smGridDim;
+	}
+
+	if (vr.m_numShadowcastLights > 0)
+	{
+		int i = 0;
+		int viewIter = 0;
+		for (auto& light: vr.currWorld->GetAllOmniLightInstances())
+		{
+			++viewIter;
+			// not a shadow casting light skip
+			if (light.info.x < 1) continue;
+
+			// this is an omnilight
+			if (light.info.x == 1)
+			{
+				constexpr size_t cubeFaces = 6;
+				for (size_t face = 0; face < cubeFaces; face++)
+				{
+					int lightGrid = light.info.y + face;
+					// set custom viewport for each view
+					int ly = lightGrid / smGridDim;
+					int lx = lightGrid - (ly * smGridDim);
+					vec2 customVP = increment * glm::vec2{ lx,smGridDim - ly };
+
+					light.info.z = customVP.x; // this is actually wasted
+					light.info.w = customVP.y; // this is actually wasted
+
+					//cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
+					//cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
+
+					// calculate viewport for each light
+					cmd.SetViewport(VkViewport{ customVP.x, customVP.y,increment.x, -vpHeight +(vpHeight-increment.y), 0.0f, 1.0f });
+					// TODO: Set exact region for scissor
+					cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpHeight, (uint32_t)vpWidth } });
+
+					//constexpr glm::vec3 up{ 0.0f,1.0f,0.0f };
+					//constexpr glm::vec3 right{ 1.0f,0.0f,0.0f };
+					//constexpr glm::vec3 forward{ 0.0f,0.0f,-1.0f };
+					//
+					//std::array<glm::vec3, 6> dirs{
+					//	glm::vec3(light.position) + -up ,
+					//	glm::vec3(light.position) + up,
+					//	glm::vec3(light.position) + -right,
+					//	glm::vec3(light.position) + right,
+					//	glm::vec3(light.position) + -forward,
+					//	glm::vec3(light.position) + forward,
+					//};
+					//DebugDraw::AddArrow(light.position, dirs[face], oGFX::Colors::RED);
 
 
-		vkCmdPushConstants(cmdlist,
-			PSOLayoutDB::defaultPSOLayout,
-			VK_SHADER_STAGE_ALL,	    // stage to push constants to
-			0,							// offset of push constants to update
-			sizeof(glm::mat4),			// size of data being pushed
-			glm::value_ptr(viewproj));	// actualy data being pushed (could be an array));
+					glm::mat4 mm(1.0f);
+					mm = light.projection * light.view[face];
+					vkCmdPushConstants(cmdlist,
+						PSOLayoutDB::defaultPSOLayout,
+						VK_SHADER_STAGE_ALL,	    // stage to push constants to
+						0,							// offset of push constants to update
+						sizeof(glm::mat4),			// size of data being pushed
+						glm::value_ptr(mm));		// actualy data being pushed (could be an array));
 
-		cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, vr.shadowCasterCommandsBuffer.size());
+					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, vr.shadowCasterCommandsBuffer.size());
+				}
+				++i;
+			}
+
+			
+		}		
 	}
 
 	vkCmdEndRenderPass(cmdlist);
@@ -147,7 +202,7 @@ void ShadowPass::Shutdown()
 	auto& device = vr.m_device.logicalDevice;
 
 	shadow_depth.destroy();
-	vkDestroyRenderPass(device, renderpass_Shadow, nullptr);
+	renderpass_Shadow.destroy();
 	vkDestroyPipeline(device, pso_ShadowDefault, nullptr);
 }
 
@@ -160,6 +215,7 @@ void ShadowPass::SetupRenderpass()
 	const uint32_t width = shadowmapSize.width;
 	const uint32_t height = shadowmapSize.height;
 
+	shadow_depth.name = "SHADOW_ATLAS";
 	shadow_depth.forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height, false);
 	
 	vkutils::Texture2D tex;
@@ -218,8 +274,8 @@ void ShadowPass::SetupRenderpass()
 	renderPassInfo.dependencyCount = 2;
 	renderPassInfo.pDependencies = dependencies.data();
 
-	VK_CHK(vkCreateRenderPass(m_device.logicalDevice, &renderPassInfo, nullptr, &renderpass_Shadow));
-	VK_NAME(m_device.logicalDevice, "ShadowPass", renderpass_Shadow);
+	renderpass_Shadow.name = "ShadowPass";
+	renderpass_Shadow.Init(m_device, renderPassInfo);
 }
 
 void ShadowPass::SetupFramebuffer()
@@ -230,9 +286,9 @@ void ShadowPass::SetupFramebuffer()
 	VkImageView depthView = shadow_depth.view;
 
 	VkFramebuffer fb;
-	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&shadow_depth)
-		.Build(fb,renderpass_Shadow);
+	//FramebufferBuilder::Begin(&vr.fbCache)
+	//	.BindImage(&shadow_depth)
+	//	.Build(fb,renderpass_Shadow);
 
 	// TODO: Fix imgui depth rendering
 	//deferredImg[GBufferAttachmentIndex::DEPTH]    = ImGui_ImplVulkan_AddTexture(GfxSamplerManager::GetSampler_Deferred(), att_depth.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -256,7 +312,7 @@ void ShadowPass::CreatePipeline()
 	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 
-	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default);
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout, vr.renderPass_default.pass);
 	pipelineCI.pInputAssemblyState = &inputAssemblyState;
 	pipelineCI.pRasterizationState = &rasterizationState;
 	pipelineCI.pColorBlendState = &colorBlendState;
@@ -291,7 +347,7 @@ void ShadowPass::CreatePipeline()
 	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/shadow.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Separate render pass
-	pipelineCI.renderPass = renderpass_Shadow;
+	pipelineCI.renderPass = renderpass_Shadow.pass;
 
 	// Blend attachment states required for all color attachments
 	// This is important, as color write mask will otherwise be 0x0 and you

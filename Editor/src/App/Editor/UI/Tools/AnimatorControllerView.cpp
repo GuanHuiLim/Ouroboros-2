@@ -14,6 +14,8 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #include "pch.h"
+#include "Project.h"
+#include "../Object Editor/AssetBrowser.h"
 #include "AnimatorControllerView.h"
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
@@ -21,6 +23,12 @@ Technology is prohibited.
 #include "Ouroboros/Animation/AnimationSystem.h"
 
 #include "App/Editor/Utility/ImGuiManager.h"
+
+uintptr_t GetNextId()
+{
+    static uintptr_t id = 1;
+    return id++;
+}
 
 AnimatorControllerView::NodeInfo* AnimatorControllerView::FindNode(ed::PinId pinID)
 {
@@ -45,10 +53,33 @@ AnimatorControllerView::NodeInfo* AnimatorControllerView::FindNode(ed::NodeId id
 
 AnimatorControllerView::NodeInfo* AnimatorControllerView::FindNode(oo::Anim::Node* _node)
 {
+    auto id = reinterpret_cast<uintptr_t>(static_cast<void*>(_node));
     for (auto& node : m_nodes)
-        if (node.anim_node == _node)
+        if (node.id.Get() == id)
             return &node;
     return nullptr;
+}
+
+void AnimatorControllerView::ReturnID(ed::NodeId id)
+{
+    free_Node_IDs.emplace(id.Get());
+}
+void AnimatorControllerView::ReturnID(ed::PinId id)
+{
+    free_Node_IDs.emplace(id.Get());
+}
+void AnimatorControllerView::ReturnID(ed::LinkId id)
+{
+    free_Node_IDs.emplace(id.Get());
+}
+
+uintptr_t AnimatorControllerView::GetAvailableNodeID()
+{
+    if (free_Node_IDs.empty()) return GetNextId();
+
+    auto id = free_Node_IDs.top();
+    free_Node_IDs.pop();
+    return id;
 }
 
 void AnimatorControllerView::Show()
@@ -58,20 +89,33 @@ void AnimatorControllerView::Show()
     auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 
     if (selected_items.size() <= 0)
+    {
+        Clear();
         return;
+    }
 
     auto gameobject = scene->FindWithInstanceID(*selected_items.begin());
 
     if (gameobject == nullptr || gameobject->HasComponent<oo::AnimationComponent>() == false)
+    {
+        Clear();
         return;
+    }
 
     animator = &gameobject.get()->GetComponent<oo::AnimationComponent>();
 
+    LoadGraph(animator);
+
     DisplayAnimatorController(animator);
+
+    PostDisplayUpdate(animator);
 }
 
 void AnimatorControllerView::BuildNode(NodeInfo* node)
 {
+    assert(node);
+    if (node == nullptr) return;
+
     for (auto& input : node->Input)
     {
         input.node = node;
@@ -83,6 +127,8 @@ void AnimatorControllerView::BuildNode(NodeInfo* node)
         output.node = node;
         output.kind = PinKind::Output;
     }
+
+    BuildNodeOnEditor(*node);
 }
 
 void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _animator)
@@ -104,88 +150,37 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     //    //auto& start_node = tree->groups.begin()->second.startNode;
     //}
 
-    //Handle for everytime i press a new animatortree
-    //if (m_firstFrame)
-    if constexpr (true)
-    {
-        //initialize the node editor with data from animation tree
-        if (!_animator->GetActualComponent().animTree->groups.empty())
-        {
-            //reset the data before populating
-            uniqueId = 0;
-            m_nodes.clear();
-            m_links_.clear();
-
-            auto& groups = _animator->GetActualComponent().animTree->groups;
-            for (auto& [groupID, group] : groups)
-            {
-                for (auto& [nodeID, node] : group.nodes)
-                {
-                    CreateNode(uniqueId, &node);
-                }
-
-                for (auto& [linkID, link] : group.links)
-                {
-                    NodeInfo* outputNode = FindNode(link.src.operator->());
-                    NodeInfo* inputNode = FindNode(link.dst.operator->());
-
-                    ed::PinId inputPin = outputNode->Output[0].id;
-                    ed::PinId outputPin = inputNode->Input[0].id;
-
-                    m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin));
-                    m_links_.back().link = &link;
-                    ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
-                }
-            }
-        }
-    }
 
     //
     // 1) Commit known data to editor
     //
 
-    for (int i = 0; i < m_nodes.size(); ++i)
+    //for (int i = 0; i < m_nodes.size(); ++i)
+    //{
+    //    //if (m_firstFrame)
+    //    ed::SetNodePosition(m_nodes[i].id, m_nodes[i].pos);
+    //    ed::BeginNode(m_nodes[i].id);
+    //    ed::BeginPin(m_nodes[i].Input[0].id, ed::PinKind::Input);
+    //    ImGui::Text("O");
+    //    ed::EndPin();
+    //    ImGui::SameLine();
+    //    ImGui::Text(m_nodes[i].anim_node->name.c_str());
+    //    ImGui::SameLine();
+    //    ed::BeginPin(m_nodes[i].Output[0].id, ed::PinKind::Output);
+    //    ImGui::Text(">");
+    //    ed::EndPin();
+    //    ed::EndNode();
+    //}
+    for (auto& nodeinfo : m_nodes)
     {
-        if (m_firstFrame)
-            ed::SetNodePosition(m_nodes[i].id, m_nodes[i].pos);
-        ed::BeginNode(m_nodes[i].id);
-        ed::BeginPin(m_nodes[i].Input[0].id, ed::PinKind::Input);
-        ImGui::Text("O");
-        ed::EndPin();
-        ImGui::SameLine();
-        ImGui::Text(m_nodes[i].anim_node->name.c_str());
-        ImGui::SameLine();
-        ed::BeginPin(m_nodes[i].Output[0].id, ed::PinKind::Output);
-        ImGui::Text(">");
-        ed::EndPin();
-        ed::EndNode();
+        BuildNodeOnEditor(nodeinfo);
     }
+
 
     for (auto& LinkInfo : m_links_)
     {
         ed::Link(LinkInfo.id, LinkInfo.inputID, LinkInfo.outputID);
     }
-
-    /*if (m_firstFrame)
-    {
-        auto& temp = _animator->GetActualComponent().animTree->groups;
-        for (auto it = temp.begin(); it != temp.end(); ++it)
-        {
-            for (auto it2 = it->second.links.begin(); it2 != it->second.links.end(); ++it2)
-            {
-                NodeInfo* outputNode = FindNode(it2->second.src.operator->());
-                NodeInfo* inputNode = FindNode(it2->second.dst.operator->());
-
-                ed::PinId inputPin = outputNode->Output[0].id;
-                ed::PinId outputPin = inputNode->Input[0].id;
-
-                m_links_.push_back(LinkInfo(ed::LinkId(m_nextLinkId++), inputPin, outputPin));
-                m_links_.back().link = &(it2->second);
-                ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
-            }
-        }
-    }*/
-
 
     //
     // 2) Handle interactions
@@ -214,11 +209,15 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 // ed::AcceptNewItem() return true when user release mouse button.
                 if (ed::AcceptNewItem())
                 {
+                    auto link = _animator->AddLink(current_group_name,
+                        FindNode(inputPinId)->anim_node->name,
+                        FindNode(outputPinId)->anim_node->name);
+
                     // Since we accepted new link, lets add one to our list of links.
-                    CreateLink(_animator, uniqueId, inputPinId, outputPinId);
+                    auto linkinfo = CreateLink(link.operator->(), inputPinId, outputPinId);
 
                     // Draw new link.
-                    ed::Link(m_links_.back().id, m_links_.back().inputID, m_links_.back().outputID);
+                    ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
                 }
 
                 // You may choose to reject connection between these nodes
@@ -252,15 +251,15 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 if (it == temp.begin())
                 {
                     oo::Anim::NodeInfo nodeinfo{
-                        .name{ "New Node" },
-                        .animation_name{ oo::Anim::Animation::empty_animation_name },
+                        .name{ "New Node" /*+ std::to_string(uniqueId)*/ },
+                        .animation_name{ oo::Anim::internal::empty_animation_name },
                         .speed{ 1.f },
                         .position{0.f,0.f,0.f}
                     };
 
                     auto node = _animator->AddNode(it->second.name, nodeinfo);
-
-                    CreateNode(uniqueId, node.operator->());
+                    assert(node);
+                    if (node) CreateNode(node.operator->());
                 }
             }
         }
@@ -468,19 +467,19 @@ void AnimatorControllerView::DisplayParameters()
 
 void AnimatorControllerView::DisplayInspector()
 {
-    m_nodesId.resize(ed::GetSelectedObjectCount());
-    m_linksId.resize(ed::GetSelectedObjectCount());
+    auto num_selected_objects = ed::GetSelectedObjectCount(); 
 
-    int nodeCount = ed::GetSelectedNodes(m_nodesId.data(), static_cast<int>(m_nodesId.size()));
-    int linkCount = ed::GetSelectedLinks(m_linksId.data(), static_cast<int>(m_linksId.size()));
+    m_nodesId.resize(static_cast<size_t>(num_selected_objects));
+    m_linksId.resize(static_cast<size_t>(num_selected_objects));
 
-    m_nodesId.resize(nodeCount);
-    m_linksId.resize(linkCount);
+    int nodeCount = ed::GetSelectedNodes(m_nodesId.data(), num_selected_objects);
+    int linkCount = ed::GetSelectedLinks(m_linksId.data(), num_selected_objects);
 
     if (ImGui::Begin("Animator Inspector"))
     {
         if (nodeCount != 0)
         {
+            static ImGuiID open = 0;
             for (int i = 0; i < nodeCount; ++i)
             {
                 ed::NodeId temp = m_nodesId[i];
@@ -494,14 +493,19 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Text("Name");
                 ImVec2 textsize = ImGui::CalcTextSize("a");
                 ImGui::SameLine(textsize.x * 8);
-                ImGui::InputText("##name", const_cast<char*>(id->anim_node->name.c_str()), 256);
+                ImGui::InputText("##name", &id->anim_node->name);
                 ImGui::Separator();
                 ImGui::Text("Animation");
                 ImGui::SameLine(textsize.x * 12);
-                ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 256);
+                ImGui::InputText("##animation", &id->anim_node->GetAnimation().name, ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+                ImGui::SameLine();
+                DisplayAnimationSelector(id->anim_node, open);
                 ImGui::Text("Speed");
                 ImGui::SameLine(textsize.x * 12);
                 ImGui::InputFloat("##speed", &id->anim_node->speed);
+                ImGui::Text("Looping");
+                ImGui::SameLine(textsize.x * 12);
+                ImGui::Checkbox("##looping", &id->anim_node->GetAnimation().looping);
             }
         }
         else if (linkCount != 0)
@@ -510,8 +514,8 @@ void AnimatorControllerView::DisplayInspector()
             {
                 ed::LinkId temp = m_linksId[i];
                 auto id = std::find_if(m_links_.begin(), m_links_.end(), [temp](auto& link) {return link.id == temp; });
-                std::string linkRelation = id->link->name;
-                ImGui::Text(linkRelation.c_str());
+                //std::string linkRelation = id->link->name;
+                //ImGui::Text(linkRelation.c_str());
                 ImVec2 textsize = ImGui::CalcTextSize("a");
                 ImGui::Text("Has Exit Time");
                 ImGui::SameLine(textsize.x * 25);
@@ -528,6 +532,10 @@ void AnimatorControllerView::DisplayInspector()
                         ImGui::Text("Fixed Duration");
                         ImGui::SameLine(textsize.x * 25);
                         ImGui::Checkbox("##fixedduration", &id->link->fixed_duration);
+                        ImGui::Text("Transition Duration");
+                        ImGui::SameLine(textsize.x * 25);
+                        ImGui::InputFloat("##transitionduration", &id->link->transition_duration, 0.0f, 0.0f, "%.2f");
+
                     }
                     ImGui::TreePop();
                 }
@@ -536,6 +544,43 @@ void AnimatorControllerView::DisplayInspector()
             }
         }
         ImGui::End();
+    }
+}
+
+void AnimatorControllerView::DisplayAnimationSelector(oo::Anim::Node* _anim_node, ImGuiID& openID)
+{
+    ImGui::PushID(_anim_node->name.c_str());
+    ImGuiID tempID = ImGui::GetItemID();
+    if (ImGui::Button("Edit"))
+    {
+        if (openID == tempID)
+            openID = 0;
+        else
+        {
+            openID = tempID;
+        }
+    }
+    ImGui::PopID();
+    if (openID == tempID)
+    {
+        //display the animations
+        ImVec2 windowSize = ImGui::GetContentRegionAvail();
+        ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
+
+        if (ImGui::BeginChild("Select Animation", windowSize, true))
+        {
+            for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation))
+            {
+                if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
+                {
+                    //TODO: CHANGE ANIMATION HERE
+                    _anim_node->SetAnimationAsset(assets);
+                    //_anim_node->anim_asset = assets;
+                    openID = 0;
+                }
+            }
+            ImGui::EndChild();
+        }
     }
 }
 
@@ -744,11 +789,11 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
     }
 }
 
-AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& _uniqueId, oo::Anim::Node* _anim_node)
+AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(oo::Anim::Node* _anim_node)
 {
-    m_nodes.emplace_back(_uniqueId++, _anim_node);
-    m_nodes.back().Input.emplace_back(_uniqueId++, &m_nodes.back(), _anim_node->name.c_str());
-    m_nodes.back().Output.emplace_back(_uniqueId++, &m_nodes.back(), _anim_node->name.c_str());
+    m_nodes.emplace_back(_anim_node);
+    m_nodes.back().Input.emplace_back(GetAvailableNodeID(), &m_nodes.back(), _anim_node->name.c_str());
+    m_nodes.back().Output.emplace_back(GetAvailableNodeID(), &m_nodes.back(), _anim_node->name.c_str());
     m_nodes.back().pos = ImVec2(_anim_node->position.x, _anim_node->position.y);
 
     BuildNode(&m_nodes.back());
@@ -756,10 +801,13 @@ AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(int& _uniqu
     return &m_nodes.back();
 }
 
-AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(oo::AnimationComponent* _animator, int& _uniqueId, ed::PinId inputPinId, ed::PinId outputPinId)
+AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(oo::Anim::Link* link, ed::PinId inputPinId, ed::PinId outputPinId)
 {
-    auto& temp = _animator->GetActualComponent().animTree->groups;
+    m_links_.emplace_back( inputPinId, outputPinId, link);
+    return &m_links_.back();
+    /*auto& temp = _animator->GetActualComponent().animTree->groups;
 
+    
     for (auto it = temp.begin(); it != temp.end(); ++it)
     {
         auto newLink = _animator->AddLink(it->second.name,
@@ -767,7 +815,7 @@ AnimatorControllerView::LinkInfo* AnimatorControllerView::CreateLink(oo::Animati
                                           FindNode(outputPinId)->anim_node->name);
         m_links_.push_back({ ed::LinkId(m_nextLinkId++), inputPinId, outputPinId, newLink.operator->() });
     }
-    return &m_links_.back();
+    return &m_links_.back();*/
 }
 
 void AnimatorControllerView::OnDelete()
@@ -781,7 +829,11 @@ void AnimatorControllerView::OnDelete()
             {
                 auto id = std::find_if(m_links_.begin(), m_links_.end(), [linkId](auto& link) { return link.id == linkId; });
                 if (id != m_links_.end())
+                {
+                    auto deletingLink = id->link;
+                    animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->dst->group->name}, .link_ID{deletingLink->linkID} });
                     m_links_.erase(id);
+                }
             }
         }
 
@@ -803,6 +855,8 @@ void AnimatorControllerView::OnDelete()
                             {
                                 ed::DeleteLink(m_links_[i].id);
                                 auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                auto deletingLink = iter->link;
+                                animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->dst->group->name}, .link_ID{deletingLink->linkID} });
                                 m_links_.erase(iter);
                                 continue;
                             }
@@ -816,17 +870,42 @@ void AnimatorControllerView::OnDelete()
                             {
                                 ed::DeleteLink(m_links_[i].id);
                                 auto iter = std::find_if(m_links_.begin(), m_links_.end(), [&](const auto& link) { return link.id == m_links_[i].id; });
+                                auto deletingLink = iter->link;
+                                animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->src->group->name}, .link_ID{deletingLink->linkID} });
                                 m_links_.erase(iter);
                                 continue;
                             }
                         }
                     }
+                    auto deletingNodeContainer = FindNode(id->id);
+                    auto deletingNode = deletingNodeContainer->anim_node;
+                    animator->RemoveNode(oo::Anim::TargetNodeInfo{ .group_name{deletingNode->group->name}, .node_ID{deletingNode->node_ID} });
                     m_nodes.erase(id);
                 }
             }
         }
     }
     ed::EndDelete();
+}
+
+void AnimatorControllerView::PostDisplayUpdate(oo::AnimationComponent* _animator)
+{
+    if (m_firstFrame == true) return;
+    //update animator nodes
+    for (auto& node : m_nodes)
+    {
+        node.pos = ed::GetNodePosition(node.id);
+        if (node.pos.x == FLT_MAX)
+            node.pos.x = 0.f;
+        if (node.pos.y == FLT_MAX)
+            node.pos.y = 0.f;
+        //update animation node's position
+        auto& position = node.anim_node->position;
+        position.x = node.pos.x;
+        position.y = node.pos.y;
+    }
+
+    
 }
 
 AnimatorControllerView::Pin* AnimatorControllerView::FindPin(ed::PinId id)
@@ -846,4 +925,132 @@ AnimatorControllerView::Pin* AnimatorControllerView::FindPin(ed::PinId id)
     }
 
     return nullptr;
+}
+
+void AnimatorControllerView::LoadGraph(oo::AnimationComponent* _animator)
+{
+    if (m_firstFrame == false) return;
+    if (_animator->HasAnimationTree() == false) return;
+    if (_animator->GetActualComponent().animTree->groups.empty()) return;
+
+    ed::SetCurrentEditor(m_Context);
+    ed::Begin("Animator Controller Editor", ImVec2(0.0, 0.0));
+
+    //initialize the node editor with data from animation tree
+    auto& groups = _animator->GetActualComponent().animTree->groups;
+    
+    for (auto& [groupID, group] : groups)
+    {
+        current_group_name = group.name;
+
+        for (auto& [nodeID, node] : group.nodes)
+        {
+            auto nodeinfo = CreateNode(&node);
+            assert(nodeinfo);
+        }
+
+        for (auto& [linkID, link] : group.links)
+        {
+            NodeInfo* outputNode = FindNode(link.src.operator->());
+            NodeInfo* inputNode = FindNode(link.dst.operator->());
+            assert(outputNode && inputNode);
+            if ((outputNode && inputNode) == false) continue;
+
+            ed::PinId inputPin = outputNode->Output[0].id;
+            ed::PinId outputPin = inputNode->Input[0].id;
+
+            auto linkinfo = CreateLink(&link, inputPin, outputPin);
+
+            ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+        }
+    }
+    
+    ed::End();
+    //no need to load data again after this
+    m_firstFrame = false;
+}
+
+//void AnimatorControllerView::BuildNodes()
+//{
+//    for (int i = 0; i < m_nodes.size(); ++i)
+//    {
+//        //if (m_firstFrame)
+//        BuildNode(m_nodes[i]);
+//    }
+//}
+
+void AnimatorControllerView::BuildNodeOnEditor(NodeInfo& info)
+{
+    ed::SetNodePosition(info.id, info.pos);
+    ed::BeginNode(info.id);
+    ed::BeginPin(info.Input[0].id, ed::PinKind::Input);
+    ImGui::Text("O");
+    ed::EndPin();
+    ImGui::SameLine();
+    ImGui::Text(info.anim_node->name.c_str());
+    ImGui::SameLine();
+    ed::BeginPin(info.Output[0].id, ed::PinKind::Output);
+    ImGui::Text(">");
+    ed::EndPin();
+    ed::EndNode();
+}
+
+void AnimatorControllerView::Clear()
+{
+    if (m_firstFrame == true) return;
+
+
+    ed::SetCurrentEditor(m_Context);
+    ed::Begin("Animator Controller Editor", ImVec2(0.0, 0.0));
+
+    //return the ids for nodes
+    for (auto& node : m_nodes)
+    {
+        ed::DeleteNode(node.id);
+        
+        //ReturnID(node.id);
+
+        for (auto& pin : node.Input)
+            ReturnID(pin.id);
+
+        for (auto& pin : node.Output)
+            ReturnID(pin.id);
+
+    }
+
+    //return the ids for links
+    for (auto& link : m_links_)
+    {
+        ed::DeleteLink(link.id);
+
+        //ReturnID(link.id);
+    }
+    //clear the containers for future use
+    m_nodes.clear();
+    m_links_.clear();
+
+    //clear the delete queue
+    if (ed::BeginDelete())
+    {
+        ed::LinkId linkId = 0;
+        while (ed::QueryDeletedLink(&linkId))
+        {
+            if (ed::AcceptDeletedItem())
+            {
+            }
+        }
+        ed::NodeId nodeId = 0;
+        while (ed::QueryDeletedNode(&nodeId))
+        {
+            if (ed::AcceptDeletedItem())
+            {
+            }
+        }
+    }
+    ed::EndDelete();
+
+    ed::End();
+
+    //be ready to load data again
+    m_firstFrame = true;
 }

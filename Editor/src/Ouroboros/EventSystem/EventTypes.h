@@ -21,9 +21,23 @@ Technology is prohibited.
 #include "App/SceneHeader.h"
 
 //Editor events
+struct UpdateRendererSettings : public oo::Event
+{
+};
+
 struct EditorViewportResizeEvent : public oo::Event
 {
     float X, Y;
+};
+
+struct PreviewWindowResizeEvent : public oo::Event
+{
+    float X, Y;
+};
+
+struct GetPreviewWindowSizeEvent : public oo::Event
+{
+    float Width, Height;
 };
 
 namespace oo

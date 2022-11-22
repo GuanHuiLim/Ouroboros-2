@@ -114,7 +114,7 @@ namespace Ouroboros
                     return null;
                 return new AudioClip(id);
             }
-            set { AudioSourceComponent_SetAudioClip(gameObject.scene, gameObject.GetInstanceID(), value.GetID()); }
+            set { AudioSourceComponent_SetAudioClip(gameObject.scene, gameObject.GetInstanceID(), (value == null) ? 0 : value.GetID()); }
         }
     }
 }

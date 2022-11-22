@@ -24,4 +24,8 @@ Technology is prohibited.
 #include "TransformAPI.h"
 #include "AudioSourceAPI.h"
 
+#include "PhysicsAPI.h"
 #include "RigidbodyAPI.h"
+
+#include "ParticleEmitterAPI.h"
+#include "AnimationAPI.h"

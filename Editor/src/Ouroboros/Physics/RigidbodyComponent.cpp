@@ -30,7 +30,7 @@ namespace oo
             //.property("type", &RigidbodyComponent::collider_type)
             .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
             .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
-            .property("Disable Gravity", &RigidbodyComponent::IsGravityDisabled, &RigidbodyComponent::SetGravity)
+            .property("Enable Gravity", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
             .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
             .property_readonly("Velocity", &RigidbodyComponent::GetLinearVelocity)
@@ -120,12 +120,12 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsGravityEnabled() const
     {
-        return !IsGravityDisabled();
+        return object.isGravityEnabled();
     }
 
     bool oo::RigidbodyComponent::IsGravityDisabled() const
     {
-        return object.useGravity();
+        return !IsGravityEnabled();
     }
 
     bool oo::RigidbodyComponent::IsStatic() const
@@ -153,6 +153,16 @@ namespace oo
         return !IsTrigger();
     }
 
+    void oo::RigidbodyComponent::EnableCollider()
+    {
+        object.enableCollider(true);
+    }
+
+    void oo::RigidbodyComponent::DisableCollider()
+    {
+        object.enableCollider(false);
+    }
+
     void oo::RigidbodyComponent::SetTrigger(bool enable)
     {
         IsTriggerObject = enable;
@@ -169,11 +179,11 @@ namespace oo
         object.setPosOrientation({ pos.x, pos.y, pos.z }, { quat.x, quat.y, quat.z, quat.w }); 
     }
     
-    void oo::RigidbodyComponent::SetGravity(bool to_disable)
+    void oo::RigidbodyComponent::SetGravity(bool enable)
     {
         // only applies to none static objects.
         if (!IsStaticObject)
-            object.disableGravity(to_disable);
+            object.enableGravity(enable);
     }
 
     /*void RigidbodyComponent::EnableGravity()

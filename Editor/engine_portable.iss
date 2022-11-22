@@ -2,8 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Ouroboros 2"
-#define MyAppVersion "1.0.0"
-#define MyAppPublisher "NineCraft"
+#include "version.txt"
+#define MyAppPublisher "Arcadia"
 #define MyAppURL "https://www.digipen.com/"
 #define SourceAppExeName "Editor.exe"
 #define MyAppExeName "Ouroboros.exe"
@@ -68,13 +68,15 @@ Source:"PhysXDevice64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysXFoundation_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysXGpu_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysX_64.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source:"SLikeNet_DLL_Release_x64.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ;settings files                       
 Source: "EditorMode.settings"; DestDir: "{app}"; Flags: ignoreversion
 Source: "PlayMode.settings"; DestDir: "{app}"; Flags: ignoreversion
 Source: "imgui.ini"; DestDir: "{app}"; Flags: ignoreversion
-Source: "default.ini"; DestDir: "{app}"; Flags: ignoreversion
-Source: "gamecontrollerdb.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "default.ini"; DestDir: "{app}"; Flags: ignoreversion    
+Source: "gamecontrollerdb.txt"; DestDir: "{app}"; Flags: ignoreversion  
+Source: "version.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

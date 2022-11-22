@@ -60,7 +60,7 @@ private: //Member Variables
 		std::string name;
 		PinKind		kind;
 
-		Pin(int _id, NodeInfo* _node, const char* _name):
+		Pin(uintptr_t _id, NodeInfo* _node, const char* _name):
 			id(_id), node(_node), name(_name), kind(PinKind::Input)
 		{
 		}
@@ -80,10 +80,10 @@ private: //Member Variables
 		std::string state;
 		std::string savedState;
 
-		NodeInfo(int _id, 
+		NodeInfo(/*uintptr_t _id,*/
 				 oo::Anim::Node* _anim_node = nullptr,
 				 ImColor _color = ImColor(255, 255, 255)) 
-		:id(_id), 
+		:id(static_cast<void*>(_anim_node)),
 		anim_node{ _anim_node },
 		color(_color), 
 		size(0, 0), 
@@ -105,11 +105,11 @@ private: //Member Variables
 		ed::PinId outputID;
 		bool selected;
 
-		LinkInfo(ed::LinkId _id, 
+		LinkInfo(/*ed::LinkId _id,*/ 
 				 ed::PinId _inputID = {}, 
 				 ed::PinId _outputID = {}, 
 				 oo::Anim::Link* _link = nullptr) 
-		:id(_id), 
+		:id(static_cast<void*>(_link)),
 		inputID(_inputID), 
 		outputID(_outputID), 
 		selected(false), 
@@ -122,9 +122,12 @@ private: //Member Variables
 
 	bool m_firstFrame				  = true;
 
-	int uniqueId					  = 1;		//for debugging purposes
+	uintptr_t uniqueId				  = 1;		//for debugging purposes
 	int  m_nextLinkId				  = 100;	//for debugging purposes
 
+	std::stack<uintptr_t> free_Node_IDs{};		//track free ids
+
+	std::string current_group_name{};
 private: //Member Functions
 
 	void BuildNode(NodeInfo* node);
@@ -132,14 +135,28 @@ private: //Member Functions
 	void DisplayAnimatorController(oo::AnimationComponent* _animator);
 	void DisplayParameters();
 	void DisplayInspector();
+	void DisplayAnimationSelector(oo::Anim::Node* _anim_node, ImGuiID& openID);
 	void DisplayConditions(oo::Anim::Link* link);
-	NodeInfo* CreateNode(int& uniqueId, oo::Anim::Node* _anim_node);
-	LinkInfo* CreateLink(oo::AnimationComponent* _animator, int& uniqueId, ed::PinId inputPinId, ed::PinId outputPinId);
+	NodeInfo* CreateNode(oo::Anim::Node* _anim_node);
+	LinkInfo* CreateLink(oo::Anim::Link* link, ed::PinId inputPinId, ed::PinId outputPinId);
 	void OnDelete();
 
+	void PostDisplayUpdate(oo::AnimationComponent* _animator);
 	//Helper Functions
 	Pin* FindPin(ed::PinId id);
 	NodeInfo* FindNode(ed::PinId pinID);
 	NodeInfo* FindNode(ed::NodeId id);
 	NodeInfo* FindNode(oo::Anim::Node* _node);
+
+	//managing node unique IDs
+	void ReturnID(ed::NodeId id);
+	void ReturnID(ed::PinId id);
+	void ReturnID(ed::LinkId id);
+	uintptr_t GetAvailableNodeID();
+
+	//loads data from AnimationComponent
+	void LoadGraph(oo::AnimationComponent* _animator);
+	//void BuildNodes();
+	void BuildNodeOnEditor(NodeInfo& info);
+	void Clear();
 };

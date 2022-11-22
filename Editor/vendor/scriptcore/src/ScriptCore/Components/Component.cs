@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Ouroboros
@@ -41,11 +40,14 @@ namespace Ouroboros
         {
             if (ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is null, and rhs is null
                 return true;
+
             if (!ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is not null, but rhs is null
-                return !CheckEntityExists(lhs.gameObject.scene, lhs.gameObject.GetInstanceID());
+                return lhs.gameObject == null || !ReferenceEquals(lhs, lhs.GetComponent(lhs.GetType()));
+
             if (ReferenceEquals(lhs, null) && !ReferenceEquals(rhs, null)) // lhs is null, but rhs is not null
-                return !CheckEntityExists(rhs.gameObject.scene, rhs.gameObject.GetInstanceID());
-            return lhs.gameObject.GetInstanceID() == rhs.gameObject.GetInstanceID();
+                return rhs.gameObject == null || !ReferenceEquals(rhs, rhs.GetComponent(rhs.GetType()));
+
+            return ReferenceEquals(lhs, rhs);
         }
 
         public static bool operator !=(Component lhs, Component rhs)

@@ -52,6 +52,8 @@ namespace Ouroboros
 
         public static bool operator ==(Asset lhs, Asset rhs)
         {
+            if (ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is null, and rhs is null
+                return true;
             if (!ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is not null, but rhs is null
                 return lhs.id == 0;
             if (ReferenceEquals(lhs, null) && !ReferenceEquals(rhs, null)) // lhs is null, but rhs is not null
@@ -84,6 +86,17 @@ namespace Ouroboros
         public static Asset LoadAtPath(string path)
         {
             return new Asset(Asset_LoadAssetAtPath(path));
+        }
+
+        [DllImport("__Internal")] protected static extern object[] Asset_GetByType(Type assetType, string name_space, string name);
+
+        public static T[] GetByType<T>(Type type)
+        {
+            string name_space = "";
+            if (typeof(T).Namespace != null)
+                name_space = typeof(T).Namespace;
+
+            return Asset_GetByType(type, name_space, typeof(T).Name) as T[];
         }
     }
 }

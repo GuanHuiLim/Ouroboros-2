@@ -11,16 +11,22 @@
 #ifdef __cplusplus
 #include "MathCommon.h"
 // GLSL Type
-using vec2 = glm::vec2;
-using vec3 = glm::vec3;
 using vec4 = glm::vec4;
+using vec3 = glm::vec3;
+using vec2 = glm::vec2;
 using uvec4 = glm::uvec4;
+using uvec3 = glm::uvec3;
+using uvec2 = glm::uvec2;
+using ivec4 = glm::ivec4;
+using ivec3 = glm::ivec3;
+using ivec2 = glm::ivec2;
 using mat4 = glm::mat4;
 using uint = unsigned int;
 #endif
 
 struct LocalLightInstance
 {
+    ivec4 info;
     vec4 position;
     vec4 color;
     vec4 radius;
@@ -30,15 +36,17 @@ struct LocalLightInstance
 
 struct OmniLightInstance
 {
-    vec4 position;
-    vec4 color;
-    vec4 radius;
+    ivec4 info; // TODO: does this take up too much space?
+    vec4 position; // XYZ
+    vec4 color; // RGB Intensity
+    vec4 radius; // Inner rad outer rad etc..
     mat4 projection;
     mat4 view[6];
 };
 
 struct SpotLightInstance
 {
+    ivec4 info;
     vec4 position;
     vec3 color;
     vec4 radius; // x inner, y outer
@@ -48,10 +56,23 @@ struct SpotLightInstance
 
 struct LightPC
 {
-    uvec4 numLights;
-    mat4 lightMat;
+    uint numLights;
+    uint useSSAO;
+    vec2 shadowMapGridDim;
+    float ambient;
+    float maxBias;
+    float mulBias;
+    uint PADDING;
 };
 
+struct SSAOPC
+{
+    vec2 screenDim;
+    vec2 sampleDim; // screenDim_sampleDim
+    float radius;
+    float bias;
+    uint numSamples;
+};
 
 struct GPUTransform
 {
@@ -65,7 +86,7 @@ struct GPUTransform
 struct GPUObjectInformation
 {
     uint boneStartIdx;
-    uint boneCnt;
+    int entityID;
     uint materialIdx;
     uint unused;
 };

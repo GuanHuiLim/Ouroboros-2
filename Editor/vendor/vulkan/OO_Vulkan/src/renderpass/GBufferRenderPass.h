@@ -17,6 +17,7 @@ Technology is prohibited.
 #include "vulkan/vulkan.h"
 #include "imgui/imgui.h"
 #include "VulkanTexture.h"
+#include "VulkanRenderpass.h"
 
 #include <array>
 
@@ -37,7 +38,7 @@ struct GBufferRenderPass : public GfxRenderpass
 	// This is for ImGui
 	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
 
-	VkRenderPass renderpass_GBuffer{};
+	VulkanRenderpass renderpass_GBuffer{};
 	VkFramebuffer framebuffer_GBuffer{};
 
 	//VkPushConstantRange pushConstantRange;

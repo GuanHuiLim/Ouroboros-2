@@ -47,37 +47,52 @@ VulkanDevice::~VulkanDevice()
 
 void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance& instance)
 {
-    m_instancePtr = &instance;
-    // Enumerate over physical devices the VK instance can access
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance.instance, &deviceCount, nullptr);
+	m_instancePtr = &instance;
+	// Enumerate over physical devices the VK instance can access
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(instance.instance, &deviceCount, nullptr);
 
-    // If no devices available, then none support vulkan!
-    if (deviceCount == 0)
-    {
-        std::cerr << "Can't find GPUs that support vulkan instance!" << std::endl;
-        throw std::runtime_error("Can't find GPUs that support vulkan instance!");
-    }
+	// If no devices available, then none support vulkan!
+	if (deviceCount == 0)
+	{
+		std::cerr << "Can't find GPUs that support vulkan instance!" << std::endl;
+		throw std::runtime_error("Can't find GPUs that support vulkan instance!");
+	}
 
-    // Get ist of physical devices
-    std::vector<VkPhysicalDevice> deviceList(deviceCount);
-    vkEnumeratePhysicalDevices(instance.instance, &deviceCount, deviceList.data());
+	// Get ist of physical devices
+	std::vector<VkPhysicalDevice> deviceList(deviceCount);
+	vkEnumeratePhysicalDevices(instance.instance, &deviceCount, deviceList.data());
 
-    // find a suitable device
-    for (const auto &device : deviceList)
-    {
-        if (CheckDeviceSuitable(si,device))
-        {
-            //found a nice device
-            physicalDevice = device;
-            break;
-        }
-    }
-    if (physicalDevice == VK_NULL_HANDLE)
-    {
-        std::cerr << "No suitable physical device found!" << std::endl;
-        throw std::runtime_error("No suitable physical device found!");
-    }
+	uint32_t best = 0;
+	uint32_t memory = 0;
+	for (size_t i = 0; i < deviceList.size(); i++)
+	{
+		auto& device = deviceList[i];
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(device, &props);
+		if (props.limits.maxComputeWorkGroupInvocations > memory)
+		{
+			memory = props.limits.maxComputeWorkGroupInvocations;
+			std::swap(deviceList[i], deviceList[best]);
+			best = i;
+		}
+	}
+
+	// find a suitable device
+	for (const auto& device : deviceList)
+	{
+		if (CheckDeviceSuitable(si, device))
+		{
+			//found a nice device
+			physicalDevice = device;
+			break;
+		}
+	}
+	if (physicalDevice == VK_NULL_HANDLE)
+	{
+		std::cerr << "No suitable physical device found!" << std::endl;
+		throw std::runtime_error("No suitable physical device found!");
+	}
 
 }
 
@@ -113,13 +128,13 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
 
     std::vector<const char*>deviceExtensions{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
     };
 
     if (si.debug && si.renderDoc)
     {
 #ifdef _DEBUG
-        deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+        deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME); 
 #endif // DEBUG
     }
 
@@ -140,8 +155,16 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     deviceFeatures.multiDrawIndirect = VK_TRUE;
 
     deviceFeatures.fillModeNonSolid = VK_TRUE;  //wireframe drawing
-    
+    deviceFeatures.drawIndirectFirstInstance = VK_TRUE;
+    deviceFeatures.independentBlend = VK_TRUE;
+
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
+
+    // required for instance base vertex
+    VkPhysicalDeviceShaderDrawParametersFeatures shaderDrawFeatures{};
+    shaderDrawFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+    shaderDrawFeatures.shaderDrawParameters = VK_TRUE;
 
     // Bindless design requirement Descriptor indexing for descriptors
     VkPhysicalDeviceDescriptorIndexingFeatures descriptor_indexing_features{};
@@ -153,6 +176,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     descriptor_indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
 
     deviceCreateInfo.pNext = &descriptor_indexing_features;
+    descriptor_indexing_features.pNext = &shaderDrawFeatures;
 
     this->enabledFeatures = deviceFeatures;
 
@@ -217,7 +241,7 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
     if (extensionCount == 0)
     {
         return false;
-    }
+    } 
 
     //populate list of extensions
     std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -227,7 +251,7 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
     { 
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME
         //        ,   VK_NV_GLSL_SHADER_EXTENSION_NAME  // nVidia useful extension to be able to load GLSL shaders
     };
     // TODO BETTER

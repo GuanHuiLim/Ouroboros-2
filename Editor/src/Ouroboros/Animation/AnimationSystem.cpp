@@ -29,6 +29,7 @@ Technology is prohibited.
 #include "App/Editor/UI/Tools/MeshHierarchy.h"
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #define DEBUG_ANIMATION false
 namespace oo::Anim
@@ -82,14 +83,15 @@ namespace oo::Anim
 					.SetParameter("Test float", 30.f);
 			}
 		}
-
+		
+		TRACY_PROFILE_SCOPE_NC(Animation_Update, 0x00E0E3);
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
 			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), 0.016f };
 			internal::UpdateTracker(info);
 			});
-
+		TRACY_PROFILE_SCOPE_END();
 		/*world->for_each(query, [&](AnimationComponent& animationComp) {
 			internal::UpdateTracker(*this, animationComp, animationComp.GetTracker(), 0.016f);
 			});*/
@@ -106,7 +108,14 @@ namespace oo::Anim
 			return _query;
 		}();
 
-
+		//set all animation data 
+		for (auto& [key, tree] : AnimationTree::map)
+		{
+			internal::BindConditionsToParameters(tree);
+			internal::BindNodesToAnimations(tree);
+			internal::CalculateAnimationLength(tree);
+			internal::ReloadReferences(tree);
+		}
 
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 
@@ -115,14 +124,7 @@ namespace oo::Anim
 
 			});
 
-		//set all condition's parameter index 
-		for (auto& [key, tree] : AnimationTree::map)
-		{
-			internal::BindConditionsToParameters(tree);
-			internal::BindNodesToAnimations(tree);
-			internal::CalculateAnimationLength(tree);
-			internal::ReloadReferences(tree);
-		}
+		
 	}
 
 	void AnimationSystem::TestObject()
@@ -182,7 +184,7 @@ namespace oo::Anim
 
 		NodeInfo nodeinfo{
 			.name{ "Test Node" },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f}
 		};
@@ -267,16 +269,63 @@ namespace oo::Anim
 
 	}
 
+	void AnimationSystem::TestDemoObject()
+	{
+		auto anim_assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation);
+		oo::Asset animation_asset{};
+		for (auto& asset : anim_assets)
+		{
+			auto name = asset.GetData<std::string>();
+			if (name == "MainChar_Idle_Take 001")
+			{
+				animation_asset = asset;
+				break;
+			}
+		}
+		assert(animation_asset.IsValid());
+
+		constexpr size_t treeID = 1234647030338911234ull;
+		auto tree = internal::RetrieveAnimationTree("Demo Animation Tree");
+		assert(tree);
+		auto animation = internal::RetrieveAnimation("MainChar_Idle_Take 001");
+
+		test_obj = scene->CreateGameObjectImmediate();
+		test_obj->Name() = "AnimationTestObject";
+		auto& comp = test_obj->AddComponent<oo::AnimationComponent>();
+		comp.SetAnimationTree(tree->treeID);
+		assert(comp.HasAnimationTree());
+
+		//{//add conditions
+		//	ConditionInfo condition_info{
+		//	.comparison{Condition::CompareType::EQUAL},
+		//	.parameter_name{"bool"},
+		//	.value{true}
+		//	};
+		//	auto result = comp.AddCondition("Group 1", "Start Node -> Idle Node", condition_info);
+		//	assert(result);
+		//}
+		//{//set animation
+		//	SetNodeAnimInfo info{
+		//	.group_name{"Group 1"},
+		//	.node_ID{3935255677567460564ull},
+		//	.anim_asset{ animation_asset },
+		//	};
+		//	auto result = comp.SetNodeAnimation(info);
+		//	assert(result);
+		//}
+		
+	}
+
 	Scene::go_ptr AnimationSystem::CreateAnimationTestObject()
 	{
 		if constexpr (DEBUG_ANIMATION == false) return nullptr;
 
 		else
 		{
-			auto animationfbx_fp = Project::GetAssetFolder().string();
+			/*auto animationfbx_fp = Project::GetAssetFolder().string();
 			TestObject();
-			auto obj_children = scene->GetRoot()->GetChildren();
-
+			auto obj_children = scene->GetRoot()->GetChildren();*/
+			TestDemoObject();
 
 			return nullptr;
 		}
@@ -312,6 +361,26 @@ namespace oo::Anim
 
 		return SaveAnimationTree(tree, filepath);
 	}
+	bool AnimationSystem::SaveAllAnimations()
+	{
+		for (auto& [id, anim] : Animation::animation_storage)
+		{
+			if (anim.animation_ID == internal::empty_animation_UID) continue;
+
+			auto asset = GetAnimationAsset(id);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			anim.name = asset.GetFilePath().stem().string();
+			auto result = AnimationSystem::SaveAnimation(anim, asset.GetFilePath().string());
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
 	bool AnimationSystem::SaveAllAnimations(std::string filepath)
 	{
 		for (auto& [id, anim] : Animation::animation_storage)
@@ -323,10 +392,43 @@ namespace oo::Anim
 		return true;
 	}
 
+	bool AnimationSystem::SaveAllAnimationTree()
+	{
+		for (auto& [treeID, tree] : AnimationTree::map)
+		{
+			internal::CalculateAnimationLength(tree);
+			internal::ReAssignReferences(tree);
+			internal::ReloadReferences(tree);
+
+			auto asset = GetAnimationTreeAsset(treeID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			tree.name = asset.GetFilePath().stem().string(); 
+			auto result = AnimationSystem::SaveAnimationTree(tree, asset.GetFilePath().string());
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
 	bool AnimationSystem::SaveAllAnimationTree(std::string filepath)
 	{
-		for (auto& [name, tree] : AnimationTree::map)
+		for (auto& [treeID, tree] : AnimationTree::map)
 		{
+			internal::CalculateAnimationLength(tree);
+			internal::ReAssignReferences(tree);
+			internal::ReloadReferences(tree);
+			
+			auto asset = GetAnimationTreeAsset(treeID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			tree.name = asset.GetFilePath().stem().string();
 			auto result = AnimationSystem::SaveAnimationTree(tree, filepath + "/" + tree.name + ".tree");
 			if (result == false)
 				return false;
@@ -336,16 +438,19 @@ namespace oo::Anim
 
 	bool AnimationSystem::SaveAnimation(Animation& anim, std::string filepath)
 	{
+		//dont save empty animation
+		if (anim.animation_ID == internal::empty_animation_UID) return true;
+
 		std::ofstream stream{ filepath ,std::ios::trunc };
 		if (!stream)
 		{
 			assert(false);
 			return false;
 		}
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		rapidjson::OStreamWrapper osw(stream);
 		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
-
 		//writer.Key("AnimationTree", static_cast<rapidjson::SizeType>(std::string("AnimationTree").size()));
 		auto serialize_fn = rttr::type::get<Animation>().get_method(internal::serialize_method_name);
 		serialize_fn.invoke({}, writer, anim);
@@ -354,6 +459,106 @@ namespace oo::Anim
 		stream.close();
 		return true;
 	}
+
+	oo::Asset AnimationSystem::GetAnimationAsset(UID anim_ID)
+	{
+		auto assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation);
+		for (auto& asset : assets)
+		{
+			if (asset.GetData<UID>() == anim_ID)
+				return asset;
+		}
+		return {};
+	}
+
+	oo::Asset AnimationSystem::GetAnimationTreeAsset(UID anim_ID)
+	{
+		auto assets = Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::AnimationTree);
+		for (auto& asset : assets)
+		{
+			if (asset.GetData<UID>() == anim_ID)
+				return asset;
+		}
+		return {};
+	}
+
+	oo::Asset AnimationSystem::AddAnimationAsset(Animation&& anim, std::string const& filepath)
+	{
+		SaveAnimation(anim, filepath);
+		return Project::GetAssetManager()->GetOrLoadPath(std::filesystem::path{ filepath });
+	}
+
+	bool AnimationSystem::SplitAnimation(SplitAnimationInfo& info, Animation& anim)
+	{
+		bool result{ false };
+		auto new_anim = Animation::ExtractAnimation(info.start_time, info.end_time, anim, result);
+		if (result == false)
+		{
+			assert(false);//extract animation failed
+			return false;
+		}
+		new_anim.name = info.split_animation_name;
+
+		auto filepath = info.filepath;
+		//use original animation's filepath
+		if (filepath.empty())
+		{
+			auto asset = GetAnimationAsset(info.anim_ID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);//original animation's asset doesn't exist
+				return false;
+			}
+
+			filepath = asset.GetFilePath().parent_path().string() + "/" + new_anim.name + ".anim";
+		}
+		//add the animation as an asset
+		auto asset = AddAnimationAsset(std::move(new_anim), filepath);
+		if (asset.IsValid() == false)
+		{
+			assert(false); // animation asset invalid, did animation fail to load?
+			return false;
+		}
+
+		return true;
+	}
+
+	bool AnimationSystem::SplitAnimation(SplitAnimationInfo& info)
+	{
+		
+		auto anim_ptr = internal::RetrieveAnimation(info.anim_ID);
+		if (anim_ptr == nullptr)
+		{
+			assert(false);//animation dont exist or not sotred
+			return false;
+		}
+		if (info.split_animation_name.empty())
+		{
+			assert(false);//no name specified for split animation
+			return false;
+		}
+
+		auto& anim = *anim_ptr;
+
+		if (info.in_frames)
+		{
+			//if start_frame == end_frame do nothing
+			if (info.start_frame == info.end_frame) return false;
+			//convert to time
+			info.start_time = anim.TimeFromFrame(info.start_frame);
+			info.end_time = anim.TimeFromFrame(info.end_frame);
+		}
+		else
+		{
+			//if start_time == end_time do nothing
+			if (internal::Equal(info.start_time, info.end_time))
+				return false;
+		}
+
+		return SplitAnimation(info, anim);
+	}
+
+
 	bool AnimationSystem::SaveAnimation(std::string name, std::string filepath)
 	{
 		//map should contain the animation tree
@@ -368,18 +573,17 @@ namespace oo::Anim
 	{
 		if (evnt->m_type != OpenFileEvent::FileType::FBX) return;
 
-		auto relativepath = std::filesystem::relative(evnt->m_filepath, Project::GetAssetFolder());
-		auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
-		auto resource = asset.GetData<ModelFileResource*>();
+		//auto relativepath = std::filesystem::relative(evnt->m_filepath, Project::GetAssetFolder());
+		//auto asset = Project::GetAssetManager()->GetOrLoadPath(relativepath);
+		//auto resource = asset.GetData<ModelFileResource*>();
 
-		Animation::LoadAnimationFromFBX(evnt->m_filepath.string(), resource);
+		//Animation::LoadAnimationFromFBX(evnt->m_filepath.string(), resource);
 	}
 
 	void AnimationSystem::CloseProjectCallback(CloseProjectEvent* evnt)
 	{
-		auto asset_folder = Project::GetAssetFolder().string();
-		SaveAllAnimations(asset_folder);
-		SaveAllAnimationTree(asset_folder);
+		SaveAllAnimations();
+		SaveAllAnimationTree();
 
 	}
 
@@ -422,7 +626,7 @@ namespace oo::Anim
 
 		auto load_fn = rttr::type::get< AnimationTree>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, tree);
-
+		tree.name = std::filesystem::path{ filepath }.stem().string();
 		auto loaded_tree = AnimationTree::Add(std::move(tree));
 
 		internal::ReAssignReferences(*loaded_tree);
@@ -448,10 +652,42 @@ namespace oo::Anim
 		auto obj = doc.GetObj();
 		auto load_fn = rttr::type::get< Animation>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, anim);
-
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		return Animation::AddAnimation(std::move(anim));
 
+	}
+
+	std::vector<Animation*> AnimationSystem::LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource)
+	{
+		auto anims = Animation::LoadAnimationFromFBX(filepath, resource);
+
+		for (auto& anim_ptr : anims)
+		{
+			if (anim_ptr == nullptr)
+			{
+				assert(false);
+				continue;
+			}
+			auto anim_name = anim_ptr->name;
+			auto anim_ID = anim_ptr->animation_ID;
+			auto anim_filepath = std::filesystem::path{ filepath }.parent_path().string() + "/" + anim_ptr->name + ".anim";
+			SaveAnimation(*anim_ptr, anim_filepath);
+			DeleteAnimation(anim_name);
+			/*auto asset = */Project::GetAssetManager()->GetOrLoadPath(std::filesystem::path{ anim_filepath });
+
+			anim_ptr = internal::RetrieveAnimation(anim_ID);
+		}
+
+
+		return anims;
+	}
+
+	bool AnimationSystem::DeleteAnimation(std::string const& name)
+	{
+		Animation::RemoveAnimation(name);
+
+		return true;
 	}
 
 	Animation* AnimationSystem::AddAnimation(std::string const& name)

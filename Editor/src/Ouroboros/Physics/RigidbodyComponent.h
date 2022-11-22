@@ -113,6 +113,9 @@ namespace oo
         bool IsTrigger() const;
         bool IsCollider() const;
         
+        void EnableCollider();
+        void DisableCollider();
+
         void SetTrigger(bool enable);
 
         void SetMaterial(PhysicsMaterial material);

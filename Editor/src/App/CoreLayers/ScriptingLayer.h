@@ -23,6 +23,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
+#include "Ouroboros/Vulkan/ParticleEmitterComponent.h"
+#include "Ouroboros/Animation/AnimationComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
 #include "Ouroboros/Physics/RigidbodyComponent.h"
@@ -42,13 +44,18 @@ namespace oo
         {
             ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
             ScriptManager::RegisterComponent<MeshRendererComponent>("Ouroboros", "MeshRenderer");
+            ScriptManager::RegisterComponent<ParticleEmitterComponent>("Ouroboros", "ParticleSystem");
+            ScriptManager::RegisterComponent<AnimationComponent>("Ouroboros", "Animator");
             ScriptManager::RegisterComponent<AudioSourceComponent>("Ouroboros", "AudioSource");
 
             ScriptManager::RegisterComponent<RigidbodyComponent>("Ouroboros", "Rigidbody");
             ScriptManager::RegisterComponent<BoxColliderComponent>("Ouroboros", "BoxCollider");
+            ScriptManager::RegisterComponent<SphereColliderComponent>("Ouroboros", "SphereCollider");
+            ScriptManager::RegisterComponent<CapsuleColliderComponent>("Ouroboros", "CapsuleCollider");
+
+            ScriptManager::s_SceneManager = &sceneManager;
 
 #if OO_EDITOR
-            ScriptManager::s_SceneManager = &sceneManager;
             EventManager::Subscribe<ToolbarButtonEvent>([](ToolbarButtonEvent* e)
                 {
                     if (e->m_buttonType != ToolbarButtonEvent::ToolbarButton::COMPILE)
@@ -72,16 +79,25 @@ namespace oo
                     {
                         bool outdated = false;
                         std::filesystem::file_time_type dll_time = std::filesystem::last_write_time(Project::GetScriptBuildPath() / "Scripting.dll");
-                        for (std::filesystem::directory_entry const& dir : std::filesystem::recursive_directory_iterator(Project::GetProjectFolder() / "Scripts"))
+
+                        if (std::filesystem::last_write_time(Project::GetProjectFolder() / "Scripts") > dll_time)
                         {
-                            if (dir.is_directory())
-                                continue;
-                            if (dir.last_write_time() > dll_time)
+                            outdated = true;
+                        }
+                        else
+                        {
+                            for (std::filesystem::directory_entry const& dir : std::filesystem::recursive_directory_iterator(Project::GetProjectFolder() / "Scripts"))
                             {
-                                outdated = true;
-                                break;
+                                if (!dir.is_directory())
+                                    continue;
+                                if (dir.last_write_time() > dll_time)
+                                {
+                                    outdated = true;
+                                    break;
+                                }
                             }
                         }
+
                         if (!outdated)
                             return;
                     }

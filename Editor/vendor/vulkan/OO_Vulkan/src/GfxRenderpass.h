@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "Profiling.h"
 #include "rhi/CommandList.h"
 #include "FramebufferBuilder.h"
+#include "VulkanRenderpass.h"
 
 #include <vector>
 #include <memory>
@@ -29,6 +30,7 @@ enum GBufferAttachmentIndex
     NORMAL ,
     ALBEDO ,
     MATERIAL ,
+    ENTITY_ID,
     DEPTH ,
 
     MAX_ATTACHMENTS,

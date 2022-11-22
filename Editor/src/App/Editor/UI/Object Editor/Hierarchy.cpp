@@ -48,6 +48,7 @@ Technology is prohibited.
 #include <Ouroboros/Commands/CommandStackManager.h>
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 #include <Ouroboros/Commands/Ordering_ActionCommand.h>
+#include <Ouroboros/Commands/Component_ActionCommand.h>
 //events
 #include <App/Editor/Events/OpenPromtEvent.h>
 #include <App/Editor/Events/OpenFileEvent.h>
@@ -65,6 +66,11 @@ Technology is prohibited.
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include <Ouroboros/Vulkan/CameraComponent.h>
 
+#include <Ouroboros/UI/GraphicsRaycasterComponent.h>
+#include <Ouroboros/UI/RectTransformComponent.h>
+#include <Ouroboros/UI/UICanvasComponent.h>
+#include <Ouroboros/UI/UIImageComponent.h>
+#include <Ouroboros/UI/UIRaycastComponent.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -91,8 +97,9 @@ Hierarchy::Hierarchy()
 
 void Hierarchy::Show()
 {
+	
 	TRACY_PROFILE_SCOPE_NC(hierarchy_ui_update, tracy::Color::BlueViolet);
-
+	
 	ImGui::BeginChild("search bar", { 0,40 }, false);
 	SearchFilter();
 	ImGui::EndChild();
@@ -143,8 +150,14 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 		auto source = scene->FindWithInstanceID(node.get_handle());
 		ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("##rename", &source->Name(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+		std::string curr_name = source->Name();
+		if (ImGui::InputText("##rename", &curr_name, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::GameObjectComponent>
+				(source->Name(), curr_name, rttr::type::get<oo::GameObjectComponent>().get_property("Name"), source->GetInstanceID()));
+			source->Name() = curr_name;
 			m_isRename = false;
+		}
 	}
 	//nothing should parent over it if no_interaction == false
 	if (ImGui::BeginDragDropTarget() && no_Interaction == false)
@@ -165,11 +178,13 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	ImGui::PopID();
 	bool hovered = ImGui::IsItemHovered();
 	bool clicked = ImGui::IsMouseReleased(ImGuiMouseButton_Left) | ImGui::IsMouseClicked(ImGuiMouseButton_Right);
-	bool keyenter = ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER));
 	if (hovered)
 	{
+		bool mousedown = ImGui::IsMouseDragging(ImGuiMouseButton_Left);
+		bool keyenter = ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER));
+
 		m_hovered = node.get_handle();
-		if ((clicked || keyenter) && s_selected.contains(handle) == false) //always insert values that unique (avoid unnesscary checks)
+		if ((clicked || keyenter || (mousedown /*&& !clicked*/)) && s_selected.contains(handle) == false) //always insert values that unique (avoid unnesscary checks)
 		{
 			for (auto other_handles : s_networkUserSelection)
 			{
@@ -180,9 +195,9 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 					return open;
 				}
 			}
-			if (ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LSHIFT)))
-				s_selected.emplace(handle);
-			else
+			if ((mousedown && !clicked) && ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
+				s_selected.emplace(handle);//this is hard to broadcast
+			else if (!mousedown)
 			{
 				using namespace std::chrono;
 				s_selected.clear();
@@ -218,6 +233,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 {
+	if (node.get_handle() == m_dragged)
+		return;
 	ImGui::PushID(static_cast<int>(node.get_handle()));
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,1.0f });
 	ImVec2 pos = ImGui::GetCursorPos();
@@ -267,6 +284,12 @@ const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 std::set<scenenode::handle_type>& Hierarchy::GetSelectedNonConst()
 {
 	return s_selected;
+}
+void Hierarchy::SetItemSelected(scenenode::handle_type id)
+{
+	s_selected.clear();
+	s_selected.emplace(id);
+	BroadcastSelection(id);
 }
 const uint64_t Hierarchy::GetSelectedTime()
 {
@@ -511,11 +534,12 @@ void Hierarchy::FilteredView()
 
 		bool hovered = ImGui::IsItemHovered();
 		bool clicked = ImGui::IsMouseReleased(ImGuiMouseButton_Left) | ImGui::IsMouseClicked(ImGuiMouseButton_Right);
-		bool keyenter = ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER));
 		if (hovered)
 		{
+			bool keyenter = ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::ENTER));
+			bool mousedown = ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 			m_hovered = handle;
-			if ((clicked || keyenter) && s_selected.contains(handle) == false) //avoid unnessary checks
+			if (( clicked || (mousedown /*&& !clicked*/) || keyenter) && s_selected.contains(handle) == false) //avoid unnessary checks
 			{
 				for (auto other_handles : s_networkUserSelection)
 				{
@@ -527,9 +551,9 @@ void Hierarchy::FilteredView()
 					}
 				}
 
-				if (ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LSHIFT)))
+				if ((mousedown && !clicked) && ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LCTRL)))
 					s_selected.emplace(handle);
-				else
+				else if (!mousedown)
 				{
 					s_selected.clear();
 					s_selected.emplace(handle);
@@ -600,7 +624,30 @@ void Hierarchy::RightClickOptions()
 						go.EnsureComponent<oo::MeshRendererComponent>();
 						go.EnsureComponent<oo::BoxColliderComponent>();
 					});
-			
+			}
+			if (ImGui::MenuItem("Sphere"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Sphere");
+						go.EnsureComponent<oo::MeshRendererComponent>();
+						go.EnsureComponent<oo::SphereColliderComponent>();
+					});
+			}
+			if (ImGui::MenuItem("Capsule"))
+			{
+				auto go_collider = CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Capsule");
+						go.EnsureComponent<oo::CapsuleColliderComponent>();
+					});
+				auto go_mesh = CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Capsule Mesh");
+						go.EnsureComponent<oo::MeshRendererComponent>();
+					});
+				go_collider->AddChild(*go_mesh);
+				go_mesh->GetComponent<oo::TransformComponent>().SetGlobalScale({ 1, 2, 1 });
 			}
 			if (ImGui::MenuItem("Light"))
 			{
@@ -619,6 +666,27 @@ void Hierarchy::RightClickOptions()
 						go.EnsureComponent<oo::CameraComponent>();
 						// for now lets add a mesh to let us know where our camera is
 						go.EnsureComponent<oo::MeshRendererComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Canvas"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Canvas");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UICanvasComponent>();
+						go.EnsureComponent<oo::GraphicsRaycasterComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Image"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("UI Image");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UICanvasComponent>();
+						go.EnsureComponent<oo::UIRaycastComponent>();
+						go.EnsureComponent<oo::UIImageComponent>();
 					});
 			}
 			ImGui::EndMenu();
@@ -640,16 +708,26 @@ void Hierarchy::RightClickOptions()
 		if (ImGui::MenuItem("Duplicate GameObject"))
 		{
 			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			decltype(s_selected) created_list;
 			for (auto go : s_selected)
 			{
 				auto object = scene->FindWithInstanceID(go);
 				if (object->HasComponent<oo::PrefabComponent>() == false && object->GetIsPrefab())
 					continue;
 				oo::GameObject new_object = object->Duplicate();
+				created_list.emplace(new_object.GetInstanceID());
 				//need the scene::go_ptr
 				auto goptr = scene->FindWithInstanceID(new_object.GetInstanceID());
 				oo::CommandStackManager::AddCommand(new oo::Create_ActionCommand(goptr));
+				if (object->HasValidParent())
+				{
+					oo::GameObject object_parent = object->GetParent();
+					oo::CommandStackManager::AddCommand(new oo::Parenting_ActionCommand(goptr,object_parent.GetInstanceID()));
+					object_parent.AddChild(new_object);
+				}
 			}
+			s_selected.clear();
+			s_selected = created_list;
 		}
 		ImGui::EndPopup();
 	}

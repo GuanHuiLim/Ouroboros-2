@@ -56,16 +56,15 @@ namespace oo::Anim::internal
 	void TriggerEvent(UpdateProgressTrackerInfo& info, ScriptEvent& event);
 	KeyFrame::DataType GetInterpolatedValue(rttr::type rttr_type, KeyFrame::DataType prev, KeyFrame::DataType next, float percentage);
 
-	//void UpdateEvent(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
-	void UpdateEvent(UpdateProgressTrackerInfo& info, float updatedTimer);
 
-	//void UpdateProperty_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
+
 	void UpdateProperty_Animation(UpdateProgressTrackerInfo& info, float updatedTimer);
 
-	//void UpdateFBX_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
 	void UpdateFBX_Animation(UpdateProgressTrackerInfo& info, float updatedTimer);
 	//go through all progress trackers and call their update function
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer);
+
+	void UpdateScriptEventProgress(UpdateTrackerInfo& info, float updatedTimer);
 
 	KeyFrame* GetCurrentKeyFrame(ProgressTracker& tracker);
 
@@ -77,6 +76,7 @@ namespace oo::Anim::internal
 	//update a node's trackers to reflect its animation timelines
 	void UpdateNodeTrackers(Node& node);
 	//checks if a node is available for transition
+	Link* CheckNodeTransitions(UpdateTrackerInfo& info, Node& node);
 	Link* CheckNodeTransitions(UpdateTrackerInfo& info);
 
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link);
@@ -90,9 +90,11 @@ namespace oo::Anim::internal
 	Group* RetrieveGroupFromTree(AnimationTree& tree, std::string const& groupName);
 	Node* RetrieveNodeFromTree(AnimationTree& tree, std::string const& groupName, std::string const& name);
 	Node* RetrieveNodeFromGroup(Group& group, std::string const& name);
+	Node* RetrieveNodeFromGroup(Group& group, UID node_ID);
 	//same as RetrieveNodeFromGroup but without error messages and asserts
 	Node* TryRetrieveNodeFromGroup(Group& group, std::string const& name);
 	Link* RetrieveLinkFromGroup(Group& group, std::string const& linkName);
+	Link* RetrieveLinkFromGroup(Group& group, UID link_ID);
 	Parameter* RetrieveParameterFromTree(AnimationTree& tree, std::string const& param_name);
 	Timeline* RetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
 	Timeline* TryRetrieveTimelineFromAnimation(Animation& animation, std::string const& timelineName);
@@ -101,6 +103,7 @@ namespace oo::Anim::internal
 	Parameter* RetrieveParameterFromComponentByIndex(IAnimationComponent& comp, uint index);
 	Animation* RetrieveAnimation(std::string const& anim_name);
 	Animation* RetrieveAnimation(size_t anim_id);
+	Animation* RetrieveAnimation(oo::Asset asset);
 	AnimationTree* RetrieveAnimationTree(std::string const& name);
 	AnimationTree* RetrieveAnimationTree(size_t id);
 	
@@ -120,13 +123,16 @@ namespace oo::Anim::internal
 	Link* AddLinkBetweenNodes(Group& group, std::string const& src_name, std::string const& dst_name);
 
 	Parameter* AddParameterToTree(AnimationTree& tree, Anim::ParameterInfo const& info);
+	void RemoveParameterFromTree(AnimationTree& tree, UID param_ID);
 
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info);
+	void RemoveConditionFromLink(Link& link, UID conditionID);
 
 	Animation* AddAnimationToNode(Node& node, Animation& anim);
+	Animation* AddAnimationToNode(Node& node, oo::Asset asset);
 
-	void RemoveNodeFromGroup(Group& group, std::string const& node_name);
-	void RemoveLinkFromGroup(Group& group, std::string const& link_name);
+	bool RemoveNodeFromGroup(Group& group, UID node_ID);
+	void RemoveLinkFromGroup(Group& group, UID link_ID);
 
 
 	void LoadFBX(std::string const& filepath, Animation* anim);
@@ -143,6 +149,7 @@ namespace oo::Anim::internal
 
 
 	void CalculateAnimationLength(AnimationTree& tree);
+	void CalculateAnimationLength(Animation& anim);
 
 	void ReloadReferences(AnimationTree& tree);
 

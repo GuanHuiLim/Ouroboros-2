@@ -23,23 +23,27 @@ namespace oo::Anim
 		using SerializeFn = void(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>&, Node&);
 		static SerializeFn* const serializeFn;
 
+		enum class TYPE : int
+		{
+			START,
+			ANY_STATE,
+			NORMAL,
+		};
+
 		GroupRef group{};
 		std::string name{};
 		//animation asset loaded from file
 		Asset anim_asset{};
 		AnimRef anim{};
-		////used to get the animation's index
-		//size_t animation_ID{ internal::invalid_ID };
-		////index of the animation in the animation vector
-		//uint animation_index{ internal::invalid_index };
-		////Animation animation{};
 		float speed{ 1.f };
 		glm::vec3 position{};
 
 		size_t node_ID{ internal::invalid_ID };
+		TYPE node_type{ TYPE::NORMAL };
 
 		//trackers to be given to the animation component 
 		//upon reaching this node
+		ScriptEventTracker scripteventTracker{};
 		std::vector<ProgressTracker> trackers{};
 		//outgoing links to other nodes
 		std::vector<LinkRef> outgoingLinks{};
@@ -50,6 +54,9 @@ namespace oo::Anim
 		//void SetAnimation(Asset asset);
 		//void SetAnimation(Asset asset);
 		Animation& GetAnimation();
+		oo::Asset GetAnimationAsset();
+		AnimRef SetAnimationAsset(oo::Asset asset);
+		
 		bool HasAnimation();
 
 		RTTR_ENABLE();
@@ -65,5 +72,6 @@ namespace oo::Anim
 		//dont fill this up
 		GroupRef group{};
 		size_t nodeID{ internal::invalid_ID };
+		Node::TYPE type{ Node::TYPE::NORMAL };
 	};
 }

@@ -36,6 +36,8 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ScriptComponent.h"
 #include "Ouroboros/Scripting/ScriptManager.h"
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
+#include <Ouroboros/Vulkan/ParticleEmitterComponent.h>
+#include <Ouroboros/Vulkan/SkinRendererComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
@@ -43,6 +45,11 @@ Technology is prohibited.
 #include "Ouroboros/Audio/AudioListenerComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 #include "Ouroboros/Animation/AnimationComponent.h"
+#include <Ouroboros/UI/RectTransformComponent.h>
+#include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/UI/UICanvasComponent.h>
+#include <Ouroboros/UI/UIImageComponent.h>
+#include <Ouroboros/UI/GraphicsRaycasterComponent.h>
 
 #include <Ouroboros/Transform/TransformSystem.h>
 
@@ -68,6 +75,9 @@ void Serializer::Init()
 	AddLoadComponent<oo::TransformComponent>();
 	AddLoadComponent<oo::PrefabComponent>();
 	AddLoadComponent<oo::MeshRendererComponent>();
+	AddLoadComponent<oo::ParticleEmitterComponent>();
+	AddLoadComponent<oo::SkinMeshRendererComponent>();
+	AddLoadComponent<oo::SkinMeshBoneComponent>();
 	AddLoadComponent<oo::LightComponent>();
 	AddLoadComponent<oo::CameraComponent>();
 	AddLoadComponent<oo::RigidbodyComponent>();
@@ -77,6 +87,12 @@ void Serializer::Init()
 	AddLoadComponent<oo::AudioListenerComponent>();
 	AddLoadComponent<oo::AudioSourceComponent>();
 	AddLoadComponent<oo::AnimationComponent>();
+
+	AddLoadComponent<oo::RectTransformComponent>();
+	AddLoadComponent<oo::UICanvasComponent>();
+	AddLoadComponent<oo::UIRaycastComponent>();
+	AddLoadComponent<oo::UIImageComponent>();
+	AddLoadComponent<oo::GraphicsRaycasterComponent>();
 
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
@@ -389,6 +405,9 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::TransformComponent>(go, val,doc);
 
 	SaveComponent<oo::MeshRendererComponent>(go, val, doc);
+	SaveComponent<oo::ParticleEmitterComponent>(go, val, doc);
+	SaveComponent<oo::SkinMeshRendererComponent>(go, val, doc);
+	SaveComponent<oo::SkinMeshBoneComponent>(go, val, doc);
 	SaveComponent<oo::LightComponent>(go, val, doc);
 	SaveComponent<oo::CameraComponent>(go, val, doc);
 
@@ -400,6 +419,12 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::CapsuleColliderComponent>(go, val, doc);
 	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
 	SaveComponent<oo::AnimationComponent>(go, val, doc);
+
+	SaveComponent<oo::RectTransformComponent>(go, val, doc);
+	SaveComponent<oo::UICanvasComponent>(go, val, doc);
+	SaveComponent<oo::UIRaycastComponent>(go, val, doc);
+	SaveComponent<oo::UIImageComponent>(go, val, doc);
+	SaveComponent<oo::GraphicsRaycasterComponent>(go, val, doc);
 
 	SaveScript(go, val, doc);// this is the last item
 }
@@ -575,7 +600,8 @@ void Serializer::SaveSequentialContainer(rttr::variant variant, rapidjson::Value
 
 	for (size_t i = 0; i < sqv.get_size(); ++i)
 	{
-		sf->second(doc,arrayValue, sqv.get_value(i), prop);
+		rttr::variant v = sqv.get_value(i);
+		sf->second(doc,arrayValue, v, prop);
 	}
 	std::string temp = prop.get_name().data();
 	rapidjson::Value name;
@@ -603,6 +629,16 @@ void Serializer::SaveNestedComponent(rttr::variant var, rapidjson::Value& val, r
 			else if (prop_type.is_class())
 			{
 				ASSERT_MSG(true, "you are pushing it too far buddy.");
+			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant enum_data = prop.get_value(var);
+				//rttr::enumeration enuma = prop_type.get_enumeration();
+				//std::string value = enuma.value_to_name(enum_data);
+				int value = enum_data.to_int();
+				//saves all enum data as int
+				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+				m_SaveProperties.m_save_commands.find(rttrType->second)->second(doc,sub_component,value,prop);
 			}
 			continue;//not supported
 		}
@@ -762,6 +798,15 @@ void Serializer::LoadNestedComponent(rttr::variant& variant, rapidjson::Value& v
 			else if (prop_type.is_class())
 			{
 				ASSERT_MSG(true, "you are pushing it too far buddy.");
+			}
+			else if (prop_type.is_enumeration())
+			{
+				rttr::variant enum_data = prop.get_value(variant);
+				//saves all enum data as int
+				auto rttrType = UI_RTTRType::types.find(rttr::type::get<int>().get_id());
+				m_LoadProperties.m_load_commands.find(rttrType->second)->second(enum_data, std::move(iter->value));
+				rttr::enumeration enuma = prop_type.get_enumeration();		
+				prop.set_value(variant, enuma.name_to_value(enuma.value_to_name(enum_data)));
 			}
 			continue;//not supported
 		}

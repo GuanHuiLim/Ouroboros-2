@@ -14,21 +14,34 @@ layout (set = 0, binding = 2) uniform sampler2D samplerNormal;
 layout (set = 0, binding = 3) uniform sampler2D samplerAlbedo;
 layout (set = 0, binding = 4) uniform sampler2D samplerMaterial;
 layout (set = 0, binding = 5) uniform sampler2D samplerShadows;
+layout (set = 0, binding = 6) uniform sampler2D samplerSSAO;
 
+#include "lights.shader"
 
-layout(std430, set = 0, binding = 7) readonly buffer Lights
+layout( push_constant ) uniform lightpc
 {
-	SpotLightInstance Lights_SSBO[];
-};
-
-layout( push_constant ) uniform pc
-{
-	LightPC lightPC;
+	LightPC PC;
 };
 
 #include "lightingEquations.shader"
 
-float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
+vec2 GetShadowMapRegion(int gridID, in vec2 uv, in vec2 gridSize)
+{
+	
+	vec2 gridIncrement = vec2(1.0)/gridSize; // size for each cell
+
+	vec2 actualUV = gridIncrement * uv; // uv local to this cell
+
+	// avoid the modolus operator not sure how much that matters
+	int y = gridID/int(gridSize.x);
+	int x = gridID - int(gridSize.x*y);
+
+	vec2 offset = gridIncrement * vec2(x,y); // offset to our cell
+
+	return offset+actualUV; //sampled position
+}
+
+float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, float NdotL)
 {
 
 	// perspective divide
@@ -36,28 +49,42 @@ float ShadowCalculation(in vec4 fragPosLightSpace, float NdotL)
 	//normalization [0,1] tex coords only.. FOR VULKAN DONT DO Z
 	projCoords.xy = projCoords.xy* 0.5 + 0.5;
 
-	float maxbias =  0.0001;
-	float mulBias = 0.002;
-	float bias = max(mulBias * (1.0 - NdotL),maxbias);
+	vec2 uvs = vec2(projCoords.x,projCoords.y);
+	uvs = GetShadowMapRegion(gridID,uvs,PC.shadowMapGridDim);
+	
 	// Flip y during sample
-	vec2 uvs = vec2(projCoords.x,1.0-projCoords.y);
-	float closestDepth = texture(samplerShadows,uvs).r;
+	uvs = vec2(uvs.x, 1.0-uvs.y);
+	
+	// Bounds check for the actual shadow map
+	float closestDepth = 1.0;
+	if(projCoords.x >1.0 || projCoords.x < 0.0
+		|| projCoords.y >1.0 || projCoords.y < 0.0 
+		|| projCoords.z>1)
+	{
+		return 1.0;
+	}
+	else
+	{
+		closestDepth = texture(samplerShadows,uvs).r;
+	}
 	float currDepth = projCoords.z;
 
+	float maxbias =  PC.maxBias;
+	float mulBias = PC.mulBias;
+	float bias = max(mulBias * (1.0 - NdotL),maxbias);
 	float shadow = 1.0;
 	if (projCoords.w > 0.0 && currDepth - bias > closestDepth ) 
 	{
 		if(projCoords.z < 1)
 		{
-			shadow = 0.0;		
+			shadow = 0.0;	
 		}
 	}
-	//shadow = currDepth - bias > closestDepth ? 1.0 : 0.0;
 
 	return shadow;
 }
 
-vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular, float shadow)
+vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular, out float shadow)
 {
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);
 	vec3 N = normalize(normal);
@@ -82,31 +109,44 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 
 	//if(dist < Lights_SSBO[lightIndex].radius.x)
 	{
-	    float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
+		//SpotLightInstance light = SpotLightInstance(Omni_LightSSBO[lightIndex]); 
+	    
+		float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
 		float r2 = Lights_SSBO[lightIndex].radius.x;
+		vec3 lCol = Lights_SSBO[lightIndex].color.xyz;
 
     		// Attenuation
 		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);		 
 	
 		// Diffuse part
 		
-		vec3 diff = Lights_SSBO[lightIndex].color.xyz * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
+		vec3 diff = lCol * GGXBRDF(L , V , H , N , alpha , Kd , Ks) * NdotL * atten;
 
 
 		// Specular part
 		// Specular map values are stored in alpha of albedo mrt
-		//vec3 R = -reflect(L, N);
-		//float RdotV = max(0.0, dot(R, V));
-		//vec3 spec = ubo.lights[lightIndex].color.xyz * specular * pow(RdotV, 16.0) * atten;
+		vec3 R = -reflect(L, N);
+		float RdotV = max(0.0, dot(R, V));
+		//vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
+		vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
 	
 		//result = diff;// + spec;	
-		result = diff;
+		result = diff+spec;
 	}
 
-	if(lightIndex == 0)
-	{
-		vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
-		float shadow = ShadowCalculation(outFragmentLightPos,NdotL);
+	// calculate shadow if this is a shadow light
+	shadow = 1.0;
+	if(Lights_SSBO[lightIndex].info.x > 0)
+	{		
+		if(Lights_SSBO[lightIndex].info.x == 1)
+		{
+			int gridID = Lights_SSBO[lightIndex].info.y;
+			for(int i = 0; i < 6; ++i)
+			{
+				vec4 outFragmentLightPos = Lights_SSBO[lightIndex].projection * Lights_SSBO[lightIndex].view[i] * vec4(fragPos,1.0);
+				shadow *= ShadowCalculation(lightIndex,gridID+i,outFragmentLightPos,NdotL);
+			}
+		}
 		result *= shadow;
 	}
 
@@ -120,41 +160,23 @@ uint DecodeFlags(in float value)
     return uint(value * 255.0f);
 }
 
-vec3 WorldPosFromDepth(float depth, in vec2 uvCoord, in mat4 projInv, in mat4 viewInv) {
-    
-	float z = depth;
-	// skip this step because vulkan
-	// z = depth * 2.0 - 1.0;
-	
-	vec2 uv = uvCoord * 2.0 - 1.0;
-	float x = uvCoord.x * 2 - 1;
-	// flipped y for vulkan
-    float y = (1 - uvCoord.y) * 2 - 1;
-
-    vec4 clipSpacePosition = vec4(x, y, z, 1.0);
-    vec4 viewSpacePosition = projInv * clipSpacePosition;
-
-    // Perspective division
-    viewSpacePosition /= viewSpacePosition.w;
-
-    vec4 worldSpacePosition = viewInv * viewSpacePosition;
-
-    return worldSpacePosition.xyz;
-}
+#include "shader_utility.shader"
 
 void main()
 {
 	// Get G-Buffer values
 	vec4 depth = texture(samplerDepth, inUV);
 	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
+	//fragPos.z = depth.r;
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
-	float specular = material.b;
+	float SSAO = texture(samplerSSAO, inUV).r;
+	float specular = material.g;
 	float roughness = material.r;
 
 	// Render-target composition
-	float ambient = uboFrameContext.vector4_values5.x;
+	float ambient = PC.ambient;
 	if (DecodeFlags(material.z) == 0x1)
 	{
 		ambient = 1.0;
@@ -164,25 +186,22 @@ void main()
 	albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
-	vec3 result = albedo.rgb * ambient;
-	
-	
+	vec3 result = albedo.rgb  * ambient;
+
+	if(PC.useSSAO != 0){
+		result *=  SSAO;
+	}
 	
 	// Point Lights
-	for(int i = 0; i < lightPC.numLights.x; ++i)
+	for(int i = 0; i < PC.numLights; ++i)
 	{
-		//if(i==0)
-		//{
-		//	vec4 outFragmentLightPos = lightPC.lightMat * vec4(fragPos,1.0);
-		//	float shadow = ShadowCalculation(outFragmentLightPos);
-		//	result += (shadow)*EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, shadow);
-		//}
-		//else
-		{
-			result += EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, 0.0);
-		}
+		float outshadow = 1.0;
+		vec3 res = EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, outshadow);
+		
+		result += res;
 	}
 
 	result = pow(result, vec3(1.0/gamma));
-	outFragcolor = vec4(result, 1.0);	
+
+	outFragcolor = vec4(result, albedo.a);	
 }

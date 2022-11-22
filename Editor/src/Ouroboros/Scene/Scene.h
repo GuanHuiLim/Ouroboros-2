@@ -29,10 +29,13 @@ Technology is prohibited.
 #include <Scripting/ScriptDatabase.h>
 #include <Scripting/ComponentDatabase.h>
 
+#include "Ouroboros/ECS/GameObjectComponent.h"
+
 namespace oo
 {
     //forward declare
     class GameObject;
+    
 
     class Scene : public IScene
     {
@@ -91,6 +94,13 @@ namespace oo
         scenegraph const GetGraph() const;
         go_ptr GetRoot() const;
         GraphicsWorld* GetGraphicsWorld() const;
+        go_ptr GetMainCameraObject() const;
+        Camera MainCamera() const;
+
+        // Graphics Specific code
+        UUID GetUUIDFromGraphicsId(std::int32_t graphicsId);
+        std::int32_t CreateGraphicsInstance(UUID uuid);
+        void DestroyGraphicsInstance(std::int32_t graphicsId);
 
     protected:
         void SetFilePath(std::string_view filepath);
@@ -110,6 +120,9 @@ namespace oo
 
         oo::UUID GetInstanceID(GameObject const& go) const;
 
+        void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
+        void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
+
         // Variables
     private:
         std::string m_name;
@@ -125,11 +138,17 @@ namespace oo
         // direct copy of all gameobjects in the scene
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 
+        // graphics related ids
+        std::unordered_map<std::int32_t, UUID> m_graphicsIdToUUID;
+        std::unordered_map<UUID, std::int32_t> m_uuidToGraphicsID;
+
         //TODO : temporarily only have one graphics world
         inline static std::unique_ptr<GraphicsWorld> m_graphicsWorld;
         std::unique_ptr<Ecs::ECSWorld> m_ecsWorld;
         std::unique_ptr<scenegraph> m_scenegraph;
         go_ptr m_rootGo;
+
+        go_ptr m_mainCamera;
 
         // scripting stuff
         std::unique_ptr<ScriptDatabase> m_scriptDatabase;

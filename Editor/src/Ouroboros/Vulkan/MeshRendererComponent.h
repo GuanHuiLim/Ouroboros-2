@@ -24,41 +24,53 @@ namespace oo
 
     struct MeshRendererComponent
     {
-        Asset albedo_handle;
-        Asset normal_handle;
-        MeshInfo meshInfo;
-        uint32_t albedoID = 0xFFFFFFFF;
-        uint32_t normalID = 0xFFFFFFFF;
+        MeshInfo MeshInformation;
+    
+        Asset AlbedoHandle;
+        uint32_t AlbedoID = 0xFFFFFFFF;
+        
+        Asset NormalHandle;
+        uint32_t NormalID = 0xFFFFFFFF;
+        
+        Asset MetallicHandle;
+        uint32_t MetallicID = 0xFFFFFFFF;
+        
+        Asset RoughnessHandle;
+        uint32_t RoughnessID = 0xFFFFFFFF;
 
         //no need to serialize
-        uint32_t model_handle{ 0 };
-        uint32_t graphicsWorld_ID{};
+        uint32_t ModelHandle{ 0 };
+        int32_t GraphicsWorldID{};
+
+        bool CastShadows = false;
+        bool ReceiveShadows = false;
 
         MeshInfo GetMeshInfo();
         /*********************************************************************************//*!
         \brief      this function will only set the submeshbits
         *//**********************************************************************************/
         void SetMeshInfo(MeshInfo info);
-        void GetModelHandle();
-
-        //set a single model and asset
-        void SetModelHandle(Asset _asset, uint32_t _submodel_id);
+        
         Asset GetMesh();
         void SetMesh(Asset _asset);
 
+        //void GetModelHandle();
+
+        //set a single model and asset
+        void SetModelHandle(Asset _asset, uint32_t _submodel_id);
+        
         void SetAlbedoMap(Asset albedoMap);
         Asset GetAlbedoMap() const;
 
         void SetNormalMap(Asset normalMap);
         Asset GetNormalMap() const;
 
-        //std::vector<Material> materials;
+        void SetMetallicMap(Asset metallicMap);
+        Asset GetMetallicMap() const;
 
-        //Lighting
+        void SetRoughnessMap(Asset roughnessMap);
+        Asset GetRoughnessMap() const;
 
-        //Probes
-
-        //Additional Settings
         RTTR_ENABLE();
     };
 

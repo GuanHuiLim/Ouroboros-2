@@ -172,7 +172,8 @@ namespace oo::Anim
 			tracker.updatefunction = &internal::UpdateFBX_Animation;
 			break;
 		case Timeline::TYPE::SCRIPT_EVENT:
-			tracker.updatefunction = &internal::UpdateEvent;
+			assert(false);//it shouldnt hit this
+			//tracker.updatefunction = &internal::UpdateEvent;
 			break;
 		default:
 			break;

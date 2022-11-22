@@ -36,6 +36,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Vulkan/RendererSystem.h"
 #include "Ouroboros/Vulkan/SkinRendererSystem.h"
+#include "Ouroboros/Vulkan/ParticleRendererSystem.h"
 
 #include "Ouroboros/Audio/AudioSystem.h"
 
@@ -59,11 +60,16 @@ namespace oo
         , m_ecsWorld { nullptr }
         , m_scenegraph { nullptr }
         , m_rootGo { nullptr }
-    {
+        , m_mainCamera { nullptr }
+    { 
+        EventManager::Subscribe<Scene, GameObjectComponent::OnEnableEvent>(this, &Scene::OnEnableGameObject);
+        EventManager::Subscribe<Scene, GameObjectComponent::OnDisableEvent>(this, &Scene::OnDisableGameObject);
     }
 
     Scene::~Scene()
     {
+        EventManager::Unsubscribe<Scene, GameObjectComponent::OnEnableEvent>(this, &Scene::OnEnableGameObject);
+        EventManager::Unsubscribe<Scene, GameObjectComponent::OnDisableEvent>(this, &Scene::OnDisableGameObject);
     }
 
     void Scene::Init()
@@ -81,11 +87,16 @@ namespace oo
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
             m_ecsWorld->Add_System<oo::AudioSystem>(this);
             //rendering system initialization
-            // temporarily initialize number of cameras to 1
+            // temporarily initialize number of cameras to 2 [0 is Scene camera] [1 is Editor Camera]
+#if defined OO_EXECUTABLE
             m_graphicsWorld->numCameras = 1;
-            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get())->Init();
+#elif OO_EDITOR
+            m_graphicsWorld->numCameras = 2;
+#endif
+            m_ecsWorld->Add_System<oo::RendererSystem>(m_graphicsWorld.get(), this)->Init();
+            m_ecsWorld->Add_System<oo::ParticleRendererSystem>(m_graphicsWorld.get(), this)->Init();
             Application::Get().GetWindow().GetVulkanContext()->getRenderer()->InitWorld(m_graphicsWorld.get());
-            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get())->Init();
+            m_ecsWorld->Add_System<oo::SkinMeshRendererSystem>(m_graphicsWorld.get(), this)->Init();
         }
 
         PRINT(m_name);
@@ -106,6 +117,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
 
+        m_ecsWorld->Get_System<oo::RendererSystem>()->UpdateCameras(m_mainCamera);
         PRINT(m_name);
 
         TRACY_PROFILE_SCOPE_END();
@@ -117,6 +129,7 @@ namespace oo
 
         GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
         GetWorld().Get_System<oo::SkinMeshRendererSystem>()->Run(m_ecsWorld.get());
+        GetWorld().Get_System<oo::ParticleRendererSystem>()->Run(m_ecsWorld.get());
         PRINT(m_name);
         
         TRACY_PROFILE_SCOPE_END();
@@ -218,6 +231,9 @@ namespace oo
         // TODO: Temporarily remove destroying the world on load
         m_graphicsWorld->ClearLightInstances();
         m_graphicsWorld->ClearObjectInstances();
+        m_graphicsIdToUUID.clear();
+        m_uuidToGraphicsID.clear();
+
         // kill the graphics world
         Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
 
@@ -227,6 +243,7 @@ namespace oo
         m_scenegraph.reset();
         m_ecsWorld.reset();
         m_graphicsWorld.reset();
+        
 
         m_scriptDatabase.reset();
         m_componentDatabase.reset();
@@ -535,7 +552,29 @@ namespace oo
     //        RecusriveLinkScenegraph(og_child, new_objects);
     //    }
     //}
-    
+
+    void Scene::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
+    {
+        // graphics specific logic
+        if (m_uuidToGraphicsID.contains(e->Id))
+        {
+            auto& gid = m_uuidToGraphicsID.at(e->Id);
+            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
+            actualObject.SetRenderEnabled(true);
+        }
+    }
+
+    void Scene::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
+    {
+        // graphics specific logic
+        if (m_uuidToGraphicsID.contains(e->Id))
+        {
+            auto& gid = m_uuidToGraphicsID.at(e->Id);
+            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
+            actualObject.SetRenderEnabled(false);
+        }
+    }
+
     Ecs::ECSWorld& Scene::GetWorld()
     {
         return *m_ecsWorld;
@@ -554,5 +593,54 @@ namespace oo
     GraphicsWorld* Scene::GetGraphicsWorld() const 
     { 
         return m_graphicsWorld.get(); 
+    }
+    
+    Scene::go_ptr Scene::GetMainCameraObject() const
+    {
+        return m_mainCamera;
+    }
+
+    Camera Scene::MainCamera() const
+    {
+        return m_graphicsWorld->cameras[m_mainCamera->GetComponent<CameraComponent>().GraphicsWorldIndex];
+    }
+
+    UUID Scene::GetUUIDFromGraphicsId(std::int32_t graphicsId)
+    {
+        if (m_graphicsIdToUUID.contains(graphicsId))
+            return m_graphicsIdToUUID.at(graphicsId);
+
+        return UUID::Invalid;
+    }
+
+    std::int32_t Scene::CreateGraphicsInstance(UUID uuid)
+    {
+        auto graphicsWorldID = m_graphicsWorld->CreateObjectInstance();
+        
+        auto& graphicsObj = m_graphicsWorld->GetObjectInstance(graphicsWorldID);
+        // set entity ID to graphics world ID for now. should be good enough for the time being
+        graphicsObj.entityID = graphicsWorldID;     
+
+        ASSERT_MSG(m_graphicsIdToUUID.contains(graphicsWorldID) == true, " this graphics id should be new! Did you create graphics instance through this function?");
+        ASSERT_MSG(m_uuidToGraphicsID.contains(uuid) == true, " this uuid should not already exist");
+        
+        // map graphics id to uuid of gameobject
+        m_graphicsIdToUUID.insert({ graphicsWorldID, uuid });
+        m_uuidToGraphicsID.insert({ uuid, graphicsWorldID });
+        
+        return graphicsWorldID;
+    }
+
+    void Scene::DestroyGraphicsInstance(std::int32_t graphicsId)
+    {
+        auto uuid = m_graphicsIdToUUID.at(graphicsId);
+
+        ASSERT_MSG(m_graphicsIdToUUID.contains(graphicsId) == false, " this graphics id should exist! Did you delete graphics instance through this function?");
+        ASSERT_MSG(m_uuidToGraphicsID.contains(uuid) == false, " this uuid should exist");
+
+        m_graphicsWorld->DestroyObjectInstance(graphicsId);
+        // remove graphics id to uuid of gameobject
+        m_graphicsIdToUUID.erase(graphicsId);
+        m_uuidToGraphicsID.erase(uuid);
     }
 }

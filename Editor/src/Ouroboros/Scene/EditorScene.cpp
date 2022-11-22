@@ -20,10 +20,12 @@ Technology is prohibited.
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
 #include "Ouroboros/Core/Application.h"
+#include "Ouroboros/UI/UISystem.h"
 
 //optick
 #include "optick.h"
@@ -46,6 +48,7 @@ namespace oo
         {
             // Unlock the mouse if it was locked in play mode
             Application::Get().GetWindow().SetMouseLockState(false);
+            oo::timer::set_timescale(1.0);
         }
 
         Scene::Init();
@@ -55,6 +58,7 @@ namespace oo
             TRACY_PROFILE_SCOPE_N(editor_registration);
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
+            GetWorld().Add_System<oo::UISystem>(this);
             //bool wantDebug = true;
 
             //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
@@ -93,6 +97,7 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -105,6 +110,7 @@ namespace oo
         GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
         GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
         GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
+        GetWorld().Get_System<oo::UISystem>()->EditorUpdate();
 
         {
             //TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
@@ -152,7 +158,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
-        GetWorld().Get_System<RendererSystem>()->UpdateCamerasEditorMode();
         TRACY_PROFILE_SCOPE_END();
     }
 

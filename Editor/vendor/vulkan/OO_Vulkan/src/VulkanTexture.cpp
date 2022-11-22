@@ -509,17 +509,19 @@ namespace vkutils
 		VkImageUsageFlags imageUsageFlags,
 		uint32_t texWidth, uint32_t texHeight,
 		bool forFullscr,
+		float _renderscale,
 		uint32_t _mipLevels,
 		VkMemoryPropertyFlags properties,
 		VkFilter filter
 	)
 	{
 		this->device = device;
-		width = texWidth;
-		height = texHeight;
+		targetSwapchain = forFullscr;
+		renderScale = _renderscale;
+		width = texWidth * renderScale;
+		height = texHeight* renderScale;
 		format = _format;
 		MemProps = properties;
-		targetSwapchain = forFullscr;
 
 		aspectMask = 0;
 
@@ -618,8 +620,8 @@ namespace vkutils
 		if (device == nullptr)
 			return;
 
-		width = texWidth;
-		height = texHeight;
+		width = texWidth * renderScale;
+		height = texHeight * renderScale;
 
 		VkImageView oldview = view;
 		VkDeviceMemory oldMemory = deviceMemory;

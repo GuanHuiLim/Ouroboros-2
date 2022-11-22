@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "VulkanSwapchain.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
+#include "VulkanRenderpass.h"
 #include "GpuVector.h"
 #include "gpuCommon.h"
 #include "DescriptorBuilder.h"
@@ -67,6 +68,8 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout lights;
 	// 
 	inline static VkDescriptorSetLayout ForwardDecal;
+
+	inline static VkDescriptorSetLayout SSAO;
 };
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
@@ -75,6 +78,7 @@ struct PSOLayoutDB
 	inline static VkPipelineLayout defaultPSOLayout;
 	inline static VkPipelineLayout deferredLightingCompositionPSOLayout;
 	inline static VkPipelineLayout forwardDecalPSOLayout;
+	inline static VkPipelineLayout SSAOPSOLayout;
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -149,6 +153,7 @@ public:
 
 	ImTextureID myImg;
 
+	bool useSSAO = true;
     bool m_imguiInitialized = false;
 	bool m_initialized = false;
 
@@ -175,6 +180,8 @@ public:
 	VkDescriptorSet descriptorSet_bones;
 
 	VkDescriptorSet descriptorSet_objInfos;
+
+	VkDescriptorSet descriptorSet_SSAO;
 	// For UBO with the corresponding swap chain image
 	std::vector<VkDescriptorSet> descriptorSets_uniform;
 
@@ -185,8 +192,11 @@ public:
 	void DestroyWorld(GraphicsWorld* world);
 	GraphicsWorld* currWorld{ nullptr };
 	uint32_t renderIteration{ 0};
+	int32_t m_numShadowcastLights{0};
 	uint32_t renderTargetInUseID{ 0 };
 	float renderClock{ 0.0f };
+
+	int32_t GetPixelValue(uint32_t fbID, glm::vec2 uv);
 
 	GraphicsBatch batches;
 
@@ -262,6 +272,8 @@ public:
 	};
 
 	IndexedVertexBuffer g_GlobalMeshBuffers;
+	std::array<GpuVector<ParticleData>,3> g_particleDatas;
+	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer{};
 
 	GpuVector<oGFX::DebugVertex> g_DebugDrawVertexBufferGPU;
 	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU;
@@ -289,21 +301,25 @@ public:
 	uint32_t normalTextureID = static_cast<uint32_t>(-1);
 	uint32_t pinkTextureID = static_cast<uint32_t>(-1);
 
+	uint32_t GetDefaultCubeID();
+	uint32_t GetDefaultPlaneID();
+	uint32_t GetDefaultSpriteID();
+
 	// - Synchronisation
 	std::vector<VkSemaphore> imageAvailable;
 	std::vector<VkSemaphore> renderFinished;
 	std::vector<VkFence> drawFences;
 
 	// - Pipeline
-	VkRenderPass renderPass_default{};
-	VkRenderPass renderPass_default2{};
+	VulkanRenderpass renderPass_default{};
+	VulkanRenderpass renderPass_default_noDepth{};
 
 	vkutils::Buffer indirectCommandsBuffer{};
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};
 	uint32_t indirectDrawCount{};
 
 	GpuVector<oGFX::BoneWeight> skinningVertexBuffer{};
-	GpuVector<SpotLightInstance> globalLightBuffer{};
+	GpuVector<LocalLightInstance> globalLightBuffer{};
 
 	// - Descriptors
 
@@ -433,7 +449,11 @@ public:
 		uint32_t CreateTextureImage(const std::string& fileName);
 		uint32_t AddBindlessGlobalTexture(vkutils::Texture2D texture);		
 
-		
+		void InitDefaultPrimatives();
+		std::unique_ptr<ModelFileResource>def_cube;
+		std::unique_ptr<ModelFileResource>def_sprite;
+		std::unique_ptr<ModelFileResource>def_plane;
+		std::unique_ptr<ModelFileResource>def_sphere;
 
 };
 

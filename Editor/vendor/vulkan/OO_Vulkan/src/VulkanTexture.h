@@ -46,6 +46,7 @@ namespace vkutils
 		VkImageAspectFlags aspectMask{};
 		VkMemoryPropertyFlags MemProps{};
 		bool targetSwapchain = true;
+		float renderScale = 1.0f;
 		
 		void updateDescriptor();
 		void destroy();
@@ -83,6 +84,7 @@ namespace vkutils
 			VkImageUsageFlags imageUsageFlags,
 			uint32_t texWidth, uint32_t texHeight,
 			bool forFullscr = true,
+			float renderscale = 1.0f,
 			uint32_t mipLevels = 1,
 			VkMemoryPropertyFlags properties= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			VkFilter filter = VK_FILTER_LINEAR

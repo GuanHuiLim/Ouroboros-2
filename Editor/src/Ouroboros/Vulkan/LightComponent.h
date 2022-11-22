@@ -38,6 +38,7 @@ namespace oo
         
         LightType LightType = LightType::POINT;
 
+        bool ProduceShadows = false;
         RTTR_ENABLE();
     };
 }

@@ -31,6 +31,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 
 #include "App/Editor/UI/Object Editor/AssetBrowser.h"
+#include <Project.h>
 ScriptingProperties::ScriptingProperties()
 {
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::BOOL, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
@@ -75,14 +76,22 @@ ScriptingProperties::ScriptingProperties()
 			edited = ImGui::IsItemDeactivatedAfterEdit();
             if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
 		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::COLOR, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			oo::Color data = v.TryGetRuntimeValue().GetValue<oo::Color>();
+			editing = ImGui::ColorEdit4(v.name.c_str(), &data.r, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_InputRGB);
+			edited = ImGui::IsItemDeactivatedAfterEdit();
+			if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::ENUM, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::enum_type>();
 			auto list = data.GetOptions();
+            auto name = data.GetValueName(data.value);
 
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImVec2 cursorPos = ImGui::GetCursorPos();
-			ImGui::InputText(v.name.c_str(), &list[data.index]);
+			ImGui::InputText(v.name.c_str(), &name);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
 			
@@ -96,7 +105,6 @@ ScriptingProperties::ScriptingProperties()
 					showList = currID;
 				else
 					showList = 0;
-				editing = true;
 			}
 			if (showList == currID)
 			{
@@ -105,7 +113,7 @@ ScriptingProperties::ScriptingProperties()
 				{
 					if (ImGui::Selectable(list[i].c_str()))
 					{
-						data.index = i;
+                        data.value = data.GetValues()[i];
 						v.TrySetRuntimeValue(oo::ScriptValue{ data });
 						editing = true;
 						edited = true;
@@ -125,7 +133,7 @@ ScriptingProperties::ScriptingProperties()
 			ImGui::DragInt(v.name.c_str(), &size);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
-
+			ImGui::PushID(v.name.c_str());
 			float itemwidth = ImGui::CalcItemWidth();
 			ImGui::SetCursorPos(cursorPos);
 			if (ImGui::ArrowButton("##listenumleft", ImGuiDir_::ImGuiDir_Left))
@@ -137,6 +145,7 @@ ScriptingProperties::ScriptingProperties()
 					data.valueList.resize(size);
 					editing = true; edited = true;
 					v.TrySetRuntimeValue(oo::ScriptValue{ data });
+					ImGui::PopID();
 					return;
 				}
 			}
@@ -149,6 +158,7 @@ ScriptingProperties::ScriptingProperties()
 				data.Push();
 				editing = true; edited = true;
 				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+				ImGui::PopID();
 				return;
 			}
 
@@ -179,6 +189,7 @@ ScriptingProperties::ScriptingProperties()
 				ImGui::SameLine(0,5.0f);
 				ImGui::TextColored(ImVec4(1.0f,0,0,1.0f), "End of list");
 			}
+			ImGui::PopID();
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
@@ -194,6 +205,27 @@ ScriptingProperties::ScriptingProperties()
 				if (payload)
 				{
 					data = *static_cast<oo::UUID*>(payload->Data);
+					editing = true;
+					edited = true;
+					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
+				}
+				ImGui::EndDragDropTarget();
+			}
+		});
+	m_scriptUI.emplace(oo::ScriptValue::type_enum::PREFAB, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
+		{
+			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::prefab_type>();
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			std::string referenceObj = data.filePath.empty()? "Invalid Object" : std::filesystem::path(data.filePath).filename().string();
+			ImGui::InputText(v.name.c_str(), &referenceObj, ImGuiInputTextFlags_ReadOnly);
+			ImGui::PopItemFlag();
+			if (ImGui::BeginDragDropTarget())
+			{
+				auto* payload = ImGui::AcceptDragDropPayload(".prefab");
+				if (payload)
+				{
+					auto path = (*static_cast<std::filesystem::path*>(payload->Data));
+					data.filePath = std::filesystem::relative(path, Project::GetPrefabFolder()).string();
 					editing = true;
 					edited = true;
 					if (editing) { v.TrySetRuntimeValue(oo::ScriptValue{ data }); };
@@ -355,7 +387,6 @@ ScriptingProperties::ScriptingProperties()
 					opened = 0;
 				else
 					opened = curr;
-				editing = true;
 			}
 			ImGui::PopID();
 			if (curr == opened)

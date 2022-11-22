@@ -176,6 +176,9 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		auto str = rttr::type::get <oo::Anim::P_TYPE>().get_enumeration().value_to_name(val);
 		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
 	};
+	/*
+	* Timeline
+	*/
 	map[rttr::type::get<oo::Anim::Timeline::TYPE>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -188,6 +191,16 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::SerializeFn*> oo::An
 		auto str = rttr::type::get <oo::Anim::Timeline::DATATYPE>().get_enumeration().value_to_name(val);
 		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
 	};
+	/*
+	* Node
+	*/
+	map[rttr::type::get<oo::Anim::Node::TYPE>().get_id()]
+		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
+	{
+		auto str = rttr::type::get <oo::Anim::Node::TYPE>().get_enumeration().value_to_name(val);
+		writer.String(str.data(), static_cast<rapidjson::SizeType>(str.size()));
+	};
+
 	map[rttr::type::get<oo::ScriptValue::function_info>().get_id()]
 		= [](rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, rttr::variant& val)
 	{
@@ -427,7 +440,9 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 		auto enum_value = rttr::type::get <oo::Anim::P_TYPE>().get_enumeration().name_to_value(value.GetString());
 		return rttr::variant{ enum_value };
 	};
-
+	/*
+	* Timeline
+	*/
 	map[rttr::type::get<oo::Anim::Timeline::TYPE>().get_id()]
 		= [](rapidjson::Value& value)
 	{
@@ -442,7 +457,16 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 		auto enum_value = rttr::type::get <oo::Anim::Timeline::DATATYPE>().get_enumeration().name_to_value(value.GetString());
 		return rttr::variant{ enum_value };
 	};
-
+	/*
+	* Node
+	*/
+	map[rttr::type::get<oo::Anim::Node::TYPE>().get_id()]
+		= [](rapidjson::Value& value)
+	{
+		auto temp = std::string{ value.GetString() };
+		auto enum_variant = rttr::type::get <oo::Anim::Node::TYPE>().get_enumeration().name_to_value(value.GetString());
+		return rttr::variant{ enum_variant };
+	};
 	map[rttr::type::get<oo::ScriptValue::function_info>().get_id()]
 		= [](rapidjson::Value& value)
 	{
@@ -461,7 +485,8 @@ std::unordered_map<rttr::type::type_id, oo::Anim::internal::LoadFn*> oo::Anim::i
 	{
 		GroupRef ref;
 		auto load_fn = rttr::type::get<GroupRef>().get_method(internal::load_method_name);
-		load_fn.invoke({}, value, ref);
+		auto result = load_fn.invoke({}, value, ref);
+		assert(result.is_valid());
 		return rttr::variant{ ref };
 	};
 
@@ -753,7 +778,7 @@ namespace oo::Anim::internal
 		//	condition->parameter->SetWithoutChecking(false);
 		assert(condition.compareFn);
 		if (condition.compareFn)
-			return condition.compareFn(condition.value, tracker.parameters[condition.parameterIndex].value);
+			return condition.compareFn(tracker.parameters[condition.parameterIndex].value, condition.value);
 
 		return false;
 	}
@@ -783,12 +808,22 @@ namespace oo::Anim::internal
 	{
 		if (rttr_type == rttr::type::get< glm::vec3>())
 		{
-			return (1.f - percentage) * prev.get_value< glm::vec3 >() + (percentage * next.get_value< glm::vec3 >());
+			//return (1.f - percentage) * prev.get_value< glm::vec3 >() + (percentage * next.get_value< glm::vec3 >());
+			return next;
 		}
-		else if (rttr_type == rttr::type::get< glm::quat>())
+		else if (rttr_type == rttr::type::get< oo::TransformComponent::quat>())
 		{
-			return glm::slerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
-			//return (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
+			KeyFrame::DataType quat;
+
+			quat = (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
+			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
+			return result;
+
+			/*quat = glm::lerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
+			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
+			return result;*/
+
+			return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
 		}
 		else if (rttr_type == rttr::type::get< bool>())
 		{
@@ -797,29 +832,6 @@ namespace oo::Anim::internal
 		else return prev;
 	}
 
-	//void UpdateEvent(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
-	void UpdateEvent(UpdateProgressTrackerInfo& info, float updatedTimer)
-	{
-		//it should be an event tracker
-		assert(info.progressTracker.type == Timeline::TYPE::SCRIPT_EVENT);
-
-		auto& timeline = info.tracker_info.tracker.currentNode->GetAnimation().events;
-		//no events in timeline
-		if (timeline.empty()) return;
-		//already hit last so we return
-		if (info.progressTracker.index >= (timeline.size() - 1ul))
-			return;
-
-		auto& nextEvent = *(timeline.begin() + info.progressTracker.index + 1ul);
-
-		//if next event not within bounds
-		if (Withinbounds(updatedTimer, nextEvent.time) == false) return;
-
-		TriggerEvent(info, nextEvent);
-		info.progressTracker.index++;
-
-		//TODO: if went past more than 1 event, trigger those as well
-	}
 
 	//void UpdateProperty_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
 	void UpdateProperty_Animation(UpdateProgressTrackerInfo& info, float updatedTimer)
@@ -928,7 +940,138 @@ namespace oo::Anim::internal
 	//void UpdateFBX_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
 	void UpdateFBX_Animation(UpdateProgressTrackerInfo& info, float updatedTimer)
 	{
-		//assert(progressTracker.type == Timeline::TYPE::FBX_ANIM);
+		assert(info.progressTracker.type == Timeline::TYPE::FBX_ANIM);
+
+		auto& timeline = *(info.progressTracker.timeline);
+
+		//no keyframes so we return
+		if (timeline.keyframes.empty()) return;
+
+		//already hit last and animation not looping so we return
+		if (info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
+			info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
+		{
+			return;
+		}
+
+		////if looping, set the normalized time based on iterations
+		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
+		//{
+		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
+		//	{
+		//		currentTimer -= timeline.keyframes.back().time;
+		//		num_iterations += 1.f;
+		//	}
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
+		//}
+		//else
+		//{
+		//	//set normalized timer
+		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
+		//}
+
+		//update index to the correct keyframe
+		/*size_t prev_index = info.progressTracker.index;
+		if (timeline.keyframes[info.progressTracker.index + 1u].time < updatedTimer)
+		{
+			size_t increment{ 1 };
+			for (auto iter = timeline.keyframes.begin() + (info.progressTracker.index + 1u); iter != timeline.keyframes.end(); ++iter)
+			{
+				if (iter->time > updatedTimer)
+					break;
+
+				++increment;
+			}
+			info.progressTracker.index += increment;
+		}*/
+
+		//find the correct gameobject
+		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
+		//traverse the hierarchy
+		for (auto& index : timeline.children_index)
+		{
+			auto name = go.Name();
+			auto children = go.GetDirectChilds();
+			go = children[index];
+		}
+		//if next keyframe within bounds increment index 
+		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
+		if (Withinbounds(updatedTimer, nextEvent.time))
+		{
+			++info.progressTracker.index;
+			//check if passed more than 1 keyframe
+			auto max_index = (timeline.keyframes.size() - 1ul);
+			while(info.progressTracker.index < max_index &&
+				Withinbounds(updatedTimer, timeline.keyframes[info.progressTracker.index + 1ul].time))
+				++info.progressTracker.index;
+
+			//went past last keyframe so we set data to last and return
+			if (info.progressTracker.index >= max_index)
+			{
+				//get the instance
+				auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
+					go.GetEntity(), info.progressTracker.timeline->component_hash);
+				auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
+				//set the value
+				if (timeline.keyframes.back().data.get_type() == rttr::type::get<oo::TransformComponent::quat>())
+				{
+					KeyFrame::DataType data = oo::TransformComponent::quat{ timeline.keyframes.back().data.get_value<glm::quat>() };
+					info.progressTracker.timeline->rttr_property.set_value(rttr_instance, 
+						data);
+				}
+				else
+				{
+					info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
+				}
+
+				//if animation is looping, reset keyframe index
+				if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
+				{
+					info.progressTracker.index = 0;
+				}
+				return;
+			}
+
+		}
+
+		/*--------------------------------
+		interpolate animation accordingly
+		--------------------------------*/
+		auto& prevKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index);
+		auto& nextKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index + 1u);
+		auto prevTime = prevKeyframe.time;
+		auto nextTime = nextKeyframe.time;
+
+		//current progress in keyframe over total time in between keyframes
+		float percentage = (updatedTimer - prevTime) / (nextTime - prevTime);
+
+		KeyFrame::DataType interpolated_value = GetInterpolatedValue(
+			info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
+
+		/*--------------------------------
+		set related game object's data
+		--------------------------------*/
+		//get a ptr to the component
+		auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
+			go.GetEntity(), info.progressTracker.timeline->component_hash);
+
+		//get the instance
+		auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
+		//set the value
+		//if (interpolated_value.get_type() == rttr::type::get< glm::vec3>()) return;
+
+		auto result = info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
+		if (result == false)
+		{
+			auto type_name = interpolated_value.get_type().get_name();
+			auto correct_Type_name = info.progressTracker.timeline->rttr_property.get_type().get_name();
+			auto temp = rttr::type::get<oo::TransformComponent::quat>().get_name();
+			assert(result);
+		}
+		
+		//SetComponentData(timeline, interpolated_value);
+		//assert(false);
 	}
 	//go through all progress trackers and call their update function
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer)
@@ -940,6 +1083,34 @@ namespace oo::Anim::internal
 			UpdateProgressTrackerInfo p_info{ info, progressTracker };
 			//call the respective update function on this tracker
 			progressTracker.updatefunction(p_info, updatedTimer);
+		}
+	}
+
+	void UpdateScriptEventProgress(UpdateTrackerInfo& info, float updatedTimer)
+	{
+		auto& tracker = info.tracker.scripteventTracker;
+		if (tracker.events == nullptr)
+		{
+			assert(false);
+			return;
+		}
+		if (tracker.events->empty()) return;
+
+		auto& events = *tracker.events;
+		auto last_index = events.size() - 1ull;
+
+		//already hit last event
+		if (tracker.nextEvent_index > last_index) return;
+
+
+		//catch up on all script events to be called & update index
+		while (	tracker.nextEvent_index <= last_index &&
+				events[tracker.nextEvent_index].time < updatedTimer)
+		{
+			//invoke script event
+			events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			//update index
+			++tracker.nextEvent_index;
 		}
 	}
 
@@ -1003,6 +1174,8 @@ namespace oo::Anim::internal
 		animTracker.num_iterations = 0;
 		//track all timelines in node's animations with trackers
 		animTracker.trackers = node->trackers;
+		//script event as well
+		animTracker.scripteventTracker = node->scripteventTracker;
 	}
 
 	//copy animation tree's parameters to the tracker
@@ -1020,7 +1193,9 @@ namespace oo::Anim::internal
 		node.trackers.clear();
 		//add script event tracker
 		{
-			auto progressTracker = ProgressTracker::Create(Timeline::TYPE::SCRIPT_EVENT);
+			//auto progressTracker = ProgressTracker::Create(Timeline::TYPE::SCRIPT_EVENT);
+			node.scripteventTracker.nextEvent_index = 0;
+			node.scripteventTracker.events = &(node.GetAnimation().events);
 		}
 
 		//add timeline trackers
@@ -1033,10 +1208,10 @@ namespace oo::Anim::internal
 			node.trackers.emplace_back(std::move(progressTracker));
 		}
 	}
-	//checks if a node is available for transition
-	Link* CheckNodeTransitions(UpdateTrackerInfo& info)
+
+	Link* CheckNodeTransitions(UpdateTrackerInfo& info, Node& node)
 	{
-		for (auto& link : info.tracker.currentNode->outgoingLinks)
+		for (auto& link : node.outgoingLinks)
 		{
 			if (link->has_exit_time)
 			{
@@ -1078,6 +1253,13 @@ namespace oo::Anim::internal
 
 		return nullptr;
 	}
+	//checks if a node is available for transition
+	Link* CheckNodeTransitions(UpdateTrackerInfo& info)
+	{
+		if (info.tracker.currentNode == false) return nullptr;
+
+		return CheckNodeTransitions(info, *(info.tracker.currentNode));
+	}
 
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link)
 	{
@@ -1103,13 +1285,28 @@ namespace oo::Anim::internal
 		{
 			assert(false);
 		}
-
-
-		auto result = CheckNodeTransitions(info);
-		if (result)
+		//check transitions for any state node
+		bool has_transitioned = false;
 		{
-			ActivateTransition(info, result);
+			auto& any_state_node = *(info.tracker.currentNode->group->any_state_Node);
+			auto result = CheckNodeTransitions(info, any_state_node);
+			if (result)
+			{
+				ActivateTransition(info, result);
+				has_transitioned = true;
+			}
 		}
+		
+		//check transitions for current node if any state node no transition
+		if (has_transitioned == false)
+		{
+			auto result = CheckNodeTransitions(info);
+			if (result)
+			{
+				ActivateTransition(info, result);
+			}
+		}
+		
 		float updatedTimer = info.tracker.timer + info.tracker.currentNode->speed * info.dt;
 		//update tracker timer and global timer
 		info.tracker.timer = updatedTimer;
@@ -1119,6 +1316,8 @@ namespace oo::Anim::internal
 		//not in transition
 		if (info.tracker.transition_info.in_transition == false)
 		{
+			//check if we passed a script event and invoke
+			UpdateScriptEventProgress(info, updatedTimer);
 			//check if we passed a keyframe and update
 			UpdateTrackerKeyframeProgress(info, updatedTimer);
 		}
@@ -1220,6 +1419,12 @@ namespace oo::Anim::internal
 		assert(false);
 		return nullptr;
 	}
+	Node* RetrieveNodeFromGroup(Group& group, UID node_ID)
+	{
+		if (group.nodes.contains(node_ID) == false) return nullptr;
+
+		return &(group.nodes[node_ID]);
+	}
 	//same as RetrieveNodeFromGroup but without error messages and asserts
 	Node* TryRetrieveNodeFromGroup(Group& group, std::string const& name)
 	{
@@ -1242,6 +1447,12 @@ namespace oo::Anim::internal
 		LOG_CORE_ERROR("could not find {0} link!!", linkName);
 		assert(false);
 		return nullptr;
+	}
+	Link* RetrieveLinkFromGroup(Group& group, UID link_ID)
+	{
+		if (group.links.contains(link_ID) == false) return nullptr;
+
+		return  &(group.links[link_ID]);
 	}
 
 	Parameter* RetrieveParameterFromTree(AnimationTree& tree, std::string const& param_name)
@@ -1326,6 +1537,17 @@ namespace oo::Anim::internal
 			return nullptr;
 	}
 
+	Animation* RetrieveAnimation(oo::Asset asset)
+	{
+		auto anim_id = asset.GetData<UID>();
+		auto has_anim = Animation::animation_storage.contains(anim_id);
+		assert(has_anim);
+		if (has_anim)
+			return &(Animation::animation_storage[anim_id]);
+		else
+			return nullptr;
+	}
+
 	AnimationTree* RetrieveAnimationTree(std::string const& name)
 	{
 		for (auto& [key, tree] : AnimationTree::map)
@@ -1346,16 +1568,16 @@ namespace oo::Anim::internal
 
 	Node* AddNodeToGroup(Group& group, Anim::NodeInfo& info)
 	{
-
+		//allow nodes with same name
 		//if node already added to this group then just return it
-		for (auto& [key, node] : group.nodes)
+		/*for (auto& [key, node] : group.nodes)
 		{
 			if (node.name == info.name)
 			{
 				LOG_CORE_WARN("{0} Animation Node already exists in group!!", info.name);
 				return &node;
 			}
-		}
+		}*/
 
 		//create the node and add it to this group
 		Node node{ info };
@@ -1376,17 +1598,38 @@ namespace oo::Anim::internal
 		assert(result == true);
 		auto& group = tree.groups[key];
 		//create the starting node
-		NodeInfo n_info{
-			.name{ "Start Node" },
-			.animation_name{ Animation::empty_animation_name },
+		{
+			NodeInfo start_node_info{
+			.name{ start_node_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
 			.group{ internal::CreateGroupReference(tree,group.groupID)},
-			.nodeID{internal::generateUID() }
-		};
-		auto node = Anim::internal::AddNodeToGroup(group, n_info);
-		assert(node);
-		group.startNode = internal::CreateNodeReference(group, n_info.nodeID);
+			.nodeID{internal::generateUID() },
+			.type{Node::TYPE::START}
+			};
+			auto node = Anim::internal::AddNodeToGroup(group, start_node_info);
+			assert(node);
+			group.startNode = internal::CreateNodeReference(group, node->node_ID);
+		}
+		
+		//create the any state node
+		{
+			NodeInfo any_state_node_info{
+			.name{ any_state_node_name },
+			.animation_name{ internal::empty_animation_name },
+			.speed{ 1.f },
+			.position{0.f,0.f,0.f},
+			.group{ internal::CreateGroupReference(tree,group.groupID)},
+			.nodeID{internal::generateUID() },
+			.type{Node::TYPE::ANY_STATE}
+			};
+			auto node = Anim::internal::AddNodeToGroup(group, any_state_node_info);
+			assert(node);
+			group.any_state_Node = internal::CreateNodeReference(group, node->node_ID);
+		}
+		
+		
 
 		return &group;
 	}
@@ -1529,6 +1772,13 @@ namespace oo::Anim::internal
 		size_t index = 0;
 		for (auto& kf : timeline.keyframes)
 		{
+			//overwrite if same time as a current keyframe
+			if (Equal(kf.time, keyframe.time))
+			{
+				kf.data = keyframe.data;
+				return &kf;
+			}
+			//first keyframe that is past the inserted keyframe time
 			if (kf.time > keyframe.time)
 			{
 				break;
@@ -1593,6 +1843,56 @@ namespace oo::Anim::internal
 		return &parameter;
 	}
 
+	void RemoveParameterFromTree(AnimationTree& tree, UID param_ID)
+	{
+		//find the parameter
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& param : tree.parameters)
+		{
+			if (param.paramID == param_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+
+		//remove conditions that reference the parameter
+		struct LinkCondition
+		{
+			Link* link{nullptr};
+			UID condition_ID{};
+		};
+		std::stack<LinkCondition> to_remove{};
+
+		for (auto& [groupID, group] : tree.groups)
+		{
+		for (auto& [linkID, link] : group.links)
+		{
+		for (auto& condition : link.conditions)
+		{
+			if (condition.paramID == param_ID)
+			{
+				to_remove.emplace(&link, condition.conditionID);
+			}
+		}
+		}
+		}
+		while (to_remove.empty() == false)
+		{
+			auto info = to_remove.top();
+			to_remove.pop();
+			RemoveConditionFromLink(*(info.link), info.condition_ID);
+		}
+
+		//remove the parameter
+		tree.parameters.erase(tree.parameters.begin() + index);
+
+
+	}
+
 	Condition* AddConditionToLink(AnimationTree& tree, Link& link, ConditionInfo& info)
 	{
 		//verify there is a parameter available
@@ -1605,6 +1905,24 @@ namespace oo::Anim::internal
 		return &createdCondition;
 	}
 
+	void RemoveConditionFromLink(Link& link, UID conditionID)
+	{
+		uint index = 0;
+		bool found{false};
+		for (auto& condition : link.conditions)
+		{
+			if (condition.conditionID == conditionID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		if (found == false) return;
+		assert(index < link.conditions.size());
+		link.conditions.erase(link.conditions.begin() + index);
+	}
+
 	Animation* AddAnimationToNode(Node& node, Animation& anim)
 	{
 		node.anim = CreateAnimationReference(anim.animation_ID);
@@ -1612,12 +1930,71 @@ namespace oo::Anim::internal
 		return &anim;
 	}
 
-	void RemoveNodeFromGroup(Group& group, std::string const& node_name)
+	Animation* AddAnimationToNode(Node& node, oo::Asset asset)
 	{
+		auto anim = RetrieveAnimation(asset);
+		if (anim == nullptr)
+		{
+			return nullptr;
+		}
+		node.anim = CreateAnimationReference(anim->animation_ID);
+		node.anim_asset = asset;
+
+		return anim;
 	}
 
-	void RemoveLinkFromGroup(Group& group, std::string const& link_name)
+	bool RemoveNodeFromGroup(Group& group, UID node_ID)
 	{
+		auto node_ptr = RetrieveNodeFromGroup(group, node_ID);
+		if (node_ptr == nullptr) return false;
+		if (node_ptr->name == start_node_name) return false;	 //dont remove start node
+		if (node_ptr->name == any_state_node_name) return false; //dont remove any state node
+
+
+		std::stack<UID> links_to_remove{};
+		//remove links to the node and links from the node to others
+		for (auto& [id, link] : group.links)
+		{
+			if (link.dst->node_ID == node_ID || link.src->node_ID == node_ID)
+			{
+				links_to_remove.emplace(link.linkID);
+			}
+		}
+		while (links_to_remove.empty() == false)
+		{
+			auto linkID = links_to_remove.top();
+			links_to_remove.pop();
+			RemoveLinkFromGroup(group, linkID);
+		}
+		//remove the node
+		group.nodes.erase(node_ID);
+		return true;
+	}
+
+	void RemoveLinkFromGroup(Group& group, UID link_ID)
+	{
+		auto link = RetrieveLinkFromGroup(group, link_ID);
+		if (link == nullptr) return;
+
+		//remove outgoing link from src node
+		auto& outgoingLinks = link->src->outgoingLinks;
+		uint index{ 0 };
+		bool found{ false };
+		for (auto& linkref : outgoingLinks)
+		{
+			if (linkref->linkID == link_ID)
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		assert(found);
+		if (found == false) return;
+		outgoingLinks.erase(outgoingLinks.begin() + index);
+
+		//remove link
+		group.links.erase(link_ID);
 	}
 
 	void LoadFBX(std::string const& filepath, Animation* anim)
@@ -1696,12 +2073,6 @@ namespace oo::Anim::internal
 				for (auto& condition : link.conditions)
 				{
 					BindConditionToParameter(tree, condition);
-					////set param index
-					//assert(tree.paramIDtoIndexMap.contains(condition.paramID));
-					//condition.parameterIndex = tree.paramIDtoIndexMap[condition.paramID];
-
-					////set condition comparison function
-					//internal::AssignComparisonFunctionToCondition(condition);
 				}
 			}
 		}
@@ -1742,12 +2113,27 @@ namespace oo::Anim::internal
 			}
 		}
 	}
+	void CalculateAnimationLength(Animation& anim)
+	{
+		float longest_time{ 0.f };
+		auto& timelines = anim.timelines;
+		for (auto& timeline : timelines)
+		{
+			if (timeline.keyframes.empty()) continue;
+
+			if (longest_time < timeline.keyframes.back().time)
+				longest_time = timeline.keyframes.back().time;
+		}
+
+		anim.animation_length = longest_time;
+	}
 
 	void ReloadReferences(AnimationTree& tree)
 	{
 		for (auto& [group_id, group] : tree.groups)
 		{
 			group.startNode.Reload();
+			group.any_state_Node.Reload();
 			for (auto& [node_id, node] : group.nodes)
 			{
 				node.group.Reload();
@@ -1767,6 +2153,7 @@ namespace oo::Anim::internal
 		for (auto& [group_id, group] : tree.groups)
 		{
 			group.startNode.nodes = &group.nodes;
+			group.any_state_Node.nodes = &group.nodes;
 			for (auto& [node_id, node] : group.nodes)
 			{
 				node.group.groups = &tree.groups;

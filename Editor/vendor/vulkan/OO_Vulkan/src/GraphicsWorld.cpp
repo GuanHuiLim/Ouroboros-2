@@ -1,3 +1,8 @@
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
+#include "GraphicsWorld.h"
 /************************************************************************************//*!
 \file           GraphicsWorld.cpp
 \project        Ouroboros
@@ -79,4 +84,149 @@ void GraphicsWorld::ClearLightInstances()
 {
 	m_OmniLightInstances.Clear();
 	m_lightCount = 0;
+}
+
+int32_t GraphicsWorld::CreateEmitterInstance()
+{
+	return CreateEmitterInstance(EmitterInstance());
+}
+
+int32_t GraphicsWorld::CreateEmitterInstance(EmitterInstance obj)
+{
+	++m_emitterCount;
+	return m_EmitterInstances.Add(obj);
+}
+
+EmitterInstance& GraphicsWorld::GetEmitterInstance(int32_t id)
+{
+	return m_EmitterInstances.Get(id);
+}
+
+void GraphicsWorld::DestroyEmitterInstance(int32_t id)
+{
+	m_EmitterInstances.Remove(id);
+	--m_emitterCount;
+}
+
+void GraphicsWorld::ClearEmitterInstances()
+{
+	m_EmitterInstances.Clear();
+	m_emitterCount = 0;
+}
+
+void GraphicsWorld::SubmitParticles(std::vector<ParticleData>& particleData, uint32_t cnt, int32_t eID)
+{
+	if (cnt == 0) return;
+
+	auto& emitter = GetEmitterInstance(eID);
+
+	emitter.particles.resize(cnt);
+	
+	memcpy(emitter.particles.data(), particleData.data(), cnt * sizeof(ParticleData));
+
+}
+
+void ObjectInstance::SetShadowCaster(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SHADOW_CASTER;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SHADOW_CASTER);
+	}
+}
+
+void ObjectInstance::SetShadowReciever(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SHADOW_RECEIVER;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SHADOW_RECEIVER);
+	}
+}
+
+void ObjectInstance::SetSkinned(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SKINNED;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SKINNED);
+	}
+}
+
+void ObjectInstance::SetShadowEnabled(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::SHADOW_ENABLED;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::SHADOW_ENABLED);
+	}
+}
+
+void ObjectInstance::SetRenderEnabled(bool s)
+{
+	if (s)
+	{
+		flags = flags | ObjectInstanceFlags::RENDER_ENABLED;
+	}
+	else
+	{
+		flags = flags& (~ObjectInstanceFlags::RENDER_ENABLED);
+	}
+}
+
+bool ObjectInstance::isSkinned()
+{
+	return flags & ObjectInstanceFlags::SKINNED;
+}
+
+bool ObjectInstance::isShadowEnabled()
+{
+	return flags & ObjectInstanceFlags::SHADOW_ENABLED;
+}
+
+bool ObjectInstance::isRenderable()
+{
+	return flags & ObjectInstanceFlags::RENDER_ENABLED;
+}
+
+void SetCastsShadows(LocalLightInstance& l, bool s)
+{
+	l.info.x = s ? 1 : -1;
+}
+
+bool GetCastsShadows(LocalLightInstance& l)
+{
+	return l.info.x == 1;
+}
+
+void SetCastsShadows(OmniLightInstance& l, bool s)
+{
+	SetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l),s);
+}
+
+bool GetCastsShadows(OmniLightInstance& l)
+{
+	return GetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l));
+}
+
+void SetCastsShadows(SpotLightInstance& l, bool s)
+{
+	SetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l),s);
+}
+
+bool GetCastsShadows(SpotLightInstance& l)
+{
+	return GetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l));
 }

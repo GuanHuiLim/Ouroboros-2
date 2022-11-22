@@ -42,6 +42,12 @@ namespace oo
         #endif
     }
 
+    SCRIPT_API ScriptDatabase::IntPtr Application_GetAssetPath()
+    {
+        MonoString* str = ScriptEngine::CreateString(Project::GetAssetFolder().string().c_str());
+        return mono_gchandle_new((MonoObject*)str, false);
+    }
+
     /*-----------------------------------------------------------------------------*/
     /* Cursor Functions for C#                                                     */
     /*-----------------------------------------------------------------------------*/
@@ -50,20 +56,30 @@ namespace oo
         Application::Get().GetWindow().ShowCursor(isVisible);
     }
 
+    SCRIPT_API bool Cursor_GetLocked()
+    {
+        return Application::Get().GetWindow().GetMouseCursorMode();
+    }
+
     SCRIPT_API void Cursor_SetLocked(bool isLocked)
     {
         Application::Get().GetWindow().SetMouseLockState(isLocked);
     }
 
+    SCRIPT_API void Cursor_SetPosition(int x, int y)
+    {
+        Application::Get().GetWindow().SetCursorPosition(x, y);
+    }
+
     /*-----------------------------------------------------------------------------*/
     /* Screen Functions for C#                                                     */
     /*-----------------------------------------------------------------------------*/
-    SCRIPT_API unsigned int Screen_GetWidth()
+    SCRIPT_API int Screen_GetWidth()
     {
         return Application::Get().GetWindow().GetWidth();
     }
 
-    SCRIPT_API unsigned int Screen_GetHeight()
+    SCRIPT_API int Screen_GetHeight()
     {
         return Application::Get().GetWindow().GetHeight();
     }
@@ -139,6 +155,27 @@ namespace oo
             ScriptEngine::ThrowNullException();
 
         return static_cast<unsigned int>(asset.GetType());
+    }
+
+    SCRIPT_API MonoArray* Asset_GetByType(AssetInfo::Type assetType, const char* name_space, const char* name)
+    {
+        std::vector<oo::Asset> assetList = Project::GetAssetManager()->GetAssetsByType(assetType);
+
+        MonoClass* baseClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Asset");
+        MonoClassField* field = mono_class_get_field_from_name(baseClass, "id");
+
+        MonoClass* klass = ScriptEngine::GetClass("ScriptCore", name_space, name);
+        MonoArray* arr = ScriptEngine::CreateArray(klass, assetList.size());
+
+        for (int i = 0; i < assetList.size(); ++i)
+        {
+            MonoObject* asset = ScriptEngine::CreateObject(klass);
+            AssetID id = assetList[i].GetID();
+            mono_field_set_value(asset, field, &id);
+
+            mono_array_set(arr, MonoObject*, i, asset);
+        }
+        return arr;
     }
 
     /*-----------------------------------------------------------------------------*/
