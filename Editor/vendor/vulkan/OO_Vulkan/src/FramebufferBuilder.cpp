@@ -47,7 +47,14 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, const VulkanRenderpas
 		const auto& attachmentDes = renderPass.rpci.pAttachments[i];
 		assert(swapchainTarget == tex->targetSwapchain && "Swapchain Target Unexpected!");
 		assert(w == tex->width && h == tex->height && "Incompatible attachment sizes!");
+		assert(attachmentDes.format != VK_FORMAT_UNDEFINED && "Why is this undefined");
 
+		if (tex->format != attachmentDes.format)
+		{
+			std::cout << "Hey unexpected format for renderpass "<<renderPass.name << "attachment=" <<i <<std::endl;
+			std::cout << "\t expected "<< oGFX::vkutils::tools::VkFormatString(attachmentDes.format) 
+				<<" target "<<oGFX::vkutils::tools::VkFormatString(tex->format) << std::endl;
+		}
 		//verify resource
 		if (tex->currentLayout != attachmentDes.initialLayout && attachmentDes.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED)
 		{

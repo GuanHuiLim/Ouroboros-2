@@ -191,9 +191,14 @@ VulkanRenderer::~VulkanRenderer()
 	}
 
 	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::defaultPSOLayout, nullptr);
-	
+	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::PSO_fullscreenBlitLayout, nullptr);
+	vkDestroyPipeline(m_device.logicalDevice, pso_utilFullscreenBlit, nullptr);
+
 	renderPass_default.destroy();
 	renderPass_default_noDepth.destroy();
+	renderPass_HDR.destroy();
+	renderPass_HDR_noDepth.destroy();
+	
 	
 }
 
@@ -247,6 +252,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		CreateDescriptorSets_Lights();
 
 		CreateDefaultPSOLayouts();
+		CreateDefaultPSO();
 
 		if (setupSpecs.useOwnImgui)
 		{
@@ -297,6 +303,7 @@ void VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 		
 		RenderPassDatabase::InitAllRegisteredPasses();
 
+		
 		auto& shadowTexture =RenderPassDatabase::GetRenderPass<ShadowPass>()->shadow_depth;
 		shadowTexture.updateDescriptor();
 
@@ -463,12 +470,32 @@ void VulkanRenderer::CreateDefaultRenderpass()
 	renderPass_default.name = "defaultRenderPass";
 	renderPass_default.Init(m_device, renderPassCreateInfo);
 
-
 	subpass.pDepthStencilAttachment = VK_NULL_HANDLE;
 	renderPassCreateInfo.attachmentCount = 1; // colour only
 	renderPassCreateInfo.dependencyCount = 0; // colour only
 	renderPass_default_noDepth.name = "defaultRenderPass_noDepth";
 	renderPass_default_noDepth.Init(m_device, renderPassCreateInfo);
+
+
+	renderpassAttachments[0].format = G_HDR_FORMAT;
+	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(renderpassAttachments.size());
+	renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependancies.size());
+	renderPass_HDR.name = "defaulRenderpassHDR";
+	renderPass_HDR.Init(m_device, renderPassCreateInfo);
+
+
+	subpass.pDepthStencilAttachment = VK_NULL_HANDLE;
+	renderPassCreateInfo.attachmentCount = 1; // colour only
+	renderPassCreateInfo.dependencyCount = 0; // colour only
+	renderPass_HDR_noDepth.name = "defaultRenderPassHDR_noDepth";
+	renderPass_HDR_noDepth.Init(m_device, renderPassCreateInfo);
+	
+
+	//renderPassCreateInfo.attachmentCount = 1; // only use colour attachment;
+	//renderPassCreateInfo.dependencyCount = 0; // colour only
+	//
+	//renderPass_blit.name = "renderPass_blit";
+	//renderPass_blit.Init(m_device, renderPassCreateInfo);
 }
 
 void VulkanRenderer::CreateDefaultDescriptorSetLayout()
@@ -547,6 +574,100 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 	{
 		throw std::runtime_error("Failed to create a descriptor set layout!");
 	}
+}
+
+void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& src, VkImageLayout srcFinal, vkutils::Texture2D& dst, VkImageLayout dstFinal) 
+{
+	
+	const VkCommandBuffer cmdlist = inCmd;
+	PROFILE_GPU_CONTEXT(cmdlist);
+	PROFILE_GPU_EVENT("Blit");
+
+	std::array<VkClearValue, 1> clearValues{};
+	clearValues[0].color = { 0.0f,0.0f,0.0f,0.0f };
+
+	//Information about how to begin a render pass (only needed for graphical applications)
+	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
+	renderPassBeginInfo.renderPass = renderPass_default_noDepth.pass;                  //render pass to begin
+	renderPassBeginInfo.renderArea.offset = { 0,0 };                                     //start point of render pass in pixels
+	glm::uvec2 renderSize = glm::vec2{ dst.width,dst.height };
+
+	renderPassBeginInfo.renderArea.extent = VkExtent2D{ renderSize.x,renderSize.y }; //size of region to run render pass on (Starting from offset)
+	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+
+	VkFramebuffer currentFB;
+	FramebufferBuilder::Begin(&fbCache)
+		.BindImage(&dst)
+		//.BindImage(&vr.renderTargets[vr.renderTargetInUseID].depth) //no depth
+		.Build(currentFB, renderPass_default_noDepth);
+	renderPassBeginInfo.framebuffer = currentFB;
+
+	vkutils::TransitionImage(cmdlist, src, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	VkDescriptorImageInfo texdesc = oGFX::vkutils::inits::descriptorImageInfo(
+		GfxSamplerManager::GetSampler_SSAOEdgeClamp(),
+		src.view,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	rhi::CommandList cmd{ cmdlist };
+	std::array<VkViewport, 1>viewports{ VkViewport{0,renderSize.y * 1.0f,renderSize.x * 1.0f,renderSize.y * -1.0f} };
+	cmd.SetViewport(0, viewports.size(), viewports.data());
+	VkRect2D scissor{ {}, {renderSize.x,renderSize.y} };
+	cmd.SetScissor(scissor);
+
+
+
+	// create descriptor for this pass
+	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
+		.BindImage(1, &texdesc, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.Build(descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);
+
+	cmd.BindPSO(pso_utilFullscreenBlit);
+
+	SSAOPC pc{};
+	VkPushConstantRange range;
+	range.offset = 0;
+	range.size = sizeof(SSAOPC);
+
+	cmd.SetPushConstant(PSOLayoutDB::PSO_fullscreenBlitLayout, range, &pc);
+
+	uint32_t dynamicOffset = static_cast<uint32_t>(renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO),
+		m_device.properties.limits.minUniformBufferOffsetAlignment));
+	cmd.BindDescriptorSet(PSOLayoutDB::PSO_fullscreenBlitLayout, 0,
+		std::array<VkDescriptorSet, 1>
+		{
+			descriptorSet_fullscreenBlit,
+		},
+		0
+	);
+
+	cmd.DrawFullScreenQuad();
+	vkCmdEndRenderPass(cmdlist);
+
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmdlist,
+		src.image,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		src.currentLayout,
+		srcFinal,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	src.currentLayout = srcFinal;
+
+	oGFX::vkutils::tools::insertImageMemoryBarrier(
+		cmdlist,
+		dst.image,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		dst.currentLayout,
+		dstFinal,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	dst.currentLayout = dstFinal;
 }
 
 void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal)
@@ -673,8 +794,7 @@ void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D& sr
 }
 
 void VulkanRenderer::CreateDefaultPSOLayouts()
-{
-	
+{	
 	std::array<VkDescriptorSetLayout,4> descriptorSetLayouts = 
 	{
 		SetLayoutDB::gpuscene, // (set = 0)
@@ -692,6 +812,63 @@ void VulkanRenderer::CreateDefaultPSOLayouts()
 	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &PSOLayoutDB::defaultPSOLayout));
 	VK_NAME(m_device.logicalDevice, "defaultPSOLayout", PSOLayoutDB::defaultPSOLayout);
 	
+	//create dummy for desciptorlayout
+	VkDescriptorSetLayoutBinding binding = oGFX::vkutils::inits::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+	VkDescriptorSetLayoutCreateInfo dci = oGFX::vkutils::inits::descriptorSetLayoutCreateInfo(&binding,1);
+	SetLayoutDB::util_fullscreenBlit= DescLayoutCache.CreateDescriptorLayout(&dci);
+
+	pipelineLayoutCreateInfo.setLayoutCount = 1;
+	pipelineLayoutCreateInfo.pSetLayouts = &SetLayoutDB::util_fullscreenBlit;
+	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &PSOLayoutDB::PSO_fullscreenBlitLayout));
+	VK_NAME(m_device.logicalDevice, "fullscreenPSOLayout", PSOLayoutDB::PSO_fullscreenBlitLayout);
+	
+}
+
+void VulkanRenderer::CreateDefaultPSO()
+{
+
+	const char* shaderVS = "Shaders/bin/genericFullscreen.vert.spv";
+	const char* shaderPS = "Shaders/bin/Blit.frag.spv";
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages
+	{
+		LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
+		LoadShader(m_device, shaderPS, VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
+
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT , VK_FALSE);
+	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
+	VkPipelineViewportStateCreateInfo viewportState = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1, 1, 0);
+	VkPipelineMultisampleStateCreateInfo multisampleState = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
+	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+	VkPipelineDynamicStateCreateInfo dynamicState = oGFX::vkutils::inits::pipelineDynamicStateCreateInfo(dynamicStateEnables);
+
+	VkGraphicsPipelineCreateInfo pipelineCI = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::PSO_fullscreenBlitLayout, renderPass_default_noDepth.pass);
+	pipelineCI.pInputAssemblyState = &inputAssemblyState;
+	pipelineCI.pRasterizationState = &rasterizationState;
+	pipelineCI.pColorBlendState = &colorBlendState;
+	pipelineCI.pMultisampleState = &multisampleState;
+	pipelineCI.pViewportState = &viewportState;
+	pipelineCI.pDepthStencilState = &depthStencilState;
+	pipelineCI.pDynamicState = &dynamicState;
+	pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
+	pipelineCI.pStages = shaderStages.data();
+
+	// Empty vertex input state, vertices are generated by the vertex shader
+	VkPipelineVertexInputStateCreateInfo emptyInputState = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo();
+	pipelineCI.pVertexInputState = &emptyInputState;
+	pipelineCI.renderPass = renderPass_default_noDepth.pass;
+	pipelineCI.layout = PSOLayoutDB::PSO_fullscreenBlitLayout;
+	colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+	blendAttachmentState= oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+
+	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_utilFullscreenBlit));
+	VK_NAME(m_device.logicalDevice, "pso_blit", pso_utilFullscreenBlit);
+	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr); // destroy vert
+	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr); // destroy fragment
+
 }
 
 void VulkanRenderer::CreateDebugCallback()
@@ -822,9 +999,9 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 			if (image.image == VK_NULL_HANDLE)
 			{
 				image.name = "GW_"+std::to_string(wrdID)+":COL";
-				image.forFrameBuffer(&m_device, m_swapchain.swapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+				image.forFrameBuffer(&m_device, G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
-				image.name = "WorldColourTarget";			
+						
 			}
 			if (image.image&&renderTargets[wrdID].imguiTex == 0)
 			{
@@ -836,7 +1013,7 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 				depth.name = "GW_"+std::to_string(wrdID)+":DEPTH";
 				depth.forFrameBuffer(&m_device, G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
-				depth.name = "WorldDepthTarget";
+				
 				//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
 			}
 
@@ -2056,33 +2233,24 @@ void VulkanRenderer::RenderFrame()
 				++renderIteration;
 			}
 			auto& dst = m_swapchain.swapChainImages[swapchainIdx];
-			dst.currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			if (currWorld->numCameras > 1)
 			{
 				// TODO: Very bad pls fix
 				auto thisID = currWorld->targetIDs[1];
-				auto& texture = renderTargets[thisID].texture;
-				texture.currentLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;				
+				auto& texture = renderTargets[thisID].texture;		
 
-				BlitFramebuffer(commandBuffers[swapchainIdx],
-					texture, VK_IMAGE_LAYOUT_GENERAL,
-					dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+				vkutils::TransitionImage(commandBuffers[swapchainIdx], texture, VK_IMAGE_LAYOUT_GENERAL);
 
 				auto nextID = currWorld->targetIDs[0];
 				auto& nextTexture = renderTargets[nextID].texture;
-				nextTexture.currentLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-				BlitFramebuffer(commandBuffers[swapchainIdx], 
-					nextTexture, VK_IMAGE_LAYOUT_GENERAL,
-					dst,VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+				FullscreenBlit(commandBuffers[swapchainIdx], nextTexture, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+				
 			}
 			else
 			{
 				auto thisID = currWorld->targetIDs[0];
 				auto& texture = renderTargets[thisID].texture;
-				texture.currentLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;	
-				BlitFramebuffer(commandBuffers[swapchainIdx],
-					texture,VK_IMAGE_LAYOUT_GENERAL,
-					dst,VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+				FullscreenBlit(commandBuffers[swapchainIdx], texture, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
 			}
 			// only blit main framebuffer
 			
