@@ -139,22 +139,62 @@ void MeshHierarchy::Show()
 	{
 		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
 
+		
+
 		if constexpr(true)
 		{
 			auto anim = anims.front();
-
-			{//Idle
+			std::string prefix = "Char_";
+			auto const split = [&](size_t start, size_t end, std::string const& split_anim_name)
+			{
 				oo::Anim::SplitAnimationInfo info{
-				.in_frames{true},
-				.start_frame{1ull},
-				.end_frame{397ull},
-				.anim_ID{anim->animation_ID},
-				.split_animation_name{"Idle_Char"}
+					.in_frames{true},
+					.start_frame{start},
+					.end_frame{end},
+					.anim_ID{anim->animation_ID},
+					.split_animation_name{prefix + split_anim_name }
 				};
 				auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
 				assert(true);
+			};
+			if (anim->name == "MainChar_Idle_Take 001")
+			{
+				prefix = "Char_";
+				split(1, 397, "Idle");
+				split(399, 442, "Jump");
+				split(442, 480, "Land");
+				split(481, 550, "Falling");
+				split(552, 600, "Running");
+
+				split(602, 700, "Punch1");
+				split(602, 630, "Punch1_HIT");
+
+
+				split(702, 780, "Punch2");
+				split(702, 717, "Punch2_HIT");
+
+				split(782, 867, "Punch3");
+
+				split(869, 1045, "KeyHit1");
+				split(1047, 1328, "KeyHit2");
+				split(1330, 1526, "KeyHit3");
 			}
-			
+			else if (anim->name == "Key_FullAnimSet_Take 001")
+			{
+				prefix = "Key_";
+
+				split(0, 60, "Open");
+				split(64, 120, "Close");
+			}
+			else if (anim->name == "GruntEnemy_FullAnimSet_Take 001")
+			{
+				prefix = "Grunt_";
+
+				split(1, 71, "Idle");
+				split(73, 123, "Run");
+				split(125, 240, "Attack");
+				split(242, 297, "Stagger");
+			}
 		}
 	}
 }
