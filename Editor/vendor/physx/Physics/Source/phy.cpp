@@ -20,7 +20,7 @@ Technology is prohibited.
 
 using namespace physx;
 
-static constexpr bool use_debugger = false;
+static constexpr bool use_debugger = true;
 
 static myPhysx::EventCallBack mEventCallback;
 
@@ -73,7 +73,7 @@ namespace myPhysx
         PxPhysics* createPhysics() {
 
             mToleranceScale.length = 1;        // typical length of an object
-            mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
+            mToleranceScale.speed = 9.81;         // typical speed of an object, gravity*1s is a reasonable choice
 
             //if (PVD_DEBUGGER)
             if constexpr (use_debugger)
@@ -157,7 +157,7 @@ namespace myPhysx
 
             if constexpr (use_debugger) {
                 printf("DEBUGGER ON\n");
-                myPVD.createPvd(mFoundation, "172.28.68.41");
+                myPVD.createPvd(mFoundation, "172.28.68.244");
             }
             else {
                 printf("DEBUGGER OFF\n");
