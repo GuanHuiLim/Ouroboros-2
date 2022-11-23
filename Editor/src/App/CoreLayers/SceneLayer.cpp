@@ -41,8 +41,9 @@ namespace oo
 
 #ifdef OO_EDITOR
         EventManager::Subscribe<SceneLayer, ToolbarButtonEvent>(this, &SceneLayer::OnToolbarButtonEvent);
-        ImGuiManager::s_runtime_controller = &m_runtimeController;
 #endif
+        // TODO: for now.
+        ImGuiManager::s_runtime_controller = &m_runtimeController;
 
     }
 
