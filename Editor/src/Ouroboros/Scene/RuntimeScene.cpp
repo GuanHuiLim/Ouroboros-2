@@ -128,6 +128,12 @@ namespace oo
         }
 
         {
+            TRACY_PROFILE_SCOPE(scripts_update);
+            GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("TickCoroutines");
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        {
             TRACY_PROFILE_SCOPE(physics_runtime_update);
             GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
             TRACY_PROFILE_SCOPE_END();
