@@ -20,21 +20,22 @@ namespace oo
 			this, &SkinMeshRendererSystem::OnMeshRemove);
 	}
 
-	void RecurseChildren_AssignparentTransform_to_BoneComponents(GameObject obj, glm::mat4 parentTransform)
+	void RecurseChildren_AssignparentTransform_to_BoneComponents(GameObject obj, glm::mat4 parentTransform, UUID uid)
 	{
 		auto children = obj.GetDirectChilds();
 		if (children.empty()) return;
-
 		//auto localTransform = obj.GetComponent<TransformComponent>().GetLocalMatrix();
 
 		for (auto& child : children)
 		{
 			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
+			auto& bonecomp = child.GetComponent<SkinMeshBoneComponent>();
+			if (bonecomp.skin_mesh_object != uid) continue;
 
 			auto const transform = parentTransform * child.GetComponent<TransformComponent>().GetLocalMatrix();
-			child.GetComponent<SkinMeshBoneComponent>().globalTransform = transform;
+			bonecomp.globalTransform = transform;
 
-			RecurseChildren_AssignparentTransform_to_BoneComponents(child, transform);
+			RecurseChildren_AssignparentTransform_to_BoneComponents(child, transform, uid);
 		}
 	}
 	void SkinMeshRendererSystem::Run(Ecs::ECSWorld* world)
@@ -57,13 +58,17 @@ namespace oo
 				oo::GameObject rootbone{};
 				for (auto& child : children)
 				{
-					if (child.GetInstanceID() == uid) continue;
+					if (child.GetInstanceID() == uid)
+					{
+						continue;
+					}
+
 
 					rootbone = child;
 					break;
 				}
 				//auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
-				RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>());
+				RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>(), uid);
 
 			});
 
@@ -76,7 +81,8 @@ namespace oo
 				gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
 				gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
 				gfx_Object.submesh = m_comp.meshInfo.submeshBits;
-
+				gfx_Object.SetShadowCaster(m_comp.CastShadows);
+				gfx_Object.SetShadowReciever(m_comp.ReceiveShadows);
 				//do nothing if transform did not change
 				if (transformComp.HasChangedThisFrame == false) return;
 
@@ -123,7 +129,7 @@ namespace oo
 		AssignGraphicsWorldID_to_BoneComponents(scene);
 	}
 
-	void RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(GameObject obj, uint32_t graphicsID)
+	void RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(GameObject obj, uint32_t graphicsID, UUID uid)
 	{
 		auto children = obj.GetChildren();
 		if (children.empty()) return;
@@ -132,7 +138,10 @@ namespace oo
 		{
 			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
 
-			child.GetComponent<SkinMeshBoneComponent>().graphicsWorld_ID = graphicsID;
+			auto& bonecomp = child.GetComponent<SkinMeshBoneComponent>();
+			if (bonecomp.skin_mesh_object != uid) continue;
+
+			bonecomp.graphicsWorld_ID = graphicsID;
 		}
 	}
 
@@ -160,7 +169,7 @@ namespace oo
 				}
 
 
-				RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(the_one_with_bones, graphicsID);
+				RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(the_one_with_bones, graphicsID, go.GetComponent<GameObjectComponent>().Id);
 				/*auto children = go.GetChildren();
 
 				for (auto& child : children)
