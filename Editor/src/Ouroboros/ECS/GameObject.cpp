@@ -317,7 +317,7 @@ namespace oo
                 // if was active, call the disable event
                 GameObjectComponent::OnDisableEvent onDisableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onDisableEvent);
-                LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
+                //LOG_CORE_INFO("GameObjectComponent OnDisable Invoke");
 
             }
             else
@@ -325,7 +325,7 @@ namespace oo
                 // if was inactive, call the enable event
                 GameObjectComponent::OnEnableEvent onEnableEvent{ comp.Id };
                 oo::EventManager::Broadcast(&onEnableEvent);
-                LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
+                //LOG_CORE_INFO("GameObjectComponent OnEnable Invoke");
             }
             
             comp.ActiveInHierarchy = active;

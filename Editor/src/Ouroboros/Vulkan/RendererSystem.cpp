@@ -311,17 +311,20 @@ namespace oo
     
     void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)
     {
-        // Draw Debug Lights
-        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-        world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+        if (LightsDebugDraw)
         {
-            auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
-            // lighting debug draw
-            Sphere sphere;
-            sphere.center = vec3{ graphics_light.position };
-            sphere.radius = 0.1f;
-            DebugDraw::AddSphere(sphere, graphics_light.color);
-        });
+            // Draw Debug Lights
+            static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
+            world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+            {
+                auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+                // lighting debug draw
+                Sphere sphere;
+                sphere.center = vec3{ graphics_light.position };
+                sphere.radius = 0.1f;
+                DebugDraw::AddSphere(sphere, graphics_light.color);
+            });
+        }
 
         if (CameraDebugDraw)
         {
