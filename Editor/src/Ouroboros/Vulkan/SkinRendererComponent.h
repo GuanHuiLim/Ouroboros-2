@@ -25,6 +25,9 @@ namespace oo
 
 		uint32_t albedoID = 0xFFFFFFFF;
 		uint32_t normalID = 0xFFFFFFFF;
+
+		bool CastShadows{	 false };
+		bool ReceiveShadows{ false };
 		
 		//no need to serialize
 		uint32_t graphicsWorld_ID{};

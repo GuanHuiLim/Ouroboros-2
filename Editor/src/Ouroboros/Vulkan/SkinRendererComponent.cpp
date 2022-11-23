@@ -23,7 +23,9 @@ namespace oo
 		(
 			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
 		)
-		.property("MeshInfo", &SkinMeshRendererComponent::GetMeshInfo, &SkinMeshRendererComponent::SetMeshInfo);
+		.property("MeshInfo", &SkinMeshRendererComponent::GetMeshInfo, &SkinMeshRendererComponent::SetMeshInfo)
+		.property("Cast Shadows",    &SkinMeshRendererComponent::CastShadows)
+		.property("Receive Shadows", &SkinMeshRendererComponent::ReceiveShadows)
 		;
 
 		registration::class_<SkinMeshBoneComponent>("Skinned Mesh Bone Component")
@@ -33,7 +35,7 @@ namespace oo
 		.property("inverseBindPose_info->transform.y", &SkinMeshBoneComponent::GetInverseBindPoseInfo_Transform_Y, &SkinMeshBoneComponent::SetInverseBindPoseInfo_Transform_Y)
 		.property("inverseBindPose_info->transform.z", &SkinMeshBoneComponent::GetInverseBindPoseInfo_Transform_Z, &SkinMeshBoneComponent::SetInverseBindPoseInfo_Transform_Z)
 		.property("inverseBindPose_info->transform.w", &SkinMeshBoneComponent::GetInverseBindPoseInfo_Transform_W, &SkinMeshBoneComponent::SetInverseBindPoseInfo_Transform_W)
-		;
+			;
 	};
 
 

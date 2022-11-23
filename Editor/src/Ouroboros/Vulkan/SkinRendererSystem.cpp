@@ -81,7 +81,8 @@ namespace oo
 				gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
 				gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
 				gfx_Object.submesh = m_comp.meshInfo.submeshBits;
-
+				gfx_Object.SetShadowCaster(m_comp.CastShadows);
+				gfx_Object.SetShadowReciever(m_comp.ReceiveShadows);
 				//do nothing if transform did not change
 				if (transformComp.HasChangedThisFrame == false) return;
 
