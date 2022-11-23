@@ -361,7 +361,7 @@ void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 	{
 		if (s_maximizeOnPlay)
 		{
-			if (s_windowStates.empty() == false)
+			if (s_windowStates.empty() == true)
 				return;
 			int i = 0;
 			for (auto& window : ImGuiManager::s_GUIContainer)
@@ -370,10 +370,7 @@ void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 			}
 			s_windowStates.clear();
 		}
-		else
-		{
-			ImGui::SetWindowFocus("Editor Viewport");
-		}
+		ImGui::SetWindowFocus("Editor Viewport");
 	}
 }
 

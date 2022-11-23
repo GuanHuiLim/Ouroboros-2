@@ -339,6 +339,42 @@ void Project::LoadScriptSequence(const std::filesystem::path& path)
 	ifs2.close();
 }
 
+void Project::LoadRendererSettingFile()
+{
+	std::ifstream ifs(s_configFile.string());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Config File is not valid!");
+		return;
+	}
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	if (doc.HasMember("Renderer Settings"))
+	{
+		LoadRenderer(doc.FindMember("Renderer Settings")->value);
+	}
+}
+
+void Project::SaveRendererSettingFile()
+{
+	std::ifstream ifs(s_configFile.string());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Config File is not valid!");
+		return;
+	}
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	if (doc.HasMember("Renderer Settings"))
+	{
+		auto& val = doc.FindMember("Renderer Settings")->value;
+		val.RemoveAllMembers();//its easier to clear everything and key in the value again
+		SaveRenderer(val, doc);
+	}
+}
+
 void Project::LoadRendererSetting(rapidjson::Value& setting_val, rttr::variant& v)
 {
 	static SerializerLoadProperties loadProperties;
