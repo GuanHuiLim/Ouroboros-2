@@ -168,6 +168,7 @@ public:
     EndProduct(oo::CommandLineArgs args)
         : Application{ std::string{"Minute v"} + GameVersionNumber, args }
         , m_prefab_controller{ m_sceneManager }
+        , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
         //GetWindow().SetFullScreen(true);
 
@@ -195,8 +196,12 @@ public:
     void OnUpdate() override
     {
         TRACY_PROFILE_SCOPE_N(end_product_app_update);
+        // TODO : Remove imgui abstract next time. Backend shouldn't be expecting GUI for Final build
+        m_imGuiAbstract->Begin();
 
         m_layerset.Update();
+
+        m_imGuiAbstract->End();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -205,9 +210,8 @@ private:
     // main scene manager
     SceneManager m_sceneManager;
     oo::LayerSet m_layerset;
-
-
     oo::PrefabSceneController m_prefab_controller;
+    std::unique_ptr<oo::ImGuiAbstraction> m_imGuiAbstract;
 };
 
 oo::Application* oo::CreateApplication(oo::CommandLineArgs args)
