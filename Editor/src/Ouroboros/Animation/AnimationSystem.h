@@ -49,17 +49,23 @@ namespace oo::Anim
 		//test function
 		Scene::go_ptr CreateAnimationTestObject();
 		
-		static bool SaveAllAnimations(std::string filepath);
 		/*------------
 		animation tree
 		------------*/
 		static bool SaveAnimationTree(size_t id, std::string filepath);
+		//save all animation trees in respective asset filepath
+		static bool SaveAllAnimationTree();
+		//save all animation trees in filepath
 		static bool SaveAllAnimationTree(std::string filepath);
 		static AnimationTree* LoadAnimationTree(std::string filepath);
 		static oo::Asset GetAnimationTreeAsset(UID anim_ID);
 		/*---------
 		animation
 		---------*/
+		//save all animations in respective asset filepath
+		static bool SaveAllAnimations();
+		//save all animations in filepath
+		static bool SaveAllAnimations(std::string filepath);
 		static bool SaveAnimation(std::string name, std::string filepath);
 		static Animation* LoadAnimation(std::string filepath);
 		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);

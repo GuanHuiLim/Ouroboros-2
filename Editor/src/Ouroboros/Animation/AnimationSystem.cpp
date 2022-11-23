@@ -29,6 +29,7 @@ Technology is prohibited.
 #include "App/Editor/UI/Tools/MeshHierarchy.h"
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 #define DEBUG_ANIMATION false
 namespace oo::Anim
@@ -83,13 +84,14 @@ namespace oo::Anim
 			}
 		}
 		
+		TRACY_PROFILE_SCOPE_NC(Animation_Update, 0x00E0E3);
 		//TODO: replace 0.016f with delta time
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
 			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), 0.016f };
 			internal::UpdateTracker(info);
 			});
-
+		TRACY_PROFILE_SCOPE_END();
 		/*world->for_each(query, [&](AnimationComponent& animationComp) {
 			internal::UpdateTracker(*this, animationComp, animationComp.GetTracker(), 0.016f);
 			});*/
@@ -182,7 +184,7 @@ namespace oo::Anim
 
 		NodeInfo nodeinfo{
 			.name{ "Test Node" },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f}
 		};
@@ -359,11 +361,53 @@ namespace oo::Anim
 
 		return SaveAnimationTree(tree, filepath);
 	}
+	bool AnimationSystem::SaveAllAnimations()
+	{
+		for (auto& [id, anim] : Animation::animation_storage)
+		{
+			if (anim.animation_ID == internal::empty_animation_UID) continue;
+
+			auto asset = GetAnimationAsset(id);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			anim.name = asset.GetFilePath().stem().string();
+			auto result = AnimationSystem::SaveAnimation(anim, asset.GetFilePath().string());
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
 	bool AnimationSystem::SaveAllAnimations(std::string filepath)
 	{
 		for (auto& [id, anim] : Animation::animation_storage)
 		{
 			auto result = AnimationSystem::SaveAnimation(anim, filepath + "/" + anim.name + ".anim");
+			if (result == false)
+				return false;
+		}
+		return true;
+	}
+
+	bool AnimationSystem::SaveAllAnimationTree()
+	{
+		for (auto& [treeID, tree] : AnimationTree::map)
+		{
+			internal::CalculateAnimationLength(tree);
+			internal::ReAssignReferences(tree);
+			internal::ReloadReferences(tree);
+
+			auto asset = GetAnimationTreeAsset(treeID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			tree.name = asset.GetFilePath().stem().string(); 
+			auto result = AnimationSystem::SaveAnimationTree(tree, asset.GetFilePath().string());
 			if (result == false)
 				return false;
 		}
@@ -394,16 +438,19 @@ namespace oo::Anim
 
 	bool AnimationSystem::SaveAnimation(Animation& anim, std::string filepath)
 	{
+		//dont save empty animation
+		if (anim.animation_ID == internal::empty_animation_UID) return true;
+
 		std::ofstream stream{ filepath ,std::ios::trunc };
 		if (!stream)
 		{
 			assert(false);
 			return false;
 		}
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		rapidjson::OStreamWrapper osw(stream);
 		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
-
 		//writer.Key("AnimationTree", static_cast<rapidjson::SizeType>(std::string("AnimationTree").size()));
 		auto serialize_fn = rttr::type::get<Animation>().get_method(internal::serialize_method_name);
 		serialize_fn.invoke({}, writer, anim);
@@ -535,9 +582,8 @@ namespace oo::Anim
 
 	void AnimationSystem::CloseProjectCallback(CloseProjectEvent* evnt)
 	{
-		auto asset_folder = Project::GetAssetFolder().string();
-		SaveAllAnimations(asset_folder);
-		SaveAllAnimationTree(asset_folder);
+		SaveAllAnimations();
+		SaveAllAnimationTree();
 
 	}
 
@@ -606,7 +652,7 @@ namespace oo::Anim
 		auto obj = doc.GetObj();
 		auto load_fn = rttr::type::get< Animation>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, anim);
-
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		return Animation::AddAnimation(std::move(anim));
 

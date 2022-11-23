@@ -181,8 +181,8 @@ namespace oo
 
 		auto& meshComp = evnt->component;
 		auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
-
-		meshComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+		auto& go_component = m_world->get_component<GameObjectComponent>(evnt->entityID);
+		meshComp.graphicsWorld_ID = scene->CreateGraphicsInstance(go_component.Id);
 		
 		//update initial position
 		auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
@@ -193,8 +193,8 @@ namespace oo
 	}
 	void SkinMeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)
 	{
-		auto& comp = evnt->component;
-		m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
+		auto& comp = evnt->component; 
+		scene->DestroyGraphicsInstance(comp.graphicsWorld_ID);
 		// remove graphics id to uuid of gameobject
 		//m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
 	}
