@@ -218,7 +218,7 @@ void AnimationTimelineView::DrawToolbar(oo::AnimationComponent* _animator)
             newEvent.script_function_info = oo::ScriptValue::function_info() ;
             newEvent.time = currentTime;
             
-            _animator->AddScriptEvent(node->group->name, node->name, timeline->name, newEvent);
+            scriptevent = _animator->AddScriptEvent(node->group->name, node->name, timeline->name, newEvent);
             //animation->events.push_back(newEvent);
         }
     }
