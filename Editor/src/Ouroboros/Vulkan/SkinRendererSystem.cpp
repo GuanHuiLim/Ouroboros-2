@@ -58,13 +58,17 @@ namespace oo
 				oo::GameObject rootbone{};
 				for (auto& child : children)
 				{
-					if (child.GetInstanceID() == uid) continue;
+					if (child.GetInstanceID() == uid)
+					{
+						continue;
+					}
+
 
 					rootbone = child;
 					break;
 				}
 				//auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
-				RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>(), rootbone.GetInstanceID());
+				RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>(), uid);
 
 			});
 
