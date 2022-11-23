@@ -149,7 +149,7 @@ void DebugDrawRenderpass::CreateDebugRenderpass()
 {
 	auto& vr = *VulkanRenderer::get();
 	VkAttachmentDescription colourAttachment = {};
-	colourAttachment.format = vr.m_swapchain.swapChainImageFormat;  //format to use for attachment
+	colourAttachment.format = vr.G_HDR_FORMAT;  //format to use for attachment
 	colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;//number of samples to use for multisampling
 	colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;//descripts what to do with attachment before rendering
 	colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;//describes what to do with attachment after rendering
@@ -280,7 +280,7 @@ void DebugDrawRenderpass::CreatePipeline()
 	colourState.alphaBlendOp = VK_BLEND_OP_ADD;
 	VkPipelineColorBlendStateCreateInfo colourBlendingCreateInfo = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1,&colourState);
 
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout,vr.renderPass_default.pass);
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo = oGFX::vkutils::inits::pipelineCreateInfo(PSOLayoutDB::defaultPSOLayout,vr.renderPass_HDR.pass);
 	pipelineCreateInfo.stageCount = 2;
 	pipelineCreateInfo.pStages = shaderStages.data();
 	pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;

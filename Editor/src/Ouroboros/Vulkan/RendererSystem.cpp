@@ -70,6 +70,7 @@ namespace oo
     {
         m_graphicsWorld->ssaoSettings.bias = RendererSettings::setting.SSAO.Bias;
         m_graphicsWorld->ssaoSettings.radius = RendererSettings::setting.SSAO.Radius;
+        m_graphicsWorld->ssaoSettings.intensity = RendererSettings::setting.SSAO.intensity;
 
         m_graphicsWorld->lightSettings.ambient = RendererSettings::setting.Lighting.Ambient;
         m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;

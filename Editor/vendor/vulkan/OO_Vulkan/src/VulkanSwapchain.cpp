@@ -146,6 +146,7 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 		swapChainImages[i].view = CreateImageView(device,images[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		swapChainImages[i].width = swapChainExtent.width;
 		swapChainImages[i].height = swapChainExtent.height;
+		swapChainImages[i].format = swapChainImageFormat;
 	}
 
 	CreateDepthBuffer();
