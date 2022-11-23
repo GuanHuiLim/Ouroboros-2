@@ -77,6 +77,9 @@ namespace oo
 		void SetInverseBindPoseInfo_Transform_W(glm::vec4 transform);
 		glm::vec4 GetInverseBindPoseInfo_Transform_W();
 
+		void SetSkinMeshObjectUUID(size_t uid);
+		size_t GetSkinMeshObjectUUID();
+
 		RTTR_ENABLE();
 	};
 
