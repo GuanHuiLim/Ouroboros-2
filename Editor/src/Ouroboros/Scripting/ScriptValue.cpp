@@ -1400,7 +1400,13 @@ namespace oo
         }
         std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
         ScriptSystem* scriptSystem = scene->GetWorld().Get_System<ScriptSystem>();
-        MonoObject* script = mono_gchandle_get_target(scriptSystem->GetScript(uuid, classNamespace.c_str(), className.c_str()));
+        ScriptDatabase::IntPtr ptr = scriptSystem->GetScript(uuid, classNamespace.c_str(), className.c_str());
+        if (ptr == ScriptDatabase::InvalidPtr)
+        {
+            LOG_WARN("{0} does not have the {1}.{2} script", uuid, classNamespace, className);
+            return;
+        }
+        MonoObject* script = mono_gchandle_get_target(ptr);
         if (script == nullptr)
         {
             LOG_WARN("{0} does not have the {1}.{2} script", uuid, classNamespace, className);
