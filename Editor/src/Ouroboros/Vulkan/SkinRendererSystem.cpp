@@ -38,13 +38,59 @@ namespace oo
 			RecurseChildren_AssignparentTransform_to_BoneComponents(child, transform, uid);
 		}
 	}
+
+	void RecurseChildren_AssignGraphicsWorldID_UID_to_DuplicatedBoneComponents(GameObject obj, uint32_t graphicsID, UUID uid)
+	{
+		auto children = obj.GetChildren();
+		if (children.empty()) return;
+
+		for (auto& child : children)
+		{
+			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
+
+			auto& bonecomp = child.GetComponent<SkinMeshBoneComponent>();
+
+			bonecomp.graphicsWorld_ID = graphicsID;
+			bonecomp.skin_mesh_object = uid;
+		}
+	}
+
 	void SkinMeshRendererSystem::Run(Ecs::ECSWorld* world)
 	{
 		
 		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
-		
+		static Ecs::Query duplicated_query = Ecs::make_raw_query<SkinMeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
 		static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
 		
+		
+		world->for_each_entity_and_component(duplicated_query,
+			[&](Ecs::EntityID entity,SkinMeshRendererComponent& renderComp, TransformComponent& transformComp, GameObjectComponent& goComp, DuplicatedComponent& dupComp)
+			{
+				Initialize(renderComp, transformComp, goComp);
+
+				auto graphicsID = renderComp.graphicsWorld_ID;
+
+				GameObject go{ entity,*scene };
+				auto parent = go.GetParent();
+				auto siblings = parent.GetDirectChilds();
+				auto uid = go.GetInstanceID();
+				oo::GameObject rootbone{};
+				for (auto& child : siblings)
+				{
+					if (child.GetInstanceID() == uid)
+					{
+						continue;
+					}
+					rootbone = child;
+					break;
+				}
+
+				RecurseChildren_AssignGraphicsWorldID_UID_to_DuplicatedBoneComponents(rootbone, graphicsID, uid);
+
+			});
+
+
+
 		world->for_each_entity(skin_mesh_query,
 			[&](Ecs::EntityID entity)
 			{
@@ -191,14 +237,8 @@ namespace oo
 		auto& meshComp = evnt->component;
 		auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
 		auto& go_component = m_world->get_component<GameObjectComponent>(evnt->entityID);
-		meshComp.graphicsWorld_ID = scene->CreateGraphicsInstance(go_component.Id);
-		
-		//update initial position
-		auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.graphicsWorld_ID);
-		graphics_object.localToWorld = transform_component.GetGlobalMatrix();
-		graphics_object.flags = ObjectInstanceFlags::SKINNED | ObjectInstanceFlags::RENDER_ENABLED;
 
-		meshComp.gfx_Object = &graphics_object;
+		Initialize(meshComp, transform_component, go_component);
 	}
 	void SkinMeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)
 	{
@@ -206,5 +246,18 @@ namespace oo
 		scene->DestroyGraphicsInstance(comp.graphicsWorld_ID);
 		// remove graphics id to uuid of gameobject
 		//m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
+	}
+
+	void SkinMeshRendererSystem::Initialize(SkinMeshRendererComponent& renderComp, TransformComponent& transformComp, GameObjectComponent& goComp)
+	{
+
+		renderComp.graphicsWorld_ID = scene->CreateGraphicsInstance(goComp.Id);
+
+		//update initial position
+		auto& graphics_object = m_graphicsWorld->GetObjectInstance(renderComp.graphicsWorld_ID);
+		graphics_object.localToWorld = transformComp.GetGlobalMatrix();
+		graphics_object.flags = ObjectInstanceFlags::SKINNED | ObjectInstanceFlags::RENDER_ENABLED;
+
+		renderComp.gfx_Object = &graphics_object;
 	}
 }

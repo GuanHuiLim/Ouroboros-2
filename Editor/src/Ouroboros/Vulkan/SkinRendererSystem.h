@@ -23,5 +23,7 @@ namespace oo
 		void AssignGraphicsWorldID_to_BoneComponents(oo::Scene& scene);
 		void OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt);
 		void OnMeshRemove(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt);
+
+		void Initialize(SkinMeshRendererComponent& renderComp, TransformComponent& transformComp, GameObjectComponent& goComp);
 	};
 }
