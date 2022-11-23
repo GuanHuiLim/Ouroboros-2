@@ -128,6 +128,7 @@ namespace oo
         FMOD::Sound* sound = audio::GetSound(audioClip.GetData<SoundID>());
         FMOD_ERR_HAND(audio::GetSystem()->playSound(sound, nullptr, false, &channel));
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
+        FMOD_ERR_HAND(channel->setVolume(0)); // initialise volume at 0 to prevent spiking
     }
 
     void AudioSourceComponent::Stop()
