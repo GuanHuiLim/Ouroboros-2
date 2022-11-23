@@ -23,6 +23,7 @@ namespace oo
         {
             float Radius = 0.5f;
             float Bias = 0.025f;
+            float intensity = {1.0f};
             RTTR_ENABLE();
         }
         SSAO{};
