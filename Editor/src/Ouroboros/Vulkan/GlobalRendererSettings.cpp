@@ -27,13 +27,31 @@ namespace oo
             .property("Bias", &GlobalRendererSettings::SSAOSettings::Bias)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             ;
         registration::class_<GlobalRendererSettings::LightingSettings>("Light Settings")
-            .property("Ambient", &GlobalRendererSettings::LightingSettings::Ambient)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Max Bias", &GlobalRendererSettings::LightingSettings::MaxBias)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+            .property("Ambient", &GlobalRendererSettings::LightingSettings::GetAmbient, &GlobalRendererSettings::LightingSettings::SetAmbient)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Max Bias", &GlobalRendererSettings::LightingSettings::GetMaxBias, &GlobalRendererSettings::LightingSettings::SetMaxBias)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             ;
         registration::class_<GlobalRendererSettings>("Renderer Settings")
             .property("SSAO Configuration", &GlobalRendererSettings::SSAO)
             .property("Light Configuration", &GlobalRendererSettings::Lighting)
             ;
+    }
+    
+    void GlobalRendererSettings::LightingSettings::SetMaxBias(float v)
+    {
+        MaxBias = v / 1000;
+    }
+
+    float GlobalRendererSettings::LightingSettings::GetMaxBias() const
+    {
+        return MaxBias * 1000.f;
+    }
+    void GlobalRendererSettings::LightingSettings::SetAmbient(float v)
+    {
+        Ambient = v / 1000.f;
+    }
+    float GlobalRendererSettings::LightingSettings::GetAmbient() const
+    {
+        return Ambient * 1000.f;
     }
 }
