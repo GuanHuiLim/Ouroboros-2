@@ -43,12 +43,14 @@ struct SSAORenderPass : public GfxRenderpass
 	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
 
 	VulkanRenderpass renderpass_SSAO{};
-	VkFramebuffer framebuffer_SSAO{};
 
 	//VkPushConstantRange pushConstantRange;
 	VkPipeline pso_SSAO{};
+	// TODO: compute i guess
+	VkPipeline pso_SSAO_blur{};
 
 	vkutils::Texture2D SSAO_renderTarget;
+	vkutils::Texture2D SSAO_finalTarget;
 	vkutils::Texture2D randomNoise_texture;
 
 	GpuVector<glm::vec3> randomVectorsSSBO;

@@ -70,15 +70,20 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout ForwardDecal;
 
 	inline static VkDescriptorSetLayout SSAO;
+	inline static VkDescriptorSetLayout SSAOBlur;
+
+	inline static VkDescriptorSetLayout util_fullscreenBlit;
 };
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
 struct PSOLayoutDB
 {
 	inline static VkPipelineLayout defaultPSOLayout;
+	inline static VkPipelineLayout PSO_fullscreenBlitLayout;
 	inline static VkPipelineLayout deferredLightingCompositionPSOLayout;
 	inline static VkPipelineLayout forwardDecalPSOLayout;
 	inline static VkPipelineLayout SSAOPSOLayout;
+	inline static VkPipelineLayout SSAOBlurLayout;
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -121,6 +126,7 @@ public:
 	static constexpr int MAX_FRAME_DRAWS = 2;
 	static constexpr int MAX_OBJECTS = 2048;
 	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT_S8_UINT;
+	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_R32G32B32A32_SFLOAT;
 
 	static int ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface);
 
@@ -144,9 +150,11 @@ public:
 	void CreateDefaultRenderpass();
 	void CreateDefaultDescriptorSetLayout();
 
+	void FullscreenBlit(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal);
 	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal);
 
 	void CreateDefaultPSOLayouts();
+	void CreateDefaultPSO();
 	//void CreateDepthBufferImage();
 	void CreateFramebuffers(); 
 	void CreateCommandBuffers();
@@ -182,6 +190,9 @@ public:
 	VkDescriptorSet descriptorSet_objInfos;
 
 	VkDescriptorSet descriptorSet_SSAO;
+	VkDescriptorSet descriptorSet_SSAOBlur;
+
+	VkDescriptorSet descriptorSet_fullscreenBlit;
 	// For UBO with the corresponding swap chain image
 	std::vector<VkDescriptorSet> descriptorSets_uniform;
 
@@ -311,8 +322,13 @@ public:
 	std::vector<VkFence> drawFences;
 
 	// - Pipeline
+	VkPipeline pso_utilFullscreenBlit;
+
 	VulkanRenderpass renderPass_default{};
 	VulkanRenderpass renderPass_default_noDepth{};
+	VulkanRenderpass renderPass_HDR{};
+	VulkanRenderpass renderPass_HDR_noDepth{};
+	VulkanRenderpass renderPass_blit{};
 
 	vkutils::Buffer indirectCommandsBuffer{};
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};

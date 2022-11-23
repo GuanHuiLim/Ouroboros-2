@@ -86,7 +86,7 @@ float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, f
 
 vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular, out float shadow)
 {
-	vec3 result = vec3(0.0f, 0.0f, 0.0f);
+	vec3 result = vec3(0.0f, 0.0f, 0.0f);	
 	vec3 N = normalize(normal);
 	float alpha = roughness;
 	vec3 Kd = albedo;
@@ -169,6 +169,11 @@ void main()
 	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
 	//fragPos.z = depth.r;
 	vec3 normal = texture(samplerNormal, inUV).rgb;
+	if(dot(normal,normal) == 0.0)
+	{
+		outFragcolor = vec4(0);
+		return;
+	}
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
 	float SSAO = texture(samplerSSAO, inUV).r;

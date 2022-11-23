@@ -437,11 +437,14 @@ namespace myPhysx
         // TRIGGER
         physicsObj.setTriggerShape(initObj.is_trigger);
 
-        // GRAVITY
-        physicsObj.enableGravity(initObj.gravity_enabled);
+        if (initObj.rigid_type == rigid::rdynamic) {
 
-        // KINEMATIC
-        physicsObj.enableKinematic(initObj.is_kinematic);
+            // GRAVITY
+            physicsObj.enableGravity(initObj.gravity_enabled);
+
+            // KINEMATIC
+            physicsObj.enableKinematic(initObj.is_kinematic);
+        }
 
         // COLLIDER
         physicsObj.enableCollider(initObj.is_collider);

@@ -62,6 +62,7 @@ void WarningMessage::Show()
 }
 void WarningMessage::DisplayWarning(DisplayType type ,const std::string& str,float time)
 {
+#ifndef OO_END_PRODUCT
 	switch (type)
 	{
 	case WarningMessage::DisplayType::DISPLAY_LOG:
@@ -79,7 +80,7 @@ void WarningMessage::DisplayWarning(DisplayType type ,const std::string& str,flo
 	s_counter = time;
 	s_position[0] = ImGui::GetMousePos().x;
 	s_position[1] = ImGui::GetMousePos().y;
-	
+#endif
 }
 
 void WarningMessage::DisplayToolTip(const std::string& str)
