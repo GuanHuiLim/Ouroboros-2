@@ -94,7 +94,7 @@ public:
         //m_layerset.PushLayer(std::make_shared<AssetDebugLayer>());
 #ifdef OO_EDITOR
         //m_layerset.PushLayer(std::make_shared<MainDebugLayer>());     //menu to test various debug scenes
-        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());      //FPS display counter
+        //m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());      //FPS display counter
 #endif
         // Main Layers
         // Scripting Layer
