@@ -58,6 +58,7 @@ namespace oo
 
         //UUID GetUUID(uint32_t graphicsID) const;
         inline static bool CameraDebugDraw = true;
+        inline static bool LightsDebugDraw = true;
 
     private:
         void OnScreenResize(WindowResizeEvent* e);

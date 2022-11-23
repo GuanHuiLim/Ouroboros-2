@@ -88,6 +88,7 @@ namespace oo
             // set default debug draws
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = false;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = false;
+            GetWorld().Get_System<RendererSystem>()->LightsDebugDraw = false;
         }
 
         {
@@ -226,6 +227,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(start_simulation);
 
+        GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*GetRoot(), false);
         GetWorld().Get_System<ScriptSystem>()->StartPlay();
 
         /*GetWorld().GetSystem<oo::ScriptSystem>()->StartPlay();

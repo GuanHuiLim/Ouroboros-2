@@ -97,13 +97,18 @@ namespace oo
 
     void MeshRendererComponent::SetMesh(Asset _asset)
     {
+        MeshInformation.mesh_handle = _asset;
+
         if (_asset.IsValid())
         {
-            MeshInformation.mesh_handle = _asset;
             ModelHandle = MeshInformation.mesh_handle.GetData<ModelFileResource*>()->meshResource;
             // HACK this is needed to render stuff under edit..
             // MeshInformation.submeshBits.reset();
             // MeshInformation.submeshBits[0] = true;
+        }
+        else
+        {
+            ModelHandle = 0;
         }
     }
 
@@ -113,6 +118,10 @@ namespace oo
         if (AlbedoHandle.IsValid())
         {
             AlbedoID = AlbedoHandle.GetData<uint32_t>();
+        }
+        else
+        {
+            AlbedoID = 0xFFFFFFFF;
         }
     }
 
@@ -128,6 +137,10 @@ namespace oo
         {
             NormalID = NormalHandle.GetData<uint32_t>();
         }
+        else
+        {
+            NormalID = 0xFFFFFFFF;
+        }
     }
 
     Asset oo::MeshRendererComponent::GetNormalMap() const
@@ -142,6 +155,10 @@ namespace oo
         {
             MetallicID = MetallicHandle.GetData<uint32_t>();
         }
+        else
+        {
+            MetallicID = 0xFFFFFFFF;
+        }
     }
 
     Asset oo::MeshRendererComponent::GetMetallicMap() const
@@ -155,6 +172,10 @@ namespace oo
         if (RoughnessHandle.IsValid())
         {
             RoughnessID = RoughnessHandle.GetData<uint32_t>();
+        }
+        else
+        {
+            RoughnessID = 0xFFFFFFFF;
         }
     }
 
