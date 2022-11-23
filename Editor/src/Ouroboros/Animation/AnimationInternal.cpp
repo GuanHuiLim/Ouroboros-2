@@ -855,22 +855,6 @@ namespace oo::Anim::internal
 			return;
 		}
 
-		////if looping, set the normalized time based on iterations
-		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
-		//{
-		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
-		//	{
-		//		currentTimer -= timeline.keyframes.back().time;
-		//		num_iterations += 1.f;
-		//	}
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
-		//}
-		//else
-		//{
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		//}
 
 
 		//find the correct gameobject
@@ -954,37 +938,6 @@ namespace oo::Anim::internal
 			return;
 		}
 
-		////if looping, set the normalized time based on iterations
-		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
-		//{
-		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
-		//	{
-		//		currentTimer -= timeline.keyframes.back().time;
-		//		num_iterations += 1.f;
-		//	}
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
-		//}
-		//else
-		//{
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		//}
-
-		//update index to the correct keyframe
-		/*size_t prev_index = info.progressTracker.index;
-		if (timeline.keyframes[info.progressTracker.index + 1u].time < updatedTimer)
-		{
-			size_t increment{ 1 };
-			for (auto iter = timeline.keyframes.begin() + (info.progressTracker.index + 1u); iter != timeline.keyframes.end(); ++iter)
-			{
-				if (iter->time > updatedTimer)
-					break;
-
-				++increment;
-			}
-			info.progressTracker.index += increment;
-		}*/
 
 		//find the correct gameobject
 		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
@@ -1083,6 +1036,16 @@ namespace oo::Anim::internal
 			UpdateProgressTrackerInfo p_info{ info, progressTracker };
 			//call the respective update function on this tracker
 			progressTracker.updatefunction(p_info, updatedTimer);
+		}
+	}
+
+	void ResetTrackerProgress(AnimationTracker& tracker)
+	{
+		tracker.scripteventTracker.nextEvent_index = 0ull;
+		auto& progress_trackers = tracker.trackers;
+		for (auto& p_tracker : progress_trackers)
+		{
+			p_tracker.index = 0ull;
 		}
 	}
 
@@ -1343,6 +1306,8 @@ namespace oo::Anim::internal
 			updatedTimer > info.tracker.currentNode->GetAnimation().animation_length)
 		{
 			info.tracker.timer = updatedTimer - info.tracker.currentNode->GetAnimation().animation_length;
+			ResetTrackerProgress(info.tracker);
+
 			++info.tracker.num_iterations;
 		}
 

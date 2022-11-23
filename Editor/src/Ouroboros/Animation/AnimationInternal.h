@@ -64,6 +64,8 @@ namespace oo::Anim::internal
 	//go through all progress trackers and call their update function
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer);
 
+	void ResetTrackerProgress(AnimationTracker& tracker);
+
 	void UpdateScriptEventProgress(UpdateTrackerInfo& info, float updatedTimer);
 
 	KeyFrame* GetCurrentKeyFrame(ProgressTracker& tracker);
