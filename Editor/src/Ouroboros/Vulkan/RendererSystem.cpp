@@ -231,6 +231,7 @@ namespace oo
             actualObject.modelID = m_comp.ModelHandle;
             actualObject.bindlessGlobalTextureIndex_Albedo      = m_comp.AlbedoID;
             actualObject.bindlessGlobalTextureIndex_Normal      = m_comp.NormalID;
+            // TODO : Fix this.
             //actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
             //actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
             actualObject.submesh = m_comp.MeshInformation.submeshBits;
