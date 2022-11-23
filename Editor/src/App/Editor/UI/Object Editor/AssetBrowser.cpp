@@ -72,7 +72,27 @@ void AssetBrowser::TextureUI(rttr::variant& data, bool& edited)
 	}
 	int column = listview ? 1 : static_cast<int>(windowSize.x / (ImGui_StylePresets::image_medium.x + spacing.x));
 	ImGui::BeginTable("##Assets", column);
-
+	{//default asset
+		auto assets = oo::Asset();
+		ImGui::TableNextColumn();
+		ImGui::BeginGroup();
+		if (ImGui::Button("Empty", ImGui_StylePresets::image_medium))
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+		}
+		if (listview)
+		{
+			ImGui::SameLine();
+			ImGui::BeginGroup();
+			ImGui::Text("Empty Asset");
+			ImGui::EndGroup();
+		}
+		else
+			ImGui::Text(assets.GetFilePath().stem().string().c_str());
+		ImGui::EndGroup();
+	}
 	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Texture))
 	{
 		if (m_filter.empty() == false)
@@ -111,7 +131,15 @@ void AssetBrowser::FontUI(rttr::variant& data, bool& edited)
 {
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
-
+	{
+		auto assets = oo::Asset();
+		if (ImGui::Selectable("Empty Font"))
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+		}
+	}
 	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Font))
 	{
 		if (m_filter.empty() == false)
@@ -134,6 +162,18 @@ void AssetBrowser::AudioUI(rttr::variant& data, bool& edited)
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
 	static ImGuiID hoveredID = 0;
+	{
+		auto assets = oo::Asset();
+		ImGui::Dummy({ 30, 0 });
+		ImGui::SameLine();
+		if (ImGui::Selectable("Empty Asset"))
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+			oo::audio::StopGlobal();
+		}
+	}
 	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Audio))
 	{
 		if (m_filter.empty() == false)
@@ -173,7 +213,15 @@ void AssetBrowser::MeshUI(rttr::variant& data, bool& edited)
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
 	ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
 
-
+	{//default
+		auto assets = oo::Asset();
+		if (ImGui::Selectable("Empty Asset"))
+		{
+			data.clear();
+			data = assets;
+			edited = true;
+		}
+	}
 	for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Model))
 	{
 		if (m_filter.empty() == false)

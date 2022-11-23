@@ -93,4 +93,7 @@ namespace vkutils
 		void Resize(uint32_t texWidth, uint32_t texHeight);
 	};
 
+
+	void TransitionImage(VkCommandBuffer cmd,Texture2D& texture, VkImageLayout targetLayout);
+
 }

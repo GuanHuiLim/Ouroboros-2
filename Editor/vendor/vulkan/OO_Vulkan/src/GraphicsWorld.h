@@ -186,6 +186,7 @@ public:
     {
         float radius = 0.5f;
         float bias = 0.025f;
+        float intensity = 1.0f;
         uint32_t samples = 8;
     }ssaoSettings{};
 
