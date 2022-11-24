@@ -2,6 +2,7 @@
 #include "SkinRendererSystem.h"
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include "Ouroboros/ECS/GameObject.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 namespace oo
 {
@@ -62,6 +63,7 @@ namespace oo
 		static Ecs::Query duplicated_query = Ecs::make_raw_query<SkinMeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
 		static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
 		
+		TRACY_PROFILE_SCOPE_NC(Skin_Mesh_Renderer_Update, 0x00E0E3);
 		
 		world->for_each_entity_and_component(duplicated_query,
 			[&](Ecs::EntityID entity,SkinMeshRendererComponent& renderComp, TransformComponent& transformComp, GameObjectComponent& goComp, DuplicatedComponent& dupComp)
@@ -151,6 +153,7 @@ namespace oo
 				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] = boneComp.globalTransform * boneComp.inverseBindPose_info.transform;
 			});
 
+		TRACY_PROFILE_SCOPE_END();
 	}
 
 	void SkinMeshRendererSystem::PostLoadScene(oo::Scene& scene)
