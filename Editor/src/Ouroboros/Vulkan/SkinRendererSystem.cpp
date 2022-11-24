@@ -257,7 +257,7 @@ namespace oo
 		auto& graphics_object = m_graphicsWorld->GetObjectInstance(renderComp.graphicsWorld_ID);
 		graphics_object.localToWorld = transformComp.GetGlobalMatrix();
 		graphics_object.flags = ObjectInstanceFlags::SKINNED | ObjectInstanceFlags::RENDER_ENABLED;
-
+		graphics_object.bones.resize(renderComp.num_bones);
 		renderComp.gfx_Object = &graphics_object;
 	}
 }

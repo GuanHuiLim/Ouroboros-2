@@ -170,7 +170,7 @@ public:
         , m_prefab_controller{ m_sceneManager }
         , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
-        //GetWindow().SetFullScreen(true);
+        GetWindow().SetFullScreen(true);
 
         // for now
         ImGuiManager::s_scenemanager = &m_sceneManager;
