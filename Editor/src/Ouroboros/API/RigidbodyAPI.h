@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           AudioSourceAPI.h
+\file           RigidbodyAPI.h
 \project        Ouroboros
 \author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
 \par            email: t.tengshuesolomon\@digipen.edu

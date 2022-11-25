@@ -1,3 +1,18 @@
+/************************************************************************************//*!
+\file           PhysicsAPI.h
+\project        Ouroboros
+\author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
+\par            email: t.tengshuesolomon\@digipen.edu
+\date           Nov 4, 2022
+\brief          Defines the exported helper functions that the C# scripts will use
+                to interact with the C++ Physics System in the ECS Systems
+
+Copyright (C) 2022 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents
+without the prior written consent of DigiPen Institute of
+Technology is prohibited.
+*//*************************************************************************************/
+
 #pragma once
 
 #include "Ouroboros/Scripting/ExportAPI.h"
