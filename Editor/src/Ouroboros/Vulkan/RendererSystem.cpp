@@ -147,7 +147,7 @@ namespace oo
             EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
             auto ar = e.Width / e.Height;
             camera.SetAspectRatio(ar);*/
-            static constexpr float defaultAR = 16.0 / 9.0;
+            static constexpr float defaultAR = 16.0f / 9.0f;
             camera.SetAspectRatio(defaultAR);
 #endif
             camera.movementSpeed = 5.0f;
@@ -294,13 +294,13 @@ namespace oo
             switch (cameraComp.AspectRatio)
             {
             case CameraAspectRatio::FOUR_BY_THREE:
-                camera->SetAspectRatio(4.0/3.0);
+                camera->SetAspectRatio(4.0f/3.0f);
                 break;
             case CameraAspectRatio::SIXTEEN_BY_NINE:
-                camera->SetAspectRatio(16.0/9.0);
+                camera->SetAspectRatio(16.0f/9.0f);
                 break;
             case CameraAspectRatio::SIXTEEN_BY_TEN:
-                camera->SetAspectRatio(16.0/10.0);
+                camera->SetAspectRatio(16.0f/10.0f);
                 break;
             }
         });

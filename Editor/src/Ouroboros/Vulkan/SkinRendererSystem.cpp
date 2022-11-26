@@ -98,7 +98,7 @@ namespace oo
 			{
 				oo::GameObject go{ entity,*scene };
 
-				auto graphicsID = go.GetComponent<SkinMeshRendererComponent>().graphicsWorld_ID;
+				//auto graphicsID = go.GetComponent<SkinMeshRendererComponent>().graphicsWorld_ID;
 
 				auto parent = go.GetParent();
 				auto children = parent.GetDirectChilds();
@@ -156,12 +156,12 @@ namespace oo
 		TRACY_PROFILE_SCOPE_END();
 	}
 
-	void SkinMeshRendererSystem::PostLoadScene(oo::Scene& scene)
+	void SkinMeshRendererSystem::PostLoadScene()
 	{
 		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
 
 		//resize bones container beforehand
-		scene.GetWorld().for_each(skin_mesh_query,
+		scene->GetWorld().for_each(skin_mesh_query,
 			[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
 			{
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
@@ -175,7 +175,7 @@ namespace oo
 					gfx_Object.bones.resize(m_comp.num_bones);
 			});
 
-		AssignGraphicsWorldID_to_BoneComponents(scene);
+		AssignGraphicsWorldID_to_BoneComponents();
 	}
 
 	void RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(GameObject obj, uint32_t graphicsID, UUID uid)
@@ -194,15 +194,15 @@ namespace oo
 		}
 	}
 
-	void SkinMeshRendererSystem::AssignGraphicsWorldID_to_BoneComponents(oo::Scene& scene)
+	void SkinMeshRendererSystem::AssignGraphicsWorldID_to_BoneComponents()
 	{
 		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
 		//static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
 
-		scene.GetWorld().for_each_entity(skin_mesh_query,
+		scene->GetWorld().for_each_entity(skin_mesh_query,
 			[&](Ecs::EntityID entity)
 			{
-				oo::GameObject go{ entity,scene };
+				oo::GameObject go{ entity,*scene };
 
 				auto graphicsID = go.GetComponent<SkinMeshRendererComponent>().graphicsWorld_ID;
 

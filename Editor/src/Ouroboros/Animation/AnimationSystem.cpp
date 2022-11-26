@@ -289,7 +289,7 @@ namespace oo::Anim
 		auto tree = internal::RetrieveAnimationTree("Demo Animation Tree");
 		assert(tree);
 		auto animation = internal::RetrieveAnimation("MainChar_Idle_Take 001");
-
+		(void)animation;
 		test_obj = scene->CreateGameObjectImmediate();
 		test_obj->Name() = "AnimationTestObject";
 		auto& comp = test_obj->AddComponent<oo::AnimationComponent>();

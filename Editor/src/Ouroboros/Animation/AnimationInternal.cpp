@@ -823,7 +823,7 @@ namespace oo::Anim::internal
 			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
 			return result;*/
 
-			return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
+			//return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
 		}
 		else if (rttr_type == rttr::type::get< bool>())
 		{
