@@ -293,6 +293,7 @@ project "Editor"
             {"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
             -- copy iss file for compiling /for production only
             {"{COPY} \"%{AppDir}/engine_portable.iss\" \"" .. binApp .. "\"" },
+            {"{COPY} \"%{AppDir}/executable_portable.iss\" \"" .. binApp .. "\"" },
         }
 
         links
