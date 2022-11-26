@@ -307,7 +307,7 @@ namespace oo
             {
                 auto& pD = emitter.m_persistentData[i];
                 auto& particle = emitter.m_particles[i];
-
+                (void)particle;
                 auto dir = pD.m_startDirection + interpDirection;
                 float len = glm::length(dir);
                 if (len > 0.0f)
@@ -495,7 +495,7 @@ namespace oo
             }
 
             // update all so we can have dead particles
-            UpdateAllParticlesLifetime(emitter, FixedDeltaTime);
+            UpdateAllParticlesLifetime(emitter, static_cast<float>(FixedDeltaTime));
 
             std::sort(emitter.m_persistentData.begin(), emitter.m_persistentData.end(), [](ParticlePersistence& l, ParticlePersistence& r)
                 {
@@ -505,7 +505,7 @@ namespace oo
 
             SpawnParticles(emitter, transformComp, toSpawnCnt);
 
-            SimulateAllParticles(emitter, transformComp, FixedDeltaTime);
+            SimulateAllParticles(emitter, transformComp, static_cast<float>(FixedDeltaTime));
         });
            
         world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp)

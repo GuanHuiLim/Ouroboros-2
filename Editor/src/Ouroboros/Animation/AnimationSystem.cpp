@@ -209,6 +209,7 @@ namespace oo::Anim
 			.value{20.f}
 		};
 		auto condition = comp.AddCondition(group.name, linkName, condition_info);
+		(void)condition;
 		assert(condition);
 
 		//add a timeline to the node's animation
@@ -230,11 +231,13 @@ namespace oo::Anim
 			};
 			auto Keyframe1 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf1);
 			assert(Keyframe1);
+			(void)Keyframe1;
 			KeyFrame kf2{
 				glm::vec3{10.f,0.f,0.f},
 				2.f
 			};
 			auto Keyframe2 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf2);
+			(void)Keyframe2;
 			assert(Keyframe2);
 			KeyFrame kf3{
 				glm::vec3{10.f,10.f,0.f},
@@ -242,11 +245,13 @@ namespace oo::Anim
 			};
 			auto Keyframe3 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf3);
 			assert(Keyframe3);
+			(void)Keyframe3;
 			KeyFrame kf4{
 				glm::vec3{0.f,10.f,0.f},
 				6.f
 			};
 			auto Keyframe4 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf4);
+			(void)Keyframe4;
 			assert(Keyframe4);
 		}
 
