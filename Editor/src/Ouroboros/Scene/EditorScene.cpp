@@ -98,7 +98,7 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
 
         TRACY_PROFILE_SCOPE_END();
     }

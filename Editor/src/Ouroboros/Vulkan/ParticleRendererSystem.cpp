@@ -281,7 +281,7 @@ namespace oo
             {
                 auto& pD = emitter.m_persistentData[i];
                 auto& particle = emitter.m_particles[i];
-
+                (void)particle;
                 auto dir = pD.m_startDirection + interpDirection;
                 float len = glm::length(dir);
                 if (len > 0.0f)

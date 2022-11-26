@@ -98,7 +98,7 @@ namespace oo
         }
         //post load file processes
         GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
 
         StartSimulation();
 
