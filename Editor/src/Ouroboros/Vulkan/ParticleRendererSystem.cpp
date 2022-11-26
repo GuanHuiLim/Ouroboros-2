@@ -472,8 +472,8 @@ namespace oo
                 PerformBulkPrewarm(emitter, transformComp);
             }
 
-            emitter.m_systemLifetime += FixedDeltaTime;
-            emitter.m_spawnCooldown += FixedDeltaTime;
+            emitter.m_systemLifetime += static_cast<float>(FixedDeltaTime);
+            emitter.m_spawnCooldown +=  static_cast<float>(FixedDeltaTime);
 
             if (emitter.m_looping == false && emitter.m_systemLifetime > emitter.m_duration)
             {

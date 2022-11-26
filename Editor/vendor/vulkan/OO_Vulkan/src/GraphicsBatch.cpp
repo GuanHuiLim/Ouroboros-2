@@ -202,7 +202,7 @@ void GraphicsBatch::GenerateBatches()
 		// set up the commands and number of particles
 		oGFX::IndirectCommand cmd{};
 
-		cmd.instanceCount = emitter.particles.size();
+		cmd.instanceCount = static_cast<uint32_t>(emitter.particles.size());
 		// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
 		// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
 		cmd.firstInstance = emitterCnt;
