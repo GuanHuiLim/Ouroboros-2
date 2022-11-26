@@ -106,12 +106,12 @@ namespace oo
                 *setter = mono_gchandle_get_target(ptr);
 
             element += sizeof(MonoObject*);
-            glm::vec3* vecSetter = reinterpret_cast<glm::vec3*>(element);
-            *vecSetter = result.Position;
+            ScriptValue::vec3_type* vecSetter = reinterpret_cast<ScriptValue::vec3_type*>(element);
+            *vecSetter = ScriptValue::vec3_type{ result.Position.x, result.Position.y, result.Position.z };
 
             element += sizeof(float) * 3;
-            vecSetter = reinterpret_cast<glm::vec3*>(element);
-            *vecSetter = result.Normal;
+            vecSetter = reinterpret_cast<ScriptValue::vec3_type*>(element);
+            *vecSetter = ScriptValue::vec3_type{ result.Normal.x, result.Normal.y, result.Normal.z };
 
             element += sizeof(float) * 3;
             float* floatSetter = reinterpret_cast<float*>(element);
@@ -120,28 +120,49 @@ namespace oo
         return arr;
     }
 
-    SCRIPT_API bool Physics_RaycastBasic(glm::vec3 origin, glm::vec3 dir)
+    SCRIPT_API bool Physics_RaycastBasic(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
-        RaycastResult result = ps->Raycast(oo::Ray{ origin, dir });
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
+        
+        RaycastResult result;
+        try
+        {
+            result = ps->Raycast(ray);
+        }
+        catch (std::exception const&)
+        {
+            // most likely invalid map key, do nothing
+        }
         return result.Intersect;
     }
 
-    SCRIPT_API bool Physics_Raycast(glm::vec3 origin, glm::vec3 dir, float maxDistance)
+    SCRIPT_API bool Physics_Raycast(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir, float maxDistance)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
-        RaycastResult result = ps->Raycast(oo::Ray{ origin, dir }, maxDistance);
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
+        
+        RaycastResult result;
+        try
+        {
+            result = ps->Raycast(ray, maxDistance);
+        }
+        catch (std::exception const&)
+        {
+            // most likely invalid map key, do nothing
+        }
         return result.Intersect;
     }
 
-    SCRIPT_API ScriptDatabase::IntPtr Physics_RaycastBasic_WithData(glm::vec3 origin, glm::vec3 dir)
+    SCRIPT_API ScriptDatabase::IntPtr Physics_RaycastBasic_WithData(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
 
         RaycastResult result;
         try
         {
-            result = ps->Raycast(oo::Ray{ origin, dir });
+            result = ps->Raycast(ray);
         }
         catch (std::exception const&)
         {
@@ -152,14 +173,15 @@ namespace oo
         return mono_gchandle_new(CreateRaycastHit(result), false);
     }
 
-    SCRIPT_API ScriptDatabase::IntPtr Physics_Raycast_WithData(glm::vec3 origin, glm::vec3 dir, float maxDistance)
+    SCRIPT_API ScriptDatabase::IntPtr Physics_Raycast_WithData(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir, float maxDistance)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
 
         RaycastResult result;
         try
         {
-            result = ps->Raycast(oo::Ray{ origin, dir }, maxDistance);
+            result = ps->Raycast(ray, maxDistance);
         }
         catch (std::exception const&)
         {
@@ -170,14 +192,15 @@ namespace oo
         return mono_gchandle_new(CreateRaycastHit(result), false);
     }
 
-    SCRIPT_API MonoArray* Physics_RaycastAllBasic(glm::vec3 origin, glm::vec3 dir)
+    SCRIPT_API MonoArray* Physics_RaycastAllBasic(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
 
         std::vector<RaycastResult> result;
         try
         {
-            result = ps->RaycastAll(oo::Ray{ origin, dir });
+            result = ps->RaycastAll(ray);
         }
         catch (std::exception const&)
         {
@@ -186,14 +209,15 @@ namespace oo
         return CreateRaycastHitArray(result);
     }
 
-    SCRIPT_API MonoArray* Physics_RaycastAll(glm::vec3 origin, glm::vec3 dir, float maxDistance)
+    SCRIPT_API MonoArray* Physics_RaycastAll(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir, float maxDistance)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
 
         std::vector<RaycastResult> result;
         try
         {
-            result = ps->RaycastAll(oo::Ray{ origin, dir }, maxDistance);
+            result = ps->RaycastAll(ray, maxDistance);
         }
         catch (std::exception const&)
         {
