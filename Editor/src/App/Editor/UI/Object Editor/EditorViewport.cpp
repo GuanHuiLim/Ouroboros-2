@@ -332,31 +332,45 @@ void EditorViewport::Show()
 
 void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY && s_maximizeOnPlay)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY)
 	{
-		if (s_windowStates.size())
-			return;
-		s_windowStates.clear();
-		for (auto& window : ImGuiManager::s_GUIContainer)
+		if (s_maximizeOnPlay)
 		{
-			s_windowStates.push_back(window.second.m_enabled);
-			window.second.m_enabled = false;
+			if (s_windowStates.size())
+				return;
+			s_windowStates.clear();
+			for (auto& window : ImGuiManager::s_GUIContainer)
+			{
+				s_windowStates.push_back(window.second.m_enabled);
+				window.second.m_enabled = false;
+			}
+			ImGuiManager::GetItem("Toolbar").m_enabled = true;
+			ImGuiManager::GetItem("Preview Window").m_enabled = true;
 		}
-		ImGuiManager::GetItem("Toolbar").m_enabled = true;
-		ImGuiManager::GetItem("Preview Window").m_enabled = true;
+		else
+		{
+			ImGui::SetWindowFocus("Logger");
+			ImGui::SetWindowFocus("Preview Window");
+		}
 	}
 }
 
 void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay && s_windowStates.empty() == false)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP)
 	{
-		int i = 0;
-		for (auto& window : ImGuiManager::s_GUIContainer)
+		if (s_maximizeOnPlay)
 		{
-			window.second.m_enabled = s_windowStates[i++];
+			if (s_windowStates.empty() == true)
+				return;
+			int i = 0;
+			for (auto& window : ImGuiManager::s_GUIContainer)
+			{
+				window.second.m_enabled = s_windowStates[i++];
+			}
+			s_windowStates.clear();
 		}
-		s_windowStates.clear();
+		ImGui::SetWindowFocus("Editor Viewport");
 	}
 }
 

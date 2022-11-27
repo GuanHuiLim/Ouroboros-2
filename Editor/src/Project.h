@@ -19,6 +19,9 @@ public:
 	//script sequence
 	static void SaveScriptSequence(const std::filesystem::path& path);
 	static void LoadScriptSequence(const std::filesystem::path& path);
+	//renderer settings
+	static void LoadRendererSettingFile();
+	static void SaveRendererSettingFile();
 
 	static std::filesystem::path GetInputFilePath() { return GetProjectFolder() / InputFileName; };
 	static std::filesystem::path GetScriptSequencePath() { return GetProjectFolder() / ScriptSequenceFileName; };
