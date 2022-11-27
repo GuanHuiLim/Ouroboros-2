@@ -410,7 +410,7 @@ void Project::LoadRenderer(rapidjson::Value& val)
 	}
 }
 
-void Project::SaveRendererSetting(rapidjson::Value& val,rttr::property prop, rttr::variant v, rapidjson::Document& doc)
+void Project::SaveRendererSetting(rapidjson::Value& val,rttr::property _prop, rttr::variant v, rapidjson::Document& doc)
 {
 	static SerializerSaveProperties saveProperties;
 	rttr::type t = v.get_type();
@@ -425,7 +425,7 @@ void Project::SaveRendererSetting(rapidjson::Value& val,rttr::property prop, rtt
 			continue;
 		commanditer->second(doc, setting_val, prop.get_value(v), prop);
 	}
-	val.AddMember(rapidjson::Value(prop.get_name().data(), doc.GetAllocator()), setting_val, doc.GetAllocator());
+	val.AddMember(rapidjson::Value(_prop.get_name().data(), doc.GetAllocator()), setting_val, doc.GetAllocator());
 }
 
 void Project::SaveRenderer(rapidjson::Value& val, rapidjson::Document& doc)
