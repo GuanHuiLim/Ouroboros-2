@@ -36,11 +36,11 @@ void ChatSystem::Show()
 			{
 				PacketUtilts::is_connected = true;
 				connected = true;
-				socketDescriptor = SLNet::SocketDescriptor(atoi(clientPort.c_str()), 0);
+				socketDescriptor = SLNet::SocketDescriptor(std::stoul(clientPort.c_str()), 0);
 				socketDescriptor.socketFamily = AF_INET;
 				client->Startup(8, &socketDescriptor, 1);
 				client->SetOccasionalPing(true);
-				SLNet::ConnectionAttemptResult car = client->Connect(ip.c_str(), atoi(serverPort.c_str()), "Rumpelstiltskin", (int)strlen("Rumpelstiltskin"));
+				SLNet::ConnectionAttemptResult car = client->Connect(ip.c_str(), std::stoul(serverPort.c_str()), "Rumpelstiltskin", (int)strlen("Rumpelstiltskin"));
 				RakAssert(car == SLNet::CONNECTION_ATTEMPT_STARTED);
 
 				m_messages.emplace_back("My Ip Addresses:");
