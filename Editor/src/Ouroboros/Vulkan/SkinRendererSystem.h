@@ -18,10 +18,12 @@ namespace oo
 
 		virtual void Run(Ecs::ECSWorld* world) override;
 
-		void PostLoadScene(oo::Scene& scene);
+		void PostLoadScene();
 	private:
-		void AssignGraphicsWorldID_to_BoneComponents(oo::Scene& scene);
+		void AssignGraphicsWorldID_to_BoneComponents();
 		void OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt);
 		void OnMeshRemove(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt);
+
+		void Initialize(SkinMeshRendererComponent& renderComp, TransformComponent& transformComp, GameObjectComponent& goComp);
 	};
 }

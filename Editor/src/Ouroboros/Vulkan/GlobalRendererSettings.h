@@ -23,6 +23,7 @@ namespace oo
         {
             float Radius = 0.5f;
             float Bias = 0.025f;
+            float intensity = {1.0f};
             RTTR_ENABLE();
         }
         SSAO{};
@@ -32,6 +33,13 @@ namespace oo
             float Ambient = 0.2f;
             float MaxBias = 0.0001f;
             float BiasMultiplier = 0.002f;
+
+            void SetMaxBias(float);
+            float GetMaxBias() const;
+
+            void SetAmbient(float);
+            float GetAmbient() const;
+
             RTTR_ENABLE();
         }
         Lighting{};

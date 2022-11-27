@@ -88,6 +88,7 @@ namespace oo
             // set default debug draws
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = false;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = false;
+            GetWorld().Get_System<RendererSystem>()->LightsDebugDraw = false;
         }
 
         {
@@ -97,7 +98,7 @@ namespace oo
         }
         //post load file processes
         GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
 
         StartSimulation();
 
@@ -124,6 +125,12 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE(scripts_update);
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        {
+            TRACY_PROFILE_SCOPE(scripts_update);
+            GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("TickCoroutines");
             TRACY_PROFILE_SCOPE_END();
         }
 
@@ -226,6 +233,7 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(start_simulation);
 
+        GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*GetRoot(), false);
         GetWorld().Get_System<ScriptSystem>()->StartPlay();
 
         /*GetWorld().GetSystem<oo::ScriptSystem>()->StartPlay();

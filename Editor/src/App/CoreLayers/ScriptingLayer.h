@@ -33,6 +33,7 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
+#include "Ouroboros/Scene/EditorController.h"
 
 namespace oo
 {
@@ -65,6 +66,10 @@ namespace oo
                         ScriptManager::Load();
                         ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<ScriptSystem>()->RefreshScriptInfoAll();
                     }
+                });
+            EventManager::Subscribe<EditorController::OnStopEvent>([](EditorController::OnStopEvent* e)
+                {
+                    ScriptManager::Load();
                 });
             EventManager::Subscribe<WindowFocusEvent>([](WindowFocusEvent* e)
                 {

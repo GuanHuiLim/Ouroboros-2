@@ -69,10 +69,6 @@ namespace oo::Anim::internal
 			for (auto& prop : properties)
 			{
 				auto& value = object.FindMember(prop.get_name().data())->value;
-				if (prop.get_name() == "any_state_Node")
-				{
-					int i = 0;
-				}
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
 				prop.set_value(obj, val);

@@ -11,7 +11,7 @@
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
 #include "OO_Vulkan/src/GraphicsWorld.h"
 #include "MeshInfo.h"
-
+#include "Utility/UUID.h"
 #include <rttr/type>
 namespace oo
 {
@@ -25,6 +25,9 @@ namespace oo
 
 		uint32_t albedoID = 0xFFFFFFFF;
 		uint32_t normalID = 0xFFFFFFFF;
+
+		bool CastShadows{	 false };
+		bool ReceiveShadows{ false };
 		
 		//no need to serialize
 		uint32_t graphicsWorld_ID{};
@@ -59,6 +62,7 @@ namespace oo
 		oGFX::BoneInverseBindPoseInfo inverseBindPose_info{};
 		uint32_t graphicsWorld_ID;
 		glm::mat4 globalTransform{};
+		UUID skin_mesh_object{};
 
 		void SetInverseBindPoseInfo_BoneIdx(uint32_t boneIdx);
 		uint32_t GetInverseBindPoseInfo_BoneIdx();
@@ -75,6 +79,9 @@ namespace oo
 
 		void SetInverseBindPoseInfo_Transform_W(glm::vec4 transform);
 		glm::vec4 GetInverseBindPoseInfo_Transform_W();
+
+		void SetSkinMeshObjectUUID(size_t uid);
+		size_t GetSkinMeshObjectUUID();
 
 		RTTR_ENABLE();
 	};

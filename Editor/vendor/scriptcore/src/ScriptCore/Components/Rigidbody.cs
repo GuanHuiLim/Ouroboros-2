@@ -22,13 +22,13 @@ namespace Ouroboros
             set { RigidbodyComponent_SetIsTrigger(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
-        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetGravityDisabled(uint sceneID, ulong instanceID);
-        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetGravityDisabled(uint sceneID, ulong instanceID, bool value);
+        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetGravity(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetGravity(uint sceneID, ulong instanceID, bool value);
 
-        public bool gravityDisabled
+        public bool useGravity
         {
-            get { return RigidbodyComponent_GetGravityDisabled(gameObject.scene, gameObject.GetInstanceID()); }
-            set { RigidbodyComponent_SetGravityDisabled(gameObject.scene, gameObject.GetInstanceID(), value); }
+            get { return RigidbodyComponent_GetGravity(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetGravity(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
         [DllImport("__Internal")] private static extern void Rigidbody_GetVelocity(uint sceneID, ulong instanceID, out float x, out float y, out float z);

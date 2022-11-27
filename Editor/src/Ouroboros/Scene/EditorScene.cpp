@@ -86,6 +86,7 @@ namespace oo
             // set default debug draws
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = true;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = true;
+            GetWorld().Get_System<RendererSystem>()->LightsDebugDraw = true;
         }
 
         // if filepath is a valid file path
@@ -97,7 +98,7 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
 
         TRACY_PROFILE_SCOPE_END();
     }

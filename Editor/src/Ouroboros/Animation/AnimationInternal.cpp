@@ -823,7 +823,7 @@ namespace oo::Anim::internal
 			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
 			return result;*/
 
-			return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
+			//return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
 		}
 		else if (rttr_type == rttr::type::get< bool>())
 		{
@@ -855,22 +855,6 @@ namespace oo::Anim::internal
 			return;
 		}
 
-		////if looping, set the normalized time based on iterations
-		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
-		//{
-		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
-		//	{
-		//		currentTimer -= timeline.keyframes.back().time;
-		//		num_iterations += 1.f;
-		//	}
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
-		//}
-		//else
-		//{
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		//}
 
 
 		//find the correct gameobject
@@ -954,37 +938,6 @@ namespace oo::Anim::internal
 			return;
 		}
 
-		////if looping, set the normalized time based on iterations
-		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
-		//{
-		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
-		//	{
-		//		currentTimer -= timeline.keyframes.back().time;
-		//		num_iterations += 1.f;
-		//	}
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
-		//}
-		//else
-		//{
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		//}
-
-		//update index to the correct keyframe
-		/*size_t prev_index = info.progressTracker.index;
-		if (timeline.keyframes[info.progressTracker.index + 1u].time < updatedTimer)
-		{
-			size_t increment{ 1 };
-			for (auto iter = timeline.keyframes.begin() + (info.progressTracker.index + 1u); iter != timeline.keyframes.end(); ++iter)
-			{
-				if (iter->time > updatedTimer)
-					break;
-
-				++increment;
-			}
-			info.progressTracker.index += increment;
-		}*/
 
 		//find the correct gameobject
 		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
@@ -1086,6 +1039,16 @@ namespace oo::Anim::internal
 		}
 	}
 
+	void ResetTrackerProgress(AnimationTracker& tracker)
+	{
+		tracker.scripteventTracker.nextEvent_index = 0ull;
+		auto& progress_trackers = tracker.trackers;
+		for (auto& p_tracker : progress_trackers)
+		{
+			p_tracker.index = 0ull;
+		}
+	}
+
 	void UpdateScriptEventProgress(UpdateTrackerInfo& info, float updatedTimer)
 	{
 		auto& tracker = info.tracker.scripteventTracker;
@@ -1178,6 +1141,17 @@ namespace oo::Anim::internal
 		animTracker.scripteventTracker = node->scripteventTracker;
 	}
 
+	void ResetTriggers(UpdateTrackerInfo& info, Link& link)
+	{
+		for (auto& condition : link.conditions)
+		{
+			if (condition.type == P_TYPE::TRIGGER)
+			{
+				info.comp.tracker.parameters[condition.parameterIndex].value = false;
+			}
+		}
+	}
+
 	//copy animation tree's parameters to the tracker
 	//set the starting node for the tracker and its respective data
 	/*void InitializeTracker(IAnimationComponent& comp)
@@ -1261,10 +1235,11 @@ namespace oo::Anim::internal
 		return CheckNodeTransitions(info, *(info.tracker.currentNode));
 	}
 
-	void ActivateTransition(UpdateTrackerInfo& info, Link* link)
+
+	void ActivateTransition(UpdateTrackerInfo& info, Link* link, Node& current_node)
 	{
 		AssignNodeToTracker(info.tracker, link->dst);
-
+		ResetTriggers(info, *link);
 		//TODO: transitions
 		/*info.tracker.transition_info.in_transition = true;
 		info.tracker.transition_info.link = link;
@@ -1292,7 +1267,7 @@ namespace oo::Anim::internal
 			auto result = CheckNodeTransitions(info, any_state_node);
 			if (result)
 			{
-				ActivateTransition(info, result);
+				ActivateTransition(info, result, any_state_node);
 				has_transitioned = true;
 			}
 		}
@@ -1303,7 +1278,7 @@ namespace oo::Anim::internal
 			auto result = CheckNodeTransitions(info);
 			if (result)
 			{
-				ActivateTransition(info, result);
+				ActivateTransition(info, result, *(info.tracker.currentNode));
 			}
 		}
 		
@@ -1331,6 +1306,8 @@ namespace oo::Anim::internal
 			updatedTimer > info.tracker.currentNode->GetAnimation().animation_length)
 		{
 			info.tracker.timer = updatedTimer - info.tracker.currentNode->GetAnimation().animation_length;
+			ResetTrackerProgress(info.tracker);
+
 			++info.tracker.num_iterations;
 		}
 

@@ -385,9 +385,9 @@ void AnimatorControllerView::DisplayParameters()
                             }
                             case oo::Anim::P_TYPE::TRIGGER:
                             {
-                                bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
-                                if (ImGui::Checkbox("##trigger", &temp))
-                                    animator->GetActualComponent().animTree->parameters[i].value = temp;
+                                //bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
+                                //if (ImGui::Checkbox("##trigger", &temp))
+                                //    animator->GetActualComponent().animTree->parameters[i].value = temp;
                                 break;
                             }
                             case oo::Anim::P_TYPE::INT:
@@ -634,42 +634,48 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                     ImGui::BeginGroup();
                     if (!link->conditions.empty())
                     {
-                        ImGui::InputText("##comparestuff", &_compareTypes[(int)link->conditions[i].comparison_type], ImGuiInputTextFlags_ReadOnly);
-                        ImGui::SameLine();
-                        if (ImGui::ArrowButton("downbtn", ImGuiDir_Down))
+                        if (link->conditions[i].type != oo::Anim::P_TYPE::TRIGGER)
                         {
-                            _condid = _currCondId;
-                            open = !open;
-                        }
-                        if (open && _currCondId == _condid)
-                        {
-                            if (ImGui::BeginListBox("##compare"))
+                            ImGui::InputText("##comparestuff", &_compareTypes[(int)link->conditions[i].comparison_type], ImGuiInputTextFlags_ReadOnly);
+                            ImGui::SameLine();
+                            if (ImGui::ArrowButton("downbtn", ImGuiDir_Down))
                             {
-                                if (link->conditions[i].type == oo::Anim::P_TYPE::INT || link->conditions[i].type == oo::Anim::P_TYPE::FLOAT)
-                                {
-                                    if (ImGui::Selectable(_compareTypes[0].c_str()))
-                                    {
-                                        link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::GREATER;
-                                        open = !open;
-                                    }
-                                    if (ImGui::Selectable(_compareTypes[1].c_str()))
-                                    {
-                                        link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::LESS;
-                                        open = !open;
-                                    }
-                                }
-                                if (ImGui::Selectable(_compareTypes[2].c_str()))
-                                {
-                                    link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::EQUAL;
-                                    open = !open;
-                                }
-                                if (ImGui::Selectable(_compareTypes[3].c_str()))
-                                {
-                                    link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::NOT_EQUAL;
-                                    open = !open;
-                                }
+                                _condid = _currCondId;
+                                open = !open;
                             }
-                            ImGui::EndListBox();
+                            if (open && _currCondId == _condid)
+                            {
+                                if (ImGui::BeginListBox("##compare"))
+                                {
+                                    if (link->conditions[i].type == oo::Anim::P_TYPE::INT || link->conditions[i].type == oo::Anim::P_TYPE::FLOAT)
+                                    {
+                                        if (ImGui::Selectable(_compareTypes[0].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::GREATER;
+                                            open = !open;
+                                        }
+                                        if (ImGui::Selectable(_compareTypes[1].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::LESS;
+                                            open = !open;
+                                        }
+                                    }
+                                    if (link->conditions[i].type == oo::Anim::P_TYPE::BOOL)
+                                    {
+                                        if (ImGui::Selectable(_compareTypes[2].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::EQUAL;
+                                            open = !open;
+                                        }
+                                        if (ImGui::Selectable(_compareTypes[3].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::NOT_EQUAL;
+                                            open = !open;
+                                        }
+                                    }
+                                }
+                                ImGui::EndListBox();
+                            }
                         }
                     }
                     ImGui::EndGroup();
@@ -690,9 +696,9 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                         }
                         case oo::Anim::P_TYPE::TRIGGER:
                         {
-                            bool temp = link->conditions[i].value.get_value<bool>();
-                            if (ImGui::Checkbox("##trigger", &temp))
-                                link->conditions[i].value = temp;
+                            //bool temp = link->conditions[i].value.get_value<bool>();
+                            //if (ImGui::Checkbox("##trigger", &temp))
+                            //    link->conditions[i].value = temp;
                             break;
                         }
                         case oo::Anim::P_TYPE::INT:

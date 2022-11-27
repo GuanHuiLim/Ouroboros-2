@@ -245,6 +245,10 @@ void Editor::MenuBar()
 			{
 				oo::RendererSystem::CameraDebugDraw = !oo::RendererSystem::CameraDebugDraw;
 			}
+			if (ImGui::MenuItem("Lights Debug Draw", 0, oo::RendererSystem::LightsDebugDraw))
+			{
+				oo::RendererSystem::LightsDebugDraw = !oo::RendererSystem::LightsDebugDraw;
+			}
 			
 			ImGui::EndMenu();
 		}
