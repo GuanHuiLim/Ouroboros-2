@@ -193,14 +193,14 @@ void AnimationTimelineView::DrawToolbar(oo::AnimationComponent* _animator)
             {
                 oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(glm::vec3{ 0.f,0.f,0.f }, currentTime);
 
-                auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
+                [[maybe_unused]] auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
                 assert(newKeyFrame);
             }
             if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
             {
                 oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(false, currentTime);
 
-                auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
+                [[maybe_unused]] auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
                 assert(newKeyFrame);
             }
         }

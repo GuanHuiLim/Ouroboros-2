@@ -951,7 +951,7 @@ void AnimatorControllerView::LoadGraph(oo::AnimationComponent* _animator)
 
         for (auto& [nodeID, node] : group.nodes)
         {
-            auto nodeinfo = CreateNode(&node);
+            [[maybe_unused]] auto nodeinfo = CreateNode(&node);
             assert(nodeinfo);
         }
 

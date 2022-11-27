@@ -42,7 +42,7 @@ void ChatSystem::Show()
 				socketDescriptor.socketFamily = AF_INET;
 				client->Startup(8, &socketDescriptor, 1);
 				client->SetOccasionalPing(true);
-				SLNet::ConnectionAttemptResult car = client->Connect(ip.c_str(), server_port, "Rumpelstiltskin", (int)strlen("Rumpelstiltskin"));
+				[[maybe_unused]] SLNet::ConnectionAttemptResult car = client->Connect(ip.c_str(), server_port, "Rumpelstiltskin", (int)strlen("Rumpelstiltskin"));
 				RakAssert(car == SLNet::CONNECTION_ATTEMPT_STARTED);
 
 				m_messages.emplace_back("My Ip Addresses:");
