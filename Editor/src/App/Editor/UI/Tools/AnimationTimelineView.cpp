@@ -532,143 +532,130 @@ void AnimationTimelineView::DrawTimeLineContent()
 
 void AnimationTimelineView::DisplayInspector()
 {
-        if (ImGui::Begin("Animation Event Inspector"))
+    if (ImGui::Begin("Animation TImeline Inspector"))
+    {
+        static float h = 50.0f;
+        static float h2 = 50.0f;
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+        ImGui::BeginChild("##TimelineInspector", ImVec2(0, h));
+        ImGui::Text("Timeline");
+        if (timeline != nullptr)
         {
-            if (scriptevent != nullptr)
-            {
-                static bool openEventDropdown = false;
-                static std::string eventName = "empty";
-                ImGui::Text("Invoke: ");
-                ImGui::SameLine();
-                //ImGui Dropdown of all the invokable events 
-                eventName = scriptevent->script_function_info.className + "." + scriptevent->script_function_info.functionName;
-                fnInfo.clear();
-                oo::ScriptComponent::map_type& scriptMap = source_go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
-
-                for (auto it = scriptMap.begin(); it != scriptMap.end(); ++it)
-                {
-                    oo::ScriptInfo& scriptInfo = it->second;
-                    std::vector<oo::ScriptValue::function_info> fnInfoAll = scriptInfo.classInfo.GetFunctionInfoAll();
-                    for (oo::ScriptValue::function_info _fnInfo : fnInfoAll)
-                        fnInfo.push_back(_fnInfo);
-                }
-
-                ImGui::InputText("##eventstuff", &eventName, ImGuiInputTextFlags_ReadOnly);
-                ImGui::SameLine();
-                if (ImGui::ArrowButton("eventdownbtn", ImGuiDir_Down))
-                {
-                    openEventDropdown = !openEventDropdown;
-                }
-                if (openEventDropdown)
-                {
-                    for (int i = 0; i < fnInfo.size(); ++i)
-                    {
-                        std::string tempname = fnInfo[i].className + "." + fnInfo[i].functionName;
-                        //ImGui::Text(tempname.c_str());
-                        if (ImGui::Selectable(tempname.c_str()))
-                        {
-                            scriptevent->script_function_info = fnInfo[i];
-                            eventName = tempname;
-                            openEventDropdown = !openEventDropdown;
-                        }
-                    }
-                }
-
-                //use scriptevent to display any other parameters
-                if (!scriptevent->script_function_info.paramList.empty())
-                {
-                    for (int i = 0; i < scriptevent->script_function_info.paramList.size(); ++i)
-                    {
-                        std::string paramLabel = scriptevent->script_function_info.paramList[i].name + ":";
-                        ImGui::Text(paramLabel.c_str());
-                        ImGui::SameLine();
-                        std::string valueLabel = "##" + scriptevent->script_function_info.paramList[i].name;
-                        if (scriptevent->script_function_info.paramList[i].value.IsValueType<bool>())
-                        {
-                            ImGui::Checkbox(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<bool>());
-                        }
-                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<int>())
-                        {
-                            ImGui::DragInt(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<int>());
-                        }
-                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<float>())
-                        {
-                            ImGui::DragFloat(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<float>());
-                        }
-                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<std::string>())
-                        {
-                            ImGui::InputText(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<std::string>());
-                        }
-                    }
-                }
-
-                ImGui::Text("Time: ");
-                ImGui::SameLine();
-                ImGui::DragFloat("##scripteventtime", &scriptevent->time, unitPerFrame);
-            }
-            ImGui::End();
+            ImGui::Text("Name: ");
+            ImGui::SameLine();
+            ImGui::InputText("##timelineName", &timeline->name, ImGuiInputTextFlags_ReadOnly);
         }
-
-
-        if (ImGui::Begin("Animation Timeline Inspector"))
+        ImGui::EndChild();
+        ImGui::Button("##hsplitter", ImVec2(-1, 4.0f));
+        if (ImGui::IsItemActive())
+            h += ImGui::GetIO().MouseDelta.y;
+        ImGui::BeginChild("##EventInspector", ImVec2(0, h2));
+        ImGui::Text("Event");
+        if (scriptevent != nullptr)
         {
-            if (timeline != nullptr)
+            static bool openEventDropdown = false;
+            static std::string eventName = "empty";
+            ImGui::Text("Invoke: ");
+            ImGui::SameLine();
+            //ImGui Dropdown of all the invokable events 
+            eventName = scriptevent->script_function_info.className + "." + scriptevent->script_function_info.functionName;
+            fnInfo.clear();
+            oo::ScriptComponent::map_type& scriptMap = source_go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
+
+            for (auto it = scriptMap.begin(); it != scriptMap.end(); ++it)
             {
-                ImGui::Text("Name: ");
-                ImGui::SameLine();
-                ImGui::InputText("##timelineName", &timeline->name, ImGuiInputTextFlags_ReadOnly);
+                oo::ScriptInfo& scriptInfo = it->second;
+                std::vector<oo::ScriptValue::function_info> fnInfoAll = scriptInfo.classInfo.GetFunctionInfoAll();
+                for (oo::ScriptValue::function_info _fnInfo : fnInfoAll)
+                    fnInfo.push_back(_fnInfo);
             }
-            ImGui::End();
-        }
 
-        if (ImGui::Begin("KeyFrame Editor"))
-        {
-            if (keyframe != nullptr)
+            ImGui::InputText("##eventstuff", &eventName, ImGuiInputTextFlags_ReadOnly);
+            ImGui::SameLine();
+            if (ImGui::ArrowButton("eventdownbtn", ImGuiDir_Down))
             {
-                ImGui::Text("Time: ");
-                ImGui::SameLine();
-                ImGui::DragFloat("##keyframetime", &keyframe->time, unitPerFrame);
-                if (currentTime == keyframe->time)
+                openEventDropdown = !openEventDropdown;
+            }
+            if (openEventDropdown)
+            {
+                for (int i = 0; i < fnInfo.size(); ++i)
                 {
-                    if (timeline != nullptr )
+                    std::string tempname = fnInfo[i].className + "." + fnInfo[i].functionName;
+                    if (ImGui::Selectable(tempname.c_str()))
                     {
-                        if (timeline->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
-                        {
-                            //draw the property editor
-                            ImGui::DragFloat("X", &keyframe->data.get_value<glm::vec3>().x);
-                            ImGui::DragFloat("Y", &keyframe->data.get_value<glm::vec3>().y);
-                            ImGui::DragFloat("Z", &keyframe->data.get_value<glm::vec3>().z);
-
-                            //need to support applying to child object
-                            timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::TransformComponent>(),
-                                                              keyframe->data.get_value<glm::vec3>());
-                        }
-                        //else if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
-                        //{
-                        //    ImGui::Checkbox(timeline->name.c_str(), &keyframe->data.get_value<bool>());
-                        //    
-                        //    if (source_go.get()->TryGetComponent<oo::SphereColliderComponent>())
-                        //    {
-                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::SphereColliderComponent>(),
-                        //            keyframe->data.get_value<bool>());
-                        //    }
-                        //    if (source_go.get()->TryGetComponent<oo::BoxColliderComponent>())
-                        //    {
-                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::BoxColliderComponent>(),
-                        //            keyframe->data.get_value<bool>());
-                        //    }
-                        //    if (source_go.get()->TryGetComponent<oo::CapsuleColliderComponent>())
-                        //    {
-                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::CapsuleColliderComponent>(),
-                        //            keyframe->data.get_value<bool>());
-                        //    }
-                        //    //apply it to the object property
-                        //}
+                        scriptevent->script_function_info = fnInfo[i];
+                        eventName = tempname;
+                        openEventDropdown = !openEventDropdown;
                     }
                 }
             }
-            ImGui::End();
+
+            //use scriptevent to display any other parameters
+            if (!scriptevent->script_function_info.paramList.empty())
+            {
+                for (int i = 0; i < scriptevent->script_function_info.paramList.size(); ++i)
+                {
+                    std::string paramLabel = scriptevent->script_function_info.paramList[i].name + ":";
+                    ImGui::Text(paramLabel.c_str());
+                    ImGui::SameLine();
+                    std::string valueLabel = "##" + scriptevent->script_function_info.paramList[i].name;
+                    if (scriptevent->script_function_info.paramList[i].value.IsValueType<bool>())
+                    {
+                        ImGui::Checkbox(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<bool>());
+                    }
+                    else if (scriptevent->script_function_info.paramList[i].value.IsValueType<int>())
+                    {
+                        ImGui::DragInt(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<int>());
+                    }
+                    else if (scriptevent->script_function_info.paramList[i].value.IsValueType<float>())
+                    {
+                        ImGui::DragFloat(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<float>());
+                    }
+                    else if (scriptevent->script_function_info.paramList[i].value.IsValueType<std::string>())
+                    {
+                        ImGui::InputText(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<std::string>());
+                    }
+                }
+            }
+
+            ImGui::Text("Time: ");
+            ImGui::SameLine();
+            ImGui::DragFloat("##scripteventtime", &scriptevent->time, unitPerFrame);
         }
+        ImGui::EndChild();
+        ImGui::Button("##hsplitter2", ImVec2(-1, 4.0f));
+        if (ImGui::IsItemActive())
+            h2 += ImGui::GetIO().MouseDelta.y;
+        ImGui::BeginChild("##KeyframeInspector", ImVec2(0, 0));
+        ImGui::Text("Keyframe Editor");
+        if (keyframe != nullptr)
+        {
+            ImGui::Text("Time: ");
+            ImGui::SameLine();
+            ImGui::DragFloat("##keyframetime", &keyframe->time, unitPerFrame);
+            if (currentTime == keyframe->time)
+            {
+                if (timeline != nullptr)
+                {
+                    if (timeline->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
+                    {
+                        //draw the property editor
+                        ImGui::DragFloat("X", &keyframe->data.get_value<glm::vec3>().x);
+                        ImGui::DragFloat("Y", &keyframe->data.get_value<glm::vec3>().y);
+                        ImGui::DragFloat("Z", &keyframe->data.get_value<glm::vec3>().z);
+
+                        //need to support applying to child object
+                        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::TransformComponent>(),
+                            keyframe->data.get_value<glm::vec3>());
+                    }
+                }
+            }
+        }
+        ImGui::EndChild();
+        ImGui::PopStyleVar();
+
+        ImGui::End();
+    }
 }
 
 void AnimationTimelineView::DrawTimeLineSelector(oo::GameObject* go)
