@@ -154,7 +154,7 @@ void Inspector::Show()
 void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::PushItemWidth(200.0f);
-	DisplayComponent<oo::GameObjectComponent>(gameobject);
+	//DisplayComponent<oo::GameObjectComponent>(gameobject);
 	// display either rect transform or base transform
 	if (gameobject.HasComponent<oo::RectTransformComponent>())
 	{
@@ -216,10 +216,10 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 		if (ImGui::BeginListBox("##AddComponents", { x,y }))
 		{
 			// Components that you're not supposed to be able to add
-			selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::DuplicatedComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
+			//selected |= AddComponentSelectable<oo::GameObjectComponent>(gameobject);
+			//selected |= AddComponentSelectable<oo::DeferredComponent>(gameobject);
+			//selected |= AddComponentSelectable<oo::DuplicatedComponent>(gameobject);
+			//selected |= AddComponentSelectable<oo::TransformComponent>(gameobject);
 			
 			// Components that should be in the final version
 			selected |= AddComponentSelectable<oo::RigidbodyComponent>(gameobject);
@@ -292,11 +292,24 @@ bool Inspector::AddScriptsSelectable(const std::vector<std::shared_ptr<oo::GameO
 void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type class_type, rttr::variant& value, bool& edited, bool& endEdit)
 {
 
-	ImGui::Text(main_property.get_name().data());
 	ImGui::Dummy({ 5.0f,0 });
 	ImGui::SameLine();
 	ImGui::BeginGroup();
-	ImGui::Separator();
+	
+	//ImGui::Text(main_property.get_name().data());
+	ImVec4 hc = ImGui::GetStyleColorVec4(ImGuiCol_Header);
+	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(hc.y,hc.z,hc.x,0.6f));
+	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(hc.y, hc.z, hc.x, 0.8f));
+	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(hc.y, hc.z, hc.x, 1.0f));
+	bool opened = ImGui::CollapsingHeader(main_property.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
+	ImGui::PopStyleColor(3);
+	
+	if (opened == false)
+	{
+		ImGui::EndGroup();
+		return;
+	}
+
 	ImGui::PushID(static_cast<int>(class_type.get_id()));
 	int sameline_next = 0;
 	float UI_sameline_size = 0;
@@ -430,7 +443,6 @@ void Inspector::DisplayNestedComponent(rttr::property main_property , rttr::type
 		}
 	}
 	ImGui::PopID();
-	ImGui::Separator();
 	ImGui::EndGroup();
 
 }
@@ -551,8 +563,14 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 	for (auto& scriptInfo : sc.GetScriptInfoAll())
 	{
 		ImGui::PushID(scriptInfo.first.c_str());
-		bool opened = ImGui::TreeNodeEx(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		ImVec4 hc = ImGui::GetStyleColorVec4(ImGuiCol_Header);
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(hc.z, hc.y, hc.x, 0.6f));
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(hc.z, hc.y, hc.x, 0.8f));
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(hc.z, hc.y, hc.x, 1.0f));
+		bool opened = ImGui::CollapsingHeader(scriptInfo.first.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
+		ImGui::PopStyleColor(3);
 		{
+			ImGui::SetItemAllowOverlap();
 			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
 			if (ImGui::SmallButton("x"))
 			{
