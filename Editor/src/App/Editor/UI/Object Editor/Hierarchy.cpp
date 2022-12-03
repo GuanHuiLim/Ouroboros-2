@@ -71,6 +71,7 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/Editor/EditorComponent.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -117,7 +118,7 @@ void Hierarchy::Show()
  * \param no_Interaction - true if there is interaction , false if no interaction
  * \return 
  */
-bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
+bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, oo::Scene::go_ptr gameobj, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
 	//networking code////////////
@@ -134,15 +135,52 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	//end of networking code/////
 	ImGui::PushID(static_cast<int>(handle));
 	bool open = false;
+	bool collapsingHeader = false;
+	if (gameobj->HasComponent<oo::EditorComponent>())
+		collapsingHeader = gameobj->GetComponent<oo::EditorComponent>().m_header;
 	if (!rename)
 	{
-		if(networking_selected == false)
-			open = (ImGui::TreeNodeEx(name, flags));
+		if (networking_selected == false)
+		{
+			if (collapsingHeader == false)
+				open = (ImGui::TreeNodeEx(name, flags));
+			else
+			{
+				auto& editorComponent = gameobj->GetComponent<oo::EditorComponent>();
+				auto ecc = editorComponent.m_color;
+				ImVec4 col(ecc.r, ecc.g, ecc.b, ecc.a);
+				ImGui::PushStyleColor(ImGuiCol_HeaderActive, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, col);col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_Header, col);
+				open = ImGui::CollapsingHeader(name, flags);
+				if (open && (flags & ImGuiTreeNodeFlags_Bullet) == 0)//if open and not a bullet
+					ImGui::TreePush(name);
+				ImGui::PopStyleColor(3);
+			}
+
+		}
 		else
 		{
-			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
-			open = (ImGui::TreeNodeEx(name, flags));
-			ImGui::PopStyleColor();
+
+			if (collapsingHeader == false)
+			{
+				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
+				open = (ImGui::TreeNodeEx(name, flags));
+				ImGui::PopStyleColor();
+			}
+			else
+			{
+				auto& editorComponent = gameobj->GetComponent<oo::EditorComponent>();
+				auto ecc = editorComponent.m_color;
+				ImVec4 col(ecc.r, ecc.g, ecc.b, ecc.a);
+				ImGui::PushStyleColor(ImGuiCol_HeaderActive, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_Header, col);
+				open = ImGui::CollapsingHeader(name, flags);
+				if (open && (flags & ImGuiTreeNodeFlags_Bullet) == 0)//if open and not a bullet
+					ImGui::TreePush(name);
+				ImGui::PopStyleColor(3);
+			}
 		}
 	}
 	else
@@ -444,7 +482,7 @@ void Hierarchy::NormalView()
 		{
 
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
-			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
+			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
 			{
 				open_prefab = true;
@@ -453,7 +491,7 @@ void Hierarchy::NormalView()
 			ImGui::PopStyleColor();
 		}
 		else
-			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
+			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
 
 		if (open == true && (flags & ImGuiTreeNodeFlags_OpenOnArrow))
 		{
@@ -615,6 +653,14 @@ void Hierarchy::RightClickOptions()
 			if (ImGui::MenuItem("New GameObject"))
 			{
 				CreateGameObjectImmediate();
+			}
+			if (ImGui::MenuItem("Header"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Header");
+						go.EnsureComponent<oo::EditorComponent>();
+					});
 			}
 			if(ImGui::MenuItem("Box"))
 			{

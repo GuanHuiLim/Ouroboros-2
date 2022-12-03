@@ -65,6 +65,7 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/GraphicsRaycasterComponent.h>
+#include <Ouroboros/Editor/EditorComponent.h>
 
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
@@ -164,6 +165,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	{
 		DisplayComponent<oo::TransformComponent>(gameobject);
 	}
+	DisplayComponent<oo::EditorComponent>(gameobject);
+
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
@@ -241,6 +244,8 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::GraphicsRaycasterComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UIImageComponent>(gameobject);
+
+			selected |= AddComponentSelectable<oo::EditorComponent>(gameobject);
 
 			selected |= AddScriptsSelectable(gameobject);
 
