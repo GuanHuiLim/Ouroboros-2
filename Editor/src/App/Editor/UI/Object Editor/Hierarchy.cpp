@@ -61,6 +61,7 @@ Technology is prohibited.
 //other components
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
+#include <Ouroboros/Scripting/ScriptComponent.h>
 //#include <Ouroboros/Vulkan/RendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
@@ -607,7 +608,7 @@ void Hierarchy::SearchFilter()
 {
 	{//for drawing the search bar
 		ImVec2 cursor_pos = ImGui::GetCursorPos();
-		ImGui::PushItemWidth(-100.0f);
+		ImGui::PushItemWidth(-145.0f);
 		bool edited = ImGui::InputText("##Search", &m_filter);
 		ImGui::PopItemWidth();
 		ImVec2 cursor_pos2 = ImGui::GetCursorPos();
@@ -633,8 +634,10 @@ void Hierarchy::SearchFilter()
 			Filter_ByName();
 			break;
 		case 1:
+			Filter_ByComponent();
 			break;
 		case 2:
+			Filter_ByScript();
 			break;
 		}
 
@@ -790,7 +793,7 @@ void Hierarchy::Filter_ByName()
 	{
 		std::shared_ptr<oo::GameObject> go = scene->FindWithInstanceID(curr_handle);
 		std::string& name = go->Name();
-		
+
 		auto iter = std::search(name.begin(), name.end(),
 			m_filter.begin(), m_filter.end(),
 			[](char ch1, char ch2) 
@@ -804,10 +807,34 @@ void Hierarchy::Filter_ByName()
 
 void Hierarchy::Filter_ByComponent()
 {
+
 }
 
 void Hierarchy::Filter_ByScript()
 {
+	m_filterList.clear();
+	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();
+	auto handles = instance.hierarchy_traversal_handles();
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto curr_handle : handles)
+	{
+		std::shared_ptr<oo::GameObject> go = scene->FindWithInstanceID(curr_handle);
+		auto& scriptcomp = go->GetComponent<oo::ScriptComponent>();
+		for (auto& script : scriptcomp.GetScriptInfoAll())
+		{
+			auto iter = std::search(script.first.begin(), script.first.end(),
+				m_filter.begin(), m_filter.end(),
+				[](char ch1, char ch2)
+				{
+					return std::toupper(ch1) == std::toupper(ch2);
+				});
+			if (iter != script.first.end())
+			{
+				m_filterList.emplace_back(curr_handle);
+				break;
+			}
+		}
+	}
 }
 
 std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate(std::function<void(oo::GameObject&)> modifications)

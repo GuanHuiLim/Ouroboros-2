@@ -176,7 +176,6 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
 	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
 
-	DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::ParticleEmitterComponent>(gameobject);
 	DisplayComponent<oo::SkinMeshRendererComponent>(gameobject);
@@ -192,6 +191,9 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::UICanvasComponent>(gameobject);
 	DisplayComponent<oo::UIImageComponent>(gameobject);
 	DisplayComponent<oo::GraphicsRaycasterComponent>(gameobject);
+
+	if(m_showReadonly)
+		DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 
 	DisplayScript(gameobject);
 	ImGui::PopItemWidth();

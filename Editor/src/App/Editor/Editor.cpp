@@ -89,7 +89,7 @@ Editor::Editor()
 	ImGuiManager::Create("Script Sequencer", false, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
 
 	//tools
-	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
+	ImGuiManager::Create("Style Editor", false, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
 	ImGuiManager::Create("PenTool", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoDecoration), [this] {this->m_pentool.Show(); });
 	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
 	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
@@ -208,6 +208,10 @@ void Editor::MenuBar()
 					oo::OO_TracyProfiler::CloseTracyServer();
 				else
 					oo::OO_TracyProfiler::StartTracyServer();
+			}
+			if (ImGui::MenuItem("Style Editor", nullptr, ImGuiManager::GetItem("Style Editor").m_enabled))
+			{
+				ImGuiManager::GetItem("Style Editor").m_enabled = !ImGuiManager::GetItem("Style Editor").m_enabled;
 			}
 			ImGui::EndMenu();
 		}
