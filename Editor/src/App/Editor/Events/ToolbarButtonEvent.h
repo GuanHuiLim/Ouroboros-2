@@ -26,6 +26,7 @@ public:
 		PLAY,
 		PAUSE,
 		STOP,
+		OPENLIVESHARE,
 	};
 	ToolbarButtonEvent(ToolbarButton button) :m_buttonType{ button } {  };
 	~ToolbarButtonEvent() {};

@@ -139,7 +139,7 @@ void Toolbar::Show()
 		ImGui::EndChild(); 
 	}
 	{
-		ImGui::SameLine(w - (ImGui_StylePresets::image_small.x * 5));
+		ImGui::SameLine(w - (ImGui_StylePresets::image_small.x * 6));
 		ImGui::BeginChild("ChildToolbar3", { 0,0 });
 		if (ImGuiUtilities::ImageButton_ToolTip(7, "Undocks the toolbar",
 			m_iconsSaved["LockButton"].GetData<ImTextureID>(),
@@ -174,7 +174,14 @@ void Toolbar::Show()
 		{
 			ShellExecute(0, 0, L"calculator:\\", 0, 0, SW_SHOW);
 		}
-
+		ImGui::SameLine();
+		if (ImGuiUtilities::ImageButton_ToolTip(10, "Ouroboros Collab",
+			m_iconsSaved["RotateButton"].GetData<ImTextureID>(),
+			ImGui_StylePresets::image_small))
+		{
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::OPENLIVESHARE);
+			oo::EventManager::Broadcast(&tbe);
+		};
 		ImGui::EndChild();
 	}
 	ImGui::PopStyleVar();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "App/Editor/Networking/NetworkingEvent.h"
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 #include "slikenet/peerinterface.h"
 #include "slikenet/statistics.h"
 #include <string>
@@ -13,12 +14,16 @@ public:
 
 	void Show();
 	void PrepareMessageSend(NetworkingSendEvent* e);
+	void OpenLiveShareUIEvent(ToolbarButtonEvent* e);
 	void SendMsg(const std::string& msg);
 	unsigned char GetPacketIdentifier(SLNet::Packet* p);
+private://old code
+	void ScrollToBottom();
 private:
 	void AddMessage(std::string&& str);
-	void ScrollToBottom();
 	void MessageTypes(unsigned char id , SLNet::Packet* pk);
+private://Imgui
+	void PopupUI();
 private:
 	SLNet::RakNetStatistics* rss = 0;
 	SLNet::RakPeerInterface* client = 0;
@@ -27,6 +32,7 @@ private:
 	SLNet::SocketDescriptor socketDescriptor;
 	std::string ip, serverPort, clientPort;
 	bool connected = false;
+	bool open_UI = false;
 private://imgui stuff
 	std::deque<std::string> m_messages;
 	std::string m_currentmessage;
