@@ -256,6 +256,12 @@ void Editor::MenuBar()
 			
 			ImGui::EndMenu();
 		}
+		if (ImGui::MenuItem("Compile Scripts"))
+		{
+			//this is a legacy event but rn im too lazy to make a new event and rename everything
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
+			oo::EventManager::Broadcast(&tbe);
+		}
 		ImGui::EndMainMenuBar();
 	}
 }

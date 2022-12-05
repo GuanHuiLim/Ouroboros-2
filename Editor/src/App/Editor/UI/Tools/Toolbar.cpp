@@ -94,14 +94,14 @@ void Toolbar::Show()
 		}
 
 
-		ImGui::SameLine();
-		if (ImGui::Button("Compile", { 0,btn_height }))
-		{
-			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
-			oo::EventManager::Broadcast(&tbe);
-		}
-		if (ImGui::IsItemHovered())
-			WarningMessage::DisplayToolTip("Compiles C# scripts");
+		//ImGui::SameLine();
+		//if (ImGui::Button("Compile", { 0,btn_height }))
+		//{
+		//	ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
+		//	oo::EventManager::Broadcast(&tbe);
+		//}
+		//if (ImGui::IsItemHovered())
+		//	WarningMessage::DisplayToolTip("Compiles C# scripts");
 
 		ImGui::EndChild();
 		ImGui::SameLine(w * 0.5f - (btn_width * 3 * 0.5f));
