@@ -33,9 +33,13 @@ void ImGuiManager::InitAssetsAll()
 	//ImGuiManager::s_editorAssetManager.LoadName("GenericFileIcon.png");
 }
 
-void ImGuiManager::Create(const std::string name, const bool enabled,const ImGuiWindowFlags_ flag, std::function<void()> fnc, std::function<void()> pre_window)
+void ImGuiManager::Create(const std::string name, const bool enabled,const ImGuiWindowFlags_ flag, std::function<void()> fnc, std::function<void()> pre_window, bool closable_window)
 {
-	s_GUIContainer.emplace(name, ImGuiObject(enabled,flag,fnc, pre_window));
+	ImGuiObject obj(enabled, flag, fnc, pre_window);
+	if (closable_window == false)
+		obj.m_closable_window = false;
+	s_GUIContainer.emplace(name, std::move(obj));
+
 }
 
 void ImGuiManager::UpdateAllUI()
@@ -50,7 +54,9 @@ void ImGuiManager::UpdateAllUI()
 		if (field.second.m_prewindow)
 			field.second.m_prewindow();
 
-		if (ImGui::Begin(field.first.c_str(), &field.second.m_enabled, field.second.m_flags) == false)
+		if (ImGui::Begin(field.first.c_str(),
+			(field.second.m_closable_window ? &field.second.m_enabled : nullptr)
+			, field.second.m_flags) == false)
 		{
 			ImGui::End();
 			

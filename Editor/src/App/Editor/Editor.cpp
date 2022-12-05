@@ -82,23 +82,23 @@ Editor::Editor()
 		}, 240.0f));
 	
 	//object editors
-	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
-	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
-	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
-	ImGuiManager::Create("Editor Viewport", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoBackground |ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar), [this] {this->m_EditorViewport.Show(); });
+	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); }, 0, false);
+	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); }, 0, false);
+	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); }, 0, false);
+	ImGuiManager::Create("Editor Viewport", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoBackground |ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar), [this] {this->m_EditorViewport.Show(); }, 0, false);
+	ImGuiManager::Create("Preview Window", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollWithMouse), [this] {this->m_previewWindow.Show(); }, 0, false);
 	ImGuiManager::Create("Script Sequencer", false, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
 
 	//tools
 	ImGuiManager::Create("Style Editor", false, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
 	ImGuiManager::Create("PenTool", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoDecoration), [this] {this->m_pentool.Show(); });
-	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
-	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
-	ImGuiManager::Create("Animator Controller", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animatorControllerView.Show(); });
-	ImGuiManager::Create("Animation Timeline", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animationTimelineView.Show(); });
+	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); }, 0, false);
+	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); }, 0, false);
+	ImGuiManager::Create("Animator Controller", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animatorControllerView.Show(); });
+	ImGuiManager::Create("Animation Timeline", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animationTimelineView.Show(); });
 	ImGuiManager::Create("Mesh Hierarchy", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar ), [this] {this->m_meshHierarchy.Show(); });
 	//ImGuiManager::Create("Renderer Debugger", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_rendererDebugger.Show(); });
 	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
-	ImGuiManager::Create("Preview Window", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollWithMouse), [this] {this->m_previewWindow.Show(); });
 
 	//external (project based tools)
 	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
@@ -232,6 +232,18 @@ void Editor::MenuBar()
 			if (ImGui::MenuItem("Renderer Fields", 0, ImGuiManager::GetItem("Renderer Fields").m_enabled))
 			{
 				ImGuiManager::GetItem("Renderer Fields").m_enabled = !ImGuiManager::GetItem("Renderer Fields").m_enabled;
+			}
+			if (ImGui::BeginMenu("Animation"))
+			{
+				if (ImGui::MenuItem("Animation Timeline", 0, ImGuiManager::GetItem("Animation Timeline").m_enabled))
+				{
+					ImGuiManager::GetItem("Animation Timeline").m_enabled = !ImGuiManager::GetItem("Animation Timeline").m_enabled;
+				}
+				if (ImGui::MenuItem("Animator Controller", 0, ImGuiManager::GetItem("Animator Controller").m_enabled))
+				{
+					ImGuiManager::GetItem("Animator Controller").m_enabled = !ImGuiManager::GetItem("Animator Controller").m_enabled;
+				}
+				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 		}
