@@ -7,7 +7,9 @@
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "App/Editor/Networking/PacketUtils.h"
 
-
+#include "Project.h"
+#include <App/Editor/UI/Tools/WarningMessage.h>
+#include "slikenet/FileOperations.h"
 ChatSystem::ChatSystem()
 	:client{SLNet::RakPeerInterface::GetInstance()},
 	clientID{ SLNet::UNASSIGNED_SYSTEM_ADDRESS }
@@ -74,6 +76,32 @@ unsigned char ChatSystem::GetPacketIdentifier(SLNet::Packet* _p)
 	return (unsigned char)_p->data[0];
 }
 
+void ChatSystem::SendFile(std::filesystem::path& path)
+{
+	SLNet::FileList fileList;
+	SLNet::IncrementalReadInterface incrementalReadInterface;
+
+
+	unsigned int file_length = GetFileLength(path.string().c_str());
+	if (file_length == 0)
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "File Not Found!!");
+		return;
+	}
+	//signal to host
+	char msg = 101;
+	std::string temp = "";
+	temp += msg;
+	SendMsg(temp);
+
+	//add file to filelist
+	fileList.AddFile(path.string().c_str(), (Project::GetProjectFolder() / path).string().c_str(), 0, file_length, file_length, FileListNodeContext(0, 0, 0, 0), true);
+	
+	
+	//starts sending
+	flt.Send(&fileList, client,SLNet::UNASSIGNED_SYSTEM_ADDRESS, 0, HIGH_PRIORITY, 0, &incrementalReadInterface);
+}
+
 void ChatSystem::AddMessage(std::string&& str)
 {
 	m_messages.emplace_back(str);
@@ -101,6 +129,15 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 		m_messages.emplace_back(temp);
 		break;
 	}
+	case ID_NEW_INCOMING_CONNECTION:
+	{
+		system_addresses.emplace(pk->systemAddress);
+	}break;
+	case ID_DISCONNECTION_NOTIFICATION:
+	case ID_CONNECTION_LOST:
+	{
+		system_addresses.erase(pk->systemAddress);
+	}break;
 	case 100:
 	{
 		PacketHeader header;
@@ -108,7 +145,11 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 		PacketUtilts::ProcessHeader(header,data);
 		NetworkingReceivedEvent e(std::move(header), std::move(data));
 		oo::EventManager::Broadcast(&e);
-	}
+	}break;
+	case 101:
+	{
+		flt.SetupReceive(&file_cb,false,pk->systemAddress);
+	}break;
 	};
 }
 
@@ -137,6 +178,14 @@ void ChatSystem::PopupUI()
 					socketDescriptor = SLNet::SocketDescriptor(client_port, 0);
 					socketDescriptor.socketFamily = AF_INET;
 					client->Startup(8, &socketDescriptor, 1);
+					
+					//sending code
+					//file list transfer
+					client->AttachPlugin(&flt);
+					flt.AddCallback(&filelistprogress);
+					flt.StartIncrementalReadThreads(1);
+
+
 					client->SetOccasionalPing(true);
 					[[maybe_unused]] SLNet::ConnectionAttemptResult car = client->Connect(ip.c_str(), server_port, "Rumpelstiltskin", (int)strlen("Rumpelstiltskin"));
 					RakAssert(car == SLNet::CONNECTION_ATTEMPT_STARTED);
@@ -164,3 +213,23 @@ void ChatSystem::PopupUI()
 	}
 }
 
+bool FileCallback::OnFile(SLNet::FileListTransferCBInterface::OnFileStruct* onFileStruct)
+{
+	FILE* fp;
+	std::string filename = (Project::GetProjectFolder()/onFileStruct->fileName).string();
+	fopen_s(&fp, filename.c_str(), "wb");
+	fwrite(onFileStruct->fileData, onFileStruct->byteLengthOfThisFile, 1, fp);
+	fclose(fp);
+	//not going to verify if the transfer worked
+	return true;
+}
+
+void FileCallback::OnFileProgress(SLNet::FileListTransferCBInterface::FileProgressStruct* fps)
+{
+}
+
+bool FileCallback::OnDownloadComplete(SLNet::FileListTransferCBInterface::DownloadCompleteStruct* dcs)
+{
+	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Asset Downloaded");
+	return false;
+}
