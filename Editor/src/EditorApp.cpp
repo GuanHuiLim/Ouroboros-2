@@ -53,10 +53,6 @@ Technology is prohibited.
 #include <App/Editor/Events/LoadProjectEvents.h>
 #include <App/Editor/Events/OpenPromtEvent.h>
 
-//Tracy
-#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-//Optick
-#include <optick.h>
 // Scripting
 #include <Scripting/Scripting.h>
 

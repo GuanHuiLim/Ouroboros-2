@@ -114,6 +114,8 @@ namespace oo
 
     void TransformSystem::UpdateLocalTransform(TransformComponent& tf)
     {
+        TRACY_PROFILE_SCOPE_NC(transform_single_local_update, tracy::Color::Gold4);
+
         // TODO: this part of the code doesn't need to be serial.
         // Update local and global transform immediately
         if (tf.LocalMatrixDirty)
@@ -121,11 +123,13 @@ namespace oo
             //std::string debugName = goc.Name;
             tf.CalculateLocalTransform();
         }
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void TransformSystem::UpdateLocalTransforms()
     {
-        TRACY_PROFILE_SCOPE_NC(transform_local_transform_update, tracy::Color::Gold4);
+        TRACY_PROFILE_SCOPE_NC(transform_local_transforms_update, tracy::Color::Gold4);
         
         // Update their local transform
         static Ecs::Query query = Ecs::make_raw_query</*GameObjectComponent, */TransformComponent>();
@@ -147,7 +151,7 @@ namespace oo
     {
         // Transform System updates via the scenegraph because the order matters
         
-        TRACY_PROFILE_SCOPE_NC(pre_transform_collect, tracy::Color::Gold3);
+        TRACY_PROFILE_SCOPE_NC(transform_update_tree, tracy::Color::Gold3);
 
         scenegraph::shared_pointer root_node = node;
         std::stack<scenenode::shared_pointer> s;
@@ -159,14 +163,14 @@ namespace oo
             // Find root gameobject
             auto const go = m_scene->FindWithInstanceID(node->get_handle());
             GameObjectComponent goc = go->GetComponent<GameObjectComponent>();
-            UpdateTransform(go, go->Transform());
+            UpdateTransform(go);
             //// Skip gameobjects that has the deferred component
             //if (go->HasComponent<DeferredComponent>() == false)
             //{
             //}
         }
 
-        s.push(curr);
+        s.emplace(curr);
         while (!s.empty())
         {
             curr = s.top();
@@ -174,7 +178,7 @@ namespace oo
             for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
             {
                 scenenode::shared_pointer child = *iter;
-                s.push(child);
+                s.emplace(child);
 
                 // Find current gameobject
                 auto const go = m_scene->FindWithInstanceID(child->get_handle());
@@ -183,39 +187,50 @@ namespace oo
                 //if (go->HasComponent<DeferredComponent>())
                 //    continue;
 
-                UpdateTransform(go, go->Transform());
+                UpdateTransform(go);
             }
         }
 
         TRACY_PROFILE_SCOPE_END();
     }
 
-    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf)
+    void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go)
     {
         TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
-        
+
+        // Check for valid parent
+        {
+            TRACY_PROFILE_SCOPE_NC(transform_assert_check_duration, tracy::Color::Gold4);
+            ASSERT_MSG(m_scene->IsValid(go->GetParentUUID()) == false, "Assumes we always have proper parent");
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        auto& tf = go->Transform();
+        auto& parentTf = m_scene->FindWithInstanceID(go->GetParentUUID())->Transform();
+
         /// all parents need to be sure to be updated first.
         if (tf.GlobalMatrixDirty)
         {
+            TRACY_PROFILE_SCOPE_NC(update_global_matrix, tracy::Color::Gold4);
+            
             tf.CalculateGlobalTransform();
-            glm::mat4 parentGlobal = go->GetParent().Transform().GlobalTransform;
+            glm::mat4 parentGlobal = parentTf.GlobalTransform;
             glm::mat4 parent_inverse = glm::affineInverse(parentGlobal) * tf.GlobalTransform.Matrix;
             tf.SetLocalTransform(parent_inverse);   // decompose to this values.
             tf.LocalEulerAngles = glm::degrees(quaternion::to_euler(tf.LocalTransform.Orientation));// update fake values outside!
+            
+            TRACY_PROFILE_SCOPE_END();
         }
-        else 
+        // Check if transform has changed locally or if parent has changed [optimization step]
+        else if (tf.HasChangedThisFrame || parentTf.HasChangedThisFrame)
         {
-            ASSERT_MSG(m_scene->IsValid(go->GetParentUUID()) == false, "Assumes we always have proper parent");
-
-            // Check for valid parent
-            auto& parentTf = go->GetParent().Transform();
-            // Check if transform has changed locally or if parent has changed [optimization step]
-            if (tf.HasChangedThisFrame || parentTf.HasChangedThisFrame)
-            {
-                tf.HasChangedThisFrame = true;
-                tf.GlobalTransform.Matrix = go->GetParent().Transform().GlobalTransform.Matrix * tf.LocalTransform.Matrix;
-                Transform3D::DecomposeValues(tf.GlobalTransform.Matrix, tf.GlobalTransform.Position, tf.GlobalTransform.Orientation.value, tf.GlobalTransform.Scale);
-            }
+            TRACY_PROFILE_SCOPE_NC(update_transform_global_values, tracy::Color::Gold4);
+                
+            tf.HasChangedThisFrame = true;
+            tf.GlobalTransform.Matrix = parentTf.GlobalTransform.Matrix * tf.LocalTransform.Matrix;
+            Transform3D::DecomposeValues(tf.GlobalTransform.Matrix, tf.GlobalTransform.Position, tf.GlobalTransform.Orientation.value, tf.GlobalTransform.Scale);
+                
+            TRACY_PROFILE_SCOPE_END();
         }
 
         TRACY_PROFILE_SCOPE_END();
