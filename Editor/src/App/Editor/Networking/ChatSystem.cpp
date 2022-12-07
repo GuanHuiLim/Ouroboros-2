@@ -10,6 +10,7 @@
 #include "Project.h"
 #include <App/Editor/UI/Tools/WarningMessage.h>
 #include "slikenet/FileOperations.h"
+#include "slikenet/peerinterface.h"
 ChatSystem::ChatSystem()
 	:client{SLNet::RakPeerInterface::GetInstance()},
 	clientID{ SLNet::UNASSIGNED_SYSTEM_ADDRESS }
@@ -36,6 +37,12 @@ void ChatSystem::Show()
 		{
 			unsigned char packetIdentifier = GetPacketIdentifier(p);
 			MessageTypes(packetIdentifier, p);
+			if (hosting)
+			{
+				char message[2048];
+				sprintf_s(message, "%s", p->data);
+				client->Send(message, strlen(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, p->systemAddress, true);
+			}
 		}
 	}
 	if (m_messages.empty() == false)
@@ -59,7 +66,11 @@ void ChatSystem::OpenLiveShareUIEvent(ToolbarButtonEvent* e)
 {
 	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::OPENLIVESHARE)
 	{
-		open_UI = true;
+		if (open_UI == true)
+		{
+			ImGui::CloseCurrentPopup();
+		}
+		open_UI = !open_UI;
 	}
 }
 
@@ -80,8 +91,6 @@ void ChatSystem::SendFile(std::filesystem::path& path)
 {
 	SLNet::FileList fileList;
 	SLNet::IncrementalReadInterface incrementalReadInterface;
-
-
 	unsigned int file_length = GetFileLength(path.string().c_str());
 	if (file_length == 0)
 	{
@@ -96,7 +105,6 @@ void ChatSystem::SendFile(std::filesystem::path& path)
 
 	//add file to filelist
 	fileList.AddFile(path.string().c_str(), (Project::GetProjectFolder() / path).string().c_str(), 0, file_length, file_length, FileListNodeContext(0, 0, 0, 0), true);
-	
 	
 	//starts sending
 	flt.Send(&fileList, client,SLNet::UNASSIGNED_SYSTEM_ADDRESS, 0, HIGH_PRIORITY, 0, &incrementalReadInterface);
@@ -132,6 +140,7 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 	case ID_NEW_INCOMING_CONNECTION:
 	{
 		system_addresses.emplace(pk->systemAddress);
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Someone Connected");
 	}break;
 	case ID_DISCONNECTION_NOTIFICATION:
 	case ID_CONNECTION_LOST:
@@ -162,54 +171,122 @@ void ChatSystem::PopupUI()
 	}
 	if (ImGui::BeginPopup("Live Share"))
 	{
+		if (ImGui::Button(hosting ? "join" : "host"))
+			hosting = !hosting;
 		if (connected == false)
 		{
-			ImGui::InputText("IP", &ip);
-			ImGui::InputText("Port", &serverPort);
-			ImGui::InputText("User Name", PacketUtilts::s_personalHeader.name, 20);
-			if (ImGui::Button("Connect"))
-			{
-				if ((ip.empty() | serverPort.empty()) == false)
-				{
-					PacketUtilts::is_connected = true;
-					connected = true;
-					short client_port = (unsigned short)std::stoul(clientPort.c_str());
-					short server_port = (unsigned short)std::stoul(serverPort.c_str());
-					socketDescriptor = SLNet::SocketDescriptor(client_port, 0);
-					socketDescriptor.socketFamily = AF_INET;
-					client->Startup(8, &socketDescriptor, 1);
-					
-					//sending code
-					//file list transfer
-					client->AttachPlugin(&flt);
-					flt.AddCallback(&filelistprogress);
-					flt.StartIncrementalReadThreads(1);
+			if (hosting)
+				HostUI();
+			else
+				JoinUI();
 
-
-					client->SetOccasionalPing(true);
-					[[maybe_unused]] SLNet::ConnectionAttemptResult car = client->Connect(ip.c_str(), server_port, "Rumpelstiltskin", (int)strlen("Rumpelstiltskin"));
-					RakAssert(car == SLNet::CONNECTION_ATTEMPT_STARTED);
-
-					m_messages.emplace_back("My Ip Addresses:");
-					unsigned int i;
-					for (i = 0; i < client->GetNumberOfAddresses(); i++)
-					{
-						m_messages.emplace_back(std::to_string(i) + "  " + client->GetLocalIP(i));
-					}
-					m_messages.emplace_back("My GUID :");
-					m_messages.emplace_back(client->GetGuidFromSystemAddress(SLNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
-				}
-				ImGui::CloseCurrentPopup();
-			}
 		}
 		else
 		{
+			{
+				SLNet::SystemAddress myadd = client->GetInternalID(SLNet::UNASSIGNED_SYSTEM_ADDRESS);
+				ImGui::Text("My Addresses: %s \n", myadd.ToString(false));
+			}
+			int i = 1;
+			for (auto& sa : system_addresses)
+			{
+				ImGui::Text("Addresses %i. %s \n",i++, sa.ToString(false));
+			}
+			ImGui::Separator();
+			ImGui::Text("Port: %s", serverPort.c_str());
+			ImGui::Text("Password: %s", password.c_str());
 			if (ImGui::Button("Disconnect"))
 			{
+				//send disconnect message
 				ImGui::CloseCurrentPopup();
 			}
 		}
 		ImGui::EndPopup();
+	}
+}
+
+void ChatSystem::HostUI()
+{
+	ImGui::InputText("Port", &serverPort);
+	ImGui::InputText("Password", &password);
+	ImGui::InputText("User Name", PacketUtilts::s_personalHeader.name, 20);
+	if (ImGui::Button("Host") && serverPort.empty() == false )
+	{
+		PacketUtilts::is_connected = true;
+		connected = true;
+		password += '\0';
+		client->SetIncomingPassword(password.c_str(), (int)password.size() - 1);
+		client->SetTimeoutTime(30000, SLNet::UNASSIGNED_SYSTEM_ADDRESS);
+
+		SLNet::SocketDescriptor socketDescriptors[2];
+		socketDescriptors[0].port = atoi(serverPort.c_str());
+		socketDescriptors[0].socketFamily = AF_INET; // Test out IPV4
+		socketDescriptors[1].port = atoi(serverPort.c_str());
+		socketDescriptors[1].socketFamily = AF_INET6; // Test out IPV6
+		bool b = client->Startup(4, socketDescriptors, 2) == SLNet::RAKNET_STARTED;
+		if (!b)
+		{
+			printf("Failed to start dual IPV4 and IPV6 ports. Trying IPV4 only.\n");
+
+			// Try again, but leave out IPV6
+			b = client->Startup(4, socketDescriptors, 1) == SLNet::RAKNET_STARTED;
+			if (!b)
+			{
+				puts("Server failed to start.  Terminating.");
+				exit(1);
+			}
+		}
+		client->SetMaximumIncomingConnections(4);
+		client->SetOccasionalPing(true);
+		client->SetUnreliableTimeout(1000);
+
+		ImGui::CloseCurrentPopup();
+	}
+}
+
+void ChatSystem::JoinUI()
+{
+	ImGui::InputText("IP", &ip);
+	ImGui::InputText("Client Port", &clientPort);
+	ImGui::InputText("Server Port", &serverPort);
+	ImGui::InputText("Password", &password);
+	ImGui::InputText("User Name", PacketUtilts::s_personalHeader.name, 20);
+	if (ImGui::Button("Connect"))
+	{
+		if ((ip.empty() | serverPort.empty()) == false)
+		{
+			PacketUtilts::is_connected = true;
+			connected = true;
+
+			client->AllowConnectionResponseIPMigration(false);
+			short client_port = (unsigned short)std::stoul(clientPort.c_str());
+			short server_port = (unsigned short)std::stoul(serverPort.c_str());
+			socketDescriptor = SLNet::SocketDescriptor(client_port, 0);
+			socketDescriptor.socketFamily = AF_INET;
+			client->Startup(8, &socketDescriptor, 1);
+
+			//sending code
+			//file list transfer
+			client->AttachPlugin(&flt);
+			flt.AddCallback(&filelistprogress);
+			flt.StartIncrementalReadThreads(1);
+
+
+			client->SetOccasionalPing(true);
+			password += '\0';
+			[[maybe_unused]] SLNet::ConnectionAttemptResult car = client->Connect(ip.c_str(), server_port, password.c_str(), (int)password.size() - 1);
+			RakAssert(car == SLNet::CONNECTION_ATTEMPT_STARTED);
+
+			//m_messages.emplace_back("My Ip Addresses:");
+			//unsigned int i;
+			//for (i = 0; i < client->GetNumberOfAddresses(); i++)
+			//{
+			//	m_messages.emplace_back(std::to_string(i) + "  " + client->GetLocalIP(i));
+			//}
+			//m_messages.emplace_back("My GUID :");
+			//m_messages.emplace_back(client->GetGuidFromSystemAddress(SLNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
+		}
+		ImGui::CloseCurrentPopup();
 	}
 }
 

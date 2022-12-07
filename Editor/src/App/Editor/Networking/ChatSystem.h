@@ -64,6 +64,8 @@ private:
 	void MessageTypes(unsigned char id , SLNet::Packet* pk);
 private://Imgui
 	void PopupUI();
+	void HostUI();
+	void JoinUI();
 private:
 	FileCallback file_cb;
 	OuroFileListProgress filelistprogress;
@@ -80,9 +82,10 @@ private:
 	SLNet::Packet* p = 0;
 	SLNet::SystemAddress clientID;
 	SLNet::SocketDescriptor socketDescriptor;
-	std::string ip, serverPort, clientPort;
+	std::string ip, serverPort, clientPort,password;
 	bool connected = false;
 	bool open_UI = false;
+	bool hosting = false;
 private://imgui stuff
 	std::deque<std::string> m_messages;
 	std::string m_currentmessage;
