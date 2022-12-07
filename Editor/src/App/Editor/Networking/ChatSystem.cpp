@@ -37,7 +37,7 @@ void ChatSystem::Show()
 		{
 			unsigned char packetIdentifier = GetPacketIdentifier(p);
 			MessageTypes(packetIdentifier, p);
-			if (hosting)
+			if (hosting && packetIdentifier != 100)//101 is file transfer
 			{
 				char message[2048];
 				sprintf_s(message, "%s", p->data);
@@ -54,11 +54,19 @@ void ChatSystem::Show()
 
 void ChatSystem::PrepareMessageSend(NetworkingSendEvent* e)
 {
-	if (connected == true)
+	if (connected == true && e->type == 100)
 	{
 		PacketUtilts::s_personalHeader.packetType = e->type;
 		PacketUtilts::PackHeaderIntoPacket(e->data);
 		m_messages.push_back(std::move(e->data));
+	}
+}
+
+void ChatSystem::DownloadComplete(NetworkingSendEvent* e)
+{
+	if (e->type == 101 && hosting && connected)
+	{
+		SendFile(e->data);
 	}
 }
 
@@ -87,27 +95,22 @@ unsigned char ChatSystem::GetPacketIdentifier(SLNet::Packet* _p)
 	return (unsigned char)_p->data[0];
 }
 
-void ChatSystem::SendFile(std::filesystem::path& path)
+void ChatSystem::SendFile(const std::filesystem::path& path)
 {
-	SLNet::FileList fileList;
-	SLNet::IncrementalReadInterface incrementalReadInterface;
-	unsigned int file_length = GetFileLength(path.string().c_str());
+	unsigned int file_length = GetFileLength((Project::GetProjectFolder()/path).string().c_str());
 	if (file_length == 0)
 	{
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "File Not Found!!");
 		return;
 	}
 	//signal to host
-	char msg = 101;
-	std::string temp = "";
-	temp += msg;
-	SendMsg(temp);
 
-	//add file to filelist
-	fileList.AddFile(path.string().c_str(), (Project::GetProjectFolder() / path).string().c_str(), 0, file_length, file_length, FileListNodeContext(0, 0, 0, 0), true);
+	char msg = 101;
+	client->Send(&msg, 2, HIGH_PRIORITY, RELIABLE_ORDERED_WITH_ACK_RECEIPT, 0, SLNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 	
-	//starts sending
-	flt.Send(&fileList, client,SLNet::UNASSIGNED_SYSTEM_ADDRESS, 0, HIGH_PRIORITY, 0, &incrementalReadInterface);
+	//add file to filelist
+	fileList.Clear();
+	fileList.AddFile(path.string().c_str(), (Project::GetProjectFolder() / path).string().c_str(), 0, file_length, file_length, FileListNodeContext(0, 0, 0, 0), true);
 }
 
 void ChatSystem::AddMessage(std::string&& str)
@@ -141,6 +144,32 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 	{
 		system_addresses.emplace(pk->systemAddress);
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Someone Connected");
+		if (hosting)
+		{
+			char msg = 20;
+			client->Send(&msg, 2 , HIGH_PRIORITY, RELIABLE_ORDERED, 0, pk->systemAddress, false);
+		}
+	}break;
+	case 20:
+	{
+		host_address = pk->systemAddress;
+	}break;
+	case ID_SND_RECEIPT_ACKED:
+	{
+		//starts sending
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Sending File");
+		SLNet::IncrementalReadInterface incrementalReadInterface;
+		if (hosting)
+		{
+			for (auto& address : system_addresses)
+			{
+				flt.Send(&fileList, client, address, 0, HIGH_PRIORITY, 0, &incrementalReadInterface);
+			}
+		}
+		else
+		{
+			flt.Send(&fileList, client, host_address, 0, HIGH_PRIORITY, 0, &incrementalReadInterface);
+		}
 	}break;
 	case ID_DISCONNECTION_NOTIFICATION:
 	case ID_CONNECTION_LOST:
@@ -187,10 +216,12 @@ void ChatSystem::PopupUI()
 				SLNet::SystemAddress myadd = client->GetInternalID(SLNet::UNASSIGNED_SYSTEM_ADDRESS);
 				ImGui::Text("My Addresses: %s \n", myadd.ToString(false));
 			}
-			int i = 1;
-			for (auto& sa : system_addresses)
 			{
-				ImGui::Text("Addresses %i. %s \n",i++, sa.ToString(false));
+				int i = 1;
+				for (auto& sa : system_addresses)
+				{
+					ImGui::Text("Addresses %i. %s \n",i++, sa.ToString(false));
+				}
 			}
 			ImGui::Separator();
 			ImGui::Text("Port: %s", serverPort.c_str());
@@ -199,6 +230,10 @@ void ChatSystem::PopupUI()
 			{
 				//send disconnect message
 				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::Button("Send File"))
+			{
+				SendFile("Assets/Arcadia.png");
 			}
 		}
 		ImGui::EndPopup();
@@ -294,6 +329,7 @@ bool FileCallback::OnFile(SLNet::FileListTransferCBInterface::OnFileStruct* onFi
 {
 	FILE* fp;
 	std::string filename = (Project::GetProjectFolder()/onFileStruct->fileName).string();
+	m_previousDownloadedFile = onFileStruct->fileName;
 	fopen_s(&fp, filename.c_str(), "wb");
 	fwrite(onFileStruct->fileData, onFileStruct->byteLengthOfThisFile, 1, fp);
 	fclose(fp);
@@ -308,5 +344,7 @@ void FileCallback::OnFileProgress(SLNet::FileListTransferCBInterface::FileProgre
 bool FileCallback::OnDownloadComplete(SLNet::FileListTransferCBInterface::DownloadCompleteStruct* dcs)
 {
 	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Asset Downloaded");
+	NetworkingSendEvent nse(101, m_previousDownloadedFile);
+	oo::EventManager::Broadcast<NetworkingSendEvent>(&nse);
 	return false;
 }

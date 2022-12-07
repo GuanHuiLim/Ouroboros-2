@@ -18,7 +18,7 @@ public:
 	bool OnFile(OnFileStruct* onFileStruct);
 	virtual void OnFileProgress(FileProgressStruct* fps);
 	virtual bool OnDownloadComplete(DownloadCompleteStruct* dcs);
-
+	std::string m_previousDownloadedFile;
 };
 class OuroFileListProgress : public SLNet::FileListProgress
 {
@@ -48,6 +48,7 @@ public:
 
 	void Show();
 	void PrepareMessageSend(NetworkingSendEvent* e);
+	void DownloadComplete(NetworkingSendEvent* e);
 	void OpenLiveShareUIEvent(ToolbarButtonEvent* e);
 	void SendMsg(const std::string& msg);
 	unsigned char GetPacketIdentifier(SLNet::Packet* p);
@@ -56,7 +57,7 @@ public:
 	\param      p ==> path of file relative to project
 	
 	*//**********************************************************************************/
-	void SendFile(std::filesystem::path& p);
+	void SendFile(const std::filesystem::path& p);
 private://old code
 	void ScrollToBottom();
 private:
@@ -70,13 +71,14 @@ private:
 	FileCallback file_cb;
 	OuroFileListProgress filelistprogress;
 
-	std::set<SLNet::SystemAddress> system_addresses;
 
+	std::set<SLNet::SystemAddress> system_addresses;
+	SLNet::SystemAddress host_address;
 	SLNet::RakNetStatistics* rss = 0;
 	SLNet::RakPeerInterface* client = 0;
 
+	SLNet::FileList fileList;
 	SLNet::FileListTransfer flt;
-
 	
 
 	SLNet::Packet* p = 0;
