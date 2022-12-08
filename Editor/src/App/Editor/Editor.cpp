@@ -68,6 +68,10 @@ static void FileDrop(oo::FileDropEvent* e)
 		}
 		std::filesystem::copy(p, Project::GetAssetFolder() / p.filename(),std::filesystem::copy_options::overwrite_existing);
 		Project::GetAssetManager()->Scan();
+		NetworkingFileTransferEvent nfte;
+
+		nfte.p = std::filesystem::relative(Project::GetAssetFolder() / p.filename(), Project::GetProjectFolder());
+		oo::EventManager::Broadcast<NetworkingFileTransferEvent>(&nfte);
 	}
 }
 Editor::Editor()

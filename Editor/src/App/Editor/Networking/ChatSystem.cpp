@@ -8,14 +8,19 @@
 #include "App/Editor/Networking/PacketUtils.h"
 
 #include "Project.h"
-#include <App/Editor/UI/Tools/WarningMessage.h>
+#include "App/Editor/UI/Tools/WarningMessage.h"
+
 #include "slikenet/FileOperations.h"
 #include "slikenet/peerinterface.h"
+#include "Ouroboros/Core/Timer.h"
+#include <algorithm>
+#include <fstream>
 ChatSystem::ChatSystem()
 	:client{SLNet::RakPeerInterface::GetInstance()},
 	clientID{ SLNet::UNASSIGNED_SYSTEM_ADDRESS }
 {
 	oo::EventManager::Subscribe<ChatSystem, NetworkingSendEvent>(this, &ChatSystem::PrepareMessageSend);
+	oo::EventManager::Subscribe<ChatSystem, NetworkingFileTransferEvent>(this, &ChatSystem::SendFile);
 	oo::EventManager::Subscribe<ChatSystem, ToolbarButtonEvent>(this, &ChatSystem::OpenLiveShareUIEvent);
 }
 
@@ -33,6 +38,15 @@ void ChatSystem::Show()
 	PopupUI();
 	if(connected)
 	{
+		if (sendFileCountDown)
+		{
+			countdown -= oo::timer::dt();
+			if (countdown <= 0)
+			{
+				sendFileCountDown = false;
+				SendFile(flt_filePath);
+			}
+		}
 		for (p = client->Receive(); p; client->DeallocatePacket(p), p = client->Receive())
 		{
 			unsigned char packetIdentifier = GetPacketIdentifier(p);
@@ -97,20 +111,42 @@ unsigned char ChatSystem::GetPacketIdentifier(SLNet::Packet* _p)
 
 void ChatSystem::SendFile(const std::filesystem::path& path)
 {
-	unsigned int file_length = GetFileLength((Project::GetProjectFolder()/path).string().c_str());
+
+	std::ifstream in((Project::GetProjectFolder() / path), std::ios::binary);
+	std::stringstream buffer;
+	buffer << in.rdbuf();
+	std::string file_data = buffer.str();
+	unsigned int file_length = file_data.size();
+	buffer.clear();
+	in.close();
 	if (file_length == 0)
 	{
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "File Not Found!!");
 		return;
 	}
 	//signal to host
-
+	LOG_TRACE("Sending data");
 	char msg = 101;
-	client->Send(&msg, 2, HIGH_PRIORITY, RELIABLE_ORDERED_WITH_ACK_RECEIPT, 0, SLNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+	client->Send(&msg, 2, HIGH_PRIORITY, RELIABLE_ORDERED, 0, SLNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 	
-	//add file to filelist
+	fileList = SLNet::FileList();
 	fileList.Clear();
-	fileList.AddFile(path.string().c_str(), (Project::GetProjectFolder() / path).string().c_str(), 0, file_length, file_length, FileListNodeContext(0, 0, 0, 0), true);
+	fileList.AddFile(path.string().c_str(), (Project::GetProjectFolder() / path).make_preferred().string().c_str(), file_data.data() , file_length, file_length, FileListNodeContext(0, 0, 0, 0), false);
+	LOG_TRACE("File Added");
+}
+
+void ChatSystem::SendFile(NetworkingFileTransferEvent* e)
+{
+	if (connected)
+	{
+		flt_filePath = e->p.make_preferred().string();
+		size_t startpos = 0;
+		//procsssing the string from \\ to /
+		std::replace(flt_filePath.begin(), flt_filePath.end(), '\\', '/');
+		countdown = 3.0f;
+		sendFileCountDown = true;
+		//SendFile("Assets/ParticleComponent.png");
+	}
 }
 
 void ChatSystem::AddMessage(std::string&& str)
@@ -154,23 +190,6 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 	{
 		host_address = pk->systemAddress;
 	}break;
-	case ID_SND_RECEIPT_ACKED:
-	{
-		//starts sending
-		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Sending File");
-		SLNet::IncrementalReadInterface incrementalReadInterface;
-		if (hosting)
-		{
-			for (auto& address : system_addresses)
-			{
-				flt.Send(&fileList, client, address, 0, HIGH_PRIORITY, 0, &incrementalReadInterface);
-			}
-		}
-		else
-		{
-			flt.Send(&fileList, client, host_address, 0, HIGH_PRIORITY, 0, &incrementalReadInterface);
-		}
-	}break;
 	case ID_DISCONNECTION_NOTIFICATION:
 	case ID_CONNECTION_LOST:
 	{
@@ -186,7 +205,30 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 	}break;
 	case 101:
 	{
-		flt.SetupReceive(&file_cb,false,pk->systemAddress);
+		unsigned short setid = flt.SetupReceive(&file_cb,false, pk->systemAddress);
+		char msg = 102;
+		std::string message;
+		message += msg + std::to_string(setid);
+		client->Send(message.c_str(), (int)(message.size() + 1), HIGH_PRIORITY, RELIABLE_ORDERED, 0, pk->systemAddress, false);
+	}break;
+	case 102:
+	{
+		//starts sending
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Sending File");
+		SLNet::IncrementalReadInterface incrementalReadInterface;
+		std::string msg = reinterpret_cast<char*>(pk->data + 1);
+		unsigned short id = (unsigned short)std::stoul(msg);
+		if (hosting)
+		{
+			//for (auto& address : system_addresses)
+			//{
+			flt.Send(&fileList, client, pk->systemAddress, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
+			/*}*/
+		}
+		else
+		{
+			flt.Send(&fileList, client, host_address, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
+		}
 	}break;
 	};
 }
@@ -231,9 +273,9 @@ void ChatSystem::PopupUI()
 				//send disconnect message
 				ImGui::CloseCurrentPopup();
 			}
-			if (ImGui::Button("Send File"))
+			if (ImGui::Button("sendgarbage"))
 			{
-				SendFile("Assets/Arcadia.png");
+				SendFile("Assets/ParticleComponent.png");
 			}
 		}
 		ImGui::EndPopup();
@@ -272,8 +314,17 @@ void ChatSystem::HostUI()
 			}
 		}
 		client->SetMaximumIncomingConnections(4);
+
+		client->AttachPlugin(&flt);
+		client->SetSplitMessageProgressInterval(9);
+
+		flt.AddCallback(&filelistprogress);
+		flt.StartIncrementalReadThreads(1);
+
 		client->SetOccasionalPing(true);
 		client->SetUnreliableTimeout(1000);
+
+
 
 		ImGui::CloseCurrentPopup();
 	}
@@ -303,6 +354,8 @@ void ChatSystem::JoinUI()
 			//sending code
 			//file list transfer
 			client->AttachPlugin(&flt);
+			client->SetSplitMessageProgressInterval(9);
+
 			flt.AddCallback(&filelistprogress);
 			flt.StartIncrementalReadThreads(1);
 

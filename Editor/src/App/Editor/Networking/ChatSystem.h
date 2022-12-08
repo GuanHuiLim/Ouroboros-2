@@ -58,6 +58,7 @@ public:
 	
 	*//**********************************************************************************/
 	void SendFile(const std::filesystem::path& p);
+	void SendFile(NetworkingFileTransferEvent* e);
 private://old code
 	void ScrollToBottom();
 private:
@@ -71,7 +72,6 @@ private:
 	FileCallback file_cb;
 	OuroFileListProgress filelistprogress;
 
-
 	std::set<SLNet::SystemAddress> system_addresses;
 	SLNet::SystemAddress host_address;
 	SLNet::RakNetStatistics* rss = 0;
@@ -79,6 +79,7 @@ private:
 
 	SLNet::FileList fileList;
 	SLNet::FileListTransfer flt;
+	std::string flt_filePath;
 	
 
 	SLNet::Packet* p = 0;
@@ -88,6 +89,9 @@ private:
 	bool connected = false;
 	bool open_UI = false;
 	bool hosting = false;
+
+	float countdown = 1.0f;
+	bool sendFileCountDown = false;
 private://imgui stuff
 	std::deque<std::string> m_messages;
 	std::string m_currentmessage;
