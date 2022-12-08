@@ -111,7 +111,6 @@ unsigned char ChatSystem::GetPacketIdentifier(SLNet::Packet* _p)
 
 void ChatSystem::SendFile(const std::filesystem::path& path)
 {
-
 	std::ifstream in((Project::GetProjectFolder() / path), std::ios::binary);
 	std::stringstream buffer;
 	buffer << in.rdbuf();
@@ -227,7 +226,7 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 		}
 		else
 		{
-			flt.Send(&fileList, client, host_address, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
+			flt.Send(&fileList, client, pk->systemAddress, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
 		}
 	}break;
 	};
