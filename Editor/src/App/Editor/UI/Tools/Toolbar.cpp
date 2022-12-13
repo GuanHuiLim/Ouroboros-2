@@ -18,6 +18,8 @@ Technology is prohibited.
 #include <imgui/imgui_internal.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
+#include "App/Editor/Utility/ImGuiStylePresets.h"
+
 //#include "Scene/SceneManager.h"
 //#include "Ouroboros/Scripting/ScriptSystem.h"
 
@@ -49,8 +51,12 @@ void Toolbar::InitAssets()
 	m_iconsSaved.emplace("PauseButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("PauseButton.png").begin());
 	m_iconsSaved.emplace("StopButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("StopButton.png").begin());
 	m_iconsSaved.emplace("LockButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("LockButton.png").begin());
-	m_iconsSaved.emplace("ListIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("ListIcon.png").begin());
-	m_iconsSaved.emplace("GridIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("GridIcon.png").begin());
+	m_iconsSaved.emplace("UnlockButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("UnlockButton.png").begin());
+
+	m_iconsSaved.emplace("PenIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("PenIcon.png").begin());
+	m_iconsSaved.emplace("CalculatorIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("CalculatorIcon.png").begin());
+	m_iconsSaved.emplace("P2PIcon", *ImGuiManager::s_editorAssetManager.GetOrLoadName("P2PIcon.png").begin());
+
 	oo::EventManager::Subscribe<Toolbar,ChangeGizmoEvent>(this, &Toolbar::OnGizmoChange);
 }
 void Toolbar::Show()
@@ -62,9 +68,9 @@ void Toolbar::Show()
 
 		TRACY_PROFILE_SCOPE_NC(ImageButton, tracy::Color::Blue);
 
-		if (ImGuiUtilities::ImageButton_ToolTip(1,"Gizmo Translate Mode",
+		if (ImGuiUtilities::ImageButton_ToolTip(1, "Gizmo Translate Mode",
 			m_iconsSaved["TranslateButton"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
+			ImGui_StylePresets::image_small, { 0,0 }, { 1,1 }, -1,
 			(currGizmoOperation == 7) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::TRANSFORM);
@@ -76,7 +82,7 @@ void Toolbar::Show()
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(2,"Gizmo Rotate Mode", 
 			m_iconsSaved["RotateButton"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
+			ImGui_StylePresets::image_small, { 0,0 }, { 1,1 }, -1,
 			(currGizmoOperation == 120) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::ROTATE);
@@ -86,7 +92,7 @@ void Toolbar::Show()
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(3, "Gizmo Scale Mode",
 			m_iconsSaved["ScaleButton"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }, { 0,0 }, { 1,1 }, -1,
+			ImGui_StylePresets::image_small, { 0,0 }, { 1,1 }, -1,
 			(currGizmoOperation == 896) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::SCALE);
@@ -94,23 +100,23 @@ void Toolbar::Show()
 		}
 
 
-		ImGui::SameLine();
-		if (ImGui::Button("Compile", { 0,btn_height }))
-		{
-			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
-			oo::EventManager::Broadcast(&tbe);
-		}
-		if (ImGui::IsItemHovered())
-			WarningMessage::DisplayToolTip("Compiles C# scripts");
+		//ImGui::SameLine();
+		//if (ImGui::Button("Compile", { 0,btn_height }))
+		//{
+		//	ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
+		//	oo::EventManager::Broadcast(&tbe);
+		//}
+		//if (ImGui::IsItemHovered())
+		//	WarningMessage::DisplayToolTip("Compiles C# scripts");
 
 		ImGui::EndChild();
-		ImGui::SameLine(w * 0.5f - (btn_width * 3 * 0.5f));
+		ImGui::SameLine(w * 0.5f - (ImGui_StylePresets::image_small.x * 3 * 0.5f));
 	}
 	{
 		ImGui::BeginChild("ChildToolbar2", { 0,0 });
 		if (ImGuiUtilities::ImageButton_ToolTip(4, "Start Simulation", 
 			m_iconsSaved["PlayButton"].GetData<ImTextureID>(),
-			{btn_width,btn_height}))
+			ImGui_StylePresets::image_small))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PLAY);
 			oo::EventManager::Broadcast(&tbe);
@@ -119,7 +125,7 @@ void Toolbar::Show()
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(5, "Pause/Next frame",
 			m_iconsSaved["PauseButton"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }))
+			ImGui_StylePresets::image_small))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PAUSE);
 			oo::EventManager::Broadcast(&tbe);
@@ -128,7 +134,7 @@ void Toolbar::Show()
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(6, "Stop Simulation",
 			m_iconsSaved["StopButton"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }))
+			ImGui_StylePresets::image_small))
 		{
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::STOP);
 			oo::EventManager::Broadcast(&tbe);
@@ -137,11 +143,11 @@ void Toolbar::Show()
 		ImGui::EndChild(); 
 	}
 	{
-		ImGui::SameLine(w - (btn_width * 5));
+		ImGui::SameLine(w - (ImGui_StylePresets::image_small.x * 6));
 		ImGui::BeginChild("ChildToolbar3", { 0,0 });
 		if (ImGuiUtilities::ImageButton_ToolTip(7, "Undocks the toolbar",
-			m_iconsSaved["LockButton"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }))
+			(docking) ? m_iconsSaved["UnlockButton"].GetData<ImTextureID>() : m_iconsSaved["LockButton"].GetData<ImTextureID>(),
+			ImGui_StylePresets::image_small))
 		{
 			docking = !docking;
 		}
@@ -149,8 +155,8 @@ void Toolbar::Show()
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(8, "Pen Tool", 
-			m_iconsSaved["ListIcon"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }))
+			m_iconsSaved["PenIcon"].GetData<ImTextureID>(),
+			ImGui_StylePresets::image_small))
 		{
 			try
 			{
@@ -167,12 +173,19 @@ void Toolbar::Show()
 		ImGui::SameLine();
 		
 		if (ImGuiUtilities::ImageButton_ToolTip(9, "Open Calculator",
-			m_iconsSaved["GridIcon"].GetData<ImTextureID>(),
-			{ btn_width,btn_height }))
+			m_iconsSaved["CalculatorIcon"].GetData<ImTextureID>(),
+			ImGui_StylePresets::image_small))
 		{
 			ShellExecute(0, 0, L"calculator:\\", 0, 0, SW_SHOW);
 		}
-
+		ImGui::SameLine();
+		if (ImGuiUtilities::ImageButton_ToolTip(10, "Ouroboros Collab",
+			m_iconsSaved["P2PIcon"].GetData<ImTextureID>(),
+			ImGui_StylePresets::image_small))
+		{
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::OPENLIVESHARE);
+			oo::EventManager::Broadcast(&tbe);
+		};
 		ImGui::EndChild();
 	}
 	ImGui::PopStyleVar();

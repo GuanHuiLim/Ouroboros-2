@@ -14,7 +14,10 @@ DiscordHelper::DiscordHelper()
 	ready = true;
 
 	//first activity
-	
+	discord::PartySize ptsz;
+	ptsz.SetMaxSize(5);
+	ptsz.SetCurrentSize(1);
+	m_current_activity.GetParty().GetSize() = ptsz;
 	m_current_activity.SetDetails("Project Selection");
 	m_current_activity.SetState("Idle");
 	m_current_activity.GetTimestamps().SetStart(time(0));
@@ -22,6 +25,7 @@ DiscordHelper::DiscordHelper()
 	m_current_activity.GetAssets().SetSmallText("Arcadia");
 	m_current_activity.GetAssets().SetLargeImage("editoricon_1");
 	m_current_activity.GetAssets().SetLargeText("Ouroboros Engine");
+	
 	state.core->ActivityManager().UpdateActivity(m_current_activity, 0);
 
 	oo::EventManager::Subscribe<DiscordHelper, LoadProjectEvent>(this, &DiscordHelper::UpdateStatus);

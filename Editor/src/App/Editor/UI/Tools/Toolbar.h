@@ -24,7 +24,7 @@ public:
 	 Ctor
 	*//**********************************************************************************/
 
-	Toolbar(float w = 30.0f, float h = 30.f) :btn_width(w), btn_height(h) {};
+	Toolbar() {};
 	void InitAssets();
 	/*********************************************************************************//*!
 	\brief    
@@ -37,8 +37,6 @@ private:
 private:
 	int currGizmoOperation = 7;
 	std::unordered_map<std::string,oo::Asset> m_iconsSaved;
-	float btn_width;
-	float btn_height;
 	bool docking = false;
 };
 
