@@ -185,6 +185,7 @@ namespace oo
     {
         ScriptClassInfo classInfo;
         std::unordered_map<std::string, ScriptFieldInfo> fieldMap;
+        std::vector<std::string> displayOrder;
 
         /*********************************************************************************//*!
         \brief      constructs a C# script's info from the given class info

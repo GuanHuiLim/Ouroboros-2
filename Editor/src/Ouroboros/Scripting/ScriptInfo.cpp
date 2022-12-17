@@ -124,6 +124,7 @@ namespace oo
         std::vector<ScriptFieldInfo> fieldList = classInfo.GetScriptFieldInfoAll();
         for (int i = 0; i < fieldList.size(); ++i)
         {
+            displayOrder.emplace_back(fieldList[i].name);
             fieldMap.insert({ fieldList[i].name, fieldList[i] });
         }
     }
