@@ -601,8 +601,11 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 			ImGui::PopID();
 			continue;
 		}
-		for (auto& sfi : scriptInfo.second.fieldMap)
+		//for (auto& sfi : scriptInfo.second.fieldMap)
+        for(auto& fieldName : scriptInfo.second.displayOrder)
 		{
+            auto& sfi = *scriptInfo.second.fieldMap.find(fieldName);
+
 			bool edit = false;
 			bool edited = false;
 			oo::ScriptFieldInfo s_value = sfi.second;

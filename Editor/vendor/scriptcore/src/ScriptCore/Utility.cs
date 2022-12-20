@@ -61,6 +61,17 @@ namespace Ouroboros
                 return attrList.Length > 0;
             }
 
+            public static object GetCustomFieldAttribute(object obj, string fieldName, Type attribute)
+            {
+                FieldInfo field = obj.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (field == null)
+                    return false;
+                object[] attrList = field.GetCustomAttributes(attribute, false);
+                if (attrList.Length <= 0)
+                    return null;
+                return attrList[0];
+            }
+
             public static bool HasCustomFieldAttribute(Type type, Type attribute)
             {
                 return type.GetCustomAttribute(attribute) != null;
