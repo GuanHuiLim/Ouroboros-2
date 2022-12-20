@@ -36,8 +36,11 @@ namespace oo
         ~ScriptFieldInfo() = default;
 
         ScriptFieldInfo(std::string const& name, ScriptValue const& value)
-            : name{ name }, value{ value }, scriptPtr{ ScriptDatabase::InvalidPtr }, scriptField{ nullptr } {}
+            : name{ name }, value{ value }, scriptPtr{ ScriptDatabase::InvalidPtr }, scriptField{ nullptr }, header{} {}
+        ScriptFieldInfo(std::string const& name, ScriptValue const& value, std::string const& header)
+            : name{ name }, value{ value }, scriptPtr{ ScriptDatabase::InvalidPtr }, scriptField{ nullptr }, header{ header } {}
 
+        std::string const& GetHeader() { return header; };
         /*********************************************************************************//*!
         \brief      attempts to try getting the actual C# field value this ScriptFieldInfo represents
                     in its corresponding C# script instance in the form of a ScriptValue.
@@ -74,6 +77,8 @@ namespace oo
     private:
         ScriptDatabase::IntPtr scriptPtr;
         MonoClassField* scriptField;
+
+        std::string header;
     };
 
     // used to represent a specific C# class

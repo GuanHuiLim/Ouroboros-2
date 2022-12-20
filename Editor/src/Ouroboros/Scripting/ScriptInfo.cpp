@@ -272,7 +272,17 @@ namespace oo
                 ScriptValue fieldValue = ScriptValue::GetFieldValue(sample, field);
                 if (!fieldValue.IsNullType())
                 {
-                    resultList.push_back({ fieldName, fieldValue });
+                    std::string fieldHeader = "";
+                    MonoObject* header = ScriptEngine::GetClassFieldAttribute(sample, fieldName.c_str(), ScriptEngine::GetType("ScriptCore", "Ouroboros", "HeaderAttribute"));
+                    if (header != nullptr)
+                    {
+                        MonoClassField* field = mono_class_get_field_from_name(ScriptEngine::GetClass("ScriptCore", "Ouroboros", "HeaderAttribute"), "Name");
+                        MonoString* str = nullptr;
+                        mono_field_get_value(header, field, &str);
+                        fieldHeader = mono_string_to_utf8(str);
+                    }
+
+                    resultList.push_back({ fieldName, fieldValue, fieldHeader });
                 }
             }
             _class = mono_class_get_parent(_class);
