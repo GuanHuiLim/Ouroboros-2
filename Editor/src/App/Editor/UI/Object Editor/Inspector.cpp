@@ -602,6 +602,7 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 			continue;
 		}
 		//for (auto& sfi : scriptInfo.second.fieldMap)
+
         for(auto& fieldName : scriptInfo.second.displayOrder)
 		{
             auto& sfi = *scriptInfo.second.fieldMap.find(fieldName);
@@ -609,6 +610,14 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 			bool edit = false;
 			bool edited = false;
 			oo::ScriptFieldInfo s_value = sfi.second;
+			if (s_value.GetHeader().empty() == false)
+			{
+				ImFont tempfont = *ImGui::GetFont();
+				tempfont.Scale *= 1.1f;
+				ImGui::PushFont(&tempfont);
+				ImGui::Text(s_value.GetHeader().c_str());
+				ImGui::PopFont();
+			}
 			auto iter = m_scriptingProperties.m_scriptUI.find(sfi.second.value.GetValueType());
 			if (iter == m_scriptingProperties.m_scriptUI.end())
 				continue;
