@@ -3,13 +3,17 @@
 #include "App/Editor/Networking/PacketUtils.h"
 #include <string>
 #include <chrono>
+#include <filesystem>
 struct NetworkingSendEvent : public oo::Event
 {
 	char type = 0;
 	std::string data;
 	NetworkingSendEvent(char t, const std::string& _data) :type{ t }, data{ _data } {};
 };
-
+struct NetworkingFileTransferEvent : public oo::Event
+{
+	std::filesystem::path p;
+};
 struct NetworkingReceivedEvent : public oo::Event
 {
 	PacketHeader header;

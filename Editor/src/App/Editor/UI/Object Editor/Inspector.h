@@ -152,7 +152,8 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 	
 	auto& component = gameobject.GetComponent<Component>();
 	rttr::type type = component.get_type();
-	bool open = ImGui::TreeNodeEx(type.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+	bool open = ImGui::CollapsingHeader(type.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
+	//ImGui::TreeNodeEx(type.get_name().data(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
 	ImGui::PushID(type.get_name().data());
 	{
 		bool smallbtn = true;
@@ -161,6 +162,7 @@ inline void Inspector::DisplayComponent(oo::GameObject& gameobject)
 			smallbtn = false;
 		if (smallbtn)
 		{
+			ImGui::SetItemAllowOverlap();
 			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
 			if (ImGui::SmallButton("x"))
 			{
