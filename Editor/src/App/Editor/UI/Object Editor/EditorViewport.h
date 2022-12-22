@@ -16,7 +16,7 @@ Technology is prohibited.
 #include "OO_Vulkan/src/Camera.h"
 #include "Ouroboros/Core/CameraController.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
-
+#include "App/Editor/Events/FocusButtonEvent.h"
 class EditorViewport
 {
 public:
@@ -42,4 +42,5 @@ private://maximize on play
 public: //maximize on play
 	static void OnPlayEvent(ToolbarButtonEvent* e);
 	static void OnStopEvent(ToolbarButtonEvent* e);
+	void OnFocusEvent(FocusButtonEvent* e);
 };

@@ -59,6 +59,7 @@ EditorViewport::EditorViewport()
 {
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnPlayEvent);
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnStopEvent);
+	oo::EventManager::Subscribe<EditorViewport, FocusButtonEvent>(this, &EditorViewport::OnFocusEvent);
 	ImGuizmo::AllowAxisFlip(false);
 	m_cc.SetCamera(&EditorCamera);
 }
@@ -323,10 +324,12 @@ void EditorViewport::Show()
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
 	}
 	//wrong but it helps 
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)))
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)) && 
+		ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
 	{
-		glm::vec3 target = EditorCamera.GetFront();
-		EditorCamera.SetPosition(transform.GetGlobalPosition() - (target * 10.0f));
+		FocusButtonEvent e;
+		e.item_globalPosition = transform.GetGlobalPosition();
+		oo::EventManager::Broadcast<FocusButtonEvent>(&e);
 	}
 }
 
@@ -372,6 +375,12 @@ void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 		}
 		ImGui::SetWindowFocus("Editor Viewport");
 	}
+}
+
+void EditorViewport::OnFocusEvent(FocusButtonEvent* e)
+{
+	glm::vec3 target = EditorCamera.GetFront();
+	EditorCamera.SetPosition(e->item_globalPosition - (target * 10.0f));
 }
 
 void EditorViewport::MenuBar()
