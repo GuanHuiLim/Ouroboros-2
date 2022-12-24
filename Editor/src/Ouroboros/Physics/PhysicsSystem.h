@@ -22,6 +22,7 @@ Technology is prohibited.
 #include <Physics/Source/phy.h>
 #include <bitset>
 #include "Ouroboros/ECS/GameObjectComponent.h"
+#include "Ouroboros/Scene/Scene.h"
 
 #include "Ouroboros/Geometry/Shapes.h"
 #include "Ouroboros/Physics/Raycast.h"
@@ -65,8 +66,8 @@ namespace oo
         std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max());
 
     private:
-        inline static std::uint64_t MaxIterations = 100;
-        inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 100 fps
+        inline static std::uint64_t MaxIterations = 60;
+        inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 60 fps
         inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations/20;  // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);

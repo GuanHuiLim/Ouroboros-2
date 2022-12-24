@@ -151,6 +151,92 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
+        // Transform System updates via the scenegraph because the order matters
+        //auto const& graph = m_scene->GetGraph();
+        //scenegraph::shared_pointer root_node = graph.get_root();
+        //std::stack<scenenode::shared_pointer> s;
+        //scenenode::shared_pointer curr = root_node;
+
+        ///* Multithread Method of updating */
+
+        //// Step 1. Extra Pre-Processing Overhead
+        //{
+        //    TRACY_PROFILE_SCOPE_NC(pre_process_overhead, tracy::Color::Gold3);
+
+        //    for (auto& group : rigidbody_groups)
+        //        group.clear();
+
+        //    s.emplace(curr);
+        //    while (!s.empty())
+        //    {
+        //        curr = s.top();
+        //        s.pop();
+        //        for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+        //        {
+        //            scenenode::shared_pointer child = *iter;
+        //            if (child->has_child())
+        //                s.emplace(child);
+        //        }
+        //        auto childs = curr->get_direct_child();
+        //        auto child_depth = curr->get_depth() + 1;
+        //        for (auto& child : childs)
+        //        {
+        //            auto const go = m_scene->FindWithInstanceID(child->get_handle());
+        //            if(go->HasComponent<RigidbodyComponent>())
+        //                rigidbody_groups[child_depth].emplace_back(go);
+        //        }
+        //        assert(child_depth != 0);
+        //    }
+
+        //    TRACY_PROFILE_SCOPE_END();
+        //}
+
+        //// Step 2. processing.
+        //for (auto& group : rigidbody_groups)
+        //{
+        //    if (group.size() <= 0)
+        //        continue;
+
+        //    jobsystem::job per_group_update{};
+
+        //    for (auto& elem : group)
+        //    {
+        //        // submitting work.
+        //        jobsystem::submit(per_group_update, [&]()
+        //            {
+        //                auto& rb = elem->GetComponent<RigidbodyComponent>();
+        //                auto& tf = elem->GetComponent<TransformComponent>();
+
+        //                // we only update dynamic colliders
+        //                if (rb.IsStatic() || rb.IsTrigger())
+        //                    return;
+
+        //                // probably better to just constantly set this 3 instead of checking
+        //                rb.object.lockPositionX(rb.LockXAxisPosition);
+        //                rb.object.lockPositionY(rb.LockYAxisPosition);
+        //                rb.object.lockPositionZ(rb.LockZAxisPosition);
+
+        //                rb.object.lockRotationX(rb.LockXAxisRotation);
+        //                rb.object.lockRotationY(rb.LockYAxisRotation);
+        //                rb.object.lockRotationZ(rb.LockZAxisRotation);
+
+        //                auto pos = rb.GetPositionInPhysicsWorld();
+        //                auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
+        //                tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
+
+        //                auto orientation = rb.GetOrientationInPhysicsWorld();
+        //                auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
+
+        //                tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
+        //            });
+        //    }
+
+        //    m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->GetRoot(), false);
+
+        //    jobsystem::wait(per_group_update);
+        //}
+
+        ///* Single threaded method */
         static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
         // set position and orientation of our scene's dynamic rigidbodies with updated physics results
@@ -161,11 +247,10 @@ namespace oo
             // but we must remember to consider the scenegraph hierarchy 
             // when calculating its final transform.
             // therefore we find the delta change and apply it to its local transform.
-
             // we only update dynamic colliders
-            if (rb.IsStatic() || rb.IsTrigger()) 
+            if (rb.IsStatic() || rb.IsTrigger())
                 return;
-            
+
             // probably better to just constantly set this 3 instead of checking
             rb.object.lockPositionX(rb.LockXAxisPosition);
             rb.object.lockPositionY(rb.LockYAxisPosition);
@@ -181,18 +266,18 @@ namespace oo
 
             auto orientation = rb.GetOrientationInPhysicsWorld();
             auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
-            
+
             //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
             //LOG_TRACE("global orientation {0},{1},{2},{3}", tf.GetGlobalRotationQuat().value.x, tf.GetGlobalRotationQuat().value.y, tf.GetGlobalRotationQuat().value.z, tf.GetGlobalRotationQuat().value.w);
             //LOG_TRACE("delta orientation {0},{1},{2},{3}", delta_orientation.x, delta_orientation.y, delta_orientation.z, delta_orientation.w);
             //LOG_TRACE("local orientation {0},{1},{2},{3}", tf.GetRotationQuat().value.x, tf.GetRotationQuat().value.y, tf.GetRotationQuat().value.z, tf.GetRotationQuat().value.w);
-           
+
             tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
             //tf.SetOrientation(orientation);
 
-            m_world->Get_System<TransformSystem>()->UpdateSubTree(*m_scene->FindWithInstanceID(goc.Id), true);
         });
 
+        m_world->Get_System<TransformSystem>()->UpdateEntireTree();
     }
 
     void PhysicsSystem::UpdatePhysicsResolution(Timestep deltaTime)
@@ -202,6 +287,8 @@ namespace oo
 
     void PhysicsSystem::UpdateDuplicatedObjects()
     {
+        TRACY_PROFILE_SCOPE_NC(physics_update_duplicated_objects, tracy::Color::PeachPuff);
+
         static Ecs::Query duplicated_rb_query = Ecs::make_raw_query<RigidbodyComponent, GameObjectComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_query, [&](RigidbodyComponent& rbComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
             {
@@ -209,90 +296,124 @@ namespace oo
                 AddToLookUp(rbComp, goc);
             });
 
+        jobsystem::job initialization_job{};
+
         static Ecs::Query duplicated_rb_with_box_query = Ecs::make_raw_query<RigidbodyComponent, BoxColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_box_query, [&](RigidbodyComponent& rbComp, BoxColliderComponent& bcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                InitializeBoxCollider(rbComp);
+                jobsystem::submit(initialization_job, [&]() 
+                {
+                    InitializeBoxCollider(rbComp);
+                });
             });
 
         static Ecs::Query duplicated_rb_with_capsule_query = Ecs::make_raw_query<RigidbodyComponent, CapsuleColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_capsule_query, [&](RigidbodyComponent& rbComp, CapsuleColliderComponent& ccComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                InitializeCapsuleCollider(rbComp);
+                jobsystem::submit(initialization_job, [&]()
+                    {
+                        InitializeCapsuleCollider(rbComp);
+                    });
             });
 
         static Ecs::Query duplicated_rb_with_sphere_query = Ecs::make_raw_query<RigidbodyComponent, SphereColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_sphere_query, [&](RigidbodyComponent& rbComp, SphereColliderComponent& scComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                InitializeSphereCollider(rbComp);
+                jobsystem::submit(initialization_job, [&]()
+                    {
+                        InitializeSphereCollider(rbComp);
+                    });
             });
+
+        jobsystem::wait(initialization_job);
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::UpdateGlobalBounds()
     {
+        TRACY_PROFILE_SCOPE_NC(physics_update_global_bounds, tracy::Color::PeachPuff);
+
+        jobsystem::job update_global_bounds_job{};
+
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
-                // only update for transformthat have changed
-                //if (tf.HasChangedThisFrame)
-                {
-                    auto pos = tf.GetGlobalPosition();
-                    auto quat = tf.GetGlobalRotationQuat();
-                    rb.SetPosOrientation(pos + rb.Offset, quat);
-                }
+                /*jobsystem::submit(update_global_bounds_job, [&]()
+                    {*/
+                        // only update for transformthat have changed
+                            //if (tf.HasChangedThisFrame)
+                            {
+                                auto pos = tf.GetGlobalPosition();
+                                auto quat = tf.GetGlobalRotationQuat();
+                                rb.SetPosOrientation(pos + rb.Offset, quat);
+                            }
 
-                // test and set trigger boolean based on serialize value
-                if (rb.object.isTrigger() != rb.IsTrigger())
-                    rb.object.setTriggerShape(rb.IsTrigger());
+                            // test and set trigger boolean based on serialize value
+                            if (rb.object.isTrigger() != rb.IsTrigger())
+                                rb.object.setTriggerShape(rb.IsTrigger());
+                    //});
             });
 
         //Updating box collider's bounds 
         static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
         m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, BoxColliderComponent& bc)
             {
-                auto pos = tf.GetGlobalPosition();
-                auto scale = tf.GetGlobalScale();
-                auto quat = tf.GetGlobalRotationQuat();
+                /*jobsystem::submit(update_global_bounds_job, [&]()
+                    {*/
+                        auto pos = tf.GetGlobalPosition();
+                        auto scale = tf.GetGlobalScale();
+                        auto quat = tf.GetGlobalRotationQuat();
 
-                // calculate global bounds and half extents
-                bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
+                        // calculate global bounds and half extents
+                        bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
 
-                // set box size
-                rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
+                        // set box size
+                        rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
+                    //});
             });
 
         //Updating capsule collider's bounds 
         static Ecs::Query capsuleColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, CapsuleColliderComponent>();
         m_world->for_each(capsuleColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, CapsuleColliderComponent& cc)
             {
-                auto pos = tf.GetGlobalPosition();
-                auto scale = tf.GetGlobalScale();
-                auto quat = tf.GetGlobalRotationQuat();
+                /*jobsystem::submit(update_global_bounds_job, [&]()
+                    {*/
+                        auto pos = tf.GetGlobalPosition();
+                        auto scale = tf.GetGlobalScale();
+                        auto quat = tf.GetGlobalRotationQuat();
 
-                // calculate global radius and half height for capsule collider
-                cc.GlobalRadius = cc.Radius * scale.y;          // for now lets just use y-axis
-                cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
+                        // calculate global radius and half height for capsule collider
+                        cc.GlobalRadius = cc.Radius * scale.y;          // for now lets just use y-axis
+                        cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
 
-                // set capsule size
-                rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
+                        // set capsule size
+                        rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
+                    //});
             });
 
         //Updating sphere collider's bounds 
         static Ecs::Query sphereColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, SphereColliderComponent>();
         m_world->for_each(sphereColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, SphereColliderComponent& sc)
             {
-                auto pos = tf.GetGlobalPosition();
-                auto scale = tf.GetGlobalScale();
-                auto quat = tf.GetGlobalRotationQuat();
+                /*jobsystem::submit(update_global_bounds_job, [&]()
+                    {*/
+                        auto pos = tf.GetGlobalPosition();
+                        auto scale = tf.GetGlobalScale();
+                        auto quat = tf.GetGlobalRotationQuat();
 
-                // calculate global bounds of capsule
-                //sc.GlobalBounds.center = sc.Bounds.center + pos;
-                sc.GlobalRadius= sc.Radius * std::max(std::max(scale.x, scale.y), scale.z);
+                        // calculate global bounds of capsule
+                        //sc.GlobalBounds.center = sc.Bounds.center + pos;
+                        sc.GlobalRadius= sc.Radius * std::max(std::max(scale.x, scale.y), scale.z);
 
-                // set capsule size
-                rb.object.setSphereProperty(sc.GlobalRadius);
+                        // set capsule size
+                        rb.object.setSphereProperty(sc.GlobalRadius);
+                    //});
             });
+
+        //jobsystem::wait(update_global_bounds_job);
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::UpdateCallbacks()
@@ -359,6 +480,9 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_NC(physics_collision_resoltion, tracy::Color::PeachPuff);
+        
+        //jobsystem::job collision_resolution;
+
         auto collision_queue = m_physicsWorld.getCollisionData();
         while (!collision_queue->empty())
         {
@@ -408,7 +532,7 @@ namespace oo
                 break;
             }
 
-            /*jobsystem::submit([&]() 
+            /*jobsystem::submit(collision_resolution, [&]()
             {*/
                 TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
                 EventManager::Broadcast(&pce);
@@ -419,7 +543,7 @@ namespace oo
         }
         m_physicsWorld.clearCollisionData();
 
-        //jobsystem::wait();
+        //jobsystem::wait(collision_resolution);
 
         TRACY_PROFILE_SCOPE_END();
     }
