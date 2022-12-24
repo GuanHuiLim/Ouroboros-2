@@ -14,7 +14,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #include "A_Ecs.h"
-
+#include "pch.h"
 
 namespace Ecs
 {

@@ -19,7 +19,7 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/Event.h"
 
 #include <scenegraph/include/scenegraph.h>
-#include <Archetypes_ECS/src/A_Ecs.h>
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include <set>
 #include <functional>
 #include "Utility/UUID.h"

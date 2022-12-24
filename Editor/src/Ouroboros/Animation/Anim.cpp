@@ -16,7 +16,7 @@ Technology is prohibited.
 #include "Anim.h"
 #include "AnimationInternal.h"
 #include "AnimationSystem.h"
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"

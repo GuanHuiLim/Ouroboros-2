@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include <Archetypes_Ecs/src/A_Ecs.h>
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Physics/PhysicsFwd.h"
 #include "PhysicsEvents.h"
 #include "Ouroboros/Core/Timer.h"

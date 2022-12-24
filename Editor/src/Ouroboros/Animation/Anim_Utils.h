@@ -15,7 +15,7 @@ Technology is prohibited.
 #include <vector>
 #include <variant>
 
-#include "Archetypes_Ecs/src/EcsUtils.h"
+#include "Ouroboros/ECS/ArchtypeECS/EcsUtils.h"
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "Ouroboros/Scripting/ScriptValue.h"
 #include "Ouroboros/Scripting/ScriptInfo.h"
