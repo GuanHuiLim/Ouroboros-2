@@ -68,7 +68,6 @@ namespace oo
         scenegraph::shared_pointer root_node = graph.get_root();
         UpdateTree(root_node, false);
 
-
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -79,6 +78,17 @@ namespace oo
         UpdateLocalTransform(go.GetComponent<TransformComponent>());
         UpdateTree(go.GetSceneNode().lock(), includeItself);
         
+        TRACY_PROFILE_SCOPE_END();
+    }
+
+    void TransformSystem::UpdateEntireTree()
+    {
+        TRACY_PROFILE_SCOPE_NC(transform_update_entire_tree, tracy::Color::Gold3);
+
+        auto const& graph = m_scene->GetGraph();
+        scenegraph::shared_pointer root_node = graph.get_root();
+        UpdateTree(root_node, false);
+
         TRACY_PROFILE_SCOPE_END();
     }
 

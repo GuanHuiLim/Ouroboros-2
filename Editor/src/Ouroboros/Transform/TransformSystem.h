@@ -30,6 +30,7 @@ namespace oo
 
         virtual void Run(Ecs::ECSWorld* world) override;
         void UpdateSubTree(GameObject go, bool includeItself = true);
+        void UpdateEntireTree();
 
         /*void StartOfFrame();
         void EndOfFrame();*/
