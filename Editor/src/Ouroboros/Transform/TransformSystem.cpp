@@ -22,6 +22,8 @@ Technology is prohibited.
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 //#include <JobSystem/src/JobSystem.h>
 
+#include <JobSystem/src/final/jobs.h>
+
 namespace oo
 {
     TransformSystem::TransformSystem(Scene* scene)
@@ -116,8 +118,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(transform_single_local_update, tracy::Color::Gold4);
 
-        // TODO: this part of the code doesn't need to be serial.
-        // Update local and global transform immediately
         if (tf.LocalMatrixDirty)
         {
             //std::string debugName = goc.Name;
@@ -147,10 +147,11 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
     }
 
+
     void TransformSystem::UpdateTree(scenenode::shared_pointer node, bool updateRoot)
     {
         // Transform System updates via the scenegraph because the order matters
-        
+
         TRACY_PROFILE_SCOPE_NC(transform_update_tree, tracy::Color::Gold3);
 
         scenegraph::shared_pointer root_node = node;
@@ -162,7 +163,7 @@ namespace oo
         {
             // Find root gameobject
             auto const go = m_scene->FindWithInstanceID(node->get_handle());
-            GameObjectComponent goc = go->GetComponent<GameObjectComponent>();
+            //GameObjectComponent goc = go->GetComponent<GameObjectComponent>();
             UpdateTransform(go);
             //// Skip gameobjects that has the deferred component
             //if (go->HasComponent<DeferredComponent>() == false)
@@ -170,25 +171,82 @@ namespace oo
             //}
         }
 
-        s.emplace(curr);
-        while (!s.empty())
+        /* Single Threaded Method of updating */
+        //s.emplace(curr);
+        //while (!s.empty())
+        //{
+        //    curr = s.top();
+        //    s.pop();
+        //    // iterate through current's childs from back to front
+        //    for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+        //    {
+        //        scenenode::shared_pointer child = *iter;
+        //        s.emplace(child);
+        //        
+        //        // Find current gameobject
+        //        auto const go = m_scene->FindWithInstanceID(child->get_handle());
+        //        
+        //        //// Skip gameobjects that has the deferred component
+        //        //if (go->HasComponent<DeferredComponent>())
+        //        //    continue;
+        //        
+        //        UpdateTransform(go);
+        //        
+        //        //launch_groups[child->get_depth()].emplace_back(child);
+        //    }
+        //}
+
+        /* Multithread Method of updating */
+        
+        // Step 1. Extra Pre-Processing Overhead
         {
-            curr = s.top();
-            s.pop();
-            for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+            TRACY_PROFILE_SCOPE_NC(pre_process_overhead, tracy::Color::Gold3);
+
+            for (auto& group : launch_groups)
+                group.clear();
+
+            s.emplace(curr);
+            while (!s.empty())
             {
-                scenenode::shared_pointer child = *iter;
-                s.emplace(child);
-
-                // Find current gameobject
-                auto const go = m_scene->FindWithInstanceID(child->get_handle());
-
-                //// Skip gameobjects that has the deferred component
-                //if (go->HasComponent<DeferredComponent>())
-                //    continue;
-
-                UpdateTransform(go);
+                curr = s.top();
+                s.pop();
+                for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+                {
+                    scenenode::shared_pointer child = *iter;
+                    if (child->has_child())
+                        s.emplace(child);
+                }
+                auto childs = curr->get_direct_child();
+                auto child_depth = curr->get_depth() + 1;
+                launch_groups[child_depth].insert(launch_groups[child_depth].end(), childs.begin(), childs.end());
+                assert(child_depth != 0);
             }
+
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        // Step 2. processing.
+        for (auto& group : launch_groups)
+        {
+            if (group.size() <= 0) 
+                continue;
+            
+            jobsystem::job per_group_update{};
+
+            for (auto& elem : group)
+            {
+                // submitting work.
+                jobsystem::submit(per_group_update, [&]()
+                {
+                    // Find current gameobject
+                    auto const go = m_scene->FindWithInstanceID(elem->get_handle());
+                    auto& const name = go->Name();
+
+                    UpdateTransform(go);
+                });
+            }
+
+            jobsystem::wait(per_group_update);
         }
 
         TRACY_PROFILE_SCOPE_END();
@@ -232,7 +290,7 @@ namespace oo
                 
             TRACY_PROFILE_SCOPE_END();
         }
-
+        
         TRACY_PROFILE_SCOPE_END();
     }
 
