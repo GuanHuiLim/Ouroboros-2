@@ -86,3 +86,6 @@ Technology is prohibited.
 #include "Ouroboros/ECS/ECS.h"
 #include "Ouroboros/ECS/DeferredComponent.h"
 #include "Ouroboros/ECS/DuplicatedComponent.h"
+
+// threadpool
+#include <JobSystem/src/final/jobs.h>
