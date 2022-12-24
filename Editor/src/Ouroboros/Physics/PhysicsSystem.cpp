@@ -92,9 +92,14 @@ namespace oo
         while (m_accumulator > FixedDeltaTime)
         {
             TRACY_PROFILE_SCOPE_NC(physics_fixed_update, tracy::Color::PeachPuff1);
-            PhysicsTickEvent e;
-            e.DeltaTime = FixedDeltaTime;
-            EventManager::Broadcast(&e);
+
+            {
+                TRACY_PROFILE_SCOPE_NC(physics_fixed_dt_broadcast, tracy::Color::PeachPuff2);
+                PhysicsTickEvent e;
+                e.DeltaTime = FixedDeltaTime;
+                EventManager::Broadcast(&e);
+                TRACY_PROFILE_SCOPE_END();
+            }
 
             {
                 TRACY_PROFILE_SCOPE_NC(physics_resolution, tracy::Color::PeachPuff3);
@@ -139,8 +144,12 @@ namespace oo
         //TODO: Should remove eventually (perhaps?)
         EditorUpdate(deltaTime);
         
-        // update the physics world using fixed dt.
-        m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
+        {
+            TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
+            // update the physics world using fixed dt.
+            m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
@@ -288,6 +297,8 @@ namespace oo
 
     void PhysicsSystem::UpdateCallbacks()
     {
+
+        TRACY_PROFILE_SCOPE_NC(physics_trigger_resoltion, tracy::Color::PeachPuff);
         auto trigger_queue = m_physicsWorld.getTriggerData();
         while (!trigger_queue->empty())
         {
@@ -336,13 +347,18 @@ namespace oo
                 pte.State = PhysicsEventState::EXIT;
                 break;
             }
+
+
+            TRACY_PROFILE_SCOPE_NC(broadcast_physics_trigger_event, tracy::Color::PeachPuff);
             EventManager::Broadcast(&pte);
+            TRACY_PROFILE_SCOPE_END();
 
             trigger_queue->pop();
         }
         m_physicsWorld.clearTriggerData();
+        TRACY_PROFILE_SCOPE_END();
 
-
+        TRACY_PROFILE_SCOPE_NC(physics_collision_resoltion, tracy::Color::PeachPuff);
         auto collision_queue = m_physicsWorld.getCollisionData();
         while (!collision_queue->empty())
         {
@@ -391,11 +407,21 @@ namespace oo
                 pce.State = PhysicsEventState::EXIT;
                 break;
             }
-            EventManager::Broadcast(&pce);
+
+            /*jobsystem::submit([&]() 
+            {*/
+                TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
+                EventManager::Broadcast(&pce);
+                TRACY_PROFILE_SCOPE_END();
+            //});
 
             collision_queue->pop();
         }
         m_physicsWorld.clearCollisionData();
+
+        //jobsystem::wait();
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::PostUpdate()
