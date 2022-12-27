@@ -22,6 +22,10 @@ Technology is prohibited.
 #include "World.h"
 #include "System.h"
 #include "Wrapper.h"
+
+//#include <JobSystem/src/final/jobs.h>
+//#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+
 namespace Ecs
 {
 	template<typename C>
@@ -696,6 +700,74 @@ namespace Ecs::internal
 	template<typename C>
 	void remove_component_from_entity(IECSWorld* world, EntityID id);
 
+	//template<typename F>
+	//void parallel_iterate_matching_archetypes(IECSWorld* world, const IQuery& query, F&& function) {
+
+	//	jobsystem::job parallel_search;
+	//	for (int i = 0; i < world->archetypeSignatures.size(); i++)
+	//	{
+	//		//if there is a good match, doing an and not be 0
+	//		uint64_t includeTest = world->archetypeSignatures[i] & query.require_matcher;
+
+	//		//implement later
+	//		uint64_t excludeTest = world->archetypeSignatures[i] & query.exclude_matcher;
+
+	//		jobsystem::submit_and_launch(parallel_search, [&, i]()
+	//			{
+	//				if (includeTest != 0) {
+
+	//					auto componentList = world->archetypes[i]->componentList;
+
+	//					//might match an excluded component, check here
+	//					if (excludeTest != 0) {
+
+	//						bool invalid = false;
+	//						//dumb algo, optimize later					
+	//						for (int mtA = 0; mtA < query.exclude_comps.size(); mtA++) {
+
+	//							for (auto cmp : componentList->components) {
+
+	//								if (cmp.type->hash == query.exclude_comps[mtA]) {
+	//									//any check and we out
+	//									invalid = true;
+	//									break;
+	//								}
+	//							}
+	//							if (invalid) {
+	//								break;
+	//							}
+	//						}
+	//						if (invalid) {
+	//							//continue;
+	//							return;
+	//						}
+	//					}
+
+	//					//dumb algo, optimize later
+	//					int matches = 0;
+	//					for (int mtA = 0; mtA < query.require_comps.size(); mtA++) {
+
+	//						for (auto cmp : componentList->components) {
+
+	//							if (cmp.type->hash == query.require_comps[mtA]) {
+	//								matches++;
+	//								break;
+	//							}
+	//						}
+	//					}
+	//					//all perfect
+	//					if (matches == query.require_comps.size()) {
+
+	//						function(world->archetypes[i]);
+	//					}
+	//				}
+	//			});
+	//	}
+
+	//	jobsystem::wait(parallel_search);
+
+	//}
+
 	template<typename F>
 	void iterate_matching_archetypes(IECSWorld* world, const IQuery& query, F&& function) {
 
@@ -1221,9 +1293,34 @@ namespace Ecs
 		internal::destroy_entity(this, eid);
 	}
 
+	//template<typename Func>
+	//inline void IECSWorld::parallel_for_each(IQuery& query, Func&& function)
+	//{
+	//	TRACY_PROFILE_SCOPE_NC(ecs_parallel_for_each, tracy::Color::OrangeRed2);
+
+	//	using params = decltype(internal::args(&Func::operator()));
+
+
+	//	internal::parallel_iterate_matching_archetypes(this, query, [&](Archetype* arch) {
+	//		//jobsystem::job iterate;
+
+	//		for (auto chnk : arch->chunks) {
+	//			internal::unpack_chunk(params{}, chnk, function);
+	//			//jobsystem::submit_and_launch(iterate, [&]() {internal::unpack_chunk(params{}, chnk, function); });
+	//		}
+
+	//		//jobsystem::wait(iterate);
+	//	});
+
+	//	
+	//	TRACY_PROFILE_SCOPE_END();
+	//}
+
 	template<typename Func>
 	inline void IECSWorld::for_each(IQuery& query, Func&& function)
 	{
+		TRACY_PROFILE_SCOPE_NC(ecs_for_each, tracy::Color::OrangeRed1);
+
 		using params = decltype(internal::args(&Func::operator()));
 
 		internal::iterate_matching_archetypes(this, query, [&](Archetype* arch) {
@@ -1233,6 +1330,8 @@ namespace Ecs
 				internal::unpack_chunk(params{}, chnk, function);
 			}
 			});
+
+		TRACY_PROFILE_SCOPE_END();
 	}
 
 	template<typename Func>
