@@ -2,8 +2,12 @@
 #include "Keylogging.h"
 #include "Ouroboros/Core/Input.h"
 #include "Ouroboros/Core/Timer.h"
+#include "Ouroboros/Core/Application.h"
 #include <WinUser.h>
 #include <imgui/imgui.h>
+#include <sdl2/SDL.h>
+
+#define DEBUG_KEYBOARD
 KeyLogging::KeyLogging()
 {
 	Reset();
@@ -56,25 +60,24 @@ void KeyLogging::Show()
 	ImGui::Begin("KeyLog");
 	if (ImGui::Button("Test"))
 	{
-		INPUT inputs[4] = {};
-		ZeroMemory(inputs, sizeof(inputs));
+		//auto window_id = SDL_GetWindowID(static_cast<SDL_Window*>(oo::Application::Get().GetWindow().GetNativeWindow()));
+		SDL_Event ev;
+		ev.key.type = SDL_KEYDOWN;
+		ev.key.state = SDL_PRESSED;
+		ev.key.repeat = 0;
+		ev.key.windowID = 1;
+		ev.key.keysym.scancode = static_cast<SDL_Scancode>(KEY_ESCAPE);
+		if (SDL_PushEvent(&ev) != 1)
+			LOG_CORE_INFO("Failed to send input");
 
-		inputs[0].type = INPUT_KEYBOARD;
-		inputs[0].ki.wVk = VK_LWIN;
-
-		inputs[1].type = INPUT_KEYBOARD;
-		inputs[1].ki.wVk = 0x44;
-
-		inputs[2].type = INPUT_KEYBOARD;
-		inputs[2].ki.wVk = 0x44;
-		inputs[2].ki.dwFlags = KEYEVENTF_KEYUP;
-
-		inputs[3].type = INPUT_KEYBOARD;
-		inputs[3].ki.wVk = VK_LWIN;
-		inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
-
-		UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+		ev.key.type = SDL_KEYUP;
+		ev.key.state = SDL_RELEASED;
+		ev.key.keysym.scancode = static_cast<SDL_Scancode>(KEY_ESCAPE);
+		if (SDL_PushEvent(&ev) != 1)
+			LOG_CORE_INFO("Failed to send input");
 	}
+	if (oo::input::IsAnyKeyPressed())
+		LOG_CORE_WARN("Keypressed");
 	if (ImGui::Button(m_start ? "Stop" : "Start"))
 	{
 		m_start = !m_start;
@@ -149,40 +152,42 @@ void KeyLogging::SimulateKeys()
 		++m_actionDownCounter;//increment after using value
 		if (item.second.size())
 		{
-			INPUT* input = new INPUT[item.second.size()];
-			ZeroMemory(input, sizeof(INPUT) * item.second.size());
-			int counter = 0;
 			for (auto timedInputs : item.second)
 			{
-				input[counter].type = INPUT_KEYBOARD;
-				input[counter].ki.wVk = m_keymapping[timedInputs];
-				//input[counter].ki.dwFlags = KEYEVENTF_KEYUP;
-				++counter;
+				SDL_Event ev;
+				ev.key.type = SDL_KEYDOWN;
+				ev.key.state = SDL_PRESSED;
+				ev.key.repeat = 0;
+				ev.key.keysym.scancode = static_cast<SDL_Scancode>(timedInputs);
+				if (SDL_PushEvent(&ev) != 1)
+					LOG_CORE_INFO("Failed to send input");
 			}
-			
-			SendInput(item.second.size(), input, sizeof(INPUT));
-			delete[] input;
 		}
 	}
-	if (m_actionUp.size() > m_actionUpCounter && m_simulatedTime >= m_actionUp[m_actionUpCounter].first)
+	if (m_actionUp.size() > m_actionUpCounter)
 	{
-		auto item = m_actionUp[m_actionUpCounter];
-		++m_actionUpCounter;//increment after using value
-		if (item.second.size())
+		if (m_simulatedTime >= m_actionUp[m_actionUpCounter].first)
 		{
-			INPUT* input = new INPUT[item.second.size()];
-			ZeroMemory(input, sizeof(INPUT) * item.second.size());
-			int counter = 0;
-			for (auto timedInputs : item.second)
+			auto item = m_actionUp[m_actionUpCounter];
+			++m_actionUpCounter;//increment after using value
+			if (item.second.size())
 			{
-				input[counter].type = INPUT_KEYBOARD;
-				input[counter].ki.wVk = m_keymapping[timedInputs];
-				input[counter].ki.dwFlags = KEYEVENTF_KEYUP;
-				++counter;
+				for (auto timedInputs : item.second)
+				{
+					SDL_Event ev;
+					ev.key.type = SDL_KEYUP;
+					ev.key.state = SDL_RELEASED;
+					ev.key.keysym.scancode = static_cast<SDL_Scancode>(timedInputs);
+					if (SDL_PushEvent(&ev) != 1)
+						LOG_CORE_INFO("Failed to send input");
+				}
 			}
-			SendInput(item.second.size(), input, sizeof(INPUT));
-			delete[] input;
 		}
+	}
+	else
+	{
+		m_start = false;
+		return;
 	}
 }
 
