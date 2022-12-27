@@ -333,27 +333,43 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_update_global_bounds, tracy::Color::PeachPuff);
 
-        jobsystem::job update_global_bounds_job{};
+        //jobsystem::job update_global_bounds_job{};
 
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
-                /*jobsystem::submit(update_global_bounds_job, [&]()
-                    {*/
+                TRACY_PROFILE_SCOPE_NC(submit_update_rigidbodies, tracy::Color::PeachPuff2);
+
+
+                //jobsystem::submit(update_global_bounds_job, [&]()
+                    //{
+                        TRACY_PROFILE_SCOPE_NC(individual_rigidbody_update, tracy::Color::PeachPuff3);
                         // only update for transformthat have changed
                             //if (tf.HasChangedThisFrame)
                             {
+                                TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                                 auto pos = tf.GetGlobalPosition();
                                 auto quat = tf.GetGlobalRotationQuat();
                                 rb.SetPosOrientation(pos + rb.Offset, quat);
+                                TRACY_PROFILE_SCOPE_END();
                             }
 
-                            // test and set trigger boolean based on serialize value
-                            if (rb.object.isTrigger() != rb.IsTrigger())
-                                rb.object.setTriggerShape(rb.IsTrigger());
+                            {
+                                TRACY_PROFILE_SCOPE_NC(rigidbody_is_trigger_check, tracy::Color::PeachPuff4);
+                                // test and set trigger boolean based on serialize value
+                                if (rb.object.isTrigger() != rb.IsTrigger())
+                                    rb.object.setTriggerShape(rb.IsTrigger());
+                                TRACY_PROFILE_SCOPE_END();
+                            }
+                            
+                        TRACY_PROFILE_SCOPE_END();
                     //});
+                
+                TRACY_PROFILE_SCOPE_END();
             });
+
+        //jobsystem::launch_and_wait(update_global_bounds_job);
 
         //Updating box collider's bounds 
         static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
@@ -373,6 +389,8 @@ namespace oo
                     //});
             });
 
+        //jobsystem::wait(update_global_bounds_job);
+
         //Updating capsule collider's bounds 
         static Ecs::Query capsuleColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, CapsuleColliderComponent>();
         m_world->for_each(capsuleColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, CapsuleColliderComponent& cc)
@@ -391,6 +409,8 @@ namespace oo
                         rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
                     //});
             });
+
+        //jobsystem::wait(update_global_bounds_job);
 
         //Updating sphere collider's bounds 
         static Ecs::Query sphereColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, SphereColliderComponent>();

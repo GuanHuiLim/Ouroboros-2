@@ -240,23 +240,27 @@ namespace oo
         {
             if (group.size() <= 0) 
                 continue;
-            
+
+            TRACY_PROFILE_SCOPE_NC(per_batch_processing, tracy::Color::Goldenrod);
+
             jobsystem::job per_group_update{};
 
             for (auto& elem : group)
             {
                 // submitting work.
-                jobsystem::submit(per_group_update, [&]()
+                jobsystem::submit_and_launch(per_group_update, [&]()
                 {
                     // Find current gameobject
                     auto const go = m_scene->FindWithInstanceID(elem->get_handle());
-                    auto& const name = go->Name();
+                    //auto& const name = go->Name();
 
                     UpdateTransform(go);
                 });
             }
 
             jobsystem::wait(per_group_update);
+
+            TRACY_PROFILE_SCOPE_END();
         }
 
         TRACY_PROFILE_SCOPE_END();
