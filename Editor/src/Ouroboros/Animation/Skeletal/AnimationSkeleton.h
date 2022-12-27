@@ -1,10 +1,11 @@
 /************************************************************************************//*!
-\file           Anim.h
+\file           AnimationSkeleton.h
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552
 \par            email: l.guanhui\@digipen.edu
 \date           August 26, 2022
-\brief          Header for Animation
+\brief          An collection of information about the skeletal mesh and the bones and 
+				other related information to be used for animation
 
 Copyright (C) 2021 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -13,18 +14,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #pragma once
-#include "Anim_Utils.h"
-#include "AnimationGroup.h"
-#include "AnimationNode.h"
-#include "AnimationLink.h"
-#include "AnimationCondition.h"
-#include "AnimationParameter.h"
-#include "AnimationTimeline.h"
-#include "AnimationKeyFrame.h"
-#include "Animation.h"
-#include "AnimationTree.h"
-#include "AnimationTracker.h"
-#include "Skeletal/AnimationPose.h"
+#include "AnimationPose.h"
 
 namespace oo::Anim::internal
 {
@@ -32,4 +22,10 @@ namespace oo::Anim::internal
 
 namespace oo::Anim
 {
+	class Skeleton
+	{
+
+	private:
+		Pose starting_pose{};
+	};
 }

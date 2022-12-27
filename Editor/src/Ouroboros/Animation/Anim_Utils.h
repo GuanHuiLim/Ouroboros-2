@@ -88,7 +88,14 @@ namespace oo::Anim
 	struct ScriptEventTracker;
 	class IAnimationComponent;
 	class AnimationSystem;
+
+	/*--------------------
+	 skeletal animation
+	--------------------*/
 	class Pose; //represents a hierarchy of bones of skeletal mesh transforms
+	class Skeleton;
+	class AnimationSkeletalSystem;
+
 	namespace internal
 	{
 		struct UpdateTrackerInfo

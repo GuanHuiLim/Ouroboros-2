@@ -23,6 +23,9 @@ namespace oo::Anim
 		AnimationTree* animTree{ nullptr };
 		AnimationTracker tracker{};
 		Ecs::EntityID root_objectID{};
+		Pose current{};
+		Pose future{};
+
 
 		inline void Reset()
 		{

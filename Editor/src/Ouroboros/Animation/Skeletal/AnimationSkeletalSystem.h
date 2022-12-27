@@ -1,38 +1,40 @@
 /************************************************************************************//*!
-\file           AnimationPose.h
+\file           AnimationSkeletalSystem.h
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552
 \par            email: l.guanhui\@digipen.edu
 \date           August 26, 2022
-\brief          An animation pose
+\brief          
+Animation skeletal system enables skeletal animations to be updated and played
+on game objects
 
 Copyright (C) 2021 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
-
 #pragma once
-#include "Anim_Utils.h"
+#include "../Anim_Utils.h"
 
-#include <Archetypes_ECS/src/A_Ecs.h>
-namespace oo::Anim::internal
-{
 
-}
-
+#include "Ouroboros/ECS/ArchtypeECS/Wrapper.h"
+#include "Ouroboros/ECS/ArchtypeECS/System.h"
+#include "App/Editor/Events/OpenFileEvent.h"
+#include "App/Editor/Events/LoadProjectEvents.h"
 namespace oo::Anim
 {
-	struct Bone
+	class AnimationSkeletalSystem : public Ecs::System
 	{
-		Ecs::EntityID id{};
-		glm::mat4 transform{};
+		Ecs::ECSWorld* world{ nullptr };
+		Scene* scene{ nullptr };
+		Scene::go_ptr test_obj{};
+	public:
+
+	private:
 	};
 
-	class Pose
-	{
-		Bone rootBone{};
 
-		std::vector<Bone> bones{};
-	};
+	
+
+	
 }
