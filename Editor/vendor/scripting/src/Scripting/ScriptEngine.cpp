@@ -294,7 +294,7 @@ namespace oo
         return optionList;
     }
 
-    std::vector<int> ScriptEngine::GetEnumOptionValues(MonoType* enumType)
+    std::vector<unsigned int> ScriptEngine::GetEnumOptionValues(MonoType* enumType)
     {
         MonoMethod* GetEnumNames = mono_class_get_method_from_name(mono_get_enum_class(), "GetValues", 1);
         void* args[1];
@@ -302,10 +302,10 @@ namespace oo
         MonoArray* enumNames = (MonoArray*)mono_runtime_invoke(GetEnumNames, NULL, args, NULL);
 
         unsigned int totalCount = (unsigned int)mono_array_length(enumNames);
-        std::vector<int> optionList(totalCount);
+        std::vector<unsigned int> optionList(totalCount);
         for (unsigned int i = 0; i < totalCount; ++i)
         {
-            optionList[i] = static_cast<int>(mono_array_get(enumNames, int, i));
+            optionList[i] = mono_array_get(enumNames, unsigned int, i);
         }
         return optionList;
     }

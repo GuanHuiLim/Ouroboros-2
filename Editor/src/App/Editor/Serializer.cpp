@@ -52,6 +52,7 @@ Technology is prohibited.
 #include <Ouroboros/UI/GraphicsRaycasterComponent.h>
 
 #include <Ouroboros/Transform/TransformSystem.h>
+#include <Ouroboros/Editor/EditorComponent.h>
 
 Serializer::Serializer()
 {
@@ -93,6 +94,11 @@ void Serializer::Init()
 	AddLoadComponent<oo::UIRaycastComponent>();
 	AddLoadComponent<oo::UIImageComponent>();
 	AddLoadComponent<oo::GraphicsRaycasterComponent>();
+
+#if OO_EDITOR
+	AddLoadComponent<oo::EditorComponent>();
+#endif // OO_EDITOR
+
 
 	load_components.emplace(rttr::type::get<oo::ScriptComponent>().get_id(),
 		[](oo::GameObject& go, rapidjson::Value&& v)
@@ -426,6 +432,9 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::UIImageComponent>(go, val, doc);
 	SaveComponent<oo::GraphicsRaycasterComponent>(go, val, doc);
 
+#if OO_EDITOR
+	SaveComponent<oo::EditorComponent>(go,val,doc);
+#endif // OO_EDITOR
 	SaveScript(go, val, doc);// this is the last item
 }
 

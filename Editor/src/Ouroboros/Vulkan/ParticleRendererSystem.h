@@ -18,7 +18,7 @@ Technology is prohibited.
 #include "ParticleEmitterComponent.h"
 #include "CameraComponent.h"
 
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 

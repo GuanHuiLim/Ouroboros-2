@@ -44,7 +44,7 @@ Technology is prohibited.
 
 #include <fmod.hpp>
 // ecs
-#include <Archetypes_Ecs/src/A_Ecs.h>
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/ECS/ECS.h"
 #include "Ouroboros/ECS/DeferredComponent.h"
 #include "Ouroboros/ECS/DuplicatedComponent.h"

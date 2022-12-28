@@ -35,6 +35,11 @@ Technology is prohibited.
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 #include "Ouroboros/Scene/EditorController.h"
 
+#if OO_EDITOR
+#include "App/Editor/UI/Tools/WarningMessage.h"
+#endif // OO_EDITOR
+
+
 namespace oo
 {
     class ScriptingLayer final : public oo::Layer
@@ -65,7 +70,12 @@ namespace oo
                     {
                         ScriptManager::Load();
                         ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<ScriptSystem>()->RefreshScriptInfoAll();
-                    }
+						WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Compiled Successfully");
+					}
+					else
+					{
+						WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Failed to compile!");
+					}
                 });
             EventManager::Subscribe<EditorController::OnStopEvent>([](EditorController::OnStopEvent* e)
                 {

@@ -15,8 +15,8 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include <Archetypes_ECS/src/A_Ecs.h>
-#include <Archetypes_ECS/src/EcsUtils.h>
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
+//#include <Archetypes_ECS/src/EcsUtils.h>
 #include <set>
 
 #include "Ouroboros/Core/Base.h"

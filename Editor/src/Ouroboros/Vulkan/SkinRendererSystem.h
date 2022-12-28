@@ -1,6 +1,6 @@
 #pragma once
 #include "SkinRendererComponent.h"
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 

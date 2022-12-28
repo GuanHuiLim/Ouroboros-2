@@ -73,9 +73,9 @@ namespace oo
             *//**********************************************************************************/
             std::vector<std::string> GetOptions() const;
 
-            std::vector<int> GetValues() const;
+            std::vector<unsigned int> GetValues() const;
 
-            std::string GetValueName(int val) const;
+            std::string GetValueName(unsigned int val) const;
         };
 
         // used to store the necessary info to create a C# Vector2
