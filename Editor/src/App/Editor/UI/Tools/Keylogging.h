@@ -3,6 +3,7 @@
 #include <vector>
 #include <deque>
 #include "Ouroboros/Core/KeyCode.h"
+#include "Ouroboros/Core/MouseCode.h"
 class KeyLogging
 {
 public:
@@ -10,6 +11,7 @@ public:
 	~KeyLogging();
 
 	using TimedInputs = std::pair<float, std::vector<oo::input::KeyCode>>;
+	using TimedMouseInputs = std::pair<float, oo::input::MouseCode>;
 	void Show();
 	void LoggingKeys();
 	void SimulateKeys();
@@ -22,9 +24,20 @@ private:
 	std::deque<TimedInputs> m_actionDown;
 	unsigned m_actionUpCounter = 0;
 	std::deque<TimedInputs> m_actionUp;
+	union MousePos
+	{
+		short x;
+		short y;
+		int data;
+	};
+	float m_timeAccumulator = 0.0f;
+	const float m_granularity = 0.016;
+	std::deque<MousePos> m_mousePosition;
+	std::deque<TimedMouseInputs> m_mousePressed;
 
 	std::unordered_map<oo::input::KeyCode ,WORD> m_keymapping;
 	std::vector<bool> m_keystate;
+	std::unordered_map<oo::input::MouseCode, bool> m_mousestate;
 	bool m_start = false;
 	bool m_mode = false;//true -> logging mode
 };

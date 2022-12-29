@@ -46,38 +46,28 @@ KeyLogging::KeyLogging()
 	m_keymapping[oo::input::KeyCode::RALT] = VK_RMENU;
 	m_keymapping[oo::input::KeyCode::SPACE] = VK_SPACE;
 	m_keymapping[oo::input::KeyCode::ENTER] = VK_RETURN;
-}
+	
+	m_mousestate[oo::input::MouseCode::Button0] = false;
+	m_mousestate[oo::input::MouseCode::Button1] = false;
+	m_mousestate[oo::input::MouseCode::Button2] = false;
+	m_mousestate[oo::input::MouseCode::Button3] = false;
+	m_mousestate[oo::input::MouseCode::Button4] = false;
+	m_mousestate[oo::input::MouseCode::Button5] = false;
+	m_mousestate[oo::input::MouseCode::Button6] = false;
+	m_mousestate[oo::input::MouseCode::Button7] = false;
+}									   
 
 KeyLogging::~KeyLogging()
 {
 	m_keystate.clear();
 	m_actionDown.clear();
 	m_actionUp.clear();
+	m_mousePosition.clear();
 }
 
 void KeyLogging::Show()
 {
 	ImGui::Begin("KeyLog");
-	if (ImGui::Button("Test"))
-	{
-		//auto window_id = SDL_GetWindowID(static_cast<SDL_Window*>(oo::Application::Get().GetWindow().GetNativeWindow()));
-		SDL_Event ev;
-		ev.key.type = SDL_KEYDOWN;
-		ev.key.state = SDL_PRESSED;
-		ev.key.repeat = 0;
-		ev.key.windowID = 1;
-		ev.key.keysym.scancode = static_cast<SDL_Scancode>(KEY_ESCAPE);
-		if (SDL_PushEvent(&ev) != 1)
-			LOG_CORE_INFO("Failed to send input");
-
-		ev.key.type = SDL_KEYUP;
-		ev.key.state = SDL_RELEASED;
-		ev.key.keysym.scancode = static_cast<SDL_Scancode>(KEY_ESCAPE);
-		if (SDL_PushEvent(&ev) != 1)
-			LOG_CORE_INFO("Failed to send input");
-	}
-	if (oo::input::IsAnyKeyPressed())
-		LOG_CORE_WARN("Keypressed");
 	if (ImGui::Button(m_start ? "Stop" : "Start"))
 	{
 		m_start = !m_start;
@@ -87,6 +77,7 @@ void KeyLogging::Show()
 				Reset();
 			else
 			{
+				oo::input::SetSimulation(true);
 				m_actionDownCounter = 0;
 				m_actionUpCounter = 0;
 			}
@@ -110,11 +101,15 @@ void KeyLogging::Show()
 			SimulateKeys();
 		}
 	}
+	if(oo::input::IsAnyMouseButtonHeld())
+		ImGui::Text("Mouse Button Pressed");
 	ImGui::End();
+
 }
 
 void KeyLogging::LoggingKeys()
 {
+	m_timeAccumulator += oo::timer::dt();
 	m_elaspedTime += oo::timer::dt();
 	auto held = oo::input::GetKeysHeld();
 	auto released = oo::input::GetKeysReleased();
@@ -141,11 +136,32 @@ void KeyLogging::LoggingKeys()
 	}
 	if(released_button.empty() == false)
 		m_actionUp.push_back(TimedInputs(m_elaspedTime, std::move(released_button)));
+	auto mousepress = oo::input::GetMouseButtonsPressed();
+	auto mouserelease = oo::input::GetMouseButtonsReleased();
+	for (auto button : mousepress)
+	{
+		m_mousePressed.push_back(TimedMouseInputs(m_elaspedTime, button));
+	}
+	for (auto button : mouserelease)
+	{
+		m_mousePressed.push_back(TimedMouseInputs(m_elaspedTime, button));
+	}
+
+	if (m_timeAccumulator > m_granularity)
+	{
+		m_timeAccumulator = 0;
+		auto pos = oo::input::GetMousePosition();
+		MousePos mp;
+		mp.x = static_cast<short>(pos.first);
+		mp.y = static_cast<short>(pos.second);
+		m_mousePosition.push_back(std::move(mp));
+	}
 }
 
 void KeyLogging::SimulateKeys()
 {
 	m_simulatedTime += oo::timer::dt();
+	m_timeAccumulator += oo::timer::dt();
 	if (m_actionDown.size() > m_actionDownCounter && m_simulatedTime >= m_actionDown[m_actionDownCounter].first)
 	{
 		auto item = m_actionDown[m_actionDownCounter];
@@ -154,13 +170,7 @@ void KeyLogging::SimulateKeys()
 		{
 			for (auto timedInputs : item.second)
 			{
-				SDL_Event ev;
-				ev.key.type = SDL_KEYDOWN;
-				ev.key.state = SDL_PRESSED;
-				ev.key.repeat = 0;
-				ev.key.keysym.scancode = static_cast<SDL_Scancode>(timedInputs);
-				if (SDL_PushEvent(&ev) != 1)
-					LOG_CORE_INFO("Failed to send input");
+				oo::input::SimulateKeyInput(timedInputs, true);
 			}
 		}
 	}
@@ -174,19 +184,44 @@ void KeyLogging::SimulateKeys()
 			{
 				for (auto timedInputs : item.second)
 				{
-					SDL_Event ev;
-					ev.key.type = SDL_KEYUP;
-					ev.key.state = SDL_RELEASED;
-					ev.key.keysym.scancode = static_cast<SDL_Scancode>(timedInputs);
-					if (SDL_PushEvent(&ev) != 1)
-						LOG_CORE_INFO("Failed to send input");
+					oo::input::SimulateKeyInput(timedInputs, false);
 				}
 			}
+		}
+	}
+	if (m_mousePressed.empty() == false)
+	{
+		
+		if (m_simulatedTime >= m_mousePressed.front().first)
+		{
+			auto& pressed = m_mousePressed.front();
+			oo::input::SimulatedMouseButton(pressed.second);
+			m_mousePressed.pop_front();
+			m_mousestate[pressed.second] = !m_mousestate[pressed.second];
+		}
+		else
+		{
+			for (auto &state : m_mousestate)
+			{
+				if (state.second)
+					oo::input::SimulatedMouseButton(state.first);
+			}
+		}
+	}
+	if (m_mousePosition.empty() == false)
+	{
+		if (m_timeAccumulator > m_granularity)
+		{
+			m_timeAccumulator = 0;
+			auto& data = m_mousePosition.front();
+			oo::input::SimulatedMousePosition(data.x, data.y);
+			m_mousePosition.pop_front();
 		}
 	}
 	else
 	{
 		m_start = false;
+		oo::input::SetSimulation(false);
 		return;
 	}
 }
@@ -198,6 +233,12 @@ void KeyLogging::Reset()
 	{
 		m_keystate.push_back(false);
 	}
+	for (auto& state : m_mousestate)
+	{
+		state.second = false;
+	}
 	m_actionDown.clear();
 	m_actionUp.clear();
+	m_mousePosition.clear();
+	m_mousePressed.clear();
 }
