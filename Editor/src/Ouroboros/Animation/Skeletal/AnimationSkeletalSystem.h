@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include "../Anim_Utils.h"
-
+#include "AnimationSkeletalComponent.h"
 
 #include "Ouroboros/ECS/ArchtypeECS/Wrapper.h"
 #include "Ouroboros/ECS/ArchtypeECS/System.h"
@@ -29,7 +29,14 @@ namespace oo::Anim
 		Scene* scene{ nullptr };
 		Scene::go_ptr test_obj{};
 	public:
-
+		AnimationSkeletalSystem() = default;
+		~AnimationSkeletalSystem();
+		//to be run before main gameplay loop
+		void Init(Ecs::ECSWorld* world, Scene* scene);
+		//to be run before main gameplay loop and after objects are created/loaded
+		void BeforeUpdateLoop();
+		//update function to be run every frame
+		void Run(Ecs::ECSWorld* world) override;
 	private:
 	};
 
