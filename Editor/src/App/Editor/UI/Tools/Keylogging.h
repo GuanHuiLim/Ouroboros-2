@@ -32,7 +32,9 @@ private:
 	};
 	float m_timeAccumulator = 0.0f;
 	const float m_granularity = 0.016;
+	unsigned m_mousepositionCounter = 0;
 	std::deque<MousePos> m_mousePosition;
+	unsigned m_mousePressedCounter = 0;
 	std::deque<TimedMouseInputs> m_mousePressed;
 
 	std::unordered_map<oo::input::KeyCode ,WORD> m_keymapping;

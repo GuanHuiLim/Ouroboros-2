@@ -80,6 +80,8 @@ void KeyLogging::Show()
 				oo::input::SetSimulation(true);
 				m_actionDownCounter = 0;
 				m_actionUpCounter = 0;
+				m_mousepositionCounter = 0;
+				m_mousePressedCounter = 0;
 			}
 		}
 		m_elaspedTime = 0;
@@ -189,33 +191,29 @@ void KeyLogging::SimulateKeys()
 			}
 		}
 	}
-	if (m_mousePressed.empty() == false)
+	if (m_mousePressed.empty() == false && m_mousePressed.size() > m_mousePressedCounter)
 	{
-		
-		if (m_simulatedTime >= m_mousePressed.front().first)
+
+		if (m_simulatedTime >= m_mousePressed[m_mousePressedCounter].first)
 		{
-			auto& pressed = m_mousePressed.front();
-			oo::input::SimulatedMouseButton(pressed.second);
-			m_mousePressed.pop_front();
+			auto& pressed = m_mousePressed[m_mousePressedCounter];
+			++m_mousePressedCounter;
 			m_mousestate[pressed.second] = !m_mousestate[pressed.second];
 		}
-		else
+		for (auto &state : m_mousestate)
 		{
-			for (auto &state : m_mousestate)
-			{
-				if (state.second)
-					oo::input::SimulatedMouseButton(state.first);
-			}
+			if (state.second)
+				oo::input::SimulatedMouseButton(state.first);
 		}
 	}
-	if (m_mousePosition.empty() == false)
+	if (m_mousePosition.empty() == false && m_mousepositionCounter < m_mousePosition.size())
 	{
 		if (m_timeAccumulator > m_granularity)
 		{
 			m_timeAccumulator = 0;
-			auto& data = m_mousePosition.front();
+			auto& data = m_mousePosition[m_mousepositionCounter];
 			oo::input::SimulatedMousePosition(data.x, data.y);
-			m_mousePosition.pop_front();
+			++m_mousepositionCounter;
 		}
 	}
 	else
