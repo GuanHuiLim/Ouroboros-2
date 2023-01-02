@@ -15,22 +15,20 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include "../Anim_Utils.h"
-#include "AnimationSkeletalComponent.h"
 
 #include "Ouroboros/ECS/ArchtypeECS/Wrapper.h"
 #include "Ouroboros/ECS/ArchtypeECS/System.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
-namespace oo::Anim
+namespace oo::SkAnim
 {
 	class AnimationSkeletalSystem : public Ecs::System
 	{
 		Ecs::ECSWorld* world{ nullptr };
 		Scene* scene{ nullptr };
-		Scene::go_ptr test_obj{};
 	public:
 		AnimationSkeletalSystem() = default;
-		~AnimationSkeletalSystem();
+		~AnimationSkeletalSystem() = default;
 		//to be run before main gameplay loop
 		void Init(Ecs::ECSWorld* world, Scene* scene);
 		//to be run before main gameplay loop and after objects are created/loaded
@@ -40,8 +38,4 @@ namespace oo::Anim
 	private:
 	};
 
-
-	
-
-	
 }

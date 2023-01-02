@@ -14,10 +14,10 @@ Technology is prohibited.
 
 #pragma once
 
-namespace oo::Anim::internal
+namespace oo::SkAnim
 {
-}
+	class AnimationSkeletalComponent
+	{
 
-namespace oo::Anim
-{
+	};
 }

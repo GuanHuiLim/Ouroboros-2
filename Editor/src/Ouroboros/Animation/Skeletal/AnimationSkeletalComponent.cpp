@@ -12,14 +12,9 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
-
 #include "AnimationSkeletalComponent.h"
-namespace oo::Anim::internal
-{
 
-} //namespace oo::Anim::internal
-
-namespace oo::Anim
+namespace oo::SkAnim
 {
 	
 }

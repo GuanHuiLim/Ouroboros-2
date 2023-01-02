@@ -42,6 +42,17 @@ namespace oo::Anim::internal
 	bool Equal(float lhs, float rhs);
 }
 
+namespace oo::SkAnim
+{
+	/*--------------------
+	 skeletal animation
+	--------------------*/
+	class Pose; //represents a hierarchy of bones of skeletal mesh transforms
+	class Skeleton;
+	class AnimationSkeletalSystem;
+	class AnimationSkeletalComponent;
+}
+
 namespace oo::Anim
 {
 	enum class ParamType : int
@@ -89,12 +100,7 @@ namespace oo::Anim
 	class IAnimationComponent;
 	class AnimationSystem;
 
-	/*--------------------
-	 skeletal animation
-	--------------------*/
-	class Pose; //represents a hierarchy of bones of skeletal mesh transforms
-	class Skeleton;
-	class AnimationSkeletalSystem;
+	
 
 	namespace internal
 	{
