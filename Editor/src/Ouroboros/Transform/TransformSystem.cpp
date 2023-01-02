@@ -228,6 +228,9 @@ namespace oo
                 }
                 auto childs = curr->get_direct_child();
                 auto child_depth = curr->get_depth() + 1;
+                //auto current_size = launch_groups[child_depth].size();
+                //launch_groups[child_depth].resize(current_size + childs.size());
+                //std::move(std::execution::par_unseq, std::begin(childs), std::end(childs), std::begin(launch_groups[child_depth]) + current_size);
                 launch_groups[child_depth].insert(launch_groups[child_depth].end(), childs.begin(), childs.end());
                 assert(child_depth != 0);
             }
@@ -243,22 +246,29 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_NC(per_batch_processing, tracy::Color::Goldenrod);
 
-            jobsystem::job per_group_update{};
-
-            for (auto& elem : group)
-            {
-                // submitting work.
-                jobsystem::submit_and_launch(per_group_update, [&]()
+            std::for_each(std::execution::par_unseq, std::begin(group), std::end(group), [&](auto const& elem)
                 {
                     // Find current gameobject
                     auto const go = m_scene->FindWithInstanceID(elem->get_handle());
-                    //auto& const name = go->Name();
-
                     UpdateTransform(go);
                 });
-            }
+            
+            //jobsystem::job per_group_update{};
 
-            jobsystem::wait(per_group_update);
+            //for (auto& elem : group)
+            //{
+            //    // submitting work.
+            //    jobsystem::submit(per_group_update, [&]()
+            //    {
+            //        // Find current gameobject
+            //        auto const go = m_scene->FindWithInstanceID(elem->get_handle());
+            //        //auto& const name = go->Name();
+
+            //        UpdateTransform(go);
+            //    });
+            //}
+
+            //jobsystem::launch_and_wait(per_group_update);
 
             TRACY_PROFILE_SCOPE_END();
         }
