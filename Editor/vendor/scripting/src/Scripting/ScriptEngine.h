@@ -16,6 +16,7 @@ Technology is prohibited.
 #pragma once
 
 #include <string>
+#include <functional>
 #include <unordered_map>
 
 #include <mono/jit/jit.h>
@@ -81,6 +82,10 @@ namespace oo
         // Actions
         static MonoObject* InvokeFunction(MonoObject* obj, MonoMethod* method, void** paramList = nullptr);
         static MonoObject* InvokeFunction(MonoObject* obj, const char* functionName, void** paramList = nullptr,  int paramCount = 0);
+
+        // Iterators
+        using ScriptFieldCallback = std::function<void(MonoClassField* field)>;
+        static void ForEachClassField(MonoClass* klass, ScriptFieldCallback callback);
 
         // Throw Exceptions
         static void ThrowNullException();
