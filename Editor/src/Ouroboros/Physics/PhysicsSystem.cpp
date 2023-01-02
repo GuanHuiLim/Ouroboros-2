@@ -30,6 +30,8 @@ Technology is prohibited.
 #include "OO_Vulkan/src/DebugDraw.h"
 #include "Ouroboros/ECS/ECS.h"
 
+#include "Ouroboros/Vulkan/MeshRendererComponent.h"
+
 // test
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObject.h"
@@ -75,6 +77,12 @@ namespace oo
 
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, SphereColliderComponent>(
             this, &PhysicsSystem::OnSphereColliderRemove);
+
+        m_world->SubscribeOnAddComponent<PhysicsSystem, MeshColliderComponent>(
+            this, &PhysicsSystem::OnMeshColliderAdd);
+
+        m_world->SubscribeOnRemoveComponent<PhysicsSystem, MeshColliderComponent>(
+            this, &PhysicsSystem::OnMeshColliderRemove);
 
         myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
     }
@@ -296,36 +304,45 @@ namespace oo
                 AddToLookUp(rbComp, goc);
             });
 
-        jobsystem::job initialization_job{};
+        //jobsystem::job initialization_job{};
 
         static Ecs::Query duplicated_rb_with_box_query = Ecs::make_raw_query<RigidbodyComponent, BoxColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_box_query, [&](RigidbodyComponent& rbComp, BoxColliderComponent& bcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                jobsystem::submit(initialization_job, [&]() 
-                {
+                /*jobsystem::submit(initialization_job, [&]() 
+                {*/
                     InitializeBoxCollider(rbComp);
-                });
+                /*});*/
             });
 
         static Ecs::Query duplicated_rb_with_capsule_query = Ecs::make_raw_query<RigidbodyComponent, CapsuleColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_capsule_query, [&](RigidbodyComponent& rbComp, CapsuleColliderComponent& ccComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                jobsystem::submit(initialization_job, [&]()
-                    {
+                /*jobsystem::submit(initialization_job, [&]()
+                    {*/
                         InitializeCapsuleCollider(rbComp);
-                    });
+                    /*});*/
             });
 
         static Ecs::Query duplicated_rb_with_sphere_query = Ecs::make_raw_query<RigidbodyComponent, SphereColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_sphere_query, [&](RigidbodyComponent& rbComp, SphereColliderComponent& scComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                jobsystem::submit(initialization_job, [&]()
-                    {
+                /*jobsystem::submit(initialization_job, [&]()
+                    {*/
                         InitializeSphereCollider(rbComp);
-                    });
+                    /*});*/
             });
 
-        jobsystem::wait(initialization_job);
+        static Ecs::Query duplicated_rb_with_mesh_query = Ecs::make_raw_query<RigidbodyComponent, MeshColliderComponent, TransformComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_rb_with_mesh_query, [&](RigidbodyComponent& rbComp, MeshColliderComponent& mcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+            {
+                /*jobsystem::submit(initialization_job, [&]()
+                    {*/
+                InitializeMeshCollider(rbComp);
+                /*});*/
+            });
+
+        /*jobsystem::wait(initialization_job);*/
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -430,6 +447,25 @@ namespace oo
                         rb.object.setSphereProperty(sc.GlobalRadius);
                     //});
             });
+
+
+        TRACY_PROFILE_SCOPE_NC(physics_update_mesh_collider_bounds, tracy::Color::PeachPuff);
+        //Updating mesh collider's bounds 
+        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, MeshColliderComponent, MeshRendererComponent>();
+        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, MeshColliderComponent& mc, MeshRendererComponent& mr)
+            {
+                if (mc.Vertices.empty() || mc.Reset == true)
+                {
+                    mc.Vertices.clear();
+
+                    auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
+                    for (auto& vertex : vertices)
+                        mc.Vertices.emplace_back(vertex.pos);
+
+                    mc.Reset = false;
+                }
+            });
+        TRACY_PROFILE_SCOPE_END();
 
         //jobsystem::wait(update_global_bounds_job);
 
@@ -732,6 +768,8 @@ namespace oo
             m_world->remove_component<SphereColliderComponent>(rb->entityID);
         if(m_world->has_component<CapsuleColliderComponent>(rb->entityID))
             m_world->remove_component<CapsuleColliderComponent>(rb->entityID);
+        if (m_world->has_component<MeshColliderComponent>(rb->entityID))
+            m_world->remove_component<MeshColliderComponent>(rb->entityID);
 
         // finally we remove the physics object
         m_physicsWorld.removeInstance(rb->component.object);
@@ -807,6 +845,41 @@ namespace oo
         }
     }
 
+    void PhysicsSystem::OnMeshColliderAdd(Ecs::ComponentEvent<MeshColliderComponent>* mc)
+    {
+        // if mesh collider is directly added, ensure we add rigidbody too.
+        if (m_world->has_component<RigidbodyComponent>(mc->entityID) == false)
+        {
+            m_world->add_component<RigidbodyComponent>(mc->entityID);
+        }
+
+        auto& rb_comp = m_world->get_component<RigidbodyComponent>(mc->entityID);
+        InitializeMeshCollider(rb_comp);
+
+        //bool has_mr_comp = m_world->has_component<MeshRendererComponent>(mc->entityID);
+        //if (has_mr_comp)
+        //{
+        //    auto& mr_comp = m_world->get_component<MeshRendererComponent>(mc->entityID);
+        //    auto& vertices = mr_comp.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
+        //    //mc->component.Vertices.clear();
+        //    for (auto& vertex : vertices)
+        //    {
+        //        mc->component.Vertices.emplace_back(vertex.pos);
+        //    }
+        //}
+    }
+
+    void PhysicsSystem::OnMeshColliderRemove(Ecs::ComponentEvent<MeshColliderComponent>* mc)
+    {
+        // need this safeguard to be sure. otherwise crash.
+        if (m_world->has_component<RigidbodyComponent>(mc->entityID))
+        {
+            auto& rb_comp = m_world->get_component<RigidbodyComponent>(mc->entityID);
+            rb_comp.object.removeShape();
+            //rb_comp.object.setShape(myPhysx::shape::none);
+        }
+    }
+
     void PhysicsSystem::InitializeRigidbody(RigidbodyComponent& rb)
     {
         rb.object = m_physicsWorld.createInstance();
@@ -832,6 +905,12 @@ namespace oo
     {
         // create sphere
         rb.object.setShape(myPhysx::shape::sphere);
+    }
+
+    void PhysicsSystem::InitializeMeshCollider(RigidbodyComponent& rb)
+    {
+        // create box
+        //rb.object.setShape(myPhysx::shape::mesh);
     }
 
     void PhysicsSystem::DuplicateRigidbody(RigidbodyComponent& rb)
