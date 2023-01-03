@@ -11,42 +11,6 @@
 KeyLogging::KeyLogging()
 {
 	Reset();
-	m_keymapping[oo::input::KeyCode::A] = 0x41;
-	m_keymapping[oo::input::KeyCode::B] = 0x42;
-	m_keymapping[oo::input::KeyCode::C] = 0x43;
-	m_keymapping[oo::input::KeyCode::D] = 0x44;
-	m_keymapping[oo::input::KeyCode::E] = 0x45;
-	m_keymapping[oo::input::KeyCode::F] = 0x46;
-	m_keymapping[oo::input::KeyCode::G] = 0x47;
-	m_keymapping[oo::input::KeyCode::H] = 0x48;
-	m_keymapping[oo::input::KeyCode::I] = 0x49;
-	m_keymapping[oo::input::KeyCode::J] = 0x4A;
-	m_keymapping[oo::input::KeyCode::K] = 0x4B;
-	m_keymapping[oo::input::KeyCode::L] = 0x4C;
-	m_keymapping[oo::input::KeyCode::M] = 0x4D;
-	m_keymapping[oo::input::KeyCode::N] = 0x4E;
-	m_keymapping[oo::input::KeyCode::O] = 0x4F;
-	m_keymapping[oo::input::KeyCode::P] = 0x50;
-	m_keymapping[oo::input::KeyCode::Q] = 0x51;
-	m_keymapping[oo::input::KeyCode::R] = 0x52;
-	m_keymapping[oo::input::KeyCode::S] = 0x53;
-	m_keymapping[oo::input::KeyCode::T] = 0x54;
-	m_keymapping[oo::input::KeyCode::U] = 0x55;
-	m_keymapping[oo::input::KeyCode::V] = 0x56;
-	m_keymapping[oo::input::KeyCode::W] = 0x57;
-	m_keymapping[oo::input::KeyCode::X] = 0x58;
-	m_keymapping[oo::input::KeyCode::Y] = 0x59;
-	m_keymapping[oo::input::KeyCode::Z] = 0x5A;
-	m_keymapping[oo::input::KeyCode::LSHIFT] = VK_LSHIFT;
-	m_keymapping[oo::input::KeyCode::RSHIFT] = VK_RSHIFT;
-	m_keymapping[oo::input::KeyCode::TAB] = VK_TAB;
-	m_keymapping[oo::input::KeyCode::LCTRL] = VK_LCONTROL;
-	m_keymapping[oo::input::KeyCode::RCTRL] = VK_RCONTROL;
-	m_keymapping[oo::input::KeyCode::LALT] = VK_LMENU;
-	m_keymapping[oo::input::KeyCode::RALT] = VK_RMENU;
-	m_keymapping[oo::input::KeyCode::SPACE] = VK_SPACE;
-	m_keymapping[oo::input::KeyCode::ENTER] = VK_RETURN;
-	
 	m_mousestate[oo::input::MouseCode::Button0] = false;
 	m_mousestate[oo::input::MouseCode::Button1] = false;
 	m_mousestate[oo::input::MouseCode::Button2] = false;

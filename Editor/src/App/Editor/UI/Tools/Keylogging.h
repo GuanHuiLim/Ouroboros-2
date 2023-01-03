@@ -37,7 +37,6 @@ private:
 	unsigned m_mousePressedCounter = 0;
 	std::deque<TimedMouseInputs> m_mousePressed;
 
-	std::unordered_map<oo::input::KeyCode ,WORD> m_keymapping;
 	std::vector<bool> m_keystate;
 	std::unordered_map<oo::input::MouseCode, bool> m_mousestate;
 	bool m_start = false;
