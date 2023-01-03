@@ -1,11 +1,12 @@
 /************************************************************************************//*!
-\file           AnimationSkeleton.h
+\file           AnimationSkeletonStateMachine.h
 \project        Ouroboros
 \author         Lim Guan Hui, l.guanhui, 2000552
 \par            email: l.guanhui\@digipen.edu
 \date           August 26, 2022
-\brief          An collection of information about the skeletal mesh and the bones and 
-				other related information to be used for animation
+\brief          
+A state machine involving the skeletal mesh and the bones to be 
+used for animation
 
 Copyright (C) 2021 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -14,18 +15,21 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #pragma once
-#include "AnimationPose.h"
-
-namespace oo::SkAnim::internal
-{
-}
+#include "Ouroboros/ECS/GameObject.h"
+#include "AnimationSkeletalComponent.h"
 
 namespace oo::SkAnim
 {
-	class Skeleton
+	class AnimationSkeletonStateMachine
 	{
 
 	private:
-		Pose starting_pose{};
+
 	};
+}
+
+
+namespace oo::SkAnim::internal
+{
+	void UpdateStateMachineProgress(oo::GameObject go, AnimationSkeletalComponent& comp);
 }

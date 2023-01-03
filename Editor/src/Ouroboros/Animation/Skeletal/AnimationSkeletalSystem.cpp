@@ -16,7 +16,7 @@ Technology is prohibited.
 #include "pch.h"
 #include "AnimationSkeletalSystem.h"
 #include "AnimationSkeletalComponent.h"
-
+#include "AnimationSkeletonStateMachine.h"
 namespace oo::SkAnim
 {
 	void AnimationSkeletalSystem::Init(Ecs::ECSWorld* world, Scene* scene)
@@ -25,14 +25,27 @@ namespace oo::SkAnim
 	void AnimationSkeletalSystem::BeforeUpdateLoop()
 	{
 	}
+
+	void ApplyOutputPoseToSkeleton(AnimationSkeletalComponent& comp)
+	{
+		//TODO
+	}
+
+	void ApplySkeletonTransformToGameObjects(GameObject go, AnimationSkeletalComponent& comp)
+	{
+		//TODO
+	}
+
 	void AnimationSkeletalSystem::Run(Ecs::ECSWorld* world)
 	{
-
 		static Ecs::Query query = Ecs::make_query<AnimationSkeletalComponent, TransformComponent>();
+
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, AnimationSkeletalComponent& comp) {
 			GameObject go{ entity , *scene };
 
-
+			internal::UpdateStateMachineProgress(go, comp);
+			ApplyOutputPoseToSkeleton(comp);
+			ApplySkeletonTransformToGameObjects(go, comp);
 			});
 	}
 } //namespace oo::Anim::Anim
