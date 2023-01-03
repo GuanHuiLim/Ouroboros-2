@@ -247,6 +247,7 @@ namespace oo
             TRACY_PROFILE_SCOPE_NC(per_batch_processing, tracy::Color::Goldenrod);
 
             std::for_each(std::execution::par_unseq, std::begin(group), std::end(group), [&](auto const& elem)
+            //std::for_each(std::begin(group), std::end(group), [&](auto const& elem)
                 {
                     // Find current gameobject
                     auto const go = m_scene->FindWithInstanceID(elem->get_handle());

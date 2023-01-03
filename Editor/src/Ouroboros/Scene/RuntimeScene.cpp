@@ -113,28 +113,28 @@ namespace oo
         TRACY_PROFILE_SCOPE(runtime_scene_update);
 
         jobsystem::job phase_one{};
-
+        
         jobsystem::submit(phase_one, [&]() {
-            TRACY_PROFILE_SCOPE(transform_first_update);
-            GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
-            TRACY_PROFILE_SCOPE_END();
+          TRACY_PROFILE_SCOPE(transform_first_update);
+          GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
+          TRACY_PROFILE_SCOPE_END();
             });
         
         jobsystem::submit(phase_one, [&]() {
-            TRACY_PROFILE_SCOPE(input_update);
-            GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
-            TRACY_PROFILE_SCOPE_END();
+          TRACY_PROFILE_SCOPE(input_update);
+          GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
+          TRACY_PROFILE_SCOPE_END();
             });
-
+        
         jobsystem::launch_and_wait(phase_one);
 
         // phase 2 : things that rely on transform to complete update 
         //jobsystem::job phase_two{};
         //
         //jobsystem::submit(phase_two, [&]() {
-            TRACY_PROFILE_SCOPE(scripts_update);
-            GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
-            TRACY_PROFILE_SCOPE_END();
+          TRACY_PROFILE_SCOPE(scripts_update);
+          GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+          TRACY_PROFILE_SCOPE_END();
         //    });
         //
         //jobsystem::submit(phase_two, [&]() {
@@ -145,33 +145,33 @@ namespace oo
         //
         //jobsystem::launch_and_wait(phase_two);
 
-        //jobsystem::job phase_three{};
-        
-        //jobsystem::submit(phase_three, [&]() {
-            TRACY_PROFILE_SCOPE(physics_runtime_update);
-            GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
-            TRACY_PROFILE_SCOPE_END();
-        //    });
-
-        //jobsystem::submit(phase_three, [&]() {
-            TRACY_PROFILE_SCOPE(audio_update);
-            GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
-            TRACY_PROFILE_SCOPE_END();
-        //    });
+        jobsystem::job phase_three{};
         //
         //jobsystem::submit(phase_three, [&]() {
+          TRACY_PROFILE_SCOPE(physics_runtime_update);
+          GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
+          TRACY_PROFILE_SCOPE_END();
+        //    });
+        
+        jobsystem::submit(phase_three, [&]() {
+          TRACY_PROFILE_SCOPE(audio_update);
+          GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
+          TRACY_PROFILE_SCOPE_END();
+            });
+        
+        jobsystem::submit(phase_three, [&]() {
             TRACY_PROFILE_SCOPE(UI_runtime_update);
             GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
             TRACY_PROFILE_SCOPE_END();
-        //    });
-        //
+            });
+        
         //jobsystem::submit(phase_three, [&]() {
             TRACY_PROFILE_SCOPE(animation_update);
             GetWorld().Run_System<oo::Anim::AnimationSystem>();
             TRACY_PROFILE_SCOPE_END();
         //    });
-        //
-        //jobsystem::launch_and_wait(phase_three);
+        
+        jobsystem::launch_and_wait(phase_three);
             
         TRACY_PROFILE_SCOPE_END();
 
