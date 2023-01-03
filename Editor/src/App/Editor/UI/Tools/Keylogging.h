@@ -4,6 +4,7 @@
 #include <deque>
 #include "Ouroboros/Core/KeyCode.h"
 #include "Ouroboros/Core/MouseCode.h"
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 class KeyLogging
 {
 public:
@@ -16,6 +17,13 @@ public:
 	void LoggingKeys();
 	void SimulateKeys();
 	void Reset();
+
+	void StartLogging(ToolbarButtonEvent* ev);
+	void StopLogging(ToolbarButtonEvent* ev);
+	void ToggleSimulate(ToolbarButtonEvent* ev);
+	void SetEnableKeyLogging(ToolbarButtonEvent* ev);
+	static bool GetMode() { return m_mode; };
+	static bool GetEnable() { return m_enable; };
 private:
 	float m_elaspedTime;
 	float m_simulatedTime;
@@ -40,5 +48,6 @@ private:
 	std::vector<bool> m_keystate;
 	std::unordered_map<oo::input::MouseCode, bool> m_mousestate;
 	bool m_start = false;
-	bool m_mode = false;//true -> logging mode
+	inline static bool m_mode = false;//true -> logging mode
+	inline static bool m_enable = false;
 };

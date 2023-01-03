@@ -41,7 +41,7 @@ Technology is prohibited.
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 #include <App/Editor/Events/GizmoOperationEvent.h>
-
+#include "App/Editor/UI/Tools/Keylogging.h"
 void Toolbar::InitAssets()
 {
 	m_iconsSaved.emplace("TranslateButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("TranslateButton.png").begin());
@@ -66,8 +66,6 @@ void Toolbar::Show()
 	{
 		ImGui::BeginChild("ChildToolbar", { 0,0 });
 
-		TRACY_PROFILE_SCOPE_NC(ImageButton, tracy::Color::Blue);
-
 		if (ImGuiUtilities::ImageButton_ToolTip(1, "Gizmo Translate Mode",
 			m_iconsSaved["TranslateButton"].GetData<ImTextureID>(),
 			ImGui_StylePresets::image_small, { 0,0 }, { 1,1 }, -1,
@@ -76,8 +74,6 @@ void Toolbar::Show()
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::TRANSFORM);
 			oo::EventManager::Broadcast(&tbe);
 		}
-
-		TRACY_PROFILE_SCOPE_END();
 
 		ImGui::SameLine();
 		if (ImGuiUtilities::ImageButton_ToolTip(2,"Gizmo Rotate Mode", 
@@ -99,7 +95,25 @@ void Toolbar::Show()
 			oo::EventManager::Broadcast(&tbe);
 		}
 
+		ImGui::SameLine();
+		if (ImGuiUtilities::ImageButton_ToolTip(101, "On play will trigger simulate/recording",
+			m_iconsSaved["PlayButton"].GetData<ImTextureID>(),
+			ImGui_StylePresets::image_small,ImVec2(1,1),ImVec2(0,0), -1,
+			(KeyLogging::GetEnable() == true) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
+		{
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::SET_RECORD_ONPLAY);
+			oo::EventManager::Broadcast(&tbe);
+		};
 
+		ImGui::SameLine();
+		if (ImGuiUtilities::ImageButton_ToolTip(102, (KeyLogging::GetMode() == true)? "Recoding Mode" : "Simulating Mode",
+			m_iconsSaved["PenIcon"].GetData<ImTextureID>(),
+			ImGui_StylePresets::image_small, ImVec2(1, 1), ImVec2(0, 0), -1,
+			(KeyLogging::GetMode() == true) ? ImVec4{ 0.7f, 0.0f, 0, 1 } : ImVec4{ 0,0,0,0 }))
+		{
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::SET_SIMULATION_MODE);
+			oo::EventManager::Broadcast(&tbe);
+		};
 		//ImGui::SameLine();
 		//if (ImGui::Button("Compile", { 0,btn_height }))
 		//{

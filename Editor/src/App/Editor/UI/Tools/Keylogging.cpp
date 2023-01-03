@@ -3,10 +3,11 @@
 #include "Ouroboros/Core/Input.h"
 #include "Ouroboros/Core/Timer.h"
 #include "Ouroboros/Core/Application.h"
-#include <WinUser.h>
 #include <imgui/imgui.h>
 #include <sdl2/SDL.h>
-
+#include "App/Editor/Events/ToolbarButtonEvent.h"
+#include "Ouroboros/EventSystem/EventManager.h".
+#include "App/Editor/UI/Tools/WarningMessage.h"
 #define DEBUG_KEYBOARD
 KeyLogging::KeyLogging()
 {
@@ -19,6 +20,11 @@ KeyLogging::KeyLogging()
 	m_mousestate[oo::input::MouseCode::Button5] = false;
 	m_mousestate[oo::input::MouseCode::Button6] = false;
 	m_mousestate[oo::input::MouseCode::Button7] = false;
+
+	oo::EventManager::Subscribe<KeyLogging, ToolbarButtonEvent>(this, &KeyLogging::StartLogging);
+	oo::EventManager::Subscribe<KeyLogging, ToolbarButtonEvent>(this, &KeyLogging::StopLogging);
+	oo::EventManager::Subscribe<KeyLogging, ToolbarButtonEvent>(this, &KeyLogging::ToggleSimulate);
+	oo::EventManager::Subscribe<KeyLogging, ToolbarButtonEvent>(this, &KeyLogging::SetEnableKeyLogging);
 }									   
 
 KeyLogging::~KeyLogging()
@@ -31,7 +37,7 @@ KeyLogging::~KeyLogging()
 
 void KeyLogging::Show()
 {
-	ImGui::Begin("KeyLog");
+	/*ImGui::Begin("KeyLog");
 	if (ImGui::Button(m_start ? "Stop" : "Start"))
 	{
 		m_start = !m_start;
@@ -55,7 +61,7 @@ void KeyLogging::Show()
 	if (ImGui::Button(m_mode ? "Logging" : "Simulate"))
 	{
 		m_mode = !m_mode;
-	}
+	}*/
 	if (m_start)
 	{
 		if (m_mode)
@@ -67,9 +73,9 @@ void KeyLogging::Show()
 			SimulateKeys();
 		}
 	}
-	if(oo::input::IsAnyMouseButtonHeld())
-		ImGui::Text("Mouse Button Pressed");
-	ImGui::End();
+	//if(oo::input::IsAnyMouseButtonHeld())
+	//	ImGui::Text("Mouse Button Pressed");
+	//ImGui::End();
 
 }
 
@@ -203,4 +209,59 @@ void KeyLogging::Reset()
 	m_actionUp.clear();
 	m_mousePosition.clear();
 	m_mousePressed.clear();
+}
+
+void KeyLogging::StartLogging(ToolbarButtonEvent* ev)
+{
+	if (ev->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY && m_enable)
+	{
+		//m_mode = true;
+		m_start = true;
+
+		if (m_mode == true)
+			Reset();
+		else
+		{
+			oo::input::SetSimulation(true);
+			m_actionDownCounter = 0;
+			m_actionUpCounter = 0;
+			m_mousepositionCounter = 0;
+			m_mousePressedCounter = 0;
+		}
+
+		m_elaspedTime = 0;
+		m_simulatedTime = 0;
+	}
+}
+
+void KeyLogging::StopLogging(ToolbarButtonEvent* ev)
+{
+	if (ev->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP)
+	{
+		//m_mode = true;
+		m_start = false;
+		m_elaspedTime = 0;
+		m_simulatedTime = 0;
+	}
+}
+
+void KeyLogging::ToggleSimulate(ToolbarButtonEvent* ev)
+{
+	if (ev->m_buttonType == ToolbarButtonEvent::ToolbarButton::SET_SIMULATION_MODE)
+	{
+		m_mode = !m_mode;
+	}
+}
+
+void KeyLogging::SetEnableKeyLogging(ToolbarButtonEvent* ev)
+{
+	if (ev->m_buttonType == ToolbarButtonEvent::ToolbarButton::SET_RECORD_ONPLAY)
+	{
+		m_enable = !m_enable;
+		if (m_enable)
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Pressing play starts logging/resimulating keystrokes");
+		else
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Stop logging/resimulating keystrokes on play");
+
+	}
 }
