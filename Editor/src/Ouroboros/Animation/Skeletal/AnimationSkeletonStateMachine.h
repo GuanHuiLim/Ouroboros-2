@@ -26,6 +26,11 @@ namespace oo::SkAnim
 	private:
 
 	};
+
+	struct AnimationSkeletonStateMachineInstance
+	{
+
+	};
 }
 
 

@@ -16,12 +16,12 @@ Technology is prohibited.
 #include "../Anim_Utils.h"
 
 #include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
-namespace oo::Anim::internal
+namespace oo::SkAnim::internal
 {
 	constexpr static uint MAX_HIERARCHY_NUM = 10;
 }
 
-namespace oo::Anim
+namespace oo::SkAnim
 {
 	struct Bone
 	{
@@ -41,7 +41,7 @@ namespace oo::Anim
 }
 
 //internal functions
-namespace oo::Anim::internal
+namespace oo::SkAnim::internal
 {
 
 }

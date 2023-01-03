@@ -50,7 +50,10 @@ namespace oo::SkAnim
 	class Pose; //represents a hierarchy of bones of skeletal mesh transforms
 	class Skeleton;
 	class AnimationSkeletalSystem;
-	class AnimationSkeletalComponent;
+	struct AnimationSkeletalComponent;
+	class AnimationSkeletonStateMachine;
+	struct AnimationSkeletonStateMachineInstance;
+	using SM_Instance = AnimationSkeletonStateMachineInstance;
 }
 
 namespace oo::Anim
