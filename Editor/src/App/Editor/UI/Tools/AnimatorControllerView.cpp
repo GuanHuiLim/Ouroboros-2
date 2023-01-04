@@ -14,6 +14,8 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #include "pch.h"
+#include "Project.h"
+#include "../Object Editor/AssetBrowser.h"
 #include "AnimatorControllerView.h"
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
@@ -82,7 +84,6 @@ uintptr_t AnimatorControllerView::GetAvailableNodeID()
 
 void AnimatorControllerView::Show()
 {
-    return;
     //Get Info From the GameObject
     auto& selected_items = Hierarchy::GetSelected();    //temporary fix, ideally wanna get from animatorcontroller file
     auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -251,7 +252,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                 {
                     oo::Anim::NodeInfo nodeinfo{
                         .name{ "New Node" /*+ std::to_string(uniqueId)*/ },
-                        .animation_name{ oo::Anim::Animation::empty_animation_name },
+                        .animation_name{ oo::Anim::internal::empty_animation_name },
                         .speed{ 1.f },
                         .position{0.f,0.f,0.f}
                     };
@@ -384,9 +385,9 @@ void AnimatorControllerView::DisplayParameters()
                             }
                             case oo::Anim::P_TYPE::TRIGGER:
                             {
-                                bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
-                                if (ImGui::Checkbox("##trigger", &temp))
-                                    animator->GetActualComponent().animTree->parameters[i].value = temp;
+                                //bool temp = animator->GetActualComponent().animTree->parameters[i].value.get_value<bool>();
+                                //if (ImGui::Checkbox("##trigger", &temp))
+                                //    animator->GetActualComponent().animTree->parameters[i].value = temp;
                                 break;
                             }
                             case oo::Anim::P_TYPE::INT:
@@ -474,12 +475,11 @@ void AnimatorControllerView::DisplayInspector()
     int nodeCount = ed::GetSelectedNodes(m_nodesId.data(), num_selected_objects);
     int linkCount = ed::GetSelectedLinks(m_linksId.data(), num_selected_objects);
 
-    
-
     if (ImGui::Begin("Animator Inspector"))
     {
         if (nodeCount != 0)
         {
+            static ImGuiID open = 0;
             for (int i = 0; i < nodeCount; ++i)
             {
                 ed::NodeId temp = m_nodesId[i];
@@ -493,14 +493,19 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Text("Name");
                 ImVec2 textsize = ImGui::CalcTextSize("a");
                 ImGui::SameLine(textsize.x * 8);
-                ImGui::InputText("##name", const_cast<char*>(id->anim_node->name.c_str()), 256);
+                ImGui::InputText("##name", &id->anim_node->name);
                 ImGui::Separator();
                 ImGui::Text("Animation");
                 ImGui::SameLine(textsize.x * 12);
-                ImGui::InputText("##animation", const_cast<char*>(id->anim_node->GetAnimation().name.c_str()), 256);
+                ImGui::InputText("##animation", &id->anim_node->GetAnimation().name, ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly);
+                ImGui::SameLine();
+                DisplayAnimationSelector(id->anim_node, open);
                 ImGui::Text("Speed");
                 ImGui::SameLine(textsize.x * 12);
                 ImGui::InputFloat("##speed", &id->anim_node->speed);
+                ImGui::Text("Looping");
+                ImGui::SameLine(textsize.x * 12);
+                ImGui::Checkbox("##looping", &id->anim_node->GetAnimation().looping);
             }
         }
         else if (linkCount != 0)
@@ -509,8 +514,8 @@ void AnimatorControllerView::DisplayInspector()
             {
                 ed::LinkId temp = m_linksId[i];
                 auto id = std::find_if(m_links_.begin(), m_links_.end(), [temp](auto& link) {return link.id == temp; });
-                std::string linkRelation = id->link->name;
-                ImGui::Text(linkRelation.c_str());
+                //std::string linkRelation = id->link->name;
+                //ImGui::Text(linkRelation.c_str());
                 ImVec2 textsize = ImGui::CalcTextSize("a");
                 ImGui::Text("Has Exit Time");
                 ImGui::SameLine(textsize.x * 25);
@@ -527,6 +532,10 @@ void AnimatorControllerView::DisplayInspector()
                         ImGui::Text("Fixed Duration");
                         ImGui::SameLine(textsize.x * 25);
                         ImGui::Checkbox("##fixedduration", &id->link->fixed_duration);
+                        ImGui::Text("Transition Duration");
+                        ImGui::SameLine(textsize.x * 25);
+                        ImGui::InputFloat("##transitionduration", &id->link->transition_duration, 0.0f, 0.0f, "%.2f");
+
                     }
                     ImGui::TreePop();
                 }
@@ -535,6 +544,43 @@ void AnimatorControllerView::DisplayInspector()
             }
         }
         ImGui::End();
+    }
+}
+
+void AnimatorControllerView::DisplayAnimationSelector(oo::Anim::Node* _anim_node, ImGuiID& openID)
+{
+    ImGui::PushID(_anim_node->name.c_str());
+    ImGuiID tempID = ImGui::GetItemID();
+    if (ImGui::Button("Edit"))
+    {
+        if (openID == tempID)
+            openID = 0;
+        else
+        {
+            openID = tempID;
+        }
+    }
+    ImGui::PopID();
+    if (openID == tempID)
+    {
+        //display the animations
+        ImVec2 windowSize = ImGui::GetContentRegionAvail();
+        ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
+
+        if (ImGui::BeginChild("Select Animation", windowSize, true))
+        {
+            for (const auto& assets : Project::GetAssetManager()->GetAssetsByType(oo::AssetInfo::Type::Animation))
+            {
+                if (ImGui::Selectable(assets.GetFilePath().stem().string().c_str()))
+                {
+                    //TODO: CHANGE ANIMATION HERE
+                    _anim_node->SetAnimationAsset(assets);
+                    //_anim_node->anim_asset = assets;
+                    openID = 0;
+                }
+            }
+            ImGui::EndChild();
+        }
     }
 }
 
@@ -588,42 +634,48 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                     ImGui::BeginGroup();
                     if (!link->conditions.empty())
                     {
-                        ImGui::InputText("##comparestuff", &_compareTypes[(int)link->conditions[i].comparison_type], ImGuiInputTextFlags_ReadOnly);
-                        ImGui::SameLine();
-                        if (ImGui::ArrowButton("downbtn", ImGuiDir_Down))
+                        if (link->conditions[i].type != oo::Anim::P_TYPE::TRIGGER)
                         {
-                            _condid = _currCondId;
-                            open = !open;
-                        }
-                        if (open && _currCondId == _condid)
-                        {
-                            if (ImGui::BeginListBox("##compare"))
+                            ImGui::InputText("##comparestuff", &_compareTypes[(int)link->conditions[i].comparison_type], ImGuiInputTextFlags_ReadOnly);
+                            ImGui::SameLine();
+                            if (ImGui::ArrowButton("downbtn", ImGuiDir_Down))
                             {
-                                if (link->conditions[i].type == oo::Anim::P_TYPE::INT || link->conditions[i].type == oo::Anim::P_TYPE::FLOAT)
-                                {
-                                    if (ImGui::Selectable(_compareTypes[0].c_str()))
-                                    {
-                                        link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::GREATER;
-                                        open = !open;
-                                    }
-                                    if (ImGui::Selectable(_compareTypes[1].c_str()))
-                                    {
-                                        link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::LESS;
-                                        open = !open;
-                                    }
-                                }
-                                if (ImGui::Selectable(_compareTypes[2].c_str()))
-                                {
-                                    link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::EQUAL;
-                                    open = !open;
-                                }
-                                if (ImGui::Selectable(_compareTypes[3].c_str()))
-                                {
-                                    link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::NOT_EQUAL;
-                                    open = !open;
-                                }
+                                _condid = _currCondId;
+                                open = !open;
                             }
-                            ImGui::EndListBox();
+                            if (open && _currCondId == _condid)
+                            {
+                                if (ImGui::BeginListBox("##compare"))
+                                {
+                                    if (link->conditions[i].type == oo::Anim::P_TYPE::INT || link->conditions[i].type == oo::Anim::P_TYPE::FLOAT)
+                                    {
+                                        if (ImGui::Selectable(_compareTypes[0].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::GREATER;
+                                            open = !open;
+                                        }
+                                        if (ImGui::Selectable(_compareTypes[1].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::LESS;
+                                            open = !open;
+                                        }
+                                    }
+                                    if (link->conditions[i].type == oo::Anim::P_TYPE::BOOL)
+                                    {
+                                        if (ImGui::Selectable(_compareTypes[2].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::EQUAL;
+                                            open = !open;
+                                        }
+                                        if (ImGui::Selectable(_compareTypes[3].c_str()))
+                                        {
+                                            link->conditions[i].comparison_type = oo::Anim::Condition::CompareType::NOT_EQUAL;
+                                            open = !open;
+                                        }
+                                    }
+                                }
+                                ImGui::EndListBox();
+                            }
                         }
                     }
                     ImGui::EndGroup();
@@ -644,9 +696,9 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                         }
                         case oo::Anim::P_TYPE::TRIGGER:
                         {
-                            bool temp = link->conditions[i].value.get_value<bool>();
-                            if (ImGui::Checkbox("##trigger", &temp))
-                                link->conditions[i].value = temp;
+                            //bool temp = link->conditions[i].value.get_value<bool>();
+                            //if (ImGui::Checkbox("##trigger", &temp))
+                            //    link->conditions[i].value = temp;
                             break;
                         }
                         case oo::Anim::P_TYPE::INT:
@@ -899,7 +951,7 @@ void AnimatorControllerView::LoadGraph(oo::AnimationComponent* _animator)
 
         for (auto& [nodeID, node] : group.nodes)
         {
-            auto nodeinfo = CreateNode(&node);
+            [[maybe_unused]] auto nodeinfo = CreateNode(&node);
             assert(nodeinfo);
         }
 

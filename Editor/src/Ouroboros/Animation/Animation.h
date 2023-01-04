@@ -23,7 +23,7 @@ namespace oo::Anim
 	{
 		friend class AnimationSystem;
 
-		static constexpr const char* empty_animation_name = "empty animation";
+		
 		static std::unordered_map< std::string, size_t> name_to_ID;
 		static std::map<size_t, Animation> animation_storage;
 
@@ -40,13 +40,24 @@ namespace oo::Anim
 
 		UID animation_ID{ internal::generateUID() };
 
-		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
+		//stored as float cos assimp loads it as double
+
+		float frames_per_second{60ull};
+		//float total_frames{ 0ull };
+
+		float TimeFromFrame(size_t frame);
 
 		RTTR_ENABLE();
 
 	private:
+
+
+		static std::vector<Animation*> LoadAnimationFromFBX(std::string const& filepath, ModelFileResource* resource);
 		static Animation* AddAnimation(Animation&& anim);
 		static void RemoveAnimation(std::string const& name);
+
+		static Animation ExtractAnimation(float start_time, float end_time, Animation& anim, bool& result);
+		static Animation ExtractAnimation(size_t start_frame, size_t end_frame, Animation& anim, bool& result);
 	};
 
 

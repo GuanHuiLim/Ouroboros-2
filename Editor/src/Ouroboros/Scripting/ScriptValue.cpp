@@ -1194,7 +1194,7 @@ namespace oo
         {
             enum_type currValue = GetValue<enum_type>();
             enum_type srcValue = src.GetValue<enum_type>();
-            std::vector<int> newValues = currValue.GetValues();
+            std::vector<unsigned int> newValues = currValue.GetValues();
             return currValue.name == srcValue.name && currValue.name_space == srcValue.name_space
                 && std::find(newValues.begin(), newValues.end(), srcValue.value) != newValues.end();
         }
@@ -1226,7 +1226,7 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     ScriptValue::enum_type::enum_type(std::string const& namespace_, std::string const& name_, unsigned int val) : name_space{ namespace_ }, name{ name_ }, value{ val }
     {
-        std::vector<int> values = GetValues();
+        std::vector<unsigned int> values = GetValues();
         if (std::find(values.begin(), values.end(), value) == values.end())
             value = values[0];
     };
@@ -1240,7 +1240,7 @@ namespace oo
         return ScriptEngine::GetEnumOptions(mono_class_get_type(klass));
     }
 
-    std::vector<int> ScriptValue::enum_type::GetValues() const
+    std::vector<unsigned int> ScriptValue::enum_type::GetValues() const
     {
         MonoClass* klass = ScriptEngine::TryGetClass("Scripting", name_space.c_str(), name.c_str());
         if (klass == nullptr)
@@ -1249,9 +1249,9 @@ namespace oo
         return ScriptEngine::GetEnumOptionValues(mono_class_get_type(klass));
     }
 
-    std::string ScriptValue::enum_type::GetValueName(int val) const
+    std::string ScriptValue::enum_type::GetValueName(unsigned int val) const
     {
-        std::vector<int> values = GetValues();
+        std::vector<unsigned int> values = GetValues();
         std::vector<std::string> names = GetOptions();
 
         size_t index = std::find(values.begin(), values.end(), val) - values.begin();
@@ -1400,7 +1400,13 @@ namespace oo
         }
         std::shared_ptr<Scene> scene = ScriptManager::s_SceneManager->GetActiveScene<Scene>();
         ScriptSystem* scriptSystem = scene->GetWorld().Get_System<ScriptSystem>();
-        MonoObject* script = mono_gchandle_get_target(scriptSystem->GetScript(uuid, classNamespace.c_str(), className.c_str()));
+        ScriptDatabase::IntPtr ptr = scriptSystem->GetScript(uuid, classNamespace.c_str(), className.c_str());
+        if (ptr == ScriptDatabase::InvalidPtr)
+        {
+            LOG_WARN("{0} does not have the {1}.{2} script", uuid, classNamespace, className);
+            return;
+        }
+        MonoObject* script = mono_gchandle_get_target(ptr);
         if (script == nullptr)
         {
             LOG_WARN("{0} does not have the {1}.{2} script", uuid, classNamespace, className);

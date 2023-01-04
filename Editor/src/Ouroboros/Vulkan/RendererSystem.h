@@ -19,7 +19,7 @@ Technology is prohibited.
 #include "LightComponent.h"
 #include "CameraComponent.h"
 
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/ECS/GameObjectComponent.h"
@@ -58,6 +58,7 @@ namespace oo
 
         //UUID GetUUID(uint32_t graphicsID) const;
         inline static bool CameraDebugDraw = true;
+        inline static bool LightsDebugDraw = true;
 
     private:
         void OnScreenResize(WindowResizeEvent* e);

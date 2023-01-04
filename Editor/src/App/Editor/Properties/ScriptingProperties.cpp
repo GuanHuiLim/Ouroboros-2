@@ -32,6 +32,9 @@ Technology is prohibited.
 
 #include "App/Editor/UI/Object Editor/AssetBrowser.h"
 #include <Project.h>
+
+//this is a little of a fuckfest
+#include "App/Editor/UI/Object Editor/Hierarchy.h"
 ScriptingProperties::ScriptingProperties()
 {
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::BOOL, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
@@ -133,7 +136,7 @@ ScriptingProperties::ScriptingProperties()
 			ImGui::DragInt(v.name.c_str(), &size);
 			ImGui::PopItemFlag();
 			ImGui::SetItemAllowOverlap();
-
+			ImGui::PushID(v.name.c_str());
 			float itemwidth = ImGui::CalcItemWidth();
 			ImGui::SetCursorPos(cursorPos);
 			if (ImGui::ArrowButton("##listenumleft", ImGuiDir_::ImGuiDir_Left))
@@ -145,6 +148,7 @@ ScriptingProperties::ScriptingProperties()
 					data.valueList.resize(size);
 					editing = true; edited = true;
 					v.TrySetRuntimeValue(oo::ScriptValue{ data });
+					ImGui::PopID();
 					return;
 				}
 			}
@@ -157,6 +161,7 @@ ScriptingProperties::ScriptingProperties()
 				data.Push();
 				editing = true; edited = true;
 				v.TrySetRuntimeValue(oo::ScriptValue{ data });
+				ImGui::PopID();
 				return;
 			}
 
@@ -187,15 +192,18 @@ ScriptingProperties::ScriptingProperties()
 				ImGui::SameLine(0,5.0f);
 				ImGui::TextColored(ImVec4(1.0f,0,0,1.0f), "End of list");
 			}
+			ImGui::PopID();
 		});
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::GAMEOBJECT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::UUID>();
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			//ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			auto gameobject_ptr = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(data);
 			std::string referenceObj = gameobject_ptr == nullptr ? "Invalid Object" : gameobject_ptr->Name();
 			ImGui::InputText(v.name.c_str(), &referenceObj,ImGuiInputTextFlags_ReadOnly);
-			ImGui::PopItemFlag();
+			if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && gameobject_ptr)
+				Hierarchy::SetItemSelected(data);
+			//ImGui::PopItemFlag();
 			if (ImGui::BeginDragDropTarget())
 			{
 				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
@@ -233,12 +241,14 @@ ScriptingProperties::ScriptingProperties()
 	m_scriptUI.emplace(oo::ScriptValue::type_enum::COMPONENT, [](oo::ScriptFieldInfo& v, bool& editing, bool& edited)
 		{
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::component_type>();
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			//ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			auto gameobject_ptr = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(data.m_objID);
 			std::string referenceObj = gameobject_ptr == nullptr ? "Invalid "+ data.m_name : gameobject_ptr->Name();
 			std::string intput_txt_name = data.m_name + " " + v.name;
 			ImGui::InputText(intput_txt_name.c_str(), &referenceObj, ImGuiInputTextFlags_ReadOnly);
-			ImGui::PopItemFlag();
+			if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && gameobject_ptr)
+				Hierarchy::SetItemSelected(data.m_objID);
+			//ImGui::PopItemFlag();
 			if (ImGui::BeginDragDropTarget())
 			{
 				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
@@ -257,9 +267,18 @@ ScriptingProperties::ScriptingProperties()
 			auto data = v.TryGetRuntimeValue().GetValue<oo::ScriptValue::function_type>();
 			//assign UUID
 			auto uuid = data.m_objID;
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::DragScalarN(v.name.c_str(), ImGuiDataType_U64, &uuid, 1);
-			ImGui::PopItemFlag();
+			
+
+			auto gameobject = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(uuid);
+			bool validGameObject = gameobject == nullptr;
+			std::string name = validGameObject ? "Invalid" : gameobject->Name();
+			//ImGui::PushItemFlag(ImGuiItemFlags_Disabled,true);
+			ImGui::InputText(v.name.c_str(), &name,ImGuiInputTextFlags_ReadOnly);
+			if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && !validGameObject)
+				Hierarchy::SetItemSelected(uuid);
+			//ImGui::PopItemFlag();
+
+
 			if (ImGui::BeginDragDropTarget())
 			{
 				auto* payload = ImGui::AcceptDragDropPayload("HIERARCHY_PAYLOAD");
@@ -277,14 +296,18 @@ ScriptingProperties::ScriptingProperties()
 				v.TrySetRuntimeValue(oo::ScriptValue{ data });
 				return;
 			};
+			if (validGameObject)
+				return;//nothing to display so dont bother
+
+
+			
 			//function part
+			std::string funcName = data.m_info.functionName.size() ? data.m_info.functionName : "NOT ASSIGNED";
 			ImGui::Separator();
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			std::string funcName = data.m_info.functionName.size() ? data.m_info.functionName : "NOT ASSIGNED";
 			ImGui::InputText("##Function", &funcName);
 			ImGui::PopItemFlag();
 
-			auto gameobject = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(uuid);
 
 			ImGui::SameLine();
 			if (ImGui::SmallButton("o"))

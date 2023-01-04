@@ -89,7 +89,10 @@ namespace oo
     {
         if (scriptPtr == ScriptDatabase::InvalidPtr || scriptField == nullptr || value.GetValueType() == ScriptValue::type_enum::FUNCTION)
             return value;
-        return ScriptValue::GetFieldValue(mono_gchandle_get_target(scriptPtr), scriptField, value);
+        MonoObject* scriptObject = mono_gchandle_get_target(scriptPtr);
+        if (scriptObject == nullptr)
+            return value;
+        return ScriptValue::GetFieldValue(scriptObject, scriptField, value);
     }
 
     void ScriptFieldInfo::TrySetRuntimeValue(ScriptValue const& newValue)

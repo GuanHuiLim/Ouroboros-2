@@ -101,7 +101,7 @@ struct ParticleData
 {
     glm::mat4 transform{1.0f};
     glm::vec4 colour{1.0f};
-    glm::ivec4 instanceData; // EntityID, flags  ,abledo norm, roughness metal
+    glm::ivec4 instanceData{}; // EntityID, flags  ,abledo norm, roughness metal
 };
 
 struct EmitterInstance
@@ -186,6 +186,7 @@ public:
     {
         float radius = 0.5f;
         float bias = 0.025f;
+        float intensity = 1.0f;
         uint32_t samples = 8;
     }ssaoSettings{};
 
@@ -205,6 +206,7 @@ private:
     int32_t m_emitterCount{};
     BitContainer<EmitterInstance> m_EmitterInstances;
     bool initialized = false;
+
     //etc
 
     // + Spatial Acceleration Structures

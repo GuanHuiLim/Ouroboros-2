@@ -31,6 +31,7 @@ Technology is prohibited.
 #include "Ouroboros/Commands/CommandStackManager.h"
 #include "Ouroboros/Commands/Component_ActionCommand.h"
 #include "App/Editor/Events/GizmoOperationEvent.h"
+
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/Core/Input.h"
 
@@ -43,6 +44,7 @@ Technology is prohibited.
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
 
+
 // Default settings for editor camera
 Camera EditorViewport::EditorCamera = [&]()
 {
@@ -53,7 +55,6 @@ Camera EditorViewport::EditorCamera = [&]()
 	camera.Rotate({ 45, 180, 0 });
 	return camera;
 }();
-
 EditorViewport::EditorViewport()
 {
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnPlayEvent);
@@ -90,31 +91,6 @@ void EditorViewport::Show()
 	vMax.y += ImGui::GetWindowPos().y;
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
-	
-	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && cameraFocus)
-	{
-		ImVec2 mousepos = ImGui::GetMousePos();
-		ImVec2 cursor_screenpos = ImGui::GetCursorScreenPos();
-		mousepos.x -= cursor_screenpos.x;
-		mousepos.y -= cursor_screenpos.y;
-		
-		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
-		mousepos.x = mousepos.x / contentRegion.x;
-		mousepos.y = mousepos.y / contentRegion.y;
-		if (mousepos.x > 0 && mousepos.y > 0 && mousepos.x < 1 && mousepos.y < 1)
-		{
-			auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y});
-			if (graphicsID >= 0)
-			{
-				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
-				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid ); 
-				Hierarchy::GetSelectedNonConst().clear();
-				Hierarchy::GetSelectedNonConst().emplace(uuid);
-			}
-		}
-	}
-
 
 
 	m_cc.Update(oo::timer::dt(), cameraFocus);
@@ -147,9 +123,29 @@ void EditorViewport::Show()
 	ImGui::Image(graphicsworld->imguiID[1], ImGui::GetContentRegionAvail());
 	ImGui::SetCursorPos(prevpos);
 
+	ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+	ImVec2 cursor_screenpos = ImGui::GetCursorScreenPos();
 	//ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && cameraFocus && Hierarchy::GetSelected().empty())
+	{
+		ImVec2 mousepos = ImGui::GetMousePos();
+		mousepos.x -= cursor_screenpos.x;
+		mousepos.y -= cursor_screenpos.y;
 
-
+		mousepos.x = mousepos.x / contentRegion.x;
+		mousepos.y = mousepos.y / contentRegion.y;
+		if (mousepos.x > 0 && mousepos.y > 0 && mousepos.x < 1 && mousepos.y < 1)
+		{
+			auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y });
+			if (graphicsID >= 0)
+			{
+				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
+				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
+				Hierarchy::SetItemSelected(uuid);
+			}
+		}
+	}
 
 	//guarding against negative content sizes
 	auto& selectedItems = Hierarchy::GetSelected();
@@ -254,6 +250,31 @@ void EditorViewport::Show()
 			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.
 		}
 	}
+	else
+	{
+		
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && cameraFocus)
+		{
+			ImVec2 mousepos = ImGui::GetMousePos();
+			
+			mousepos.x -= cursor_screenpos.x;
+			mousepos.y -= cursor_screenpos.y;
+
+			mousepos.x = mousepos.x / contentRegion.x;
+			mousepos.y = mousepos.y / contentRegion.y;
+			if (mousepos.x > 0 && mousepos.y > 0 && mousepos.x < 1 && mousepos.y < 1)
+			{
+				auto graphicsID = VulkanRenderer::get()->GetPixelValue(0, { mousepos.x, mousepos.y });
+				if (graphicsID >= 0)
+				{
+					LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
+					auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+					ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
+					Hierarchy::SetItemSelected(uuid);
+				}
+			}
+		}
+	}
 	if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)&& before_edit.is_valid())
 	{
 		rttr::variant after_edit;
@@ -311,29 +332,45 @@ void EditorViewport::Show()
 
 void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY && s_maximizeOnPlay)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY)
 	{
-		s_windowStates.clear();
-		for (auto& window : ImGuiManager::s_GUIContainer)
+		if (s_maximizeOnPlay)
 		{
-			s_windowStates.push_back(window.second.m_enabled);
-			window.second.m_enabled = false;
+			if (s_windowStates.size())
+				return;
+			s_windowStates.clear();
+			for (auto& window : ImGuiManager::s_GUIContainer)
+			{
+				s_windowStates.push_back(window.second.m_enabled);
+				window.second.m_enabled = false;
+			}
+			ImGuiManager::GetItem("Toolbar").m_enabled = true;
+			ImGuiManager::GetItem("Preview Window").m_enabled = true;
 		}
-		ImGuiManager::GetItem("Toolbar").m_enabled = true;
-		ImGuiManager::GetItem("Preview Window").m_enabled = true;
+		else
+		{
+			ImGui::SetWindowFocus("Logger");
+			ImGui::SetWindowFocus("Preview Window");
+		}
 	}
 }
 
 void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay && s_windowStates.empty() == false)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP)
 	{
-		int i = 0;
-		for (auto& window : ImGuiManager::s_GUIContainer)
+		if (s_maximizeOnPlay)
 		{
-			window.second.m_enabled = s_windowStates[i++];
+			if (s_windowStates.empty() == true)
+				return;
+			int i = 0;
+			for (auto& window : ImGuiManager::s_GUIContainer)
+			{
+				window.second.m_enabled = s_windowStates[i++];
+			}
+			s_windowStates.clear();
 		}
-		s_windowStates.clear();
+		ImGui::SetWindowFocus("Editor Viewport");
 	}
 }
 
@@ -355,6 +392,10 @@ void EditorViewport::MenuBar()
 			if (ImGui::MenuItem("Camera Debug Draw", 0, oo::RendererSystem::CameraDebugDraw))
 			{
 				oo::RendererSystem::CameraDebugDraw = !oo::RendererSystem::CameraDebugDraw;
+			}
+			if (ImGui::MenuItem("Light Debug Draw", 0, oo::RendererSystem::LightsDebugDraw))
+			{
+				oo::RendererSystem::LightsDebugDraw = !oo::RendererSystem::LightsDebugDraw;
 			}
 
 			ImGui::EndMenu();

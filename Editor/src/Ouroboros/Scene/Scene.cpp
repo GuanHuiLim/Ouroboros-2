@@ -286,7 +286,7 @@ namespace oo
 
     Scene::go_ptr Scene::CreateGameObjectDeferred(oo::UUID uuid)
     {
-        LOG_INFO("Creating Deferred Game Object");
+        //LOG_INFO("Creating Deferred Game Object");
 
         Scene::go_ptr newObjectPtr = std::make_shared<GameObject>(uuid , *this);
         //m_createList.emplace_back(std::make_pair(newObjectPtr, onCreationCallback));

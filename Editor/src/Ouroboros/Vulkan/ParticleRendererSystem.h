@@ -18,7 +18,7 @@ Technology is prohibited.
 #include "ParticleEmitterComponent.h"
 #include "CameraComponent.h"
 
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 
@@ -37,6 +37,10 @@ namespace oo
         virtual ~ParticleRendererSystem();
 
         void Init();
+
+        void OnObjectEnabled(GameObjectComponent::OnEnableEvent* e);
+
+        void OnObjectDisabled(GameObjectComponent::OnDisableEvent* e);
 
         virtual void Run(Ecs::ECSWorld* world) override;
 

@@ -21,6 +21,7 @@ Technology is prohibited.
 #include "Log.h"
 #include <Physics/Source/phy.h>
 #include "Ouroboros/Audio/Audio.h"
+#include <JobSystem/src/final/jobs.h>
 
 namespace oo
 {
@@ -28,6 +29,7 @@ namespace oo
     {
         void init()
         {
+            jobsystem::initialize();
             log::init();
             LOG_CORE_INFO("Begin loading static lifetime objects");
             timer::init();
@@ -42,6 +44,7 @@ namespace oo
             log::shutdown();
             myPhysx::physx_system::shutdown();
             audio::ShutDown();
+            jobsystem::shutdown();
         }
     };
 }

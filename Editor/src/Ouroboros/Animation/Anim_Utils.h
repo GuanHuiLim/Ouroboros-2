@@ -15,7 +15,7 @@ Technology is prohibited.
 #include <vector>
 #include <variant>
 
-#include "Archetypes_Ecs/src/EcsUtils.h"
+#include "Ouroboros/ECS/ArchtypeECS/EcsUtils.h"
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "Ouroboros/Scripting/ScriptValue.h"
 #include "Ouroboros/Scripting/ScriptInfo.h"
@@ -30,7 +30,8 @@ Technology is prohibited.
 
 namespace oo::Anim::internal
 {
-	constexpr uint expected_num_anims = 50;
+	auto constexpr EPSILON = std::numeric_limits < float > ::epsilon();
+	//constexpr uint expected_num_anims = 50;
 	constexpr size_t invalid_ID{ std::numeric_limits<size_t>().max() };
 	constexpr uint invalid_index{ std::numeric_limits<uint>().max() };
 	extern std::unordered_map< size_t, rttr::instance(*)(void*)> hash_to_instance;
@@ -38,6 +39,7 @@ namespace oo::Anim::internal
 	void Initialise_hash_to_instance();
 
 	size_t generateUID();
+	bool Equal(float lhs, float rhs);
 }
 
 namespace oo::Anim
@@ -113,6 +115,11 @@ namespace oo::Anim
 
 		constexpr char  serialize_method_name[] = "Serialize";
 		constexpr char  load_method_name[] = "Load";
+		constexpr char	start_node_name[] = "Start Node";
+		constexpr char	any_state_node_name[] = "Any State Node";
+
+		static constexpr const char* empty_animation_name = "empty animation";
+		static inline UID empty_animation_UID{ 0ull };
 	}
 
 	struct GroupRef
@@ -268,6 +275,26 @@ namespace oo::Anim
 	{
 		//id of the parameter
 		size_t param_ID{ internal::invalid_ID };
+	};
+
+	struct SplitAnimationInfo
+	{
+		bool in_frames{ false };
+
+		//if in_frames is set to true use this
+		size_t start_frame{ 0ull };
+		size_t end_frame{ 0ull };
+
+		//if in_frames is set to false use this
+		float start_time{ 0.f };
+		float end_time{ 0.f };
+		//from animation->animation_ID 
+		UID anim_ID{internal::invalid_ID};
+		//desired split_animation_name
+		std::string split_animation_name{};
+
+		//leave this as empty to store in same directory as original animation
+		std::string filepath{};
 	};
 }
 

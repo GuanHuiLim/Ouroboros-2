@@ -70,6 +70,7 @@ namespace oo
     {
         m_graphicsWorld->ssaoSettings.bias = RendererSettings::setting.SSAO.Bias;
         m_graphicsWorld->ssaoSettings.radius = RendererSettings::setting.SSAO.Radius;
+        m_graphicsWorld->ssaoSettings.intensity = RendererSettings::setting.SSAO.intensity;
 
         m_graphicsWorld->lightSettings.ambient = RendererSettings::setting.Lighting.Ambient;
         m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;
@@ -146,7 +147,7 @@ namespace oo
             EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
             auto ar = e.Width / e.Height;
             camera.SetAspectRatio(ar);*/
-            static constexpr float defaultAR = 16.0 / 9.0;
+            static constexpr float defaultAR = 16.0f / 9.0f;
             camera.SetAspectRatio(defaultAR);
 #endif
             camera.movementSpeed = 5.0f;
@@ -230,8 +231,9 @@ namespace oo
             actualObject.modelID = m_comp.ModelHandle;
             actualObject.bindlessGlobalTextureIndex_Albedo      = m_comp.AlbedoID;
             actualObject.bindlessGlobalTextureIndex_Normal      = m_comp.NormalID;
-            actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
-            actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
+            // TODO : Fix this.
+            //actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
+            //actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
             actualObject.submesh = m_comp.MeshInformation.submeshBits;
 
             if (transformComp.HasChangedThisFrame)
@@ -292,13 +294,13 @@ namespace oo
             switch (cameraComp.AspectRatio)
             {
             case CameraAspectRatio::FOUR_BY_THREE:
-                camera->SetAspectRatio(4.0/3.0);
+                camera->SetAspectRatio(4.0f/3.0f);
                 break;
             case CameraAspectRatio::SIXTEEN_BY_NINE:
-                camera->SetAspectRatio(16.0/9.0);
+                camera->SetAspectRatio(16.0f/9.0f);
                 break;
             case CameraAspectRatio::SIXTEEN_BY_TEN:
-                camera->SetAspectRatio(16.0/10.0);
+                camera->SetAspectRatio(16.0f/10.0f);
                 break;
             }
         });
@@ -310,17 +312,20 @@ namespace oo
     
     void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)
     {
-        // Draw Debug Lights
-        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-        world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+        if (LightsDebugDraw)
         {
-            auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
-            // lighting debug draw
-            Sphere sphere;
-            sphere.center = vec3{ graphics_light.position };
-            sphere.radius = 0.1f;
-            DebugDraw::AddSphere(sphere, graphics_light.color);
-        });
+            // Draw Debug Lights
+            static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
+            world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+            {
+                auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+                // lighting debug draw
+                Sphere sphere;
+                sphere.center = vec3{ graphics_light.position };
+                sphere.radius = 0.1f;
+                DebugDraw::AddSphere(sphere, graphics_light.color);
+            });
+        }
 
         if (CameraDebugDraw)
         {

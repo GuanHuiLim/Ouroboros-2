@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           AudioSourceAPI.h
+\file           RigidbodyAPI.h
 \project        Ouroboros
 \author         Solomon Tan Teng Shue, t.tengshuesolomon, 620010020 | code contribution (100%)
 \par            email: t.tengshuesolomon\@digipen.edu
@@ -26,7 +26,14 @@ namespace oo
 
     SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, IsTrigger, bool, IsTrigger, SetTrigger)
 
-    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, GravityDisabled, bool, IsGravityDisabled, SetGravity)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, Gravity, bool, IsGravityEnabled, SetGravity)
+
+    SCRIPT_API_GET_SET(RigidbodyComponent, LockXAxisPosition, bool, LockXAxisPosition)
+    SCRIPT_API_GET_SET(RigidbodyComponent, LockYAxisPosition, bool, LockYAxisPosition)
+    SCRIPT_API_GET_SET(RigidbodyComponent, LockZAxisPosition, bool, LockZAxisPosition)
+    SCRIPT_API_GET_SET(RigidbodyComponent, LockXAxisRotation, bool, LockXAxisRotation)
+    SCRIPT_API_GET_SET(RigidbodyComponent, LockYAxisRotation, bool, LockYAxisRotation)
+    SCRIPT_API_GET_SET(RigidbodyComponent, LockZAxisRotation, bool, LockZAxisRotation)
 
     SCRIPT_API void Rigidbody_GetVelocity(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {

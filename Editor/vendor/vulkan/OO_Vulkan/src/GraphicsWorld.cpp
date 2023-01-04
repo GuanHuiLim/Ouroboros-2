@@ -203,12 +203,12 @@ bool ObjectInstance::isRenderable()
 
 void SetCastsShadows(LocalLightInstance& l, bool s)
 {
-	l.info.x = s ? -1 : 1;
+	l.info.x = s ? 1 : -1;
 }
 
 bool GetCastsShadows(LocalLightInstance& l)
 {
-	return l.info.x == -1;
+	return l.info.x == 1;
 }
 
 void SetCastsShadows(OmniLightInstance& l, bool s)

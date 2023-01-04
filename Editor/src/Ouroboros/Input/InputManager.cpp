@@ -64,11 +64,28 @@ namespace oo
 			  value("Key Y", input::KeyCode::Y),
 			  value("Key Z", input::KeyCode::Z),
 
+              value("Key 1", input::KeyCode::D1),
+              value("Key 2", input::KeyCode::D2),
+              value("Key 3", input::KeyCode::D3),
+              value("Key 4", input::KeyCode::D4),
+              value("Key 5", input::KeyCode::D5),
+              value("Key 6", input::KeyCode::D6),
+              value("Key 7", input::KeyCode::D7),
+              value("Key 8", input::KeyCode::D8),
+              value("Key 9", input::KeyCode::D9),
+
 			  value("Enter Key", input::KeyCode::ENTER),
 			  value("Escape Key", input::KeyCode::ESCAPE),
 			  value("Backspace", input::KeyCode::BACKSPACE),
 			  value("TAB key", input::KeyCode::TAB),
 			  value("Space key", input::KeyCode::SPACE),
+
+              value("Left Control key", input::KeyCode::LCTRL),
+              value("Right Control key", input::KeyCode::RCTRL),
+              value("Left Shift key", input::KeyCode::LSHIFT),
+              value("Right Shift key", input::KeyCode::RSHIFT),
+              value("Left Alt key", input::KeyCode::LALT),
+              value("Right Alt key", input::KeyCode::RALT),
 
 			  value("Right Arrow", input::KeyCode::RIGHT),
 			  value("Left Arrow", input::KeyCode::LEFT),

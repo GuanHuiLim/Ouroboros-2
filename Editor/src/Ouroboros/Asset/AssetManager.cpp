@@ -228,8 +228,13 @@ namespace oo
         auto filtered = store.filter(type);
         if (filtered.empty())
             return v;
-        std::transform(filtered.begin(), filtered.end(), std::back_inserter(v), [this](const decltype(filtered)::value_type& e)
+        std::for_each(filtered.begin(), filtered.end(), [&v](const decltype(filtered)::value_type& e)
         {
+            auto asset = Asset(e.second);
+            v.insert(std::upper_bound(v.begin(), v.end(), asset, [](const Asset& a, const Asset& b)
+            {
+                return a.GetFilePath().filename().string() < b.GetFilePath().filename().string();
+            }), asset);
             return Asset(e.second);
         });
         return v;
@@ -436,7 +441,7 @@ namespace oo
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->Reload();
                     store.tree.insert(FP);
-                    LOG_INFO("Move {0}", FP.filename());
+                    //LOG_INFO("Move {0}", FP.filename());
                 }
                 else if (tLast < WRITE_TIME && WRITE_TIME <= t)
                 {
@@ -445,7 +450,7 @@ namespace oo
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->timeLoaded = t;
                     store.at(meta.id)->Reload();
-                    LOG_INFO("Modified asset {0}", FP.filename());
+                    //LOG_INFO("Modified asset {0}", FP.filename());
                 }
             }
         }
@@ -486,7 +491,7 @@ namespace oo
 
                         // Remove
                         toRemove.emplace_back(asset.second->id);
-                        LOG_INFO("Un-indexed asset {0}", ASS_FP.filename());
+                        //LOG_INFO("Un-indexed asset {0}", ASS_FP.filename());
                     }
                 }
                 for (const auto& i : toRemove)
@@ -511,14 +516,14 @@ namespace oo
         {
             // Create meta file
             meta.id = Asset::GenerateSnowflake();
-            std::ofstream ofs = std::ofstream(fpMeta);
+            std::ofstream ofs = std::ofstream(fpMeta, std::ios::binary);
             BinaryIO::Write(ofs, meta);
-            LOG_INFO("Created meta {0}", fpMeta.filename());
+            //LOG_INFO("Created meta {0}", fpMeta.filename());
         }
         else
         {
             // Read meta file
-            std::ifstream ifs = std::ifstream(fpMeta);
+            std::ifstream ifs = std::ifstream(fpMeta, std::ios::binary);
             BinaryIO::Read(ifs, meta);
         }
         return meta;
@@ -569,7 +574,7 @@ namespace oo
         info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
         info->timeLoaded = std::chrono::file_clock::now();
         info->type = info->GetType();
-        LOG_INFO("Indexed asset {0}", fp.filename());
+        //LOG_INFO("Indexed asset {0}", fp.filename());
         return Asset(store.emplace(info->id, info));
     }
 }

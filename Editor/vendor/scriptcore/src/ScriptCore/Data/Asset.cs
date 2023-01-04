@@ -52,6 +52,8 @@ namespace Ouroboros
 
         public static bool operator ==(Asset lhs, Asset rhs)
         {
+            if (ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is null, and rhs is null
+                return true;
             if (!ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null)) // lhs is not null, but rhs is null
                 return lhs.id == 0;
             if (ReferenceEquals(lhs, null) && !ReferenceEquals(rhs, null)) // lhs is null, but rhs is not null

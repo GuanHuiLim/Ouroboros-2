@@ -64,6 +64,8 @@ namespace oo::Anim::internal
 	//go through all progress trackers and call their update function
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer);
 
+	void ResetTrackerProgress(AnimationTracker& tracker);
+
 	void UpdateScriptEventProgress(UpdateTrackerInfo& info, float updatedTimer);
 
 	KeyFrame* GetCurrentKeyFrame(ProgressTracker& tracker);
@@ -72,13 +74,15 @@ namespace oo::Anim::internal
 
 	void AssignNodeToTracker(AnimationTracker& animTracker, NodeRef node);
 
+	void ResetTriggers(UpdateTrackerInfo& info, Link& link);
 
 	//update a node's trackers to reflect its animation timelines
 	void UpdateNodeTrackers(Node& node);
 	//checks if a node is available for transition
+	Link* CheckNodeTransitions(UpdateTrackerInfo& info, Node& node);
 	Link* CheckNodeTransitions(UpdateTrackerInfo& info);
 
-	void ActivateTransition(UpdateTrackerInfo& info, Link* link);
+	void ActivateTransition(UpdateTrackerInfo& info, Link* link, Node& current_node);
 
 	void UpdateTracker(UpdateTrackerInfo& info);
 
@@ -130,7 +134,7 @@ namespace oo::Anim::internal
 	Animation* AddAnimationToNode(Node& node, Animation& anim);
 	Animation* AddAnimationToNode(Node& node, oo::Asset asset);
 
-	void RemoveNodeFromGroup(Group& group, UID node_ID);
+	bool RemoveNodeFromGroup(Group& group, UID node_ID);
 	void RemoveLinkFromGroup(Group& group, UID link_ID);
 
 

@@ -86,6 +86,7 @@ namespace oo
             // set default debug draws
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = true;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = true;
+            GetWorld().Get_System<RendererSystem>()->LightsDebugDraw = true;
         }
 
         // if filepath is a valid file path
@@ -97,7 +98,7 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -107,10 +108,24 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
         OPTICK_EVENT();
 
-        GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
-        GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
-        GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
-        GetWorld().Get_System<oo::UISystem>()->EditorUpdate();
+        jobsystem::job phase_one{};
+        jobsystem::submit(phase_one, [&]() {
+            GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
+            });
+        jobsystem::launch_and_wait(phase_one);
+
+        jobsystem::job phase_two{};
+        jobsystem::submit(phase_two, [&]() {
+            GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
+            });
+        jobsystem::submit(phase_two, [&]() {
+            GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
+            });
+        jobsystem::submit(phase_two, [&]() {
+            GetWorld().Get_System<oo::UISystem>()->EditorUpdate();
+            });
+        
+        jobsystem::launch_and_wait(phase_two);
 
         {
             //TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);

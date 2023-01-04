@@ -30,6 +30,7 @@ public:
 	void Show();
 	static const std::set<scenenode::handle_type>& GetSelected();
 	static std::set<scenenode::handle_type>& GetSelectedNonConst();
+	static void SetItemSelected(scenenode::handle_type id);
 	static const uint64_t GetSelectedTime();
 	void PreviewPrefab(const std::filesystem::path& p,const std::filesystem::path& currscene);
 	void PopBackPrefabStack();
@@ -38,7 +39,7 @@ protected:
 	void FilteredView();
 
 
-	bool TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flag, bool swaping = false, bool rename = false,bool noInteraction = false);
+	bool TreeNodeUI(const char* name, scenenode& node,oo::Scene::go_ptr go, ImGuiTreeNodeFlags_ flag, bool swaping = false, bool rename = false,bool noInteraction = false);
 	void SwappingUI(scenenode& node, bool setbelow = true);
 	void SearchFilter();
 	void RightClickOptions();

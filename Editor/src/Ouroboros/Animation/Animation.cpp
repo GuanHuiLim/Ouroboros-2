@@ -84,7 +84,7 @@ namespace oo::Anim::internal
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
-				auto result = prop.set_value(obj, val);
+				[[maybe_unused]] auto result = prop.set_value(obj, val);
 				assert(result);
 			}
 		}
@@ -127,6 +127,8 @@ namespace oo::Anim
 		.property("looping", &Animation::looping)
 		.property("animation_length", &Animation::animation_length)
 		.property("animation_ID", &Animation::animation_ID)
+		.property("frames_per_second", &Animation::frames_per_second)
+		//.property("total_frames", &Animation::total_frames)
 		.method(internal::serialize_method_name, &internal::SerializeAnimation)
 		.method(internal::load_method_name, &internal::LoadAnimation)
 		;
@@ -139,7 +141,8 @@ namespace oo::Anim
 
 		//create empty animation
 		Animation empty_anim{};
-		empty_anim.name = Animation::empty_animation_name;
+		empty_anim.name			= internal::empty_animation_name;
+		empty_anim.animation_ID	= internal::empty_animation_UID;
 
 		Animation::name_to_ID[empty_anim.name] = empty_anim.animation_ID;
 		//Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());
@@ -279,6 +282,17 @@ namespace oo::Anim
 			Animation anim{};
 			anim.name = prefix_name + scene->mAnimations[i]->mName.C_Str();
 
+			if (scene->mAnimations[i]->mTicksPerSecond != 0)
+				anim.frames_per_second = static_cast<float>(scene->mAnimations[i]->mTicksPerSecond);
+			else
+				anim.frames_per_second = 25.f;
+
+			//anim.total_frames	  = static_cast<float>(scene->mAnimations[i]->mDuration);
+			auto total_frames	  = static_cast<float>(scene->mAnimations[i]->mDuration);
+			anim.animation_length = total_frames / anim.frames_per_second;
+
+
+
 			for (size_t x = 0; x < scene->mAnimations[i]->mNumChannels; x++)
 			{
 				os << "Anim channel: " << scene->mAnimations[i]->mChannels[x]->mNodeName.C_Str() << std::endl;
@@ -318,9 +332,9 @@ namespace oo::Anim
 					{
 						auto& key = channel->mPositionKeys[y];
 						KeyFrame kf{ glm::vec3{key.mValue.x,key.mValue.y,key.mValue.z},
-						static_cast<float>(key.mTime)};
+						static_cast<float>(key.mTime) / anim.frames_per_second };
 
-						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						[[maybe_unused]] auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
 
 						os << y << "- Keyframe Position: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << std::endl;
@@ -345,9 +359,9 @@ namespace oo::Anim
 					{
 						auto& key = channel->mRotationKeys[y];
 						KeyFrame kf{glm::quat{key.mValue.w, key.mValue.x,key.mValue.y,key.mValue.z} ,
-						static_cast<float>(key.mTime)};
+						static_cast<float>(key.mTime) / anim.frames_per_second };
 
-						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						[[maybe_unused]] auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
 						os << y << "- Keyframe rotation: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << "," << key.mValue.w << std::endl;
 					}
@@ -371,9 +385,9 @@ namespace oo::Anim
 					{
 						auto& key = channel->mScalingKeys[y];
 						KeyFrame kf{glm::vec3{key.mValue.x,key.mValue.y,key.mValue.z} ,
-						static_cast<float>(key.mTime)};
+						static_cast<float>(key.mTime) / anim.frames_per_second };
 
-						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						[[maybe_unused]] auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
 					}
 				}
@@ -398,7 +412,7 @@ namespace oo::Anim
 		//remove existing dupe
 		if (Animation::name_to_ID.contains(anim.name))
 		{
-			auto old_anim = internal::RetrieveAnimation(Animation::name_to_ID[anim.name]);
+			[[maybe_unused]] auto old_anim = internal::RetrieveAnimation(Animation::name_to_ID[anim.name]);
 			assert(old_anim);
 			//anim.animation_ID = old_anim->animation_ID;
 			RemoveAnimation(anim.name);
@@ -424,4 +438,112 @@ namespace oo::Anim
 		Animation::name_to_ID.erase(name);
 
 	}
+	float Animation::TimeFromFrame(size_t frame)
+	{
+		return (1.f / frames_per_second) * static_cast<float>(frame);
+	}
+
+	Animation Animation::ExtractAnimation(float start_time, float end_time, Animation& anim, bool& result)
+	{
+		if (start_time > end_time)
+		{
+			assert(false); //how can start time more than end time
+			result = false;
+			return {};
+		}
+
+		Animation new_anim{};
+
+		new_anim.frames_per_second = anim.frames_per_second;
+
+		//copy keyframes in timelines
+		for (auto& timeline : anim.timelines)
+		{
+			Timeline new_timeline{ timeline };
+			new_timeline.keyframes.clear();
+
+			auto& keyframes = timeline.keyframes;
+
+			size_t start_keyframe_index{ 0 };
+			size_t end_keyframe_index{ keyframes.size() };
+			float start_keyframe_timing{ 0.f};
+
+			{//find starting keyframe index
+				size_t index{ 0ull };
+				for (auto& kf : keyframes)
+				{
+					if (internal::Equal(kf.time, start_time))
+					{
+						break;
+					}
+					if (kf.time > start_time)
+					{
+						start_keyframe_timing = kf.time - start_time;
+						break;
+					}
+					++index;
+				}
+				if (index == keyframes.size())
+				{
+					assert(false);//start keyframe not found!
+					result = false;
+					return {};
+				}
+				start_keyframe_index = index;
+			}
+			{//find ending keyframe index
+				size_t index{ 0ull };
+				for (auto& kf : keyframes)
+				{
+					if (internal::Equal(kf.time, end_time))
+						break;
+
+					if (kf.time > end_time)
+					{
+						if (index == 0ull)
+						{
+							assert(false);//end keyframe cant be the first keyframe!
+							result = false;
+							return {};
+						}
+						--index;
+						break;
+					}
+					++index;
+				}
+				end_keyframe_index = index;
+			}
+			if (end_keyframe_index == keyframes.size()) //end frame is the end
+			{
+				end_keyframe_index = keyframes.size() - 1ull;
+			}
+			auto keyframe_timing = start_keyframe_timing;
+			for (size_t index = start_keyframe_index; index < end_keyframe_index; ++index)
+			{
+				//if keyframe isnt the first
+				if (index > start_keyframe_index)
+				{//increment start keyframe time by difference between previous and current keyframe
+					keyframe_timing += keyframes[index].time - keyframes[index - 1ull].time;
+				}
+				auto keyframe = keyframes[index];
+				keyframe.time = keyframe_timing;
+
+				new_timeline.keyframes.emplace_back(keyframe);
+			}
+			assert(new_timeline.keyframes.size() > 1ull);
+			new_anim.timelines.emplace_back(std::move(new_timeline));
+		}
+
+		result = true;
+		return new_anim;
+	}
+
+	Animation Animation::ExtractAnimation(size_t start_frame, size_t end_frame, Animation& anim, bool& result)
+	{
+		float start_time = anim.TimeFromFrame(start_frame);
+		float end_time = anim.TimeFromFrame(end_frame);
+
+		return ExtractAnimation(start_time, end_time, anim, result);
+	}
+
 }

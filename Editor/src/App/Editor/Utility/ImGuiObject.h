@@ -27,5 +27,6 @@ public:
 	std::function<void()> m_prewindow;
 	ImGuiWindowFlags_ m_flags;
 	bool m_enabled = true;
+	bool m_closable_window = true;
 private:
 };

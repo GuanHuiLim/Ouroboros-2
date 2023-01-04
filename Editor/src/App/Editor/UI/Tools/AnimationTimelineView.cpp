@@ -40,8 +40,8 @@ void AnimationTimelineView::Show()
     if (gameObject == nullptr || gameObject->HasComponent<oo::AnimationComponent>() == false)
         return;
 
-    go = gameObject;
-    animator = &go.get()->GetComponent<oo::AnimationComponent>();
+    source_go = gameObject;
+    animator = &source_go.get()->GetComponent<oo::AnimationComponent>();
 
     DisplayAnimationTimeline(animator);
 }
@@ -56,7 +56,7 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
-        DrawToolbar();
+        DrawToolbar(_animator);
         
         DrawNodeSelector(_animator);
 
@@ -73,6 +73,45 @@ void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _an
         if (animation != nullptr)
         {
             //TODO: Loop Animation Keyframe
+            //stores the keyframs and timelines in that particular keyframe
+            for (int i = 0; i < animation->timelines.size(); ++i)
+            {
+                for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
+                {
+                    if ((currentKeyFrame * unitPerFrame) == animation->timelines[i].keyframes[j].time)
+                    {
+                        if (!keyframes.empty())
+                            keyframes.clear();
+                        if (!timelines.empty())
+                            timelines.clear();
+
+                        timelines.push_back(&animation->timelines[i]);
+                        keyframes.push_back(&animation->timelines[i].keyframes[j]);
+                    }
+                }
+            }
+
+            //applies the data of the stored timelines and keyframes to their respective rttr::instance object
+            for (int i = 0; i < timelines.size(); ++i)
+            {
+                if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
+                {
+                    //apply it according to the rttr_property
+                    timelines[i]->rttr_property.set_value(source_go.get()->GetComponent<oo::TransformComponent>(),
+                                                          keyframes[i]->data.get_value<glm::vec3>());
+                }
+                //else if (timelines[i]->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+                //{
+
+                //}
+            }
+
+            //for (int i = 0; i < animation->events.size(); ++i)
+            //{
+            //    if ((currentKeyFrame * unitPerFrame) == animation->events[i].time)
+            //        animation->events[i].script_function_info.Invoke(go.get()->GetInstanceID());
+            //}
+
             currentKeyFrame++;
         }
     }
@@ -105,7 +144,7 @@ void AnimationTimelineView::DrawTimeLineInfo()
     ImGui::SameLine();
 }
 
-void AnimationTimelineView::DrawToolbar()
+void AnimationTimelineView::DrawToolbar(oo::AnimationComponent* _animator)
 {
     if (ImGui::Button("<<"))
     {
@@ -148,18 +187,21 @@ void AnimationTimelineView::DrawToolbar()
     {
         //provide a drop down of the type of keyframe to make
 
-        if (animation != nullptr)
+        if (timeline != nullptr)
         {
-            for (int i = 0; i < animation->timelines.size(); ++i)
+            if (timeline->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
             {
                 oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(glm::vec3{ 0.f,0.f,0.f }, currentTime);
 
-                auto& temp = animator->GetActualComponent().animTree->groups;
-                for (auto it = temp.begin(); it != temp.end(); ++it)
-                {
-                    auto newKeyFrame = animator->AddKeyFrame(it->second.name, node->name, animation->timelines[i].name, newkf);
-                    assert(newKeyFrame);
-                }
+                [[maybe_unused]] auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
+                assert(newKeyFrame);
+            }
+            if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+            {
+                oo::Anim::KeyFrame newkf = oo::Anim::KeyFrame(false, currentTime);
+
+                [[maybe_unused]] auto newKeyFrame = animator->AddKeyFrame(node->group->name, node->name, timeline->name, newkf);
+                assert(newKeyFrame);
             }
         }
     }
@@ -175,8 +217,9 @@ void AnimationTimelineView::DrawToolbar()
 
             newEvent.script_function_info = oo::ScriptValue::function_info() ;
             newEvent.time = currentTime;
-
-            animation->events.push_back(newEvent);
+            
+            scriptevent = _animator->AddScriptEvent(node->group->name, node->name, timeline->name, newEvent);
+            //animation->events.push_back(newEvent);
         }
     }
 
@@ -248,6 +291,9 @@ void AnimationTimelineView::DrawNodeSelector(oo::AnimationComponent* _animator)
                             node = &it2->second;
                             animation = &node->GetAnimation();
                             currentKeyFrame = 0;
+                            timeline = nullptr;
+                            keyframe = nullptr;
+                            scriptevent = nullptr;
                             animopen = !animopen;
                         }
                     }
@@ -403,7 +449,13 @@ void AnimationTimelineView::DrawTimeLineContent()
                     {
                         if ((k * unitPerFrame) == animation->timelines[i].keyframes[j].time)
                         {
-                            DrawKeyFrame(k, IM_COL32(211, 211, 211, 255));
+                            DrawKeyFrame(k, { 0, 0, 0, 255 }, 15.0f + i * 20.0f, "K");
+                            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
+                            {
+                                keyframe = &animation->timelines[i].keyframes[j];
+                                timeline = &animation->timelines[i];
+                                currentKeyFrame = k;
+                            }
                         }
                     }
                 }
@@ -416,7 +468,12 @@ void AnimationTimelineView::DrawTimeLineContent()
                 {
                     if ((j * unitPerFrame) == animation->events[i].time)
                     {
-                        DrawKeyFrame(j, IM_COL32(211, 211, 0, 255));
+                        DrawKeyFrame(j, { 211, 211, 0, 255 }, -2.0f, "E");
+                        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
+                        {
+                            scriptevent = &animation->events[i];
+                            currentKeyFrame = j;
+                        }
                     }
                 }
             }
@@ -431,6 +488,7 @@ void AnimationTimelineView::DrawTimeLineContent()
             for (int i = 0; i < animation->timelines.size(); ++i)
             {
                 ImGui::PushID(i);
+                ImGui::SetCursorPosY(20.0f + (i * 20.0f));
                 bool requestDelete = false;
                 if (ImGui::SmallButton("X"))
                 {
@@ -442,28 +500,9 @@ void AnimationTimelineView::DrawTimeLineContent()
 
                 if (!animation->timelines.empty())
                 {
-                    opentimeline = ImGui::TreeNodeEx(animation->timelines[i].name.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-
-                    if (opentimeline)
+                    if (ImGui::Selectable(animation->timelines[i].name.c_str(), false))
                     {
                         timeline = &animation->timelines[i];
-                        for (int j = 0; j < animation->timelines[i].keyframes.size(); ++j)
-                        {
-                            if (animation->timelines[i].datatype == oo::Anim::Timeline::DATATYPE::VEC3)
-                            {
-                                if (currentTime == animation->timelines[i].keyframes[j].time)
-                                {
-                                    //draw the property editor
-                                    ImGui::DragFloat("X", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().x);
-                                    ImGui::DragFloat("Y", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().y);
-                                    ImGui::DragFloat("Z", &animation->timelines[i].keyframes[j].data.get_value<glm::vec3>().z);
-
-                                    animation->timelines[i].rttr_property.set_value(go.get()->GetComponent<oo::TransformComponent>(),
-                                                                                    animation->timelines[i].keyframes[j].data.get_value<glm::vec3>());
-                                }
-                            }
-                        }
-                        ImGui::TreePop();
                     }
                 }
                 if(requestDelete)
@@ -482,29 +521,10 @@ void AnimationTimelineView::DrawTimeLineContent()
 
             if (ImGui::BeginPopup("##addtimeline"))
             {
-                if (ImGui::MenuItem("Add Example Timeline"))
-                {
-                    auto& temp = animator->GetActualComponent().animTree->groups;
-
-                    for (auto it = temp.begin(); it != temp.end(); ++it)
-                    {
-                        oo::Anim::TimelineInfo exampleTimeline{
-                        .type{oo::Anim::Timeline::TYPE::PROPERTY},
-                        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
-                        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
-                        .timeline_name{"Example Timeline " + std::to_string(currentTimeLineCount)},
-                        .target_object{*(go.get())},
-                        .source_object{*(go.get())}
-                        };
-                        auto exampleTL = animator->AddTimeline(it->second.name, node->name, exampleTimeline);
-                        timeline = exampleTL.operator->();
-                    }
-                    ++currentTimeLineCount;
-                }
+                DrawTimeLineSelector(source_go.get());
                 ImGui::EndPopup();
             }
         }
-
         ImGui::EndChild();
     }
     DisplayInspector();
@@ -512,46 +532,209 @@ void AnimationTimelineView::DrawTimeLineContent()
 
 void AnimationTimelineView::DisplayInspector()
 {
-    if (animation != nullptr)
-    {
-        if (ImGui::Begin("Animation Event Inspector", &displayEventInspector))
+        if (ImGui::Begin("Animation Event Inspector"))
         {
-            for (int i = 0; i < animation->events.size(); ++i)
+            if (scriptevent != nullptr)
             {
-                if (currentTime == animation->events[i].time)
+                static bool openEventDropdown = false;
+                static std::string eventName = "empty";
+                ImGui::Text("Invoke: ");
+                ImGui::SameLine();
+                //ImGui Dropdown of all the invokable events 
+                eventName = scriptevent->script_function_info.className + "." + scriptevent->script_function_info.functionName;
+                fnInfo.clear();
+                oo::ScriptComponent::map_type& scriptMap = source_go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
+
+                for (auto it = scriptMap.begin(); it != scriptMap.end(); ++it)
                 {
-                    ImGui::Text("Invoke: ");
+                    oo::ScriptInfo& scriptInfo = it->second;
+                    std::vector<oo::ScriptValue::function_info> fnInfoAll = scriptInfo.classInfo.GetFunctionInfoAll();
+                    for (oo::ScriptValue::function_info _fnInfo : fnInfoAll)
+                        fnInfo.push_back(_fnInfo);
                 }
+
+                ImGui::InputText("##eventstuff", &eventName, ImGuiInputTextFlags_ReadOnly);
+                ImGui::SameLine();
+                if (ImGui::ArrowButton("eventdownbtn", ImGuiDir_Down))
+                {
+                    openEventDropdown = !openEventDropdown;
+                }
+                if (openEventDropdown)
+                {
+                    for (int i = 0; i < fnInfo.size(); ++i)
+                    {
+                        std::string tempname = fnInfo[i].className + "." + fnInfo[i].functionName;
+                        //ImGui::Text(tempname.c_str());
+                        if (ImGui::Selectable(tempname.c_str()))
+                        {
+                            scriptevent->script_function_info = fnInfo[i];
+                            eventName = tempname;
+                            openEventDropdown = !openEventDropdown;
+                        }
+                    }
+                }
+
+                //use scriptevent to display any other parameters
+                if (!scriptevent->script_function_info.paramList.empty())
+                {
+                    for (int i = 0; i < scriptevent->script_function_info.paramList.size(); ++i)
+                    {
+                        std::string paramLabel = scriptevent->script_function_info.paramList[i].name + ":";
+                        ImGui::Text(paramLabel.c_str());
+                        ImGui::SameLine();
+                        std::string valueLabel = "##" + scriptevent->script_function_info.paramList[i].name;
+                        if (scriptevent->script_function_info.paramList[i].value.IsValueType<bool>())
+                        {
+                            ImGui::Checkbox(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<bool>());
+                        }
+                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<int>())
+                        {
+                            ImGui::DragInt(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<int>());
+                        }
+                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<float>())
+                        {
+                            ImGui::DragFloat(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<float>());
+                        }
+                        else if (scriptevent->script_function_info.paramList[i].value.IsValueType<std::string>())
+                        {
+                            ImGui::InputText(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<std::string>());
+                        }
+                    }
+                }
+
+                ImGui::Text("Time: ");
+                ImGui::SameLine();
+                ImGui::DragFloat("##scripteventtime", &scriptevent->time, unitPerFrame);
             }
             ImGui::End();
         }
 
-    }
 
-    if (timeline != nullptr)
-    {
-        if (ImGui::Begin("Animation Timeline Inspector", &opentimeline))
+        if (ImGui::Begin("Animation Timeline Inspector"))
         {
-            ImGui::Text("Name: ");
-            ImGui::SameLine();
-            ImGui::InputText("##timelineName", &timeline->name);
+            if (timeline != nullptr)
+            {
+                ImGui::Text("Name: ");
+                ImGui::SameLine();
+                ImGui::InputText("##timelineName", &timeline->name, ImGuiInputTextFlags_ReadOnly);
+            }
             ImGui::End();
         }
-    }
+
+        if (ImGui::Begin("KeyFrame Editor"))
+        {
+            if (keyframe != nullptr)
+            {
+                ImGui::Text("Time: ");
+                ImGui::SameLine();
+                ImGui::DragFloat("##keyframetime", &keyframe->time, unitPerFrame);
+                if (currentTime == keyframe->time)
+                {
+                    if (timeline != nullptr )
+                    {
+                        if (timeline->datatype == oo::Anim::Timeline::DATATYPE::VEC3)
+                        {
+                            //draw the property editor
+                            ImGui::DragFloat("X", &keyframe->data.get_value<glm::vec3>().x);
+                            ImGui::DragFloat("Y", &keyframe->data.get_value<glm::vec3>().y);
+                            ImGui::DragFloat("Z", &keyframe->data.get_value<glm::vec3>().z);
+
+                            //need to support applying to child object
+                            timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::TransformComponent>(),
+                                                              keyframe->data.get_value<glm::vec3>());
+                        }
+                        //else if (timeline->datatype == oo::Anim::Timeline::DATATYPE::BOOL)
+                        //{
+                        //    ImGui::Checkbox(timeline->name.c_str(), &keyframe->data.get_value<bool>());
+                        //    
+                        //    if (source_go.get()->TryGetComponent<oo::SphereColliderComponent>())
+                        //    {
+                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::SphereColliderComponent>(),
+                        //            keyframe->data.get_value<bool>());
+                        //    }
+                        //    if (source_go.get()->TryGetComponent<oo::BoxColliderComponent>())
+                        //    {
+                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::BoxColliderComponent>(),
+                        //            keyframe->data.get_value<bool>());
+                        //    }
+                        //    if (source_go.get()->TryGetComponent<oo::CapsuleColliderComponent>())
+                        //    {
+                        //        timeline->rttr_property.set_value(source_go.get()->GetComponent<oo::CapsuleColliderComponent>(),
+                        //            keyframe->data.get_value<bool>());
+                        //    }
+                        //    //apply it to the object property
+                        //}
+                    }
+                }
+            }
+            ImGui::End();
+        }
 }
 
-void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, ImU32 colour)
+void AnimationTimelineView::DrawTimeLineSelector(oo::GameObject* go)
+{
+    //create recursive tree instead(?)
+    if (ImGui::MenuItem("Position"))
+    {
+        oo::Anim::TimelineInfo positionTimeline{
+        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Position")},
+        .timeline_name{go->Name() + " Position"},
+        .target_object{*go},
+        .source_object{*source_go.get()}
+        };
+        auto posTL = animator->AddTimeline(node->group->name, node->name, positionTimeline);
+        timeline = posTL.operator->();
+    }
+    if (ImGui::MenuItem("Rotation"))
+    {
+        oo::Anim::TimelineInfo rotationTimeline{
+        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Euler Angles")},
+        .timeline_name{go->Name() + " Rotation"},
+        .target_object{*go},
+        .source_object{*source_go.get()}
+        };
+        auto rotTL = animator->AddTimeline(node->group->name, node->name, rotationTimeline);
+        timeline = rotTL.operator->();
+    }
+    if (ImGui::MenuItem("Scaling"))
+    {
+        oo::Anim::TimelineInfo scaleTimeline{
+        .type{oo::Anim::Timeline::TYPE::PROPERTY},
+        .component_hash{Ecs::ECSWorld::get_component_hash<oo::TransformComponent>()},
+        .rttr_property{rttr::type::get< oo::TransformComponent>().get_property("Scaling")},
+        .timeline_name{go->Name() + " Scaling"},
+        .target_object{*go},
+        .source_object{*source_go.get()}
+        };
+        auto scaTL = animator->AddTimeline(node->group->name, node->name, scaleTimeline);
+        timeline = scaTL.operator->();
+    }
+    //if (go->TryGetComponent<oo::SphereColliderComponent>()
+    //        || go->TryGetComponent<oo::BoxColliderComponent>()
+    //        || go->TryGetComponent<oo::CapsuleColliderComponent>())
+    //{
+    //    if (ImGui::MenuItem("Collider"))
+    //    {
+    //        //enable or disable that component
+    //    }
+    //}
+}
+
+void AnimationTimelineView::DrawKeyFrame(int _currentKeyFrame, const ImVec4& colour, float ypos, const std::string& label)
 {
     ImVec2 cursorPos = ImGui::GetCursorScreenPos();
     float keyFrameSize = 7.0f;
     int halfKeyFrameSize = static_cast<int>(std::floor(keyFrameSize / 2));
 
-    cursorPos.x += GetTimelinePosFromFrame(_currentKeyFrame) + (halfKeyFrameSize + 22);
-    cursorPos.y -= 2;
-
-    ImVec2 size = ImVec2(keyFrameSize, keyFrameSize + 4);
-
-    ImGui::GetWindowDrawList()->AddRectFilled(cursorPos, ImVec2(cursorPos.x + size.x, cursorPos.y + size.y), colour);
+    ImGui::SetCursorPosX(250.0f + GetTimelinePosFromFrame(_currentKeyFrame) + (halfKeyFrameSize));
+    ImGui::SetCursorPosY(ypos);
+    ImGui::PushStyleColor(ImGuiCol_Button, colour);
+    ImGui::Button(label.c_str());
+    ImGui::PopStyleColor();
 }
 
 int AnimationTimelineView::GetFrameFromTimelinePos(float pos)

@@ -73,7 +73,7 @@ namespace oo
         OO_Tracy_Zone(const char* name);
         ~OO_Tracy_Zone();
 
-        inline static std::stack<TracyCZoneCtx> m_ctxStack{};
+        inline static thread_local std::stack<TracyCZoneCtx> m_ctxStack{};
         static void ProfileZone(TracyCZoneCtx ctx)
         {
             m_ctxStack.emplace(ctx);

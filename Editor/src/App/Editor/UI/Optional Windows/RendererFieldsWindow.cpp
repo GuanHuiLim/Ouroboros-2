@@ -5,6 +5,7 @@
 
 #include "Ouroboros/EventSystem/EventTypes.h"
 #include "Ouroboros/EventSystem/EventManager.h"
+#include <App/Editor/UI/Tools/WarningMessage.h>
 
 RendererFieldsWindow::RendererFieldsWindow()
 {
@@ -12,6 +13,20 @@ RendererFieldsWindow::RendererFieldsWindow()
 
 void RendererFieldsWindow::Show()
 {
+	if (ImGui::BeginMenuBar())
+	{
+		if (ImGui::MenuItem("Save"))
+		{
+			Project::SaveRendererSettingFile();
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Saved(Renderer Settings)");
+		}
+		if (ImGui::MenuItem("Load/Revert"))
+		{
+			Project::LoadRendererSettingFile();
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Loaded(Renderer Settings)");
+		}
+		ImGui::EndMenuBar();
+	}
 	bool isEdited = false;
 
 	rttr::type t = oo::RendererSettings::setting.get_type();

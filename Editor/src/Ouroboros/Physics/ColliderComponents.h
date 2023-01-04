@@ -82,4 +82,11 @@ namespace oo
         RTTR_ENABLE();
     };
 
+    struct MeshColliderComponent final
+    {
+        bool Reset = false;
+        std::vector<vec3> Vertices;
+        RTTR_ENABLE();
+    };
+
 }

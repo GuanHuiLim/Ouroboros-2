@@ -48,6 +48,7 @@ Technology is prohibited.
 #include <Ouroboros/Commands/CommandStackManager.h>
 #include <Ouroboros/Commands/Delete_ActionCommand.h>
 #include <Ouroboros/Commands/Ordering_ActionCommand.h>
+#include <Ouroboros/Commands/Component_ActionCommand.h>
 //events
 #include <App/Editor/Events/OpenPromtEvent.h>
 #include <App/Editor/Events/OpenFileEvent.h>
@@ -60,6 +61,7 @@ Technology is prohibited.
 //other components
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
+#include <Ouroboros/Scripting/ScriptComponent.h>
 //#include <Ouroboros/Vulkan/RendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
@@ -70,6 +72,7 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/Editor/EditorComponent.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -116,7 +119,7 @@ void Hierarchy::Show()
  * \param no_Interaction - true if there is interaction , false if no interaction
  * \return 
  */
-bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
+bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, oo::Scene::go_ptr gameobj, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
 	//networking code////////////
@@ -133,15 +136,52 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	//end of networking code/////
 	ImGui::PushID(static_cast<int>(handle));
 	bool open = false;
+	bool collapsingHeader = false;
+	if (gameobj->HasComponent<oo::EditorComponent>())
+		collapsingHeader = gameobj->GetComponent<oo::EditorComponent>().m_header;
 	if (!rename)
 	{
-		if(networking_selected == false)
-			open = (ImGui::TreeNodeEx(name, flags));
+		if (networking_selected == false)
+		{
+			if (collapsingHeader == false)
+				open = (ImGui::TreeNodeEx(name, flags));
+			else
+			{
+				auto& editorComponent = gameobj->GetComponent<oo::EditorComponent>();
+				auto ecc = editorComponent.m_color;
+				ImVec4 col(ecc.r, ecc.g, ecc.b, ecc.a);
+				ImGui::PushStyleColor(ImGuiCol_HeaderActive, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, col);col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_Header, col);
+				open = ImGui::CollapsingHeader(name, flags);
+				if (open && (flags & ImGuiTreeNodeFlags_Bullet) == 0)//if open and not a bullet
+					ImGui::TreePush(name);
+				ImGui::PopStyleColor(3);
+			}
+
+		}
 		else
 		{
-			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
-			open = (ImGui::TreeNodeEx(name, flags));
-			ImGui::PopStyleColor();
+
+			if (collapsingHeader == false)
+			{
+				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
+				open = (ImGui::TreeNodeEx(name, flags));
+				ImGui::PopStyleColor();
+			}
+			else
+			{
+				auto& editorComponent = gameobj->GetComponent<oo::EditorComponent>();
+				auto ecc = editorComponent.m_color;
+				ImVec4 col(ecc.r, ecc.g, ecc.b, ecc.a);
+				ImGui::PushStyleColor(ImGuiCol_HeaderActive, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_Header, col);
+				open = ImGui::CollapsingHeader(name, flags);
+				if (open && (flags & ImGuiTreeNodeFlags_Bullet) == 0)//if open and not a bullet
+					ImGui::TreePush(name);
+				ImGui::PopStyleColor(3);
+			}
 		}
 	}
 	else
@@ -149,8 +189,14 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 		auto source = scene->FindWithInstanceID(node.get_handle());
 		ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("##rename", &source->Name(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+		std::string curr_name = source->Name();
+		if (ImGui::InputText("##rename", &curr_name, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			oo::CommandStackManager::AddCommand(new oo::Component_ActionCommand<oo::GameObjectComponent>
+				(source->Name(), curr_name, rttr::type::get<oo::GameObjectComponent>().get_property("Name"), source->GetInstanceID()));
+			source->Name() = curr_name;
 			m_isRename = false;
+		}
 	}
 	//nothing should parent over it if no_interaction == false
 	if (ImGui::BeginDragDropTarget() && no_Interaction == false)
@@ -188,9 +234,9 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 					return open;
 				}
 			}
-			if ((mousedown && !clicked) || ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
-				s_selected.emplace(handle);
-			else
+			if ((mousedown && !clicked) && ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
+				s_selected.emplace(handle);//this is hard to broadcast
+			else if (!mousedown)
 			{
 				using namespace std::chrono;
 				s_selected.clear();
@@ -226,6 +272,8 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 
 void Hierarchy::SwappingUI(scenenode& node, bool setbelow)
 {
+	if (node.get_handle() == m_dragged)
+		return;
 	ImGui::PushID(static_cast<int>(node.get_handle()));
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, { 0,1.0f });
 	ImVec2 pos = ImGui::GetCursorPos();
@@ -275,6 +323,12 @@ const std::set<scenenode::handle_type>& Hierarchy::GetSelected()
 std::set<scenenode::handle_type>& Hierarchy::GetSelectedNonConst()
 {
 	return s_selected;
+}
+void Hierarchy::SetItemSelected(scenenode::handle_type id)
+{
+	s_selected.clear();
+	s_selected.emplace(id);
+	BroadcastSelection(id);
 }
 const uint64_t Hierarchy::GetSelectedTime()
 {
@@ -429,7 +483,7 @@ void Hierarchy::NormalView()
 		{
 
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
-			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
+			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
 			{
 				open_prefab = true;
@@ -438,7 +492,7 @@ void Hierarchy::NormalView()
 			ImGui::PopStyleColor();
 		}
 		else
-			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
+			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
 
 		if (open == true && (flags & ImGuiTreeNodeFlags_OpenOnArrow))
 		{
@@ -536,9 +590,9 @@ void Hierarchy::FilteredView()
 					}
 				}
 
-				if ((mousedown && !clicked) || ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LCTRL)))
+				if ((mousedown && !clicked) && ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LCTRL)))
 					s_selected.emplace(handle);
-				else
+				else if (!mousedown)
 				{
 					s_selected.clear();
 					s_selected.emplace(handle);
@@ -554,7 +608,7 @@ void Hierarchy::SearchFilter()
 {
 	{//for drawing the search bar
 		ImVec2 cursor_pos = ImGui::GetCursorPos();
-		ImGui::PushItemWidth(-100.0f);
+		ImGui::PushItemWidth(-145.0f);
 		bool edited = ImGui::InputText("##Search", &m_filter);
 		ImGui::PopItemWidth();
 		ImVec2 cursor_pos2 = ImGui::GetCursorPos();
@@ -580,8 +634,10 @@ void Hierarchy::SearchFilter()
 			Filter_ByName();
 			break;
 		case 1:
+			Filter_ByComponent();
 			break;
 		case 2:
+			Filter_ByScript();
 			break;
 		}
 
@@ -600,6 +656,14 @@ void Hierarchy::RightClickOptions()
 			if (ImGui::MenuItem("New GameObject"))
 			{
 				CreateGameObjectImmediate();
+			}
+			if (ImGui::MenuItem("Header"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Header");
+						go.EnsureComponent<oo::EditorComponent>();
+					});
 			}
 			if(ImGui::MenuItem("Box"))
 			{
@@ -729,7 +793,7 @@ void Hierarchy::Filter_ByName()
 	{
 		std::shared_ptr<oo::GameObject> go = scene->FindWithInstanceID(curr_handle);
 		std::string& name = go->Name();
-		
+
 		auto iter = std::search(name.begin(), name.end(),
 			m_filter.begin(), m_filter.end(),
 			[](char ch1, char ch2) 
@@ -743,10 +807,34 @@ void Hierarchy::Filter_ByName()
 
 void Hierarchy::Filter_ByComponent()
 {
+
 }
 
 void Hierarchy::Filter_ByScript()
 {
+	m_filterList.clear();
+	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();
+	auto handles = instance.hierarchy_traversal_handles();
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto curr_handle : handles)
+	{
+		std::shared_ptr<oo::GameObject> go = scene->FindWithInstanceID(curr_handle);
+		auto& scriptcomp = go->GetComponent<oo::ScriptComponent>();
+		for (auto& script : scriptcomp.GetScriptInfoAll())
+		{
+			auto iter = std::search(script.first.begin(), script.first.end(),
+				m_filter.begin(), m_filter.end(),
+				[](char ch1, char ch2)
+				{
+					return std::toupper(ch1) == std::toupper(ch2);
+				});
+			if (iter != script.first.end())
+			{
+				m_filterList.emplace_back(curr_handle);
+				break;
+			}
+		}
+	}
 }
 
 std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate(std::function<void(oo::GameObject&)> modifications)

@@ -47,37 +47,52 @@ VulkanDevice::~VulkanDevice()
 
 void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance& instance)
 {
-    m_instancePtr = &instance;
-    // Enumerate over physical devices the VK instance can access
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance.instance, &deviceCount, nullptr);
+	m_instancePtr = &instance;
+	// Enumerate over physical devices the VK instance can access
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(instance.instance, &deviceCount, nullptr);
 
-    // If no devices available, then none support vulkan!
-    if (deviceCount == 0)
-    {
-        std::cerr << "Can't find GPUs that support vulkan instance!" << std::endl;
-        throw std::runtime_error("Can't find GPUs that support vulkan instance!");
-    }
+	// If no devices available, then none support vulkan!
+	if (deviceCount == 0)
+	{
+		std::cerr << "Can't find GPUs that support vulkan instance!" << std::endl;
+		throw std::runtime_error("Can't find GPUs that support vulkan instance!");
+	}
 
-    // Get ist of physical devices
-    std::vector<VkPhysicalDevice> deviceList(deviceCount);
-    vkEnumeratePhysicalDevices(instance.instance, &deviceCount, deviceList.data());
+	// Get ist of physical devices
+	std::vector<VkPhysicalDevice> deviceList(deviceCount);
+	vkEnumeratePhysicalDevices(instance.instance, &deviceCount, deviceList.data());
 
-    // find a suitable device
-    for (const auto &device : deviceList)
-    {
-        if (CheckDeviceSuitable(si,device))
-        {
-            //found a nice device
-            physicalDevice = device;
-            break;
-        }
-    }
-    if (physicalDevice == VK_NULL_HANDLE)
-    {
-        std::cerr << "No suitable physical device found!" << std::endl;
-        throw std::runtime_error("No suitable physical device found!");
-    }
+	uint32_t best = 0;
+	uint32_t memory = 0;
+	for (size_t i = 0; i < deviceList.size(); i++)
+	{
+		auto& device = deviceList[i];
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(device, &props);
+		if (props.limits.maxComputeWorkGroupInvocations > memory)
+		{
+			memory = props.limits.maxComputeWorkGroupInvocations;
+			std::swap(deviceList[i], deviceList[best]);
+			best = static_cast<uint32_t>(i);
+		}
+	}
+
+	// find a suitable device
+	for (const auto& device : deviceList)
+	{
+		if (CheckDeviceSuitable(si, device))
+		{
+			//found a nice device
+			physicalDevice = device;
+			break;
+		}
+	}
+	if (physicalDevice == VK_NULL_HANDLE)
+	{
+		std::cerr << "No suitable physical device found!" << std::endl;
+		throw std::runtime_error("No suitable physical device found!");
+	}
 
 }
 

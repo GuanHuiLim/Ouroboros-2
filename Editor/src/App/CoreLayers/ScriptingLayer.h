@@ -23,6 +23,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
+#include "Ouroboros/Vulkan/ParticleEmitterComponent.h"
+#include "Ouroboros/Animation/AnimationComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
 
 #include "Ouroboros/Physics/RigidbodyComponent.h"
@@ -31,6 +33,12 @@ Technology is prohibited.
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
+#include "Ouroboros/Scene/EditorController.h"
+
+#if OO_EDITOR
+#include "App/Editor/UI/Tools/WarningMessage.h"
+#endif // OO_EDITOR
+
 
 namespace oo
 {
@@ -42,6 +50,8 @@ namespace oo
         {
             ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
             ScriptManager::RegisterComponent<MeshRendererComponent>("Ouroboros", "MeshRenderer");
+            ScriptManager::RegisterComponent<ParticleEmitterComponent>("Ouroboros", "ParticleSystem");
+            ScriptManager::RegisterComponent<AnimationComponent>("Ouroboros", "Animator");
             ScriptManager::RegisterComponent<AudioSourceComponent>("Ouroboros", "AudioSource");
 
             ScriptManager::RegisterComponent<RigidbodyComponent>("Ouroboros", "Rigidbody");
@@ -60,7 +70,16 @@ namespace oo
                     {
                         ScriptManager::Load();
                         ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<ScriptSystem>()->RefreshScriptInfoAll();
-                    }
+						WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Compiled Successfully");
+					}
+					else
+					{
+						WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "Failed to compile!");
+					}
+                });
+            EventManager::Subscribe<EditorController::OnStopEvent>([](EditorController::OnStopEvent* e)
+                {
+                    ScriptManager::Load();
                 });
             EventManager::Subscribe<WindowFocusEvent>([](WindowFocusEvent* e)
                 {
