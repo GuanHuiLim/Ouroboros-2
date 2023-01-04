@@ -25,6 +25,19 @@ namespace oo::SkAnim::internal
 {
 	void UpdateStateMachineProgress(oo::GameObject go, AnimationSkeletalComponent& comp)
 	{
-
+		//check transition conditions
+		//TODO
+		
+		//try to transition if possible
+		//TODO
+		
+		//blend current state and next state
+		//TODO
+		
+		//if transition done, set current state to next state
+		//TODO
+		
+		//update current state node
+		//TODO
 	}
 }
