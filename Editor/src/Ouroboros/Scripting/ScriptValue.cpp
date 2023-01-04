@@ -41,6 +41,7 @@ namespace oo
 
     std::map<ScriptValue::type_enum, ScriptValue::helper_functions> ScriptValue::utilityMap
     {
+        // BOOL
         {
             ScriptValue::type_enum::BOOL, ScriptValue::helper_functions
             {
@@ -73,6 +74,7 @@ namespace oo
                 }
             }
         },
+        // INT
         { 
             ScriptValue::type_enum::INT, ScriptValue::helper_functions
             {
@@ -105,6 +107,7 @@ namespace oo
                 }
             }
         },
+        // FLOAT
         { 
             ScriptValue::type_enum::FLOAT, ScriptValue::helper_functions
             {
@@ -137,6 +140,7 @@ namespace oo
                 }
             }
         },
+        // STRING
         { 
             ScriptValue::type_enum::STRING, ScriptValue::helper_functions
             {
@@ -171,6 +175,7 @@ namespace oo
                 }
             }
         },
+        // ENUM
         { 
             ScriptValue::type_enum::ENUM, ScriptValue::helper_functions
             {
@@ -206,6 +211,7 @@ namespace oo
                 }
             }
         },
+        // VECTOR2
         { 
             ScriptValue::type_enum::VECTOR2, ScriptValue::helper_functions
             {
@@ -276,6 +282,7 @@ namespace oo
                 }
             }
         },
+        // VECTOR3
         { 
             ScriptValue::type_enum::VECTOR3, ScriptValue::helper_functions
             {
@@ -355,6 +362,7 @@ namespace oo
                 }
             }
         },
+        // COLOR
         { 
             ScriptValue::type_enum::COLOR, ScriptValue::helper_functions
             {
@@ -443,6 +451,7 @@ namespace oo
                 }
             }
         },
+        // GAMEOBJECT
         { 
             ScriptValue::type_enum::GAMEOBJECT, ScriptValue::helper_functions
             {
@@ -531,6 +540,7 @@ namespace oo
                 }
             }
         },
+        // COMPONENT
         { 
             ScriptValue::type_enum::COMPONENT, ScriptValue::helper_functions
             {
@@ -625,6 +635,7 @@ namespace oo
                 }
             }
         },
+        // ASSET
         {
             ScriptValue::type_enum::ASSET, ScriptValue::helper_functions
             {
@@ -748,6 +759,7 @@ namespace oo
                 }
             }
         },
+        // PREFAB
         { 
             ScriptValue::type_enum::PREFAB, ScriptValue::helper_functions
             {
@@ -824,6 +836,7 @@ namespace oo
                 }
             }
         },
+        // CLASS
         { 
             ScriptValue::type_enum::CLASS, ScriptValue::helper_functions
             {
@@ -859,20 +872,32 @@ namespace oo
                     size_t fieldIndex = 0;
 
                     std::vector<ScriptFieldInfo> resultList;
-                    void* iter = NULL;
-                    MonoClassField* valueField = nullptr;
-                    while ((valueField = mono_class_get_fields(typeClass, &iter)) != nullptr)
-                    {
-                        if (!ScriptEngine::CheckClassFieldInspectorVisible(fieldValue, valueField))
-                            continue;
+                    ScriptEngine::ForEachClassField(typeClass, [&](MonoClassField* field)
+                        {
+                            if (!ScriptEngine::CheckClassFieldInspectorVisible(fieldValue, field))
+                                return;
 
-                        std::string valueFieldName(mono_field_get_name(valueField));
-                        ScriptValue valueFieldValue = ScriptValue::GetFieldValue(fieldValue, valueField,
-                            ((fieldIndex < refFieldList.size()) ? refFieldList[fieldIndex].value : ScriptValue()));
-                        ++fieldIndex;
+                            std::string valueFieldName(mono_field_get_name(field));
+                            ScriptValue valueFieldValue = ScriptValue::GetFieldValue(fieldValue, field,
+                                ((fieldIndex < refFieldList.size()) ? refFieldList[fieldIndex].value : ScriptValue()));
+                            ++fieldIndex;
 
-                        resultList.push_back({ valueFieldName, valueFieldValue });
-                    }
+                            resultList.push_back({ valueFieldName, valueFieldValue });
+                        });
+                    //void* iter = NULL;
+                    //MonoClassField* valueField = nullptr;
+                    //while ((valueField = mono_class_get_fields(typeClass, &iter)) != nullptr)
+                    //{
+                    //    if (!ScriptEngine::CheckClassFieldInspectorVisible(fieldValue, valueField))
+                    //        continue;
+
+                    //    std::string valueFieldName(mono_field_get_name(valueField));
+                    //    ScriptValue valueFieldValue = ScriptValue::GetFieldValue(fieldValue, valueField,
+                    //        ((fieldIndex < refFieldList.size()) ? refFieldList[fieldIndex].value : ScriptValue()));
+                    //    ++fieldIndex;
+
+                    //    resultList.push_back({ valueFieldName, valueFieldValue });
+                    //}
                     return ScriptValue(ScriptValue::class_type{ ScriptEngine::GetClassInfoNameSpace(typeClass), ScriptEngine::GetClassInfoName(typeClass), resultList });
                 },
                 // GetObjectValue
@@ -927,6 +952,7 @@ namespace oo
                 }
             }
         },
+        // LIST
         { 
             ScriptValue::type_enum::LIST, ScriptValue::helper_functions
             {
@@ -1058,6 +1084,7 @@ namespace oo
                 }
             }
         },
+        // FUNCTION
         { 
             ScriptValue::type_enum::FUNCTION, ScriptValue::helper_functions
             {

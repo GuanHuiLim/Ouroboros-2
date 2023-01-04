@@ -251,31 +251,24 @@ namespace oo
 
     std::vector<ScriptFieldInfo> const ScriptClassInfo::GetScriptFieldInfoAll() const
     {
-        MonoClass* monoBehaviour = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        //MonoClass* monoBehaviour = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
         MonoClass* _class = ScriptEngine::GetClass("Scripting", name_space.c_str(), name.c_str());
         // create sample instance with the default values
         MonoObject* sample = ScriptEngine::CreateObject(_class);
         mono_runtime_object_init(sample);
 
         std::vector<ScriptFieldInfo> resultList;
-
-        while (_class != nullptr && _class != monoBehaviour)
+        ScriptEngine::ForEachClassField(_class, [&resultList, &sample](MonoClassField* field)
         {
-            void* iter = NULL;
-            MonoClassField* field = nullptr;
-            while ((field = mono_class_get_fields(_class, &iter)) != nullptr)
-            {
                 if (!ScriptEngine::CheckClassFieldInspectorVisible(sample, field))
-                    continue;
+                    return;
                 std::string fieldName(mono_field_get_name(field));
                 ScriptValue fieldValue = ScriptValue::GetFieldValue(sample, field);
                 if (!fieldValue.IsNullType())
                 {
                     resultList.push_back({ fieldName, fieldValue });
                 }
-            }
-            _class = mono_class_get_parent(_class);
-        }
+        });
         return resultList;
     }
 
