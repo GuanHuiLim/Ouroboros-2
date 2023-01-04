@@ -56,7 +56,8 @@ namespace oo
 
         void Init()
         {
-            m_prevMouseState = m_mouseState = m_mouseXPos = m_mouseYPos = 0;
+            m_mouseState = SDL_GetMouseState(&m_mouseXPos, &m_mouseYPos);
+            m_prevMouseState /*= m_mouseState = m_mouseXPos = m_mouseYPos */= 0;
 
             m_keyboardState = SDL_GetKeyboardState(&m_keyLength);
             m_prevKeyboardState = new Uint8[m_keyLength];
@@ -374,9 +375,10 @@ namespace oo
 
         std::pair<int, int> GetMousePosition()
         {
-            int x, y;
+            /*int x, y;
             SDL_GetMouseState(&x, &y);
-            return { x, y };
+            return { x, y };*/
+            return { m_mouseXPos, m_mouseYPos };
         }
 
         std::pair<int, int> GetMouseDelta()
