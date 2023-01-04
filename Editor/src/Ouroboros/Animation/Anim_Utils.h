@@ -42,19 +42,7 @@ namespace oo::Anim::internal
 	bool Equal(float lhs, float rhs);
 }
 
-namespace oo::SkAnim
-{
-	/*--------------------
-	 skeletal animation
-	--------------------*/
-	class Pose; //represents a hierarchy of bones of skeletal mesh transforms
-	class Skeleton;
-	class AnimationSkeletalSystem;
-	struct AnimationSkeletalComponent;
-	class AnimationSkeletonStateMachine;
-	struct AnimationSkeletonStateMachineInstance;
-	using SM_Instance = AnimationSkeletonStateMachineInstance;
-}
+
 
 namespace oo::Anim
 {

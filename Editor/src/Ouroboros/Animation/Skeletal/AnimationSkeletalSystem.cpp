@@ -48,4 +48,4 @@ namespace oo::SkAnim
 			ApplySkeletonTransformToGameObjects(go, comp);
 			});
 	}
-} //namespace oo::Anim::Anim
+} //namespace oo::SkAnim

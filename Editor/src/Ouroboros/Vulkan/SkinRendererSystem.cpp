@@ -136,7 +136,11 @@ namespace oo
 
 				if (gfx_Object.bones.size() != m_comp.num_bones)
 					gfx_Object.bones.resize(m_comp.num_bones);
-
+				
+				/* for blend shapes
+				if (gfx_Object.blendShapeWeights.size() != m_comp.blendShapeWeights)
+					gfx_Object.blendShapeWeights.resize(m_comp.blendShapeWeights.size());
+				*/
 
 				gfx_Object.localToWorld = transformComp.GetGlobalMatrix();
 			});
