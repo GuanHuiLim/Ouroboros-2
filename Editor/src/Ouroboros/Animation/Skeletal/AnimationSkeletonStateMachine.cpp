@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "AnimationSkeletonStateMachine.h"
-
+#include "AnimationSkeletalInternal.h"
 namespace oo::SkAnim
 {
 	
@@ -26,12 +26,17 @@ namespace oo::SkAnim::internal
 	void UpdateStateMachineProgress(oo::GameObject go, AnimationSkeletalComponent& comp)
 	{
 		//check transition conditions
-		//TODO
+		CheckTransitionConditions(comp.stateMachineInstance, *comp.stateMachine);
 		
 		//try to transition if possible
-		//TODO
+		TryTransitionIfPossible(comp.stateMachineInstance, *comp.stateMachine);
 		
-		//blend current state and next state
+		//blend current state and next state if in transition
+		if (comp.stateMachineInstance.inTransition)
+		{
+			//blend current state and next state
+			BlendStates(comp.stateMachineInstance, *comp.stateMachine);
+		}
 		//TODO
 		
 		//if transition done, set current state to next state

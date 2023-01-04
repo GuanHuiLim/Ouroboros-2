@@ -29,7 +29,12 @@ namespace oo::SkAnim
 
 	struct AnimationSkeletonStateMachineInstance
 	{
+		bool canTransition{ false };
+		bool inTransition{ false };
 
+		int currentState{ -1 };
+		int nextState{ -1 };
+		
 	};
 }
 
