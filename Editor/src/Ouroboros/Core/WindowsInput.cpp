@@ -74,9 +74,9 @@ namespace oo
 			m_keyboardState = new Uint8[m_keyLength];
             m_prevKeyboardState = new Uint8[m_keyLength];
 			m_simulatedKeys = new Uint8[m_keyLength];
-
             memcpy(m_prevKeyboardState, m_currkeyboardState, m_keyLength);
 			memcpy(m_keyboardState, m_currkeyboardState, m_keyLength);
+			memset(m_simulatedKeys, 0, sizeof(Uint8) * m_keyLength);
 
             //Controller
             {
@@ -403,9 +403,9 @@ namespace oo
 
         std::pair<int, int> GetMousePosition()
         {
-            int x, y;
-            SDL_GetMouseState(&x, &y);
-            return { x, y };
+            /*int x, y;
+            SDL_GetMouseState(&x, &y);*/
+            return { m_mouseXPos, m_mouseYPos };
         }
 
         std::pair<int, int> GetMouseDelta()
@@ -592,6 +592,8 @@ namespace oo
 			m_mouseXDelta = m_simulated_mouseXDelta;
 			m_mouseYDelta = m_simulated_mouseYDelta;
 
+			m_simulated_mouseXDelta = m_simulated_mouseYDelta = 0;
+			
 			m_mouseState = m_simulated_mouseState;
 			m_simulated_mouseState = 0;
 		}

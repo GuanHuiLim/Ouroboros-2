@@ -32,16 +32,16 @@ private:
 	std::deque<TimedInputs> m_actionDown;
 	unsigned m_actionUpCounter = 0;
 	std::deque<TimedInputs> m_actionUp;
-	union MousePos
+
+	struct MousePos
 	{
 		short x;
 		short y;
-		int data;
 	};
 	float m_timeAccumulator = 0.0f;
 	const float m_granularity = 0.016;
 	unsigned m_mousepositionCounter = 0;
-	std::deque<MousePos> m_mousePosition;
+	std::vector < std::pair<float, MousePos> > m_mousePosition;
 	unsigned m_mousePressedCounter = 0;
 	std::deque<TimedMouseInputs> m_mousePressed;
 

@@ -12,6 +12,7 @@
 KeyLogging::KeyLogging()
 {
 	Reset();
+	m_mousePosition.reserve(100000);
 	m_mousestate[oo::input::MouseCode::Button0] = false;
 	m_mousestate[oo::input::MouseCode::Button1] = false;
 	m_mousestate[oo::input::MouseCode::Button2] = false;
@@ -81,7 +82,6 @@ void KeyLogging::Show()
 
 void KeyLogging::LoggingKeys()
 {
-	m_timeAccumulator += oo::timer::dt();
 	m_elaspedTime += oo::timer::dt();
 	auto held = oo::input::GetKeysHeld();
 	auto released = oo::input::GetKeysReleased();
@@ -119,21 +119,41 @@ void KeyLogging::LoggingKeys()
 		m_mousePressed.push_back(TimedMouseInputs(m_elaspedTime, button));
 	}
 
-	if (m_timeAccumulator > m_granularity)
+
+	m_timeAccumulator += oo::timer::dt();
+	auto delta = oo::input::GetMouseDelta();
+	if (delta.first + delta.second != 0)
 	{
-		m_timeAccumulator = 0;
 		auto pos = oo::input::GetMousePosition();
 		MousePos mp;
 		mp.x = static_cast<short>(pos.first);
 		mp.y = static_cast<short>(pos.second);
-		m_mousePosition.push_back(std::move(mp));
+		m_mousePosition.push_back(std::pair(m_timeAccumulator, std::move(mp)));
+		m_timeAccumulator = 0;
 	}
 }
 
 void KeyLogging::SimulateKeys()
 {
 	m_simulatedTime += oo::timer::dt();
-	m_timeAccumulator += oo::timer::dt();
+	if (m_mousePosition.empty() == false && m_mousepositionCounter < m_mousePosition.size())
+	{
+		auto& mousedata = m_mousePosition[m_mousepositionCounter];
+		if (m_simulatedTime > m_timeAccumulator + mousedata.first)
+		{
+			auto& data = mousedata.second;
+			oo::input::SimulatedMousePosition(data.x, data.y);
+			++m_mousepositionCounter;
+			m_timeAccumulator += mousedata.first;
+		}
+	}
+	else
+	{
+		m_start = false;
+		oo::input::SetSimulation(false);
+		return;
+	}
+
 	if (m_actionDown.size() > m_actionDownCounter && m_simulatedTime >= m_actionDown[m_actionDownCounter].first)
 	{
 		auto item = m_actionDown[m_actionDownCounter];
@@ -176,22 +196,7 @@ void KeyLogging::SimulateKeys()
 				oo::input::SimulatedMouseButton(state.first);
 		}
 	}
-	if (m_mousePosition.empty() == false && m_mousepositionCounter < m_mousePosition.size())
-	{
-		if (m_timeAccumulator > m_granularity)
-		{
-			m_timeAccumulator = 0;
-			auto& data = m_mousePosition[m_mousepositionCounter];
-			oo::input::SimulatedMousePosition(data.x, data.y);
-			++m_mousepositionCounter;
-		}
-	}
-	else
-	{
-		m_start = false;
-		oo::input::SetSimulation(false);
-		return;
-	}
+
 }
 
 void KeyLogging::Reset()
@@ -231,6 +236,7 @@ void KeyLogging::StartLogging(ToolbarButtonEvent* ev)
 
 		m_elaspedTime = 0;
 		m_simulatedTime = 0;
+		m_timeAccumulator = 0;
 	}
 }
 
@@ -242,6 +248,7 @@ void KeyLogging::StopLogging(ToolbarButtonEvent* ev)
 		m_start = false;
 		m_elaspedTime = 0;
 		m_simulatedTime = 0;
+		m_timeAccumulator = 0;
 	}
 }
 
