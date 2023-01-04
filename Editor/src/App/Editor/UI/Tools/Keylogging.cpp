@@ -13,6 +13,9 @@ KeyLogging::KeyLogging()
 {
 	Reset();
 	m_mousePosition.reserve(100000);
+	m_actionDown.reserve(256);
+	m_actionUp.reserve(256);
+	m_mousePressed.reserve(256);
 	m_mousestate[oo::input::MouseCode::Button0] = false;
 	m_mousestate[oo::input::MouseCode::Button1] = false;
 	m_mousestate[oo::input::MouseCode::Button2] = false;
@@ -128,6 +131,8 @@ void KeyLogging::LoggingKeys()
 		MousePos mp;
 		mp.x = static_cast<short>(pos.first);
 		mp.y = static_cast<short>(pos.second);
+		mp.dx = static_cast<short>(delta.first);
+		mp.dy = static_cast<short>(delta.second);
 		m_mousePosition.push_back(std::pair(m_timeAccumulator, std::move(mp)));
 		m_timeAccumulator = 0;
 	}
@@ -142,7 +147,7 @@ void KeyLogging::SimulateKeys()
 		if (m_simulatedTime > m_timeAccumulator + mousedata.first)
 		{
 			auto& data = mousedata.second;
-			oo::input::SimulatedMousePosition(data.x, data.y);
+			oo::input::SimulatedMousePosition(data.x, data.y, data.dx, data.dy);
 			++m_mousepositionCounter;
 			m_timeAccumulator += mousedata.first;
 		}

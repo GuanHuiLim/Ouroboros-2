@@ -326,7 +326,7 @@ namespace oo
 		\brief
 			insert keypresses
 		*//**********************************************************************************/
-		void SimulatedMousePosition(int x, int y);
+		void SimulatedMousePosition(short x, short y,short dx,short dy);
 		/*********************************************************************************//*!
 		\brief
 			set simulation status

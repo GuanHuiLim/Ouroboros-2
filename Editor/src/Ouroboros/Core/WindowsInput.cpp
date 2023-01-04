@@ -78,6 +78,8 @@ namespace oo
 			memcpy(m_keyboardState, m_currkeyboardState, m_keyLength);
 			memset(m_simulatedKeys, 0, sizeof(Uint8) * m_keyLength);
 
+			SDL_GetMouseState(&m_mouseXPos, &m_mouseYPos);
+			SDL_GetRelativeMouseState(&m_mouseXDelta, &m_mouseYDelta);
             //Controller
             {
                 // Set the controller to NULL
@@ -592,16 +594,17 @@ namespace oo
 			m_mouseXDelta = m_simulated_mouseXDelta;
 			m_mouseYDelta = m_simulated_mouseYDelta;
 
-			m_simulated_mouseXDelta = m_simulated_mouseYDelta = 0;
+			m_simulated_mouseXDelta = 0;
+			m_simulated_mouseYDelta = 0;
 			
 			m_mouseState = m_simulated_mouseState;
 			m_simulated_mouseState = 0;
 		}
 
-		void SimulatedMousePosition(int x, int y)
+		void SimulatedMousePosition(short x, short y, short dx, short dy)
 		{
-			m_simulated_mouseXDelta = x - m_simulated_mouseXPos;
-			m_simulated_mouseYDelta = y - m_simulated_mouseYPos;
+			m_simulated_mouseXDelta = dx;
+			m_simulated_mouseYDelta = dy;
 			m_simulated_mouseXPos = x;
 			m_simulated_mouseYPos = y;
 		}

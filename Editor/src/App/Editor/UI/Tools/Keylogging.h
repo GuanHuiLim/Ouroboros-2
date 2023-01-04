@@ -29,21 +29,23 @@ private:
 	float m_simulatedTime;
 
 	unsigned m_actionDownCounter = 0;
-	std::deque<TimedInputs> m_actionDown;
+	std::vector<TimedInputs> m_actionDown;
 	unsigned m_actionUpCounter = 0;
-	std::deque<TimedInputs> m_actionUp;
+	std::vector<TimedInputs> m_actionUp;
 
 	struct MousePos
 	{
 		short x;
 		short y;
+		short dx;
+		short dy;
 	};
 	float m_timeAccumulator = 0.0f;
 	const float m_granularity = 0.016;
 	unsigned m_mousepositionCounter = 0;
 	std::vector < std::pair<float, MousePos> > m_mousePosition;
 	unsigned m_mousePressedCounter = 0;
-	std::deque<TimedMouseInputs> m_mousePressed;
+	std::vector<TimedMouseInputs> m_mousePressed;
 
 	std::vector<bool> m_keystate;
 	std::unordered_map<oo::input::MouseCode, bool> m_mousestate;
