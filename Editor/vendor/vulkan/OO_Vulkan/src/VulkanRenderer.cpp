@@ -210,8 +210,7 @@ VulkanRenderer::~VulkanRenderer()
 	renderPass_HDR_noDepth.destroy();
 	
 	
-
-	OPTICK_SHUTDOWN();
+	PROFILE_GPU_SHUTDOWN();
 }
 
 VulkanRenderer* VulkanRenderer::get()
