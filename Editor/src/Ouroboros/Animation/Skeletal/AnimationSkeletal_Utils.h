@@ -25,4 +25,7 @@ namespace oo::SkAnim
 	class AnimationSkeletonStateMachine;
 	struct AnimationSkeletonStateMachineInstance;
 	using SM_Instance = AnimationSkeletonStateMachineInstance;
+	struct StateNode;
+	struct Transition;
+	struct Rule;
 }

@@ -13,10 +13,26 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "AnimationSkeletalInternal.h"
+#include "AnimationSkeletonStateMachine.h"
 
 namespace oo::SkAnim::internal
 {
+    void CheckTransitionConditions(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine)
+    {
+        auto currState = statemachine.GetState(instance.currentState);
+        if (currState == nullptr) return;
 
+        for (auto const& transition : currState->transitions)
+        {
+            if (transition.CheckConditions(instance))
+            {
+                instance.canTransition = true;
+                instance.transition = &transition;
+                break;
+            }
+        }
+    
+    }
 }
 
 

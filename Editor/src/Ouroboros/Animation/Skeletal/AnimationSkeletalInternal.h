@@ -22,7 +22,11 @@ namespace oo::SkAnim::internal
 
 	void TryTransitionIfPossible(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
 
-	void BlendStates
+	void BlendStates(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
+
+	void TryUpdateState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
+
+	void UpdateState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
 }
 
 

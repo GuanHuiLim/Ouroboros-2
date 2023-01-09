@@ -37,12 +37,11 @@ namespace oo::SkAnim::internal
 			//blend current state and next state
 			BlendStates(comp.stateMachineInstance, *comp.stateMachine);
 		}
-		//TODO
 		
 		//if transition done, set current state to next state
-		//TODO
-		
+		TryUpdateState(comp.stateMachineInstance, *comp.stateMachine);
+
 		//update current state node
-		//TODO
+		UpdateState(comp.stateMachineInstance, *comp.stateMachine);
 	}
 }

@@ -17,25 +17,69 @@ Technology is prohibited.
 #pragma once
 #include "Ouroboros/ECS/GameObject.h"
 #include "AnimationSkeletalComponent.h"
+#include "rttr/variant.h"
 
 namespace oo::SkAnim
 {
 	class AnimationSkeletonStateMachine
 	{
-
+	public:
+		StateNode const* GetState(int state) const
+		{
+			if (state < 0 || state > nodes.size())
+			{
+				assert(false);
+				return nullptr;
+			}
+			return &(nodes.at(state).get_value<StateNode>());
+		}
 	private:
-
+		std::vector<rttr::variant> nodes{};
 	};
 
 	struct AnimationSkeletonStateMachineInstance
 	{
 		bool canTransition{ false };
 		bool inTransition{ false };
+		Transition const* transition{nullptr};
 
 		int currentState{ -1 };
 		int nextState{ -1 };
 		
 	};
+
+	struct Rule
+	{
+		bool Check(SM_Instance& instance) const
+		{
+
+		}
+
+	private:
+		int parameterIndex{ -1 };
+		rttr::variant value;
+		
+	};
+
+	struct Transition
+	{
+		bool CheckConditions(SM_Instance& instance) const
+		{
+			for (auto const& rule : rules)
+			{
+				rule.Check(instance);
+			}
+		}
+
+	private:
+		std::vector<Rule> rules;
+	};
+	struct StateNode
+	{
+		std::vector<Transition> transitions{};
+	};
+
+
 }
 
 
