@@ -476,6 +476,27 @@ namespace oo
         return InvokeFunction(obj, GetFunction(obj, functionName, paramCount), paramList);
     }
 
+    void ScriptEngine::ForEachClassField(MonoClass* klass, ScriptFieldCallback callback)
+    {
+        MonoClass* monoBehaviour = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        std::vector<MonoClass*> klassList;
+        while (klass != nullptr && klass != monoBehaviour)
+        {
+            klassList.emplace_back(klass);
+            klass = mono_class_get_parent(klass);
+        }
+        void* iter = NULL;
+        MonoClassField* field = nullptr;
+        for (auto klassPtr = klassList.rbegin(); klassPtr != klassList.rend(); ++klassPtr)
+        {
+            iter = NULL;
+            while ((field = mono_class_get_fields(*klassPtr, &iter)) != nullptr)
+            {
+                callback(field);
+            }
+        }
+    }
+
     void ScriptEngine::ThrowNullException()
     {
         mono_raise_exception(mono_get_exception_null_reference());
