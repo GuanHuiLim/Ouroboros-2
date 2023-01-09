@@ -58,6 +58,7 @@ namespace oo
         {
             m_mouseState = SDL_GetMouseState(&m_mouseXPos, &m_mouseYPos);
             m_prevMouseState /*= m_mouseState = m_mouseXPos = m_mouseYPos */= 0;
+            SDL_GetRelativeMouseState(&m_mouseXDelta, &m_mouseYDelta);
 
             m_keyboardState = SDL_GetKeyboardState(&m_keyLength);
             m_prevKeyboardState = new Uint8[m_keyLength];
