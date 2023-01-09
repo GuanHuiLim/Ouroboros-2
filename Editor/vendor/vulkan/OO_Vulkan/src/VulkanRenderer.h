@@ -73,6 +73,9 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout SSAOBlur;
 
 	inline static VkDescriptorSetLayout util_fullscreenBlit;
+
+	inline static VkDescriptorSetLayout compute_singleTexture;
+
 };
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
@@ -84,6 +87,7 @@ struct PSOLayoutDB
 	inline static VkPipelineLayout forwardDecalPSOLayout;
 	inline static VkPipelineLayout SSAOPSOLayout;
 	inline static VkPipelineLayout SSAOBlurLayout;
+	inline static VkPipelineLayout BloomLayout; 
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -121,18 +125,22 @@ namespace CB
 class VulkanRenderer
 {
 public:
+
 	static VulkanRenderer* s_vulkanRenderer;
 
+	inline static uint64_t totalTextureSizeLoaded = 0;
 	static constexpr int MAX_FRAME_DRAWS = 2;
 	static constexpr int MAX_OBJECTS = 2048;
 	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT_S8_UINT;
-	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_R32G32B32A32_SFLOAT;
+	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 
 	static int ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface);
 
 #define OBJECT_INSTANCE_COUNT 128
 
 	 PFN_vkDebugMarkerSetObjectNameEXT pfnDebugMarkerSetObjectName{ nullptr };
+	 PFN_vkCmdDebugMarkerBeginEXT pfnDebugMarkerRegionBegin{ nullptr };
+	 PFN_vkCmdDebugMarkerEndEXT pfnDebugMarkerRegionEnd{ nullptr };
 
 	~VulkanRenderer();
 
@@ -244,7 +252,7 @@ public:
 	void UploadInstanceData();
 	uint32_t objectCount{};
 	// Contains the instanced data
-	vkutils::Buffer instanceBuffer;
+	GpuVector<oGFX::InstanceData> instanceBuffer;
 
 	bool PrepareFrame();
 	void BeginDraw();
@@ -260,6 +268,8 @@ public:
 
 	uint32_t CreateTexture(uint32_t width, uint32_t height, unsigned char* imgData);
 	uint32_t CreateTexture(const std::string& fileName);
+	bool ReloadTexture(uint32_t textureID, const std::string& file);
+
 	struct TextureInfo
 	{
 		std::string name;
@@ -290,6 +300,8 @@ public:
 	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU;
 	std::vector<oGFX::DebugVertex> g_DebugDrawVertexBufferCPU;
 	std::vector<uint32_t> g_DebugDrawIndexBufferCPU;
+
+	ModelFileResource* GetDefaultCube();
 
 	ModelFileResource* LoadModelFromFile(const std::string& file);
 	ModelFileResource* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex, std::vector<uint32_t>& indices, gfxModel* model);
@@ -330,7 +342,7 @@ public:
 	VulkanRenderpass renderPass_HDR_noDepth{};
 	VulkanRenderpass renderPass_blit{};
 
-	vkutils::Buffer indirectCommandsBuffer{};
+	GpuVector<oGFX::IndirectCommand> indirectCommandsBuffer{};
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};
 	uint32_t indirectDrawCount{};
 

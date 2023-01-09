@@ -101,7 +101,7 @@ struct ParticleData
 {
     glm::mat4 transform{1.0f};
     glm::vec4 colour{1.0f};
-    glm::ivec4 instanceData{}; // EntityID, flags  ,abledo norm, roughness metal
+    glm::ivec4 instanceData; // EntityID, flags  ,abledo norm, roughness metal
 };
 
 struct EmitterInstance

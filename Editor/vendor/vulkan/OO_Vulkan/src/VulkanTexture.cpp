@@ -12,7 +12,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #include "VulkanTexture.h"
-
+#include "DelayedDeleter.h"
 
 #pragma warning( push )
 #pragma warning( disable : 26451 ) // arithmetic overflow
@@ -30,19 +30,38 @@ namespace vkutils
 		descriptor.imageLayout = imageLayout;
 	}
 
-	void Texture::destroy()
+	void Texture::destroy(bool delayed)
 	{
-		vkDestroyImageView(device->logicalDevice, view, nullptr);
-		view = VK_NULL_HANDLE;
+		auto viewCpy = view;
+		auto imageCpy = image;
+		auto samplerCpy = sampler;
+		auto memoryCpy = deviceMemory;
+		auto deviceCpy = device->logicalDevice;
 
-		vkDestroyImage(device->logicalDevice, image, nullptr);
-		image = VK_NULL_HANDLE;
-		if (sampler)
+		// deletion func
+		auto delFunctor = [=](){
+			vkDestroyImageView(deviceCpy, viewCpy, nullptr);
+			vkDestroyImage(deviceCpy, imageCpy, nullptr);
+			if (samplerCpy)
+			{
+				vkDestroySampler(deviceCpy, samplerCpy, nullptr);
+			}
+			vkFreeMemory(deviceCpy, memoryCpy, nullptr);
+		};
+
+		if (delayed)
 		{
-			vkDestroySampler(device->logicalDevice, sampler, nullptr);
-			sampler = VK_NULL_HANDLE;
+			auto* dd = DelayedDeleter::get();
+			dd->DeleteAfterFrames(delFunctor);
 		}
-		vkFreeMemory(device->logicalDevice, deviceMemory, nullptr);
+		else
+		{
+			delFunctor();
+		}
+		
+		view = VK_NULL_HANDLE;		
+		image = VK_NULL_HANDLE;
+		sampler = VK_NULL_HANDLE;
 		deviceMemory = VK_NULL_HANDLE;
 	}
 
@@ -361,7 +380,7 @@ namespace vkutils
 		VkMemoryRequirements memReqs;
 
 		// Use a separate command buffer for texture loading
-		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, device->transferPool, true);
 
 		// Create a host-visible staging buffer that contains the raw image data
 		VkBuffer stagingBuffer;
@@ -456,6 +475,7 @@ namespace vkutils
 
 		// Change texture image layout to shader read after all mip levels have been copied
 		this->imageLayout = imageLayout;
+		this->currentLayout = imageLayout;
 		oGFX::vkutils::tools::setImageLayout(
 			copyCmd,
 			image,
@@ -463,7 +483,7 @@ namespace vkutils
 			imageLayout,
 			subresourceRange);
 
-		device->FlushCommandBuffer(copyCmd, copyQueue);
+		device->FlushCommandBuffer(copyCmd, copyQueue, device->transferPool);
 
 		// Clean up staging resources
 		vkFreeMemory(device->logicalDevice, stagingMemory, nullptr);
@@ -518,8 +538,8 @@ namespace vkutils
 		this->device = device;
 		targetSwapchain = forFullscr;
 		renderScale = _renderscale;
-		width = static_cast<uint32_t>(texWidth * renderScale);
-		height = static_cast<uint32_t>(texHeight* renderScale);
+		width = texWidth * renderScale;
+		height = texHeight* renderScale;
 		format = _format;
 		MemProps = properties;
 
@@ -620,8 +640,8 @@ namespace vkutils
 		if (device == nullptr)
 			return;
 
-		width = static_cast<uint32_t>(texWidth * renderScale);
-		height = static_cast<uint32_t>(texHeight * renderScale);
+		width = texWidth * renderScale;
+		height = texHeight * renderScale;
 
 		VkImageView oldview = view;
 		VkDeviceMemory oldMemory = deviceMemory;
@@ -674,6 +694,95 @@ namespace vkutils
 
 	}
 
+	void Texture2D::Update(void* buffer, VkDeviceSize bufferSize, 
+		VkFormat _format, uint32_t texWidth, uint32_t texHeight, 
+		std::vector<VkBufferImageCopy> mipInfo, VulkanDevice* device,
+		VkQueue copyQueue, VkFilter filter, VkImageUsageFlags imageUsageFlags)
+	{
+		assert(buffer);
+
+		assert(this->device);
+		assert(width == texWidth);
+		assert(height == texHeight);
+		assert(format == _format);
+		assert(usage += imageUsageFlags);
+		assert(mipLevels == static_cast<uint32_t>(mipInfo.size()));
+		assert(image);
+
+		VkMemoryAllocateInfo memAllocInfo = oGFX::vkutils::inits::memoryAllocateInfo();
+		VkMemoryRequirements memReqs;
+
+		// Use a separate command buffer for texture loading
+		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY,device->commandPool, true);
+
+		// Create a host-visible staging buffer that contains the raw image data
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingMemory;
+
+		// This buffer is used as a transfer source for the buffer copy
+		VkBufferCreateInfo bufferCreateInfo = oGFX::vkutils::inits::bufferCreateInfo(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,bufferSize);
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		vkCreateBuffer(device->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer);
+
+		// Get memory requirements for the staging buffer (alignment, memory type bits)
+		vkGetBufferMemoryRequirements(device->logicalDevice, stagingBuffer, &memReqs);
+
+		memAllocInfo.allocationSize = memReqs.size;
+		// Get memory type index for a host visible buffer
+		memAllocInfo.memoryTypeIndex = oGFX::FindMemoryTypeIndex(device->physicalDevice,memReqs.memoryTypeBits,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		vkAllocateMemory(device->logicalDevice, &memAllocInfo, nullptr, &stagingMemory);
+		vkBindBufferMemory(device->logicalDevice, stagingBuffer, stagingMemory, 0);
+
+		// Copy texture data into staging buffer
+		uint8_t *data;
+		vkMapMemory(device->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data);
+		memcpy(data, buffer, bufferSize);
+		vkUnmapMemory(device->logicalDevice, stagingMemory);
+
+
+		std::vector<VkBufferImageCopy>bufferCopyRegion = mipInfo;
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = mipLevels;
+		subresourceRange.layerCount = 1;
+
+		// Image barrier for optimal image (target)
+		// Optimal image will be used as destination for the copy
+		oGFX::vkutils::tools::setImageLayout(
+			copyCmd,
+			image,
+			this->currentLayout,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			subresourceRange);
+
+		// Copy mip levels from staging buffer
+		vkCmdCopyBufferToImage(
+			copyCmd,
+			stagingBuffer,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			mipLevels,
+			bufferCopyRegion.data()
+		);
+
+		// Change texture image layout to shader read after all mip levels have been copied
+		oGFX::vkutils::tools::setImageLayout(
+			copyCmd,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			this->currentLayout,
+			subresourceRange);
+
+		device->FlushCommandBuffer(copyCmd, copyQueue);
+
+		// Clean up staging resources
+		vkFreeMemory(device->logicalDevice, stagingMemory, nullptr);
+		vkDestroyBuffer(device->logicalDevice, stagingBuffer, nullptr);
+	}
 
 	void TransitionImage(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout)
 	{

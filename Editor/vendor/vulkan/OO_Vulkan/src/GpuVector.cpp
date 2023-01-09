@@ -11,3 +11,5 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
+#include "GpuVector.h"
+uint64_t accumulatedBytes = 0;

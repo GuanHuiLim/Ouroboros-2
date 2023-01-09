@@ -13,6 +13,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
+#include "MathCommon.h"
 #include <array>
 #include <vulkan/vulkan.h>
 
@@ -24,10 +25,8 @@ class CommandList
 {
 public:
 
-	CommandList(const VkCommandBuffer& cmd)
-		: m_VkCommandBuffer{ cmd } 
-	{
-	}
+	CommandList(const VkCommandBuffer& cmd, const char* name = nullptr, const glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f });
+	~CommandList();
 
 	//----------------------------------------------------------------------------------------------------
 	// Binding Commands
