@@ -27,6 +27,8 @@ public:
 		PAUSE,
 		STOP,
 		OPENLIVESHARE,
+		SET_SIMULATION_MODE,
+		SET_RECORD_ONPLAY,
 	};
 	ToolbarButtonEvent(ToolbarButton button) :m_buttonType{ button } {  };
 	~ToolbarButtonEvent() {};

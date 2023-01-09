@@ -59,6 +59,7 @@ EditorViewport::EditorViewport()
 {
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnPlayEvent);
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnStopEvent);
+	oo::EventManager::Subscribe<EditorViewport, FocusButtonEvent>(this, &EditorViewport::OnFocusEvent);
 	ImGuizmo::AllowAxisFlip(false);
 	m_cc.SetCamera(&EditorCamera);
 }
@@ -304,29 +305,54 @@ void EditorViewport::Show()
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
-		ChangeGizmoEvent e(m_gizmoOperation);
-		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
+		ChangeGizmoEvent e(m_gizmoOperation,m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
-		ChangeGizmoEvent e(m_gizmoOperation);
-		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 	}
+
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::R)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
-		ChangeGizmoEvent e(m_gizmoOperation);
-		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 	}
-	//wrong but it helps 
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)))
+
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftShift))
 	{
-		glm::vec3 target = EditorCamera.GetFront();
-		EditorCamera.SetPosition(transform.GetGlobalPosition() - (target * 10.0f));
+		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
+	}
+	else if (ImGui::IsKeyReleased(ImGuiKey_::ImGuiKey_LeftShift))
+	{
+		switch (m_gizmoOperation)
+		{
+		case ImGuizmo::OPERATION::TRANSLATE:
+			m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD); break;
+		case ImGuizmo::OPERATION::ROTATE:
+			m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD); break;
+		case ImGuizmo::OPERATION::SCALE:
+			m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL); break;
+		}
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
+	}
+	
+	//wrong but it helps 
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)) && 
+		ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+	{
+		FocusButtonEvent e;
+		e.item_globalPosition = transform.GetGlobalPosition();
+		oo::EventManager::Broadcast<FocusButtonEvent>(&e);
 	}
 }
 
@@ -372,6 +398,12 @@ void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 		}
 		ImGui::SetWindowFocus("Editor Viewport");
 	}
+}
+
+void EditorViewport::OnFocusEvent(FocusButtonEvent* e)
+{
+	glm::vec3 target = EditorCamera.GetFront();
+	EditorCamera.SetPosition(e->item_globalPosition - (target * 10.0f));
 }
 
 void EditorViewport::MenuBar()

@@ -30,18 +30,28 @@ namespace oo
         // SDL Specific Input Requirements
 
         int m_keyLength;
-        const Uint8* m_keyboardState;
+		const Uint8* m_currkeyboardState;
+        Uint8* m_keyboardState;
         Uint8* m_prevKeyboardState;
+		Uint8* m_simulatedKeys;
+		std::vector<KeyCode> m_keysPressed;
 
         Uint32 m_prevMouseState;
         Uint32 m_mouseState;
+		Uint32 m_simulated_mouseState = 0;
+
 
         int m_mouseXPos;
         int m_mouseYPos;
 
         int m_mouseXDelta;
         int m_mouseYDelta;
-    
+		
+		int m_simulated_mouseXPos;
+		int m_simulated_mouseYPos;
+		int m_simulated_mouseXDelta;
+		int m_simulated_mouseYDelta;
+
         // Controller information
         SDL_GameController* m_pGameController;
         int m_controllerIndex;
@@ -51,6 +61,8 @@ namespace oo
         Uint8 m_uButtonStatesPrev[(size_t)ControllerButtonCode::MAX];
         float m_fAxisValues[(size_t)ControllerAxisCode::MAX];
 
+		bool m_simulate = false;//put this here for now
+
         // 16 bits are used for the complete controller range
         static constexpr float CompleteControllerRange = 1 << 16;
 
@@ -58,10 +70,16 @@ namespace oo
         {
             m_prevMouseState = m_mouseState = m_mouseXPos = m_mouseYPos = 0;
 
-            m_keyboardState = SDL_GetKeyboardState(&m_keyLength);
+			m_currkeyboardState = SDL_GetKeyboardState(&m_keyLength);
+			m_keyboardState = new Uint8[m_keyLength];
             m_prevKeyboardState = new Uint8[m_keyLength];
-            memcpy(m_prevKeyboardState, m_keyboardState, m_keyLength);
+			m_simulatedKeys = new Uint8[m_keyLength];
+            memcpy(m_prevKeyboardState, m_currkeyboardState, m_keyLength);
+			memcpy(m_keyboardState, m_currkeyboardState, m_keyLength);
+			memset(m_simulatedKeys, 0, sizeof(Uint8) * m_keyLength);
 
+			SDL_GetMouseState(&m_mouseXPos, &m_mouseYPos);
+			SDL_GetRelativeMouseState(&m_mouseXDelta, &m_mouseYDelta);
             //Controller
             {
                 // Set the controller to NULL
@@ -74,15 +92,24 @@ namespace oo
                 memset(m_fAxisValues, 0, sizeof(float) * (size_t)ControllerAxisCode::MAX);
             }
         }
-
         void Update()
         {
-            memcpy(m_prevKeyboardState, m_keyboardState, m_keyLength);
-            m_prevMouseState = m_mouseState;
+			std::swap(m_keyboardState, m_prevKeyboardState);
+            memcpy(m_keyboardState, m_currkeyboardState, m_keyLength);
+			SimulatedInputUpdate();
 
-            m_mouseState = SDL_GetMouseState(&m_mouseXPos, &m_mouseYPos);
+			m_prevMouseState = m_mouseState;
 
-            SDL_GetRelativeMouseState(&m_mouseXDelta, &m_mouseYDelta);
+			if (m_simulate)
+			{
+				SimulatedMouse();
+				
+			}
+			else
+			{
+				m_mouseState = SDL_GetMouseState(&m_mouseXPos, &m_mouseYPos);
+				SDL_GetRelativeMouseState(&m_mouseXDelta, &m_mouseYDelta);
+			}
 
             //TODO : verify
             int state = SDL_GameControllerEventState(SDL_QUERY);
@@ -113,8 +140,12 @@ namespace oo
 
         void ShutDown()
         {
+			delete[] m_keyboardState;
+			delete[] m_simulatedKeys;
             delete[] m_prevKeyboardState;
             m_prevKeyboardState = nullptr;
+			m_simulatedKeys = nullptr;
+			m_keyboardState = nullptr;
         }
 
         void AddController(int index)
@@ -374,9 +405,9 @@ namespace oo
 
         std::pair<int, int> GetMousePosition()
         {
-            int x, y;
-            SDL_GetMouseState(&x, &y);
-            return { x, y };
+            /*int x, y;
+            SDL_GetMouseState(&x, &y);*/
+            return { m_mouseXPos, m_mouseYPos };
         }
 
         std::pair<int, int> GetMouseDelta()
@@ -523,6 +554,89 @@ namespace oo
 
             return controllerAxis;
         }
+
+		void SimulatedInputUpdate()
+		{
+			int currKey;
+			for (auto key : m_keysPressed)
+			{
+				currKey = static_cast<int>(key);
+				m_keyboardState[currKey] = m_simulatedKeys[currKey];
+			}
+		}
+
+		void SimulateKeyInput(KeyCode key, bool pressed)
+		{
+			int currKey = static_cast<int>(key);
+			if (pressed)
+			{
+				m_simulatedKeys[currKey] = pressed;
+				m_keysPressed.push_back(key);
+			}
+			else
+			{
+				m_simulatedKeys[currKey] = pressed;
+				int item = 0;
+				for (; item < m_keysPressed.size(); ++item)
+				{
+					if (key == m_keysPressed[item])
+						break;
+				}
+				std::swap(m_keysPressed[item], m_keysPressed[m_keysPressed.size() - 1]);
+				m_keysPressed.pop_back();
+			}
+		}
+
+		void SimulatedMouse()
+		{
+			m_mouseXPos = m_simulated_mouseXPos;
+			m_mouseYPos = m_simulated_mouseYPos;
+			m_mouseXDelta = m_simulated_mouseXDelta;
+			m_mouseYDelta = m_simulated_mouseYDelta;
+
+			m_simulated_mouseXDelta = 0;
+			m_simulated_mouseYDelta = 0;
+			
+			m_mouseState = m_simulated_mouseState;
+			m_simulated_mouseState = 0;
+		}
+
+		void SimulatedMousePosition(short x, short y, short dx, short dy)
+		{
+			m_simulated_mouseXDelta = dx;
+			m_simulated_mouseYDelta = dy;
+			m_simulated_mouseXPos = x;
+			m_simulated_mouseYPos = y;
+		}
+
+		void SetSimulation(bool start)
+		{
+			m_simulate = start;
+		}
+
+		void SimulatedMouseButton(MouseCode mousebutton)
+		{
+			switch (mousebutton)
+			{
+			case Mouse::ButtonLeft:
+				m_simulated_mouseState += SDL_BUTTON_LMASK;
+				break;
+
+			case Mouse::ButtonRight:
+				m_simulated_mouseState += SDL_BUTTON_RMASK;
+				break;
+
+			case Mouse::ButtonMiddle:
+				m_simulated_mouseState += SDL_BUTTON_MMASK;
+				break;
+
+			case Mouse::ButtonLast:
+				m_simulated_mouseState += SDL_BUTTON_X1MASK;
+				break;
+			}
+		}
+
+
 
     }
 }
