@@ -25,6 +25,7 @@ public:
 	void Show();
 
 	int m_gizmoOperation = 7;
+	int m_gizmoMode = 1;	// IMGUIZMO::MODE::WORLD <- default
 
 	// Editor Camera only exist within this viewport
 	// default values found in cpp
@@ -32,7 +33,6 @@ public:
 private:
 	void MenuBar();
 
-	int m_gizmoMode = 1;	// IMGUIZMO::MODE::WORLD <- default
 	float m_viewportWidth = 0.f, m_viewportHeight = 0.f;
 
 	inline static CameraController m_cc;
