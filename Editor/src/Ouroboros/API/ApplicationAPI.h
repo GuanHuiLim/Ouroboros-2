@@ -181,28 +181,28 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* Debug Functions for C#                                                      */
     /*-----------------------------------------------------------------------------*/
-    SCRIPT_API void Log(const char* msg)
+    SCRIPT_API void Log(const char* filename, int lineNumber, const char* msg)
     {
-        LOG_TRACE(msg);
+        LOG_SCRIPT_TRACE(filename, lineNumber, msg);
     }
 
-    SCRIPT_API void LogInfo(const char* msg)
+    SCRIPT_API void LogInfo(const char* filename, int lineNumber, const char* msg)
     {
-        LOG_INFO(msg);
+        LOG_SCRIPT_INFO(filename, lineNumber, msg);
     }
 
-    SCRIPT_API void LogWarning(const char* msg)
+    SCRIPT_API void LogWarning(const char* filename, int lineNumber, const char* msg)
     {
-        LOG_WARN(msg);
+        LOG_SCRIPT_WARN(filename, lineNumber, msg);
     }
 
-    SCRIPT_API void LogError(const char* msg)
+    SCRIPT_API void LogError(const char* filename, int lineNumber, const char* msg)
     {
-        LOG_ERROR(msg);
+        LOG_SCRIPT_ERROR(filename, lineNumber, msg);
     }
 
-    SCRIPT_API void LogCritical(const char* msg)
+    SCRIPT_API void LogCritical(const char* filename, int lineNumber, const char* msg)
     {
-        LOG_CRITICAL(msg);
+        LOG_SCRIPT_CRITICAL(filename, lineNumber, msg);
     }
 }

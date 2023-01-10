@@ -125,9 +125,12 @@ void LoggingView::Show()
 	ImGui::SetCursorPosY(ImGui::GetWindowContentRegionMax().y - 100.f);
 	ImGui::Separator();
 	ImGui::BeginChild("FullLogView", { 0, 100.f }, false);
-	ImGui::Text(m_msgitem.msg.c_str());
-	ImGui::Text(LogMessageType(m_msgitem.type).c_str());
-	ImGui::Text(m_msgitem.filename.c_str());
+	if (m_msgitem.count)
+	{
+		ImGui::Text(m_msgitem.msg.c_str());
+		ImGui::Text(LogMessageType(m_msgitem.type).c_str());
+		ImGui::Text("%s (%d)", m_msgitem.filename.c_str(),m_msgitem.line_number);
+	}
 	ImGui::EndChild();
 
 	TRACY_PROFILE_SCOPE_END();
@@ -143,7 +146,7 @@ void LoggingView::Show()
 			the file where the log came from
 
 *//**********************************************************************************/
-void LoggingView::AddItem(const std::string& str,char type,const std::string& filename)
+void LoggingView::AddItem(const std::string& str,char type,int line_no ,const std::string& filename)
 {
 	if (s_paused)
 		return;
@@ -156,7 +159,7 @@ void LoggingView::AddItem(const std::string& str,char type,const std::string& fi
 
 	auto foundLogMsgID = [hash](const MessageData& msg) { return msg.id == hash; };
 	if (std::find_if(s_msgCollection.begin(), s_msgCollection.end(), foundLogMsgID) == s_msgCollection.end())
-		s_msgCollection.push_back({ 1,hash,type,str,filename });
+		s_msgCollection.push_back(MessageData(str,filename, line_no ,1,hash,type,false));
 	else
 		std::find_if(s_msgCollection.begin(), s_msgCollection.end(), foundLogMsgID)->count += 1;
 }

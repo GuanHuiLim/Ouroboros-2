@@ -49,6 +49,8 @@ namespace oo
         static MonoImage* GetLibrary(const char* aLibrary);
         static MonoClass* GetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static MonoClass* TryGetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
+        static MonoType* GetType(const char* aLibrary, const char* aNamespace, const char* aClassName);
+        static MonoType* TryGetType(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static std::vector<MonoClass*> const GetClassesByBaseClass(const char* aLibrary, MonoClass* baseClass);
         static std::string const GetClassInfoNameSpace(MonoClass* klass);
         static std::string const GetClassInfoName(MonoClass* klass);
@@ -72,6 +74,8 @@ namespace oo
         static bool CheckClassFieldInspectorVisible(MonoObject* obj, MonoClassField* field);
 
         static bool CheckTypeHasAttribute(MonoType* type, MonoType* attribute);
+
+        static MonoObject* GetClassFieldAttribute(MonoObject* obj, const char* fieldName, MonoType* attributeType);
 
         static bool CheckClassMethodStatic(MonoClass* klass, MonoMethod* method);
         static bool CheckClassMethodPublic(MonoClass* klass, MonoMethod* method);

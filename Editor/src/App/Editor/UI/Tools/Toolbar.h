@@ -36,6 +36,7 @@ public:
 private:
 private:
 	int currGizmoOperation = 7;
+	int currSpaceOperation = 1;
 	std::unordered_map<std::string,oo::Asset> m_iconsSaved;
 	bool docking = false;
 };

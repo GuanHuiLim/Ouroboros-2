@@ -20,6 +20,7 @@ Technology is prohibited.
 #if not defined(SPDLOG_ACTIVE_LEVEL) 
 #define SPDLOG_ACTIVE_LEVEL 0 
 #endif 
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 #pragma warning(pop)
@@ -83,6 +84,14 @@ namespace oo
 #define LOG_WARN(...)                       SPDLOG_LOGGER_WARN(::oo::log::GetClientLogger(),__VA_ARGS__)
 #define LOG_ERROR(...)                      SPDLOG_LOGGER_ERROR(::oo::log::GetClientLogger(),__VA_ARGS__)
 #define LOG_CRITICAL(...)                   SPDLOG_LOGGER_CRITICAL(::oo::log::GetClientLogger(),__VA_ARGS__)
+
+// script Log macros
+#define CUSTOM_SCIPT_LOGGER_CALL(logger, level,filename,line_number, ...) (logger)->log(spdlog::source_loc{filename, line_number, SPDLOG_FUNCTION}, level, __VA_ARGS__)
+#define LOG_SCRIPT_TRACE(filename,line_number,...)                      CUSTOM_SCIPT_LOGGER_CALL(::oo::log::GetClientLogger(),spdlog::level::trace,filename,line_number,__VA_ARGS__)
+#define LOG_SCRIPT_INFO(filename,line_number,...)                       CUSTOM_SCIPT_LOGGER_CALL(::oo::log::GetClientLogger(),spdlog::level::info,filename,line_number,__VA_ARGS__)
+#define LOG_SCRIPT_WARN(filename,line_number,...)                       CUSTOM_SCIPT_LOGGER_CALL(::oo::log::GetClientLogger(),spdlog::level::warn,filename,line_number,__VA_ARGS__)
+#define LOG_SCRIPT_ERROR(filename,line_number,...)                      CUSTOM_SCIPT_LOGGER_CALL(::oo::log::GetClientLogger(),spdlog::level::err,filename,line_number,__VA_ARGS__)
+#define LOG_SCRIPT_CRITICAL(filename,line_number,...)                   CUSTOM_SCIPT_LOGGER_CALL(::oo::log::GetClientLogger(),spdlog::level::critical,filename,line_number,__VA_ARGS__)
 
 #ifndef OO_EXECUTABLE
 

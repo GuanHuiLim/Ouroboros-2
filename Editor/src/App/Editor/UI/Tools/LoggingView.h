@@ -43,17 +43,27 @@ protected:
 				the file where the log came from
 
 	*//**********************************************************************************/
-	static void AddItem(const std::string& str,char type,const std::string& filename);
+	static void AddItem(const std::string& str,char type,int line_no ,const std::string& filename);
 private:
 	std::unordered_map<std::string, oo::Asset> assets;
 
 	struct MessageData
 	{
+		MessageData() {};
+		MessageData(const std::string& m, const std::string& fn, int ln, int c, std::uint32_t id, char t, bool select)
+			:msg{ m },
+			filename{ fn },
+			line_number{ ln },
+			count{ c },
+			id{ id },
+			type{ t },
+			selected{ select } {};
+		std::string msg;
+		std::string filename;
+		int line_number = 0;
 		int count = 0;
 		std::uint32_t id = 0;
 		char type = {'7'};
-		std::string msg;
-		std::string filename;
 		bool selected = false;
 	};
 	static std::deque<std::uint32_t> s_messages;

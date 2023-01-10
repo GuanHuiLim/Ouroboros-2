@@ -19,7 +19,7 @@ Technology is prohibited.
 
 namespace oo
 {
-    using FunctionType = std::function<void(const std::string&, char, const std::string&)>;
+    using FunctionType = std::function<void(const std::string&, char,int, const std::string&)>;
 
     template <typename Mutex>
     class CallbackSink : public spdlog::sinks::base_sink <Mutex>
@@ -57,7 +57,7 @@ namespace oo
 
             for (auto& subscriber : m_subscriberList)
             {
-                subscriber(temp, (char)msg.level, msg.source.filename);
+                subscriber(temp, (char)msg.level,msg.source.line, msg.source.filename);
             }
         }
 
