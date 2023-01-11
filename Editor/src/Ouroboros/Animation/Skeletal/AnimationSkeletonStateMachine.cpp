@@ -18,7 +18,22 @@ Technology is prohibited.
 #include "AnimationSkeletalInternal.h"
 namespace oo::SkAnim
 {
-	
+	Comparator::Map const Comparator::comparisonFn_map = []() {
+		rttr::type::register_comparators<bool>();
+		rttr::type::register_comparators<float>();
+		rttr::type::register_comparators<int>();
+		
+		Map map{};
+
+		map[Type::Equal] = [](rttr::variant const& lhs, rttr::variant const& rhs)				{ return lhs == rhs; };
+		map[Type::NotEqual] = [](rttr::variant const& lhs, rttr::variant const& rhs)			{ return lhs != rhs; };
+		map[Type::GreaterThan] = [](rttr::variant const& lhs, rttr::variant const& rhs)			{ return lhs > rhs; };
+		map[Type::LessThan] = [](rttr::variant const& lhs, rttr::variant const& rhs)			{ return lhs < rhs; };
+		map[Type::GreaterThanOrEqual] = [](rttr::variant const& lhs, rttr::variant const& rhs)	{ return lhs >= rhs; };
+		map[Type::LessThanOrEqual] = [](rttr::variant const& lhs, rttr::variant const& rhs)		{ return lhs <= rhs; };
+
+		return map;
+	}();
 }
 
 namespace oo::SkAnim::internal

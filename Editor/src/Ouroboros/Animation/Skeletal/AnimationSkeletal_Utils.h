@@ -28,4 +28,6 @@ namespace oo::SkAnim
 	struct StateNode;
 	struct Transition;
 	struct Rule;
+	struct Comparator;
+	struct ParameterList;
 }

@@ -46,19 +46,56 @@ namespace oo::SkAnim
 		int currentState{ -1 };
 		int nextState{ -1 };
 		
+		ParameterList paramList{};
+	};
+
+	struct ParameterList
+	{
+		std::vector<rttr::variant> params;
+		 
+		//operator[] overload to get the parameter 
+		inline rttr::variant operator[](int index) const
+		{
+			return params[index];
+		}
+		inline rttr::variant& operator[](int index)
+		{
+			return params[index];
+		}
+	};
+
+	struct Comparator
+	{
+		enum class Type
+		{
+			Equal,
+			NotEqual,
+			GreaterThan,
+			LessThan,
+			GreaterThanOrEqual,
+			LessThanOrEqual
+		};
+
+		using CompareFn = bool(rttr::variant const&, rttr::variant const&);
+		using Map = std::unordered_map< Type, CompareFn*>;
+		static Map const comparisonFn_map;
+
+		Type type{ Type::Equal };
+
+		Type GetType() const { return type; }
 	};
 
 	struct Rule
 	{
 		bool Check(SM_Instance& instance) const
 		{
-
+			return Comparator::comparisonFn_map.at(comparator.GetType())(instance.paramList[parameterIndex], value);
 		}
 
 	private:
 		int parameterIndex{ -1 };
-		rttr::variant value;
-		
+		rttr::variant value{};
+		Comparator comparator{};
 	};
 
 	struct Transition
@@ -67,8 +104,12 @@ namespace oo::SkAnim
 		{
 			for (auto const& rule : rules)
 			{
-				rule.Check(instance);
+				if (rule.Check(instance) == false)
+				{
+					return false;
+				}
 			}
+			return true;
 		}
 
 	private:
