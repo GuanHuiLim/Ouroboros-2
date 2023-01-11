@@ -64,4 +64,14 @@ namespace oo
     {
         DebugDraw::AddSphere({ center, radius }, color);
     }
+
+    SCRIPT_API void Debug_DrawArrow(ScriptValue::vec3_type p0, ScriptValue::vec3_type p1)
+    {
+        DebugDraw::AddArrow(p0, p1);
+    }
+
+    SCRIPT_API void Debug_DrawArrow_Color(ScriptValue::vec3_type p0, ScriptValue::vec3_type p1, Color color)
+    {
+        DebugDraw::AddArrow(p0, p1, color);
+    }
 }

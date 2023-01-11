@@ -113,5 +113,18 @@ namespace Ouroboros
         {
             Debug_DrawWireSphere_Color(center, radius, color);
         }
+
+        [DllImport("__Internal")] private static extern void Debug_DrawArrow(Vector3 p0, Vector3 p1);
+        [DllImport("__Internal")] private static extern void Debug_DrawArrow_Color(Vector3 p0, Vector3 p1, Color color);
+
+        public static void DrawArrow(Vector3 p0, Vector3 p1)
+        {
+            Debug_DrawArrow(p0, p1);
+        }
+
+        public static void DrawArrow(Vector3 p0, Vector3 p1, Color color)
+        {
+            Debug_DrawArrow_Color(p0, p1, color);
+        }
     }
 }
