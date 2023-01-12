@@ -33,6 +33,22 @@ namespace oo::SkAnim::internal
         }
     
     }
+    void TryTransitionIfPossible(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine)
+    {
+        if (instance.canTransition == false) return;
+
+        instance.inTransition = true;
+        instance.canTransition = false;
+        instance.transitionTimer = 0.f;
+		instance.transitionDuration = instance.transition->Duration();
+        
+        //consume triggers
+        if
+
+        instance.nextState = instance.transition->NextState();
+        
+
+    }
 }
 
 

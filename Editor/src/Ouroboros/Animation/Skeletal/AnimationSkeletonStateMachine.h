@@ -42,6 +42,9 @@ namespace oo::SkAnim
 		bool canTransition{ false };
 		bool inTransition{ false };
 		Transition const* transition{nullptr};
+		float transitionTimer{ 0.0f };
+		float transitionDuration{ 0.0f };
+		
 
 		int currentState{ -1 };
 		int nextState{ -1 };
@@ -112,8 +115,12 @@ namespace oo::SkAnim
 			return true;
 		}
 
+		int NextState() const { return nextState; }
+		float Duration() const { return duration; }
 	private:
-		std::vector<Rule> rules;
+		std::vector<Rule> rules{};
+		int nextState{ -1 };
+		float duration{ 0.f };
 	};
 	struct StateNode
 	{
