@@ -43,11 +43,20 @@ namespace oo::SkAnim::internal
 		instance.transitionDuration = instance.transition->Duration();
         
         //consume triggers
-        if
+		ConsumeTriggers(instance, *instance.transition);
 
         instance.nextState = instance.transition->NextState();
         
 
+    }
+    void ConsumeTriggers(SM_Instance& instance, Transition const& transition)
+    {
+        for (auto const& rule : transition.Rules())
+        {
+            if (rule.IsTrigger() == false) continue;
+
+			rule.GetParam(instance).get_value<Trigger>().Reset();
+        }
     }
 }
 

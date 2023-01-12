@@ -30,4 +30,9 @@ namespace oo::SkAnim
 	struct Rule;
 	struct Comparator;
 	struct ParameterList;
+	struct Trigger
+	{
+		bool value{ false };
+		void Reset() { value = false; }
+	};
 }

@@ -27,6 +27,8 @@ namespace oo::SkAnim::internal
 	void TryUpdateState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
 
 	void UpdateState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
+
+	void ConsumeTriggers(SM_Instance& instance, Transition const& transition);
 }
 
 

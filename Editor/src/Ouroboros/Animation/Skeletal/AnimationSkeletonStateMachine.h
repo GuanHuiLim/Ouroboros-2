@@ -95,6 +95,12 @@ namespace oo::SkAnim
 			return Comparator::comparisonFn_map.at(comparator.GetType())(instance.paramList[parameterIndex], value);
 		}
 
+		bool IsTrigger() const { return value.is_type<Trigger>(); }
+		
+		rttr::variant& GetParam(SM_Instance& instance) const
+		{ 
+			return instance.paramList[parameterIndex];
+		}
 	private:
 		int parameterIndex{ -1 };
 		rttr::variant value{};
@@ -117,6 +123,8 @@ namespace oo::SkAnim
 
 		int NextState() const { return nextState; }
 		float Duration() const { return duration; }
+
+		std::vector<Rule> const& Rules() const { return rules; }
 	private:
 		std::vector<Rule> rules{};
 		int nextState{ -1 };
