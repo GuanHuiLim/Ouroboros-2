@@ -323,7 +323,6 @@ namespace myPhysx {
 
     };
 
-
     // Physx visual degguer
     class PVD {
 
