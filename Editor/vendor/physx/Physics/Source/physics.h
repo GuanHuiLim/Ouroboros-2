@@ -266,6 +266,14 @@ namespace phy
     private:
         // helper functions
         void setAllOldData(PhysicsObject& physicsObj, PhysxObject& iniObj, size_t index);
+        
+        void retrieveOldData(PhysicsObject& physics_Obj, const PhysxObject& init_Obj) const;
+
+        template<typename Type>
+        void retrievePosOri(PhysicsObject& physics_Obj, Type data) const;
+
+        template<typename Type>
+        void setRigidShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, Type data);
 
     private:
         PxScene* scene = nullptr;
