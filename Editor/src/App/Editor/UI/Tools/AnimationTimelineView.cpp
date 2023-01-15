@@ -20,6 +20,238 @@ Technology is prohibited.
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
 #include "App/Editor/Utility/ImGuiManager.h"
 
+
+void AnimationTimelineView::Show()
+{
+    auto& selected_items = Hierarchy::GetSelected();    //temporary fix, ideally wanna get from animatorcontroller file
+    auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+
+    if (selected_items.size() <= 0)
+        return;
+
+    auto gameObject = scene->FindWithInstanceID(*selected_items.begin());
+
+    if (gameObject == nullptr || gameObject->HasComponent<oo::AnimationComponent>() == false)
+        return;
+
+    source_go = gameObject;
+    animator = &source_go.get()->GetComponent<oo::AnimationComponent>();
+
+    DisplayAnimationTimeline(animator);
+}
+
+void AnimationTimelineView::DisplayAnimationTimeline(oo::AnimationComponent* _animator)
+{
+    ////draw 2 child windows, and make them be separated by splitter
+    static float w = 250.0f;
+    static float h = 315.0f;
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+    if (ImGui::BeginChild("AnimationTimeline", ImVec2(w, h)))
+    {
+        //Do Animation Timeline things here
+        DisplayAnimationTimelineView(_animator);
+        ImGui::EndChild();
+    }
+    ImGui::SameLine();
+    ImGui::SetCursorPosY(0.0f);
+    ImGui::Button("##vsplitter", ImVec2(2.0f, ImGui::GetWindowHeight()));
+    if (ImGui::IsItemActive())
+        w += ImGui::GetIO().MouseDelta.x;
+    ImGui::SameLine();
+    if (ImGui::BeginChild("AnimationEvent", ImVec2(0, h)))
+    {
+        //Do Animation Event things here
+        if (animation != nullptr)
+            DisplayAnimationEventView(animation);
+        ImGui::EndChild();
+    }
+    ImGui::PopStyleVar();
+}
+
+void AnimationTimelineView::DisplayAnimationTimelineView(oo::AnimationComponent* _animator)
+{
+    //display animation dropdown to select animation
+    static bool animOpen = false;
+    static std::string animName = "empty";
+    auto& temp = _animator->GetActualComponent().animTree->groups;
+
+    SelectAnimation(_animator, temp, animName, animOpen);
+    if (animation != nullptr)
+    {
+        AnimationFrameTime(animation);
+        //display all available events
+        AnimationEventList(animation);
+    }
+}
+
+void AnimationTimelineView::SelectAnimation(oo::AnimationComponent* _animator,
+                                            std::map<size_t, oo::Anim::Group>& _group, 
+                                            std::string& _animName,
+                                            bool& _animOpen)
+{
+    //To Get Which Node to Modify, Temporary Solution
+    ImGui::PushItemWidth(160);
+    ImGui::BeginGroup();
+    ImGui::Text("Node");
+    ImGui::SameLine(64.0f);
+    ImGui::InputText("##animationstuff", &_animName, ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
+    if (ImGui::ArrowButton("animdownbtn", ImGuiDir_Down))
+    {
+        _animOpen = !_animOpen;
+    }
+    if (_animOpen)
+    {
+        if (ImGui::BeginListBox("##animation"))
+        {
+            if (_animator->GetActualComponent().animTree != nullptr)
+            {
+                for (auto it = _group.begin(); it != _group.end(); ++it)
+                {
+                    for (auto it2 = it->second.nodes.begin(); it2 != it->second.nodes.end(); ++it2)
+                    {
+                        if (ImGui::Selectable(it2->second.name.c_str()))
+                        {
+                            _animName = it2->second.name;
+                            node = &it2->second;
+                            animation = &it2->second.GetAnimation();
+                            scriptevent = nullptr;
+                            _animOpen = !_animOpen;
+                        }
+                    }
+                }
+            }
+        }
+        ImGui::EndListBox();
+    }
+    ImGui::EndGroup();
+    ImGui::PopItemWidth();
+}
+
+void AnimationTimelineView::AnimationFrameTime(oo::Anim::Animation* _animation)
+{
+    ImGui::Text("Frame");
+    ImGui::SameLine(65.0f);
+    ImGui::SliderFloat("##Frame", &currentFrameTime, 0.0f, _animation->animation_length);
+}
+
+void AnimationTimelineView::AnimationEventList(oo::Anim::Animation* _animation)
+{
+    for (int i = 0; i < _animation->events.size(); ++i)
+    {
+        //do for multiple timeline
+        ImGui::PushID(i);
+        bool requestDelete = false;
+        if (ImGui::SmallButton("X"))
+        {
+            //used for deleting animation timelines
+            requestDelete = true;
+        }
+
+        ImGui::SameLine();
+
+        if (!animation->events.empty())
+        {
+            if (ImGui::Selectable(std::to_string(animation->events[i].time).c_str(), false))
+            {
+                scriptevent = &animation->events[i];
+            }
+        }
+        if (requestDelete)
+            animation->events.erase(animation->events.begin() + i);
+
+        ImGui::PopID();
+        ImGui::Separator();
+    }
+
+    if (ImGui::Button("Add Animation"))
+    {
+        //Do Add Animation Here
+        oo::Anim::ScriptEvent newEvent = oo::Anim::ScriptEvent();
+
+        newEvent.script_function_info = oo::ScriptValue::function_info();
+        newEvent.time = currentFrameTime;
+
+        scriptevent = animator->AddScriptEvent(node->group->name, node->name, "", newEvent);
+    }
+}
+
+void AnimationTimelineView::DisplayAnimationEventView(oo::Anim::Animation* _animation)
+{
+    if (scriptevent != nullptr)
+    {
+        static bool openEventDropdown = false;
+        static std::string eventName = "empty";
+        ImGui::Text("Invoke: ");
+        ImGui::SameLine();
+        //ImGui Dropdown of all the invokable events 
+        eventName = scriptevent->script_function_info.className + "." + scriptevent->script_function_info.functionName;
+        fnInfo.clear();
+        oo::ScriptComponent::map_type& scriptMap = source_go.get()->GetComponent<oo::ScriptComponent>().GetScriptInfoAll();
+
+        for (auto it = scriptMap.begin(); it != scriptMap.end(); ++it)
+        {
+            oo::ScriptInfo& scriptInfo = it->second;
+            std::vector<oo::ScriptValue::function_info> fnInfoAll = scriptInfo.classInfo.GetFunctionInfoAll();
+            for (oo::ScriptValue::function_info _fnInfo : fnInfoAll)
+                fnInfo.push_back(_fnInfo);
+        }
+
+        ImGui::InputText("##eventstuff", &eventName, ImGuiInputTextFlags_ReadOnly);
+        ImGui::SameLine();
+        if (ImGui::ArrowButton("eventdownbtn", ImGuiDir_Down))
+        {
+            openEventDropdown = !openEventDropdown;
+        }
+        if (openEventDropdown)
+        {
+            for (int i = 0; i < fnInfo.size(); ++i)
+            {
+                std::string tempname = fnInfo[i].className + "." + fnInfo[i].functionName;
+                if (ImGui::Selectable(tempname.c_str()))
+                {
+                    scriptevent->script_function_info = fnInfo[i];
+                    eventName = tempname;
+                    openEventDropdown = !openEventDropdown;
+                }
+            }
+        }
+
+        //use scriptevent to display any other parameters
+        if (!scriptevent->script_function_info.paramList.empty())
+        {
+            for (int i = 0; i < scriptevent->script_function_info.paramList.size(); ++i)
+            {
+                std::string paramLabel = scriptevent->script_function_info.paramList[i].name + ":";
+                ImGui::Text(paramLabel.c_str());
+                ImGui::SameLine();
+                std::string valueLabel = "##" + scriptevent->script_function_info.paramList[i].name;
+                if (scriptevent->script_function_info.paramList[i].value.IsValueType<bool>())
+                {
+                    ImGui::Checkbox(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<bool>());
+                }
+                else if (scriptevent->script_function_info.paramList[i].value.IsValueType<int>())
+                {
+                    ImGui::DragInt(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<int>());
+                }
+                else if (scriptevent->script_function_info.paramList[i].value.IsValueType<float>())
+                {
+                    ImGui::DragFloat(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<float>());
+                }
+                else if (scriptevent->script_function_info.paramList[i].value.IsValueType<std::string>())
+                {
+                    ImGui::InputText(valueLabel.c_str(), &scriptevent->script_function_info.paramList[i].value.GetValue<std::string>());
+                }
+            }
+        }
+
+        ImGui::Text("Time: ");
+        ImGui::SameLine();
+        ImGui::SliderFloat("##scripteeventtime", &scriptevent->time, 0.0f, animation->animation_length);
+    }
+}
+
+#ifdef LEGACY_CODE
 constexpr ImGuiID popUpOptionTimeline = 700;
 int AnimationTimelineView::currentKeyFrame;
 float AnimationTimelineView::unitPerFrame = 0.1f;
@@ -215,7 +447,7 @@ void AnimationTimelineView::DrawToolbar(oo::AnimationComponent* _animator)
         {
             oo::Anim::ScriptEvent newEvent = oo::Anim::ScriptEvent();
 
-            newEvent.script_function_info = oo::ScriptValue::function_info() ;
+            newEvent.script_function_info = oo::ScriptValue::function_info();
             newEvent.time = currentTime;
             
             scriptevent = _animator->AddScriptEvent(node->group->name, node->name, timeline->name, newEvent);
@@ -733,3 +965,4 @@ float AnimationTimelineView::GetTimelinePosFromFrame(int frame)
 {
     return (frame - visibleStartingFrame) * pixelsPerFrame + lineStartOffset;
 }
+#endif

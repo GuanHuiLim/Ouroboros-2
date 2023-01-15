@@ -26,6 +26,38 @@ Technology is prohibited.
 class AnimationTimelineView
 {
 public:
+	void Show();
+
+private:
+	oo::Scene::go_ptr source_go;
+	oo::AnimationComponent* animator = nullptr;
+	oo::Anim::Node* node = nullptr;
+	oo::Anim::Animation* animation = nullptr;
+	oo::Anim::ScriptEvent* scriptevent = nullptr;
+	float currentFrameTime = 0.0f;
+	oo::Anim::Timeline* timeline = nullptr;
+	oo::Anim::KeyFrame* keyframe = nullptr;
+	std::vector<oo::ScriptValue::function_info> fnInfo;
+
+	//to be used to apply data to gameObject, for previewing
+	std::vector<oo::Anim::Timeline*> timelines;	//if there are multiple timelines that has a keyframe at that currentKeyFrame, store them both in here
+	std::vector<oo::Anim::KeyFrame*> keyframes;	//Since there are multiple timeline that may have a keyframe at this currentKeyFrame, invoke both keyframes
+
+	void DisplayAnimationTimeline(oo::AnimationComponent* _animator);
+	void DisplayAnimationTimelineView(oo::AnimationComponent* _animator);
+	void SelectAnimation(oo::AnimationComponent* _animator, 
+						 std::map<size_t, oo::Anim::Group>& _group,
+						 std::string& _animName, 
+						 bool& _animOpen);
+	void AnimationFrameTime(oo::Anim::Animation* _animation);
+	void AnimationEventList(oo::Anim::Animation* _animation);
+	void DisplayAnimationEventView(oo::Anim::Animation* _animation);
+};
+
+#ifdef LEGACY_CODE
+class AnimationTimelineView
+{
+public:
 
 	void Show();
 
@@ -82,3 +114,4 @@ private:
 	int GetFrameFromTimelinePos(float pos);
 	float GetTimelinePosFromFrame(int frame);
 };
+#endif
