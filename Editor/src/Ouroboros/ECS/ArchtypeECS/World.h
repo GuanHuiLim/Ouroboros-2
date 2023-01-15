@@ -73,6 +73,9 @@ namespace Ecs
 		void for_each(IQuery& query, Func&& function);
 
 		template<typename Func>
+		void parallel_for_each(IQuery& query, Func&& function);
+
+		template<typename Func>
 		void for_each_entity(IQuery& query, Func&& function);
 
 		template<typename Func>

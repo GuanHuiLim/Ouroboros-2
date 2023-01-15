@@ -29,6 +29,7 @@ Technology is prohibited.
 #include "UI/Tools/MeshHierarchy.h"
 //#include "UI/Tools/RendererDebugger.h"
 #include "UI/Tools/PreviewWindow.h"
+#include "UI/Tools/Keylogging.h"
 
 #include "UI/Optional Windows/SceneOrderingWindow.h"
 #include "UI/Optional Windows/RendererFieldsWindow.h"
@@ -85,6 +86,8 @@ public:
 
 	SceneOrderingWindow m_sceneOderingWindow;
 	RendererFieldsWindow m_rendererFieldsWindow;
+ 
+	KeyLogging m_Keylogger;
 public:
 	PopupHelperWindow helper;
 	struct TimedSequence

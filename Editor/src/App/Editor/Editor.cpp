@@ -38,7 +38,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Timer.h"
 #include <Ouroboros/Physics/PhysicsSystem.h>
 #include <Ouroboros/Vulkan/RendererSystem.h>
-
+#include <Ouroboros/Scene/RuntimeController.h>
 static void FileDrop(oo::FileDropEvent* e)
 {
 	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf", ".tga"};
@@ -137,7 +137,11 @@ void Editor::Update()
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
 	m_chatsystem.Show();
+
+	m_Keylogger.Show();
 	helper.Popups();
+	
+
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl))
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_S))

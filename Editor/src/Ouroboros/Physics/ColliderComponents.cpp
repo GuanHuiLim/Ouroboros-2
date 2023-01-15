@@ -47,5 +47,9 @@ namespace oo
             .property_readonly("Global Radius", &CapsuleColliderComponent::GlobalRadius)
             .property_readonly("Global Half Height", &CapsuleColliderComponent::GlobalHalfHeight)
             ;
+
+        registration::class_<MeshColliderComponent>("Mesh Collider")
+            .property("Reset", &MeshColliderComponent::Reset)
+            .property_readonly("vertices", &MeshColliderComponent::Vertices);
     }
 }

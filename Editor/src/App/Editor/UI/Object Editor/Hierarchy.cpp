@@ -94,7 +94,7 @@ Hierarchy::Hierarchy()
 		});
 	oo::EventManager::Subscribe<DuplicateButtonEvent>(&DuplicateEvent);
 	oo::EventManager::Subscribe<DestroyGameObjectButtonEvent>(&DestroyEvent);
-
+	oo::EventManager::Subscribe<Hierarchy, FocusButtonEvent>(this, &Hierarchy::OpenItemFocus);
 }
 
 void Hierarchy::Show()
@@ -136,11 +136,21 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, oo::Scene::go_ptr 
 	//end of networking code/////
 	ImGui::PushID(static_cast<int>(handle));
 	bool open = false;
+
 	bool collapsingHeader = false;
+
+
 	if (gameobj->HasComponent<oo::EditorComponent>())
 		collapsingHeader = gameobj->GetComponent<oo::EditorComponent>().m_header;
+
+
 	if (!rename)
 	{
+		if (m_focusList.empty() == false && node.get_handle() == m_focusList.front())
+		{
+			ImGui::SetNextItemOpen(true); //next item is treenode
+			m_focusList.pop_front();
+		}
 		if (networking_selected == false)
 		{
 			if (collapsingHeader == false)
@@ -347,10 +357,24 @@ void Hierarchy::PopBackPrefabStack()
 	OpenPromptEvent<OpenFileEvent> ope(OpenFileEvent(m_prefabsceneList.back().m_curr_sceneFilepath), [this] {m_prefabsceneList.pop_back(); });
 	oo::EventManager::Broadcast(&ope);
 }
+void Hierarchy::OpenItemFocus(FocusButtonEvent*)
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	oo::GameObject go = *scene->FindWithInstanceID(*(s_selected.begin()));
+
+	while (go.HasValidParent() == true)
+	{
+		auto id = go.GetParentUUID();
+		if (id == scene->GetRoot()->GetInstanceID())
+			break;
+		m_focusList.push_front(id);
+		go = go.GetParent();
+	}
+}
 void Hierarchy::NormalView()
 {
 	RightClickOptions();
-
+	TriggerFocusButton();
 	{
 		ImVec2 temp = ImGui::GetCursorPos();
 		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
@@ -781,6 +805,17 @@ void Hierarchy::RightClickOptions()
 		ImGui::EndPopup();
 	}
 
+}
+
+void Hierarchy::TriggerFocusButton()
+{
+	if (s_selected.empty() == false && ImGui::IsKeyPressed(ImGuiKey_F) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+	{
+		FocusButtonEvent e;
+		auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(*s_selected.begin());
+		e.item_globalPosition = go->GetComponent<oo::TransformComponent>().GetGlobalPosition();
+		oo::EventManager::Broadcast(&e);
+	}
 }
 
 void Hierarchy::Filter_ByName()

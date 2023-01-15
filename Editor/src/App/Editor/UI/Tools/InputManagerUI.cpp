@@ -59,15 +59,31 @@ void InputManagerUI::Show()
 		ImGui::EndMenuBar();
 	}
 
-	for (auto& input : oo::InputManager::GetAxes())
+	for (auto iter = oo::InputManager::GetAxes().begin() ; iter != oo::InputManager::GetAxes().end() ; ++iter)
 	{
+		auto& input = *iter;
 		ImGui::Separator();
 
+		ImVec2 content_avail = ImGui::GetContentRegionAvail();
+
 		bool opened = ImGui::TreeNodeEx(input.GetName().c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_DefaultOpen);
+		
+		ImGui::PushID(input.GetName().c_str());
+		ImGui::SetItemAllowOverlap();
+		ImGui::SameLine(content_avail.x - 20.0f);
+		if (ImGui::SmallButton("x"))
+		{
+			oo::InputManager::GetAxes().erase(iter);
+			ImGui::PopID();
+			break;
+		}
+		oo::InputManager::GetAxes();
 		ImGui::Separator();
 		if (opened == false)
+		{
+			ImGui::PopID();
 			continue;
-		ImGui::PushID(input.GetName().c_str());
+		}
 
 		std::string name = input.GetName();
 		if (ImGui::InputText("Name", &name, ImGuiInputTextFlags_EnterReturnsTrue))

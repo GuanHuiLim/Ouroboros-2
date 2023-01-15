@@ -181,6 +181,30 @@ namespace oo
         return klass;
     }
 
+    MonoType* ScriptEngine::GetType(const char* aLibrary, const char* aNamespace, const char* aClassName)
+    {
+        MonoImage* library = GetLibrary(aLibrary);
+        assert(library != nullptr);
+        //if (library == nullptr)
+            //throw std::exception("ScriptEngine GetClass Exception: the Library doesn't exist");
+        MonoClass* klass = mono_class_from_name(library, aNamespace, aClassName);
+        assert(klass != nullptr);
+        //if (klass == nullptr)
+            //throw std::exception("ScriptEngine GetClass Exception: class doesn't exist");
+        return mono_class_get_type(klass);
+    }
+
+    MonoType* ScriptEngine::TryGetType(const char* aLibrary, const char* aNamespace, const char* aClassName)
+    {
+        MonoImage* library = GetLibrary(aLibrary);
+        if (library == nullptr)
+            return nullptr;
+        MonoClass* klass = mono_class_from_name(library, aNamespace, aClassName);
+        if (klass == nullptr)
+            return nullptr;
+        return mono_class_get_type(klass);
+    }
+
     std::vector<MonoClass*> const ScriptEngine::GetClassesByBaseClass(const char* aLibrary, MonoClass* baseClass)
     {
         std::vector<MonoClass*> classList{};
@@ -396,6 +420,21 @@ namespace oo
         }
     }
 
+    MonoObject* ScriptEngine::GetClassFieldAttribute(MonoObject* obj, const char* fieldName, MonoType* attributeType)
+    {
+        MonoString* fieldNameString = CreateString(fieldName);
+        MonoReflectionType* attrRefType = mono_type_get_object(mono_domain_get(), attributeType);
+
+        MonoClass* utilClass = GetClass("ScriptCore", "Ouroboros.Engine", "Utility");
+        MonoMethod* utilMethod = mono_class_get_method_from_name(utilClass, "GetCustomFieldAttribute", 3);
+        void* params[3];
+        params[0] = obj;
+        params[1] = fieldNameString;
+        params[2] = attrRefType;
+        MonoObject* result = mono_runtime_invoke(utilMethod, NULL, params, NULL);
+        return result;
+    }
+
     bool ScriptEngine::CheckTypeHasAttribute(MonoType* type, MonoType* attribute)
     {
         MonoReflectionType* typeRefType = mono_type_get_object(mono_domain_get(), type);
@@ -474,6 +513,27 @@ namespace oo
     MonoObject* ScriptEngine::InvokeFunction(MonoObject* obj, const char* functionName, void** paramList, int paramCount)
     {
         return InvokeFunction(obj, GetFunction(obj, functionName, paramCount), paramList);
+    }
+
+    void ScriptEngine::ForEachClassField(MonoClass* klass, ScriptFieldCallback callback)
+    {
+        MonoClass* monoBehaviour = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "MonoBehaviour");
+        std::vector<MonoClass*> klassList;
+        while (klass != nullptr && klass != monoBehaviour)
+        {
+            klassList.emplace_back(klass);
+            klass = mono_class_get_parent(klass);
+        }
+        void* iter = NULL;
+        MonoClassField* field = nullptr;
+        for (auto klassPtr = klassList.rbegin(); klassPtr != klassList.rend(); ++klassPtr)
+        {
+            iter = NULL;
+            while ((field = mono_class_get_fields(*klassPtr, &iter)) != nullptr)
+            {
+                callback(field);
+            }
+        }
     }
 
     void ScriptEngine::ThrowNullException()

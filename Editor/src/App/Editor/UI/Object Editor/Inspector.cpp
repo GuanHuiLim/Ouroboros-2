@@ -175,6 +175,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
 	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
+	DisplayComponent<oo::MeshColliderComponent>(gameobject);
 
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::ParticleEmitterComponent>(gameobject);
@@ -231,6 +232,7 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::MeshColliderComponent>(gameobject);
 
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::ParticleEmitterComponent>(gameobject);
@@ -601,11 +603,23 @@ void Inspector::DisplayScript(oo::GameObject& gameobject)
 			ImGui::PopID();
 			continue;
 		}
-		for (auto& sfi : scriptInfo.second.fieldMap)
+		//for (auto& sfi : scriptInfo.second.fieldMap)
+
+        for(auto& fieldName : scriptInfo.second.displayOrder)
 		{
+            auto& sfi = *scriptInfo.second.fieldMap.find(fieldName);
+
 			bool edit = false;
 			bool edited = false;
 			oo::ScriptFieldInfo s_value = sfi.second;
+			if (s_value.GetHeader().empty() == false)
+			{
+				ImFont tempfont = *ImGui::GetFont();
+				tempfont.Scale *= 1.1f;
+				ImGui::PushFont(&tempfont);
+				ImGui::Text(s_value.GetHeader().c_str());
+				ImGui::PopFont();
+			}
 			auto iter = m_scriptingProperties.m_scriptUI.find(sfi.second.value.GetValueType());
 			if (iter == m_scriptingProperties.m_scriptUI.end())
 				continue;
