@@ -79,7 +79,6 @@ void AnimationTimelineView::DisplayAnimationTimelineView(oo::AnimationComponent*
     if (animation != nullptr)
     {
         AnimationFrameTime(animation);
-        //display all available events
         AnimationEventList(animation);
     }
 }
@@ -131,7 +130,7 @@ void AnimationTimelineView::SelectAnimation(oo::AnimationComponent* _animator,
 void AnimationTimelineView::AnimationFrameTime(oo::Anim::Animation* _animation)
 {
     ImGui::Text("Frame");
-    ImGui::SameLine(65.0f);
+    ImGui::SameLine(64.5f);
     ImGui::SliderFloat("##Frame", &currentFrameTime, 0.0f, _animation->animation_length);
 }
 
@@ -158,13 +157,16 @@ void AnimationTimelineView::AnimationEventList(oo::Anim::Animation* _animation)
             }
         }
         if (requestDelete)
+        {
             animation->events.erase(animation->events.begin() + i);
+            scriptevent = nullptr;
+        }
 
         ImGui::PopID();
         ImGui::Separator();
     }
 
-    if (ImGui::Button("Add Animation"))
+    if (ImGui::Button("Add Event"))
     {
         //Do Add Animation Here
         oo::Anim::ScriptEvent newEvent = oo::Anim::ScriptEvent();
@@ -246,7 +248,7 @@ void AnimationTimelineView::DisplayAnimationEventView(oo::Anim::Animation* _anim
         }
 
         ImGui::Text("Time: ");
-        ImGui::SameLine();
+        ImGui::SameLine(51.0f);
         ImGui::SliderFloat("##scripteeventtime", &scriptevent->time, 0.0f, animation->animation_length);
     }
 }
