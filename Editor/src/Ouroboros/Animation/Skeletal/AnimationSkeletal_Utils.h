@@ -35,4 +35,5 @@ namespace oo::SkAnim
 		bool value{ false };
 		void Reset() { value = false; }
 	};
+	struct TrackedState;
 }

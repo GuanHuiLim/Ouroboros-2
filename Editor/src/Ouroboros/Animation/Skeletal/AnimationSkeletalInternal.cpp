@@ -46,7 +46,16 @@ namespace oo::SkAnim::internal
 		//ConsumeTriggers(instance, *instance.transition);
 
         instance.nextState = instance.transition->NextState();
-        
+        instance.trackedStates.emplace_back()
+
+    }
+    void TryUpdateTransitionState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine)
+    {
+        if (instance.transitionTimer < instance.transitionDuration) return;
+
+        instance.currentState = instance.nextState;
+
+
 
     }
     void ConsumeTriggers(SM_Instance& instance, Transition const& transition)

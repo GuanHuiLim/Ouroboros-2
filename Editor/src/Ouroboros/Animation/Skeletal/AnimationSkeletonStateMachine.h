@@ -50,6 +50,12 @@ namespace oo::SkAnim
 		int nextState{ -1 };
 		
 		ParameterList paramList{};
+		std::vector<TrackedState> trackedStates{};
+	};
+
+	struct TrackedState
+	{
+		TrackedState()
 	};
 
 	struct ParameterList

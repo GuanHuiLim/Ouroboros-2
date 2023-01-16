@@ -46,13 +46,6 @@ namespace oo::SkAnim::internal
 		//try to transition if possible
 		TryTransitionIfPossible(comp.stateMachineInstance, *comp.stateMachine);
 		
-		//blend current state and next state if in transition
-		if (comp.stateMachineInstance.inTransition)
-		{
-			//blend current state and next state
-			BlendStates(comp.stateMachineInstance, *comp.stateMachine);
-		}
-		
 		//if transition done, set current state to next state
 		TryUpdateTransitionState(comp.stateMachineInstance, *comp.stateMachine);
 
