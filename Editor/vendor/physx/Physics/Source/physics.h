@@ -14,6 +14,7 @@
 #include <queue>
 #include <deque>
 #include <memory>
+#include <unordered_map>
 
 #include "uuid.h"
 
@@ -200,7 +201,10 @@ namespace phy
         PhysxObject& operator=(PhysxObject&& object) = default;
 
         std::unique_ptr<phy_uuid::UUID> id = nullptr;
-        phy_uuid::UUID matID = 0;
+
+        // material
+        PxMaterial* m_material = nullptr;
+        //phy_uuid::UUID matID = 0;
 
         // shape
         PxShape* m_shape = nullptr;
@@ -259,9 +263,10 @@ namespace phy
 
 
         // NEW KEY FUNCTIONS!
+        std::unordered_map<phy_uuid::UUID, PhysicsObject> retrieveCurrentObjects() const;
+        void submitUpdatedObjects(std::unordered_map<phy_uuid::UUID, PhysicsObject> updatedObjects);
 
-        std::vector<PhysicsObject> retrieveCurrentObjects() const;
-        void submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects);
+        void submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand);
 
     private:
         // helper functions
@@ -272,8 +277,14 @@ namespace phy
         template<typename Type>
         void retrievePosOri(PhysicsObject& physics_Obj, Type data) const;
 
-        template<typename Type>
-        void setRigidShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, Type data);
+        void setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj);
+        
+        void setRigidShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj);
+
+        void setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
+        
+        void setTorque(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
+
 
     private:
         PxScene* scene = nullptr;

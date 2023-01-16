@@ -279,8 +279,7 @@ namespace phy
             
             //setAllOldData(physicsNewObject, initialized_object, index);
 
-            retrieveOldData(physicsNewObject, initialized_object);
-            // do a bit more things here to set it up correctly
+            setAllData(physicsNewObject, initialized_object);
 
             return physicsNewObject; // a copy
         }
@@ -288,9 +287,9 @@ namespace phy
         return PhysicsObject{}; // return empty
     }
 
-    std::vector<PhysicsObject> PhysicsWorld::retrieveCurrentObjects() const
+    std::unordered_map<phy_uuid::UUID, PhysicsObject> PhysicsWorld::retrieveCurrentObjects() const
     {
-        std::vector<PhysicsObject> updatedObjects;
+        std::unordered_map<phy_uuid::UUID, PhysicsObject> updatedObjects;
 
         for (auto&& physx_obj : m_physx_objects)
         {
@@ -298,7 +297,7 @@ namespace phy
 
             retrieveOldData(new_obj, physx_obj);
 
-            updatedObjects.emplace_back(new_obj);
+            updatedObjects.insert({ new_obj.id, new_obj });
         }
 
         return updatedObjects;
@@ -310,10 +309,10 @@ namespace phy
 
         // MATERIAL PROPERTIES
         //physics_Obj.matID = init_Obj.matID;
-        PxMaterial* currentMat = mat.at(init_Obj.matID);
-        physics_Obj.material = Material{ currentMat->getStaticFriction(),
-                                         currentMat->getDynamicFriction(),
-                                         currentMat->getRestitution() };
+        //PxMaterial* currentMat = mat.at(init_Obj.matID);
+        physics_Obj.material = Material{ init_Obj.m_material->getStaticFriction(),
+                                         init_Obj.m_material->getDynamicFriction(),
+                                         init_Obj.m_material->getRestitution() };
 
         // RIGIDBODY PROPERTIES
         physics_Obj.rigid_type = init_Obj.rigid_type;
@@ -356,12 +355,6 @@ namespace phy
             break;
         }
 
-        // NOT SURE IF EMPTY CAN RETRIEVE OR NOT
-        //physics_Obj.box = init_Obj.m_shape->getGeometry().box();
-        //physics_Obj.sphere = init_Obj.m_shape->getGeometry().sphere();
-        //physics_Obj.plane = init_Obj.m_shape->getGeometry().plane();
-        //physics_Obj.capsule = init_Obj.m_shape->getGeometry().capsule();
-
         // AXIS PROPERTIES
         physics_Obj.lockPositionAxis = init_Obj.lockPositionAxis;
         physics_Obj.lockRotationAxis = init_Obj.lockRotationAxis;
@@ -382,142 +375,135 @@ namespace phy
         physics_Obj.orientation = data->getGlobalPose().q;
     }
 
-    void PhysicsWorld::submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects)
+    void PhysicsWorld::submitUpdatedObjects(std::unordered_map<phy_uuid::UUID, PhysicsObject> updatedObjects)
     {
         for (auto&& updatedObj : updatedObjects)
         {
             // CHECK WHETHER OBJECT EXISTED
-            if (!m_objects_lookup.contains(updatedObj.id))
+            if (!m_objects_lookup.contains(updatedObj.first))
                 continue;
             
-            PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.id)];
+            PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.first)];
 
-            // MATERIAL PROPERTIES
-            //underlying_obj.matID = updatedObj.matID;
-            
-            // CHECK WHETHER IS AN EXISTING MATERIAL
-            if (mat.contains(underlying_obj.matID)) {
-
-                PxMaterial* temp_mat = mat.at(underlying_obj.matID);
-
-                temp_mat->setStaticFriction(updatedObj.material.staticFriction);
-                temp_mat->setDynamicFriction(updatedObj.material.dynamicFriction);
-                temp_mat->setRestitution(updatedObj.material.restitution);
-            }
-            else {
-
-                // CREATE NEW MATERIAL
-                PxMaterial* newMat = mPhysics->createMaterial(updatedObj.material.staticFriction,
-                                                                updatedObj.material.dynamicFriction,
-                                                                updatedObj.material.restitution);
-
-                phy_uuid::UUID UUID = phy_uuid::UUID{};
-
-                mat.emplace(UUID, newMat);
-
-                underlying_obj.matID = UUID; // set material id for that object
-            }
-
-            // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
-            PxRigidStatic* rstat = underlying_obj.rb.rigidStatic;
-            PxRigidDynamic* rdyna = underlying_obj.rb.rigidDynamic;
-
-            if (rstat) {
-                scene->removeActor(*rstat);
-                underlying_obj.rb.rigidStatic = nullptr; // clear the current data
-            }
-            else if (rdyna) {
-                scene->removeActor(*rdyna);
-                underlying_obj.rb.rigidDynamic = nullptr;
-            }
-
-            // SET NEW RIDID TYPE
-            underlying_obj.rigid_type = updatedObj.rigid_type;
-
-            // RIGIDBODY PROPERTIES
-            if (underlying_obj.rigid_type == rigid::rstatic) {
-
-                setRigidShape(updatedObj, underlying_obj, underlying_obj.rb.rigidStatic);
-
-            }
-            else if (underlying_obj.rigid_type == rigid::rdynamic) {
-
-                setRigidShape(updatedObj, underlying_obj, underlying_obj.rb.rigidDynamic);
-
-                underlying_obj.rb.rigidDynamic->setMass(updatedObj.mass);
-                underlying_obj.rb.rigidDynamic->setLinearDamping(updatedObj.linearDamping);
-                underlying_obj.rb.rigidDynamic->setAngularDamping(updatedObj.angularDamping);
-                underlying_obj.rb.rigidDynamic->setLinearVelocity(updatedObj.linearVel);
-                underlying_obj.rb.rigidDynamic->setAngularVelocity(updatedObj.angularVel);
-
-                // AXIS PROPERTIES
-                underlying_obj.lockPositionAxis = updatedObj.lockPositionAxis;
-                underlying_obj.lockRotationAxis = updatedObj.lockRotationAxis;
-
-                LockingAxis lockPos = underlying_obj.lockPositionAxis;
-                underlying_obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_X, lockPos.x_axis);
-                underlying_obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lockPos.y_axis);
-                underlying_obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lockPos.z_axis);
-
-                LockingAxis lockRot = underlying_obj.lockRotationAxis;
-                underlying_obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lockRot.x_axis);
-                underlying_obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lockRot.y_axis);
-                underlying_obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lockRot.z_axis);
-                
-                // KINE | GRAVITY PROPERTIES
-                underlying_obj.is_kinematic = updatedObj.is_kinematic;
-                underlying_obj.gravity_enabled = updatedObj.gravity_enabled;
-
-                underlying_obj.rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !underlying_obj.gravity_enabled);
-                underlying_obj.rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, underlying_obj.is_kinematic);
-            }
-                    
-            // COLLIDER PROPERTIES
-            underlying_obj.is_collider_enabled = updatedObj.is_collider_enabled;
-            underlying_obj.m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, underlying_obj.is_collider_enabled);
-
-            // TRIGGER PROPERTIES
-            underlying_obj.is_trigger = updatedObj.is_trigger;
-
-            if (underlying_obj.is_trigger)
-                underlying_obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
-            else
-                underlying_obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
-            
+            setAllData(updatedObj.second, underlying_obj);
         }
     }
 
-    template<typename Type>
-    void PhysicsWorld::setRigidShape(PhysicsObject& updated_Obj, PhysxObject& underlying_obj, Type data) {
+    void PhysicsWorld::setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj) {
+
+        // MATERIAL PROPERTIES
+        underlying_Obj.m_material->setStaticFriction(updatedPhysicsObj.material.staticFriction);
+        underlying_Obj.m_material->setDynamicFriction(updatedPhysicsObj.material.dynamicFriction);
+        underlying_Obj.m_material->setRestitution(updatedPhysicsObj.material.restitution);
+
+        // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
+        PxRigidStatic* rstat = underlying_Obj.rb.rigidStatic;
+        PxRigidDynamic* rdyna = underlying_Obj.rb.rigidDynamic;
+
+        if (rstat) {
+            scene->removeActor(*rstat);
+            underlying_Obj.rb.rigidStatic = nullptr; // clear the current data
+        }
+        else if (rdyna) {
+            scene->removeActor(*rdyna);
+            underlying_Obj.rb.rigidDynamic = nullptr;
+        }
+
+        // SET NEW RIDID TYPE
+        underlying_Obj.rigid_type = updatedPhysicsObj.rigid_type;
+
+        // RIGIDBODY PROPERTIES
+        if (underlying_Obj.rigid_type == rigid::rstatic) {
+
+            setRigidShape(updatedPhysicsObj, underlying_Obj);
+
+        }
+        else if (underlying_Obj.rigid_type == rigid::rdynamic) {
+
+            setRigidShape(updatedPhysicsObj, underlying_Obj);
+
+            underlying_Obj.rb.rigidDynamic->setMass(updatedPhysicsObj.mass);
+            underlying_Obj.rb.rigidDynamic->setLinearDamping(updatedPhysicsObj.linearDamping);
+            underlying_Obj.rb.rigidDynamic->setAngularDamping(updatedPhysicsObj.angularDamping);
+            underlying_Obj.rb.rigidDynamic->setLinearVelocity(updatedPhysicsObj.linearVel);
+            underlying_Obj.rb.rigidDynamic->setAngularVelocity(updatedPhysicsObj.angularVel);
+
+            // AXIS PROPERTIES
+            underlying_Obj.lockPositionAxis = updatedPhysicsObj.lockPositionAxis;
+            underlying_Obj.lockRotationAxis = updatedPhysicsObj.lockRotationAxis;
+
+            LockingAxis lockPos = underlying_Obj.lockPositionAxis;
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_X, lockPos.x_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lockPos.y_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lockPos.z_axis);
+
+            LockingAxis lockRot = underlying_Obj.lockRotationAxis;
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lockRot.x_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lockRot.y_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lockRot.z_axis);
+
+            // KINE | GRAVITY PROPERTIES
+            underlying_Obj.is_kinematic = updatedPhysicsObj.is_kinematic;
+            underlying_Obj.gravity_enabled = updatedPhysicsObj.gravity_enabled;
+
+            underlying_Obj.rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !underlying_Obj.gravity_enabled);
+            underlying_Obj.rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, underlying_Obj.is_kinematic);
+        }
+
+        // COLLIDER PROPERTIES
+        underlying_Obj.is_collider_enabled = updatedPhysicsObj.is_collider_enabled;
+        underlying_Obj.m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, underlying_Obj.is_collider_enabled);
+
+        // TRIGGER PROPERTIES
+        underlying_Obj.is_trigger = updatedPhysicsObj.is_trigger;
+
+        if (underlying_Obj.is_trigger)
+            underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
+        else
+            underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
+
+    }
+
+    void PhysicsWorld::setRigidShape(PhysicsObject& updated_Obj, PhysxObject& underlying_obj) {
+
+        PxRigidActor* rigidbody = nullptr;
+
+        // RIGID ACTOR
+        if ( underlying_obj.rigid_type == rigid::rstatic)
+        {
+            underlying_obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{ updated_Obj.position, updated_Obj.orientation });
+            rigidbody = underlying_obj.rb.rigidStatic;
+        }
+        else if (underlying_obj.rigid_type == rigid::rdynamic)
+        {
+            underlying_obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ updated_Obj.position, updated_Obj.orientation });
+            rigidbody = underlying_obj.rb.rigidDynamic;
+        }
+        
+        rigidbody->userData = underlying_obj.id.get();
+        scene->addActor(*rigidbody);
+
 
         // CHECK IF THIS OBJ HAVE SHAPE DATA INIT OR NOT
         if (underlying_obj.m_shape)
-            underlying_obj.rb.rigidStatic->detachShape(*underlying_obj.m_shape);
+            rigidbody->detachShape(*underlying_obj.m_shape);
 
         // SHAPE PROPERTIES
         underlying_obj.shape_type = updated_Obj.shape_type;
-        
-        PxMaterial* material = mat.at(underlying_obj.matID);
-
-        // RIGID ACTOR
-        // TODO!!!
-        underlying_obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{ updated_Obj.position, updated_Obj.orientation });
-        underlying_obj.rb.rigidStatic->userData = underlying_obj.id.get();
-        scene->addActor(*underlying_obj.rb.rigidStatic);
 
         switch (underlying_obj.shape_type)
         {
         case shape::box:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.box, *material, true);
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.box, *underlying_obj.m_material, true);
             break;
         case shape::sphere:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.sphere, *material, true);
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.sphere, *underlying_obj.m_material, true);
             break;
         case shape::plane:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.plane, *material, true);
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.plane, *underlying_obj.m_material, true);
             break;
         case shape::capsule:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *material, true);
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *underlying_obj.m_material, true);
             break;
         case shape::none:
         default:
@@ -527,9 +513,84 @@ namespace phy
         //underlying_obj.m_shape->setContactOffset(1);
 
         // ATTACH THE NEW SHAPE TO THE OBJECT
-        underlying_obj.rb.rigidStatic->attachShape(*underlying_obj.m_shape);
+        rigidbody->attachShape(*underlying_obj.m_shape);
 
         physx_system::setupFiltering(underlying_obj.m_shape);
+    }
+
+    void PhysicsWorld::submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand) {
+
+        for (auto&& updatedCommandObj : physicsCommand)
+        {
+            // CHECK WHETHER OBJECT EXISTED
+            if (!m_objects_lookup.contains(updatedCommandObj.Id))
+                continue;
+
+            PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedCommandObj.Id)];
+
+            if (underlying_obj.rigid_type != rigid::rdynamic)
+                continue;
+
+            setForce(underlying_obj, updatedCommandObj);
+            
+            setTorque(underlying_obj, updatedCommandObj);
+        }
+
+    }
+
+    void PhysicsWorld::setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj) {
+
+        if (command_Obj.AddForce) {
+
+            switch (command_Obj.Type) {
+            case force::force:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eFORCE);
+                break;
+
+            case force::impulse:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eIMPULSE);
+                break;
+
+            case force::velocityChanged:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eVELOCITY_CHANGE);
+                break;
+
+            case force::acceleration:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eACCELERATION);
+                break;
+
+            default:
+                break;
+            }
+        }
+    }
+
+    void PhysicsWorld::setTorque(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj) {
+
+        if (command_Obj.AddTorque) {
+
+            switch (command_Obj.Type) {
+            case force::force:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eFORCE);
+                break;
+
+            case force::impulse:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eIMPULSE);
+                break;
+
+            case force::velocityChanged:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eVELOCITY_CHANGE);
+                break;
+
+            case force::acceleration:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eACCELERATION);
+                break;
+
+            default:
+                break;
+            
+            }
+        }
     }
 
     void PhysicsWorld::updateTriggerState(phy_uuid::UUID id) 
@@ -641,19 +702,20 @@ namespace phy
     /*-----------------------------------------------------------------------------*/
     /*                           PHYSX OBJECT                                      */
     /*-----------------------------------------------------------------------------*/
-    PhysxObject::PhysxObject(const PhysxObject& other) : matID(other.matID),
-        shape_type(other.shape_type),
-        rigid_type(other.rigid_type),
-        lockPositionAxis(other.lockPositionAxis),
-        lockRotationAxis(other.lockRotationAxis),
-        is_trigger(other.is_trigger),
-        gravity_enabled(other.gravity_enabled),
-        is_kinematic(other.is_kinematic),
-        is_collider_enabled(other.is_collider_enabled),
-        m_shape{ nullptr },
-        rb{},
-        // Create new UUID when we attempt to make a copy
-        id{ std::make_unique<phy_uuid::UUID>() }   {}
+    PhysxObject::PhysxObject(const PhysxObject& other) : //matID(other.matID),
+                                                         m_material{ nullptr },
+                                                         shape_type(other.shape_type),
+                                                         rigid_type(other.rigid_type),
+                                                         lockPositionAxis(other.lockPositionAxis),
+                                                         lockRotationAxis(other.lockRotationAxis),
+                                                         is_trigger(other.is_trigger),
+                                                         gravity_enabled(other.gravity_enabled),
+                                                         is_kinematic(other.is_kinematic),
+                                                         is_collider_enabled(other.is_collider_enabled),
+                                                         m_shape{ nullptr },
+                                                         rb{},
+                                                         // Create new UUID when we attempt to make a copy
+                                                         id{ std::make_unique<phy_uuid::UUID>() }   {}
 
     PhysxObject& PhysxObject::operator=(const PhysxObject& object) 
     {
