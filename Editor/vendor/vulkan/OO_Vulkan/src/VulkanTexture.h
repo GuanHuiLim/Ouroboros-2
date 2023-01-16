@@ -46,6 +46,7 @@ namespace vkutils
 		VkImageAspectFlags aspectMask{};
 		VkMemoryPropertyFlags MemProps{};
 		bool targetSwapchain = true;
+		bool isValid = false;
 		float renderScale = 1.0f;
 		
 		void updateDescriptor();
