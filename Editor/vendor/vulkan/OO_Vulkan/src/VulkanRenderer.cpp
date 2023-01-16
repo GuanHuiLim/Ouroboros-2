@@ -1963,19 +1963,21 @@ void VulkanRenderer::UploadInstanceData()
 					//for (size_t x = 0; x < g_globalModels[ent.modelID].meshCount; x++)
 					{
 						// This is per entity. Should be per material.
+						constexpr uint32_t invalidIndex = 0xFFFFFFFF;
+
 						uint32_t albedo = ent.bindlessGlobalTextureIndex_Albedo;
 						uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
 						uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
 						uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
 						const uint8_t perInstanceData = ent.instanceData;
-						constexpr uint32_t invalidIndex = 0xFFFFFFFF;
-						if (albedo == invalidIndex)
+
+						if (albedo == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Albedo].isValid == false)
 							albedo = whiteTextureID; // TODO: Dont hardcode this bindless texture index
-						if (normal == invalidIndex)
+						if (normal == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Normal].isValid == false)
 							normal = blackTextureID; // TODO: Dont hardcode this bindless texture index
-						if (roughness == invalidIndex)
+						if (roughness == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Roughness].isValid == false)
 							roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
-						if (metallic == invalidIndex)
+						if (metallic == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Metallic].isValid == false)
 							metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
 
 						// Important: Make sure this index packing matches the unpacking in the shader
@@ -2542,9 +2544,13 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	ModelFileResource* modelFile = new ModelFileResource;
 	modelFile->fileName = file;
 
-	auto mdlResourceIdx = g_globalModels.size();
-	modelFile->meshResource = static_cast<uint32_t>(mdlResourceIdx);
-	auto& mdl{ g_globalModels.emplace_back(gfxModel{}) };
+	auto& mdl = [&]()-> gfxModel& {
+		std::scoped_lock(g_mut_globalModels);
+		auto mdlResourceIdx = g_globalModels.size();
+		modelFile->meshResource = static_cast<uint32_t>(mdlResourceIdx);
+		return  g_globalModels.emplace_back(gfxModel{});		 
+	}();
+
 	mdl.name = std::filesystem::path(file).stem().string();
 
 	mdl.m_subMeshes.resize(scene->mNumMeshes);
@@ -2582,18 +2588,6 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		mdl.skeleton->m_boneNodes = new oGFX::BoneNode();
 		mdl.skeleton->m_boneNodes->mName = "RootNode";
 		BuildSkeletonRecursive(*modelFile, scene->mRootNode, mdl.skeleton->m_boneNodes);
-		
-		for (size_t i = 0; i < mdl.skeleton->boneWeights.size(); i++)
-		{
-			//auto& ref = mdl.skeleton->boneWeights[i];
-			//os << i;
-			//for (size_t x = 0; x < 4; x++)
-			//{
-			//	os << " [" << ref.boneIdx[x] << "," << ref.boneWeights[x] <<"]";
-			//}
-			//os << std::endl;
-		}
-
 	}
 	
 	for (auto& sm : mdl.m_subMeshes)
@@ -2602,13 +2596,8 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		mdl.indicesCount += sm.indicesCount;
 	}
 
-	//mData->sceneInfo = new Node();
 	//always has one transform, root
 	modelFile->ModelSceneLoad(scene, *scene->mRootNode, nullptr, glm::mat4{ 1.0f });
-		
-	//model.loadNode(nullptr, scene, *scene->mRootNode, 0, *mData);
-	auto cI_offset = g_GlobalMeshBuffers.IdxOffset;
-	auto cV_offset = g_GlobalMeshBuffers.VtxOffset;
 	
 	{
 		LoadMeshFromBuffers(modelFile->vertices, modelFile->indices, &mdl);
@@ -2715,22 +2704,27 @@ ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
 	}	
 
 	// these offsets are using local offset based on the buffer.
-	std::cout << "Writing to vtx from data " << model->baseVertex
-		<< " for " << model->vertexCount
-		<<" total " << model->baseVertex+model->vertexCount
-		<< " at GPU buffer " << g_GlobalMeshBuffers.VtxOffset
-		<< std::endl;
-	g_GlobalMeshBuffers.IdxBuffer.writeTo(model->indicesCount, indices.data() + model->baseIndices,
-		g_GlobalMeshBuffers.IdxOffset);
-	g_GlobalMeshBuffers.VtxBuffer.writeTo(model->vertexCount, vertex.data() + model->baseVertex,
-		g_GlobalMeshBuffers.VtxOffset);
+	//std::cout << "Writing to vtx from data " << model->baseVertex
+	//	<< " for " << model->vertexCount
+	//	<<" total " << model->baseVertex+model->vertexCount
+	//	<< " at GPU buffer " << g_GlobalMeshBuffers.VtxOffset
+	//	<< std::endl;
+
 
 	// now we update them to the global offset
-	model->baseIndices= g_GlobalMeshBuffers.IdxOffset;
-	model->baseVertex= g_GlobalMeshBuffers.VtxOffset;
+	{
+		std::scoped_lock(g_mut_globalMeshBuffers);
+		g_GlobalMeshBuffers.IdxBuffer.writeTo(model->indicesCount, indices.data() + model->baseIndices,
+			g_GlobalMeshBuffers.IdxOffset);
+		g_GlobalMeshBuffers.VtxBuffer.writeTo(model->vertexCount, vertex.data() + model->baseVertex,
+			g_GlobalMeshBuffers.VtxOffset);
 
-	g_GlobalMeshBuffers.IdxOffset += model->indicesCount;
-	g_GlobalMeshBuffers.VtxOffset += model->vertexCount;
+		model->baseIndices= g_GlobalMeshBuffers.IdxOffset;
+		model->baseVertex= g_GlobalMeshBuffers.VtxOffset;
+
+		g_GlobalMeshBuffers.IdxOffset += model->indicesCount;
+		g_GlobalMeshBuffers.VtxOffset += model->vertexCount;
+	}
 
 	if (model->skeleton)
 	{
@@ -3004,7 +2998,7 @@ uint32_t VulkanRenderer::CreateTexture(uint32_t width, uint32_t height, unsigned
 	auto ind = CreateTextureImage(fileData);
 
 	//create texture descriptor
-	int descriptorLoc = AddBindlessGlobalTexture(g_Textures[ind]);
+	int descriptorLoc = UpdateBindlessGlobalTexture(ind);
 
 	//return location of set with texture
 	return descriptorLoc;
@@ -3017,7 +3011,7 @@ uint32_t VulkanRenderer::CreateTexture(const std::string& file)
 	uint32_t textureImageLoc = CreateTextureImage(file);
 
 	//create texture descriptor
-	int descriptorLoc = AddBindlessGlobalTexture(g_Textures[textureImageLoc]);
+	int descriptorLoc = UpdateBindlessGlobalTexture(textureImageLoc);
 
 	//return location of set with texture
 	return descriptorLoc;
@@ -3039,12 +3033,7 @@ bool VulkanRenderer::ReloadTexture(uint32_t textureID,const std::string& file)
 	UnloadTexture(textureID);
 	texture.fromBuffer((void*)imageData.imgData.data(), imageSize, imageData.format, imageData.w, imageData.h, imageData.mipInformation, &m_device, m_device.transferQueue);
 	texture.updateDescriptor();
-	std::vector<VkWriteDescriptorSet> writeSets
-	{
-		oGFX::vkutils::inits::writeDescriptorSet(descriptorSet_bindless, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &texture.descriptor),
-	};
-	writeSets[0].dstArrayElement = textureID;
-	vkUpdateDescriptorSets(m_device.logicalDevice, static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
+	UpdateBindlessGlobalTexture(textureID);
 
 	//texture.Update((void*)imageData.imgData.data(), imageSize, imageData.format, imageData.w, imageData.h,imageData.mipInformation, &m_device, m_device.graphicsQueue);
 	
@@ -3059,6 +3048,7 @@ void VulkanRenderer::UnloadTexture(uint32_t textureID)
 	auto& texture = g_Textures[textureID];
 	constexpr bool delayDeletion = true;
 	texture.destroy(delayDeletion);
+	texture.isValid = false;
 }
 
 VulkanRenderer::TextureInfo VulkanRenderer::GetTextureInfo(uint32_t handle)
@@ -3195,8 +3185,13 @@ uint32_t VulkanRenderer::CreateTextureImage(const oGFX::FileImageData& imageInfo
 	VkDeviceSize imageSize = imageInfo.dataSize;
 	totalTextureSizeLoaded += imageSize;
 
-	auto indx = g_Textures.size();
-	g_Textures.push_back(vkutils::Texture2D());
+	auto indx = [&]{
+		// mutex
+		std::scoped_lock(g_mut_Textures);
+		auto indx = g_Textures.size();
+		g_Textures.push_back(vkutils::Texture2D());
+		return indx;
+	}();
 
 	auto& texture = g_Textures[indx];
 	
@@ -3233,8 +3228,10 @@ VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(VulkanDevice& device,
 	return shaderStageCreateInfo;
 }
 
-uint32_t VulkanRenderer::AddBindlessGlobalTexture(vkutils::Texture2D texture)
+uint32_t VulkanRenderer::UpdateBindlessGlobalTexture(uint32_t textureID)
 {
+
+	auto& texture = g_Textures[textureID];
 	std::vector<VkWriteDescriptorSet> writeSets
 	{
 		oGFX::vkutils::inits::writeDescriptorSet(descriptorSet_bindless, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &texture.descriptor),
@@ -3242,12 +3239,12 @@ uint32_t VulkanRenderer::AddBindlessGlobalTexture(vkutils::Texture2D texture)
 
 	//auto index = static_cast<uint32_t>(samplerDescriptorSets.size());
 	//samplerDescriptorSets.push_back(globalSamplers); // Wtf???
-	uint32_t index = bindlessGlobalTexturesNextIndex++;
-	writeSets[0].dstArrayElement = index;
+	writeSets[0].dstArrayElement = textureID;
 
 	vkUpdateDescriptorSets(m_device.logicalDevice, static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
+	texture.isValid = true;
 
-	return index;
+	return textureID;
 }
 
 void VulkanRenderer::InitDefaultPrimatives()

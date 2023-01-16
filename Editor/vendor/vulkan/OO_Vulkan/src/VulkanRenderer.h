@@ -48,6 +48,7 @@ Technology is prohibited.
 #include <array>
 #include <set>
 #include <string>
+#include <mutex>
 
 struct Window;
 
@@ -293,6 +294,7 @@ public:
 		uint32_t IdxOffset{};
 	};
 
+	std::mutex g_mut_globalMeshBuffers;
 	IndexedVertexBuffer g_GlobalMeshBuffers;
 	std::array<GpuVector<ParticleData>,3> g_particleDatas;
 	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer{};
@@ -317,6 +319,7 @@ public:
 	Window* windowPtr{ nullptr };
 
 	//textures
+	std::mutex g_mut_Textures;
 	std::vector<vkutils::Texture2D> g_Textures;
 	std::vector<ImTextureID> g_imguiIDs;
 
@@ -386,6 +389,7 @@ public:
 	// Store the indirect draw commands containing index offsets and instance count per object
 
 	//Scene objects
+	std::mutex g_mut_globalModels;
 	std::vector<gfxModel> g_globalModels;
 
 	uint32_t currentFrame = 0;
@@ -476,7 +480,7 @@ public:
 	private:
 		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);		
 		uint32_t CreateTextureImage(const std::string& fileName);
-		uint32_t AddBindlessGlobalTexture(vkutils::Texture2D texture);		
+		uint32_t UpdateBindlessGlobalTexture(uint32_t textureID);		
 
 		bool shadowsRendered{ false };
 
