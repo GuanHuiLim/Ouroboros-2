@@ -704,6 +704,29 @@ namespace oo
                 DebugDraw::AddSphere({ pos, sc.GlobalRadius }, oGFX::Colors::GREEN);
             });
 
+        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, MeshColliderComponent>();
+        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, MeshColliderComponent& mc)
+            {
+                if (!mc.Vertices.empty())
+                {
+                    auto pos = rb.GetPositionInPhysicsWorld();
+                    auto scale = tf.GetGlobalScale();
+                    auto quat = rb.GetOrientationInPhysicsWorld();
+
+                    auto& first = mc.Vertices.back();
+                    auto& next = mc.Vertices.front();
+                    for (auto iter = mc.Vertices.begin() + 1; iter != mc.Vertices.end(); ++iter)
+                    {
+                        DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                        
+                        auto& vert = *iter;
+                        first = next;
+                        next = vert;
+                    }
+                    DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                }
+            });
+
         TRACY_PROFILE_SCOPE_END();
     }
 
