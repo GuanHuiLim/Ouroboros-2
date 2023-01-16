@@ -97,6 +97,7 @@ void EditorViewport::Show()
 	m_cc.Update(oo::timer::dt(), cameraFocus);
 
 	auto graphicsworld = scene->GetGraphicsWorld();
+	graphicsworld->shouldRenderCamera[1] = true;
 	auto& camera_matrices = EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	
@@ -354,6 +355,13 @@ void EditorViewport::Show()
 		e.item_globalPosition = transform.GetGlobalPosition();
 		oo::EventManager::Broadcast<FocusButtonEvent>(&e);
 	}
+}
+
+void EditorViewport::UpdateWhenNotShown()
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
+	graphicsworld->shouldRenderCamera[1] = false;
 }
 
 void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)

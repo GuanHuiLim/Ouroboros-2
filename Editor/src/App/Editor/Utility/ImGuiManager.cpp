@@ -51,18 +51,18 @@ void ImGuiManager::UpdateAllUI()
 
 		TRACY_PROFILE_SCOPE_NC(editor_ui_object, tracy::Color::BlueViolet);
 
-		if (field.second.m_prewindow)
-			field.second.m_prewindow();
 
 		if (ImGui::Begin(field.first.c_str(),
 			(field.second.m_closable_window ? &field.second.m_enabled : nullptr)
 			, field.second.m_flags) == false)
 		{
 			ImGui::End();
-			
+			if (field.second.m_UpdateWhenNotSeen)
+				field.second.m_UpdateWhenNotSeen();
 			TRACY_PROFILE_SCOPE_END();
 			continue;
 		}
+
 
 		field.second.m_UIupdate();
 		ImGui::End();

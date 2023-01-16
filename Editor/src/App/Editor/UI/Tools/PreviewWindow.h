@@ -9,7 +9,7 @@ public:
 	PreviewWindow();
 	~PreviewWindow();
 	void Show();
-
+	void UpdateWhenNotShown();
 private:
 	void GetPreviewWindowSize(GetPreviewWindowSizeEvent* e);
 	float m_viewportWidth = 0.f, m_viewportHeight = 0.f;
