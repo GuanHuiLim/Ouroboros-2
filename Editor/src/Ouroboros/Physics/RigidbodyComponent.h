@@ -86,6 +86,8 @@ namespace oo
     class RigidbodyComponent final
     {
     public:
+        bool HasChanged = true;
+
         phy::PhysicsObject underlying_object{};
         phy::PhysicsObject desired_object{};
 

@@ -152,12 +152,32 @@ namespace oo
         //TODO: Should remove eventually (perhaps?)
         EditorUpdate(deltaTime);
         
+        std::vector<phy::PhysicsObject> needsUpdating;
+        static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+            {
+                if (rb.HasChanged)
+                    needsUpdating.emplace_back(rb.desired_object);
+            });
+
+        // submit to update
+        m_physicsWorld.submitUpdatedObjects(needsUpdating);
+
         {
             TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
             // update the physics world using fixed dt.
             m_physicsWorld.updateWorld(static_cast<float>(FixedDeltaTime));
             TRACY_PROFILE_SCOPE_END();
         }
+
+        // TODO
+        // retrieve the latest data and update existing pool
+        auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
+        for (auto& physicsObj : updatedPhysicsObjects)
+        {
+            physicsObj.id;
+        }
+
 
         // Transform System updates via the scenegraph because the order matters
         //auto const& graph = m_scene->GetGraph();
@@ -304,45 +324,30 @@ namespace oo
                 AddToLookUp(rbComp, goc);
             });
 
-        //jobsystem::job initialization_job{};
-
         static Ecs::Query duplicated_rb_with_box_query = Ecs::make_raw_query<RigidbodyComponent, BoxColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_box_query, [&](RigidbodyComponent& rbComp, BoxColliderComponent& bcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                /*jobsystem::submit(initialization_job, [&]() 
-                {*/
-                    InitializeBoxCollider(rbComp);
-                /*});*/
+                InitializeBoxCollider(rbComp);
             });
 
         static Ecs::Query duplicated_rb_with_capsule_query = Ecs::make_raw_query<RigidbodyComponent, CapsuleColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_capsule_query, [&](RigidbodyComponent& rbComp, CapsuleColliderComponent& ccComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                /*jobsystem::submit(initialization_job, [&]()
-                    {*/
-                        InitializeCapsuleCollider(rbComp);
-                    /*});*/
+                InitializeCapsuleCollider(rbComp);
             });
 
         static Ecs::Query duplicated_rb_with_sphere_query = Ecs::make_raw_query<RigidbodyComponent, SphereColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_sphere_query, [&](RigidbodyComponent& rbComp, SphereColliderComponent& scComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                /*jobsystem::submit(initialization_job, [&]()
-                    {*/
-                        InitializeSphereCollider(rbComp);
-                    /*});*/
+                InitializeSphereCollider(rbComp);
             });
 
         static Ecs::Query duplicated_rb_with_mesh_query = Ecs::make_raw_query<RigidbodyComponent, MeshColliderComponent, TransformComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_with_mesh_query, [&](RigidbodyComponent& rbComp, MeshColliderComponent& mcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
-                /*jobsystem::submit(initialization_job, [&]()
-                    {*/
                 InitializeMeshCollider(rbComp);
-                /*});*/
             });
 
-        /*jobsystem::wait(initialization_job);*/
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -403,8 +408,8 @@ namespace oo
                         bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
 
                         // set box size
-                        rb.underlying_object.shape_type = phy::shape::box;
-                        rb.underlying_object.box = { bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z };
+                        rb.desired_object.shape_type = phy::shape::box;
+                        rb.desired_object.box = { bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z };
                     //});
             });
 
@@ -425,8 +430,8 @@ namespace oo
                         cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
 
                         // set capsule size
-                        rb.underlying_object.shape_type = phy::shape::capsule;
-                        rb.underlying_object.capsule = { cc.GlobalRadius, cc.GlobalHalfHeight };
+                        rb.desired_object.shape_type = phy::shape::capsule;
+                        rb.desired_object.capsule = { cc.GlobalRadius, cc.GlobalHalfHeight };
                     //});
             });
 
@@ -447,8 +452,8 @@ namespace oo
                         sc.GlobalRadius= sc.Radius * std::max(std::max(scale.x, scale.y), scale.z);
 
                         // set capsule size
-                        rb.underlying_object.shape_type = phy::shape::sphere;
-                        rb.underlying_object.sphere = { sc.GlobalRadius };
+                        rb.desired_object.shape_type = phy::shape::sphere;
+                        rb.desired_object.sphere = { sc.GlobalRadius };
                     //});
             });
 
