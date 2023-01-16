@@ -264,7 +264,7 @@ namespace phy
 
         // NEW KEY FUNCTIONS!
         std::unordered_map<phy_uuid::UUID, PhysicsObject> retrieveCurrentObjects() const;
-        void submitUpdatedObjects(std::unordered_map<phy_uuid::UUID, PhysicsObject> updatedObjects);
+        void submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects);
 
         void submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand);
 

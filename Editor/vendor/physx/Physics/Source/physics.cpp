@@ -375,17 +375,17 @@ namespace phy
         physics_Obj.orientation = data->getGlobalPose().q;
     }
 
-    void PhysicsWorld::submitUpdatedObjects(std::unordered_map<phy_uuid::UUID, PhysicsObject> updatedObjects)
+    void PhysicsWorld::submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects)
     {
         for (auto&& updatedObj : updatedObjects)
         {
             // CHECK WHETHER OBJECT EXISTED
-            if (!m_objects_lookup.contains(updatedObj.first))
+            if (!m_objects_lookup.contains(updatedObj.id))
                 continue;
             
-            PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.first)];
+            PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.id)];
 
-            setAllData(updatedObj.second, underlying_obj);
+            setAllData(updatedObj, underlying_obj);
         }
     }
 
