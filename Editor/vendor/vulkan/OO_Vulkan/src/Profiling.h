@@ -33,6 +33,7 @@ Technology is prohibited.
     #define PROFILE_GPU_CONTEXT(...)         OPTICK_GPU_CONTEXT(__VA_ARGS__);
     #define PROFILE_GPU_EVENT(...)           OPTICK_GPU_EVENT(__VA_ARGS__);
     #define PROFILE_GPU_PRESENT(...)         OPTICK_GPU_FLIP(__VA_ARGS__);
+    #define PROFILE_GPU_SHUTDOWN(...)         OPTICK_SHUTDOWN();
 #else
     #define PROFILE_SCOPED(...)
     #define PROFILE_FRAME(...)
@@ -41,6 +42,7 @@ Technology is prohibited.
     #define PROFILE_GPU_CONTEXT(...)
     #define PROFILE_GPU_EVENT(...)
     #define PROFILE_GPU_PRESENT(...)
+    #define PROFILE_GPU_SHUTDOWN(...) 
 #endif
 
 #pragma warning( pop )

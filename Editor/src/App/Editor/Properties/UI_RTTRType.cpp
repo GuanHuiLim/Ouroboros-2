@@ -19,7 +19,7 @@ Technology is prohibited.
 #include <glm/vec3.hpp>
 #include <Quaternion/include/Quaternion.h>
 #include <filesystem>
-#include <Archetypes_Ecs/src/A_Ecs.h>
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Asset/Asset.h"
 #include "Ouroboros/Vulkan/MeshInfo.h"
 #include "Ouroboros/Vulkan/Color.h"

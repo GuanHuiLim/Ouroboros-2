@@ -50,7 +50,7 @@ IncludeDir["slikenet"]      = AppVendor .. "/slikenet/include"
 
 -- Our External Submodules 
 IncludeDir["launcher"]      = AppVendor .. "/launcher/Oroborous-Launcher"
-IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs"
+--IncludeDir["ecs"]           = AppVendor .. "/Archetypes_Ecs"
 IncludeDir["scripting"]     = AppVendor .. "/scripting/src"
 
 IncludeDir["sharedlib"]     = AppVendor .. "/sharedlib/Isolated-Testing-Ground"

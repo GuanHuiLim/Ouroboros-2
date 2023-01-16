@@ -15,7 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include <Archetypes_Ecs/src/A_Ecs.h>
+#include "ArchtypeECS/A_Ecs.h"
 #include <rttr/type>
 
 namespace oo

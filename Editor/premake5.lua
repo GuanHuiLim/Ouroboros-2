@@ -54,7 +54,7 @@ project "Editor"
         "%{IncludeDir.rttr}",
 
         "%{IncludeDir.launcher}",
-        "%{IncludeDir.ecs}",
+        --"%{IncludeDir.ecs}",
         "%{IncludeDir.sharedlib}",
         
         "%{IncludeDir.physx}",
@@ -103,7 +103,7 @@ project "Editor"
         "SDL2main",
         "SDL2test",
         
-        "ECS",
+        --"ECS",
         "Launcher",
         "SharedLib",
         "Physics",

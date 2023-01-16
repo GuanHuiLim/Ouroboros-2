@@ -43,6 +43,7 @@ namespace oo
     struct BoxColliderComponent;
     struct SphereColliderComponent;
     struct CapsuleColliderComponent;
+    struct MeshColliderComponent;
     //struct ConvexCollider;
 
     // Data Structures

@@ -125,17 +125,17 @@ void SSAORenderPass::Draw()
 		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	rhi::CommandList cmd{ cmdlist };
+	rhi::CommandList cmd{ cmdlist, "SSAO Pass"};
 	std::array<VkViewport, 1>viewports{ VkViewport{0,renderSize.y * 1.0f,renderSize.x * 1.0f,renderSize.y * -1.0f} };
-	cmd.SetViewport(0, static_cast<uint32_t>(viewports.size()), viewports.data());
+	cmd.SetViewport(0, viewports.size(), viewports.data());
 
 	CreateDescriptors();
 	cmd.BindPSO(pso_SSAO);
 
 	SSAOPC pc{};
-	pc.screenDim.x = static_cast<float>(renderSize.x);
-	pc.screenDim.y = static_cast<float>(renderSize.y);
-	pc.sampleDim.x = 4;								
+	pc.screenDim.x = renderSize.x;
+	pc.screenDim.y = renderSize.y;
+	pc.sampleDim.x = 4;
 	pc.sampleDim.y = 4;
 	pc.radius = vr.currWorld->ssaoSettings.radius;
 	pc.bias = vr.currWorld->ssaoSettings.bias;
@@ -247,7 +247,7 @@ void SSAORenderPass::InitRandomFactors()
 		);
 		sample  = glm::normalize(sample);
 		sample *= randomFloats(generator);
-		float scale = (float)i / 64.0f; 
+		float scale = (float)i / 64.0; 
 		scale	= lerp(0.1f, 1.0f, scale * scale);
 		sample *= scale;
 		ssaoKernel.push_back(sample);  
@@ -282,7 +282,7 @@ void SSAORenderPass::InitRandomFactors()
 	std::vector<VkBufferImageCopy> copies{copyRegion};
 
 	randomNoise_texture.fromBuffer(ssaoNoise.data(), ssaoNoise.size() * sizeof(glm::vec4), VK_FORMAT_R32G32B32A32_SFLOAT,
-		width,height,copies,&vr.m_device,vr.m_device.graphicsQueue,VK_FILTER_NEAREST);
+		width,height,copies,&vr.m_device,vr.m_device.transferQueue,VK_FILTER_NEAREST);
 }
 
 

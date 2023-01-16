@@ -31,6 +31,27 @@ void CommandList::SetPushConstant(VkPipelineLayout layout, const VkPushConstantR
 	vkCmdPushConstants(m_VkCommandBuffer, layout, VK_SHADER_STAGE_ALL,pcr.offset,pcr.size,data);
 }
 
+CommandList::CommandList(const VkCommandBuffer& cmd, const char* name, const glm::vec4 col)
+	: m_VkCommandBuffer{ cmd } 
+{
+	auto region = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
+	if (name && region)
+	{
+		VkDebugMarkerMarkerInfoEXT marker = {};
+		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+		memcpy(marker.color, &col[0], sizeof(float) * 4);
+		marker.pMarkerName = name;
+		region(m_VkCommandBuffer, &marker);
+	}
+}
+CommandList::~CommandList()
+{
+	auto region = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
+	if (region)
+	{
+		region(m_VkCommandBuffer);
+	}
+}
 void CommandList::BindVertexBuffer(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets /*= nullptr*/)
 {
 	VkDeviceSize offsets[] = { 0 };

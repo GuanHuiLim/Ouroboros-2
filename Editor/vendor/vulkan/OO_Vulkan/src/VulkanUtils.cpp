@@ -91,7 +91,27 @@ namespace oGFX
 			}
 			i++;
 		}
+		//reset
+		i = 0;
+		for (const auto& queueFamily : queueFamilyList)
+		{
+			if (i == indices.graphicsFamily)
+			{
+				i++;
+				continue;
+			}
 
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+			{
+				//found queue family get the index
+				indices.transferFamily = i;
+				break;
+			}
+			i++;
+		}
+
+		indices.transferFamily = indices.transferFamily < 0 ? indices.graphicsFamily : indices.transferFamily;
+		
 		return indices;
 	}	   
 

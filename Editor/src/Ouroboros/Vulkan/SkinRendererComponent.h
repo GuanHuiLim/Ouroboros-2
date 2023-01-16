@@ -7,7 +7,7 @@
 #include "glm/common.hpp"
 #include "Ouroboros/Asset/AssetManager.h"
 #include "OO_Vulkan/src/MeshModel.h"
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
 #include "OO_Vulkan/src/GraphicsWorld.h"
 #include "MeshInfo.h"

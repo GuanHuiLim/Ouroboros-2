@@ -15,6 +15,15 @@ Technology is prohibited.
 #include <cassert>
 #include <algorithm>
 
+DelayedDeleter::DelayedDeleter()
+{
+    for (size_t i = 0; i < MAX_FRAMES; i++)
+    {
+        m_countQueue.push_back(0);
+    }
+    m_isActive = true;
+}
+
 DelayedDeleter* DelayedDeleter::get()
 {
     if (s_deleter == nullptr)
@@ -31,45 +40,39 @@ void DelayedDeleter::Shutdown()
     delete p;
 }
 
-void DelayedDeleter::DeleteAfterFrames(std::function<void()> fn, size_t frames)
+void DelayedDeleter::DeleteAfterFrames(std::function<void()> fn)
 {
-    assert(frames);
-    frames = std::min(frames, MAX_FRAMES);
-
-    auto currFrame = m_frame + frames;
-
-    m_funcs[currFrame%MAX_FRAMES].emplace_back(fn);
+    m_itemsThisFrame++;
+    m_funcQueue.push_back(fn);
 }
 
-void DelayedDeleter::DeleteAfterSeconds(std::function<void()> fn, float seconds)
-{
-}
+//void DelayedDeleter::DeleteAfterSeconds(std::function<void()> fn, float seconds)
+//{
+//    // TODO
+//}
 
 void DelayedDeleter::Update(float deltaTime)
 {
-    ++m_frame;
+    m_countQueue.emplace_back(m_itemsThisFrame);
+    m_itemsThisFrame = 0;
 
-    auto currFrame = m_frame % MAX_FRAMES;
-
-    for (auto& f : m_funcs[currFrame])
+    auto funcsToInvoke = m_countQueue.front();
+    m_countQueue.pop_front();
+     
+    for (size_t i = 0; i < funcsToInvoke; i++)
     {
-        // invoker deleter
-        f();
+        assert(m_funcQueue.size()); // paranoia
+        m_funcQueue.front()();
+        m_funcQueue.pop_front();
     }
-    m_funcs[currFrame].clear();
-
 }
 
 void DelayedDeleter::Clear()
 {
-    for (auto& batch : m_funcs)
+    while (m_funcQueue.size())
     {
-        for (auto& f : batch)
-        {
-            // invoker deleter
-            f();
-        }
-        batch.clear();
+        m_funcQueue.front()();
+        m_funcQueue.pop_front();
     }
 }
 
