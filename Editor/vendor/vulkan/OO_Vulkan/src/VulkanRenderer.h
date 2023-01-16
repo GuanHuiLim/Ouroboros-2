@@ -269,6 +269,7 @@ public:
 	uint32_t CreateTexture(uint32_t width, uint32_t height, unsigned char* imgData);
 	uint32_t CreateTexture(const std::string& fileName);
 	bool ReloadTexture(uint32_t textureID, const std::string& file);
+	void UnloadTexture(uint32_t textureID);
 
 	struct TextureInfo
 	{

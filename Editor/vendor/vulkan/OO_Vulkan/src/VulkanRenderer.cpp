@@ -3036,8 +3036,7 @@ bool VulkanRenderer::ReloadTexture(uint32_t textureID,const std::string& file)
 	auto& texture = g_Textures[textureID];
 
 	//vkDeviceWaitIdle(m_device.logicalDevice);
-	constexpr bool delayDeletion = true;
-	texture.destroy(delayDeletion);
+	UnloadTexture(textureID);
 	texture.fromBuffer((void*)imageData.imgData.data(), imageSize, imageData.format, imageData.w, imageData.h, imageData.mipInformation, &m_device, m_device.transferQueue);
 	texture.updateDescriptor();
 	std::vector<VkWriteDescriptorSet> writeSets
@@ -3047,13 +3046,19 @@ bool VulkanRenderer::ReloadTexture(uint32_t textureID,const std::string& file)
 	writeSets[0].dstArrayElement = textureID;
 	vkUpdateDescriptorSets(m_device.logicalDevice, static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 
-
 	//texture.Update((void*)imageData.imgData.data(), imageSize, imageData.format, imageData.w, imageData.h,imageData.mipInformation, &m_device, m_device.graphicsQueue);
 	
 	//setup imgui binding
 	//g_imguiIDs.push_back(CreateImguiBinding(texture.sampler, texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	return true;
+}
+
+void VulkanRenderer::UnloadTexture(uint32_t textureID)
+{
+	auto& texture = g_Textures[textureID];
+	constexpr bool delayDeletion = true;
+	texture.destroy(delayDeletion);
 }
 
 VulkanRenderer::TextureInfo VulkanRenderer::GetTextureInfo(uint32_t handle)
