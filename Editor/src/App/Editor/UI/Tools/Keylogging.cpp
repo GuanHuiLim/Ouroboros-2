@@ -8,6 +8,17 @@
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h".
 #include "App/Editor/UI/Tools/WarningMessage.h"
+
+#include "App/Editor/Utility/FileSystemUtills.h"
+
+#include <App/Editor/Utility/Windows_Utill.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/prettywriter.h>
+#include <fstream>
+
 #define DEBUG_KEYBOARD
 KeyLogging::KeyLogging()
 {
@@ -41,6 +52,23 @@ KeyLogging::~KeyLogging()
 
 void KeyLogging::Show()
 {
+	if (m_enable)
+	{
+		if (ImGui::Begin("Key Simulate", &m_enable))
+		{
+			if (ImGui::Button("Save File"))
+			{
+				WindowsUtilities::FileDialogue_Folder([this](const std::filesystem::path& p) {this->SaveKeylogs(p); });
+			}
+			if (ImGui::Button("Load File"))
+			{
+				WindowsUtilities::FileDialogue_Generic(L"Replays",L"*.OOReplays", [this](const std::filesystem::path& p) {this->LoadKeylogs(p); });
+			}
+			ImGui::Text("MousePositions: %u MouseClicks: %u", m_mousePosition.size(), m_mousePressed.size());
+			ImGui::Text("ActionDown: %u ActionUp: %u", m_actionDown.size(), m_actionUp.size());
+			ImGui::End();
+		}
+	}
 	/*ImGui::Begin("KeyLog");
 	if (ImGui::Button(m_start ? "Stop" : "Start"))
 	{
@@ -277,3 +305,143 @@ void KeyLogging::SetEnableKeyLogging(ToolbarButtonEvent* ev)
 
 	}
 }
+
+void KeyLogging::SaveKeylogs(const std::filesystem::path& path)
+{
+	rapidjson::Document doc;
+	rapidjson::Value& val = doc.SetObject();
+
+	rapidjson::Value actionDown(rapidjson::kObjectType);
+	rapidjson::Value actionUp(rapidjson::kObjectType);
+	rapidjson::Value mousePosition(rapidjson::kObjectType);
+	rapidjson::Value mousePressed(rapidjson::kObjectType);
+
+	for (const auto& item : m_actionDown)
+	{
+		rapidjson::Value arrVal(rapidjson::kArrayType);
+		rapidjson::Value arrVal2(rapidjson::kArrayType);
+		arrVal.PushBack(item.first, doc.GetAllocator());
+		for (auto kc : item.second)
+		{
+			int k = (int)kc;
+			arrVal2.PushBack(k, doc.GetAllocator());
+		}
+		arrVal.PushBack(arrVal2, doc.GetAllocator());
+		actionDown.AddMember("", arrVal, doc.GetAllocator());
+	}
+	for (const auto& item : m_actionUp)
+	{
+		rapidjson::Value arrVal(rapidjson::kArrayType);
+		rapidjson::Value arrVal2(rapidjson::kArrayType);
+		arrVal.PushBack(item.first, doc.GetAllocator());
+		for (auto kc : item.second)
+		{
+			int k = (int)kc;
+			arrVal2.PushBack(k, doc.GetAllocator());
+		}
+		arrVal.PushBack(arrVal2, doc.GetAllocator());
+		actionUp.AddMember("", arrVal, doc.GetAllocator());
+	}
+	for (const auto& item : m_mousePosition)
+	{
+		rapidjson::Value arrVal(rapidjson::kArrayType);
+		arrVal.PushBack(item.first, doc.GetAllocator());
+		arrVal.PushBack(item.second.dx, doc.GetAllocator());
+		arrVal.PushBack(item.second.dy, doc.GetAllocator());
+		arrVal.PushBack(item.second.x, doc.GetAllocator());
+		arrVal.PushBack(item.second.y, doc.GetAllocator());
+		mousePosition.AddMember("", arrVal, doc.GetAllocator());
+	}
+	for (const auto& item : m_mousePressed)
+	{
+		rapidjson::Value arrVal(rapidjson::kArrayType);
+		arrVal.PushBack(item.first, doc.GetAllocator());
+		int k = (int)item.second;
+		arrVal.PushBack(k, doc.GetAllocator());
+		mousePressed.AddMember("", arrVal, doc.GetAllocator());
+	}
+	val.AddMember("down", actionDown, doc.GetAllocator());
+	val.AddMember("up", actionUp, doc.GetAllocator());
+	val.AddMember("mousepos", mousePosition, doc.GetAllocator());
+	val.AddMember("mousepress", mousePressed, doc.GetAllocator());
+
+	auto p = FileSystemUtils::CreateItem((path / "Replay").string(), ".OOReplays");
+	std::ofstream ofs(p, std::fstream::out | std::fstream::trunc);
+	if (ofs.good())
+	{
+		rapidjson::OStreamWrapper osw(ofs);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
+		writer.SetMaxDecimalPlaces(6);
+		doc.Accept(writer);
+		ofs.close();
+	}
+}
+
+void KeyLogging::LoadKeylogs(const std::filesystem::path& path)
+{
+	std::ifstream ifs(path);
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Scene File is not valid!");
+		return;
+	}
+	Reset();//reset
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	
+	rapidjson::Value& down = doc.FindMember("down")->value;
+	rapidjson::Value& up = doc.FindMember("up")->value;
+	rapidjson::Value& mousepos = doc.FindMember("mousepos")->value;
+	rapidjson::Value& mousepress = doc.FindMember("mousepress")->value;
+
+	for (auto iter = down.MemberBegin(); iter != down.MemberEnd(); ++iter)
+	{
+		auto arr = iter->value.GetArray();
+		float t = arr[0].GetFloat();
+		auto keycommands = arr[1].GetArray();
+		std::vector<oo::input::KeyCode> key;
+		for (auto i = 0; i < keycommands.Size(); ++i)
+		{
+			key.push_back((oo::input::KeyCode)keycommands[0].GetInt());
+		}
+		m_actionDown.push_back(std::pair(t, key));
+	}
+	for (auto iter = up.MemberBegin(); iter != up.MemberEnd(); ++iter)
+	{
+		auto arr = iter->value.GetArray();
+		float t = arr[0].GetFloat();
+		auto keycommands = arr[1].GetArray();
+		std::vector<oo::input::KeyCode> key;
+		for (auto i = 0; i < keycommands.Size(); ++i)
+		{
+			key.push_back((oo::input::KeyCode)keycommands[0].GetInt());
+		}
+		m_actionUp.push_back(std::pair(t, key));
+	}
+
+	for (auto iter = mousepos.MemberBegin(); iter != mousepos.MemberEnd(); ++iter)
+	{
+		auto arr = iter->value.GetArray();
+		float t = arr[0].GetFloat();
+		MousePos mp;
+		mp.dx = arr[1].GetInt();
+		mp.dy = arr[2].GetInt();
+		mp.x = arr[3].GetInt();
+		mp.y = arr[4].GetInt();
+
+		m_mousePosition.push_back(std::pair(t, mp));
+	}
+
+	for (auto iter = mousepress.MemberBegin(); iter != mousepress.MemberEnd(); ++iter)
+	{
+		auto arr = iter->value.GetArray();
+		float t = arr[0].GetFloat();
+		oo::input::MouseCode key;
+		key = (oo::input::MouseCode)arr[1].GetInt();
+		m_mousePressed.push_back(std::pair(t, key));
+	}
+	ifs.close();
+}
+
