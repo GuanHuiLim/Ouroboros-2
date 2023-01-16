@@ -42,8 +42,8 @@ namespace oo::SkAnim::internal
         instance.transitionTimer = 0.f;
 		instance.transitionDuration = instance.transition->Duration();
         
-        //consume triggers
-		ConsumeTriggers(instance, *instance.transition);
+        //consume triggers - as needed
+		//ConsumeTriggers(instance, *instance.transition);
 
         instance.nextState = instance.transition->NextState();
         

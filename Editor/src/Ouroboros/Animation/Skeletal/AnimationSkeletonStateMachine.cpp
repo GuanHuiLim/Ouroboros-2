@@ -54,7 +54,7 @@ namespace oo::SkAnim::internal
 		}
 		
 		//if transition done, set current state to next state
-		TryUpdateState(comp.stateMachineInstance, *comp.stateMachine);
+		TryUpdateTransitionState(comp.stateMachineInstance, *comp.stateMachine);
 
 		//update current state node
 		UpdateState(comp.stateMachineInstance, *comp.stateMachine);

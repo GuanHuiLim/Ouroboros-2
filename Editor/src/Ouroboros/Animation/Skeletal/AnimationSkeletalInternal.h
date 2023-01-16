@@ -24,7 +24,7 @@ namespace oo::SkAnim::internal
 
 	void BlendStates(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
 
-	void TryUpdateState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
+	void TryUpdateTransitionState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
 
 	void UpdateState(SM_Instance& instance, AnimationSkeletonStateMachine const& statemachine);
 
