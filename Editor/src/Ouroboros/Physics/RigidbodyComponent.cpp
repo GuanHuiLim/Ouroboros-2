@@ -26,25 +26,36 @@ namespace oo
     {
         using namespace rttr;
 
+        registration::enumeration<ColliderShape>("Collider Shape")
+        (
+            value("None", ColliderShape::NONE),
+            value("Box", ColliderShape::BOX),
+            value("Capsule", ColliderShape::CAPSULE),
+            value("Sphere", ColliderShape::SPHERE),
+            value("Mesh", ColliderShape::MESH)
+        );
+
         registration::class_<RigidbodyComponent>("Rigidbody")
             //.property("type", &RigidbodyComponent::collider_type)
-            .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
-            .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
-            .property("Enable Gravity", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
+            .property_readonly("Underlying physX UUID", &RigidbodyComponent::GetUnderlyingUUID)
+            .property("Offset", &RigidbodyComponent::Offset)
             .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
-            .property_readonly("Velocity", &RigidbodyComponent::GetLinearVelocity)
             .property("Linear Damping", &RigidbodyComponent::GetLinearDamping, &RigidbodyComponent::SetLinearDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property_readonly("Angular Velocity", &RigidbodyComponent::GetAngularVelocity)
             .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Offset", &RigidbodyComponent::Offset)
-            .property("Lock X Axis Position", &RigidbodyComponent::desired_object)
-            .property("Lock Y Axis Position", &RigidbodyComponent::desired_object)
-            .property("Lock Z Axis Position", &RigidbodyComponent::desired_object)
-            .property("Lock X Axis Rotation", &RigidbodyComponent::desired_object)
-            .property("Lock Y Axis Rotation", &RigidbodyComponent::desired_object)
-            .property("Lock Z Axis Rotation", &RigidbodyComponent::desired_object)
-            .property_readonly("Underlying physX UUID", &RigidbodyComponent::GetUnderlyingUUID)
+            .property_readonly("Velocity", &RigidbodyComponent::GetLinearVelocity)
+            .property_readonly("Angular Velocity", &RigidbodyComponent::GetAngularVelocity)
+            .property_readonly("Shape",&RigidbodyComponent::GetUnderlyingShape)
+            .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
+            .property("Enable Gravity", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
+            .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
+            .property("Lock X Axis Position", &RigidbodyComponent::IsPositionLockedX, &RigidbodyComponent::LockPositionX)
+            .property("Lock Y Axis Position", &RigidbodyComponent::IsPositionLockedY, &RigidbodyComponent::LockPositionY)
+            .property("Lock Z Axis Position", &RigidbodyComponent::IsPositionLockedZ, &RigidbodyComponent::LockPositionZ)
+            .property("Lock X Axis Rotation", &RigidbodyComponent::IsRotationLockedX, &RigidbodyComponent::LockRotationX)
+            .property("Lock Y Axis Rotation", &RigidbodyComponent::IsRotationLockedY, &RigidbodyComponent::LockRotationY)
+            .property("Lock Z Axis Rotation", &RigidbodyComponent::IsRotationLockedZ, &RigidbodyComponent::LockRotationZ)
+            
             //.property_readonly("underlying shape", &RigidbodyComponent::collider_shape)
             //.property_readonly("dirty", &RigidbodyComponent::Dirty)
             /*.property("Kinematic", &RigidbodyComponent::Kinematic)
@@ -99,7 +110,7 @@ namespace oo
 
     vec3 oo::RigidbodyComponent::GetAngularVelocity() const
     {
-        auto vel = underlying_object.angularVel;
+        auto& vel = underlying_object.angularVel;
         return vec3{ vel.x, vel.y, vel.z };
     }
 
@@ -151,12 +162,72 @@ namespace oo
 
     void oo::RigidbodyComponent::EnableCollider()
     {
-        desired_object.is_collider_enable = true;
+        desired_object.is_collider_enabled = true;
     }
 
     void oo::RigidbodyComponent::DisableCollider()
     {
-        desired_object.is_collider_enable = false;
+        desired_object.is_collider_enabled = false;
+    }
+
+    void oo::RigidbodyComponent::LockPositionX(bool enable)
+    {
+        desired_object.lockPositionAxis.x_axis = enable;
+    }
+
+    bool oo::RigidbodyComponent::IsPositionLockedX()
+    {
+        return underlying_object.lockPositionAxis.x_axis;
+    }
+
+    void oo::RigidbodyComponent::LockPositionY(bool enable)
+    {
+        desired_object.lockPositionAxis.y_axis = enable;
+    }
+
+    bool oo::RigidbodyComponent::IsPositionLockedY()
+    {
+        return underlying_object.lockPositionAxis.y_axis;
+    }
+
+    void oo::RigidbodyComponent::LockPositionZ(bool enable)
+    {
+        desired_object.lockPositionAxis.z_axis = enable;
+    }
+
+    bool oo::RigidbodyComponent::IsPositionLockedZ()
+    {
+        return underlying_object.lockPositionAxis.z_axis;
+    }
+
+    void oo::RigidbodyComponent::LockRotationX(bool enable)
+    {
+        desired_object.lockRotationAxis.x_axis = enable;
+    }
+
+    bool oo::RigidbodyComponent::IsRotationLockedX()
+    {
+        return underlying_object.lockRotationAxis.x_axis;
+    }
+
+    void oo::RigidbodyComponent::LockRotationZ(bool enable)
+    {
+        desired_object.lockRotationAxis.z_axis = enable;
+    }
+
+    bool oo::RigidbodyComponent::IsRotationLockedZ()
+    {
+        return underlying_object.lockRotationAxis.z_axis;
+    }
+
+    void oo::RigidbodyComponent::LockRotationY(bool enable)
+    {
+        desired_object.lockRotationAxis.y_axis = enable;
+    }
+
+    bool oo::RigidbodyComponent::IsRotationLockedY()
+    {
+        return underlying_object.lockRotationAxis.y_axis;
     }
 
     void oo::RigidbodyComponent::SetTrigger(bool enable)
@@ -200,6 +271,27 @@ namespace oo
     void RigidbodyComponent::SetAngularVelocity(vec3 angularVelocity)
     {
         desired_object.angularVel = PxVec3{ angularVelocity.x, angularVelocity.y, angularVelocity.z };
+    }
+
+    ColliderShape oo::RigidbodyComponent::GetUnderlyingShape() const
+    {
+        switch (underlying_object.shape_type)
+        {
+        case phy::shape::box:
+            ColliderShape::BOX;
+            break;
+        case phy::shape::capsule:
+            ColliderShape::CAPSULE;
+            break;
+        case phy::shape::sphere:
+            ColliderShape::SPHERE;
+            break;
+
+        case phy::shape::none:
+        case phy::shape::plane:
+        default:
+            return ColliderShape::NONE;
+        }
     }
 
     void RigidbodyComponent::SetLinearDamping(float linearDamping)
@@ -272,5 +364,6 @@ namespace oo
     {
         return oo::UUID{ std::uint64_t{underlying_object.id} };
     }
+
 
 }

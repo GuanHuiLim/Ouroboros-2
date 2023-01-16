@@ -259,14 +259,14 @@ namespace oo
             if (rb.IsStatic() || rb.IsTrigger())
                 return;
 
-            // probably better to just constantly set this 3 instead of checking
-            rb.object.lockPositionX(rb.LockXAxisPosition);
-            rb.object.lockPositionY(rb.LockYAxisPosition);
-            rb.object.lockPositionZ(rb.LockZAxisPosition);
+            //// probably better to just constantly set this 3 instead of checking
+            //rb.object.lockPositionX(rb.LockXAxisPosition);
+            //rb.object.lockPositionY(rb.LockYAxisPosition);
+            //rb.object.lockPositionZ(rb.LockZAxisPosition);
 
-            rb.object.lockRotationX(rb.LockXAxisRotation);
-            rb.object.lockRotationY(rb.LockYAxisRotation);
-            rb.object.lockRotationZ(rb.LockZAxisRotation);
+            //rb.object.lockRotationX(rb.LockXAxisRotation);
+            //rb.object.lockRotationY(rb.LockYAxisRotation);
+            //rb.object.lockRotationZ(rb.LockZAxisRotation);
 
             auto pos = rb.GetPositionInPhysicsWorld();
             auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
@@ -375,8 +375,9 @@ namespace oo
                             {
                                 TRACY_PROFILE_SCOPE_NC(rigidbody_is_trigger_check, tracy::Color::PeachPuff4);
                                 // test and set trigger boolean based on serialize value
-                                if (rb.object.isTrigger() != rb.IsTrigger())
+                                /*if (rb.object.isTrigger() != rb.IsTrigger())
                                     rb.object.setTriggerShape(rb.IsTrigger());
+                                rb.desired_object.is_trigger;*/
                                 TRACY_PROFILE_SCOPE_END();
                             }
                             
@@ -402,7 +403,8 @@ namespace oo
                         bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
 
                         // set box size
-                        rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
+                        rb.underlying_object.shape_type = phy::shape::box;
+                        rb.underlying_object.box = { bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z };
                     //});
             });
 
@@ -423,7 +425,8 @@ namespace oo
                         cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
 
                         // set capsule size
-                        rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
+                        rb.underlying_object.shape_type = phy::shape::capsule;
+                        rb.underlying_object.capsule = { cc.GlobalRadius, cc.GlobalHalfHeight };
                     //});
             });
 
@@ -444,7 +447,8 @@ namespace oo
                         sc.GlobalRadius= sc.Radius * std::max(std::max(scale.x, scale.y), scale.z);
 
                         // set capsule size
-                        rb.object.setSphereProperty(sc.GlobalRadius);
+                        rb.underlying_object.shape_type = phy::shape::sphere;
+                        rb.underlying_object.sphere = { sc.GlobalRadius };
                     //});
             });
 
@@ -479,7 +483,7 @@ namespace oo
         auto trigger_queue = m_physicsWorld.getTriggerData();
         while (!trigger_queue.empty())
         {
-            myPhysx::TriggerManifold trigger_manifold = trigger_queue.front();
+            phy::TriggerManifold trigger_manifold = trigger_queue.front();
 
             // if either objects are already removed, we skip them
             if (m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false
@@ -505,20 +509,20 @@ namespace oo
             pte.OtherID = other_go_id;
             switch (trigger_manifold.status)
             {
-            case myPhysx::trigger::none:
+            case phy::trigger::none:
                 pte.State = PhysicsEventState::NONE;
                 break;
-            case myPhysx::trigger::onTriggerEnter:
+            case phy::trigger::onTriggerEnter:
                 if(DebugMessages)
                     LOG_TRACE("Trigger Enter Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::ENTER;
                 break;
-            case myPhysx::trigger::onTriggerStay:
+            case phy::trigger::onTriggerStay:
                 if (DebugMessages)
                     LOG_TRACE("Trigger Stay Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::STAY;
                 break;
-            case myPhysx::trigger::onTriggerExit:
+            case phy::trigger::onTriggerExit:
                 if (DebugMessages) 
                     LOG_TRACE("Trigger Exit Event! Trigger Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pte.TriggerID)->Name(), m_scene->FindWithInstanceID(pte.OtherID)->Name());
                 pte.State = PhysicsEventState::EXIT;
@@ -542,7 +546,7 @@ namespace oo
         auto collision_queue = m_physicsWorld.getCollisionData();
         while (!collision_queue.empty())
         {
-            myPhysx::ContactManifold contact_manifold = collision_queue.front();
+            phy::ContactManifold contact_manifold = collision_queue.front();
 
             // if either objects are already removed, we skip them
             if (m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false
@@ -571,18 +575,18 @@ namespace oo
 
             switch (contact_manifold.status)
             {
-            case myPhysx::collision::none:
+            case phy::collision::none:
                 pce.State = PhysicsEventState::NONE;
                 break;
-            case myPhysx::collision::onCollisionEnter:
+            case phy::collision::onCollisionEnter:
                 if (DebugMessages)LOG_TRACE("Collision Enter Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::ENTER;
                 break;
-            case myPhysx::collision::onCollisionStay:
+            case phy::collision::onCollisionStay:
                 if(DebugMessages) LOG_TRACE("Collision Stay Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::STAY;
                 break;
-            case myPhysx::collision::onCollisionExit:
+            case phy::collision::onCollisionExit:
                 if (DebugMessages) LOG_TRACE("Collision Exit Event! Collider Name \"{0}\", Other Name \"{1}\"", m_scene->FindWithInstanceID(pce.Collider1)->Name(), m_scene->FindWithInstanceID(pce.Collider2)->Name());
                 pce.State = PhysicsEventState::EXIT;
                 break;
@@ -754,11 +758,11 @@ namespace oo
     void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
         // Remove Data from lookup table
-        ASSERT_MSG(m_physicsToGameObjectLookup.contains(rb->component.object.id) == false, "This should never happen!");
+        ASSERT_MSG(m_physicsToGameObjectLookup.contains(rb->component.underlying_object.id) == false, "This should never happen!");
 
-        if (m_physicsToGameObjectLookup.contains(rb->component.object.id))
+        if (m_physicsToGameObjectLookup.contains(rb->component.underlying_object.id))
         {
-            m_physicsToGameObjectLookup.erase(rb->component.object.id);
+            m_physicsToGameObjectLookup.erase(rb->component.underlying_object.id);
         }
         //Remove all other colliders as well
 
@@ -772,7 +776,7 @@ namespace oo
             m_world->remove_component<MeshColliderComponent>(rb->entityID);
 
         // finally we remove the physics object
-        m_physicsWorld.removeInstance(rb->component.object);
+        m_physicsWorld.removeInstance(rb->component.underlying_object);
 
     }
 
@@ -794,7 +798,7 @@ namespace oo
         if (m_world->has_component<RigidbodyComponent>(bc->entityID))
         {
             auto& rb_comp = m_world->get_component<RigidbodyComponent>(bc->entityID);
-            rb_comp.object.removeShape();
+            rb_comp.desired_object.shape_type = phy::shape::none;
             //rb_comp.object.setShape(myPhysx::shape::none);
         }
     }
@@ -817,7 +821,7 @@ namespace oo
         if (m_world->has_component<RigidbodyComponent>(cc->entityID))
         {
             auto& rb_comp = m_world->get_component<RigidbodyComponent>(cc->entityID);
-            rb_comp.object.removeShape();
+            rb_comp.desired_object.shape_type = phy::shape::none;
             //rb_comp.object.setShape(myPhysx::shape::none);
         }
     }
@@ -840,7 +844,7 @@ namespace oo
         if (m_world->has_component<RigidbodyComponent>(sc->entityID))
         {
             auto& rb_comp = m_world->get_component<RigidbodyComponent>(sc->entityID);
-            rb_comp.object.removeShape();
+            rb_comp.desired_object.shape_type = phy::shape::none;
             //rb_comp.object.setShape(myPhysx::shape::none);
         }
     }
@@ -875,36 +879,36 @@ namespace oo
         if (m_world->has_component<RigidbodyComponent>(mc->entityID))
         {
             auto& rb_comp = m_world->get_component<RigidbodyComponent>(mc->entityID);
-            rb_comp.object.removeShape();
+            rb_comp.desired_object.shape_type = phy::shape::none;
             //rb_comp.object.setShape(myPhysx::shape::none);
         }
     }
 
     void PhysicsSystem::InitializeRigidbody(RigidbodyComponent& rb)
     {
-        rb.object = m_physicsWorld.createInstance();
+        rb.underlying_object = rb.desired_object = m_physicsWorld.createInstance();
         rb.SetStatic(true); // default to static objects. Most things in the world should be static.
         //rb.EnableGravity(); // most things in the world should have gravity enabled (?)
         //default initialize material
-        rb.object.setMaterial(PhysicsMaterial{});
+        //rb.desired_object.material = PhysicsMaterial{};
     }
 
     void PhysicsSystem::InitializeBoxCollider(RigidbodyComponent& rb)
     {
         // create box
-        rb.object.setShape(myPhysx::shape::box);
+        rb.desired_object.shape_type = phy::shape::box;
     }
 
     void PhysicsSystem::InitializeCapsuleCollider(RigidbodyComponent& rb)
     {
         // create capsule
-        rb.object.setShape(myPhysx::shape::capsule);
+        rb.desired_object.shape_type = phy::shape::capsule;
     }
 
     void PhysicsSystem::InitializeSphereCollider(RigidbodyComponent& rb)
     {
         // create sphere
-        rb.object.setShape(myPhysx::shape::sphere);
+        rb.desired_object.shape_type = phy::shape::sphere;
     }
 
     void PhysicsSystem::InitializeMeshCollider(RigidbodyComponent& rb)
@@ -916,15 +920,15 @@ namespace oo
     void PhysicsSystem::DuplicateRigidbody(RigidbodyComponent& rb)
     {
         // we duplicate instead if this is an existing object
-        if (m_physicsWorld.hasObject(rb.object.id))
-            rb.object = m_physicsWorld.duplicateObject(rb.object.id);
+        if (m_physicsWorld.hasObject(rb.underlying_object.id))
+            rb.underlying_object = rb.desired_object = m_physicsWorld.duplicateObject(rb.underlying_object.id);
     }
 
     void PhysicsSystem::AddToLookUp(RigidbodyComponent& rb, GameObjectComponent& goc)
     {
-        if (m_physicsToGameObjectLookup.contains(rb.object.id) == false)
+        if (m_physicsToGameObjectLookup.contains(rb.underlying_object.id) == false)
         {
-            m_physicsToGameObjectLookup.insert({ rb.object.id, goc.Id });
+            m_physicsToGameObjectLookup.insert({ rb.underlying_object.id, goc.Id });
         }
     }
 

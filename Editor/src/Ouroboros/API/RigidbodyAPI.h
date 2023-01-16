@@ -28,12 +28,12 @@ namespace oo
 
     SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, Gravity, bool, IsGravityEnabled, SetGravity)
 
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockXAxisPosition, bool, LockXAxisPosition)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockYAxisPosition, bool, LockYAxisPosition)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockZAxisPosition, bool, LockZAxisPosition)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockXAxisRotation, bool, LockXAxisRotation)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockYAxisRotation, bool, LockYAxisRotation)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockZAxisRotation, bool, LockZAxisRotation)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockXAxisPosition, bool, IsPositionLockedX, LockPositionX)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockYAxisPosition, bool, IsPositionLockedY, LockPositionY)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockZAxisPosition, bool, IsPositionLockedZ, LockPositionZ)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockXAxisRotation, bool, IsRotationLockedX, LockRotationX)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockYAxisRotation, bool, IsRotationLockedY, LockRotationY)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockZAxisRotation, bool, IsRotationLockedZ, LockRotationZ)
 
     SCRIPT_API void Rigidbody_GetVelocity(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {

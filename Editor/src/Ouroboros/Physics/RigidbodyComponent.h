@@ -70,6 +70,14 @@ namespace oo
         VELOCITY_CHANGE,
     };
 
+    enum class ColliderShape
+    {
+        NONE,
+        BOX,
+        CAPSULE,
+        SPHERE,
+        MESH,
+    };
 
     /*-----------------------------------------------------------------------------*/
     /* Describes and Enables Entites with this component attached to               */
@@ -122,6 +130,8 @@ namespace oo
         vec3 GetAngularVelocity() const;
         void SetAngularVelocity(vec3 angularVelocity);
 
+        ColliderShape GetUnderlyingShape() const;
+
         bool IsStatic() const;
         void SetStatic(bool result);
 
@@ -139,6 +149,20 @@ namespace oo
         
         void EnableCollider();
         void DisableCollider();
+
+        void LockPositionX(bool enable);
+        bool IsPositionLockedX();
+        void LockPositionY(bool enable);
+        bool IsPositionLockedY();
+        void LockPositionZ(bool enable);
+        bool IsPositionLockedZ();
+
+        void LockRotationX(bool enable);
+        bool IsRotationLockedX();
+        void LockRotationY(bool enable);
+        bool IsRotationLockedY();
+        void LockRotationZ(bool enable);
+        bool IsRotationLockedZ();
 
         // command wrapper functions
         void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
