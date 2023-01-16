@@ -458,9 +458,20 @@ namespace oo
                 {
                     mc.Vertices.clear();
 
-                    auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
-                    for (auto& vertex : vertices)
-                        mc.Vertices.emplace_back(vertex.pos);
+                    if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
+                    {
+                        auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
+                        for (auto& vertex : vertices)
+                            mc.Vertices.emplace_back(vertex.pos);
+
+                        auto generated_vertices = rb.StoreMesh(mc.Vertices);
+                        mc.Vertices.clear();
+                        for (auto& vertex : generated_vertices)
+                            mc.Vertices.emplace_back(vertex.x, vertex.y , vertex.z);
+
+
+                        //rb.object.storeMeshVertices(mc.Vertices);
+                    }
 
                     mc.Reset = false;
                 }
@@ -909,8 +920,8 @@ namespace oo
 
     void PhysicsSystem::InitializeMeshCollider(RigidbodyComponent& rb)
     {
-        // create box
-        //rb.object.setShape(myPhysx::shape::mesh);
+        // create mesh collider
+        rb.object.setShape(myPhysx::shape::convex);
     }
 
     void PhysicsSystem::DuplicateRigidbody(RigidbodyComponent& rb)

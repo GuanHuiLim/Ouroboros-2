@@ -43,6 +43,7 @@ PxTolerancesScale       mToleranceScale;
 
 PxFoundation* mFoundation; 
 PxPhysics* mPhysics;
+PxCooking* mCooking;
 
 /*-----------------------------------------------------------------------------*/
 /*                               Physx                                         */
@@ -80,6 +81,13 @@ namespace myPhysx
                 mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, myPVD.pvd__());
             else
                 mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale);
+
+            // Init Cooking
+            mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *mFoundation, PxCookingParams(mToleranceScale));
+
+            
+            if (!mCooking)
+                throw("PxCreateCooking failed!");
 
             return mPhysics;
         }
@@ -157,7 +165,7 @@ namespace myPhysx
 
             if constexpr (use_debugger) {
                 printf("DEBUGGER ON\n");
-                myPVD.createPvd(mFoundation, "172.28.68.244");
+                myPVD.createPvd(mFoundation, "172.28.68.233");
             }
             else {
                 printf("DEBUGGER OFF\n");
@@ -208,6 +216,9 @@ namespace myPhysx
         sceneDesc.filterShader = physx_system::contactReportFilterShader;
 
         scene = mPhysics->createScene(sceneDesc);
+
+        // create the character controller
+        //control_manager = PxCreateControllerManager(*scene);
 
         // just take note we have 5000 objects reserved.
         m_objects.reserve(5000);
@@ -674,7 +685,7 @@ namespace myPhysx
 
             underlying_obj->m_shape = physx_system::getPhysics()->createShape(data, *material, true);
 
-            //underlying_obj->m_shape->setContactOffset(1);
+            underlying_obj->m_shape->setContactOffset(1);
 
             // ATTACH THE SHAPE TO THE OBJECT
             if (rigidType == rigid::rstatic)
@@ -696,9 +707,11 @@ namespace myPhysx
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
             PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
 
+            //assert(underlying_obj->m_shape);
+
             // CHECK IF HAVE SHAPE CREATED OR NOT
             if (underlying_obj->m_shape) {
-            //if (underlying_obj->shape != shape::none) {
+            //if (underlying_obj->shape != shape::none) {j
 
                 // DETACH OLD SHAPE
                 if (underlying_obj->rigid_type == rigid::rstatic)
@@ -734,8 +747,16 @@ namespace myPhysx
                     underlying_obj->m_shape->setLocalPose(relativePose);
                 }
             }
+            else if (shape == shape::convex) {
+
+                //auto mesh_geometry = createConvexMesh(world->m_meshVertices);
+                auto mesh_geometry = createConvexMesh(underlying_obj->meshVertices);
+               
+                underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(mesh_geometry), *material, true);
+            }
+
             
-            //underlying_obj->m_shape->setContactOffset(1);
+            underlying_obj->m_shape->setContactOffset(1);
 
             // ATTACH THE SHAPE TO THE OBJECT
             if (underlying_obj->rigid_type == rigid::rstatic)
@@ -971,6 +992,121 @@ namespace myPhysx
                 //underlying_obj->m_shape->getGeometry().capsule().halfHeight = halfHeight;
             }
         }
+    }
+
+    void PhysicsObject::setConvexProperty(PxConvexMesh* mesh) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->shape_type == shape::convex)
+                underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(mesh));
+                //underlying_obj->m_shape->getGeometry().convexMesh().convexMesh->getVertices()
+        }
+    }
+
+    void PhysicsObject::storeMeshVertices(std::vector<PxVec3> vert) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->shape_type == shape::convex)
+            {
+                underlying_obj->meshVertices = vert;
+
+                //underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(createConvexMesh(world->m_meshVertices)), *world->mat.at(underlying_obj->matID), true);
+                underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(createConvexMesh(underlying_obj->meshVertices)), *world->mat.at(underlying_obj->matID), true);
+            
+                if(underlying_obj->rigid_type == rigid::rdynamic) 
+                    underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+
+                if (underlying_obj->rigid_type == rigid::rstatic)
+                    underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+
+                //getAllMeshVertices();
+            }
+        }
+    }
+
+    std::vector<PxVec3> PhysicsObject::getAllMeshVertices() {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->shape_type == shape::convex)
+            {
+                // Retrieve the vertices
+                PxConvexMesh* convexMesh = underlying_obj->m_shape->getGeometry().convexMesh().convexMesh;
+                const PxVec3* convexVerts = convexMesh->getVertices();
+                PxU32 nbVerts = convexMesh->getNbVertices();
+
+                world->m_meshVertices.clear(); // remove old data first
+
+                for (PxU32 i = 0; i < nbVerts; i++) {
+
+                    PxVec3 mesh = { convexVerts[i].x, convexVerts[i].y, convexVerts[i].z };
+
+                    world->m_meshVertices.emplace_back(mesh);
+                }
+
+                //int size = world->m_meshVertices.size();
+                //std::cout << "SIZE: " << size << std::endl;
+            }
+        }
+
+        return world->m_meshVertices;
+    }
+
+    PxConvexMesh* PhysicsObject::createConvexMesh(std::vector<PxVec3> vert) {
+
+        // vertices
+        //static const PxVec3 convexVerts[] = { PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
+
+        // Construct the convex data
+        PxConvexMeshDesc convexDesc;
+        convexDesc.points.count = vert.size(); //5;
+        convexDesc.points.stride = sizeof(PxVec3);
+        convexDesc.points.data = static_cast<void*>(vert.data()); //convexVerts;
+        convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+
+        //PxConvexMeshCookingType::eQUICKHULL;
+
+        // Construct the mesh with the cooking library
+        PxDefaultMemoryOutputStream buffer;
+        PxConvexMeshCookingResult::Enum result;
+
+        if (!mCooking->cookConvexMesh(convexDesc, buffer, &result))
+            return NULL;
+
+        // Fastest method (Vertex Points, Indices and Polygons are Provided)
+        /*
+        PxConvexMeshDesc convexDesc;
+        convexDesc.points.count = 12;
+        convexDesc.points.stride = sizeof(PxVec3);
+        convexDesc.points.data = convexVerts;
+        
+        convexDescPolygons.polygons.count = 20;
+        convexDescPolygons.polygons.stride = sizeof(PxHullPolygon);
+        convexDescPolygons.polygons.data = hullPolygons;
+        convexDesc.flags = 0;
+
+        PxDefaultMemoryOutputStream buf;
+        if (!mCooking.cookConvexMesh(convexDesc, buf))
+            return NULL;
+        */
+
+        PxDefaultMemoryInputData input(buffer.getData(), buffer.getSize());
+        PxConvexMesh* convexMesh = mPhysics->createConvexMesh(input);
+
+        // Create shape which instances the mesh
+        //PxShape* convexShape = PxRigidActorExt::createExclusiveShape();
+        
+        //setConvexProperty(convexMesh);
+
+        return convexMesh;
     }
 
     LockingAxis PhysicsObject::getLockPositionAxis() const {

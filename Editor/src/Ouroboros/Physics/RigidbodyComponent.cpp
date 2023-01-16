@@ -82,6 +82,20 @@ namespace oo
         return { res.w, res.x, res.y, res.z,  };
     }
 
+    std::vector<PxVec3> oo::RigidbodyComponent::StoreMesh(std::vector<oo::vec3> result) {
+
+        std::vector<PxVec3> vertices;
+        
+        for (auto const& i : result)
+            vertices.emplace_back(i.x,i.y,i.z);
+
+        object.storeMeshVertices(vertices);
+
+        vertices = object.getAllMeshVertices();
+
+        return vertices;
+    }
+    
     void oo::RigidbodyComponent::SetStatic(bool result)
     {
         IsStaticObject = result;
