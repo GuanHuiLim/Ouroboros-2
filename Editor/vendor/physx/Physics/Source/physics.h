@@ -148,7 +148,6 @@ namespace phy
     struct PhysicsObject
     {
         phy_uuid::UUID id;
-        phy_uuid::UUID matID = 0;
         Material material = Material{};
 
         PxVec3 position;
@@ -174,17 +173,18 @@ namespace phy
         bool is_trigger = false;
         bool gravity_enabled = true;
         bool is_kinematic = false;
-        bool is_collider = true;
+        bool is_collider_enabled = true;
     };
 
     struct PhysicsCommand
     {
-        phy_uuid::UUID id;
+        phy_uuid::UUID Id;
+        
+        PxVec3 Force = PxVec3{};
+        phy::force Type = phy::force::force;
 
-        bool AddForce;
-        bool AddTorque;
-        //...
-        bool DestroyThisObject;
+        bool AddForce = false;
+        bool AddTorque = false;
     };
 
     static constexpr std::size_t sizeofPhysicsObject = sizeof(PhysicsObject);
@@ -217,7 +217,7 @@ namespace phy
         bool is_trigger = false;
         bool gravity_enabled = true; // static should be false
         bool is_kinematic = false;
-        bool is_collider = true;
+        bool is_collider_enabled = true;
     };
 
     class PhysicsWorld

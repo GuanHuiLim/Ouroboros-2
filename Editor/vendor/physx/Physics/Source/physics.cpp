@@ -309,7 +309,7 @@ namespace phy
         physics_Obj.id = *init_Obj.id;
 
         // MATERIAL PROPERTIES
-        physics_Obj.matID = init_Obj.matID;
+        //physics_Obj.matID = init_Obj.matID;
         PxMaterial* currentMat = mat.at(init_Obj.matID);
         physics_Obj.material = Material{ currentMat->getStaticFriction(),
                                          currentMat->getDynamicFriction(),
@@ -369,7 +369,7 @@ namespace phy
         physics_Obj.is_trigger = init_Obj.is_trigger;
         physics_Obj.gravity_enabled = init_Obj.gravity_enabled;
         physics_Obj.is_kinematic = init_Obj.is_kinematic;
-        physics_Obj.is_collider = init_Obj.is_collider;
+        physics_Obj.is_collider_enabled = init_Obj.is_collider_enabled;
     }
 
     template<typename Type>
@@ -393,7 +393,7 @@ namespace phy
             PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.id)];
 
             // MATERIAL PROPERTIES
-            underlying_obj.matID = updatedObj.matID;
+            //underlying_obj.matID = updatedObj.matID;
             
             // CHECK WHETHER IS AN EXISTING MATERIAL
             if (mat.contains(underlying_obj.matID)) {
@@ -473,8 +473,8 @@ namespace phy
             }
                     
             // COLLIDER PROPERTIES
-            underlying_obj.is_collider = updatedObj.is_collider;
-            underlying_obj.m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, underlying_obj.is_collider);
+            underlying_obj.is_collider_enabled = updatedObj.is_collider_enabled;
+            underlying_obj.m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, underlying_obj.is_collider_enabled);
 
             // TRIGGER PROPERTIES
             underlying_obj.is_trigger = updatedObj.is_trigger;
@@ -499,24 +499,32 @@ namespace phy
         
         PxMaterial* material = mat.at(underlying_obj.matID);
 
-        if (underlying_obj.shape_type == shape::box)
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.box, *material, true);
-
-        else if (underlying_obj.shape_type == shape::sphere)
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.sphere, *material, true);
-
-        else if (underlying_obj.shape_type == shape::plane)
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.plane, *material, true);
-
-        else if (underlying_obj.shape_type == shape::capsule)
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *material, true);
-
-        //underlying_obj.m_shape->setContactOffset(1);
-
         // RIGID ACTOR
+        // TODO!!!
         underlying_obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{ updated_Obj.position, updated_Obj.orientation });
         underlying_obj.rb.rigidStatic->userData = underlying_obj.id.get();
         scene->addActor(*underlying_obj.rb.rigidStatic);
+
+        switch (underlying_obj.shape_type)
+        {
+        case shape::box:
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.box, *material, true);
+            break;
+        case shape::sphere:
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.sphere, *material, true);
+            break;
+        case shape::plane:
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.plane, *material, true);
+            break;
+        case shape::capsule:
+            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *material, true);
+            break;
+        case shape::none:
+        default:
+            return; // NOTE we return here because code below requires a shape!
+        }
+
+        //underlying_obj.m_shape->setContactOffset(1);
 
         // ATTACH THE NEW SHAPE TO THE OBJECT
         underlying_obj.rb.rigidStatic->attachShape(*underlying_obj.m_shape);
@@ -641,7 +649,7 @@ namespace phy
         is_trigger(other.is_trigger),
         gravity_enabled(other.gravity_enabled),
         is_kinematic(other.is_kinematic),
-        is_collider(other.is_collider),
+        is_collider_enabled(other.is_collider_enabled),
         m_shape{ nullptr },
         rb{},
         // Create new UUID when we attempt to make a copy

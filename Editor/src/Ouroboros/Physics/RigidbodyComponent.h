@@ -81,6 +81,8 @@ namespace oo
         phy::PhysicsObject underlying_object{};
         phy::PhysicsObject desired_object{};
 
+        std::vector<phy::PhysicsCommand> external_commands;
+
     /*private:
         
         bool IsStaticObject = true;
