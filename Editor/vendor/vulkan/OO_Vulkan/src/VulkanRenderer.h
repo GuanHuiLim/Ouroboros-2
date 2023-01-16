@@ -477,6 +477,8 @@ public:
 		uint32_t CreateTextureImage(const std::string& fileName);
 		uint32_t AddBindlessGlobalTexture(vkutils::Texture2D texture);		
 
+		bool shadowsRendered{ false };
+
 		void InitDefaultPrimatives();
 		std::unique_ptr<ModelFileResource>def_cube;
 		std::unique_ptr<ModelFileResource>def_sprite;

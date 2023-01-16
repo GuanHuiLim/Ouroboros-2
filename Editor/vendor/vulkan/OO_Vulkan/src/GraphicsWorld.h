@@ -175,6 +175,7 @@ public:
     void SubmitParticles(std::vector<ParticleData>& particleData, uint32_t cnt, int32_t modelID);
 
     uint32_t numCameras = 1;
+    std::array<bool, 2> shouldRenderCamera{ true, false };
     std::array<Camera, 2>cameras;
     std::array<int32_t, 2>targetIDs{ -1,-1 };
     std::array<ImTextureID, 2>imguiID{};

@@ -2107,6 +2107,8 @@ void VulkanRenderer::BeginDraw()
 		DelayedDeleter::get()->Update();
 		descAllocs[swapchainIdx].ResetPools();
 
+		shadowsRendered = false;
+
 		if (currWorld)
 		{
 			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
@@ -2134,9 +2136,8 @@ void VulkanRenderer::BeginDraw()
 		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
 			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(descriptorSets_uniform[swapchainIdx], SetLayoutDB::FrameUniform);
-	
-		
-        
+
+
 		if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
         {
             resizeSwapchain = true;
@@ -2177,6 +2178,11 @@ void VulkanRenderer::RenderFrame()
 			renderIteration = 0;
 			for (size_t i = 0; i < currWorld->numCameras; i++)
 			{		
+				if (currWorld->shouldRenderCamera[i] == false)
+				{
+					continue;
+				}
+
 				renderTargetInUseID = currWorld->targetIDs[i];
 				VkMemoryBarrier memoryBarrier{};
 				memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -2191,8 +2197,12 @@ void VulkanRenderer::RenderFrame()
 					nullptr,                       // pMemoryBarriers
 					0, NULL, 0, NULL
 				);
-
-				RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
+				if (shadowsRendered == false) // only render shadowpass once... 
+				{
+					//generally works until we need to perform better frustrum culling....
+					RenderPassDatabase::GetRenderPass<ShadowPass>()->Draw();
+					shadowsRendered = true;
+				}
 				//RenderPassDatabase::GetRenderPass<ZPrepassRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<DeferredDecalRenderpass>()->Draw();
