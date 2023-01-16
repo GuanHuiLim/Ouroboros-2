@@ -19,7 +19,8 @@ Technology is prohibited.
 #include "Ouroboros/Physics/PhysicsFwd.h"
 #include "PhysicsEvents.h"
 #include "Ouroboros/Core/Timer.h"
-#include <Physics/Source/phy.h>
+//#include <Physics/Source/phy.h>
+#include <Physics/Source/physics.h>
 #include <bitset>
 #include "Ouroboros/ECS/GameObjectComponent.h"
 #include "Ouroboros/Scene/Scene.h"
@@ -84,7 +85,7 @@ namespace oo
         std::map<phy_uuid::UUID, UUID> m_physicsToGameObjectLookup = {};
 
         //underlying physics world
-        myPhysx::PhysxWorld m_physicsWorld{ { Gravity.x, Gravity.y, Gravity.z} };
+        phy::PhysicsWorld m_physicsWorld{ { Gravity.x, Gravity.y, Gravity.z} };
 
         //time accumulator
         double m_accumulator = 0.0;

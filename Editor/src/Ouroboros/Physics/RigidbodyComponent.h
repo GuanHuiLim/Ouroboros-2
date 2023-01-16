@@ -20,7 +20,8 @@ Technology is prohibited.
 
 #include <glm/glm.hpp>
 #include <rttr/type>
-#include <Physics/Source/phy.h>
+//#include <Physics/Source/phy.h>
+#include <Physics/Source/physics.h>
 
 #include "Utility/UUID.h"
 
@@ -41,16 +42,16 @@ namespace oo
 
         PhysicsMaterial() = default;
 
-        PhysicsMaterial(myPhysx::Material const& mat)
+        PhysicsMaterial(phy::Material const& mat)
             : Restitution { mat.restitution }
             , DynamicFriction { mat.dynamicFriction }
             , StaticFriction { mat.staticFriction }
         {
         }
         
-        operator myPhysx::Material()
+        operator phy::Material()
         {
-            return myPhysx::Material
+            return phy::Material
             { 
                 .staticFriction = static_cast<float>(StaticFriction), 
                 .dynamicFriction = static_cast<float>(DynamicFriction), 
@@ -69,13 +70,19 @@ namespace oo
         VELOCITY_CHANGE,
     };
 
+
     /*-----------------------------------------------------------------------------*/
     /* Describes and Enables Entites with this component attached to               */
     /* abide by the laws of physics.                                               */
     /*-----------------------------------------------------------------------------*/
     class RigidbodyComponent final
     {
-    private:
+    public:
+        phy::PhysicsObject underlying_object{};
+        phy::PhysicsObject desired_object{};
+
+    /*private:
+        
         bool IsStaticObject = true;
 
     public:
@@ -86,56 +93,54 @@ namespace oo
         bool LockZAxisPosition = false;
         bool LockXAxisRotation = false;
         bool LockYAxisRotation = false;
-        bool LockZAxisRotation = false;
-
-        myPhysx::PhysicsObject object{};
+        bool LockZAxisRotation = false;*/
+        
         vec3 Offset = { 0.0, 0.0, 0.0 };
 
+        // property wrapper functions
+        oo::UUID GetUnderlyingUUID() const;
+        
         PhysicsMaterial GetMaterial() const;
+        void SetMaterial(PhysicsMaterial material);
+
         vec3 GetPositionInPhysicsWorld() const;
         quat GetOrientationInPhysicsWorld() const;
-
-        void SetStatic(bool result);
+        void SetPosOrientation(vec3 pos, quat quat);
 
         float GetMass() const;
-        float GetAngularDamping() const;
-        vec3 GetAngularVelocity() const;
+        void SetMass(float mass);
+
         float GetLinearDamping() const;
+        void SetLinearDamping(float linearDamping);
+        float GetAngularDamping() const;
+        void SetAngularDamping(float angularDamping);
+
         vec3 GetLinearVelocity() const;
+        void SetLinearVelocity(vec3 linearVelocity);
+        vec3 GetAngularVelocity() const;
+        void SetAngularVelocity(vec3 angularVelocity);
+
+        bool IsStatic() const;
+        void SetStatic(bool result);
 
         bool IsGravityEnabled() const;
         bool IsGravityDisabled() const;
+        void SetGravity(bool enable);
 
-        bool IsStatic() const;
         bool IsKinematic() const;
+        void SetKinematic(bool kine);
         bool IsDynamic() const;
 
+        void SetTrigger(bool enable);
         bool IsTrigger() const;
         bool IsCollider() const;
         
         void EnableCollider();
         void DisableCollider();
 
-        void SetTrigger(bool enable);
-
-        void SetMaterial(PhysicsMaterial material);
-        void SetPosOrientation(vec3 pos, quat quat);
-
-        void SetGravity(bool enable);
-        /*void EnableGravity();
-        void DisableGravity();*/
-        
-        void SetKinematic(bool kine);
-        void SetMass(float mass);
-        void SetAngularDamping(float angularDamping);
-        void SetAngularVelocity(vec3 angularVelocity);
-        void SetLinearDamping(float linearDamping);
-        void SetLinearVelocity(vec3 linearVelocity);
-
+        // command wrapper functions
         void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
         void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
-
-        oo::UUID GetUnderlyingUUID() const;
 
         RTTR_ENABLE();
     };

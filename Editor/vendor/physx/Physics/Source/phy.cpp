@@ -18,6 +18,9 @@ Technology is prohibited.
 #include <iostream>
 #include "phy.h"
 
+#include <thread>
+#include <algorithm>
+
 using namespace physx;
 
 static constexpr bool use_debugger = false;
@@ -194,8 +197,9 @@ namespace myPhysx
         gravity = sceneDesc.gravity;
 
         //PxInitExtensions(*physx_system::getPhysics(), myPVD.pvd__());
-        mDispatcher = PxDefaultCpuDispatcherCreate(2);
-
+        int numthreads = std::max(1u, std::thread::hardware_concurrency() - 1);
+        mDispatcher = PxDefaultCpuDispatcherCreate(numthreads);
+        
         sceneDesc.cpuDispatcher = mDispatcher;
         sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 

@@ -84,7 +84,7 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, MeshColliderComponent>(
             this, &PhysicsSystem::OnMeshColliderRemove);
 
-        myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
+        phy::physx_system::setCurrentWorld(&m_physicsWorld);
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -155,7 +155,7 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
             // update the physics world using fixed dt.
-            m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
+            m_physicsWorld.updateWorld(static_cast<float>(FixedDeltaTime));
             TRACY_PROFILE_SCOPE_END();
         }
 
@@ -477,9 +477,9 @@ namespace oo
 
         TRACY_PROFILE_SCOPE_NC(physics_trigger_resoltion, tracy::Color::PeachPuff);
         auto trigger_queue = m_physicsWorld.getTriggerData();
-        while (!trigger_queue->empty())
+        while (!trigger_queue.empty())
         {
-            myPhysx::TriggerManifold trigger_manifold = trigger_queue->front();
+            myPhysx::TriggerManifold trigger_manifold = trigger_queue.front();
 
             // if either objects are already removed, we skip them
             if (m_physicsToGameObjectLookup.contains(trigger_manifold.triggerID) == false
@@ -488,7 +488,7 @@ namespace oo
                 if (DebugMessages)
                     LOG_WARN("Skipped Trigger Callback because one of these pair of (Physics)UUID died ({0}), ({1}) ", trigger_manifold.triggerID, trigger_manifold.otherID);
 
-                trigger_queue->pop();
+                trigger_queue.pop();
                 continue;
             }
 
@@ -530,7 +530,7 @@ namespace oo
             EventManager::Broadcast(&pte);
             TRACY_PROFILE_SCOPE_END();
 
-            trigger_queue->pop();
+            trigger_queue.pop();
         }
         m_physicsWorld.clearTriggerData();
         TRACY_PROFILE_SCOPE_END();
@@ -540,9 +540,9 @@ namespace oo
         //jobsystem::job collision_resolution;
 
         auto collision_queue = m_physicsWorld.getCollisionData();
-        while (!collision_queue->empty())
+        while (!collision_queue.empty())
         {
-            myPhysx::ContactManifold contact_manifold = collision_queue->front();
+            myPhysx::ContactManifold contact_manifold = collision_queue.front();
 
             // if either objects are already removed, we skip them
             if (m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false
@@ -551,7 +551,7 @@ namespace oo
                 if (DebugMessages)
                     LOG_WARN("Skipped Physics Collision Callback because one of these pair of (Physics)UUID died ({0}), ({1}) ", contact_manifold.shape1_ID, contact_manifold.shape2_ID);
 
-                collision_queue->pop();
+                collision_queue.pop();
                 continue;
             }
             //ASSERT_MSG(m_physicsToGameObjectLookup.contains(contact_manifold.shape1_ID) == false, "This should never happen");
@@ -595,7 +595,7 @@ namespace oo
                 TRACY_PROFILE_SCOPE_END();
             //});
 
-            collision_queue->pop();
+            collision_queue.pop();
         }
         m_physicsWorld.clearCollisionData();
 

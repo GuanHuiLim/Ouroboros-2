@@ -38,12 +38,12 @@ namespace oo
             .property_readonly("Angular Velocity", &RigidbodyComponent::GetAngularVelocity)
             .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Offset", &RigidbodyComponent::Offset)
-            .property("Lock X Axis Position", &RigidbodyComponent::LockXAxisPosition)
-            .property("Lock Y Axis Position", &RigidbodyComponent::LockYAxisPosition)
-            .property("Lock Z Axis Position", &RigidbodyComponent::LockZAxisPosition)
-            .property("Lock X Axis Rotation", &RigidbodyComponent::LockXAxisRotation)
-            .property("Lock Y Axis Rotation", &RigidbodyComponent::LockYAxisRotation)
-            .property("Lock Z Axis Rotation", &RigidbodyComponent::LockZAxisRotation)
+            .property("Lock X Axis Position", &RigidbodyComponent::desired_object)
+            .property("Lock Y Axis Position", &RigidbodyComponent::desired_object)
+            .property("Lock Z Axis Position", &RigidbodyComponent::desired_object)
+            .property("Lock X Axis Rotation", &RigidbodyComponent::desired_object)
+            .property("Lock Y Axis Rotation", &RigidbodyComponent::desired_object)
+            .property("Lock Z Axis Rotation", &RigidbodyComponent::desired_object)
             .property_readonly("Underlying physX UUID", &RigidbodyComponent::GetUnderlyingUUID)
             //.property_readonly("underlying shape", &RigidbodyComponent::collider_shape)
             //.property_readonly("dirty", &RigidbodyComponent::Dirty)
@@ -67,60 +67,56 @@ namespace oo
 
     PhysicsMaterial RigidbodyComponent::GetMaterial() const 
     { 
-        return object.getMaterial(); 
+        return underlying_object.material; 
     }
     
     vec3 oo::RigidbodyComponent::GetPositionInPhysicsWorld() const
     {
-        auto res = object.getposition();
+        auto& res = underlying_object.position;
         return { res.x, res.y, res.z };
     }
 
     quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
     {
-        auto res = object.getOrientation();
+        auto& res = underlying_object.orientation;
         return { res.w, res.x, res.y, res.z,  };
     }
 
     void oo::RigidbodyComponent::SetStatic(bool result)
     {
-        IsStaticObject = result;
-        if (IsStaticObject)
-            object.setRigidType(myPhysx::rigid::rstatic);
-        else
-            object.setRigidType(myPhysx::rigid::rdynamic);
+        result ? desired_object.rigid_type = phy::rigid::rstatic : desired_object.rigid_type = phy::rigid::rstatic;
     }
 
     float oo::RigidbodyComponent::GetMass() const
     {
-        return object.getMass();
+        return underlying_object.mass;
     }
 
     float oo::RigidbodyComponent::GetAngularDamping() const
     {
-        return object.getAngularDamping();
+        return underlying_object.angularDamping;
     }
 
     vec3 oo::RigidbodyComponent::GetAngularVelocity() const
     {
-        auto vel = object.getAngularVelocity();
+        auto vel = underlying_object.angularVel;
         return vec3{ vel.x, vel.y, vel.z };
     }
 
     float oo::RigidbodyComponent::GetLinearDamping() const
     {
-        return object.getLinearDamping();
+        return underlying_object.linearDamping;
     }
 
     vec3 oo::RigidbodyComponent::GetLinearVelocity() const
     {
-        auto vel = object.getLinearVelocity();
+        auto& vel = underlying_object.linearVel;
         return vec3{ vel.x, vel.y, vel.z };
     }
 
     bool oo::RigidbodyComponent::IsGravityEnabled() const
     {
-        return object.isGravityEnabled();
+        return underlying_object.gravity_enabled;
     }
 
     bool oo::RigidbodyComponent::IsGravityDisabled() const
@@ -171,7 +167,7 @@ namespace oo
 
     void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 
     { 
-        object.setMaterial(material); 
+        desired_object.material = material;
     }
 
     void RigidbodyComponent::SetPosOrientation(vec3 pos, quat quat) 
@@ -271,7 +267,7 @@ namespace oo
 
     oo::UUID oo::RigidbodyComponent::GetUnderlyingUUID() const
     {
-        return oo::UUID{ std::uint64_t{object.id} };
+        return oo::UUID{ std::uint64_t{underlying_object.id} };
     }
 
 }
