@@ -530,40 +530,42 @@ namespace phy
                 break;
             case shape::none:
             default:
-                break;
+                return; // NOTE we return here because code below requires a shape!
             }
         }
+        // CHECK IF SHAPE NO CHANGE AND IS NOT NONE (ONLY UPDATING SAME GEOMETRY DATA)
+        else if (underlying_Obj.shape_type == updated_Obj.shape_type && underlying_Obj.shape_type != shape::none) {
 
-        // UPDATING THE GEOMETRY DIMENSIONS (SHAPE NOW CONFIRM CORRECT - UPDATED)
-        switch (underlying_Obj.shape_type)
-        {
-        case shape::box:
-            underlying_Obj.m_shape->setGeometry(updated_Obj.box);
-            break;
-        case shape::sphere:
-            underlying_Obj.m_shape->setGeometry(updated_Obj.sphere);
-            break;
-        case shape::plane:
-            underlying_Obj.m_shape->setGeometry(updated_Obj.plane);
-            break;
-        case shape::capsule:
-            underlying_Obj.m_shape->setGeometry(updated_Obj.capsule);
-            break;
-        case shape::none:
-        default:
-            break;
+            // SHAPE PROPERTIES
+            underlying_Obj.shape_type = updated_Obj.shape_type;
+
+            // UPDATING THE GEOMETRY DIMENSIONS (SHAPE NOW CONFIRM CORRECT - UPDATED)
+            switch (underlying_Obj.shape_type)
+            {
+            case shape::box:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.box);
+                break;
+            case shape::sphere:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.sphere);
+                break;
+            case shape::plane:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.plane);
+                break;
+            case shape::capsule:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.capsule);
+                break;
+            case shape::none:
+            default:
+                return; // NOTE we return here because code below requires a shape!
+            }
         }
 
         //underlying_obj.m_shape->setContactOffset(1);
 
-        // CHECK WHETHER NEW SHAPE IS NONE
-        if (underlying_Obj.shape_type != shape::none) {
+         // ATTACH THE NEW SHAPE TO THE OBJECT
+         rigidbody->attachShape(*underlying_Obj.m_shape);
 
-            // ATTACH THE NEW SHAPE TO THE OBJECT
-            rigidbody->attachShape(*underlying_Obj.m_shape);
-
-            physx_system::setupFiltering(underlying_Obj.m_shape);
-        }
+         physx_system::setupFiltering(underlying_Obj.m_shape);
     }
 
     void PhysicsWorld::submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand) {
