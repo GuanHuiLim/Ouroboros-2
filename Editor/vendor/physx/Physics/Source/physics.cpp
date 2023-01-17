@@ -238,6 +238,8 @@ namespace phy
 
         PhysxObject underlying_obj = m_physx_objects[current_index];
 
+        //underlying_obj.m_shape->release(); // not 100% sure need or not
+
         if (underlying_obj.rigid_type == rigid::rstatic)
             underlying_obj.rb.rigidStatic->release();
         else if (underlying_obj.rigid_type == rigid::rdynamic)
@@ -400,18 +402,16 @@ namespace phy
         underlying_Obj.m_material->setDynamicFriction(updatedPhysicsObj.material.dynamicFriction);
         underlying_Obj.m_material->setRestitution(updatedPhysicsObj.material.restitution);
 
-        bool changingType = false;
         PxRigidActor* rigidbody = nullptr;
 
         // CHECK IF CHANGING IN RIGID TYPE
         if (underlying_Obj.rigid_type != updatedPhysicsObj.rigid_type) {
 
-            changingType = true;
-
             if (underlying_Obj.rigid_type == rigid::rstatic) {
 
+                // clear the current data
                 scene->removeActor(*underlying_Obj.rb.rigidStatic);
-                underlying_Obj.rb.rigidStatic = nullptr; // clear the current data
+                underlying_Obj.rb.rigidStatic = nullptr;
 
                 // create new rigidbody
                 underlying_Obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
@@ -440,12 +440,21 @@ namespace phy
                 physx_system::setupFiltering(underlying_Obj.m_shape);
             }
         }
+        // NO CHANGING OF RIGID TYPE (ONLY UPDATING SAME RIGIDBODY DATA)
+        else {
+
+            // set new position and orientation
+            if (underlying_Obj.rigid_type == rigid::rstatic)
+                underlying_Obj.rb.rigidStatic->setGlobalPose(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
+            
+            else if (underlying_Obj.rigid_type == rigid::rdynamic)
+                underlying_Obj.rb.rigidDynamic->setGlobalPose(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
+        }
 
         // RIGIDBODY PROPERTIES
         if (underlying_Obj.rigid_type == rigid::rstatic) {
 
             setShape(updatedPhysicsObj, underlying_Obj);
-
         }
         else if (underlying_Obj.rigid_type == rigid::rdynamic) {
 
@@ -479,17 +488,19 @@ namespace phy
             underlying_Obj.rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, underlying_Obj.is_kinematic);
         }
 
-        // COLLIDER PROPERTIES
+        // COLLIDER | TRIGGER PROPERTIES
         underlying_Obj.is_collider_enabled = updatedPhysicsObj.is_collider_enabled;
-        underlying_Obj.m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, underlying_Obj.is_collider_enabled);
-
-        // TRIGGER PROPERTIES
         underlying_Obj.is_trigger = updatedPhysicsObj.is_trigger;
 
-        if (underlying_Obj.is_trigger)
-            underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
-        else
-            underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
+        if (underlying_Obj.shape_type != shape::none) {
+
+            underlying_Obj.m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, underlying_Obj.is_collider_enabled);
+
+            if (underlying_Obj.is_trigger)
+                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
+            else
+                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
+        }
 
     }
 
@@ -502,7 +513,6 @@ namespace phy
         
         else if (underlying_Obj.rigid_type == rigid::rdynamic)
             rigidbody = underlying_Obj.rb.rigidDynamic;
-        
 
         // CHECK IF CHANGING IN SHAPE & UNDERLYING SHAPE NOT NONE
         if (underlying_Obj.shape_type != updated_Obj.shape_type && underlying_Obj.shape_type != shape::none) {
@@ -527,6 +537,8 @@ namespace phy
                 break;
             case shape::capsule:
                 underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *underlying_Obj.m_material, true);
+                // Change the capsule to extend along the Y-axis
+                underlying_Obj.m_shape->setLocalPose(PxTransform{ PxQuat(PxHalfPi, PxVec3(0, 0, 1)) });
                 break;
             case shape::none:
             default:
@@ -535,9 +547,6 @@ namespace phy
         }
         // CHECK IF SHAPE NO CHANGE AND IS NOT NONE (ONLY UPDATING SAME GEOMETRY DATA)
         else if (underlying_Obj.shape_type == updated_Obj.shape_type && underlying_Obj.shape_type != shape::none) {
-
-            // SHAPE PROPERTIES
-            underlying_Obj.shape_type = updated_Obj.shape_type;
 
             // UPDATING THE GEOMETRY DIMENSIONS (SHAPE NOW CONFIRM CORRECT - UPDATED)
             switch (underlying_Obj.shape_type)
@@ -553,6 +562,8 @@ namespace phy
                 break;
             case shape::capsule:
                 underlying_Obj.m_shape->setGeometry(updated_Obj.capsule);
+                // Change the capsule to extend along the Y-axis
+                underlying_Obj.m_shape->setLocalPose(PxTransform{ PxQuat(PxHalfPi, PxVec3(0, 0, 1)) });
                 break;
             case shape::none:
             default:
@@ -562,10 +573,10 @@ namespace phy
 
         //underlying_obj.m_shape->setContactOffset(1);
 
-         // ATTACH THE NEW SHAPE TO THE OBJECT
-         rigidbody->attachShape(*underlying_Obj.m_shape);
+        // ATTACH THE NEW SHAPE TO THE OBJECT
+        rigidbody->attachShape(*underlying_Obj.m_shape);
 
-         physx_system::setupFiltering(underlying_Obj.m_shape);
+        physx_system::setupFiltering(underlying_Obj.m_shape);
     }
 
     void PhysicsWorld::submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand) {
