@@ -54,7 +54,8 @@ void KeyLogging::Show()
 {
 	if (m_enable)
 	{
-		if (ImGui::Begin("Key Simulate", &m_enable))
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.5f));
+		if (ImGui::Begin("Key Simulate", &m_enable,ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration))
 		{
 			if (ImGui::Button("Save File"))
 			{
@@ -62,12 +63,15 @@ void KeyLogging::Show()
 			}
 			if (ImGui::Button("Load File"))
 			{
-				WindowsUtilities::FileDialogue_Generic(L"Replays",L"*.OOReplays", [this](const std::filesystem::path& p) {this->LoadKeylogs(p); });
+				WindowsUtilities::FileDialogue_Generic(L"Replays", L"*.OOReplays", [this](const std::filesystem::path& p) {this->LoadKeylogs(p); });
 			}
 			ImGui::Text("MousePositions: %u MouseClicks: %u", m_mousePosition.size(), m_mousePressed.size());
 			ImGui::Text("ActionDown: %u ActionUp: %u", m_actionDown.size(), m_actionUp.size());
 			ImGui::End();
 		}
+		else
+			ImGui::End();
+		ImGui::PopStyleColor();
 	}
 	/*ImGui::Begin("KeyLog");
 	if (ImGui::Button(m_start ? "Stop" : "Start"))
