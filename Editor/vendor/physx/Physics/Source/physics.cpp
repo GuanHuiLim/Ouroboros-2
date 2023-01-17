@@ -184,10 +184,10 @@ namespace phy
 
     PhysicsWorld::~PhysicsWorld()
     {
-        for (auto const& i : mat) 
-        {
-            i.second->release();
-        }
+        //for (auto const& i : mat) 
+        //{
+        //    i.second->release();
+        //}
 
         scene->release();
 
@@ -218,6 +218,8 @@ namespace phy
     {
         PhysxObject obj;
         obj.id = std::make_unique<phy_uuid::UUID>();
+        obj.m_material = mPhysics->createMaterial(0.f,0.f,0.f);
+        
         // This is important!
         phy_uuid::UUID generated_uuid = *obj.id;
         // store the object
@@ -240,6 +242,8 @@ namespace phy
             underlying_obj.rb.rigidStatic->release();
         else if (underlying_obj.rigid_type == rigid::rdynamic)
             underlying_obj.rb.rigidDynamic->release();
+
+        underlying_obj.m_material->release();
 
         m_objects_lookup.erase(obj.id);
         for (auto i = m_objects_lookup.begin(); i != m_objects_lookup.end(); i++) 
@@ -703,7 +707,7 @@ namespace phy
     /*                           PHYSX OBJECT                                      */
     /*-----------------------------------------------------------------------------*/
     PhysxObject::PhysxObject(const PhysxObject& other) : //matID(other.matID),
-                                                         m_material{ nullptr },
+                                                         m_material{other.m_material},
                                                          shape_type(other.shape_type),
                                                          rigid_type(other.rigid_type),
                                                          lockPositionAxis(other.lockPositionAxis),

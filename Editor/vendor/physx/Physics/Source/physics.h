@@ -289,7 +289,7 @@ namespace phy
     private:
         PxScene* scene = nullptr;
 
-        std::map<phy_uuid::UUID, PxMaterial*> mat;  // map of all the physics materials in the scene.
+        //std::map<phy_uuid::UUID, PxMaterial*> mat;  // map of all the physics materials in the scene.
 
         std::map<phy_uuid::UUID, std::size_t> m_objects_lookup; // store all the index of the objects (lookups for keys / check if empty)
 
