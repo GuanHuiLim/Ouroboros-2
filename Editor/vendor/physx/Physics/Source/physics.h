@@ -279,7 +279,7 @@ namespace phy
 
         void setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj);
         
-        void setRigidShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj);
+        void setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj);
 
         void setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
         

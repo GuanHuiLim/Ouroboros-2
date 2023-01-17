@@ -400,31 +400,56 @@ namespace phy
         underlying_Obj.m_material->setDynamicFriction(updatedPhysicsObj.material.dynamicFriction);
         underlying_Obj.m_material->setRestitution(updatedPhysicsObj.material.restitution);
 
-        // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
-        PxRigidStatic* rstat = underlying_Obj.rb.rigidStatic;
-        PxRigidDynamic* rdyna = underlying_Obj.rb.rigidDynamic;
+        bool changingType = false;
+        PxRigidActor* rigidbody = nullptr;
 
-        if (rstat) {
-            scene->removeActor(*rstat);
-            underlying_Obj.rb.rigidStatic = nullptr; // clear the current data
-        }
-        else if (rdyna) {
-            scene->removeActor(*rdyna);
-            underlying_Obj.rb.rigidDynamic = nullptr;
-        }
+        // CHECK IF CHANGING IN RIGID TYPE
+        if (underlying_Obj.rigid_type != updatedPhysicsObj.rigid_type) {
 
-        // SET NEW RIDID TYPE
-        underlying_Obj.rigid_type = updatedPhysicsObj.rigid_type;
+            changingType = true;
+
+            if (underlying_Obj.rigid_type == rigid::rstatic) {
+
+                scene->removeActor(*underlying_Obj.rb.rigidStatic);
+                underlying_Obj.rb.rigidStatic = nullptr; // clear the current data
+
+                // create new rigidbody
+                underlying_Obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
+                rigidbody = underlying_Obj.rb.rigidDynamic;
+            }
+            else if (underlying_Obj.rigid_type == rigid::rdynamic) {
+
+                scene->removeActor(*underlying_Obj.rb.rigidDynamic);
+                underlying_Obj.rb.rigidDynamic = nullptr;
+
+                underlying_Obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
+                rigidbody = underlying_Obj.rb.rigidStatic;
+            }
+
+            // SET NEW RIDID TYPE
+            underlying_Obj.rigid_type = updatedPhysicsObj.rigid_type;
+
+            rigidbody->userData = underlying_Obj.id.get();
+            scene->addActor(*rigidbody);
+
+            // REATTACH SHAPE INTO NEW RIGIDBODY
+            if (underlying_Obj.m_shape && underlying_Obj.shape_type != shape::none) {
+
+                rigidbody->attachShape(*underlying_Obj.m_shape);
+
+                physx_system::setupFiltering(underlying_Obj.m_shape);
+            }
+        }
 
         // RIGIDBODY PROPERTIES
         if (underlying_Obj.rigid_type == rigid::rstatic) {
 
-            setRigidShape(updatedPhysicsObj, underlying_Obj);
+            setShape(updatedPhysicsObj, underlying_Obj);
 
         }
         else if (underlying_Obj.rigid_type == rigid::rdynamic) {
 
-            setRigidShape(updatedPhysicsObj, underlying_Obj);
+            setShape(updatedPhysicsObj, underlying_Obj);
 
             underlying_Obj.rb.rigidDynamic->setMass(updatedPhysicsObj.mass);
             underlying_Obj.rb.rigidDynamic->setLinearDamping(updatedPhysicsObj.linearDamping);
@@ -468,58 +493,77 @@ namespace phy
 
     }
 
-    void PhysicsWorld::setRigidShape(PhysicsObject& updated_Obj, PhysxObject& underlying_obj) {
+    void PhysicsWorld::setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj) {
 
         PxRigidActor* rigidbody = nullptr;
 
-        // RIGID ACTOR
-        if ( underlying_obj.rigid_type == rigid::rstatic)
-        {
-            underlying_obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{ updated_Obj.position, updated_Obj.orientation });
-            rigidbody = underlying_obj.rb.rigidStatic;
-        }
-        else if (underlying_obj.rigid_type == rigid::rdynamic)
-        {
-            underlying_obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ updated_Obj.position, updated_Obj.orientation });
-            rigidbody = underlying_obj.rb.rigidDynamic;
-        }
+        if (underlying_Obj.rigid_type == rigid::rstatic)
+            rigidbody = underlying_Obj.rb.rigidStatic;
         
-        rigidbody->userData = underlying_obj.id.get();
-        scene->addActor(*rigidbody);
+        else if (underlying_Obj.rigid_type == rigid::rdynamic)
+            rigidbody = underlying_Obj.rb.rigidDynamic;
+        
 
+        // CHECK IF CHANGING IN SHAPE & UNDERLYING SHAPE NOT NONE
+        if (underlying_Obj.shape_type != updated_Obj.shape_type && underlying_Obj.shape_type != shape::none) {
 
-        // CHECK IF THIS OBJ HAVE SHAPE DATA INIT OR NOT
-        if (underlying_obj.m_shape)
-            rigidbody->detachShape(*underlying_obj.m_shape);
+            // remove existing shape data
+            if (underlying_Obj.m_shape)
+                rigidbody->detachShape(*underlying_Obj.m_shape);
 
-        // SHAPE PROPERTIES
-        underlying_obj.shape_type = updated_Obj.shape_type;
+            // SHAPE PROPERTIES
+            underlying_Obj.shape_type = updated_Obj.shape_type;
 
-        switch (underlying_obj.shape_type)
+            switch (underlying_Obj.shape_type)
+            {
+            case shape::box:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.box, *underlying_Obj.m_material, true);
+                break;
+            case shape::sphere:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.sphere, *underlying_Obj.m_material, true);
+                break;
+            case shape::plane:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.plane, *underlying_Obj.m_material, true);
+                break;
+            case shape::capsule:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *underlying_Obj.m_material, true);
+                break;
+            case shape::none:
+            default:
+                break;
+            }
+        }
+
+        // UPDATING THE GEOMETRY DIMENSIONS (SHAPE NOW CONFIRM CORRECT - UPDATED)
+        switch (underlying_Obj.shape_type)
         {
         case shape::box:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.box, *underlying_obj.m_material, true);
+            underlying_Obj.m_shape->setGeometry(updated_Obj.box);
             break;
         case shape::sphere:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.sphere, *underlying_obj.m_material, true);
+            underlying_Obj.m_shape->setGeometry(updated_Obj.sphere);
             break;
         case shape::plane:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.plane, *underlying_obj.m_material, true);
+            underlying_Obj.m_shape->setGeometry(updated_Obj.plane);
             break;
         case shape::capsule:
-            underlying_obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *underlying_obj.m_material, true);
+            underlying_Obj.m_shape->setGeometry(updated_Obj.capsule);
             break;
         case shape::none:
         default:
-            return; // NOTE we return here because code below requires a shape!
+            break;
         }
 
         //underlying_obj.m_shape->setContactOffset(1);
 
-        // ATTACH THE NEW SHAPE TO THE OBJECT
-        rigidbody->attachShape(*underlying_obj.m_shape);
+        // CHECK WHETHER NEW SHAPE IS NONE
+        if (underlying_Obj.shape_type != shape::none) {
 
-        physx_system::setupFiltering(underlying_obj.m_shape);
+            // ATTACH THE NEW SHAPE TO THE OBJECT
+            rigidbody->attachShape(*underlying_Obj.m_shape);
+
+            physx_system::setupFiltering(underlying_Obj.m_shape);
+        }
     }
 
     void PhysicsWorld::submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand) {
