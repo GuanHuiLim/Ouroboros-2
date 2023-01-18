@@ -76,6 +76,8 @@ namespace oo
         
         void UpdateDuplicatedObjects();
         void UpdateGlobalBounds();
+        void SubmitUpdatesToPhysicsWorld();
+
         void UpdateCallbacks();
         void PostUpdate();
 

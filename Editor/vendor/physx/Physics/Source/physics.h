@@ -30,7 +30,7 @@ namespace phy
     struct PhysicsObject;
     struct RaycastHit;
 
-    enum class rigid { none, rstatic, rdynamic };
+    enum class rigid { /*none, */ rstatic, rdynamic };
     enum class shape { none, box, sphere, capsule, plane };
     enum class force { force, acceleration, impulse, velocityChanged };
     enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit };
@@ -166,7 +166,7 @@ namespace phy
         PxPlaneGeometry plane;
         PxCapsuleGeometry capsule;
         
-        rigid rigid_type = rigid::none;
+        rigid rigid_type = rigid::rstatic;
 
         LockingAxis lockPositionAxis{};
         LockingAxis lockRotationAxis{};
@@ -212,7 +212,7 @@ namespace phy
 
         // ensure at least static or dynamic is init
         RigidBody rb{};
-        rigid rigid_type = rigid::none;
+        rigid rigid_type = rigid::rstatic;
 
         // lock and unlock pos/rot axis
         LockingAxis lockPositionAxis{};

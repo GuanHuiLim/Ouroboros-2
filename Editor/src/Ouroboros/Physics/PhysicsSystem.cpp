@@ -144,48 +144,108 @@ namespace oo
         // Update global bounds of all objects
         UpdateGlobalBounds();
         
+        // Submit update to physics world to reflect changes.[properties only!]
+        SubmitUpdatesToPhysicsWorld();
+
+        // Finally we retrieve the newly updated information from physics world 
+        // and update our affected data.
+        {
+            auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
+
+            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+            m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+                {
+                    rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
+                });
+        }
+
         TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::UpdateDynamics(Timestep deltaTime)
     {
-        //TODO: Should remove eventually (perhaps?)
-        EditorUpdate(deltaTime);
+        // Update Duplicated Objects
+        UpdateDuplicatedObjects();
+
+        // Update global bounds of all objects
+        UpdateGlobalBounds();
+
+        // Submit update to physics world to reflect changes.[properties only!]
+        SubmitUpdatesToPhysicsWorld();
         
-        std::vector<phy::PhysicsObject> needsUpdating;
-        static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
-            {
-                if (rb.HasChanged)
-                    needsUpdating.emplace_back(rb.desired_object);
-            });
+        // additionally we also submit script commands!
+        {
+            std::vector<phy::PhysicsCommand> all_commands;
+            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+            m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+                {
+                    std::move(rb.external_commands.begin(), rb.external_commands.end(), all_commands.end());
+                });
+        }
 
-        // submit to update
-        m_physicsWorld.submitUpdatedObjects(needsUpdating);
-
+        // than we tell physics engine to update!
         {
             TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
-            // update the physics world using fixed dt.
-            m_physicsWorld.updateWorld(static_cast<float>(FixedDeltaTime));
+                // update the physics world using fixed dt.
+                m_physicsWorld.updateWorld(static_cast<float>(FixedDeltaTime));
             TRACY_PROFILE_SCOPE_END();
         }
 
-        // TODO
-        // retrieve the latest data and update existing pool
-        auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
-        for (auto& physicsObj : updatedPhysicsObjects)
+        // Finally we retrieve the newly updated information from physics world 
+        // and update our affected data.
         {
-            physicsObj.id;
+            auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
+
+            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+            m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+                {
+                    rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
+
+                    // IMPORTANT NOTE!
+                    // position retrieve is presumably global position in physics world.
+                    // but we must remember to consider the scenegraph hierarchy 
+                    // when calculating its final transform.
+                    // therefore we find the delta change and apply it to its local transform.
+                    // we only update dynamic colliders
+                    if (rb.IsStatic() || rb.IsTrigger())
+                        return;
+
+                    //// probably better to just constantly set this 3 instead of checking
+                    //rb.object.lockPositionX(rb.LockXAxisPosition);
+                    //rb.object.lockPositionY(rb.LockYAxisPosition);
+                    //rb.object.lockPositionZ(rb.LockZAxisPosition);
+
+                    //rb.object.lockRotationX(rb.LockXAxisRotation);
+                    //rb.object.lockRotationY(rb.LockYAxisRotation);
+                    //rb.object.lockRotationZ(rb.LockZAxisRotation);
+
+                    auto pos = rb.GetPositionInPhysicsWorld();
+                    auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
+                    tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
+
+                    auto orientation = rb.GetOrientationInPhysicsWorld();
+                    auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
+
+                    //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
+                    //LOG_TRACE("global orientation {0},{1},{2},{3}", tf.GetGlobalRotationQuat().value.x, tf.GetGlobalRotationQuat().value.y, tf.GetGlobalRotationQuat().value.z, tf.GetGlobalRotationQuat().value.w);
+                    //LOG_TRACE("delta orientation {0},{1},{2},{3}", delta_orientation.x, delta_orientation.y, delta_orientation.z, delta_orientation.w);
+                    //LOG_TRACE("local orientation {0},{1},{2},{3}", tf.GetRotationQuat().value.x, tf.GetRotationQuat().value.y, tf.GetRotationQuat().value.z, tf.GetRotationQuat().value.w);
+
+                    tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
+                    //tf.SetOrientation(orientation);
+                });
         }
+        
+        // Finally we update our own transform
 
-
+        /*
         // Transform System updates via the scenegraph because the order matters
         //auto const& graph = m_scene->GetGraph();
         //scenegraph::shared_pointer root_node = graph.get_root();
         //std::stack<scenenode::shared_pointer> s;
         //scenenode::shared_pointer curr = root_node;
 
-        ///* Multithread Method of updating */
+        //Multithread Method of updating
 
         //// Step 1. Extra Pre-Processing Overhead
         //{
@@ -263,48 +323,22 @@ namespace oo
 
         //    jobsystem::wait(per_group_update);
         //}
+        */
 
-        ///* Single threaded method */
-        static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
-        // set position and orientation of our scene's dynamic rigidbodies with updated physics results
-        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
-        {
-            // IMPORTANT NOTE!
-            // position retrieve is presumably global position in physics world.
-            // but we must remember to consider the scenegraph hierarchy 
-            // when calculating its final transform.
-            // therefore we find the delta change and apply it to its local transform.
-            // we only update dynamic colliders
-            if (rb.IsStatic() || rb.IsTrigger())
-                return;
+        //Single threaded method
+        /*
+            static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
+        
+            // set position and orientation of our scene's dynamic rigidbodies with updated physics results
+            m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
+            {
+            
 
-            //// probably better to just constantly set this 3 instead of checking
-            //rb.object.lockPositionX(rb.LockXAxisPosition);
-            //rb.object.lockPositionY(rb.LockYAxisPosition);
-            //rb.object.lockPositionZ(rb.LockZAxisPosition);
+            });
+        */
 
-            //rb.object.lockRotationX(rb.LockXAxisRotation);
-            //rb.object.lockRotationY(rb.LockYAxisRotation);
-            //rb.object.lockRotationZ(rb.LockZAxisRotation);
-
-            auto pos = rb.GetPositionInPhysicsWorld();
-            auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
-            tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
-
-            auto orientation = rb.GetOrientationInPhysicsWorld();
-            auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
-
-            //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
-            //LOG_TRACE("global orientation {0},{1},{2},{3}", tf.GetGlobalRotationQuat().value.x, tf.GetGlobalRotationQuat().value.y, tf.GetGlobalRotationQuat().value.z, tf.GetGlobalRotationQuat().value.w);
-            //LOG_TRACE("delta orientation {0},{1},{2},{3}", delta_orientation.x, delta_orientation.y, delta_orientation.z, delta_orientation.w);
-            //LOG_TRACE("local orientation {0},{1},{2},{3}", tf.GetRotationQuat().value.x, tf.GetRotationQuat().value.y, tf.GetRotationQuat().value.z, tf.GetRotationQuat().value.w);
-
-            tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
-            //tf.SetOrientation(orientation);
-
-        });
-
+        // lastly update transform system for transforms changes to be reflected
         m_world->Get_System<TransformSystem>()->UpdateEntireTree();
     }
 
@@ -479,6 +513,20 @@ namespace oo
         //jobsystem::wait(update_global_bounds_job);
 
         TRACY_PROFILE_SCOPE_END();
+    }
+
+    void PhysicsSystem::SubmitUpdatesToPhysicsWorld()
+    {
+        std::vector<phy::PhysicsObject> needsUpdating;
+        static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+            {
+                //if (rb.HasChanged)
+                needsUpdating.emplace_back(rb.desired_object);
+            });
+
+        // submit to update
+        m_physicsWorld.submitUpdatedObjects(needsUpdating);
     }
 
     void PhysicsSystem::UpdateCallbacks()

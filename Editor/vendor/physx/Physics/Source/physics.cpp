@@ -1,5 +1,7 @@
 #include "physics.h"
 
+#include <assert.h>
+
 using namespace physx;
 
 static constexpr bool use_debugger = false;
@@ -214,6 +216,7 @@ namespace phy
         scene->setGravity(gra);
     }
 
+    // TODO : Take in position and orientation straight away for instant initialization.
     PhysicsObject PhysicsWorld::createInstance() 
     {
         PhysxObject obj;
@@ -221,10 +224,22 @@ namespace phy
         obj.m_material = mPhysics->createMaterial(0.f,0.f,0.f);
         
         // This is important!
+        // default initialize here
         phy_uuid::UUID generated_uuid = *obj.id;
+        if (obj.rigid_type == rigid::rstatic)
+        {
+            // create new rigidbody
+            obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{});
+        }
+        else // obj.rigid_type == rigid::rdynamic
+        {
+            obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{});
+        }
+
         // store the object
         m_physx_objects.emplace_back(std::move(obj));
         m_objects_lookup.insert({ generated_uuid, m_physx_objects.size() - 1 }); // add back the m_objects last element
+
 
         return PhysicsObject{ generated_uuid }; // a copy
     }
@@ -405,48 +420,57 @@ namespace phy
         PxRigidActor* rigidbody = nullptr;
 
         // CHECK IF CHANGING IN RIGID TYPE
-        if (underlying_Obj.rigid_type != updatedPhysicsObj.rigid_type) {
-
-            if (underlying_Obj.rigid_type == rigid::rstatic) {
-
+        if (underlying_Obj.rigid_type != updatedPhysicsObj.rigid_type) 
+        {
+            // what is our existing shape? need to handle removing them first.
+            if (underlying_Obj.rigid_type == rigid::rstatic) 
+            {
                 // clear the current data
                 scene->removeActor(*underlying_Obj.rb.rigidStatic);
                 underlying_Obj.rb.rigidStatic = nullptr;
-
-                // create new rigidbody
-                underlying_Obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
-                rigidbody = underlying_Obj.rb.rigidDynamic;
             }
-            else if (underlying_Obj.rigid_type == rigid::rdynamic) {
-
+            else // underlying_Obj.rigid_type == rigid::rdynamic
+            {
                 scene->removeActor(*underlying_Obj.rb.rigidDynamic);
                 underlying_Obj.rb.rigidDynamic = nullptr;
+            }
 
+            // Update our rigid type to desired type
+            underlying_Obj.rigid_type = updatedPhysicsObj.rigid_type;
+
+            // we check with the newly assigned rigid type to determine
+            if (underlying_Obj.rigid_type == rigid::rstatic)
+            {
+                // create new rigidbody
                 underlying_Obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
                 rigidbody = underlying_Obj.rb.rigidStatic;
             }
+            else // underlying_Obj.rigid_type == rigid::rdynamic
+            {
+                underlying_Obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
+                rigidbody = underlying_Obj.rb.rigidDynamic;
+            }
 
-            // SET NEW RIDID TYPE
-            underlying_Obj.rigid_type = updatedPhysicsObj.rigid_type;
-
+            assert(rigidbody, "This should NOT be nullptr at all at this point!");
+            
             rigidbody->userData = underlying_Obj.id.get();
             scene->addActor(*rigidbody);
 
             // REATTACH SHAPE INTO NEW RIGIDBODY
-            if (underlying_Obj.m_shape && underlying_Obj.shape_type != shape::none) {
-
+            if (underlying_Obj.m_shape && underlying_Obj.shape_type != shape::none) 
+            {
                 rigidbody->attachShape(*underlying_Obj.m_shape);
 
                 physx_system::setupFiltering(underlying_Obj.m_shape);
             }
         }
-        // NO CHANGING OF RIGID TYPE (ONLY UPDATING SAME RIGIDBODY DATA)
-        else {
-
+        
+        // next we check for positional changes.
+        {
             // set new position and orientation
             if (underlying_Obj.rigid_type == rigid::rstatic)
                 underlying_Obj.rb.rigidStatic->setGlobalPose(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
-            
+
             else if (underlying_Obj.rigid_type == rigid::rdynamic)
                 underlying_Obj.rb.rigidDynamic->setGlobalPose(PxTransform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation });
         }
@@ -514,11 +538,11 @@ namespace phy
         else if (underlying_Obj.rigid_type == rigid::rdynamic)
             rigidbody = underlying_Obj.rb.rigidDynamic;
 
-        // CHECK IF CHANGING IN SHAPE & UNDERLYING SHAPE NOT NONE
-        if (underlying_Obj.shape_type != updated_Obj.shape_type && underlying_Obj.shape_type != shape::none) {
-
-            // remove existing shape data
-            if (underlying_Obj.m_shape)
+        // CHECK IF WE NEED TO CHANGE SHAPE 
+        if (underlying_Obj.shape_type != updated_Obj.shape_type) 
+        {
+            // if we have an existing shape, we must remove it
+            if (underlying_Obj.shape_type != shape::none && underlying_Obj.m_shape)
                 rigidbody->detachShape(*underlying_Obj.m_shape);
 
             // SHAPE PROPERTIES
@@ -544,10 +568,15 @@ namespace phy
             default:
                 return; // NOTE we return here because code below requires a shape!
             }
-        }
-        // CHECK IF SHAPE NO CHANGE AND IS NOT NONE (ONLY UPDATING SAME GEOMETRY DATA)
-        else if (underlying_Obj.shape_type == updated_Obj.shape_type && underlying_Obj.shape_type != shape::none) {
 
+            // ATTACH THE NEW SHAPE TO THE OBJECT
+            rigidbody->attachShape(*underlying_Obj.m_shape);
+
+            physx_system::setupFiltering(underlying_Obj.m_shape);
+        }
+        // Otherwise we just update our existing values.
+        else 
+        {
             // UPDATING THE GEOMETRY DIMENSIONS (SHAPE NOW CONFIRM CORRECT - UPDATED)
             switch (underlying_Obj.shape_type)
             {
@@ -572,11 +601,6 @@ namespace phy
         }
 
         //underlying_obj.m_shape->setContactOffset(1);
-
-        // ATTACH THE NEW SHAPE TO THE OBJECT
-        rigidbody->attachShape(*underlying_Obj.m_shape);
-
-        physx_system::setupFiltering(underlying_Obj.m_shape);
     }
 
     void PhysicsWorld::submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand) {
