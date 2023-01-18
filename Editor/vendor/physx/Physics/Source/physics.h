@@ -281,9 +281,9 @@ namespace phy
         template<typename Type>
         void retrievePosOri(PhysicsObject& physics_Obj, Type data) const;
 
-        void setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj);
+        void setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate);
         
-        void setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj);
+        void setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, bool duplicate);
 
         void setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
         
