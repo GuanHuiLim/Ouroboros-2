@@ -487,8 +487,6 @@ namespace phy
             underlying_Obj.rb.rigidDynamic->setMass(updatedPhysicsObj.mass);
             underlying_Obj.rb.rigidDynamic->setLinearDamping(updatedPhysicsObj.linearDamping);
             underlying_Obj.rb.rigidDynamic->setAngularDamping(updatedPhysicsObj.angularDamping);
-            underlying_Obj.rb.rigidDynamic->setLinearVelocity(updatedPhysicsObj.linearVel);
-            underlying_Obj.rb.rigidDynamic->setAngularVelocity(updatedPhysicsObj.angularVel);
 
             // AXIS PROPERTIES
             underlying_Obj.lockPositionAxis = updatedPhysicsObj.lockPositionAxis;
@@ -615,6 +613,12 @@ namespace phy
 
             if (underlying_obj.rigid_type != rigid::rdynamic)
                 continue;
+
+            if(updatedCommandObj.AngularVel)
+                underlying_obj.rb.rigidDynamic->setAngularVelocity(updatedCommandObj.angularVel);
+
+            if (updatedCommandObj.LinearVel)
+                underlying_obj.rb.rigidDynamic->setLinearVelocity(updatedCommandObj.linearVel);
 
             setForce(underlying_obj, updatedCommandObj);
             

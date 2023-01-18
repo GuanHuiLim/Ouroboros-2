@@ -184,6 +184,10 @@ namespace phy
         PxVec3 Force = PxVec3{};
         phy::force Type = phy::force::force;
 
+        PxVec3 linearVel, angularVel;
+
+        bool LinearVel = false;
+        bool AngularVel = false;
         bool AddForce = false;
         bool AddTorque = false;
     };
