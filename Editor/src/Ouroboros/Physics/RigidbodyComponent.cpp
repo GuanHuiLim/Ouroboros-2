@@ -250,18 +250,26 @@ namespace oo
         HasChanged = true;
     }
 
-    void RigidbodyComponent::SetPosOrientation(vec3 pos, quat quat)
+    void RigidbodyComponent::SetPosition(vec3 position)
     {
-        /*glm::vec3 cur_pos = { underlying_object.position.x, underlying_object.position.y, underlying_object.position.z };
-        glm::quat cur_quat = { underlying_object.orientation.x, underlying_object.orientation.y, underlying_object.orientation.z, underlying_object.orientation.w };
-        if (glm::dot(cur_pos, pos) > glm::epsilon<float>() * 5.0f || glm::dot(cur_quat, quat) > glm::epsilon<float>() * 5.0f)
-        {*/
-            desired_object.position = { pos.x, pos.y, pos.z };
-            desired_object.orientation = { quat.x, quat.y, quat.z, quat.w };
+        glm::vec3 pos_diff = position - glm::vec3{ underlying_object.position.x, underlying_object.position.y, underlying_object.position.z };
+        if (glm::dot(pos_diff, pos_diff) > glm::epsilon<float>())
+        {
+            desired_object.position = { position.x, position.y, position.z };
             HasChanged = true;
-        //}
+        }
     }
     
+    void RigidbodyComponent::SetOrientation(quat orientation)
+    {
+        glm::quat quat_diff = orientation - glm::quat{ underlying_object.orientation.x, underlying_object.orientation.y, underlying_object.orientation.z, underlying_object.orientation.w };
+        if (glm::dot(quat_diff, quat_diff) > glm::epsilon<float>())
+        {
+            desired_object.orientation = { orientation.x, orientation.y, orientation.z, orientation.w };
+            HasChanged = true;
+        }
+    }
+
     void oo::RigidbodyComponent::SetGravity(bool enable)
     {
         desired_object.gravity_enabled = enable;
