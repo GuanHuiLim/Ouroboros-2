@@ -528,12 +528,10 @@ namespace phy
 
         if (underlying_Obj.shape_type != shape::none) {
 
-            if(underlying_Obj.is_collider_enabled) 
-                underlying_Obj.m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, underlying_Obj.is_collider_enabled);
-
             if (underlying_Obj.is_trigger)
                 underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
-            else
+
+            if (!underlying_Obj.is_trigger && underlying_Obj.is_collider_enabled)
                 underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
         }
 
