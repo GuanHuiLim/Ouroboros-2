@@ -1,6 +1,7 @@
 #include "physics.h"
 
 #include <assert.h>
+#include <execution>
 
 using namespace physx;
 
@@ -229,11 +230,11 @@ namespace phy
         if (obj.rigid_type == rigid::rstatic)
         {
             // create new rigidbody
-            obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{});
+            obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{0,0,0});
         }
         else // obj.rigid_type == rigid::rdynamic
         {
-            obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{});
+            obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ 0,0,0 });
         }
 
         // store the object
@@ -398,16 +399,27 @@ namespace phy
 
     void PhysicsWorld::submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects)
     {
-        for (auto&& updatedObj : updatedObjects)
+        std::for_each(std::execution::unseq, updatedObjects.begin(), updatedObjects.end(), [&](auto&& updatedObj)
         {
             // CHECK WHETHER OBJECT EXISTED
             if (!m_objects_lookup.contains(updatedObj.id))
-                continue;
-            
-            PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.id)];
+                return;
+
+            PhysxObject& underlying_obj = m_physx_objects.at(m_objects_lookup.at(updatedObj.id));
 
             setAllData(updatedObj, underlying_obj);
-        }
+        });
+
+        //for (auto&& updatedObj : updatedObjects)
+        //{
+        //    // CHECK WHETHER OBJECT EXISTED
+        //    if (!m_objects_lookup.contains(updatedObj.id))
+        //        continue;
+        //    
+        //    PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.id)];
+
+        //    setAllData(updatedObj, underlying_obj);
+        //}
     }
 
     void PhysicsWorld::setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj) {

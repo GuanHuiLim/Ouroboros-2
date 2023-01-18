@@ -147,6 +147,7 @@ namespace oo
         // Submit update to physics world to reflect changes.[properties only!]
         SubmitUpdatesToPhysicsWorld();
 
+        TRACY_PROFILE_SCOPE_NC(physics_update_physics_properties, tracy::Color::VioletRed1);
         // Finally we retrieve the newly updated information from physics world 
         // and update our affected data.
         {
@@ -158,6 +159,7 @@ namespace oo
                     rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
                 });
         }
+        TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -442,8 +444,13 @@ namespace oo
                         bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
 
                         // set box size
-                        rb.desired_object.shape_type = phy::shape::box;
-                        rb.desired_object.box = { bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z };
+                        /*if (rb.underlying_object.shape_type != phy::shape::box ||
+                            glm::dot(bc.GlobalHalfExtents, {rb.underlying_object.box.halfExtents.x, rb.underlying_object.box.halfExtents.y, rb.underlying_object.box.halfExtents.z }) > glm::epsilon<float>())
+                        {*/
+                            rb.desired_object.shape_type = phy::shape::box;
+                            rb.desired_object.box = { bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z };
+                            rb.HasChanged = true;
+                        //}
                     //});
             });
 
@@ -464,8 +471,14 @@ namespace oo
                         cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
 
                         // set capsule size
-                        rb.desired_object.shape_type = phy::shape::capsule;
-                        rb.desired_object.capsule = { cc.GlobalRadius, cc.GlobalHalfHeight };
+                        /*if (rb.underlying_object.shape_type != phy::shape::capsule ||
+                            glm::dot(rb.underlying_object.capsule.radius, cc.GlobalRadius) > glm::epsilon<float>() ||
+                            glm::dot(rb.underlying_object.capsule.halfHeight, cc.GlobalHalfHeight) > glm::epsilon<float>())
+                        {*/
+                            rb.desired_object.shape_type = phy::shape::capsule;
+                            rb.desired_object.capsule = { cc.GlobalRadius, cc.GlobalHalfHeight };
+                            rb.HasChanged = true;
+                        /*}*/
                     //});
             });
 
@@ -486,8 +499,13 @@ namespace oo
                         sc.GlobalRadius= sc.Radius * std::max(std::max(scale.x, scale.y), scale.z);
 
                         // set capsule size
-                        rb.desired_object.shape_type = phy::shape::sphere;
-                        rb.desired_object.sphere = { sc.GlobalRadius };
+                       /* if (rb.underlying_object.shape_type != phy::shape::sphere ||
+                            glm::dot(rb.underlying_object.sphere.radius, sc.GlobalRadius) > glm::epsilon<float>())
+                        {*/
+                            rb.desired_object.shape_type = phy::shape::sphere;
+                            rb.desired_object.sphere = { sc.GlobalRadius };
+                            rb.HasChanged = true;
+                        //}
                     //});
             });
 
@@ -517,16 +535,27 @@ namespace oo
 
     void PhysicsSystem::SubmitUpdatesToPhysicsWorld()
     {
+        TRACY_PROFILE_SCOPE_NC(physics_submit_updates_to_physX_world, tracy::Color::VioletRed1);
+
+        TRACY_PROFILE_SCOPE_NC(compiling_objects_that_requires_update, tracy::Color::VioletRed2);
         std::vector<phy::PhysicsObject> needsUpdating;
+        needsUpdating.reserve(256);
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
-                //if (rb.HasChanged)
-                needsUpdating.emplace_back(rb.desired_object);
+                if (rb.HasChanged)
+                    needsUpdating.emplace_back(rb.desired_object);
+                
+                rb.HasChanged = false;
             });
+        TRACY_PROFILE_SCOPE_END();
 
+        TRACY_PROFILE_SCOPE_NC(physX_internal_updating, tracy::Color::VioletRed2);
         // submit to update
-        m_physicsWorld.submitUpdatedObjects(needsUpdating);
+        m_physicsWorld.submitUpdatedObjects(std::move(needsUpdating));
+        TRACY_PROFILE_SCOPE_END();
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::UpdateCallbacks()

@@ -95,7 +95,8 @@ namespace oo
 
     void oo::RigidbodyComponent::SetStatic(bool result)
     {
-        result ? desired_object.rigid_type = phy::rigid::rstatic : desired_object.rigid_type = phy::rigid::rstatic;
+        result ? desired_object.rigid_type = phy::rigid::rstatic : desired_object.rigid_type = phy::rigid::rdynamic;
+        HasChanged = true;
     }
 
     float oo::RigidbodyComponent::GetMass() const
@@ -163,6 +164,7 @@ namespace oo
     void oo::RigidbodyComponent::EnableCollider()
     {
         desired_object.is_collider_enabled = true;
+        HasChanged = true;
     }
 
     void oo::RigidbodyComponent::DisableCollider()
@@ -173,6 +175,7 @@ namespace oo
     void oo::RigidbodyComponent::LockPositionX(bool enable)
     {
         desired_object.lockPositionAxis.x_axis = enable;
+        HasChanged = true;
     }
 
     bool oo::RigidbodyComponent::IsPositionLockedX()
@@ -183,6 +186,7 @@ namespace oo
     void oo::RigidbodyComponent::LockPositionY(bool enable)
     {
         desired_object.lockPositionAxis.y_axis = enable;
+        HasChanged = true;
     }
 
     bool oo::RigidbodyComponent::IsPositionLockedY()
@@ -193,6 +197,7 @@ namespace oo
     void oo::RigidbodyComponent::LockPositionZ(bool enable)
     {
         desired_object.lockPositionAxis.z_axis = enable;
+        HasChanged = true;
     }
 
     bool oo::RigidbodyComponent::IsPositionLockedZ()
@@ -203,6 +208,7 @@ namespace oo
     void oo::RigidbodyComponent::LockRotationX(bool enable)
     {
         desired_object.lockRotationAxis.x_axis = enable;
+        HasChanged = true;
     }
 
     bool oo::RigidbodyComponent::IsRotationLockedX()
@@ -213,6 +219,7 @@ namespace oo
     void oo::RigidbodyComponent::LockRotationZ(bool enable)
     {
         desired_object.lockRotationAxis.z_axis = enable;
+        HasChanged = true;
     }
 
     bool oo::RigidbodyComponent::IsRotationLockedZ()
@@ -223,6 +230,7 @@ namespace oo
     void oo::RigidbodyComponent::LockRotationY(bool enable)
     {
         desired_object.lockRotationAxis.y_axis = enable;
+        HasChanged = true;
     }
 
     bool oo::RigidbodyComponent::IsRotationLockedY()
@@ -233,27 +241,37 @@ namespace oo
     void oo::RigidbodyComponent::SetTrigger(bool enable)
     {
         desired_object.is_trigger = enable;
+        HasChanged = true;
     }
 
     void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 
     { 
         desired_object.material = material;
+        HasChanged = true;
     }
 
-    void RigidbodyComponent::SetPosOrientation(vec3 pos, quat quat) 
-    { 
-        desired_object.position = { pos.x, pos.y, pos.z };
-        desired_object.orientation = { quat.x, quat.y, quat.z, quat.w };
+    void RigidbodyComponent::SetPosOrientation(vec3 pos, quat quat)
+    {
+        /*glm::vec3 cur_pos = { underlying_object.position.x, underlying_object.position.y, underlying_object.position.z };
+        glm::quat cur_quat = { underlying_object.orientation.x, underlying_object.orientation.y, underlying_object.orientation.z, underlying_object.orientation.w };
+        if (glm::dot(cur_pos, pos) > glm::epsilon<float>() * 5.0f || glm::dot(cur_quat, quat) > glm::epsilon<float>() * 5.0f)
+        {*/
+            desired_object.position = { pos.x, pos.y, pos.z };
+            desired_object.orientation = { quat.x, quat.y, quat.z, quat.w };
+            HasChanged = true;
+        //}
     }
     
     void oo::RigidbodyComponent::SetGravity(bool enable)
     {
         desired_object.gravity_enabled = enable;
+        HasChanged = true;
     }
 
     void oo::RigidbodyComponent::SetKinematic(bool kine) 
     { 
         desired_object.is_kinematic = kine; 
+        HasChanged = true;
     }
 
     // prob functions that dont really need
@@ -261,16 +279,19 @@ namespace oo
     void RigidbodyComponent::SetMass(float mass)
     {
         desired_object.mass = static_cast<PxReal>(mass);
+        HasChanged = true;
     }
 
     void RigidbodyComponent::SetAngularDamping(float angularDamping)
     {
         desired_object.angularDamping = static_cast<PxReal>(angularDamping);
+        HasChanged = true;
     }
 
     void RigidbodyComponent::SetAngularVelocity(vec3 angularVelocity)
     {
         desired_object.angularVel = PxVec3{ angularVelocity.x, angularVelocity.y, angularVelocity.z };
+        HasChanged = true;
     }
 
     ColliderShape oo::RigidbodyComponent::GetUnderlyingShape() const
@@ -297,11 +318,13 @@ namespace oo
     void RigidbodyComponent::SetLinearDamping(float linearDamping)
     {
         desired_object.linearDamping = static_cast<PxReal>(linearDamping);
+        HasChanged = true;
     }
 
     void RigidbodyComponent::SetLinearVelocity(vec3 linearVelocity)
     {
         desired_object.linearVel = PxVec3{ linearVelocity.x, linearVelocity.y, linearVelocity.z };
+        HasChanged = true;
     }
 
     void oo::RigidbodyComponent::AddForce(vec3 force, ForceMode type)
