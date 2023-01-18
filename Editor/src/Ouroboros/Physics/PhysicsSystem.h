@@ -91,6 +91,9 @@ namespace oo
 
         //time accumulator
         double m_accumulator = 0.0;
+        
+        // stores all the physics objects that needs to be updated.
+        std::vector<phy::PhysicsObject> needsUpdating;
 
         void OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb);
         void OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb);

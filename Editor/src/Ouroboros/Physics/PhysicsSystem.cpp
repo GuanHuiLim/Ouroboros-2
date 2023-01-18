@@ -409,7 +409,8 @@ namespace oo
                                 TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                                 auto pos = tf.GetGlobalPosition();
                                 auto quat = tf.GetGlobalRotationQuat();
-                                rb.SetPosOrientation(pos + rb.Offset, quat);
+                                rb.SetPosition(pos + rb.Offset);
+                                rb.SetOrientation(quat);
                                 TRACY_PROFILE_SCOPE_END();
                             }
 
@@ -443,14 +444,15 @@ namespace oo
                         // calculate global bounds and half extents
                         bc.GlobalHalfExtents = { bc.HalfExtents * bc.Size * scale };
 
+                        auto diff = bc.GlobalHalfExtents - glm::vec3{rb.underlying_object.box.halfExtents.x, rb.underlying_object.box.halfExtents.y, rb.underlying_object.box.halfExtents.z };
                         // set box size
-                        /*if (rb.underlying_object.shape_type != phy::shape::box ||
-                            glm::dot(bc.GlobalHalfExtents, {rb.underlying_object.box.halfExtents.x, rb.underlying_object.box.halfExtents.y, rb.underlying_object.box.halfExtents.z }) > glm::epsilon<float>())
-                        {*/
+                        if (rb.underlying_object.shape_type != phy::shape::box ||
+                            glm::dot(diff, diff) > glm::epsilon<float>())
+                        {
                             rb.desired_object.shape_type = phy::shape::box;
                             rb.desired_object.box = { bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z };
                             rb.HasChanged = true;
-                        //}
+                        }
                     //});
             });
 
@@ -470,15 +472,17 @@ namespace oo
                         cc.GlobalRadius = cc.Radius * scale.y;          // for now lets just use y-axis
                         cc.GlobalHalfHeight = cc.HalfHeight * scale.y;  // for now lets just use y axis
 
+                        auto rad_diff = rb.underlying_object.capsule.radius - cc.GlobalRadius;
+                        auto height_diff = rb.underlying_object.capsule.halfHeight - cc.GlobalHalfHeight;
                         // set capsule size
-                        /*if (rb.underlying_object.shape_type != phy::shape::capsule ||
-                            glm::dot(rb.underlying_object.capsule.radius, cc.GlobalRadius) > glm::epsilon<float>() ||
-                            glm::dot(rb.underlying_object.capsule.halfHeight, cc.GlobalHalfHeight) > glm::epsilon<float>())
-                        {*/
+                        if (rb.underlying_object.shape_type != phy::shape::capsule ||
+                            glm::dot(rad_diff, rad_diff) > glm::epsilon<float>() ||
+                            glm::dot(height_diff, height_diff) > glm::epsilon<float>())
+                        {
                             rb.desired_object.shape_type = phy::shape::capsule;
                             rb.desired_object.capsule = { cc.GlobalRadius, cc.GlobalHalfHeight };
                             rb.HasChanged = true;
-                        /*}*/
+                        }
                     //});
             });
 
@@ -498,14 +502,15 @@ namespace oo
                         //sc.GlobalBounds.center = sc.Bounds.center + pos;
                         sc.GlobalRadius= sc.Radius * std::max(std::max(scale.x, scale.y), scale.z);
 
+                        auto rad_diff = rb.underlying_object.sphere.radius - sc.GlobalRadius;
                         // set capsule size
-                       /* if (rb.underlying_object.shape_type != phy::shape::sphere ||
-                            glm::dot(rb.underlying_object.sphere.radius, sc.GlobalRadius) > glm::epsilon<float>())
-                        {*/
+                        if (rb.underlying_object.shape_type != phy::shape::sphere ||
+                            glm::dot(rad_diff, rad_diff) > glm::epsilon<float>())
+                        {
                             rb.desired_object.shape_type = phy::shape::sphere;
                             rb.desired_object.sphere = { sc.GlobalRadius };
                             rb.HasChanged = true;
-                        //}
+                        }
                     //});
             });
 
@@ -538,8 +543,8 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(physics_submit_updates_to_physX_world, tracy::Color::VioletRed1);
 
         TRACY_PROFILE_SCOPE_NC(compiling_objects_that_requires_update, tracy::Color::VioletRed2);
-        std::vector<phy::PhysicsObject> needsUpdating;
-        needsUpdating.reserve(256);
+        
+        needsUpdating.reserve(1024);
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {

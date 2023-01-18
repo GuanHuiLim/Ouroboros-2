@@ -117,7 +117,8 @@ namespace oo
 
         vec3 GetPositionInPhysicsWorld() const;
         quat GetOrientationInPhysicsWorld() const;
-        void SetPosOrientation(vec3 pos, quat quat);
+        void SetPosition(vec3 position);
+        void SetOrientation(quat orientation);
 
         float GetMass() const;
         void SetMass(float mass);
