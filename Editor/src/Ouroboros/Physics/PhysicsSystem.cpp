@@ -404,7 +404,7 @@ namespace oo
                     //{
                         TRACY_PROFILE_SCOPE_NC(individual_rigidbody_update, tracy::Color::PeachPuff3);
                         // only update for transformthat have changed
-                            //if (tf.HasChangedThisFrame)
+                            if (tf.HasChangedThisFrame)
                             {
                                 TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                                 auto pos = tf.GetGlobalPosition();
@@ -451,7 +451,7 @@ namespace oo
                         {
                             rb.desired_object.shape_type = phy::shape::box;
                             rb.desired_object.box = { bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z };
-                            rb.HasChanged = true;
+                            rb.IsDirty = true;
                         }
                     //});
             });
@@ -481,7 +481,7 @@ namespace oo
                         {
                             rb.desired_object.shape_type = phy::shape::capsule;
                             rb.desired_object.capsule = { cc.GlobalRadius, cc.GlobalHalfHeight };
-                            rb.HasChanged = true;
+                            rb.IsDirty = true;
                         }
                     //});
             });
@@ -509,7 +509,7 @@ namespace oo
                         {
                             rb.desired_object.shape_type = phy::shape::sphere;
                             rb.desired_object.sphere = { sc.GlobalRadius };
-                            rb.HasChanged = true;
+                            rb.IsDirty = true;
                         }
                     //});
             });
@@ -548,10 +548,10 @@ namespace oo
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
-                if (rb.HasChanged)
+                if (rb.IsDirty)
                     needsUpdating.emplace_back(rb.desired_object);
                 
-                rb.HasChanged = false;
+                rb.IsDirty = false;
             });
         TRACY_PROFILE_SCOPE_END();
 

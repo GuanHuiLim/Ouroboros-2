@@ -96,7 +96,7 @@ namespace oo
     void oo::RigidbodyComponent::SetStatic(bool result)
     {
         result ? desired_object.rigid_type = phy::rigid::rstatic : desired_object.rigid_type = phy::rigid::rdynamic;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     float oo::RigidbodyComponent::GetMass() const
@@ -164,7 +164,7 @@ namespace oo
     void oo::RigidbodyComponent::EnableCollider()
     {
         desired_object.is_collider_enabled = true;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void oo::RigidbodyComponent::DisableCollider()
@@ -175,7 +175,7 @@ namespace oo
     void oo::RigidbodyComponent::LockPositionX(bool enable)
     {
         desired_object.lockPositionAxis.x_axis = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     bool oo::RigidbodyComponent::IsPositionLockedX()
@@ -186,7 +186,7 @@ namespace oo
     void oo::RigidbodyComponent::LockPositionY(bool enable)
     {
         desired_object.lockPositionAxis.y_axis = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     bool oo::RigidbodyComponent::IsPositionLockedY()
@@ -197,7 +197,7 @@ namespace oo
     void oo::RigidbodyComponent::LockPositionZ(bool enable)
     {
         desired_object.lockPositionAxis.z_axis = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     bool oo::RigidbodyComponent::IsPositionLockedZ()
@@ -208,7 +208,7 @@ namespace oo
     void oo::RigidbodyComponent::LockRotationX(bool enable)
     {
         desired_object.lockRotationAxis.x_axis = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     bool oo::RigidbodyComponent::IsRotationLockedX()
@@ -219,7 +219,7 @@ namespace oo
     void oo::RigidbodyComponent::LockRotationZ(bool enable)
     {
         desired_object.lockRotationAxis.z_axis = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     bool oo::RigidbodyComponent::IsRotationLockedZ()
@@ -230,7 +230,7 @@ namespace oo
     void oo::RigidbodyComponent::LockRotationY(bool enable)
     {
         desired_object.lockRotationAxis.y_axis = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     bool oo::RigidbodyComponent::IsRotationLockedY()
@@ -241,13 +241,13 @@ namespace oo
     void oo::RigidbodyComponent::SetTrigger(bool enable)
     {
         desired_object.is_trigger = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void RigidbodyComponent::SetMaterial(PhysicsMaterial material) 
     { 
         desired_object.material = material;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void RigidbodyComponent::SetPosition(vec3 position)
@@ -256,7 +256,7 @@ namespace oo
         if (glm::dot(pos_diff, pos_diff) > glm::epsilon<float>())
         {
             desired_object.position = { position.x, position.y, position.z };
-            HasChanged = true;
+            IsDirty = true;
         }
     }
     
@@ -266,20 +266,20 @@ namespace oo
         if (glm::dot(quat_diff, quat_diff) > glm::epsilon<float>())
         {
             desired_object.orientation = { orientation.x, orientation.y, orientation.z, orientation.w };
-            HasChanged = true;
+            IsDirty = true;
         }
     }
 
     void oo::RigidbodyComponent::SetGravity(bool enable)
     {
         desired_object.gravity_enabled = enable;
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void oo::RigidbodyComponent::SetKinematic(bool kine) 
     { 
         desired_object.is_kinematic = kine; 
-        HasChanged = true;
+        IsDirty = true;
     }
 
     // prob functions that dont really need
@@ -287,19 +287,19 @@ namespace oo
     void RigidbodyComponent::SetMass(float mass)
     {
         desired_object.mass = static_cast<PxReal>(mass);
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void RigidbodyComponent::SetAngularDamping(float angularDamping)
     {
         desired_object.angularDamping = static_cast<PxReal>(angularDamping);
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void RigidbodyComponent::SetAngularVelocity(vec3 angularVelocity)
     {
         desired_object.angularVel = PxVec3{ angularVelocity.x, angularVelocity.y, angularVelocity.z };
-        HasChanged = true;
+        IsDirty = true;
     }
 
     ColliderShape oo::RigidbodyComponent::GetUnderlyingShape() const
@@ -326,13 +326,13 @@ namespace oo
     void RigidbodyComponent::SetLinearDamping(float linearDamping)
     {
         desired_object.linearDamping = static_cast<PxReal>(linearDamping);
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void RigidbodyComponent::SetLinearVelocity(vec3 linearVelocity)
     {
         desired_object.linearVel = PxVec3{ linearVelocity.x, linearVelocity.y, linearVelocity.z };
-        HasChanged = true;
+        IsDirty = true;
     }
 
     void oo::RigidbodyComponent::AddForce(vec3 force, ForceMode type)
