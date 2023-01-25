@@ -86,6 +86,7 @@ namespace oo
     {
         bool Reset = false;
         std::vector<vec3> Vertices;
+        std::vector<vec3> WorldSpaceVertices;
         RTTR_ENABLE();
     };
 

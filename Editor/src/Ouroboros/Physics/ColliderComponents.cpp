@@ -50,6 +50,8 @@ namespace oo
 
         registration::class_<MeshColliderComponent>("Mesh Collider")
             .property("Reset", &MeshColliderComponent::Reset)
-            .property_readonly("vertices", &MeshColliderComponent::Vertices);
+            .property_readonly("vertices", &MeshColliderComponent::Vertices)
+            .property_readonly("World Space Vertices", &MeshColliderComponent::WorldSpaceVertices)
+            ;
     }
 }

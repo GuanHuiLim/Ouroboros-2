@@ -460,21 +460,38 @@ namespace oo
 
                     if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
                     {
+
                         auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
+                        mc.Vertices.reserve(vertices.size());
                         for (auto& vertex : vertices)
-                            mc.Vertices.emplace_back(vertex.pos);
+                            mc.Vertices.emplace_back(glm::vec4{ vertex.pos, 1 });
 
                         auto generated_vertices = rb.StoreMesh(mc.Vertices);
                         mc.Vertices.clear();
-                        for (auto& vertex : generated_vertices)
-                            mc.Vertices.emplace_back(vertex.x, vertex.y , vertex.z);
 
+                        mc.Vertices.reserve(generated_vertices.size());
+                        mc.WorldSpaceVertices.reserve(generated_vertices.size());
+
+                        for (auto& new_vertex : generated_vertices)
+                        {
+                            mc.Vertices.emplace_back(new_vertex.x, new_vertex.y , new_vertex.z);
+                            mc.WorldSpaceVertices.emplace_back(new_vertex.x, new_vertex.y, new_vertex.z);
+                        }
 
                         //rb.object.storeMeshVertices(mc.Vertices);
                     }
 
                     mc.Reset = false;
                 }
+                
+                // update the world vertex position based on matrix of current object
+                auto globalMat = tf.GetGlobalMatrix();
+                auto verticesIter = mc.Vertices.begin();
+                std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v) 
+                {
+                    v = globalMat * glm::vec4{ *verticesIter++, 1 };
+                });
+
             });
         TRACY_PROFILE_SCOPE_END();
 
@@ -707,15 +724,15 @@ namespace oo
         static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, MeshColliderComponent>();
         m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, MeshColliderComponent& mc)
             {
-                if (!mc.Vertices.empty())
+                if (!mc.WorldSpaceVertices.empty())
                 {
                     auto pos = rb.GetPositionInPhysicsWorld();
                     auto scale = tf.GetGlobalScale();
                     auto quat = rb.GetOrientationInPhysicsWorld();
 
-                    auto& first = mc.Vertices.back();
-                    auto& next = mc.Vertices.front();
-                    for (auto iter = mc.Vertices.begin() + 1; iter != mc.Vertices.end(); ++iter)
+                    auto& first = mc.WorldSpaceVertices.back();
+                    auto& next = mc.WorldSpaceVertices.front();
+                    for (auto iter = mc.WorldSpaceVertices.begin() + 1; iter != mc.WorldSpaceVertices.end(); ++iter)
                     {
                         DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
                         
