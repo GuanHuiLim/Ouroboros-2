@@ -9,6 +9,7 @@ struct GizmoOperationEvent : public oo::Event
 
 struct ChangeGizmoEvent :public oo::Event
 {
-	ChangeGizmoEvent(int op) :targetOperation{ op } {};
+	ChangeGizmoEvent(int op, int currentSpace) :targetOperation{ op }, space{ currentSpace } {};
 	int targetOperation;
+	int space;
 };
