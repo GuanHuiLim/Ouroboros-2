@@ -231,10 +231,12 @@ namespace phy
         {
             // create new rigidbody
             obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{0,0,0});
+            scene->addActor(*obj.rb.rigidStatic);
         }
         else // obj.rigid_type == rigid::rdynamic
         {
             obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ 0,0,0 });
+            scene->addActor(*obj.rb.rigidDynamic);
         }
 
         // store the object
