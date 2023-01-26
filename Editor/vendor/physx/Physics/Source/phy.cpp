@@ -994,15 +994,18 @@ namespace myPhysx
         }
     }
 
-    void PhysicsObject::setConvexProperty(PxConvexMesh* mesh) {
+    void PhysicsObject::setConvexProperty(std::vector<PxVec3> vert) { //  PxConvexMesh* mesh
 
         if (world->all_objects.contains(id)) {
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->shape_type == shape::convex)
-                underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(mesh));
+            if (underlying_obj->shape_type == shape::convex) {
+
+                underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(vert)));
+
                 //underlying_obj->m_shape->getGeometry().convexMesh().convexMesh->getVertices()
+            }
         }
     }
 
@@ -1104,8 +1107,6 @@ namespace myPhysx
         // Create shape which instances the mesh
         //PxShape* convexShape = PxRigidActorExt::createExclusiveShape();
         
-        //setConvexProperty(convexMesh);
-
         return convexMesh;
     }
 
