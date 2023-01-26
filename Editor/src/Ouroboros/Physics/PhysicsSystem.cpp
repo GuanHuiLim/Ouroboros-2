@@ -196,8 +196,11 @@ namespace oo
         // Finally we retrieve the newly updated information from physics world 
         // and update our affected data.
         {
+            TRACY_PROFILE_SCOPE_NC(physics_retrieve_updated_objects, tracy::Color::Brown)
             auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
+            TRACY_PROFILE_SCOPE_END();
 
+            TRACY_PROFILE_SCOPE_NC(physics_update_components_with_rigidbody, tracy::Color::Brown)
             static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
             m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
                 {
@@ -236,6 +239,7 @@ namespace oo
                     tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
                     //tf.SetOrientation(orientation);
                 });
+            TRACY_PROFILE_SCOPE_END();
         }
         
         // Finally we update our own transform
@@ -340,8 +344,10 @@ namespace oo
             });
         */
 
+        TRACY_PROFILE_SCOPE_NC(physics_update_transform_tree, tracy::Color::Brown)
         // lastly update transform system for transforms changes to be reflected
-        m_world->Get_System<TransformSystem>()->UpdateEntireTree();
+        //m_world->Get_System<TransformSystem>()->UpdateEntireTree();
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::UpdatePhysicsResolution(Timestep deltaTime)

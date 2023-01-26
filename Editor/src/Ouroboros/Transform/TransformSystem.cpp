@@ -245,7 +245,7 @@ namespace oo
                 continue;
 
             TRACY_PROFILE_SCOPE_NC(per_batch_processing, tracy::Color::Goldenrod);
-
+            //for(auto& elem : group)
             std::for_each(std::execution::par_unseq, std::begin(group), std::end(group), [&](auto const& elem)
             //std::for_each(std::begin(group), std::end(group), [&](auto const& elem)
                 {
