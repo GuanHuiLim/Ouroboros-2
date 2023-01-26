@@ -231,11 +231,13 @@ namespace phy
         {
             // create new rigidbody
             obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{0,0,0});
+            obj.rb.rigidStatic->userData = obj.id.get();
             scene->addActor(*obj.rb.rigidStatic);
         }
         else // obj.rigid_type == rigid::rdynamic
         {
             obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ 0,0,0 });
+            obj.rb.rigidDynamic->userData = obj.id.get();
             scene->addActor(*obj.rb.rigidDynamic);
         }
 
@@ -948,6 +950,10 @@ namespace phy
 
             if (current.triggerActor != nullptr && current.otherActor != nullptr) 
             {
+                if (current.flags & (PxTriggerPairFlag::eREMOVED_SHAPE_TRIGGER | PxTriggerPairFlag::eREMOVED_SHAPE_OTHER))
+                    continue;
+
+
                 auto trigger_id = *reinterpret_cast<phy_uuid::UUID*>(current.triggerActor->userData);
                 auto other_id = *reinterpret_cast<phy_uuid::UUID*>(current.otherActor->userData);
                 //printf("trigger actor %llu, other actor %llu \n", trigger_id, other_id);
