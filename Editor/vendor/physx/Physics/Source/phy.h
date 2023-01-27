@@ -337,7 +337,7 @@ namespace myPhysx {
         void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
         void setSphereProperty(float radius);
         void setCapsuleProperty(float radius, float halfHeight);
-        void setConvexProperty(PxConvexMesh* mesh);
+        void setConvexProperty(std::vector<PxVec3> vert);
         //void setPlaneProperty(float radius);
 
         void storeMeshVertices(std::vector<PxVec3> vert);
