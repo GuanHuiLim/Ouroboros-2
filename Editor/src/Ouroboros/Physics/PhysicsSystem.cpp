@@ -477,20 +477,29 @@ namespace oo
                             mc.Vertices.emplace_back(new_vertex.x, new_vertex.y , new_vertex.z);
                             mc.WorldSpaceVertices.emplace_back(new_vertex.x, new_vertex.y, new_vertex.z);
                         }
-
+                        
                         //rb.object.storeMeshVertices(mc.Vertices);
                     }
 
                     mc.Reset = false;
                 }
                 
-                // update the world vertex position based on matrix of current object
-                auto globalMat = tf.GetGlobalMatrix();
-                auto verticesIter = mc.Vertices.begin();
-                std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v) 
+                if (tf.HasChangedThisFrame)
                 {
-                    v = globalMat * glm::vec4{ *verticesIter++, 1 };
-                });
+                    // update the world vertex position based on matrix of current object
+                    auto globalMat = tf.GetGlobalMatrix();
+                    auto verticesIter = mc.Vertices.begin();
+                    std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v) 
+                    {
+                        v = globalMat * glm::vec4{ *verticesIter++, 1 };
+                    });
+
+                    std::vector<PxVec3> res;
+                    res.reserve(mc.WorldSpaceVertices.size());
+                    for (auto& elem : mc.WorldSpaceVertices)
+                        res.emplace_back(elem.x, elem.y, elem.z);
+                    rb.object.setConvexProperty(res);
+                }
 
             });
         TRACY_PROFILE_SCOPE_END();
