@@ -1965,19 +1965,19 @@ void VulkanRenderer::UploadInstanceData()
 						// This is per entity. Should be per material.
 						constexpr uint32_t invalidIndex = 0xFFFFFFFF;
 
-						uint32_t albedo = g_Textures[ent.bindlessGlobalTextureIndex_Albedo].isValid ? ent.bindlessGlobalTextureIndex_Albedo : invalidIndex;
+						uint32_t albedo = ent.bindlessGlobalTextureIndex_Albedo;
 						uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
 						uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
 						uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
 						const uint8_t perInstanceData = ent.instanceData;
-						
-						if (albedo == invalidIndex)
+
+						if (albedo == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Albedo].isValid == false)
 							albedo = whiteTextureID; // TODO: Dont hardcode this bindless texture index
-						if (normal == invalidIndex)
+						if (normal == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Normal].isValid == false)
 							normal = blackTextureID; // TODO: Dont hardcode this bindless texture index
-						if (roughness == invalidIndex)
+						if (roughness == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Roughness].isValid == false)
 							roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
-						if (metallic == invalidIndex)
+						if (metallic == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Metallic].isValid == false)
 							metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
 
 						// Important: Make sure this index packing matches the unpacking in the shader
@@ -2182,6 +2182,7 @@ void VulkanRenderer::RenderFrame()
 			{		
 				if (currWorld->shouldRenderCamera[i] == false)
 				{
+					++renderIteration;
 					continue;
 				}
 
