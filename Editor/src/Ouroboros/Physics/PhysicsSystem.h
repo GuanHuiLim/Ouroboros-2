@@ -101,8 +101,8 @@ namespace oo
         void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* sc);
         void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* sc);
 
-        void OnMeshColliderAdd(Ecs::ComponentEvent<MeshColliderComponent>* mc);
-        void OnMeshColliderRemove(Ecs::ComponentEvent<MeshColliderComponent>* mc);
+        void OnMeshColliderAdd(Ecs::ComponentEvent<ConvexColliderComponent>* mc);
+        void OnMeshColliderRemove(Ecs::ComponentEvent<ConvexColliderComponent>* mc);
 
         void InitializeRigidbody(RigidbodyComponent& rb);
         void InitializeBoxCollider(RigidbodyComponent& rb);

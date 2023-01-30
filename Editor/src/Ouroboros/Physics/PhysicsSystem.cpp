@@ -78,10 +78,10 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, SphereColliderComponent>(
             this, &PhysicsSystem::OnSphereColliderRemove);
 
-        m_world->SubscribeOnAddComponent<PhysicsSystem, MeshColliderComponent>(
+        m_world->SubscribeOnAddComponent<PhysicsSystem, ConvexColliderComponent>(
             this, &PhysicsSystem::OnMeshColliderAdd);
 
-        m_world->SubscribeOnRemoveComponent<PhysicsSystem, MeshColliderComponent>(
+        m_world->SubscribeOnRemoveComponent<PhysicsSystem, ConvexColliderComponent>(
             this, &PhysicsSystem::OnMeshColliderRemove);
 
         myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
@@ -333,8 +333,8 @@ namespace oo
                     /*});*/
             });
 
-        static Ecs::Query duplicated_rb_with_mesh_query = Ecs::make_raw_query<RigidbodyComponent, MeshColliderComponent, TransformComponent, DuplicatedComponent>();
-        m_world->for_each(duplicated_rb_with_mesh_query, [&](RigidbodyComponent& rbComp, MeshColliderComponent& mcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        static Ecs::Query duplicated_rb_with_mesh_query = Ecs::make_raw_query<RigidbodyComponent, ConvexColliderComponent, TransformComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_rb_with_mesh_query, [&](RigidbodyComponent& rbComp, ConvexColliderComponent& mcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
                 /*jobsystem::submit(initialization_job, [&]()
                     {*/
@@ -451,8 +451,8 @@ namespace oo
 
         TRACY_PROFILE_SCOPE_NC(physics_update_mesh_collider_bounds, tracy::Color::PeachPuff);
         //Updating mesh collider's bounds 
-        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, MeshColliderComponent, MeshRendererComponent>();
-        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, MeshColliderComponent& mc, MeshRendererComponent& mr)
+        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent>();
+        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr)
             {
                 if (mc.Vertices.empty() || mc.Reset == true)
                 {
@@ -730,8 +730,8 @@ namespace oo
                 DebugDraw::AddSphere({ pos, sc.GlobalRadius }, oGFX::Colors::GREEN);
             });
 
-        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, MeshColliderComponent>();
-        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, MeshColliderComponent& mc)
+        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent>();
+        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc)
             {
                 if (!mc.WorldSpaceVertices.empty())
                 {
@@ -828,8 +828,8 @@ namespace oo
             m_world->remove_component<SphereColliderComponent>(rb->entityID);
         if(m_world->has_component<CapsuleColliderComponent>(rb->entityID))
             m_world->remove_component<CapsuleColliderComponent>(rb->entityID);
-        if (m_world->has_component<MeshColliderComponent>(rb->entityID))
-            m_world->remove_component<MeshColliderComponent>(rb->entityID);
+        if (m_world->has_component<ConvexColliderComponent>(rb->entityID))
+            m_world->remove_component<ConvexColliderComponent>(rb->entityID);
 
         // finally we remove the physics object
         m_physicsWorld.removeInstance(rb->component.object);
@@ -905,7 +905,7 @@ namespace oo
         }
     }
 
-    void PhysicsSystem::OnMeshColliderAdd(Ecs::ComponentEvent<MeshColliderComponent>* mc)
+    void PhysicsSystem::OnMeshColliderAdd(Ecs::ComponentEvent<ConvexColliderComponent>* mc)
     {
         // if mesh collider is directly added, ensure we add rigidbody too.
         if (m_world->has_component<RigidbodyComponent>(mc->entityID) == false)
@@ -929,7 +929,7 @@ namespace oo
         //}
     }
 
-    void PhysicsSystem::OnMeshColliderRemove(Ecs::ComponentEvent<MeshColliderComponent>* mc)
+    void PhysicsSystem::OnMeshColliderRemove(Ecs::ComponentEvent<ConvexColliderComponent>* mc)
     {
         // need this safeguard to be sure. otherwise crash.
         if (m_world->has_component<RigidbodyComponent>(mc->entityID))

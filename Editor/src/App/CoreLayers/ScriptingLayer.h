@@ -58,7 +58,7 @@ namespace oo
             ScriptManager::RegisterComponent<BoxColliderComponent>("Ouroboros", "BoxCollider");
             ScriptManager::RegisterComponent<SphereColliderComponent>("Ouroboros", "SphereCollider");
             ScriptManager::RegisterComponent<CapsuleColliderComponent>("Ouroboros", "CapsuleCollider");
-            ScriptManager::RegisterComponent<MeshColliderComponent>("Ouroboros", "ConvexCollider");
+            ScriptManager::RegisterComponent<ConvexColliderComponent>("Ouroboros", "ConvexCollider");
 
             ScriptManager::s_SceneManager = &sceneManager;
 

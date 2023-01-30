@@ -175,7 +175,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::SphereColliderComponent>(gameobject);
 	DisplayComponent<oo::BoxColliderComponent>(gameobject);
 	DisplayComponent<oo::CapsuleColliderComponent>(gameobject);
-	DisplayComponent<oo::MeshColliderComponent>(gameobject);
+	DisplayComponent<oo::ConvexColliderComponent>(gameobject);
 
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::ParticleEmitterComponent>(gameobject);
@@ -232,7 +232,7 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 			selected |= AddComponentSelectable<oo::BoxColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::CapsuleColliderComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::SphereColliderComponent>(gameobject);
-			selected |= AddComponentSelectable<oo::MeshColliderComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::ConvexColliderComponent>(gameobject);
 
 			selected |= AddComponentSelectable<oo::MeshRendererComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::ParticleEmitterComponent>(gameobject);
