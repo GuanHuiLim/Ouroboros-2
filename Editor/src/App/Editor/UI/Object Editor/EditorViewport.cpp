@@ -93,11 +93,12 @@ void EditorViewport::Show()
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
 
+	auto graphicsworld = scene->GetGraphicsWorld();
+	graphicsworld->shouldRenderCamera[0] = true;
+	graphicsworld->shouldRenderCamera[1] = true;
 
 	m_cc.Update(oo::timer::dt(), cameraFocus);
 
-	auto graphicsworld = scene->GetGraphicsWorld();
-	graphicsworld->shouldRenderCamera[1] = true;
 	auto& camera_matrices = EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	

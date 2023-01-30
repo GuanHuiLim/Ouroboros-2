@@ -96,7 +96,7 @@ void PreviewWindow::UpdateWhenNotShown()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto graphicsworld = scene->GetGraphicsWorld();
-	graphicsworld->shouldRenderCamera[0] = false;
+	graphicsworld->shouldRenderCamera[0] = true;
 }
 
 void PreviewWindow::GetPreviewWindowSize(GetPreviewWindowSizeEvent* e)
