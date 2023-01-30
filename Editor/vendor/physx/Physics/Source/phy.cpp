@@ -165,7 +165,7 @@ namespace myPhysx
 
             if constexpr (use_debugger) {
                 printf("DEBUGGER ON\n");
-                myPVD.createPvd(mFoundation, "172.28.68.233");
+                myPVD.createPvd(mFoundation, "localhost");
             }
             else {
                 printf("DEBUGGER OFF\n");
