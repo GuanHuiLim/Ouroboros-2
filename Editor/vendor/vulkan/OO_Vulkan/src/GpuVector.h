@@ -14,8 +14,11 @@ Technology is prohibited.
 #pragma once
 #include "vulkan/vulkan.h"
 #include <iostream>
+#include "Profiling.h"
 
 struct VulkanDevice;
+
+extern uint64_t accumulatedBytes;
 
 template <typename T>
 class GpuVector{
@@ -99,6 +102,9 @@ inline void GpuVector<T>::Init(VulkanDevice* device, VkBufferUsageFlags usage)
 template <typename T>
 void GpuVector<T>::writeTo(size_t writeSize,const void* data, size_t offset)
 {
+	if (writeSize == 0) 
+		return;
+	PROFILE_SCOPED();
 	if ((writeSize + offset) > m_capacity)
 	{
 		// TODO:  maybe resize some amount instead of perfect amount?
@@ -108,8 +114,6 @@ void GpuVector<T>::writeTo(size_t writeSize,const void* data, size_t offset)
 		return;
 	}
 
-	if (writeSize == 0) 
-		return;
 	
 	using namespace oGFX;
 	//get writeSize of buffer needed for vertices
@@ -157,8 +161,8 @@ void GpuVector<T>::resize(size_t size)
 template <typename T>
 void GpuVector<T>::reserve(size_t size)
 {
-
 	if (size < m_capacity) return;
+	PROFILE_SCOPED();
 
 	using namespace oGFX;
 	VkDeviceSize bufferSize = size * sizeof(T);
@@ -177,11 +181,17 @@ void GpuVector<T>::reserve(size_t size)
 	}
 
 	//clean up old buffer
+	// stall here -- doesnt matter because this will never happen in final product
+	vkDeviceWaitIdle(m_device->logicalDevice);
 	vkDestroyBuffer(m_device->logicalDevice, m_buffer, nullptr);
 	vkFreeMemory(m_device->logicalDevice, m_gpuMemory, nullptr);
 
 	m_buffer = tempBuffer;
 	m_gpuMemory = tempMemory;
+
+	// accumulate bytes
+	accumulatedBytes -= m_capacity;
+	accumulatedBytes += size;
 
 	m_capacity = size;
 

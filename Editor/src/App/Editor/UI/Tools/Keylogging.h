@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <vector>
 #include <deque>
+#include <filesystem>
 #include "Ouroboros/Core/KeyCode.h"
 #include "Ouroboros/Core/MouseCode.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
@@ -24,6 +25,9 @@ public:
 	void SetEnableKeyLogging(ToolbarButtonEvent* ev);
 	static bool GetMode() { return m_mode; };
 	static bool GetEnable() { return m_enable; };
+public:
+	void SaveKeylogs(const std::filesystem::path& path);
+	void LoadKeylogs(const std::filesystem::path& path);
 private:
 	float m_elaspedTime;
 	float m_simulatedTime;

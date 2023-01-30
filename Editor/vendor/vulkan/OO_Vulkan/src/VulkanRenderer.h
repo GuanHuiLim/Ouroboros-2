@@ -48,6 +48,7 @@ Technology is prohibited.
 #include <array>
 #include <set>
 #include <string>
+#include <mutex>
 
 struct Window;
 
@@ -73,6 +74,9 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout SSAOBlur;
 
 	inline static VkDescriptorSetLayout util_fullscreenBlit;
+
+	inline static VkDescriptorSetLayout compute_singleTexture;
+
 };
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
@@ -84,6 +88,7 @@ struct PSOLayoutDB
 	inline static VkPipelineLayout forwardDecalPSOLayout;
 	inline static VkPipelineLayout SSAOPSOLayout;
 	inline static VkPipelineLayout SSAOBlurLayout;
+	inline static VkPipelineLayout BloomLayout; 
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -121,18 +126,22 @@ namespace CB
 class VulkanRenderer
 {
 public:
+
 	static VulkanRenderer* s_vulkanRenderer;
 
+	inline static uint64_t totalTextureSizeLoaded = 0;
 	static constexpr int MAX_FRAME_DRAWS = 2;
 	static constexpr int MAX_OBJECTS = 2048;
 	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT_S8_UINT;
-	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_R32G32B32A32_SFLOAT;
+	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 
 	static int ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface);
 
 #define OBJECT_INSTANCE_COUNT 128
 
 	 PFN_vkDebugMarkerSetObjectNameEXT pfnDebugMarkerSetObjectName{ nullptr };
+	 PFN_vkCmdDebugMarkerBeginEXT pfnDebugMarkerRegionBegin{ nullptr };
+	 PFN_vkCmdDebugMarkerEndEXT pfnDebugMarkerRegionEnd{ nullptr };
 
 	~VulkanRenderer();
 
@@ -244,7 +253,7 @@ public:
 	void UploadInstanceData();
 	uint32_t objectCount{};
 	// Contains the instanced data
-	vkutils::Buffer instanceBuffer;
+	GpuVector<oGFX::InstanceData> instanceBuffer;
 
 	bool PrepareFrame();
 	void BeginDraw();
@@ -260,6 +269,9 @@ public:
 
 	uint32_t CreateTexture(uint32_t width, uint32_t height, unsigned char* imgData);
 	uint32_t CreateTexture(const std::string& fileName);
+	bool ReloadTexture(uint32_t textureID, const std::string& file);
+	void UnloadTexture(uint32_t textureID);
+
 	struct TextureInfo
 	{
 		std::string name;
@@ -282,6 +294,7 @@ public:
 		uint32_t IdxOffset{};
 	};
 
+	std::mutex g_mut_globalMeshBuffers;
 	IndexedVertexBuffer g_GlobalMeshBuffers;
 	std::array<GpuVector<ParticleData>,3> g_particleDatas;
 	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer{};
@@ -290,6 +303,8 @@ public:
 	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU;
 	std::vector<oGFX::DebugVertex> g_DebugDrawVertexBufferCPU;
 	std::vector<uint32_t> g_DebugDrawIndexBufferCPU;
+
+	ModelFileResource* GetDefaultCube();
 
 	ModelFileResource* LoadModelFromFile(const std::string& file);
 	ModelFileResource* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex, std::vector<uint32_t>& indices, gfxModel* model);
@@ -304,6 +319,7 @@ public:
 	Window* windowPtr{ nullptr };
 
 	//textures
+	std::mutex g_mut_Textures;
 	std::vector<vkutils::Texture2D> g_Textures;
 	std::vector<ImTextureID> g_imguiIDs;
 
@@ -330,7 +346,7 @@ public:
 	VulkanRenderpass renderPass_HDR_noDepth{};
 	VulkanRenderpass renderPass_blit{};
 
-	vkutils::Buffer indirectCommandsBuffer{};
+	GpuVector<oGFX::IndirectCommand> indirectCommandsBuffer{};
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer{};
 	uint32_t indirectDrawCount{};
 
@@ -373,6 +389,7 @@ public:
 	// Store the indirect draw commands containing index offsets and instance count per object
 
 	//Scene objects
+	std::mutex g_mut_globalModels;
 	std::vector<gfxModel> g_globalModels;
 
 	uint32_t currentFrame = 0;
@@ -463,7 +480,9 @@ public:
 	private:
 		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);		
 		uint32_t CreateTextureImage(const std::string& fileName);
-		uint32_t AddBindlessGlobalTexture(vkutils::Texture2D texture);		
+		uint32_t UpdateBindlessGlobalTexture(uint32_t textureID);		
+
+		bool shadowsRendered{ false };
 
 		void InitDefaultPrimatives();
 		std::unique_ptr<ModelFileResource>def_cube;
