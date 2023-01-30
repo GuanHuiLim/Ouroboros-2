@@ -2182,6 +2182,7 @@ void VulkanRenderer::RenderFrame()
 			{		
 				if (currWorld->shouldRenderCamera[i] == false)
 				{
+					++renderIteration;
 					continue;
 				}
 
