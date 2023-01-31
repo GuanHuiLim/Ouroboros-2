@@ -186,6 +186,11 @@ namespace oo
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
             TRACY_PROFILE_SCOPE_END();
         }
+        {
+            TRACY_PROFILE_SCOPE(inputsystem_late_update);
+            GetWorld().Get_System<InputSystem>()->LateUpdate();
+            TRACY_PROFILE_SCOPE_END();
+        }
         TRACY_PROFILE_SCOPE_END();
     }
 

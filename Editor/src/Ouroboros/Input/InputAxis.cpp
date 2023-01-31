@@ -16,6 +16,8 @@ Technology is prohibited.
 #include "pch.h"
 #include "InputAxis.h"
 
+#include "InputSystem.h"
+
 #include <Ouroboros/Core/Input.h>
 #include <rttr/registration>
 namespace oo
@@ -239,6 +241,8 @@ namespace oo
                 value = static_cast<float>(-input::GetMouseDelta().first);
             else if (axis.GetName() == "Mouse Y")
                 value = static_cast<float>(input::GetMouseDelta().second);
+            else if (axis.GetName() == "Mouse Scroll")
+                value = InputSystem::GetScrollValue();
         }
         break;
         default:
