@@ -222,7 +222,7 @@ namespace phy
     {
         PhysxObject obj;
         obj.id = std::make_unique<phy_uuid::UUID>();
-        obj.m_material = mPhysics->createMaterial(0.f,0.f,0.f);
+        obj.m_material = mPhysics->createMaterial(0.5f,0.5f,0.1f);
         
         // This is important!
         // default initialize here
@@ -526,6 +526,10 @@ namespace phy
             if(updatedPhysicsObj.angularDamping >= 0)
                 underlying_Obj.rb.rigidDynamic->setAngularDamping(updatedPhysicsObj.angularDamping);
 
+            underlying_Obj.rb.rigidDynamic->setAngularVelocity(updatedPhysicsObj.angularVel);
+
+            underlying_Obj.rb.rigidDynamic->setLinearVelocity(updatedPhysicsObj.linearVel);
+
             // AXIS PROPERTIES
             underlying_Obj.lockPositionAxis = updatedPhysicsObj.lockPositionAxis;
             underlying_Obj.lockRotationAxis = updatedPhysicsObj.lockRotationAxis;
@@ -650,12 +654,6 @@ namespace phy
 
             if (underlying_obj.rigid_type != rigid::rdynamic)
                 continue;
-
-            if(updatedCommandObj.AngularVel)
-                underlying_obj.rb.rigidDynamic->setAngularVelocity(updatedCommandObj.angularVel);
-
-            if (updatedCommandObj.LinearVel)
-                underlying_obj.rb.rigidDynamic->setLinearVelocity(updatedCommandObj.linearVel);
 
             setForce(underlying_obj, updatedCommandObj);
             
