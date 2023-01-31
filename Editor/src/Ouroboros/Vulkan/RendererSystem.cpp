@@ -259,7 +259,7 @@ namespace oo
 
             //if (transformComp.HasChanged())
             graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
-            graphics_light.color = glm::vec4{ lightComp.Color.r, lightComp.Color.g, lightComp.Color.b, lightComp.Color.a };
+            graphics_light.color = glm::vec4{ lightComp.Color.r, lightComp.Color.g, lightComp.Color.b, lightComp.Intensity };
             graphics_light.radius = vec4{ lightComp.Radius, 0, 0, 0 };
            
             SetCastsShadows(graphics_light, lightComp.ProduceShadows);

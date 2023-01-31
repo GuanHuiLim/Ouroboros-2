@@ -35,7 +35,7 @@ namespace oo
 		AddCommandToMap<oo::RigidbodyComponent>();
 		AddCommandToMap<oo::SphereColliderComponent>();
 		AddCommandToMap<oo::BoxColliderComponent>();
-		AddCommandToMap<oo::MeshColliderComponent>();
+		AddCommandToMap<oo::ConvexColliderComponent>();
 		AddCommandToMap<oo::GameObjectDebugComponent>();
 		AddCommandToMap<oo::MeshRendererComponent>();
 		AddCommandToMap<oo::ParticleEmitterComponent>();

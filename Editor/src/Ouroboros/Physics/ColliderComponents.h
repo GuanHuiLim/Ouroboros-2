@@ -82,10 +82,11 @@ namespace oo
         RTTR_ENABLE();
     };
 
-    struct MeshColliderComponent final
+    struct ConvexColliderComponent final
     {
         bool Reset = false;
         std::vector<vec3> Vertices;
+        std::vector<vec3> WorldSpaceVertices;
         RTTR_ENABLE();
     };
 

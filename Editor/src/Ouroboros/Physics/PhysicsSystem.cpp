@@ -78,10 +78,10 @@ namespace oo
         m_world->SubscribeOnRemoveComponent<PhysicsSystem, SphereColliderComponent>(
             this, &PhysicsSystem::OnSphereColliderRemove);
 
-        m_world->SubscribeOnAddComponent<PhysicsSystem, MeshColliderComponent>(
+        m_world->SubscribeOnAddComponent<PhysicsSystem, ConvexColliderComponent>(
             this, &PhysicsSystem::OnMeshColliderAdd);
 
-        m_world->SubscribeOnRemoveComponent<PhysicsSystem, MeshColliderComponent>(
+        m_world->SubscribeOnRemoveComponent<PhysicsSystem, ConvexColliderComponent>(
             this, &PhysicsSystem::OnMeshColliderRemove);
 
         myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
@@ -333,8 +333,8 @@ namespace oo
                     /*});*/
             });
 
-        static Ecs::Query duplicated_rb_with_mesh_query = Ecs::make_raw_query<RigidbodyComponent, MeshColliderComponent, TransformComponent, DuplicatedComponent>();
-        m_world->for_each(duplicated_rb_with_mesh_query, [&](RigidbodyComponent& rbComp, MeshColliderComponent& mcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        static Ecs::Query duplicated_rb_with_mesh_query = Ecs::make_raw_query<RigidbodyComponent, ConvexColliderComponent, TransformComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_rb_with_mesh_query, [&](RigidbodyComponent& rbComp, ConvexColliderComponent& mcComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
                 /*jobsystem::submit(initialization_job, [&]()
                     {*/
@@ -451,19 +451,56 @@ namespace oo
 
         TRACY_PROFILE_SCOPE_NC(physics_update_mesh_collider_bounds, tracy::Color::PeachPuff);
         //Updating mesh collider's bounds 
-        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, MeshColliderComponent, MeshRendererComponent>();
-        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, MeshColliderComponent& mc, MeshRendererComponent& mr)
+        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent>();
+        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr)
             {
                 if (mc.Vertices.empty() || mc.Reset == true)
                 {
                     mc.Vertices.clear();
 
-                    auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
-                    for (auto& vertex : vertices)
-                        mc.Vertices.emplace_back(vertex.pos);
+                    if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
+                    {
+
+                        auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
+                        mc.Vertices.reserve(vertices.size());
+                        for (auto& vertex : vertices)
+                            mc.Vertices.emplace_back(glm::vec4{ vertex.pos, 1 });
+
+                        auto generated_vertices = rb.StoreMesh(mc.Vertices);
+                        mc.Vertices.clear();
+
+                        mc.Vertices.reserve(generated_vertices.size());
+                        mc.WorldSpaceVertices.reserve(generated_vertices.size());
+
+                        for (auto& new_vertex : generated_vertices)
+                        {
+                            mc.Vertices.emplace_back(new_vertex.x, new_vertex.y , new_vertex.z);
+                            mc.WorldSpaceVertices.emplace_back(new_vertex.x, new_vertex.y, new_vertex.z);
+                        }
+                        
+                        //rb.object.storeMeshVertices(mc.Vertices);
+                    }
 
                     mc.Reset = false;
                 }
+                
+                if (tf.HasChangedThisFrame)
+                {
+                    // update the world vertex position based on matrix of current object
+                    auto globalMat = tf.GetGlobalMatrix();
+                    auto verticesIter = mc.Vertices.begin();
+                    std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v) 
+                    {
+                        v = globalMat * glm::vec4{ *verticesIter++, 1 };
+                    });
+
+                    std::vector<PxVec3> res;
+                    res.reserve(mc.WorldSpaceVertices.size());
+                    for (auto& elem : mc.WorldSpaceVertices)
+                        res.emplace_back(elem.x, elem.y, elem.z);
+                    rb.object.setConvexProperty(res);
+                }
+
             });
         TRACY_PROFILE_SCOPE_END();
 
@@ -693,6 +730,29 @@ namespace oo
                 DebugDraw::AddSphere({ pos, sc.GlobalRadius }, oGFX::Colors::GREEN);
             });
 
+        static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent>();
+        m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc)
+            {
+                if (!mc.WorldSpaceVertices.empty())
+                {
+                    auto pos = rb.GetPositionInPhysicsWorld();
+                    auto scale = tf.GetGlobalScale();
+                    auto quat = rb.GetOrientationInPhysicsWorld();
+
+                    auto& first = mc.WorldSpaceVertices.back();
+                    auto& next = mc.WorldSpaceVertices.front();
+                    for (auto iter = mc.WorldSpaceVertices.begin() + 1; iter != mc.WorldSpaceVertices.end(); ++iter)
+                    {
+                        DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                        
+                        auto& vert = *iter;
+                        first = next;
+                        next = vert;
+                    }
+                    DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                }
+            });
+
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -768,8 +828,8 @@ namespace oo
             m_world->remove_component<SphereColliderComponent>(rb->entityID);
         if(m_world->has_component<CapsuleColliderComponent>(rb->entityID))
             m_world->remove_component<CapsuleColliderComponent>(rb->entityID);
-        if (m_world->has_component<MeshColliderComponent>(rb->entityID))
-            m_world->remove_component<MeshColliderComponent>(rb->entityID);
+        if (m_world->has_component<ConvexColliderComponent>(rb->entityID))
+            m_world->remove_component<ConvexColliderComponent>(rb->entityID);
 
         // finally we remove the physics object
         m_physicsWorld.removeInstance(rb->component.object);
@@ -845,7 +905,7 @@ namespace oo
         }
     }
 
-    void PhysicsSystem::OnMeshColliderAdd(Ecs::ComponentEvent<MeshColliderComponent>* mc)
+    void PhysicsSystem::OnMeshColliderAdd(Ecs::ComponentEvent<ConvexColliderComponent>* mc)
     {
         // if mesh collider is directly added, ensure we add rigidbody too.
         if (m_world->has_component<RigidbodyComponent>(mc->entityID) == false)
@@ -869,7 +929,7 @@ namespace oo
         //}
     }
 
-    void PhysicsSystem::OnMeshColliderRemove(Ecs::ComponentEvent<MeshColliderComponent>* mc)
+    void PhysicsSystem::OnMeshColliderRemove(Ecs::ComponentEvent<ConvexColliderComponent>* mc)
     {
         // need this safeguard to be sure. otherwise crash.
         if (m_world->has_component<RigidbodyComponent>(mc->entityID))
@@ -909,8 +969,8 @@ namespace oo
 
     void PhysicsSystem::InitializeMeshCollider(RigidbodyComponent& rb)
     {
-        // create box
-        //rb.object.setShape(myPhysx::shape::mesh);
+        // create mesh collider
+        rb.object.setShape(myPhysx::shape::convex);
     }
 
     void PhysicsSystem::DuplicateRigidbody(RigidbodyComponent& rb)

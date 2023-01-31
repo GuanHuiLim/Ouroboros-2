@@ -61,6 +61,17 @@ void EditorLayer::OnUpdate()
 				m_editormode = false;
 #endif
 			}
+			// TODO : Remove or wrap in something else!
+#ifdef OO_EXECUTABLE
+			if (ImGui::MenuItem(oo::OO_TracyProfiler::m_server_active ? ("Close Profiler") : ("Open Profiler")))
+			{
+				if (oo::OO_TracyProfiler::m_server_active)
+					oo::OO_TracyProfiler::CloseTracyServer();
+				else
+					oo::OO_TracyProfiler::StartTracyServer();
+			}
+#endif
+
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();

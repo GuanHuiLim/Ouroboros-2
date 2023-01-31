@@ -17,11 +17,16 @@ Technology is prohibited.
 #include "Ouroboros/Physics/PhysicsFwd.h"
 #include <rttr/type>
 
+
 namespace oo
 {
+    //struct PxVec3;
+
     struct Point
     {
         vec3 pos;
+
+        //operator PxVec3() const { return PxVec3{ pos.x,pos.y, pos.z }; }
     };
 
     struct Sphere

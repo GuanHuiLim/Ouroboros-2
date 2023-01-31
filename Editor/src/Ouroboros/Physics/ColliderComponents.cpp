@@ -48,8 +48,10 @@ namespace oo
             .property_readonly("Global Half Height", &CapsuleColliderComponent::GlobalHalfHeight)
             ;
 
-        registration::class_<MeshColliderComponent>("Mesh Collider")
-            .property("Reset", &MeshColliderComponent::Reset)
-            .property_readonly("vertices", &MeshColliderComponent::Vertices);
+        registration::class_<ConvexColliderComponent>("Convex Collider")
+            .property("Reset", &ConvexColliderComponent::Reset)
+            .property_readonly("vertices", &ConvexColliderComponent::Vertices)
+            .property_readonly("World Space Vertices", &ConvexColliderComponent::WorldSpaceVertices)
+            ;
     }
 }

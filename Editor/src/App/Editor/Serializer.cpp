@@ -85,7 +85,7 @@ void Serializer::Init()
 	AddLoadComponent<oo::CapsuleColliderComponent>();
 	AddLoadComponent<oo::BoxColliderComponent>();
 	AddLoadComponent<oo::SphereColliderComponent>();
-	AddLoadComponent<oo::MeshColliderComponent>();
+	AddLoadComponent<oo::ConvexColliderComponent>();
 	AddLoadComponent<oo::AudioListenerComponent>();
 	AddLoadComponent<oo::AudioSourceComponent>();
 	AddLoadComponent<oo::AnimationComponent>();
@@ -425,7 +425,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::BoxColliderComponent>(go, val, doc);
 	SaveComponent<oo::CapsuleColliderComponent>(go, val, doc);
 	SaveComponent<oo::SphereColliderComponent>(go, val, doc);
-	SaveComponent<oo::MeshColliderComponent>(go, val, doc);
+	SaveComponent<oo::ConvexColliderComponent>(go, val, doc);
 	SaveComponent<oo::AnimationComponent>(go, val, doc);
 
 	SaveComponent<oo::RectTransformComponent>(go, val, doc);

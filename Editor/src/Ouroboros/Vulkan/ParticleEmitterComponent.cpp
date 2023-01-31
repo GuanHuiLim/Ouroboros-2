@@ -99,6 +99,8 @@ namespace oo
 
 		registration::class_<ParticleEmitterComponent>("Particle Emitter")
 		.property_readonly("Graphics World ID", &ParticleEmitterComponent::GraphicsWorldID)
+		.property("Randomize Position", &ParticleEmitterComponent::m_randomizePosition)
+		.property("Randomize Direction", &ParticleEmitterComponent::m_randomizeStartDir)
 		.property("Particle properties", &ParticleEmitterComponent::GetParticleProperties, &ParticleEmitterComponent::SetParticleProperties)
 		.property("Particle renderer", &ParticleEmitterComponent::GetParticleRendererProperties, &ParticleEmitterComponent::SetParticleRendererProperties)
 		.property("Particle shape", &ParticleEmitterComponent::GetParticleShapeProperties, &ParticleEmitterComponent::SetParticleShapeProperties)

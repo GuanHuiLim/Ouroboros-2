@@ -224,6 +224,13 @@ project "Editor"
         defines { "EDITOR_RELEASE", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{ "configurations:Production", "platforms:Editor"}
         defines { "EDITOR_PRODUCTION", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    -- remove eventually.
+    filter{ "configurations:Debug", "platforms:Executable"}
+        defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    filter{ "configurations:Release", "platforms:Executable"}
+        defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    filter{ "configurations:Production", "platforms:Executable"}
+        defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{}
     
     filter "configurations:Debug"

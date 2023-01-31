@@ -31,6 +31,7 @@ Technology is prohibited.
 #include <queue>
 #include <deque>
 #include <memory>
+#include <cassert>
 //#include <glm/glm.hpp>
 
 #include "uuid.h"
@@ -50,7 +51,7 @@ namespace myPhysx {
     struct RaycastHit;
 
     enum class rigid { none, rstatic, rdynamic };
-    enum class shape { none, box, sphere, capsule, plane };
+    enum class shape { none, box, sphere, capsule, plane, convex };
     enum class force { force, acceleration, impulse, velocityChanged };
     enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit};
     enum class collision { none, onCollisionEnter, onCollisionStay, onCollisionExit};
@@ -133,6 +134,13 @@ namespace myPhysx {
         PxReal restitution;
     };
 
+    struct MeshVetices {
+
+        PxReal x;
+        PxReal y;
+        PxReal z;
+    };
+
     // backend holds the overall info of the entire physics engine
     namespace physx_system {
 
@@ -176,6 +184,8 @@ namespace myPhysx {
         std::map<phy_uuid::UUID, PxMaterial*> mat;
         PxVec3 gravity;
 
+        PxControllerManager* control_manager; // character controller
+
         std::map<phy_uuid::UUID, std::size_t> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
         std::vector<PhysxObject> m_objects; // to iterate through for setting the data
@@ -183,6 +193,8 @@ namespace myPhysx {
         std::queue<TriggerManifold> m_triggerCollisionPairs; // queue to store the trigger collision pairs
 
         std::queue<ContactManifold> m_collisionPairs; // queue to store the collision pairs
+        
+        std::vector<PxVec3> m_meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) }; // vector to store the mesh vertices
 
     public:
 
@@ -250,12 +262,18 @@ namespace myPhysx {
         bool gravity_enabled = true; // static should be false
         bool is_kinematic = false;
         bool is_collider = true;
+
+     
+        std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
+        //std::vector<PxVec3> meshVertices{ PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
     };
 
     struct PhysicsObject { // you store
 
         phy_uuid::UUID id;
         PhysxWorld* world;
+
+        // ALL HERE NO NEED CHECK WHETHER THIS OBJECT CONTAINS INSIDE THE WORLD
 
         // GETTERS
         LockingAxis getLockPositionAxis() const;
@@ -319,8 +337,13 @@ namespace myPhysx {
         void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
         void setSphereProperty(float radius);
         void setCapsuleProperty(float radius, float halfHeight);
+        void setConvexProperty(std::vector<PxVec3> vert);
         //void setPlaneProperty(float radius);
 
+        void storeMeshVertices(std::vector<PxVec3> vert);
+        PxConvexMesh* createConvexMesh(std::vector<PxVec3> vert); // testing
+        std::vector<PxVec3> getAllMeshVertices();
+        
     };
 
 
