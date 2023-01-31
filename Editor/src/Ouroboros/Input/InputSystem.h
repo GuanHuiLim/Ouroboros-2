@@ -18,13 +18,23 @@ Technology is prohibited.
 #include "InputManager.h"
 #include "Ouroboros/ECS/GameObject.h"
 
+#include "Ouroboros/Core/Events/MouseEvent.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
 namespace oo
 {
     class InputSystem final : public Ecs::System
     {
     public:
-        InputSystem() {}
-        virtual ~InputSystem() = default;
+        InputSystem()
+        {
+            EventManager::Subscribe<InputSystem, MouseScrolledEvent>(this, &InputSystem::OnMouseScroll);
+        }
+
+        virtual ~InputSystem()
+        {
+            EventManager::Unsubscribe<InputSystem, MouseScrolledEvent>(this, &InputSystem::OnMouseScroll);
+        }
 
         inline void Initialize()
         {
@@ -32,6 +42,11 @@ namespace oo
         }
 
         virtual void Run(Ecs::ECSWorld* world) override;
+
+        inline void LateUpdate()
+        {
+            scrollValue = 0.0f;
+        }
 
         InputAxis& GetAxis(std::string const& axisName);
 
@@ -42,7 +57,18 @@ namespace oo
 
         float GetAxisValue(std::string const& axisName);
 
+        static inline float GetScrollValue()
+        {
+            return scrollValue;
+        }
+
     private:
+        void OnMouseScroll(MouseScrolledEvent* e)
+        {
+            scrollValue = e->GetY();
+        }
+
         std::unordered_map<std::string, InputAxis::Tracker> trackers;
+        static inline float scrollValue;
     };
 }
