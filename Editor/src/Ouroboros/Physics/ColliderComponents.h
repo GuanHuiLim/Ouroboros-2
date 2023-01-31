@@ -13,7 +13,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include "Shapes.h"
+#include "PhysicsFwd.h"
 #include <rttr/type>
 
 namespace oo
@@ -62,9 +62,9 @@ namespace oo
     struct BoxColliderComponent final /*: public ColliderBase*/
     {
         //AABB Bounds = { { -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f } };
-        vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
-        vec3 Size = { 1.f, 1.f, 1.f };
-        vec3 GlobalHalfExtents = { 0.5f, 0.5f, 0.5f };
+        glm::vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
+        glm::vec3 Size = { 1.f, 1.f, 1.f };
+        glm::vec3 GlobalHalfExtents = { 0.5f, 0.5f, 0.5f };
         //AABB GlobalBounds;
 
         //RTTR_ENABLE(ColliderBase);
@@ -85,8 +85,8 @@ namespace oo
     struct ConvexColliderComponent final
     {
         bool Reset = false;
-        std::vector<vec3> Vertices;
-        std::vector<vec3> WorldSpaceVertices;
+        std::vector<oo::vec3> Vertices;
+        std::vector<oo::vec3> WorldSpaceVertices;
         RTTR_ENABLE();
     };
 

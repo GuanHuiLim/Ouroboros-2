@@ -272,7 +272,7 @@ namespace oo
             auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
             tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
 
-            auto orientation = rb.GetOrientationInPhysicsWorld();
+            glm::quat orientation = rb.GetOrientationInPhysicsWorld();
             auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
 
             //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
@@ -366,8 +366,8 @@ namespace oo
                             //if (tf.HasChangedThisFrame)
                             {
                                 TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
-                                auto pos = tf.GetGlobalPosition();
-                                auto quat = tf.GetGlobalRotationQuat();
+                                oo::vec3 pos = tf.GetGlobalPosition();
+                                oo::quat quat = tf.GetGlobalRotationQuat();
                                 rb.SetPosOrientation(pos + rb.Offset, quat);
                                 TRACY_PROFILE_SCOPE_END();
                             }
@@ -457,28 +457,21 @@ namespace oo
                 if (mc.Vertices.empty() || mc.Reset == true)
                 {
                     mc.Vertices.clear();
+                    mc.WorldSpaceVertices.clear();
 
                     if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
                     {
-
                         auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
-                        mc.Vertices.reserve(vertices.size());
-                        for (auto& vertex : vertices)
-                            mc.Vertices.emplace_back(glm::vec4{ vertex.pos, 1 });
-
-                        auto generated_vertices = rb.StoreMesh(mc.Vertices);
-                        mc.Vertices.clear();
-
-                        mc.Vertices.reserve(generated_vertices.size());
-                        mc.WorldSpaceVertices.reserve(generated_vertices.size());
-
-                        for (auto& new_vertex : generated_vertices)
-                        {
-                            mc.Vertices.emplace_back(new_vertex.x, new_vertex.y , new_vertex.z);
-                            mc.WorldSpaceVertices.emplace_back(new_vertex.x, new_vertex.y, new_vertex.z);
-                        }
                         
-                        //rb.object.storeMeshVertices(mc.Vertices);
+                        auto new_vertices = std::vector<oo::vec3>();
+                        new_vertices.reserve(vertices.size());
+                        std::for_each(vertices.begin(), vertices.end(), [&](auto&& vertex) {
+                            new_vertices.emplace_back(vertex.pos);
+                        });
+
+                        auto generated_vertices = rb.StoreMesh(new_vertices);
+
+                        mc.WorldSpaceVertices = mc.Vertices = std::vector<oo::vec3>(generated_vertices.begin(), generated_vertices.end());
                     }
 
                     mc.Reset = false;
@@ -488,16 +481,12 @@ namespace oo
                 {
                     // update the world vertex position based on matrix of current object
                     auto globalMat = tf.GetGlobalMatrix();
-                    auto verticesIter = mc.Vertices.begin();
                     std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v) 
                     {
-                        v = globalMat * glm::vec4{ *verticesIter++, 1 };
+                        v = globalMat * glm::vec4{ static_cast<glm::vec3>(v), 1 };
                     });
 
-                    std::vector<PxVec3> res;
-                    res.reserve(mc.WorldSpaceVertices.size());
-                    for (auto& elem : mc.WorldSpaceVertices)
-                        res.emplace_back(elem.x, elem.y, elem.z);
+                    std::vector<PxVec3> res{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
                     rb.object.setConvexProperty(res);
                 }
 
@@ -660,8 +649,8 @@ namespace oo
         static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
         m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, BoxColliderComponent& bc)
         {
-            auto pos = rb.GetPositionInPhysicsWorld();
-            auto quat = rb.GetOrientationInPhysicsWorld();
+            glm::vec3 pos = rb.GetPositionInPhysicsWorld();
+            glm::quat quat = rb.GetOrientationInPhysicsWorld();
 
             glm::vec3 rotatedX = glm::rotate(quat, glm::vec3{bc.GlobalHalfExtents.x, 0, 0});
             glm::vec3 rotatedY = glm::rotate(quat, glm::vec3{0, bc.GlobalHalfExtents.y, 0});
@@ -781,6 +770,9 @@ namespace oo
     std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
     {
         std::vector<RaycastResult> result;
+        
+        // normalize our ray just to make sure
+        ray.Direction = glm::normalize(ray.Direction);
 
         auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
 

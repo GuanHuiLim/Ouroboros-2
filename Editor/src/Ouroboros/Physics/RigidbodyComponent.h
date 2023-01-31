@@ -95,7 +95,7 @@ namespace oo
         vec3 GetPositionInPhysicsWorld() const;
         quat GetOrientationInPhysicsWorld() const;
 
-        std::vector<PxVec3> StoreMesh(std::vector<oo::vec3> result);
+        std::vector<physx::PxVec3> StoreMesh(std::vector<vec3> result);
         void SetStatic(bool result);
 
         float GetMass() const;
@@ -137,6 +137,12 @@ namespace oo
         void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
 
         oo::UUID GetUnderlyingUUID() const;
+    
+        //for RTTR
+        glm::vec3 GetLinearVel() const;
+        glm::vec3 GetAngularVel() const;
+        void SetOffset(glm::vec3 offset) const;
+        glm::vec3 GetOffset() const;
 
         RTTR_ENABLE();
     };
