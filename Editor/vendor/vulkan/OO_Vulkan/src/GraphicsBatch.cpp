@@ -156,8 +156,7 @@ void GraphicsBatch::GenerateBatches()
 		light.view[4] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+-forward,	glm::vec3{ 0.0f,-1.0f, 0.0f });
 		light.view[5] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+forward,	glm::vec3{ 0.0f,-1.0f, 0.0f });
 
-		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
-		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, light.radius.x);
 	}
 
 	auto& allEmitters = m_world->GetAllEmitterInstances();
@@ -202,7 +201,7 @@ void GraphicsBatch::GenerateBatches()
 		// set up the commands and number of particles
 		oGFX::IndirectCommand cmd{};
 
-		cmd.instanceCount = static_cast<uint32_t>(emitter.particles.size());
+		cmd.instanceCount = emitter.particles.size();
 		// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
 		// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
 		cmd.firstInstance = emitterCnt;

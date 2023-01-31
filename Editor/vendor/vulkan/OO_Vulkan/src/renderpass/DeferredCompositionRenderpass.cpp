@@ -99,7 +99,7 @@ void DeferredCompositionRenderpass::Draw()
 
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	rhi::CommandList cmd{ cmdlist };
+	rhi::CommandList cmd{ cmdlist, "Lighting Pass"};
 	cmd.SetDefaultViewportAndScissor();
 
 	const auto& info = vr.globalLightBuffer.GetDescriptorBufferInfo();
@@ -115,7 +115,7 @@ void DeferredCompositionRenderpass::Draw()
 	pc.numLights = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
 
 	// calculate shadowmap grid dims
-	float gridSize = ceilf(sqrtf(static_cast<float>(vr.m_numShadowcastLights)));
+	float gridSize = ceilf(sqrtf(vr.m_numShadowcastLights));
 	gridSize = std::max<float>(0, gridSize);
 	pc.shadowMapGridDim = glm::vec2{gridSize,gridSize};
 

@@ -105,6 +105,7 @@ namespace oGFX
 	{
 		int graphicsFamily = -1; //location of graphics queue family //as per vulkan standard, if we have a graphics family, we have a transfer family
 		int presentationFamily = -1;
+		int transferFamily = -1;
 
 		//check if queue familities are valid
 		bool isValid()
@@ -653,6 +654,16 @@ namespace oGFX
 				return pipelineCreateInfo;
 			}
 
+			inline VkComputePipelineCreateInfo computeCreateInfo(
+				VkPipelineLayout layout, 
+				VkPipelineCreateFlags flags = 0)
+			{
+				VkComputePipelineCreateInfo computePipelineCreateInfo {};
+				computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+				computePipelineCreateInfo.layout = layout;
+				computePipelineCreateInfo.flags = flags;
+				return computePipelineCreateInfo;
+			}
 
 			inline VkCommandBufferBeginInfo commandBufferBeginInfo()
 			{

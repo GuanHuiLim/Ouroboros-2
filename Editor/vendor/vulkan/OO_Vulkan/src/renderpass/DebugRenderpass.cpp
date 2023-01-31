@@ -97,7 +97,7 @@ void DebugDrawRenderpass::Draw()
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	rhi::CommandList cmd{ cmdlist };
+	rhi::CommandList cmd{ cmdlist, "Debug Pass"};
 	if (dodebugRendering)
 	{
 		cmd.SetDefaultViewportAndScissor();

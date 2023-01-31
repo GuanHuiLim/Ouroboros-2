@@ -2,7 +2,7 @@ float pi = 3.1415;
 
 float approx_tan(vec3 V, vec3 N)
 {
-    float VN = dot(V,N);
+    float VN = clamp(dot(V,N),0.0,1.0);
     return sqrt( 1.0-pow(VN,2) )/VN;
 }
 

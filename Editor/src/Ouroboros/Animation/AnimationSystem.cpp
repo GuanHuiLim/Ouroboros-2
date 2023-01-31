@@ -89,7 +89,7 @@ namespace oo::Anim
 
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
-			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), timer::unscaled_dt() };
+			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), timer::dt() };
 			internal::UpdateTracker(info);
 			});
 		TRACY_PROFILE_SCOPE_END();
