@@ -176,6 +176,8 @@ namespace myPhysx
 
         void shutdown() {
 
+            mCooking->release();
+
             mPhysics->release();
 
             // pvd release here
