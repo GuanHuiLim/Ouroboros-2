@@ -38,13 +38,13 @@ namespace oo
         registration::class_<RigidbodyComponent>("Rigidbody")
             //.property("type", &RigidbodyComponent::collider_type)
             .property_readonly("Underlying physX UUID", &RigidbodyComponent::GetUnderlyingUUID)
-            .property("Offset", &RigidbodyComponent::Offset)
+            .property("Offset", &RigidbodyComponent::GetOffset, &RigidbodyComponent::SetOffset)
             .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
             .property("Linear Damping", &RigidbodyComponent::GetLinearDamping, &RigidbodyComponent::SetLinearDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
             .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property_readonly("Velocity", &RigidbodyComponent::GetLinearVelocity)
-            .property_readonly("Angular Velocity", &RigidbodyComponent::GetAngularVelocity)
+            .property("Velocity", &RigidbodyComponent::GetLinearVelocity, &RigidbodyComponent::SetLinearVelocity)(metadata(UI_metadata::HIDDEN, true))
+            .property("Angular Velocity", &RigidbodyComponent::GetAngularVelocity, &RigidbodyComponent::SetAngularVelocity)(metadata(UI_metadata::HIDDEN, true))
             .property_readonly("Shape",&RigidbodyComponent::GetUnderlyingShape)
             .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
             .property("Enable Gravity", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
@@ -146,9 +146,20 @@ namespace oo
         return !IsStatic() && underlying_object.is_kinematic;
     }
 
+    vec3 oo::RigidbodyComponent::GetOffset() const
+    {
+        return Offset;
+    }
+
     bool oo::RigidbodyComponent::IsDynamic() const
     {
         return !IsStatic() && !underlying_object.is_kinematic;
+    }
+
+    void oo::RigidbodyComponent::SetOffset(vec3 newOffset)
+    {
+        Offset = newOffset;
+        IsDirty = true;
     }
 
     bool oo::RigidbodyComponent::IsTrigger() const

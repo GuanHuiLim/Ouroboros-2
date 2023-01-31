@@ -151,8 +151,8 @@ namespace phy
         phy_uuid::UUID id;
         Material material = Material{};
 
-        PxVec3 position;
-        PxQuat orientation;
+        PxVec3 position = {};
+        PxQuat orientation = {};
 
         PxReal mass, invmass;
         PxReal linearDamping, angularDamping;
@@ -283,7 +283,7 @@ namespace phy
 
         void setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate);
         
-        void setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, bool duplicate);
+        void setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate);
 
         void setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
         

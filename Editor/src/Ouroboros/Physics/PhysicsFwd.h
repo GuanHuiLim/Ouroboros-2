@@ -18,12 +18,6 @@ Technology is prohibited.
 
 namespace oo
 {
-    // debugging defines
-    #define PHYSICS_DRAW_CONTACTS   true
-    #define PHYSICS_DRAW_FORCES     false
-    #define PHYSICS_DRAW_NORMALS    true
-    #define PHYSICS_DEBUG_MSG       false
-
     // Data Types
     using vec2 = glm::vec2;
     using vec3 = glm::vec3;
@@ -45,15 +39,4 @@ namespace oo
     struct CapsuleColliderComponent;
     struct MeshColliderComponent;
     //struct ConvexCollider;
-
-    // Data Structures
-    /*struct Contact2D;
-    struct Manifold2D;
-    struct PhysicsMaterial;
-    struct MassData;*/
-
-    //// Solvers
-    //struct Solver;
-    //struct ImpulseSolver;
-    //struct SmoothPositionSolver;
 }

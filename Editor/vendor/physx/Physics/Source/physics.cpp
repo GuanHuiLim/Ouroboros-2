@@ -403,7 +403,7 @@ namespace phy
 
     void PhysicsWorld::submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects)
     {
-        std::for_each(std::execution::unseq, updatedObjects.begin(), updatedObjects.end(), [&](auto&& updatedObj)
+        std::for_each(/*std::execution::unseq,*/ updatedObjects.begin(), updatedObjects.end(), [&](auto&& updatedObj)
         {
             // CHECK WHETHER OBJECT EXISTED
             if (!m_objects_lookup.contains(updatedObj.id))
@@ -433,8 +433,18 @@ namespace phy
         underlying_Obj.m_material->setDynamicFriction(updatedPhysicsObj.material.dynamicFriction);
         underlying_Obj.m_material->setRestitution(updatedPhysicsObj.material.restitution);
 
-        PxRigidActor* rigidbody = nullptr;
+        PxRigidActor* underlying_rigidbody = nullptr;
         PxTransform transform { updatedPhysicsObj.position, updatedPhysicsObj.orientation };
+        
+        // set our rigidbody to the correct pointer
+        if (underlying_Obj.rigid_type == rigid::rstatic)
+        {
+            underlying_rigidbody = underlying_Obj.rb.rigidStatic;
+        }
+        else // underlying_Obj.rigid_type == rigid::rdynamic
+        {
+            underlying_rigidbody = underlying_Obj.rb.rigidDynamic;
+        }
 
         // CHECK IF CHANGING IN RIGID TYPE
         if (underlying_Obj.rigid_type != updatedPhysicsObj.rigid_type || duplicate) 
@@ -446,17 +456,17 @@ namespace phy
                 if (underlying_Obj.rigid_type == rigid::rstatic)
                 {
                     // clear the current data
-                    scene->removeActor(*underlying_Obj.rb.rigidStatic);
+                    scene->removeActor(*underlying_rigidbody);
                     if (underlying_Obj.m_shape)
-                        underlying_Obj.rb.rigidStatic->detachShape(*underlying_Obj.m_shape);
-                    underlying_Obj.rb.rigidStatic = nullptr;
+                        underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
+                    underlying_rigidbody = nullptr;
                 }
                 else // underlying_Obj.rigid_type == rigid::rdynamic
                 {
-                    scene->removeActor(*underlying_Obj.rb.rigidDynamic);
+                    scene->removeActor(*underlying_rigidbody);
                     if (underlying_Obj.m_shape)
-                        underlying_Obj.rb.rigidDynamic->detachShape(*underlying_Obj.m_shape);
-                    underlying_Obj.rb.rigidDynamic = nullptr;
+                        underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
+                    underlying_rigidbody = nullptr;
                 }
             }
             else
@@ -470,47 +480,43 @@ namespace phy
             {
                 // create new rigidbody
                 underlying_Obj.rb.rigidStatic = mPhysics->createRigidStatic(transform);
-                rigidbody = underlying_Obj.rb.rigidStatic;
+                underlying_rigidbody = underlying_Obj.rb.rigidStatic;
             }
             else // underlying_Obj.rigid_type == rigid::rdynamic
             {
                 underlying_Obj.rb.rigidDynamic = mPhysics->createRigidDynamic(transform);
-                rigidbody = underlying_Obj.rb.rigidDynamic;
+                underlying_rigidbody = underlying_Obj.rb.rigidDynamic;
             }
 
-            assert(rigidbody, "This should NOT be nullptr at all at this point!");
+            assert(underlying_rigidbody, "This should NOT be nullptr at all at this point!");
             
-            rigidbody->userData = underlying_Obj.id.get();
-            scene->addActor(*rigidbody);
+            underlying_rigidbody->userData = underlying_Obj.id.get();
+            scene->addActor(*underlying_rigidbody);
 
             // REATTACH SHAPE INTO NEW RIGIDBODY
             if (underlying_Obj.m_shape) 
             {
-                rigidbody->attachShape(*underlying_Obj.m_shape);
+                underlying_rigidbody->attachShape(*underlying_Obj.m_shape);
 
                 physx_system::setupFiltering(underlying_Obj.m_shape);
             }
         }
         
         // next we check for positional changes.
+        if (underlying_rigidbody)
         {
             // set new position and orientation
-            if (underlying_Obj.rigid_type == rigid::rstatic)
-                underlying_Obj.rb.rigidStatic->setGlobalPose(transform);
-
-            else if (underlying_Obj.rigid_type == rigid::rdynamic)
-                underlying_Obj.rb.rigidDynamic->setGlobalPose(transform);
+            underlying_rigidbody->setGlobalPose(transform);
         }
 
         // RIGIDBODY PROPERTIES
-        if (underlying_Obj.rigid_type == rigid::rstatic) {
 
-            setShape(updatedPhysicsObj, underlying_Obj, duplicate);
-        }
-        else if (underlying_Obj.rigid_type == rigid::rdynamic) {
+        // we must set shape for all rigidbody
+        setShape(updatedPhysicsObj, underlying_Obj, underlying_rigidbody, duplicate);
 
-            setShape(updatedPhysicsObj, underlying_Obj, duplicate);
-
+        // Additional work needs to be done for dynamic object
+        if (underlying_Obj.rigid_type == rigid::rdynamic) 
+        {
             if(updatedPhysicsObj.mass >= 0)
                 underlying_Obj.rb.rigidDynamic->setMass(updatedPhysicsObj.mass);
 
@@ -546,8 +552,8 @@ namespace phy
         underlying_Obj.is_collider_enabled = updatedPhysicsObj.is_collider_enabled;
         underlying_Obj.is_trigger = updatedPhysicsObj.is_trigger;
 
-        if (underlying_Obj.shape_type != shape::none) {
-
+        if (underlying_Obj.shape_type != shape::none) 
+        {
             if (underlying_Obj.is_trigger)
                 underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
 
@@ -557,22 +563,22 @@ namespace phy
 
     }
 
-    void PhysicsWorld::setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, bool duplicate) {
-
-        PxRigidActor* rigidbody = nullptr;
+    void PhysicsWorld::setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate)
+    {
+        /*PxRigidActor* rigidbody = nullptr;
 
         if (underlying_Obj.rigid_type == rigid::rstatic)
             rigidbody = underlying_Obj.rb.rigidStatic;
         
         else if (underlying_Obj.rigid_type == rigid::rdynamic)
-            rigidbody = underlying_Obj.rb.rigidDynamic;
+            rigidbody = underlying_Obj.rb.rigidDynamic;*/
 
         // CHECK IF WE NEED TO CHANGE SHAPE 
         if (underlying_Obj.shape_type != updated_Obj.shape_type || duplicate) 
         {
             // if we have an existing shape, we must remove it
             if (underlying_Obj.shape_type != shape::none && underlying_Obj.m_shape)
-                rigidbody->detachShape(*underlying_Obj.m_shape);
+                underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
 
             // SHAPE PROPERTIES
             underlying_Obj.shape_type = updated_Obj.shape_type;
@@ -599,7 +605,7 @@ namespace phy
             }
 
             // ATTACH THE NEW SHAPE TO THE OBJECT
-            rigidbody->attachShape(*underlying_Obj.m_shape);
+            underlying_rigidbody->attachShape(*underlying_Obj.m_shape);
 
             physx_system::setupFiltering(underlying_Obj.m_shape);
         }

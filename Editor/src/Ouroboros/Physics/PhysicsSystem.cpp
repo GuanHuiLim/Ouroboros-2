@@ -205,39 +205,6 @@ namespace oo
             m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
                 {
                     rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
-
-                    // IMPORTANT NOTE!
-                    // position retrieve is presumably global position in physics world.
-                    // but we must remember to consider the scenegraph hierarchy 
-                    // when calculating its final transform.
-                    // therefore we find the delta change and apply it to its local transform.
-                    // we only update dynamic colliders
-                    if (rb.IsStatic() || rb.IsTrigger())
-                        return;
-
-                    //// probably better to just constantly set this 3 instead of checking
-                    //rb.object.lockPositionX(rb.LockXAxisPosition);
-                    //rb.object.lockPositionY(rb.LockYAxisPosition);
-                    //rb.object.lockPositionZ(rb.LockZAxisPosition);
-
-                    //rb.object.lockRotationX(rb.LockXAxisRotation);
-                    //rb.object.lockRotationY(rb.LockYAxisRotation);
-                    //rb.object.lockRotationZ(rb.LockZAxisRotation);
-
-                    auto pos = rb.GetPositionInPhysicsWorld();
-                    auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
-                    tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
-
-                    auto orientation = rb.GetOrientationInPhysicsWorld();
-                    auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
-
-                    //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
-                    //LOG_TRACE("global orientation {0},{1},{2},{3}", tf.GetGlobalRotationQuat().value.x, tf.GetGlobalRotationQuat().value.y, tf.GetGlobalRotationQuat().value.z, tf.GetGlobalRotationQuat().value.w);
-                    //LOG_TRACE("delta orientation {0},{1},{2},{3}", delta_orientation.x, delta_orientation.y, delta_orientation.z, delta_orientation.w);
-                    //LOG_TRACE("local orientation {0},{1},{2},{3}", tf.GetRotationQuat().value.x, tf.GetRotationQuat().value.y, tf.GetRotationQuat().value.z, tf.GetRotationQuat().value.w);
-
-                    tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
-                    //tf.SetOrientation(orientation);
                 });
             TRACY_PROFILE_SCOPE_END();
         }
@@ -333,20 +300,52 @@ namespace oo
 
         
         //Single threaded method
-        /*
+        
             static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
             // set position and orientation of our scene's dynamic rigidbodies with updated physics results
             m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
             {
             
+                    // IMPORTANT NOTE!
+                    // position retrieve is presumably global position in physics world.
+                    // but we must remember to consider the scenegraph hierarchy 
+                    // when calculating its final transform.
+                    // therefore we find the delta change and apply it to its local transform.
+                    // we only update dynamic colliders
+                    if (rb.IsStatic() || rb.IsTrigger())
+                        return;
+
+                    //// probably better to just constantly set this 3 instead of checking
+                    //rb.object.lockPositionX(rb.LockXAxisPosition);
+                    //rb.object.lockPositionY(rb.LockYAxisPosition);
+                    //rb.object.lockPositionZ(rb.LockZAxisPosition);
+
+                    //rb.object.lockRotationX(rb.LockXAxisRotation);
+                    //rb.object.lockRotationY(rb.LockYAxisRotation);
+                    //rb.object.lockRotationZ(rb.LockZAxisRotation);
+
+                    auto pos = rb.GetPositionInPhysicsWorld();
+                    auto delta_position = pos - tf.GetGlobalPosition() - rb.Offset; // Note: we minus offset here too to compensate!
+                    tf.SetGlobalPosition(tf.GetGlobalPosition() + delta_position);
+
+                    auto orientation = rb.GetOrientationInPhysicsWorld();
+                    auto delta_orientation = orientation - tf.GetGlobalRotationQuat().value;
+
+                    //LOG_TRACE("orientation {0},{1},{2},{3}", orientation.x, orientation.y, orientation.z, orientation.w);
+                    //LOG_TRACE("global orientation {0},{1},{2},{3}", tf.GetGlobalRotationQuat().value.x, tf.GetGlobalRotationQuat().value.y, tf.GetGlobalRotationQuat().value.z, tf.GetGlobalRotationQuat().value.w);
+                    //LOG_TRACE("delta orientation {0},{1},{2},{3}", delta_orientation.x, delta_orientation.y, delta_orientation.z, delta_orientation.w);
+                    //LOG_TRACE("local orientation {0},{1},{2},{3}", tf.GetRotationQuat().value.x, tf.GetRotationQuat().value.y, tf.GetRotationQuat().value.z, tf.GetRotationQuat().value.w);
+
+                    tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
+                    //tf.SetOrientation(orientation);
 
             });
-        */
+        
 
         TRACY_PROFILE_SCOPE_NC(physics_update_transform_tree, tracy::Color::Brown)
         // lastly update transform system for transforms changes to be reflected
-        //m_world->Get_System<TransformSystem>()->UpdateEntireTree();
+        m_world->Get_System<TransformSystem>()->UpdateEntireTree();
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -409,8 +408,8 @@ namespace oo
                 //jobsystem::submit(update_global_bounds_job, [&]()
                     //{
                         TRACY_PROFILE_SCOPE_NC(individual_rigidbody_update, tracy::Color::PeachPuff3);
-                        // only update for transformthat have changed
-                            if (tf.HasChangedThisFrame)
+                        // only update for transform that have changed or is just initialized (isDirty = true)
+                            if (tf.HasChangedThisFrame || rb.IsDirty)
                             {
                                 TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                                 auto pos = tf.GetGlobalPosition();
@@ -550,6 +549,7 @@ namespace oo
 
         TRACY_PROFILE_SCOPE_NC(compiling_objects_that_requires_update, tracy::Color::VioletRed2);
         
+        needsUpdating.clear();
         needsUpdating.reserve(1024);
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
@@ -727,10 +727,6 @@ namespace oo
             glm::vec3 rotatedY = glm::rotate(quat, glm::vec3{0, bc.GlobalHalfExtents.y, 0});
             glm::vec3 rotatedZ = glm::rotate(quat, glm::vec3{0, 0, bc.GlobalHalfExtents.z});
 
-            //glm::vec3 rotatedVal = glm::conjugate(quat) * bc.GlobalHalfExtents * quat;
-            ////glm::vec3 rotatedVal = glm::mat4_cast(quat) * glm::vec4{ bc.HalfExtents, 0 };
-            //rotatedVal *= bc.Size * tf.GetGlobalScale();
-
             auto bottom_left_back   = pos - rotatedX - rotatedY - rotatedZ;
             auto bottom_right_back  = pos + rotatedX - rotatedY - rotatedZ;
             auto top_left_back      = pos - rotatedX + rotatedY - rotatedZ;
@@ -747,7 +743,7 @@ namespace oo
             DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
 
             DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
+            DebugDraw::AddLine(top_left_front, top_right_front, oGFX::Colors::GREEN);
             DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
             DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
 
@@ -818,7 +814,7 @@ namespace oo
     std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
     {
         std::vector<RaycastResult> result;
-
+        ray.Direction = glm::normalize(ray.Direction);
         auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
 
         for (auto& hit : allHits)

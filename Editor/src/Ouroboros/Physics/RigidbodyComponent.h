@@ -108,6 +108,8 @@ namespace oo
         bool LockZAxisRotation = false;*/
         
         vec3 Offset = { 0.0, 0.0, 0.0 };
+        vec3 GetOffset() const;
+        void SetOffset(vec3 newOffset);
 
         // property wrapper functions
         oo::UUID GetUnderlyingUUID() const;
