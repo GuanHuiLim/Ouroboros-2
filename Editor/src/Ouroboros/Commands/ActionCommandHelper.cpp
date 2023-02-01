@@ -7,6 +7,7 @@
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/ECS/DuplicatedComponent.h>
+#include <Ouroboros/ECS/JustCreatedComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
@@ -31,6 +32,7 @@ namespace oo
 		AddCommandToMap<oo::GameObjectComponent>();
 		AddCommandToMap<oo::TransformComponent>();
 		AddCommandToMap<oo::DeferredComponent>();
+		AddCommandToMap<oo::JustCreatedComponent>();
 		AddCommandToMap<oo::DuplicatedComponent>();
 		AddCommandToMap<oo::RigidbodyComponent>();
 		AddCommandToMap<oo::SphereColliderComponent>();
@@ -41,7 +43,6 @@ namespace oo
 		AddCommandToMap<oo::ParticleEmitterComponent>();
 		AddCommandToMap<oo::SkinMeshRendererComponent>();
 		AddCommandToMap<oo::SkinMeshBoneComponent>();
-		AddCommandToMap<oo::DeferredComponent>();
 		AddCommandToMap<oo::LightComponent>();
 		AddCommandToMap<oo::CameraComponent>();
 		AddCommandToMap<oo::AudioListenerComponent>();

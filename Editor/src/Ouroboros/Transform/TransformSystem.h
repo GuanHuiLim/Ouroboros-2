@@ -28,6 +28,8 @@ namespace oo
         TransformSystem(Scene* scene);
         virtual ~TransformSystem() = default;
 
+        void PostLoadSceneInit();
+
         virtual void Run(Ecs::ECSWorld* world) override;
         void UpdateSubTree(GameObject go, bool includeItself = true);
         void UpdateEntireTree();

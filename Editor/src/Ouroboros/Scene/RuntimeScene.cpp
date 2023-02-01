@@ -96,9 +96,6 @@ namespace oo
             LoadFromFile();
             TRACY_PROFILE_SCOPE_END();
         }
-        //post load file processes
-        GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
 
         StartSimulation();
 
@@ -252,14 +249,16 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(start_simulation);
 
-        GetWorld().Get_System<oo::TransformSystem>()->UpdateSubTree(*GetRoot(), false);
+        //post load file processes
+        GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
+
         GetWorld().Get_System<ScriptSystem>()->StartPlay();
 
-        /*GetWorld().GetSystem<oo::ScriptSystem>()->StartPlay();
-        GetWorld().GetSystem<oo::TransformSystem>()->UpdateTransform();
-        GetWorld().GetSystem<oo::PhysicsSystem>()->Init();
-        GetWorld().GetSystem<oo::ParticleRenderingSystem>()->Init();
-        GetWorld().GetSystem<oo::AudioSystem>()->Init();*/
+        GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
+        GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
+        
+        GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit(&GetWorld());
 
         TRACY_PROFILE_SCOPE_END();
     }

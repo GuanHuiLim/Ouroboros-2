@@ -99,7 +99,11 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
+        // post file loaded function calls
+        GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
+        GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
         GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
+        GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit(&GetWorld());
 
         TRACY_PROFILE_SCOPE_END();
     }

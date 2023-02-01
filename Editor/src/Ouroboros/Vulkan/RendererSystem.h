@@ -51,6 +51,8 @@ namespace oo
 
         void Init();
 
+        void PostSceneLoadInit(Ecs::ECSWorld* world);
+
         virtual void Run(Ecs::ECSWorld* world) override;
 
         void UpdateCameras(Scene::go_ptr& mainCamera);
@@ -87,6 +89,6 @@ namespace oo
         CameraController m_runtimeCC;
         Camera m_runtimeCamera;
         
-        bool m_firstFrame = true; // potentially improvable if this can be run once per creation
+        //bool m_firstFrame = true; // potentially improvable if this can be run once per creation
     };
 }

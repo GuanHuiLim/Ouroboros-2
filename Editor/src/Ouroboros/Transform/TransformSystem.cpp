@@ -31,6 +31,11 @@ namespace oo
     {
     }
 
+    void TransformSystem::PostLoadSceneInit()
+    {
+        UpdateEntireTree();
+    }
+
     void TransformSystem::Run(Ecs::ECSWorld* world)
     {
         TRACY_PROFILE_SCOPE_NC(transform_main_update, tracy::Color::Gold2);
@@ -84,6 +89,8 @@ namespace oo
     void TransformSystem::UpdateEntireTree()
     {
         TRACY_PROFILE_SCOPE_NC(transform_update_entire_tree, tracy::Color::Gold3);
+
+        UpdateLocalTransforms();
 
         auto const& graph = m_scene->GetGraph();
         scenegraph::shared_pointer root_node = graph.get_root();

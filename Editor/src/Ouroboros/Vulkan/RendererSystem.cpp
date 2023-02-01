@@ -184,6 +184,17 @@ namespace oo
         oo::EventManager::Broadcast<UpdateRendererSettings>(&e);
     }
 
+    void RendererSystem::PostSceneLoadInit(Ecs::ECSWorld* world)
+    {
+        // update meshes
+        static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
+        world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
+            {
+                auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
+                actualObject.localToWorld = transformComp.GlobalTransform;
+            });
+    }
+
     void RendererSystem::SaveEditorCamera()
     {
         // Save camera information back to appropriate place
@@ -242,12 +253,12 @@ namespace oo
             actualObject.SetShadowCaster(m_comp.CastShadows);
             actualObject.SetShadowReciever(m_comp.ReceiveShadows);
             
-            // update transform if this is the first frame of rendering
-            if (m_firstFrame)
-            {
-                actualObject.localToWorld = transformComp.GlobalTransform;
-                m_firstFrame = false;
-            }
+            //// update transform if this is the first frame of rendering
+            //if (m_firstFrame)
+            //{
+            //    actualObject.localToWorld = transformComp.GlobalTransform;
+            //    m_firstFrame = false;
+            //}
         });
 
 

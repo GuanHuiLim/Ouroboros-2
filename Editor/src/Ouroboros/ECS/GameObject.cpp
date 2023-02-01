@@ -19,6 +19,7 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/GameObjectDebugComponent.h"
 #include "Ouroboros/ECS/DuplicatedComponent.h"
+#include "Ouroboros/ECS/JustCreatedComponent.h"
 #include "Ouroboros/ECS/GameObjectDisabledComponent.h"
 
 #include "Ouroboros/Scripting/ScriptComponent.h"
@@ -54,7 +55,7 @@ namespace oo
 
     GameObject::GameObject(oo::UUID uuid, Scene& scene)
         : m_scene { &scene }
-        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent, ScriptComponent>() }
+        , m_entity{ scene.GetWorld().new_entity<GameObjectComponent, TransformComponent, ScriptComponent, JustCreatedComponent>() }
     {
         SetupGo(uuid, m_entity);
     }
@@ -304,6 +305,9 @@ namespace oo
 #endif
         auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(entt);
         goComp.Id = uuid;
+        auto& jcComp = m_scene->GetWorld().get_component<JustCreatedComponent>(entt);
+        jcComp.uuid = uuid;
+        jcComp.entityID = entt;
     }
 
     void GameObject::SetHierarchyActive(GameObjectComponent& comp, bool active) const

@@ -46,6 +46,7 @@ namespace oo
         virtual void Run(Ecs::ECSWorld*) override {};
 
         void Init(Scene* m_scene);
+        void PostLoadSceneInit();
         void RuntimeUpdate(Timestep deltaTime);
         void EditorUpdate(Timestep deltaTime);
         void RenderDebugColliders();

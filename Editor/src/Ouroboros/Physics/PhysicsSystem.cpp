@@ -85,6 +85,53 @@ namespace oo
             this, &PhysicsSystem::OnMeshColliderRemove);
 
         myPhysx::physx_system::setCurrentWorld(&m_physicsWorld);
+
+
+
+    }
+
+    void PhysicsSystem::PostLoadSceneInit()
+    {
+        // we initialize stuff that we can initialize!
+        // for objects just created!
+        static Ecs::Query meshColliderJustCreatedQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent, JustCreatedComponent>();
+        m_world->for_each(meshColliderJustCreatedQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr, JustCreatedComponent& jc)
+            {
+                if (mc.Vertices.empty() || mc.Reset == true)
+                {
+                    mc.Vertices.clear();
+                    mc.WorldSpaceVertices.clear();
+
+                    if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
+                    {
+                        auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
+
+                        auto new_vertices = std::vector<oo::vec3>();
+                        new_vertices.reserve(vertices.size());
+                        std::for_each(vertices.begin(), vertices.end(), [&](auto&& vertex) {
+                            new_vertices.emplace_back(vertex.pos);
+                            });
+
+                        auto generated_vertices = rb.StoreMesh(new_vertices);
+
+                        mc.WorldSpaceVertices = mc.Vertices = std::vector<oo::vec3>(generated_vertices.begin(), generated_vertices.end());
+                    }
+
+                    mc.Reset = false;
+                }
+
+                // update the world vertex position based on matrix of current object
+                auto globalMat = tf.GetGlobalMatrix();
+                auto vertices = mc.Vertices.begin();
+                std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v)
+                    {
+                        v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
+                    });
+
+                std::vector<PxVec3> res{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
+                rb.object.setConvexProperty(res);
+
+            });
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
@@ -481,9 +528,10 @@ namespace oo
                 {
                     // update the world vertex position based on matrix of current object
                     auto globalMat = tf.GetGlobalMatrix();
+                    auto vertices = mc.Vertices.begin();
                     std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v) 
                     {
-                        v = globalMat * glm::vec4{ static_cast<glm::vec3>(v), 1 };
+                        v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
                     });
 
                     std::vector<PxVec3> res{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
@@ -491,6 +539,8 @@ namespace oo
                 }
 
             });
+        
+        
         TRACY_PROFILE_SCOPE_END();
 
         //jobsystem::wait(update_global_bounds_job);
