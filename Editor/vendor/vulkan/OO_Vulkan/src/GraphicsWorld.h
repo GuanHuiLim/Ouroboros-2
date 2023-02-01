@@ -127,6 +127,15 @@ bool GetCastsShadows(OmniLightInstance& l);
 void SetCastsShadows(SpotLightInstance& l, bool s);
 bool GetCastsShadows(SpotLightInstance& l);
 
+template <typename T>
+inline void SetLightEnabled(T& l, bool s) {
+    reinterpret_cast<LocalLightInstance*>(&l)->info.y = s ? 0 : 1;
+}
+template <typename T>
+inline bool GetLightEnabled(T& l) {
+   return reinterpret_cast<LocalLightInstance*>(&l)->info.y == 0 ? true : false;
+}
+
 
 struct DecalInstance
 {
