@@ -83,6 +83,7 @@ namespace oo
         {
             float x;
             float y;
+            operator glm::vec2() const { return glm::vec2{ x, y }; }
         };
         // used to store the necessary info to create a C# Vector3
         struct vec3_type
@@ -90,6 +91,7 @@ namespace oo
             float x;
             float y;
             float z;
+            operator glm::vec3() const { return glm::vec3{ x, y, z }; }
         };
 
         // used to store a reference to both C# scripts and C# component interfaces

@@ -37,6 +37,7 @@ void PreviewWindow::Show()
 
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto graphicsworld = scene->GetGraphicsWorld();
+	graphicsworld->shouldRenderCamera[0] = true;
 	ImTextureID imageid = graphicsworld->imguiID[0];
 	if (imageid == 0)
 	{
@@ -89,6 +90,13 @@ void PreviewWindow::Show()
 
 	
 
+}
+
+void PreviewWindow::UpdateWhenNotShown()
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
+	graphicsworld->shouldRenderCamera[0] = false;
 }
 
 void PreviewWindow::GetPreviewWindowSize(GetPreviewWindowSizeEvent* e)

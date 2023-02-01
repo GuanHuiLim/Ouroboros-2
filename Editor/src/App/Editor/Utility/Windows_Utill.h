@@ -21,6 +21,7 @@ public:
 	static void Windows_Beep_Exclaimation() noexcept;
 	static void Windows_Beep_Warn() noexcept;
 	static void Windows_Beep_Error() noexcept;
+	static bool FileDialogue_Folder(std::function<void(const std::filesystem::path&)> callback);
 private:
 
 };

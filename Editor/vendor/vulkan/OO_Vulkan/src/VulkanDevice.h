@@ -39,11 +39,13 @@ struct VulkanDevice
 	VkQueue graphicsQueue{VK_NULL_HANDLE};
 	oGFX::QueueFamilyIndices queueIndices{};
 	VkQueue presentationQueue{VK_NULL_HANDLE};
+	VkQueue transferQueue{VK_NULL_HANDLE};
 
 	VkPhysicalDeviceFeatures enabledFeatures{};
 	VkPhysicalDeviceProperties properties{};
 
 	VkCommandPool commandPool{ VK_NULL_HANDLE };
+	VkCommandPool transferPool{ VK_NULL_HANDLE };
 
 	bool CheckDeviceSuitable(const oGFX::SetupInfo& si,VkPhysicalDevice device);
 	bool CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysicalDevice device);	
