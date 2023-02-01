@@ -28,8 +28,10 @@ namespace oo
         float x, y, z;
         
         vec3() = default;
-        vec3& operator=(vec3 const&) = default;
-        glm::vec3& operator=(glm::vec3 const& other) const { return *this = static_cast<oo::vec3>(other); }
+        vec3(oo::vec3 const&) = default;
+        vec3(oo::vec3&&) = default;
+        oo::vec3& operator=(oo::vec3 const&) = default;
+        oo::vec3& operator=(oo::vec3&&) = default;
 
         vec3(float v) : x{ v }, y{ v }, z{ v }{};
         vec3(float x, float y, float z) : x{ x }, y{ y }, z{ z } {};

@@ -141,7 +141,7 @@ namespace oo
         //for RTTR
         glm::vec3 GetLinearVel() const;
         glm::vec3 GetAngularVel() const;
-        void SetOffset(glm::vec3 offset) const;
+        void SetOffset(glm::vec3 offset);
         glm::vec3 GetOffset() const;
 
         RTTR_ENABLE();

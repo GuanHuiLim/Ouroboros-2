@@ -298,14 +298,14 @@ namespace oo
         return GetAngularVelocity();
     }
 
-    void oo::RigidbodyComponent::SetOffset(glm::vec3 offset) const
+    void oo::RigidbodyComponent::SetOffset(glm::vec3 offset)
     {
-        Offset = offset;
+        Offset = {offset};
     }
 
     glm::vec3 oo::RigidbodyComponent::GetOffset() const
     {
-        return GetOffset();
+        return Offset;
     }
 
 }
