@@ -56,13 +56,20 @@ namespace oo
         various combinations. But as much as possible make_query should work for the most part.
         */
 
-        // Reset all has changed to false regardless of their previous state.
-        // Note: this should only occure once per frame. Otherwise wonky behaviour.
-        static Ecs::Query query = Ecs::make_query<TransformComponent>();
-        world->for_each(query, [&](TransformComponent& tf)
-        { 
-            tf.HasChangedThisFrame = false; 
-        });
+        if (m_firstFrame)
+        {
+            m_firstFrame = false;
+        }
+        else
+        {
+            // Reset all has changed to false regardless of their previous state.
+            // Note: this should only occure once per frame. Otherwise wonky behaviour.
+            static Ecs::Query query = Ecs::make_query<TransformComponent>();
+            world->for_each(query, [&](TransformComponent& tf)
+            { 
+                tf.HasChangedThisFrame = false; 
+            });
+        }
 
         // TODO
         // update local transformations : can be parallelized.

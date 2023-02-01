@@ -38,7 +38,7 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE_NC(just_created_component_removal, tracy::Color::Gold2);
 
-            //std::vector<oo::UUID> uuids;
+            std::vector<oo::UUID> uuids;
 
             // we collect all uuids first
             // we manually build query as we want Just Created component 
@@ -46,19 +46,19 @@ namespace oo
             world->for_each(query, [&](GameObjectComponent& gocomp, JustCreatedComponent& justCreatedComp)
                 {
                     //LOG_INFO("Should be removing deferred Component from entity {0}", gocomp.Id);
-                    //uuids.emplace_back(gocomp.Id);
+                    uuids.emplace_back(gocomp.Id);
 
-                    auto go = m_scene->FindWithInstanceID(justCreatedComp.uuid);
-                    go->RemoveComponent<JustCreatedComponent>();
+                    //auto go = m_scene->FindWithInstanceID(justCreatedComp.uuid);
+                    //go->RemoveComponent<JustCreatedComponent>();
                 });
 
             // than we start removing 
             // NOTE : because doing so while iterating will cause issues.
-            /*for (auto& uuid : uuids)
+            for (auto& uuid : uuids)
             {
                 auto go = m_scene->FindWithInstanceID(uuid);
                 go->RemoveComponent<JustCreatedComponent>();
-            }*/
+            }
 
             TRACY_PROFILE_SCOPE_END();
         }
