@@ -3,6 +3,7 @@
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Project.h"
 
 namespace oo
 {
@@ -156,13 +157,34 @@ namespace oo
 		TRACY_PROFILE_SCOPE_END();
 	}
 
+	ModelFileResource* FindModel_via_modelID(std::vector<Asset>& models, uint32_t id)
+	{
+		for (auto& model : models)
+		{
+			auto ptr = model.GetData<std::shared_ptr<ModelFileResource>>();
+			if (ptr->meshResource == id)
+				return ptr.get();
+		}
+	}
+
+	void AssignGraphicsWorldID_to_Bones_Recursively(oo::GameObject obj, ModelFileResource* model, oGFX::BoneNode* curr)
+	{
+		uint index = 0;
+		for (auto bone : curr->mChildren)
+		{
+			 
+		}
+	}
+
 	void SkinMeshRendererSystem::PostLoadScene()
 	{
 		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+		auto models = Project::GetAssetManager()->GetAssetsByType(AssetInfo::Type::Model);
+
 
 		//resize bones container beforehand
-		scene->GetWorld().for_each(skin_mesh_query,
-			[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
+		scene->GetWorld().for_each_entity_and_component(skin_mesh_query,
+			[&](Ecs::EntityID entity,SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
 			{
 				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
 				
@@ -173,6 +195,13 @@ namespace oo
 
 				if (gfx_Object.bones.size() != m_comp.num_bones)
 					gfx_Object.bones.resize(m_comp.num_bones);
+
+				ModelFileResource* model = FindModel_via_modelID(models, m_comp.meshResource);
+				assert(model->skeleton);	//should have skeleton
+				assert(model->skeleton->m_boneNodes);	//should have bones
+
+				oo::GameObject go{ entity,*scene };
+				AssignGraphicsWorldID_to_Bones_Recursively(go, model, model->skeleton->m_boneNodes);
 			});
 
 		AssignGraphicsWorldID_to_BoneComponents();
