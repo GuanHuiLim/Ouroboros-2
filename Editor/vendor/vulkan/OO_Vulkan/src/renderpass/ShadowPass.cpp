@@ -149,8 +149,8 @@ void ShadowPass::Draw()
 					int lx = lightGrid - (ly * smGridDim);
 					vec2 customVP = increment * glm::vec2{ lx,smGridDim - ly };
 
-					light.info.z = customVP.x; // this is actually wasted
-					light.info.w = customVP.y; // this is actually wasted
+					//light.info.z = customVP.x; // this is actually wasted
+					//light.info.w = customVP.y; // this is actually wasted
 
 					//cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
 					//cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
@@ -187,9 +187,7 @@ void ShadowPass::Draw()
 					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, vr.shadowCasterCommandsBuffer.size());
 				}
 				
-			}
-
-			
+			}			
 		}		
 	}
 

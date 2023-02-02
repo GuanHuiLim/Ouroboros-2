@@ -116,7 +116,7 @@ void DeferredCompositionRenderpass::Draw()
 	auto& lights = vr.currWorld->GetAllOmniLightInstances();
 	for(auto& l :lights) 
 	{
-		if (GetLightEnabled(l))
+		if (GetLightEnabled(l)== true)
 		{
 			++lightCnt;
 		}
