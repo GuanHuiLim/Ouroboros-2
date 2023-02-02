@@ -743,23 +743,39 @@ namespace oo
         static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent>();
         m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc)
             {
-                if (!mc.WorldSpaceVertices.empty())
+                /*for (auto& i : mc.WorldSpaceVertices)
                 {
-                    auto pos = rb.GetPositionInPhysicsWorld();
-                    auto scale = tf.GetGlobalScale();
-                    auto quat = rb.GetOrientationInPhysicsWorld();
+                }
 
-                    auto& first = mc.WorldSpaceVertices.back();
-                    auto& next = mc.WorldSpaceVertices.front();
-                    for (auto iter = mc.WorldSpaceVertices.begin() + 1; iter != mc.WorldSpaceVertices.end(); ++iter)
-                    {
-                        DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
-                        
-                        auto& vert = *iter;
-                        first = next;
-                        next = vert;
-                    }
+                for (auto iter = mc.WorldSpaceVertices.cbegin(); iter != mc.WorldSpaceVertices.cend(); ++iter)
+                {
+                }*/
+
+                if (mc.WorldSpaceVertices.size() > 1)
+                {
+                    auto first = mc.WorldSpaceVertices.back(); 
+                    auto next = mc.WorldSpaceVertices.front();
                     DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+
+                    for (auto curr : mc.WorldSpaceVertices)
+                    {
+                        first = next;
+                        next = curr;
+                        DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                    }
+
+                    //auto first = mc.WorldSpaceVertices.back();
+                    //auto next = mc.WorldSpaceVertices.front();
+                    
+                    //for (auto iter = std::next(mc.WorldSpaceVertices.begin()); iter != mc.WorldSpaceVertices.end(); ++iter)
+                    //{
+                    //    //DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                    //    
+                    //    //auto vert = *iter;
+                    //    //first = next;
+                    //    //next = vert;
+                    //}
+                    //DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
                 }
             });
 
