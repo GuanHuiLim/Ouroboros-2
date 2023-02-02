@@ -168,7 +168,7 @@ namespace oo
         if (m_accumulator > AccumulatorLimit)
             m_accumulator = AccumulatorLimit;
 
-        while (m_accumulator > FixedDeltaTime)
+        while (m_accumulator >= FixedDeltaTime)
         {
             TRACY_PROFILE_SCOPE_NC(physics_fixed_update, tracy::Color::PeachPuff1);
 
