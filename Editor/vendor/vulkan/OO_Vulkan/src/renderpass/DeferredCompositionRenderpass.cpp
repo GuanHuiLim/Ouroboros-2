@@ -111,8 +111,18 @@ void DeferredCompositionRenderpass::Draw()
 
 	LightPC pc{};
 	pc.useSSAO = vr.useSSAO ? 1 : 0;
+
+	size_t lightCnt = 0;
+	auto& lights = vr.currWorld->GetAllOmniLightInstances();
+	for(auto& l :lights) 
+	{
+		if (GetLightEnabled(l))
+		{
+			++lightCnt;
+		}
+	}
 	
-	pc.numLights = static_cast<uint32_t>(vr.currWorld->GetAllOmniLightInstances().size());
+	pc.numLights = static_cast<uint32_t>(lightCnt);
 
 	// calculate shadowmap grid dims
 	float gridSize = ceilf(sqrtf(vr.m_numShadowcastLights));
