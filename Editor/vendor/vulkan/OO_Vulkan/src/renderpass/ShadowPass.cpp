@@ -129,13 +129,13 @@ void ShadowPass::Draw()
 
 	if (vr.m_numShadowcastLights > 0)
 	{
-		int i = 0;
-		int viewIter = 0;
+		
 		for (auto& light: vr.currWorld->GetAllOmniLightInstances())
 		{
-			++viewIter;
+			if (GetLightEnabled(light) == false) continue;
+
 			// not a shadow casting light skip
-			if (light.info.x < 1) continue;
+			if (GetCastsShadows(light) == false) continue;
 
 			// this is an omnilight
 			if (light.info.x == 1)
@@ -186,7 +186,7 @@ void ShadowPass::Draw()
 
 					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, vr.shadowCasterCommandsBuffer.size());
 				}
-				++i;
+				
 			}
 
 			
