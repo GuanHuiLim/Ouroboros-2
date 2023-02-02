@@ -564,6 +564,13 @@ namespace oo
             auto& gid = m_uuidToGraphicsID.at(e->Id);
             auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
             actualObject.SetRenderEnabled(true);
+            
+            // On Enable we have to check!
+            auto go = FindWithInstanceID(e->Id);
+            if(go->HasComponent<MeshRendererComponent>())
+                actualObject.SetShadowEnabled(go->GetComponent<MeshRendererComponent>().CastShadows);
+            else if (go->HasComponent<SkinMeshRendererComponent>())
+                actualObject.SetShadowEnabled(go->GetComponent<SkinMeshRendererComponent>().CastShadows);
         }
     }
 
@@ -575,6 +582,9 @@ namespace oo
             auto& gid = m_uuidToGraphicsID.at(e->Id);
             auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
             actualObject.SetRenderEnabled(false);
+
+            // On Disable, we don't have to check! just set to false
+            actualObject.SetShadowEnabled(false);
         }
     }
 

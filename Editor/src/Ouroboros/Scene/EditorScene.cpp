@@ -60,25 +60,6 @@ namespace oo
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
             GetWorld().Add_System<oo::UISystem>(this);
-            //bool wantDebug = true;
-
-            //GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
-            //TRACY_PROFILE_SCOPE_N(registration);
-            /*GetWorld().RegisterSystem<PrefabComponentSystem>();
-            GetWorld().RegisterSystem<EditorComponentSystem>();
-
-            GetWorld().RegisterSystem<oo::Renderer2DSystem>(*oo::EditorCamera::g_editorCam, wantDebug);
-            GetWorld().RegisterSystem<oo::ParticleRenderingSystem>();
-            GetWorld().RegisterSystem<oo::QuadtreeSystem>();
-            GetWorld().RegisterSystem<oo::AnimatorSystem>();
-            GetWorld().RegisterSystem<oo::UIRenderingSystem>(wantDebug);
-            GetWorld().RegisterSystem<oo::VideoSystem>();
-            auto scriptSystem = GetWorld().RegisterSystem<oo::ScriptSystem>();
-            GetWorld().RegisterSystem<oo::PhysicsSystem>();
-            GetWorld().RegisterSystem<oo::UISystem>();
-            GetWorld().RegisterSystem<oo::AudioSystem>();
-
-            scriptSystem->SetCallbackInvokes();*/
             TRACY_PROFILE_SCOPE_END();
         }
 
@@ -99,11 +80,18 @@ namespace oo
 
             TRACY_PROFILE_SCOPE_END();
         }
-        // post file loaded function calls
-        GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
-        GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
-        GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit(&GetWorld());
+
+        // Functions to run after the file and scene has been loaded.
+        {
+            TRACY_PROFILE_SCOPE_N(post_load_scene_init);
+
+            GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
+            GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
+            GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
+            GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit(&GetWorld());
+            
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -113,6 +101,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
         OPTICK_EVENT();
 
+        // jobs in the same phase should not depend on one another's run order.
         jobsystem::job phase_one{};
         jobsystem::submit(phase_one, [&]() {
             GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
@@ -131,45 +120,6 @@ namespace oo
             });
         
         jobsystem::launch_and_wait(phase_two);
-
-        {
-            //TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
-
-            {
-                /*TRACY_PROFILE_SCOPE_N(physics_editor_update);
-                GetWorld().GetSystem<oo::PhysicsSystem>()->EditorModeUpdate(dt);
-                TRACY_PROFILE_SCOPE_END();*/
-            }
-
-            {
-                /*TRACY_PROFILE_SCOPE_N(transform_update);
-                GetWorld().GetSystem<oo::TransformSystem>()->Update();
-                TRACY_PROFILE_SCOPE_END();*/
-            }
-
-            {
-                /*TRACY_PROFILE_SCOPE_N(animator_update);
-                GetWorld().GetSystem<oo::AnimatorSystem>()->Update(dt);
-                TRACY_PROFILE_SCOPE_END();*/
-            }
-
-            {
-                /*TRACY_PROFILE_SCOPE_N(ui_update);
-                GetWorld().GetSystem<oo::UISystem>()->EditorUpdate();
-                TRACY_PROFILE_SCOPE_END();*/
-            }
-
-            {
-                /*ZoneScopedN(particles_update);
-                GetWorld().GetSystem<oo::ParticleRenderingSystem>()->Update(dt);*/
-            }
-
-            {
-                /*TRACY_TRACK_PERFORMANCE(video_update);
-                GetWorld().GetSystem<oo::VideoSystem>()->Update(dt);*/
-            }
-
-        }
         
         TRACY_PROFILE_SCOPE_END();
     }
@@ -193,29 +143,8 @@ namespace oo
 
         Scene::Render();
         
+        //debug draw for physics
         GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
-
-        //constexpr const char* const rendering = "Overall Rendering";
-        //constexpr const char* const text_rendering = "Text Rendering";
-        //constexpr const char* const renderer2d_rendering = "Renderer2D Rendering";
-        {
-            //TRACY_PROFILE_SCOPE_NC(rendering, tracy::Color::Cyan);
-
-            {
-                /*TRACY_PROFILE_SCOPE_N(text_rendering);
-                GetWorld().GetSystem<oo::UIRenderingSystem>()->Render();
-                TRACY_PROFILE_SCOPE_END();*/
-            }
-
-            {
-                /*TRACY_PROFILE_SCOPE_N(renderer2d_rendering);
-                GetWorld().GetSystem<oo::ParticleRenderingSystem>()->Render();
-                GetWorld().GetSystem<oo::Renderer2DSystem>()->Render();
-                TRACY_PROFILE_SCOPE_END();*/
-            }
-            //TRACY_PROFILE_SCOPE_END();
-        }
-        //TRACY_DISPLAY_PERFORMANCE_SELECTED(rendering);
         
         TRACY_PROFILE_SCOPE_END();
     }

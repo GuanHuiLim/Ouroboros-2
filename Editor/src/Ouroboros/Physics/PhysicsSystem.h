@@ -74,10 +74,15 @@ namespace oo
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsResolution(Timestep deltaTime);
         
+        void UpdateJustCreated();
         void UpdateDuplicatedObjects();
+        void UpdatedExisting();
+
         void UpdateGlobalBounds();
         void UpdateCallbacks();
         void PostUpdate();
+
+        
 
         Scene* m_scene = nullptr;
 

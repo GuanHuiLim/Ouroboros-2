@@ -48,6 +48,9 @@ namespace oo
         , m_entity{ scene.GetWorld().duplicate_entity(target.m_entity) }
     {
         oo::UUID new_uuid {};
+        // we ensure the object we duplicate has the just created component
+        if (m_scene->GetWorld().has_component<oo::JustCreatedComponent>(m_entity) == false)
+            m_scene->GetWorld().add_component<oo::JustCreatedComponent>(m_entity);
         SetupGo(new_uuid, m_entity);
         // mark item as duplicated. duplicated items will be ignored for the first frame to get it properly set up
         m_scene->GetWorld().add_component<oo::DuplicatedComponent>(m_entity);
@@ -305,6 +308,7 @@ namespace oo
 #endif
         auto& goComp = m_scene->GetWorld().get_component<GameObjectComponent>(entt);
         goComp.Id = uuid;
+        ASSERT_MSG(m_scene->GetWorld().has_component<JustCreatedComponent>(entt) == false, "We should always have the just created component!");
         auto& jcComp = m_scene->GetWorld().get_component<JustCreatedComponent>(entt);
         jcComp.uuid = uuid;
         jcComp.entityID = entt;
