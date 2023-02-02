@@ -117,7 +117,6 @@ namespace oo
 						rootbone = child;
 						break;
 					}
-
 					root_bone_inverse_map[uid] = glm::affineInverse(rootbone.Transform().GetGlobalMatrix());
 					//auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
 					//RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>(), uid);
