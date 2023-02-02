@@ -247,21 +247,21 @@ namespace oo
 
     void RendererSystem::PostSceneLoadInit()
     {
-        //// update meshes positions!
-        //static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
-        //world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
-        //    {
-        //        auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
-        //        actualObject.localToWorld = transformComp.GlobalTransform;
-        //    });
+        // update meshes positions!
+        static Ecs::Query mesh_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
+        m_world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
+            {
+                auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
+                actualObject.localToWorld = transformComp.GlobalTransform;
+            });
         
-        //// Update Lights positions immediately!
-        //static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-        //world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
-        //    {
-        //        auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
-        //        graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
-        //    });
+        // Update Lights positions immediately!
+        static Ecs::Query light_query = Ecs::make_raw_query<LightComponent, TransformComponent>();
+        m_world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+            {
+                auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+                graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+            });
     }
 
     void RendererSystem::SaveEditorCamera()
@@ -349,8 +349,8 @@ namespace oo
                 // lighting debug draw
                 Sphere sphere;
                 sphere.center = vec3{ graphics_light.position };
-                //sphere.radius = 0.1f;
-                sphere.radius = graphics_light.radius.x;
+                sphere.radius = 0.1f;
+                //sphere.radius = graphics_light.radius.x;
                 DebugDraw::AddSphere(sphere, graphics_light.color);
             });
         }

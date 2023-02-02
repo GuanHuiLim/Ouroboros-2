@@ -158,7 +158,7 @@ namespace oo
 
 	void SkinMeshRendererSystem::PostLoadScene()
 	{
-		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+		static Ecs::Query skin_mesh_query = Ecs::make_raw_query<SkinMeshRendererComponent, TransformComponent>();
 
 		//resize bones container beforehand
 		scene->GetWorld().for_each(skin_mesh_query,

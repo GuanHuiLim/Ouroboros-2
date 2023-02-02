@@ -89,9 +89,32 @@ namespace oo
 
     void PhysicsSystem::PostLoadSceneInit()
     {
+        TRACY_PROFILE_SCOPE_NC(post_load_scene_init, tracy::Color::PeachPuff2);
+
+        // Update physics World's objects position and Orientation
+        static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
+        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+            {
+                {
+                    TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
+                    oo::vec3 pos = tf.GetGlobalPosition();
+                    oo::quat quat = tf.GetGlobalRotationQuat();
+                    rb.SetPosOrientation(pos + rb.Offset, quat);
+                    TRACY_PROFILE_SCOPE_END();
+                }
+
+                {
+                    TRACY_PROFILE_SCOPE_NC(rigidbody_is_trigger_check, tracy::Color::PeachPuff4);
+                    // test and set trigger boolean based on serialize value
+                    if (rb.object.isTrigger() != rb.IsTrigger())
+                        rb.object.setTriggerShape(rb.IsTrigger());
+                    TRACY_PROFILE_SCOPE_END();
+                }
+            });
+
         // we initialize stuff that we can initialize!
         // for objects just created!
-        static Ecs::Query meshColliderJustCreatedQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent, JustCreatedComponent>();
+        static Ecs::Query meshColliderJustCreatedQuery = Ecs::make_raw_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent, JustCreatedComponent>();
         m_world->for_each(meshColliderJustCreatedQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr, JustCreatedComponent& jc)
             {
                 if (mc.Vertices.empty() || mc.Reset == true)
@@ -121,11 +144,9 @@ namespace oo
 
                 // update the world vertex position based on matrix of current object
                 auto globalMat = tf.GetGlobalMatrix();
-                //auto vertices = mc.Vertices.begin();
-                //int pos = 0;
-                for (auto iter = mc.WorldSpaceVertices.begin(); iter != mc.WorldSpaceVertices.end(); ++iter/*, ++pos*/)
+                for (auto& worldSpaceVert : mc.WorldSpaceVertices)
                 {
-                    //*iter = globalMat * glm::vec4{vertices[pos], 1};//glm::vec4{ static_cast<glm::vec3>(*vertices), 1 };
+                    worldSpaceVert = globalMat * glm::vec4{ worldSpaceVert, 1 };
                 }
                 
                 std::vector<oo::vec3> temp{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
@@ -133,6 +154,8 @@ namespace oo
                 rb.object.setConvexProperty(res);
 
             });
+
+        TRACY_PROFILE_SCOPE_END();
     }
     
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)

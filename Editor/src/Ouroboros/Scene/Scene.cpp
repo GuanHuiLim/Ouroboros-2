@@ -464,6 +464,8 @@ namespace oo
             }
             else
             {
+                go->EnsureComponent<GameObjectDisabledComponent>();
+
                 GameObjectComponent::OnDisableEvent goOnDisableEvent{ go->GetInstanceID() };
                 EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&goOnDisableEvent);
             }

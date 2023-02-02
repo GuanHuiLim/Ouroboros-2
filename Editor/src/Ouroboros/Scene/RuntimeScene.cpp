@@ -73,15 +73,6 @@ namespace oo
             LoadFromFile();
             TRACY_PROFILE_SCOPE_END();
         }
-        
-        // make sure all objects after loaded is properly set to their active states
-        {
-            static Ecs::Query activeQuery = Ecs::make_query<GameObjectComponent>();
-            GetWorld().for_each(activeQuery, [&](GameObjectComponent& goc)
-                {
-                    FindWithInstanceID(goc.Id)->SetActive(goc.Active);
-                });
-        }
 
         StartSimulation();
 

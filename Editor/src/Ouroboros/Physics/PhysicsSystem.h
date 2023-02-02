@@ -67,9 +67,9 @@ namespace oo
         std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max());
 
     private:
-        inline static std::uint64_t MaxIterations = 60;
+        inline static std::uint64_t MaxIterations = 3;
         inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 60 fps
-        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations/20;  // To prevent spiral of death
+        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsResolution(Timestep deltaTime);
@@ -81,8 +81,6 @@ namespace oo
         void UpdateGlobalBounds();
         void UpdateCallbacks();
         void PostUpdate();
-
-        
 
         Scene* m_scene = nullptr;
 
