@@ -85,8 +85,8 @@ namespace oo
     struct ConvexColliderComponent final
     {
         bool Reset = false;
-        std::vector<oo::vec3> Vertices;
-        std::vector<oo::vec3> WorldSpaceVertices;
+        std::vector<glm::vec3> Vertices;
+        std::vector<glm::vec3> WorldSpaceVertices;
         RTTR_ENABLE();
     };
 

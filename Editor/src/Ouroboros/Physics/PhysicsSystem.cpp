@@ -111,7 +111,9 @@ namespace oo
 
                         auto generated_vertices = rb.StoreMesh(new_vertices);
 
-                        mc.WorldSpaceVertices = mc.Vertices = std::vector<oo::vec3>(generated_vertices.begin(), generated_vertices.end());
+                        std::vector<oo::vec3> temp(generated_vertices.begin(), generated_vertices.end());
+                        std::vector<glm::vec3> actual(temp.begin(), temp.end());
+                        mc.WorldSpaceVertices = mc.Vertices = actual;
                     }
 
                     mc.Reset = false;
@@ -119,13 +121,15 @@ namespace oo
 
                 // update the world vertex position based on matrix of current object
                 auto globalMat = tf.GetGlobalMatrix();
-                auto vertices = mc.Vertices.begin();
-                std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v)
-                    {
-                        v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
-                    });
-
-                std::vector<PxVec3> res{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
+                //auto vertices = mc.Vertices.begin();
+                //int pos = 0;
+                for (auto iter = mc.WorldSpaceVertices.begin(); iter != mc.WorldSpaceVertices.end(); ++iter/*, ++pos*/)
+                {
+                    //*iter = globalMat * glm::vec4{vertices[pos], 1};//glm::vec4{ static_cast<glm::vec3>(*vertices), 1 };
+                }
+                
+                std::vector<oo::vec3> temp{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
+                std::vector<PxVec3> res{ temp.begin(), temp.end() };
                 rb.object.setConvexProperty(res);
 
             });
@@ -465,14 +469,16 @@ namespace oo
             static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent>();
             m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr)
                 {
-                    if (mc.Vertices.empty() || mc.Reset == true)
+                    bool justEdited = false;
+
+                    if (mc.Reset == true)
                     {
                         mc.Vertices.clear();
                         mc.WorldSpaceVertices.clear();
 
                         if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
                         {
-                            auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
+                            auto const vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
 
                             auto new_vertices = std::vector<oo::vec3>();
                             new_vertices.reserve(vertices.size());
@@ -482,13 +488,16 @@ namespace oo
 
                             auto generated_vertices = rb.StoreMesh(new_vertices);
 
-                            mc.WorldSpaceVertices = mc.Vertices = std::vector<oo::vec3>(generated_vertices.begin(), generated_vertices.end());
+                            std::vector<oo::vec3> temp{ generated_vertices.begin(), generated_vertices.end() };
+                            std::vector<glm::vec3> final_result{temp.begin(), temp.end() };
+                            mc.WorldSpaceVertices = mc.Vertices = final_result;
                         }
 
                         mc.Reset = false;
+                        justEdited = true;
                     }
 
-                    if (tf.HasChangedThisFrame)
+                    if (tf.HasChangedThisFrame || justEdited && !mc.Vertices.empty())
                     {
                         // update the world vertex position based on matrix of current object
                         auto globalMat = tf.GetGlobalMatrix();
@@ -497,8 +506,8 @@ namespace oo
                             {
                                 v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
                             });
-
-                        std::vector<PxVec3> res{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
+                        std::vector<oo::vec3>temp{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
+                        std::vector<PxVec3> res{ temp.begin(), temp.end() };
                         rb.object.setConvexProperty(res);
                     }
 
@@ -835,8 +844,11 @@ namespace oo
         if (m_world->has_component<ConvexColliderComponent>(rb->entityID))
             m_world->remove_component<ConvexColliderComponent>(rb->entityID);
 
+        // IMPT!
+        auto& obj = m_world->get_component<RigidbodyComponent>(rb->entityID);
+
         // finally we remove the physics object
-        m_physicsWorld.removeInstance(rb->component.object);
+        m_physicsWorld.removeInstance(obj.object);
 
     }
 

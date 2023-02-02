@@ -44,14 +44,14 @@ namespace oo
     {
         // Update Newly Duplicated Lights
         static Ecs::Query duplicated_lights_query = Ecs::make_raw_query<LightComponent, TransformComponent, DuplicatedComponent>();
-        world->for_each(duplicated_lights_query, [&](LightComponent& lightComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        m_world->for_each(duplicated_lights_query, [&](LightComponent& lightComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
             {
                 InitializeLight(lightComp, transformComp);
             });
 
         // Update Newly Duplicated Mesh
         static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
-        world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
+        m_world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
             {
                 InitializeMesh(meshComp, transformComp, goc);
             });
@@ -287,12 +287,12 @@ namespace oo
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
-        UpdateJustCreated(world);
-        UpdateDuplicated(world);
-        UpdateExisting(world);
+        UpdateJustCreated();
+        UpdateDuplicated();
+        UpdateExisting();
 
         // draw debug stuff
-        RenderDebugDraws(world);
+        RenderDebugDraws();
     }
 
     // additional function that runs during runtime scene only.

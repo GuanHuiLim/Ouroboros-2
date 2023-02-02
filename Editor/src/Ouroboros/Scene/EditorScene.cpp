@@ -81,6 +81,16 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         }
 
+        //// make sure all objects after loaded is properly set to their active states
+        //{
+        //    static Ecs::Query activeQuery = Ecs::make_query<GameObjectComponent>();
+        //    GetWorld().for_each(activeQuery, [&](GameObjectComponent& goc)
+        //        {
+        //            auto go = FindWithInstanceID(goc.Id);
+        //            go->SetActive(goc.Active);
+        //        });
+        //}
+
         // Functions to run after the file and scene has been loaded.
         {
             TRACY_PROFILE_SCOPE_N(post_load_scene_init);
@@ -88,7 +98,7 @@ namespace oo
             GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
             GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
             GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
-            GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit(&GetWorld());
+            GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit();
             
             TRACY_PROFILE_SCOPE_END();
         }
