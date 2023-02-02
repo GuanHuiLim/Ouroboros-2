@@ -424,6 +424,9 @@ namespace myPhysx
         else if (initObj.shape_type == shape::capsule)
             physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().capsule());
 
+        else if (initObj.shape_type == shape::convex)
+            physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().convexMesh());
+
         //else if (initObj.shape_type == shape::plane) {
         //    PxPlaneGeometry plane = m_objects.at(index).m_shape->getGeometry().plane();
         //    physicsObj.setPlaneProperty();
@@ -664,6 +667,9 @@ namespace myPhysx
 
                     else if (underlying_obj->shape_type == shape::capsule) 
                         reAttachShape(type, underlying_obj->m_shape->getGeometry().capsule());
+
+                    else if (underlying_obj->shape_type == shape::convex)
+                        reAttachShape(type, underlying_obj->m_shape->getGeometry().convexMesh());
                 }
             }
 
