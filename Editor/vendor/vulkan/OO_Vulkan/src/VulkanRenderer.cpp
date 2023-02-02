@@ -1327,12 +1327,16 @@ void VulkanRenderer::UploadLights()
 	int viewIter{};
 	for (auto& e : lights)
 	{
+		if (GetLightEnabled(e) == false)
+		{
+			continue;
+		}
 		LocalLightInstance si;
-		if (e.info.x > 0)
+		if (GetCastsShadows(e))
 		{
 			
 			e.info.y = gridIdx;			
-			if (e.info.x == 1)
+			if (e.info.x == 1) // type one is omnilight
 			{
 				// loop through all faces
 				for (size_t i = 0; i < 6; i++)
@@ -1342,7 +1346,7 @@ void VulkanRenderer::UploadLights()
 					++gridIdx;
 				}
 			}
-			else
+			else // else spotlight?
 			{
 				++m_numShadowcastLights;
 				si.view[0] = e.view[++viewIter%6];		
@@ -2406,7 +2410,7 @@ ModelFileResource* VulkanRenderer::GetDefaultCube()
 
 ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 {
-	std::stringstream os;
+	std::stringstream ss;
 	// new model loader
 	Assimp::Importer importer;
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
@@ -2441,7 +2445,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 
 	
 
-	os <<"[Loading] " << file << std::endl;
+	ss <<"[Loading] " << file << std::endl;
 	//if (scene->mNumAnimations && scene->mAnimations[0]->mNumMorphMeshChannels)
 	//{
 	//	std::stringstream ss{"Morphs\n"};
@@ -2463,13 +2467,13 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	//}
 
 	size_t count{ 0 };
-	os << "Meshes" << scene->mNumMeshes << std::endl;
+	ss << "Meshes" << scene->mNumMeshes << std::endl;
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
 		auto& mesh = scene->mMeshes[i];
-		os << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
-		os << "\t\tverts:"  << mesh->mNumVertices << std::endl;
-		os << "\t\tbones:"  << mesh->mNumBones << std::endl;
+		ss << "\tMesh" << i << " " << mesh->mName.C_Str() << std::endl;
+		ss << "\t\tverts:"  << mesh->mNumVertices << std::endl;
+		ss << "\t\tbones:"  << mesh->mNumBones << std::endl;
 		/*
 		for (size_t anim = 0; anim < mesh->mNumAnimMeshes; anim++)
 		{
@@ -2509,8 +2513,6 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		//}
 		//os << "\t\t\t|sum weights:"  << sum << std::endl;
 	}
-	std::cout << os.str();
-	os.clear();
 
 #if 0
 	if (scene->HasAnimations())
@@ -2604,9 +2606,9 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		LoadMeshFromBuffers(modelFile->vertices, modelFile->indices, &mdl);
 	}
 
-	os << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
+	ss << "\t [Meshes loaded] " << modelFile->sceneMeshCount << std::endl;
 
-	std::cout << os.str();
+	std::cout << ss.str();
 	return modelFile;
 }
 
@@ -2744,7 +2746,7 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 )
 {
 	uint32_t numBones = 0;
-
+	std::stringstream ss;
 	for (size_t i = 0; i < aimesh.mNumBones; i++)
 	{
 		auto& currBone = aimesh.mBones[i];
@@ -2830,7 +2832,7 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 				{
 					if (val == minBone)
 					{
-						std::cout << "Discarded weight: [" << key<<",\t"<< minW << "]" << std::endl;
+						ss << "Discarded weight: [" << key<<",\t"<< minW << "]" << std::endl;
 						break;
 					}
 				}
@@ -2868,7 +2870,7 @@ void VulkanRenderer::LoadBoneInformation(ModelFileResource& fileData,
 void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* parent, glm::mat4 parentXform,std::string prefix)
 {
 	std::string node_name{ ainode->mName.data };
-
+	//std::stringstream ss;
 	// TODO: quat ?
 	glm::mat4x4 node_transform = parentXform * aiMat4_to_glm(ainode->mTransformation);
 	oGFX::BoneNode* targetParent = parent;
@@ -2882,7 +2884,7 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode*
 	auto iter = fileData.strToBone.find(node_name);
 	if (iter != fileData.strToBone.end())
 	{
-		std::cout <<prefix<< "Creating bone " << node_name << std::endl;
+		//ss <<prefix<< "Creating bone " << node_name << std::endl;
 		prefix += '\t';
 		bIsBoneNode = true;
 		node = new oGFX::BoneNode;
@@ -2928,6 +2930,7 @@ void VulkanRenderer::BuildSkeletonRecursive(ModelFileResource& fileData, aiNode*
 			BuildSkeletonRecursive(fileData, ainode->mChildren[i], targetParent,node_transform,prefix);
 		}
 	}
+	//std::cout << ss.str();
 }
 
 const oGFX::Skeleton* VulkanRenderer::GetSkeleton(uint32_t modelID)

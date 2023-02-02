@@ -407,8 +407,13 @@ void AnimatorControllerView::DisplayParameters()
                 ImGui::PopID();
                 ImGui::Separator();
 
-                if(requestDelete)
-                    animator->GetActualComponent().animTree->parameters.erase(animator->GetActualComponent().animTree->parameters.begin() + i);
+                if (requestDelete)
+                {
+                    auto const& param = animator->GetActualComponent().animTree->parameters[i];
+                    //animator->GetActualComponent().animTree->parameters.erase(animator->GetActualComponent().animTree->parameters.begin() + i);
+                    oo::Anim::TargetParameterInfo info{ .param_ID = param.paramID };
+                    animator->RemoveParameter(info);
+                }
             }
         }
     }
@@ -730,8 +735,19 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                     ImGui::PopID();
                     ImGui::Separator();
 
-                    if(requestDelete)
-                        link->conditions.erase(link->conditions.begin() + i);
+                    if (requestDelete)
+                    {
+                        auto& condition = link->conditions[i];
+                        //link->conditions.erase(link->conditions.begin() + i);
+                        oo::Anim::TargetLinkInfo link_info{
+                            .group_name = current_group_name,
+                            .link_ID = link->linkID };
+                        oo::Anim::TargetConditionInfo condition_info{
+                                .link_info = link_info.group_name,
+                                .condition_ID = condition.conditionID };
+                        animator->RemoveCondition(condition_info);
+                    }
+
                 }
             }
         }

@@ -208,7 +208,7 @@ void SetCastsShadows(LocalLightInstance& l, bool s)
 
 bool GetCastsShadows(LocalLightInstance& l)
 {
-	return l.info.x == 1;
+	return l.info.x >= 1;
 }
 
 void SetCastsShadows(OmniLightInstance& l, bool s)
