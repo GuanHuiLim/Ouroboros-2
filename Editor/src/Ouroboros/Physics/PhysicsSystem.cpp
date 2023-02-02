@@ -743,7 +743,9 @@ namespace oo
         static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent>();
         m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc)
             {
-                /*for (auto& i : mc.WorldSpaceVertices)
+                /*
+                * TODO : FIGURE OUT WHY DAHELL THERES A DIFFERENCE, TOP DOESNT CRASH, BOTTOM DOES!
+                for (auto& i : mc.WorldSpaceVertices)
                 {
                 }
 
