@@ -149,10 +149,10 @@ namespace oo
 
 	void SkinMeshBoneComponent::SetSkinMeshObjectUUID(size_t uid)
 	{
-		skin_mesh_object = uid;
+		root_bone_object = uid;
 	}
 	size_t SkinMeshBoneComponent::GetSkinMeshObjectUUID()
 	{
-		return skin_mesh_object;
+		return root_bone_object;
 	}
 }

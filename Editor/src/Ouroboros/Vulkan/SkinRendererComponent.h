@@ -62,7 +62,8 @@ namespace oo
 		oGFX::BoneInverseBindPoseInfo inverseBindPose_info{};
 		uint32_t graphicsWorld_ID;
 		glm::mat4 globalTransform{};
-		UUID skin_mesh_object{};
+		glm::mat4 bone_transform{};
+		UUID root_bone_object{};
 
 		void SetInverseBindPoseInfo_BoneIdx(uint32_t boneIdx);
 		uint32_t GetInverseBindPoseInfo_BoneIdx();
