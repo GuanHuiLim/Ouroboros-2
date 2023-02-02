@@ -80,6 +80,8 @@ namespace oo
         void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
 
+        void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
+        void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
     private:
 
         GraphicsWorld* m_graphicsWorld{ nullptr };

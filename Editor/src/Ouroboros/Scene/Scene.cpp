@@ -585,6 +585,7 @@ namespace oo
 
             // On Disable, we don't have to check! just set to false
             actualObject.SetShadowEnabled(false);
+
         }
     }
 

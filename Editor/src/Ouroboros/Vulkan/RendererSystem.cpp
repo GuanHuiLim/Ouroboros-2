@@ -34,6 +34,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObjectComponent.h"
 #include "Ouroboros/Vulkan/GlobalRendererSettings.h"
 
+#include "Ouroboros/ECS/GameObject.h"
 namespace oo
 {
     void RendererSystem::UpdateJustCreated()
@@ -187,8 +188,8 @@ namespace oo
         EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         //EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
-        //EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
-        //EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
         EventManager::Unsubscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
     }
 
@@ -235,8 +236,8 @@ namespace oo
         //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
-        //EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
-        //EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
         
         EventManager::Subscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
         // launch the event manually myself once.
@@ -389,6 +390,29 @@ namespace oo
         //update graphics world side to prevent wrong initial placement
         auto& graphics_object = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
         graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+    }
+
+    void RendererSystem::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
+    {
+        // check for lights
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go->HasComponent<LightComponent>())
+        {
+            auto& lightComp = go->GetComponent<LightComponent>();
+            auto& actualLight = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+            SetLightEnabled(actualLight, true);
+        }
+    }
+
+    void RendererSystem::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
+    {
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go->HasComponent<LightComponent>())
+        {
+            auto& lightComp = go->GetComponent<LightComponent>();
+            auto& actualLight = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+            SetLightEnabled(actualLight, false);
+        }
     }
 
 }
