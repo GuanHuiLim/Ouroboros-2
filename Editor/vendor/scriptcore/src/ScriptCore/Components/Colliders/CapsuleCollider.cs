@@ -22,5 +22,19 @@ namespace Ouroboros
             get { return CapsuleColliderComponent_GetHalfHeight(gameObject.scene, gameObject.GetInstanceID()); }
             set { CapsuleColliderComponent_SetHalfHeight(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
+
+        [DllImport("__Internal")] private static extern float CapsuleColliderComponent_GetGlobalRadius(UInt32 sceneID, UInt64 uuid);
+
+        public float globalRadius
+        {
+            get { return CapsuleColliderComponent_GetGlobalRadius(gameObject.scene, gameObject.GetInstanceID()); }
+        }
+
+        [DllImport("__Internal")] private static extern float CapsuleColliderComponent_GetGlobalHalfHeight(UInt32 sceneID, UInt64 uuid);
+
+        public float globalHalfHeight
+        {
+            get { return CapsuleColliderComponent_GetGlobalHalfHeight(gameObject.scene, gameObject.GetInstanceID()); }
+        }
     }
 }

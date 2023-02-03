@@ -8,6 +8,12 @@
 namespace oo
 {
     /*-----------------------------------------------------------------------------*/
+    /* SphereCollider                                                              */
+    /*-----------------------------------------------------------------------------*/
+    SCRIPT_API_GET_SET(SphereColliderComponent, Radius, float, Radius)
+    SCRIPT_API_GET(SphereColliderComponent, GetGlobalRadius, float, GlobalRadius)
+
+    /*-----------------------------------------------------------------------------*/
     /* BoxCollider                                                                 */
     /*-----------------------------------------------------------------------------*/
     SCRIPT_API void BoxCollider_GetSize(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
@@ -55,26 +61,39 @@ namespace oo
     }
 
     /*-----------------------------------------------------------------------------*/
-    /* SphereCollider                                                              */
-    /*-----------------------------------------------------------------------------*/
-    SCRIPT_API_GET_SET(SphereColliderComponent, Radius, float, Radius)
-
-    /*-----------------------------------------------------------------------------*/
     /* CapsuleCollider                                                             */
     /*-----------------------------------------------------------------------------*/
     SCRIPT_API_GET_SET(CapsuleColliderComponent, Radius, float, Radius)
     SCRIPT_API_GET_SET(CapsuleColliderComponent, HalfHeight, float, HalfHeight)
+    SCRIPT_API_GET(CapsuleColliderComponent, GetGlobalRadius, float, GlobalRadius)
+    SCRIPT_API_GET(CapsuleColliderComponent, GetGlobalHalfHeight, float, GlobalHalfHeight)
 
     /*-----------------------------------------------------------------------------*/
     /* ConvexCollider                                                              */
     /*-----------------------------------------------------------------------------*/
+    MonoArray* ConvertVerticeArray(std::vector<vec3> vertices)
+    {
+        MonoClass* vecClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Vector3");
+        MonoArray* arr = ScriptEngine::CreateArray(vecClass, vertices.size());
+        for (size_t i = 0; i < vertices.size(); ++i)
+        {
+            ScriptValue::vec3_type vertice{ vertices[i].x, vertices[i].y, vertices[i].z };
+            mono_array_set(arr, ScriptValue::vec3_type, i, vertice);
+        }
+        return arr;
+    }
+
     SCRIPT_API MonoArray* ConvexCollider_GetVertices(Scene::ID_type sceneID, UUID uuid)
     {
-        return nullptr;
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        ConvexColliderComponent& component = obj->GetComponent<ConvexColliderComponent>();
+        return ConvertVerticeArray(component.Vertices);
     }
 
     SCRIPT_API MonoArray* ConvexCollider_GetWorldVertices(Scene::ID_type sceneID, UUID uuid)
     {
-        return nullptr;
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        ConvexColliderComponent& component = obj->GetComponent<ConvexColliderComponent>();
+        return ConvertVerticeArray(component.WorldSpaceVertices);
     }
 }
