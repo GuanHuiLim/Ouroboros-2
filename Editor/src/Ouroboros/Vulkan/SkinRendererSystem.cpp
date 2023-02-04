@@ -213,7 +213,7 @@ namespace oo
 
 	void SkinMeshRendererSystem::PostLoadScene()
 	{
-		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+		static Ecs::Query skin_mesh_query = Ecs::make_raw_query<SkinMeshRendererComponent, TransformComponent>();
 		auto models = Project::GetAssetManager()->GetAssetsByType(AssetInfo::Type::Model);
 
 
