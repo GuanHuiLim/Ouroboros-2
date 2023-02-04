@@ -85,7 +85,7 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     /* ConvexCollider                                                              */
     /*-----------------------------------------------------------------------------*/
-    MonoArray* ConvertVerticeArray(std::vector<vec3> vertices)
+    MonoArray* ConvertVerticeArray(std::vector<glm::vec3> vertices)
     {
         MonoClass* vecClass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "Vector3");
         MonoArray* arr = ScriptEngine::CreateArray(vecClass, vertices.size());
