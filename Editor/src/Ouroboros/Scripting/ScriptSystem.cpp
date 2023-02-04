@@ -366,12 +366,34 @@ namespace oo
                 }
             });
     }
+    void ScriptSystem::InvokeForAllEnabled(const char* functionName)
+    {
+        if (!ScriptEngine::IsLoaded())
+            return;
+        if (!isPlaying)
+            return;
+
+        try
+        {
+            scriptDatabase.InvokeForAllEnabled(functionName,
+                [this](ScriptDatabase::UUID uuid)
+                {
+                    std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
+                    return object->ActiveInHierarchy();
+                });
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR(e.what());
+        }
+    }
     void ScriptSystem::InvokeForAllEnabled(const char* functionName, int paramCount, void** params)
     {
         if (!ScriptEngine::IsLoaded())
             return;
         if (!isPlaying)
             return;
+
         scriptDatabase.ForAllEnabled([&functionName, &params, &paramCount](MonoObject* object)
             {
                 try
