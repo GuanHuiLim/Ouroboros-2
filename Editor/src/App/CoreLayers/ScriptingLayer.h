@@ -23,6 +23,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
+#include "Ouroboros/Vulkan/LightComponent.h"
 #include "Ouroboros/Vulkan/ParticleEmitterComponent.h"
 #include "Ouroboros/Animation/AnimationComponent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
@@ -50,6 +51,7 @@ namespace oo
         {
             ScriptManager::RegisterComponent<TransformComponent>("Ouroboros", "Transform");
             ScriptManager::RegisterComponent<MeshRendererComponent>("Ouroboros", "MeshRenderer");
+            ScriptManager::RegisterComponent<LightComponent>("Ouroboros", "Light");
             ScriptManager::RegisterComponent<ParticleEmitterComponent>("Ouroboros", "ParticleSystem");
             ScriptManager::RegisterComponent<AnimationComponent>("Ouroboros", "Animator");
             ScriptManager::RegisterComponent<AudioSourceComponent>("Ouroboros", "AudioSource");

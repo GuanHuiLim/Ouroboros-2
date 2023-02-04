@@ -29,5 +29,6 @@ Technology is prohibited.
 #include "RigidbodyAPI.h"
 #include "ColliderAPI.h"
 
+#include "LightAPI.h"
 #include "ParticleEmitterAPI.h"
 #include "AnimationAPI.h"
