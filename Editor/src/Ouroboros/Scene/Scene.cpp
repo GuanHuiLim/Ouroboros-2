@@ -28,6 +28,7 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/DeferredSystem.h"
 #include "Ouroboros/ECS/DuplicatedSystem.h"
+#include "Ouroboros/ECS/JustCreatedSystem.h"
 
 #include "Ouroboros/Scripting/ScriptSystem.h"
 
@@ -81,6 +82,7 @@ namespace oo
         
         // Initialize Default Systems
         {
+            m_ecsWorld->Add_System<oo::JustCreatedSystem>(this);
             m_ecsWorld->Add_System<oo::DeferredSystem>(this);
             m_ecsWorld->Add_System<oo::DuplicatedSystem>(this);
             m_ecsWorld->Add_System<oo::TransformSystem>(this);
@@ -151,6 +153,7 @@ namespace oo
         
         m_ecsWorld->Get_System<oo::DuplicatedSystem>()->Run(m_ecsWorld.get());
         m_ecsWorld->Get_System<oo::DeferredSystem>()->Run(m_ecsWorld.get());
+        m_ecsWorld->Get_System<oo::JustCreatedSystem>()->Run(m_ecsWorld.get());
 
         // go through all things to remove at the end of frame and do so.
         for (auto& uuid : m_removeList)
@@ -461,6 +464,8 @@ namespace oo
             }
             else
             {
+                go->EnsureComponent<GameObjectDisabledComponent>();
+
                 GameObjectComponent::OnDisableEvent goOnDisableEvent{ go->GetInstanceID() };
                 EventManager::Broadcast<GameObjectComponent::OnDisableEvent>(&goOnDisableEvent);
             }
@@ -561,6 +566,13 @@ namespace oo
             auto& gid = m_uuidToGraphicsID.at(e->Id);
             auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
             actualObject.SetRenderEnabled(true);
+            
+            // On Enable we have to check!
+            auto go = FindWithInstanceID(e->Id);
+            if(go->HasComponent<MeshRendererComponent>())
+                actualObject.SetShadowEnabled(go->GetComponent<MeshRendererComponent>().CastShadows);
+            else if (go->HasComponent<SkinMeshRendererComponent>())
+                actualObject.SetShadowEnabled(go->GetComponent<SkinMeshRendererComponent>().CastShadows);
         }
     }
 
@@ -572,6 +584,10 @@ namespace oo
             auto& gid = m_uuidToGraphicsID.at(e->Id);
             auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
             actualObject.SetRenderEnabled(false);
+
+            // On Disable, we don't have to check! just set to false
+            actualObject.SetShadowEnabled(false);
+
         }
     }
 

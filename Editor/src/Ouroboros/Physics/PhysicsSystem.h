@@ -46,6 +46,7 @@ namespace oo
         virtual void Run(Ecs::ECSWorld*) override {};
 
         void Init(Scene* m_scene);
+        void PostLoadSceneInit();
         void RuntimeUpdate(Timestep deltaTime);
         void EditorUpdate(Timestep deltaTime);
         void RenderDebugColliders();
@@ -66,14 +67,17 @@ namespace oo
         std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max());
 
     private:
-        inline static std::uint64_t MaxIterations = 60;
-        inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 60 fps
-        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations/20;  // To prevent spiral of death
+        inline static std::uint64_t MaxIterations = 2;
+        inline static Timestep FixedDeltaTime = 1.0/100;                            // physics updates at 100 fps
+        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;   // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsResolution(Timestep deltaTime);
         
+        void UpdateJustCreated();
         void UpdateDuplicatedObjects();
+        void UpdatedExisting();
+
         void UpdateGlobalBounds();
         void UpdateCallbacks();
         void PostUpdate();

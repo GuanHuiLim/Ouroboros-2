@@ -40,6 +40,7 @@ Technology is prohibited.
 #include <Ouroboros/ECS/GameObject.h>
 #include <Ouroboros/ECS/DeferredComponent.h>
 #include <Ouroboros/ECS/DuplicatedComponent.h>
+#include <Ouroboros/ECS/JustCreatedComponent.h>
 #include <Ouroboros/Transform/TransformComponent.h>
 #include <Ouroboros/Prefab/PrefabComponent.h>
 
@@ -167,6 +168,7 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	}
 	DisplayComponent<oo::EditorComponent>(gameobject);
 
+	DisplayComponent<oo::JustCreatedComponent>(gameobject);
 	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::DuplicatedComponent>(gameobject);
 	DisplayComponent<oo::GameObjectDisabledComponent>(gameobject);
@@ -180,7 +182,6 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::MeshRendererComponent>(gameobject);
 	DisplayComponent<oo::ParticleEmitterComponent>(gameobject);
 	DisplayComponent<oo::SkinMeshRendererComponent>(gameobject);
-	DisplayComponent<oo::DeferredComponent>(gameobject);
 	DisplayComponent<oo::LightComponent>(gameobject);
 	DisplayComponent<oo::CameraComponent>(gameobject);
 

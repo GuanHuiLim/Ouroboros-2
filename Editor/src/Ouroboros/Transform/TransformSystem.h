@@ -28,6 +28,8 @@ namespace oo
         TransformSystem(Scene* scene);
         virtual ~TransformSystem() = default;
 
+        void PostLoadSceneInit();
+
         virtual void Run(Ecs::ECSWorld* world) override;
         void UpdateSubTree(GameObject go, bool includeItself = true);
         void UpdateEntireTree();
@@ -43,6 +45,8 @@ namespace oo
 
     private:
         Scene* m_scene = nullptr;
+
+        bool m_firstFrame = true;
 
         // im not expecting anything that's nested beyond 32 depth. its possible but freaking unlikely
         static constexpr std::size_t MaxDepth = 32;

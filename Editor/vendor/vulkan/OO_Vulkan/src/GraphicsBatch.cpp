@@ -64,12 +64,12 @@ void GraphicsBatch::GenerateBatches()
 		auto& model = m_renderer->g_globalModels[ent.modelID];
 
 		// skip entities dont want to render
-		if (ent.isRenderable() == false)
-		{
-			// still increment instance
-			++cnt;
-			continue;
-		}
+		//if (ent.isRenderable() == false)
+		//{
+		//	// still increment instance
+		//	++cnt;
+		//	continue;
+		//}
 
 		if (ent.modelID != currModelID) // check if we are using the same model
 		{
@@ -81,7 +81,7 @@ void GraphicsBatch::GenerateBatches()
 					const auto& subMesh = model.m_subMeshes[i];
 					// clear the buffer to prepare for this model
 					oGFX::IndirectCommand indirectCmd{};
-					indirectCmd.instanceCount = 1;
+					indirectCmd.instanceCount = ent.isRenderable();
 
 					// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
 					// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();

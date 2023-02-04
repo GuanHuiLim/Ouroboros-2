@@ -1880,7 +1880,7 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		objectCount = 0;
 		for (auto& indirectCmd : allObjectsCommands)
 		{
-			objectCount += indirectCmd.instanceCount;
+			objectCount += indirectCmd.instanceCount ?  indirectCmd.instanceCount:1;
 		}
 
 

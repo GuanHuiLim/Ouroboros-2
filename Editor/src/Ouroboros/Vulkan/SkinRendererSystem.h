@@ -11,6 +11,8 @@ namespace oo
 	private:
 		GraphicsWorld* m_graphicsWorld{nullptr};
 		oo::Scene* scene{nullptr};
+
+		std::unordered_map<UUID, glm::mat4> root_bone_inverse_map{};
 	public:
 		SkinMeshRendererSystem(GraphicsWorld* graphicsWorld, oo::Scene* _scene);
 		

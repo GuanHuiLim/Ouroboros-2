@@ -1,5 +1,5 @@
 /************************************************************************************//*!
-\file           Shapes.h
+\file           Shapes.cpp
 \project        Ouroboros
 \author         Chua Teck Lee, c.tecklee, 390008420 | code contribution (100%)
 \par            email: c.tecklee\@digipen.edu
@@ -12,42 +12,36 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
-#pragma once
+#include "pch.h"
 
-#include "Ouroboros/Physics/PhysicsFwd.h"
-#include <rttr/type>
+#include "Shapes.h"
 
+#include <rttr/registration>
 
 namespace oo
 {
-    //struct PxVec3;
-
-    struct Point
+    RTTR_REGISTRATION
     {
-        vec3 pos;
+        using namespace rttr;
 
-        //operator PxVec3() const { return PxVec3{ pos.x,pos.y, pos.z }; }
-    };
+        registration::class_<oo::AABB>("AABB")
+            .property_readonly("Min", &oo::AABB::min)
+            .property_readonly("Max", &oo::AABB::max);
 
-    struct Sphere
+        registration::class_<Sphere>("Sphere")
+            .property_readonly("Center", &oo::Sphere::center)
+            .property_readonly("Radius", &oo::Sphere::radius);
+    }
+
+    AABB::AABB(glm::vec3 min, glm::vec3 max)
+        : min{ min }
+        , max{ max }
     {
-        vec3 center;
-        float radius = 0.f;
-        
-        Sphere() = default;
-        Sphere(vec3, float);
+    }
 
-        RTTR_ENABLE();
-    };
-
-    struct AABB
+    Sphere::Sphere(glm::vec3 center, float radius)
+        : center{ center }
+        , radius{ radius }
     {
-        vec3 min, max;
-        
-        AABB() = default;
-        AABB(vec3, vec3);
-
-        RTTR_ENABLE();
-    };
-
+    }
 }

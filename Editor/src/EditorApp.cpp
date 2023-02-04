@@ -175,7 +175,7 @@ public:
 
         //Debug Layers
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
-        m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());      //FPS display counter
+        //m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());      //FPS display counter
 
         // Main Layers
         // Scripting Layer
