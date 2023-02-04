@@ -60,9 +60,12 @@ namespace oo
 	void SkinMeshRendererSystem::Run(Ecs::ECSWorld* world)
 	{
 		
-		static Ecs::Query skin_mesh_query = Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
-		static Ecs::Query duplicated_query = Ecs::make_raw_query<SkinMeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
-		static Ecs::Query skin_bone_mesh_query = Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
+		static Ecs::Query skin_mesh_query = 
+			Ecs::make_query<SkinMeshRendererComponent, TransformComponent>();
+		static Ecs::Query duplicated_query = 
+			Ecs::make_raw_query<SkinMeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
+		static Ecs::Query skin_bone_mesh_query = 
+			Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
 		
 		TRACY_PROFILE_SCOPE_NC(Skin_Mesh_Renderer_Update, 0x00E0E3);
 		
@@ -89,7 +92,8 @@ namespace oo
 					break;
 				}
 
-				RecurseChildren_AssignGraphicsWorldID_UID_to_DuplicatedBoneComponents(rootbone, graphicsID, uid);
+				RecurseChildren_AssignGraphicsWorldID_UID_to_DuplicatedBoneComponents(
+					rootbone, graphicsID, uid);
 
 			});
 
@@ -117,12 +121,16 @@ namespace oo
 						rootbone = child;
 						break;
 					}
-					root_bone_inverse_map[uid] = glm::affineInverse(rootbone.Transform().GetGlobalMatrix());
+					auto tmp = rootbone.Transform().GetGlobalMatrix();
+					auto name = rootbone.Name();
+					root_bone_inverse_map[uid] = glm::affineInverse(
+						rootbone.Transform().GetGlobalMatrix());
 					//auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
 					//RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>(), uid);
 				}
 				{	//assign graphics object properties in case it changed
-					auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
+					auto& gfx_Object = m_graphicsWorld->GetObjectInstance(
+						m_comp.graphicsWorld_ID);
 					gfx_Object.modelID = m_comp.meshResource;
 					gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
 					gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
@@ -167,7 +175,8 @@ namespace oo
 			[&](SkinMeshBoneComponent& boneComp, TransformComponent& transformComp)
 			{
 				//update the bone's transform
-				boneComp.bone_transform = transformComp.GetGlobalMatrix() * root_bone_inverse_map[boneComp.root_bone_object];
+				boneComp.bone_transform = 
+					root_bone_inverse_map[boneComp.root_bone_object] * transformComp.GetGlobalMatrix();
 				//do nothing if transform did not change
 				if (transformComp.HasChangedThisFrame == false) return;
 				
@@ -175,7 +184,8 @@ namespace oo
 				
 				//set bone matrix to inverse bind pose * matrix
 				//gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] = boneComp.globalTransform * boneComp.inverseBindPose_info.transform;
-				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] = boneComp.bone_transform;
+				gfx_Object.bones[boneComp.inverseBindPose_info.boneIdx] 
+					= boneComp.bone_transform * boneComp.inverseBindPose_info.transform;
 			});
 
 		TRACY_PROFILE_SCOPE_END();
