@@ -14,6 +14,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include "Anim_Utils.h"
+#include "Utility/UUID.h"
 
 namespace oo::Anim
 {
@@ -82,6 +83,7 @@ namespace oo::Anim
 		size_t index{ 0ul };	//last index of whatever keyframe we were at
 		UpdateFn updatefunction{ nullptr };
 		Timeline* timeline{ nullptr };
+		UUID timeline_gameobject_uid{};
 
 		ProgressTracker(const Timeline::TYPE _type);
 		static ProgressTracker Create(Timeline::TYPE type);

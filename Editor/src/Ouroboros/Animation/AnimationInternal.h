@@ -82,7 +82,9 @@ namespace oo::Anim::internal
 	Link* CheckNodeTransitions(UpdateTrackerInfo& info, Node& node);
 	Link* CheckNodeTransitions(UpdateTrackerInfo& info);
 
+	void BindAnimTrackersToGameobject(UpdateTrackerInfo& info, AnimationTracker& animTracker);
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link, Node& current_node);
+	
 
 	void UpdateTracker(UpdateTrackerInfo& info);
 
