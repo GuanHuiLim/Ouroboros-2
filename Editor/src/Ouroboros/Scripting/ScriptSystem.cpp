@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/ECS.h"
 
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+
 namespace oo
 {
     // Scene specific script stuff
@@ -461,7 +463,9 @@ namespace oo
     {
         if (!isPlaying)
             return;
+        TRACY_PROFILE_SCOPE(scripts_fixed_update);
         InvokeForAllEnabled("FixedUpdate");
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void ScriptSystem::OnTriggerEvent(PhysicsTriggerEvent* e)
