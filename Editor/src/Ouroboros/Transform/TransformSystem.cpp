@@ -234,12 +234,25 @@ namespace oo
             {
                 curr = s.top();
                 s.pop();
-                for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+
                 {
-                    scenenode::shared_pointer child = *iter;
-                    if (child->has_child())
-                        s.emplace(child);
+                    TRACY_PROFILE_SCOPE_NC(pre_process_inner_for_loop, tracy::Color::Gold4);
+                    /*std::for_each(std::execution::par, curr->rbegin(), curr->rend(), [&](auto const& elem)
+                        {
+                            scenenode::shared_pointer child = elem;
+                            if (child->has_child())
+                                s.emplace(child);
+                        });*/
+                    for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+                    {
+                        scenenode::shared_pointer child = *iter;
+                        if (child->has_child())
+                            s.emplace(child);
+                    }
+
+                    TRACY_PROFILE_SCOPE_END();
                 }
+
                 auto childs = curr->get_direct_child();
                 auto child_depth = curr->get_depth() + 1;
                 //auto current_size = launch_groups[child_depth].size();

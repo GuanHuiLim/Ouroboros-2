@@ -820,17 +820,24 @@ namespace oo
 
     RaycastResult PhysicsSystem::Raycast(Ray ray, float distance)
     {
+        TRACY_PROFILE_SCOPE_NC(physics_raycast, tracy::Color::PeachPuff4);
+
         auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
         
         if(result.intersect)
             ASSERT_MSG(m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
         
+
+        TRACY_PROFILE_SCOPE_END();
+
         return { result.intersect, m_physicsToGameObjectLookup.at(result.object_ID), {result.position.x,result.position.y, result.position.z}, 
             { result.normal.x, result.normal.y, result.normal.z }, result.distance };
     }
 
     std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
     {
+        TRACY_PROFILE_SCOPE_NC(physics_raycast_all, tracy::Color::PeachPuff4);
+
         std::vector<RaycastResult> result;
         
         // normalize our ray just to make sure
@@ -855,6 +862,8 @@ namespace oo
 
             result.emplace_back(new_entry);
         }
+
+        TRACY_PROFILE_SCOPE_END();
 
         return result;
     }
