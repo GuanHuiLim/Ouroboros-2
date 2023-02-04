@@ -289,7 +289,7 @@ std::shared_ptr<oo::GameObject> MeshHierarchy::CreateSkeleton(ModelFileResource*
 		bonecomponent.bone_name = curr_bone->mName;
 		bonecomponent.inverseBindPose_info = skele->inverseBindPose[curr_bone->m_BoneIndex];
 		bonecomponent.graphicsWorld_ID = gfx_ID;
-		bonecomponent.skin_mesh_object = uid;
+		bonecomponent.root_bone_object = uid;
 		//bonecomponent.gfxbones_index = curr_bone->m_BoneIndex;
 
 	   ++node_index;
