@@ -68,7 +68,7 @@ namespace oo
 
     private:
         inline static std::uint64_t MaxIterations = 2;
-        inline static Timestep FixedDeltaTime = 1.0/100;                            // physics updates at 100 fps
+        inline static Timestep FixedDeltaTime = 1.0/60;                             // physics updates at 60 fps
         inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;   // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);
