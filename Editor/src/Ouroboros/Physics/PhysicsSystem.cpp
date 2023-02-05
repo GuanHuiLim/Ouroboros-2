@@ -142,16 +142,18 @@ namespace oo
                     mc.Reset = false;
                 }
 
-                // update the world vertex position based on matrix of current object
+                // update the world vertex position based on matrix of current object(this is now just for visualization purposes only!)
                 auto globalMat = tf.GetGlobalMatrix();
                 for (auto& worldSpaceVert : mc.WorldSpaceVertices)
                 {
                     worldSpaceVert = globalMat * glm::vec4{ worldSpaceVert, 1 };
                 }
                 
-                std::vector<oo::vec3> temp{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
+                // we update using the same local vertices but update its scale
+                std::vector<oo::vec3> temp{ mc.Vertices.begin(), mc.Vertices.end() };
                 std::vector<PxVec3> res{ temp.begin(), temp.end() };
-                rb.object.setConvexProperty(res);
+                oo::vec3 scale = tf.GetGlobalScale();
+                rb.object.setConvexProperty(res, scale);
 
             });
 
@@ -529,9 +531,10 @@ namespace oo
                             {
                                 v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
                             });
-                        std::vector<oo::vec3>temp{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
-                        std::vector<PxVec3> res{ temp.begin(), temp.end() };
-                        rb.object.setConvexProperty(res);
+                        std::vector<oo::vec3>temp{ mc.Vertices.begin(), mc.Vertices.end() };
+                        std::vector<PxVec3> res{ temp.begin(), temp.end() }; 
+                        oo::vec3 scale = tf.GetGlobalScale();
+                        rb.object.setConvexProperty(res, scale);
                     }
 
                 });
