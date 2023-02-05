@@ -119,6 +119,12 @@ namespace oo
         //
         //jobsystem::launch_and_wait(phase_two);
 
+        //jobsystem::submit(phase_three, [&]() {
+            TRACY_PROFILE_SCOPE(animation_update);
+            GetWorld().Run_System<oo::Anim::AnimationSystem>();
+            TRACY_PROFILE_SCOPE_END();
+        //    });
+
         jobsystem::job phase_three{};
         //
         //jobsystem::submit(phase_three, [&]() {
@@ -139,11 +145,6 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
             });
         
-        //jobsystem::submit(phase_three, [&]() {
-            TRACY_PROFILE_SCOPE(animation_update);
-            GetWorld().Run_System<oo::Anim::AnimationSystem>();
-            TRACY_PROFILE_SCOPE_END();
-        //    });
         
         jobsystem::launch_and_wait(phase_three);
             
