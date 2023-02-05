@@ -78,7 +78,7 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
 		{
 			memory = props.limits.maxComputeWorkGroupInvocations;
 			std::swap(deviceList[i], deviceList[best]);
-			best = i;
+            best = static_cast<uint32_t>(i);
 		}
 	}
 

@@ -630,7 +630,7 @@ void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& s
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	rhi::CommandList cmd{ cmdlist ,"Fullscreen Blit"};
 	std::array<VkViewport, 1>viewports{ VkViewport{0,renderSize.y * 1.0f,renderSize.x * 1.0f,renderSize.y * -1.0f} };
-	cmd.SetViewport(0, viewports.size(), viewports.data());
+	cmd.SetViewport(0, static_cast<uint32_t>(viewports.size()), viewports.data());
 	VkRect2D scissor{ {}, {renderSize.x,renderSize.y} };
 	cmd.SetScissor(scissor);
 

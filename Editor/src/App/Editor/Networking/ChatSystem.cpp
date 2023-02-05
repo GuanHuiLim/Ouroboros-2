@@ -55,7 +55,7 @@ void ChatSystem::Show()
 			{
 				char message[2048];
 				sprintf_s(message, "%s", p->data);
-				client->Send(message, strlen(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, p->systemAddress, true);
+				client->Send(message, static_cast<int>(strlen(message)), HIGH_PRIORITY, RELIABLE_ORDERED, 0, p->systemAddress, true);
 			}
 		}
 	}
@@ -115,7 +115,7 @@ void ChatSystem::SendFile(const std::filesystem::path& path)
 	std::stringstream buffer;
 	buffer << in.rdbuf();
 	std::string file_data = buffer.str();
-	unsigned int file_length = file_data.size();
+	unsigned int file_length = static_cast<unsigned int>(file_data.size());
 	buffer.clear();
 	in.close();
 	if (file_length == 0)
@@ -295,9 +295,9 @@ void ChatSystem::HostUI()
 		client->SetTimeoutTime(30000, SLNet::UNASSIGNED_SYSTEM_ADDRESS);
 
 		SLNet::SocketDescriptor socketDescriptors[2];
-		socketDescriptors[0].port = atoi(serverPort.c_str());
+		socketDescriptors[0].port = static_cast<unsigned short>(atoi(serverPort.c_str()));
 		socketDescriptors[0].socketFamily = AF_INET; // Test out IPV4
-		socketDescriptors[1].port = atoi(serverPort.c_str());
+		socketDescriptors[1].port = static_cast<unsigned short>(atoi(serverPort.c_str()));
 		socketDescriptors[1].socketFamily = AF_INET6; // Test out IPV6
 		bool b = client->Startup(4, socketDescriptors, 2) == SLNet::RAKNET_STARTED;
 		if (!b)
