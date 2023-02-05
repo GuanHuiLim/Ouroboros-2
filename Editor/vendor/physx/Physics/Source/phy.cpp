@@ -73,8 +73,8 @@ namespace myPhysx
 
         PxPhysics* createPhysics() {
 
-            mToleranceScale.length = 1;        // typical length of an object
-            mToleranceScale.speed = 9.81;         // typical speed of an object, gravity*1s is a reasonable choice
+            mToleranceScale.length = 1;             // typical length of an object
+            mToleranceScale.speed = 9.81f;          // typical speed of an object, gravity*1s is a reasonable choice
 
             //if (PVD_DEBUGGER)
             if constexpr (use_debugger)
@@ -1078,7 +1078,7 @@ namespace myPhysx
 
         // Construct the convex data
         PxConvexMeshDesc convexDesc;
-        convexDesc.points.count = vert.size(); //5;
+        convexDesc.points.count = static_cast<physx::PxU32>(vert.size()); //5;
         convexDesc.points.stride = sizeof(PxVec3);
         convexDesc.points.data = static_cast<void*>(vert.data()); //convexVerts;
         convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;

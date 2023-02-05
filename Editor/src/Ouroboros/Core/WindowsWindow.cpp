@@ -98,6 +98,7 @@ namespace oo
             int iNumOfControllers = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
             //ASSERT_CUSTOM_MSG(iNumOfControllers == -1, "Error loading database {0}", SDL_GetError());
             ASSERT_MSG((iNumOfControllers == -1), std::string{ "Error loading database " } + SDL_GetError());
+            UNREFERENCED(iNumOfControllers);
 
             // Ignore the controller events
             SDL_GameControllerEventState(SDL_IGNORE);
@@ -446,6 +447,7 @@ namespace oo
     {
         auto result = SDL_SetRelativeMouseMode((SDL_bool)lock);
         ASSERT(result != 0);
+        UNREFERENCED(result);
     }
 
     std::pair<int, int> WindowsWindow::GetWindowPos() const

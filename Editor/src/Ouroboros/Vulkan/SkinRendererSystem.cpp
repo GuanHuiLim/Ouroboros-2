@@ -202,14 +202,14 @@ namespace oo
 		return nullptr;
 	}
 
-	void AssignGraphicsWorldID_to_Bones_Recursively(oo::GameObject obj, ModelFileResource* model, oGFX::BoneNode* curr)
+	/*void AssignGraphicsWorldID_to_Bones_Recursively(oo::GameObject obj, ModelFileResource* model, oGFX::BoneNode* curr)
 	{
 		uint index = 0;
 		for (auto bone : curr->mChildren)
 		{
 			 
 		}
-	}
+	}*/
 
 	void SkinMeshRendererSystem::PostLoadScene()
 	{

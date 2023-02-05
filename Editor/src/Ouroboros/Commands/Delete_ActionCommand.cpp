@@ -37,8 +37,9 @@ void oo::Delete_ActionCommand::Redo()
 {
 	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
 	auto obj = scene->FindWithInstanceID(revivedObject);
-	if (obj == nullptr)
-		ASSERT_MSG(true, "object not found");
+	
+	ASSERT_MSG(obj == nullptr, "object not found");
+
 	data = Serializer::SaveDeletedObject(obj, *scene);
 	scene->DestroyGameObject(*obj);
 }
@@ -88,8 +89,9 @@ void oo::Create_ActionCommand::Undo()
 	data = Serializer::SaveDeletedObject(scene->FindWithInstanceID(object), *scene);
 
 	auto obj = scene->FindWithInstanceID(object);
-	if (obj == nullptr)
-		ASSERT_MSG(true, "object not found");
+	
+	ASSERT_MSG(obj == nullptr, "object not found");
+
 	scene->DestroyGameObject(*obj);
 }
 void oo::Create_ActionCommand::Redo()

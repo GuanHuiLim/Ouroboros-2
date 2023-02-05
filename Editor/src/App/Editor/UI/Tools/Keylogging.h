@@ -45,7 +45,7 @@ private:
 		short dy;
 	};
 	float m_timeAccumulator = 0.0f;
-	const float m_granularity = 0.016;
+	const float m_granularity = 0.016f;
 	unsigned m_mousepositionCounter = 0;
 	std::vector < std::pair<float, MousePos> > m_mousePosition;
 	unsigned m_mousePressedCounter = 0;
