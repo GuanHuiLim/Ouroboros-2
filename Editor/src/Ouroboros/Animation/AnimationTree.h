@@ -33,7 +33,7 @@ namespace oo::Anim
 		//std::vector<Animation> animations;
 		//std::vector<Node> nodes;
 		UID treeID{ internal::invalid_ID };
-
+		size_t max_blended_anims{ 1 };
 	
 		RTTR_ENABLE();
 

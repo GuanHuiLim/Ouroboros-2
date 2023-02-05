@@ -69,6 +69,12 @@ namespace oo::Anim::internal
 			auto properties = rttr::type::get<AnimationTree>().get_properties();
 			for (auto& prop : properties)
 			{
+				if (object.HasMember(prop.get_name().data()) == false)
+				{
+					LOG_CORE_WARN("AnimationTree::LoadTree: Missing property {0}", prop.get_name().data());
+					continue;
+				}
+				
 				auto& value = object.FindMember(prop.get_name().data())->value;
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
 				prop.set_value(obj, val);
@@ -111,6 +117,7 @@ namespace oo::Anim
 		registration::class_<AnimationTree>("Animation Tree")
 			.property("name", &AnimationTree::name)
 			.property("treeID", &AnimationTree::treeID)
+			.property("max_blended_anims", &AnimationTree::max_blended_anims)
 			.method(internal::serialize_method_name, &internal::SerializeTree)
 			.method(internal::load_method_name, &internal::LoadTree)
 			;

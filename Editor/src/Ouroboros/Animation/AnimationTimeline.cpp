@@ -74,6 +74,9 @@ namespace oo::Anim::internal
 			auto properties = rttr::type::get<Timeline>().get_properties();
 			for (auto& prop : properties)
 			{
+				//skip properties that dont exist
+				if (object.HasMember(prop.get_name().data()) == false) continue;
+				
 				auto& value = object.FindMember(prop.get_name().data())->value;
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
@@ -105,6 +108,10 @@ namespace oo::Anim::internal
 				timeline.keyframes.emplace_back(std::move(new_kf));
 			}
 		}
+
+		//generate and set boneID if it is not set yet
+		if (timeline.boneID == internal::invalid_ID)
+			timeline.boneID = UID{ internal::generateBoneID(timeline.children_index) };
 	}
 }
 
@@ -133,6 +140,7 @@ namespace oo::Anim
 			.property("rttr_type", &Timeline::rttr_type)
 			.property("rttr_property", &Timeline::rttr_property)
 			.property("component_hash", &Timeline::component_hash)
+			.property("boneID", &Timeline::boneID)
 			.method(internal::serialize_method_name, &internal::SerializeTimeline)
 			.method(internal::load_method_name, &internal::LoadTimeline)
 			;

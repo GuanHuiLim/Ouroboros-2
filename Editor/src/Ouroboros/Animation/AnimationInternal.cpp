@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "AnimationSystem.h"
 #include "AnimationComponent.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "AnimationSkeleton.h"
 
 std::unordered_map <StringHash::size_type, rttr::type> oo::Anim::internal::hash_to_rttrType{};
 std::unordered_map <rttr::type::type_id, StringHash::size_type> oo::Anim::internal::rttrType_to_hash = []()
@@ -816,13 +817,13 @@ namespace oo::Anim::internal
 		{
 			KeyFrame::DataType quat;
 
-			quat = (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
-			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
-			return result;
-
-			/*quat = glm::lerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
+			/*quat = (1.f - percentage) * prev.get_value< glm::quat >() + (percentage * next.get_value< glm::quat >());
 			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
 			return result;*/
+
+			quat = glm::slerp(prev.get_value< glm::quat >(), next.get_value< glm::quat >(), percentage);
+			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
+			return result;
 
 			//return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
 		}
@@ -833,6 +834,137 @@ namespace oo::Anim::internal
 		else return prev;
 	}
 
+	KeyFrame::DataType GetInterpolatedValue(DataVariant prev, DataVariant next, float percentage)
+	{
+		if (std::holds_alternative<glm::vec3>(prev))
+		{
+			//return (1.f - percentage) * prev.get_value< glm::vec3 >() + (percentage * next.get_value< glm::vec3 >());
+			return std::get<glm::vec3>(next);
+		}
+		else if (std::holds_alternative<glm::quat>(prev))
+		{
+			glm::quat quat;
+			//std::get<glm::quat>(prev);
+			quat = glm::slerp(std::get<glm::quat>(prev), std::get<glm::quat>(next), percentage);
+			return oo::TransformComponent::quat{ quat };
+		}
+
+		return next;
+	}
+
+	DataVariant DataVariant_From_RTTRVariant(rttr::variant var)
+	{
+		static const auto quat_type = rttr::type::get<oo::TransformComponent::quat>();
+		static const auto glm_quat_type = rttr::type::get<glm::quat>();
+		static const auto vec3_type = rttr::type::get<glm::vec3>(); 
+		auto var_type = var.get_type();
+		if (var_type == quat_type)
+			return glm::quat{ var.get_value<oo::TransformComponent::quat>() };
+		else if (var_type == vec3_type)
+			return var.get_value<glm::vec3>();
+		else if (var_type == glm_quat_type)
+			return var.get_value<glm::quat>();
+
+		return {};
+	}
+
+
+	KeyFrameProcessData Pipelined_GatherData(UpdateProgressTrackerInfo& info, uint timeline_index)
+	{
+		KeyFrameProcessData data{};
+		data.timeline_index = timeline_index;
+
+		auto& timeline = *(info.progressTracker.timeline);
+
+		data.hasKeyFrames = !(timeline.keyframes.empty());
+		data.animationEnded = (info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
+			info.tracker_info.tracker.currentNode->GetAnimation().looping == false);
+		data.animationIsLooping = info.tracker_info.tracker.currentNode->GetAnimation().looping;
+
+		if (!data.hasKeyFrames || data.animationEnded) return data;
+
+		auto const& nextKeyframe = timeline.keyframes[info.progressTracker.index + 1ul];
+		data.nextKeyframeTime = nextKeyframe.time;
+		auto temp = nextKeyframe.data;
+
+		data.nextKeyFrameData = DataVariant_From_RTTRVariant(nextKeyframe.data);
+		data.lastKeyFrameData = DataVariant_From_RTTRVariant(timeline.keyframes.back().data);
+		data.tracker_index = info.progressTracker.index;
+		data.last_keyframe_index = (timeline.keyframes.size() - 1ull);
+		data.keyframes = &timeline.keyframes;
+		data.component_hash = info.progressTracker.timeline->component_hash;
+		data.component_property = info.progressTracker.timeline->rttr_property;
+		{
+			auto ptr_to_go = info.tracker_info.system.Get_Scene().FindWithInstanceID(info.progressTracker.timeline_gameobject_uid);
+			GameObject go{ *ptr_to_go };
+			data.component = info.tracker_info.system.Get_Ecs_World()->get_component(
+				go.GetEntity(), data.component_hash);
+		}
+
+		return data;
+	}
+
+	void Pipelined_NextKeyFrameCheck(KeyFrameProcessData& data, float updatedTimer)
+	{
+		if (Withinbounds(updatedTimer, data.nextKeyframeTime) == false) return;
+
+		++data.tracker_index;
+
+		//check if passed more than 1 keyframe
+		{
+			auto curr_index = data.tracker_index;
+			while (curr_index < data.last_keyframe_index &&
+				Withinbounds(updatedTimer, data.keyframes->at(curr_index + 1ul).time))
+				++curr_index;
+			data.tracker_index = curr_index;
+		}
+		//did not went past or hit last keyframe
+		if (data.tracker_index < data.last_keyframe_index) return;
+
+		auto rttr_instance = internal::hash_to_instance[data.component_hash](data.component);
+
+		if (std::holds_alternative<glm::quat>(data.lastKeyFrameData))
+			data.component_property.set_value(rttr_instance, std::get<glm::quat>(data.lastKeyFrameData));
+		else
+			data.component_property.set_value(rttr_instance, std::get<glm::vec3>(data.lastKeyFrameData));
+
+		//if animation is looping, reset keyframe index
+		if (data.animationIsLooping)
+		{
+			data.tracker_index = 0;
+		}
+
+		data.skipFurtherProcessing = true;
+	}
+
+	void Pipelined_Interpolation_GatherData(KeyFrameProcessData& data, float updatedTimer)
+	{
+		auto const& prevKf = data.keyframes->at(data.tracker_index);
+		auto const& nextKf = data.keyframes->at(data.tracker_index + 1ull);
+		data.interp_prevKeyframeTime = prevKf.time;
+		data.interp_nextKeyframeTime = nextKf.time;
+		data.interp_prevKeyFrameData = DataVariant_From_RTTRVariant(prevKf.data);
+		data.interp_nextKeyFrameData = DataVariant_From_RTTRVariant(nextKf.data);
+	}
+
+	void Pipelined_Interpolation(KeyFrameProcessData& data, float updatedTimer)
+	{
+		float percentage = (updatedTimer - data.interp_prevKeyframeTime) / (data.interp_nextKeyframeTime - data.interp_prevKeyframeTime);
+		data.interp_finalKeyFrameData = GetInterpolatedValue(
+			data.interp_prevKeyFrameData, data.interp_nextKeyFrameData, percentage);
+	}
+
+	void Pipelined_SetGameObject(KeyFrameProcessData& data)
+	{
+		auto rttr_instance = internal::hash_to_instance[data.component_hash](data.component);
+		auto result = data.component_property.set_value(rttr_instance, data.interp_finalKeyFrameData);
+		assert(result);
+	}
+
+	void Pipelined_SetTrackerData(KeyFrameProcessData& data, std::vector<ProgressTracker>& trackers)
+	{
+		trackers[data.timeline_index].index = data.tracker_index;
+	}
 
 	//void UpdateProperty_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
 	void UpdateProperty_Animation(UpdateProgressTrackerInfo& info, float updatedTimer)
@@ -938,21 +1070,8 @@ namespace oo::Anim::internal
 		{
 			return;
 		}
+		// get the gameobject
 		TRACY_PROFILE_SCOPE_NC(locate_object , 0x004E41);
-		////find the correct gameobject
-		//GameObject go{ t_info.tracker_info.entity,t_info.tracker_info.system.Get_Scene() };
-		//
-		////traverse the hierarchy and find the gameobject if needed
-		//if (t_info.tracker_info.uuid == UUID::Invalid)
-		//{
-		//	for (auto& index : timeline.children_index)
-		//	{
-		//		auto name = go.Name();
-		//		auto children = go.GetDirectChilds();
-		//		go = children[index];
-		//	}
-		//	t_info.tracker_info.uuid = go.GetInstanceID();
-		//}
 		auto ptr_to_go = t_info.tracker_info.system.Get_Scene().FindWithInstanceID(t_info.progressTracker.timeline_gameobject_uid);
 		GameObject go{ *ptr_to_go };
 		TRACY_PROFILE_SCOPE_END();
@@ -980,13 +1099,20 @@ namespace oo::Anim::internal
 				//set the value
 				if (timeline.keyframes.back().data.get_type() == rttr::type::get<oo::TransformComponent::quat>())
 				{
-					KeyFrame::DataType data = oo::TransformComponent::quat{ timeline.keyframes.back().data.get_value<glm::quat>() };
+					/*KeyFrame::DataType data = oo::TransformComponent::quat{ timeline.keyframes.back().data.get_value<glm::quat>() };
 					t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, 
-						data);
+						data);*/
+					t_info.tracker_info.comp.skeleton.SetCurrentPose_Bone_Quaternion_property(
+						timeline.boneID,
+						timeline.keyframes.back().data.get_value<glm::quat>());
 				}
 				else
 				{
-					t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
+					/*t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);*/
+					t_info.tracker_info.comp.skeleton.SetCurrentPose_Bone_vec3_property(
+						timeline.boneID,
+						timeline.rttr_property,
+						timeline.keyframes.back().data.get_value<glm::vec3>());
 				}
 
 				//if animation is looping, reset keyframe index
@@ -1009,16 +1135,23 @@ namespace oo::Anim::internal
 		auto& nextKeyframe = *(timeline.keyframes.begin() + t_info.progressTracker.index + 1u);
 		auto prevTime = prevKeyframe.time;
 		auto nextTime = nextKeyframe.time;
+		TRACY_PROFILE_SCOPE_END();
 
+		TRACY_PROFILE_SCOPE_NC(calculate_percentage, 0x122F59);
 		//current progress in keyframe over total time in between keyframes
 		float percentage = (updatedTimer - prevTime) / (nextTime - prevTime);
+		TRACY_PROFILE_SCOPE_END();
 
+		TRACY_PROFILE_SCOPE_NC(get_interpolated_value, 0x122F59);
 		KeyFrame::DataType interpolated_value = GetInterpolatedValue(
 			t_info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
 		TRACY_PROFILE_SCOPE_END();
+		
+		TRACY_PROFILE_SCOPE_END();
 		/*--------------------------------
-		set related game object's data
+		set related game object's data - not set here anymore
 		--------------------------------*/
+		/*
 		TRACY_PROFILE_SCOPE_NC(set_game_object, 0x004E41);
 		//get a ptr to the component
 		auto ptr = t_info.tracker_info.system.Get_Ecs_World()->get_component(
@@ -1038,17 +1171,277 @@ namespace oo::Anim::internal
 			assert(result);
 		}
 		TRACY_PROFILE_SCOPE_END();
+		*/
+		/*--------------------------------
+		set skeleton's pose's bone data 
+		--------------------------------*/
+		static const auto vec3_type = rttr::type::get<glm::vec3>();
+
+		if (interpolated_value.get_type() == vec3_type)
+		{
+			t_info.tracker_info.comp.skeleton.SetCurrentPose_Bone_vec3_property(
+				timeline.boneID,
+				timeline.rttr_property,
+				interpolated_value.get_value< glm::vec3>());
+		}
+		else // quaternion
+		{
+			t_info.tracker_info.comp.skeleton.SetCurrentPose_Bone_Quaternion_property(
+				timeline.boneID,
+				interpolated_value.get_value<glm::quat>());
+		}
+		
+
+		
 		//SetComponentData(timeline, interpolated_value);
 		//assert(false);
 	}
-	//go through all progress trackers and call their update function
-	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer)
+	void UpdateFBX_Animation_Transition(UpdateProgressTrackerInfo& t_info, float updatedTimer)
 	{
-		for (auto& progressTracker : info.tracker.trackers)
+		assert(t_info.progressTracker.type == Timeline::TYPE::FBX_ANIM);
+
+		auto& timeline = *(t_info.progressTracker.timeline);
+
+		//no keyframes so we return
+		if (timeline.keyframes.empty()) return;
+
+		//already hit last and animation not looping so we return
+		if (t_info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
+			t_info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
+		{
+			return;
+		}
+		// get the gameobject
+		TRACY_PROFILE_SCOPE_NC(locate_object, 0x004E41);
+		auto ptr_to_go = t_info.tracker_info.system.Get_Scene().FindWithInstanceID(t_info.progressTracker.timeline_gameobject_uid);
+		GameObject go{ *ptr_to_go };
+		TRACY_PROFILE_SCOPE_END();
+
+		auto const pose_index = t_info.tracker_info.tracker.transition_info.pose_index;
+		auto const quick_blend_weight = t_info.tracker_info.tracker.transition_info.quick_blend_weight;
+
+		TRACY_PROFILE_SCOPE_NC(next_keyframe_check, 0x004E41);
+		//if next keyframe within bounds increment index 
+		auto& nextEvent = *(timeline.keyframes.begin() + t_info.progressTracker.index + 1ul);
+		if (Withinbounds(updatedTimer, nextEvent.time))
+		{
+			++t_info.progressTracker.index;
+			//check if passed more than 1 keyframe
+			auto max_index = (timeline.keyframes.size() - 1ul);
+			while (t_info.progressTracker.index < max_index &&
+				Withinbounds(updatedTimer, timeline.keyframes[t_info.progressTracker.index + 1ul].time))
+				++t_info.progressTracker.index;
+
+			//went past last keyframe so we set data to last and return
+			if (t_info.progressTracker.index >= max_index)
+			{
+				//get the instance
+				auto ptr = t_info.tracker_info.system.Get_Ecs_World()->get_component(
+					go.GetEntity(), t_info.progressTracker.timeline->component_hash);
+				auto rttr_instance = hash_to_instance[t_info.progressTracker.timeline->component_hash](ptr);
+				//set the value
+				if (timeline.keyframes.back().data.get_type() == rttr::type::get<oo::TransformComponent::quat>())
+				{
+					/*KeyFrame::DataType data = oo::TransformComponent::quat{ timeline.keyframes.back().data.get_value<glm::quat>() };
+					t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance,
+						data);*/
+					t_info.tracker_info.comp.skeleton.SetPoseBlended_Bone_Quaternion_property(
+						pose_index,
+						AnimationSkeleton::CURRENT_POSE_INDEX,
+						quick_blend_weight,
+						timeline.boneID,
+						timeline.keyframes.back().data.get_value<glm::quat>());
+				}
+				else
+				{
+					/*t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);*/
+					t_info.tracker_info.comp.skeleton.SetPoseBlended_Bone_vec3_property(
+						pose_index,
+						AnimationSkeleton::CURRENT_POSE_INDEX,
+						quick_blend_weight,
+						timeline.boneID,
+						timeline.rttr_property,
+						timeline.keyframes.back().data.get_value<glm::vec3>());
+				}
+
+				//if animation is looping, reset keyframe index
+				if (t_info.tracker_info.tracker.currentNode->GetAnimation().looping)
+				{
+					t_info.progressTracker.index = 0;
+				}
+				TRACY_PROFILE_SCOPE_END();
+				return;
+			}
+
+		}
+		TRACY_PROFILE_SCOPE_END();
+
+		/*--------------------------------
+		interpolate animation accordingly
+		--------------------------------*/
+		TRACY_PROFILE_SCOPE_NC(interpolation, 0x004E41);
+		auto& prevKeyframe = *(timeline.keyframes.begin() + t_info.progressTracker.index);
+		auto& nextKeyframe = *(timeline.keyframes.begin() + t_info.progressTracker.index + 1u);
+		auto prevTime = prevKeyframe.time;
+		auto nextTime = nextKeyframe.time;
+		TRACY_PROFILE_SCOPE_END();
+
+		TRACY_PROFILE_SCOPE_NC(calculate_percentage, 0x122F59);
+		//current progress in keyframe over total time in between keyframes
+		float percentage = (updatedTimer - prevTime) / (nextTime - prevTime);
+		TRACY_PROFILE_SCOPE_END();
+
+		TRACY_PROFILE_SCOPE_NC(get_interpolated_value, 0x122F59);
+		KeyFrame::DataType interpolated_value = GetInterpolatedValue(
+			t_info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
+		TRACY_PROFILE_SCOPE_END();
+
+		TRACY_PROFILE_SCOPE_END();
+		/*--------------------------------
+		set related game object's data - not set here anymore
+		--------------------------------*/
+		/*
+		TRACY_PROFILE_SCOPE_NC(set_game_object, 0x004E41);
+		//get a ptr to the component
+		auto ptr = t_info.tracker_info.system.Get_Ecs_World()->get_component(
+			go.GetEntity(), t_info.progressTracker.timeline->component_hash);
+
+		//get the instance
+		auto rttr_instance = hash_to_instance[t_info.progressTracker.timeline->component_hash](ptr);
+		//set the value
+		//if (interpolated_value.get_type() == rttr::type::get< glm::vec3>()) return;
+
+		auto result = t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
+		if (result == false)
+		{
+			auto type_name = interpolated_value.get_type().get_name();
+			auto correct_Type_name = t_info.progressTracker.timeline->rttr_property.get_type().get_name();
+			auto temp = rttr::type::get<oo::TransformComponent::quat>().get_name();
+			assert(result);
+		}
+		TRACY_PROFILE_SCOPE_END();
+		*/
+		/*--------------------------------
+		set skeleton's pose's bone data
+		--------------------------------*/
+		static const auto vec3_type = rttr::type::get<glm::vec3>();
+
+		if (interpolated_value.get_type() == vec3_type)
+		{
+			t_info.tracker_info.comp.skeleton.SetPoseBlended_Bone_vec3_property(
+				pose_index,
+				AnimationSkeleton::CURRENT_POSE_INDEX,
+				quick_blend_weight,
+				timeline.boneID,
+				timeline.rttr_property,
+				interpolated_value.get_value< glm::vec3>());
+		}
+		else // quaternion
+		{
+			t_info.tracker_info.comp.skeleton.SetPoseBlended_Bone_Quaternion_property(
+				pose_index,
+				AnimationSkeleton::CURRENT_POSE_INDEX,
+				quick_blend_weight,
+				timeline.boneID,
+				interpolated_value.get_value<glm::quat>());
+		}
+	}
+	//go through all progress trackers and call their update function
+	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& t_info, float updatedTimer)
+	{
+		for (auto& progressTracker : t_info.tracker.trackers)
 		{
 			//it should have an update function!!
 			assert(progressTracker.updatefunction != nullptr);
-			UpdateProgressTrackerInfo p_info{ info, progressTracker };
+			UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
+			//call the respective update function on this tracker
+			progressTracker.updatefunction(p_info, updatedTimer);
+		}
+		return;
+		/*--------------------------
+		pipeline optimization way - unused for now
+		--------------------------*/
+		/*
+		t_info.tracker.pipeline_buffer.clear();
+		//gather data first
+		TRACY_PROFILE_SCOPE_NC(gather_data, 0x004E41);
+		uint timeline_index = 0;
+		for (auto& progressTracker : t_info.tracker.trackers)
+		{
+			UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
+			auto data = Pipelined_GatherData(p_info, timeline_index);
+
+			if (!data.hasKeyFrames || data.animationEnded)
+			{
+				++timeline_index;
+				continue;
+			}
+
+			t_info.tracker.pipeline_buffer.emplace_back(data);
+
+			++timeline_index;
+		}
+		TRACY_PROFILE_SCOPE_END();
+		//next keyframe check
+
+		TRACY_PROFILE_SCOPE_NC(next_keyframe_check, 0x004E41);
+		for (auto& element : t_info.tracker.pipeline_buffer)
+		{
+			Pipelined_NextKeyFrameCheck(element, updatedTimer);
+
+			if (element.skipFurtherProcessing) continue;
+
+			Pipelined_Interpolation_GatherData(element, updatedTimer);
+			Pipelined_Interpolation(element, updatedTimer);
+			Pipelined_SetGameObject(element);
+			Pipelined_SetTrackerData(element, t_info.tracker.trackers);
+		}
+		TRACY_PROFILE_SCOPE_END();
+		return;
+		//interpolation gather data
+		TRACY_PROFILE_SCOPE_NC(interpolation_gather_data, 0x004E41);
+		for (auto& element : t_info.tracker.pipeline_buffer)
+		{
+			if (element.skipFurtherProcessing) continue;
+
+			Pipelined_Interpolation_GatherData(element, updatedTimer);
+		}
+		TRACY_PROFILE_SCOPE_END();
+		//interpolation
+		TRACY_PROFILE_SCOPE_NC(interpolation, 0x004E41);
+		for (auto& element : t_info.tracker.pipeline_buffer)
+		{
+			if (element.skipFurtherProcessing) continue;
+
+			Pipelined_Interpolation(element, updatedTimer);
+		}
+		TRACY_PROFILE_SCOPE_END();
+		//set game object
+		TRACY_PROFILE_SCOPE_NC(set_game_object, 0x004E41);
+		for (auto& element : t_info.tracker.pipeline_buffer)
+		{
+			if (element.skipFurtherProcessing) continue;
+
+			Pipelined_SetGameObject(element);
+		}
+		TRACY_PROFILE_SCOPE_END();
+		//set tracker data
+		TRACY_PROFILE_SCOPE_NC(set_tracker_data, 0x004E41);
+		for (auto& element : t_info.tracker.pipeline_buffer)
+		{
+			Pipelined_SetTrackerData(element, t_info.tracker.trackers);
+		}
+		TRACY_PROFILE_SCOPE_END();
+		*/
+	}
+
+	void UpdateTrackerKeyframeProgress_Transitions(UpdateTrackerInfo& t_info, float updatedTimer, uint pose_index)
+	{		
+		for (auto& progressTracker : t_info.tracker.transition_info.trackers)
+		{
+			//it should have an update function!!
+			assert(progressTracker.updatefunction != nullptr);
+			UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
 			//call the respective update function on this tracker
 			progressTracker.updatefunction(p_info, updatedTimer);
 		}
@@ -1102,22 +1495,18 @@ namespace oo::Anim::internal
 		auto& trans_info = info.tracker.transition_info;
 		trans_info.transition_timer += info.dt;
 		//if timer still not past offset, continue as normal
-		if (trans_info.transition_timer < trans_info.transition_offset)
+		if (trans_info.transition_timer < trans_info.quick_blend_duration)
 		{
-			UpdateTrackerKeyframeProgress(info, updatedTimer);
+			trans_info.quick_blend_weight = trans_info.transition_timer / trans_info.quick_blend_duration;
+			UpdateTrackerKeyframeProgress_Transitions(info, updatedTimer, AnimationSkeleton::NEXT_POSE_INDEX);
 			return;
 		}
+		trans_info.in_transition = false;
+
 		//interpolate between the src and dst keyframes
-		auto src_percentage = (trans_info.transition_timer - trans_info.transition_offset) / trans_info.transition_duration;
+		/*auto src_percentage = (trans_info.transition_timer - trans_info.transition_offset) / trans_info.transition_duration;
 		auto dst_percentage = 1.f - src_percentage;
-		(void)dst_percentage;
-		//TODO: there is multiple keyframes, and we can only interpolate the same type ones
-		/*for (auto& trackers : info.tracker.trackers)
-		{
-
-		}*/
-
-		//auto kf = GetCurrentKeyFrame(info.tracker.trackers)
+		(void)dst_percentage;*/
 
 	}
 	//void UpdateTrackerKeyframeProgress(AnimationComponent& component, AnimationTracker& tracker, float updatedTimer)
@@ -1262,7 +1651,27 @@ namespace oo::Anim::internal
 				auto children = curr.GetDirectChilds();
 				curr = children[index];
 			}
-			tracker.timeline_gameobject_uid = curr.GetInstanceID();
+			auto uuid = curr.GetInstanceID();
+			tracker.timeline_gameobject_uid = uuid;
+			info.comp.skeleton.SetBoneData(tracker.timeline->boneID, uuid);
+		}
+	}
+
+	void BindAnimTransitionTrackersToGameobject(UpdateTrackerInfo& info, AnimationTracker& animTracker)
+	{
+		GameObject go{ info.entity,info.system.Get_Scene() };
+		for (auto& tracker : animTracker.transition_info.trackers)
+		{
+			GameObject curr = go;
+			//traverse the hierarchy and find the gameobject
+			for (auto const& index : tracker.timeline->children_index)
+			{
+				auto children = curr.GetDirectChilds();
+				curr = children[index];
+			}
+			auto uuid = curr.GetInstanceID();
+			tracker.timeline_gameobject_uid = uuid;
+			//info.comp.skeleton.SetBoneData(tracker.timeline->boneID, uuid);
 		}
 	}
 
@@ -1271,15 +1680,32 @@ namespace oo::Anim::internal
 		AssignNodeToTracker(info.tracker, link->dst);
 		BindAnimTrackersToGameobject(info, info.tracker);
 		ResetTriggers(info, *link);
+		info.tracker.pipeline_buffer.reserve(info.tracker.trackers.size());
 		//TODO: transitions
-		/*info.tracker.transition_info.in_transition = true;
+		info.tracker.transition_info.in_transition = true;
 		info.tracker.transition_info.link = link;
 		info.tracker.transition_info.transition_timer = 0.f;
 		info.tracker.transition_info.transition_timer = link->transition_offset;
-		info.tracker.transition_info.transition_duration = link->transition_duration;
+		//HARDCODE FOR NOW FOR QUICK BLEND
+		//info.tracker.transition_info.transition_duration = 0.5f;
+		//info.tracker.transition_info.transition_duration = link->transition_duration;
 
-		info.tracker.transition_info.trackers = link->dst->trackers;*/
 
+		info.tracker.transition_info.trackers = link->dst->trackers;
+		info.tracker.transition_info.pose_index = AnimationSkeleton::NEXT_POSE_INDEX;
+
+		for (auto& tracker : info.tracker.transition_info.trackers)
+		{
+			tracker.updatefunction = &internal::UpdateFBX_Animation_Transition;
+		}
+
+		BindAnimTransitionTrackersToGameobject(info, info.tracker);
+
+		//if in transition, copy pose from next to current
+		if (info.tracker.transition_info.in_transition)
+		{
+			info.comp.skeleton.CopyPose(AnimationSkeleton::NEXT_POSE_INDEX, AnimationSkeleton::CURRENT_POSE_INDEX);
+		}
 	}
 
 	void UpdateTracker(UpdateTrackerInfo& t_info)
@@ -1335,8 +1761,10 @@ namespace oo::Anim::internal
 			UpdateTrackerKeyframeProgress(t_info, updatedTimer);
 			TRACY_PROFILE_SCOPE_END();
 		}
-		else
+		else // in transition
 		{
+			//check if we passed a script event and invoke
+			UpdateScriptEventProgress(t_info, updatedTimer);
 			//interpolate between src and dst nodes
 			UpdateTrackerTransitionProgress(t_info, updatedTimer);
 		}

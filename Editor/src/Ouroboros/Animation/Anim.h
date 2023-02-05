@@ -24,6 +24,7 @@ Technology is prohibited.
 #include "Animation.h"
 #include "AnimationTree.h"
 #include "AnimationTracker.h"
+#include "AnimationSkeleton.h"
 namespace oo::Anim::internal
 {
 }

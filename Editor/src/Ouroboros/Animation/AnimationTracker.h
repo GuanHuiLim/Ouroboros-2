@@ -27,8 +27,15 @@ namespace oo::Anim
 			std::vector<ProgressTracker> trackers{};
 			//how much time has elasped since the transition began
 			float transition_timer{ 0.f };
+
 			float transition_offset{ 0.f };
 			float transition_duration{ 0.f };
+			uint pose_index{ 0 };	//skeleton's pose index
+			
+			//QUICK BLEND
+			float quick_blend_weight{ 0.f };
+			float quick_blend_duration{ 0.15f };
+
 		};
 
 		NodeRef currentNode;
@@ -37,6 +44,9 @@ namespace oo::Anim
 		float normalized_timer{ 0.f };
 		float global_timer{ 0.f };
 		int num_iterations{ 0 };
+
+		//pipeline optimization
+		std::vector<internal::KeyFrameProcessData> pipeline_buffer{};
 
 		InTransitionInfo transition_info{};
 
@@ -47,6 +57,9 @@ namespace oo::Anim
 		//a copy of the animation tree's parameters to be used for this
 		//component only
 		std::vector<Parameter> parameters;
+
+		//skeleton pose data
+		internal::Skeleton skeleton{};
 	};
 
 	
