@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "AnimationTracker.h"
 #include "AnimationSystem.h"
 #include "AnimationComponent.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 std::unordered_map <StringHash::size_type, rttr::type> oo::Anim::internal::hash_to_rttrType{};
 std::unordered_map <rttr::type::type_id, StringHash::size_type> oo::Anim::internal::rttrType_to_hash = []()
@@ -937,17 +938,27 @@ namespace oo::Anim::internal
 		{
 			return;
 		}
+		TRACY_PROFILE_SCOPE_NC(locate_object , 004E41);
+		////find the correct gameobject
+		//GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
+		//
+		////traverse the hierarchy and find the gameobject if needed
+		//if (info.tracker_info.uuid == UUID::Invalid)
+		//{
+		//	for (auto& index : timeline.children_index)
+		//	{
+		//		auto name = go.Name();
+		//		auto children = go.GetDirectChilds();
+		//		go = children[index];
+		//	}
+		//	info.tracker_info.uuid = go.GetInstanceID();
+		//}
+		auto ptr_to_go = info.tracker_info.system.Get_Scene().FindWithInstanceID(info.progressTracker.timeline_gameobject_uid);
+		GameObject go{ *ptr_to_go };
+		TRACY_PROFILE_SCOPE_END();
 
 
-		//find the correct gameobject
-		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
-		//traverse the hierarchy
-		for (auto& index : timeline.children_index)
-		{
-			auto name = go.Name();
-			auto children = go.GetDirectChilds();
-			go = children[index];
-		}
+		TRACY_PROFILE_SCOPE_NC(next_keyframe_check, 004E41);
 		//if next keyframe within bounds increment index 
 		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
 		if (Withinbounds(updatedTimer, nextEvent.time))
@@ -983,14 +994,17 @@ namespace oo::Anim::internal
 				{
 					info.progressTracker.index = 0;
 				}
+				TRACY_PROFILE_SCOPE_END();
 				return;
 			}
 
 		}
+		TRACY_PROFILE_SCOPE_END();
 
 		/*--------------------------------
 		interpolate animation accordingly
 		--------------------------------*/
+		TRACY_PROFILE_SCOPE_NC(interpolation, 004E41);
 		auto& prevKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index);
 		auto& nextKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index + 1u);
 		auto prevTime = prevKeyframe.time;
@@ -1001,10 +1015,11 @@ namespace oo::Anim::internal
 
 		KeyFrame::DataType interpolated_value = GetInterpolatedValue(
 			info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
-
+		TRACY_PROFILE_SCOPE_END();
 		/*--------------------------------
 		set related game object's data
 		--------------------------------*/
+		TRACY_PROFILE_SCOPE_NC(set_game_object, 004E41);
 		//get a ptr to the component
 		auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
 			go.GetEntity(), info.progressTracker.timeline->component_hash);
@@ -1022,7 +1037,7 @@ namespace oo::Anim::internal
 			auto temp = rttr::type::get<oo::TransformComponent::quat>().get_name();
 			assert(result);
 		}
-		
+		TRACY_PROFILE_SCOPE_END();
 		//SetComponentData(timeline, interpolated_value);
 		//assert(false);
 	}
@@ -1235,10 +1250,26 @@ namespace oo::Anim::internal
 		return CheckNodeTransitions(info, *(info.tracker.currentNode));
 	}
 
+	void BindAnimTrackersToGameobject(UpdateTrackerInfo& info, AnimationTracker& animTracker)
+	{
+		GameObject go{ info.entity,info.system.Get_Scene() };
+		for (auto& tracker : animTracker.trackers)
+		{
+			GameObject curr = go;
+			//traverse the hierarchy and find the gameobject
+			for (auto const& index : tracker.timeline->children_index)
+			{
+				auto children = curr.GetDirectChilds();
+				curr = children[index];
+			}
+			tracker.timeline_gameobject_uid = curr.GetInstanceID();
+		}
+	}
 
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link, Node& current_node)
 	{
 		AssignNodeToTracker(info.tracker, link->dst);
+		BindAnimTrackersToGameobject(info, info.tracker);
 		ResetTriggers(info, *link);
 		//TODO: transitions
 		/*info.tracker.transition_info.in_transition = true;
@@ -1260,6 +1291,7 @@ namespace oo::Anim::internal
 		{
 			assert(false);
 		}
+		TRACY_PROFILE_SCOPE_NC(Transition, 0x4D0D65);
 		//check transitions for any state node
 		bool has_transitioned = false;
 		{
@@ -1271,8 +1303,7 @@ namespace oo::Anim::internal
 				has_transitioned = true;
 			}
 		}
-		
-		//check transitions for current node if any state node no transition
+		//check transitions for current node 
 		if (has_transitioned == false)
 		{
 			auto result = CheckNodeTransitions(info);
@@ -1281,26 +1312,35 @@ namespace oo::Anim::internal
 				ActivateTransition(info, result, *(info.tracker.currentNode));
 			}
 		}
-		
+		TRACY_PROFILE_SCOPE_END();
+
+		TRACY_PROFILE_SCOPE_NC(Timer_Update, 0x4D0D65);
 		float updatedTimer = info.tracker.timer + info.tracker.currentNode->speed * info.dt;
 		//update tracker timer and global timer
 		info.tracker.timer = updatedTimer;
 		info.tracker.global_timer += info.tracker.currentNode->speed * info.dt;
 		info.tracker.normalized_timer = updatedTimer / info.tracker.currentNode->GetAnimation().animation_length;
+		TRACY_PROFILE_SCOPE_END();
+
 
 		//not in transition
 		if (info.tracker.transition_info.in_transition == false)
 		{
+			TRACY_PROFILE_SCOPE_NC(ScriptEvent_Update, 0x4D0D65);
 			//check if we passed a script event and invoke
 			UpdateScriptEventProgress(info, updatedTimer);
+			TRACY_PROFILE_SCOPE_END();
 			//check if we passed a keyframe and update
+			TRACY_PROFILE_SCOPE_NC(Keyframe_Update, 0x4D0D65);
 			UpdateTrackerKeyframeProgress(info, updatedTimer);
+			TRACY_PROFILE_SCOPE_END();
 		}
 		else
 		{
 			//interpolate between src and dst nodes
 			UpdateTrackerTransitionProgress(info, updatedTimer);
 		}
+		TRACY_PROFILE_SCOPE_NC(Looping_Update, 0x4D0D65);
 		//update timer and iterations if animation is looping
 		if (info.tracker.currentNode->GetAnimation().looping &&
 			updatedTimer > info.tracker.currentNode->GetAnimation().animation_length)
@@ -1310,6 +1350,7 @@ namespace oo::Anim::internal
 
 			++info.tracker.num_iterations;
 		}
+		TRACY_PROFILE_SCOPE_END();
 
 	}
 
