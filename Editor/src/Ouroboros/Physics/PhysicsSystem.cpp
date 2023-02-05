@@ -520,7 +520,7 @@ namespace oo
                         justEdited = true;
                     }
 
-                    if (tf.HasChangedThisFrame || justEdited && !mc.Vertices.empty())
+                    if (tf.HasChangedThisFrame || (justEdited && !mc.Vertices.empty()))
                     {
                         // update the world vertex position based on matrix of current object
                         auto globalMat = tf.GetGlobalMatrix();
