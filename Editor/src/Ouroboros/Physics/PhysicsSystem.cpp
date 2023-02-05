@@ -810,7 +810,8 @@ namespace oo
     void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime) 
     { 
         FixedDeltaTime = NewFixedTime; 
-        AccumulatorLimit = FixedDeltaTime * MaxIterations; 
+        auto newLimit = FixedDeltaTime * MaxIterations;
+        AccumulatorLimit =  AccumulatorLimit < newLimit ? newLimit : AccumulatorLimit;
     }
 
     PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()

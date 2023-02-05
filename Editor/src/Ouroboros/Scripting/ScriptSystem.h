@@ -63,7 +63,8 @@ namespace oo
         void InvokeForEachEnabled(const char* name_space, const char* name, const char* functionName, int paramCount = 0, void** params = NULL);
 
         void InvokeForAll(const char* functionName, int paramCount = 0, void** params = NULL);
-        void InvokeForAllEnabled(const char* functionName, int paramCount = 0, void** params = NULL);
+        void InvokeForAllEnabled(const char* functionName);
+        void InvokeForAllEnabled(const char* functionName, int paramCount, void** params);
 
     private:
         void SetUpObject(oo::UUID uuid, ScriptComponent const& script);

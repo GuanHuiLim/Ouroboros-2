@@ -233,6 +233,38 @@ namespace oo
         }
     }
 
+    void ScriptDatabase::InvokeForAllEnabled(const char* functionName, ObjectCheck filter)
+    {
+        for (InstancePool& scriptPool : poolList)
+        {
+            if (scriptPool.empty())
+                continue;
+
+            MonoClass* klass = mono_object_get_class(mono_gchandle_get_target(scriptPool.begin()->second.handle));
+            MonoMethod* method = ScriptEngine::GetFunction(klass, functionName);
+            if (method == nullptr)
+                continue;
+            LifeCycleFunction function = static_cast<LifeCycleFunction>(mono_method_get_unmanaged_thunk(method));
+            MonoException* exception = NULL;
+
+            for (auto& [uuid, instance] : scriptPool)
+            {
+                if (!instance.enabled)
+                    continue;
+                if (filter && !filter(uuid))
+                    continue;
+                MonoObject* object = mono_gchandle_get_target(instance.handle);
+                function(object, &exception);
+                if (exception)
+                {
+                    MonoMethod* stringMethod = mono_class_get_method_from_name(mono_get_exception_class(), "ToString", 0);
+                    MonoString* excString = (MonoString*)mono_runtime_invoke(stringMethod, exception, NULL, NULL);
+                    throw std::exception(mono_string_to_utf8(excString));
+                }
+            }
+        }
+    }
+
     ScriptDatabase::Index ScriptDatabase::GetInstancePoolIndex(const char* name_space, const char* name)
     {
         std::string scriptName = std::string{ name_space } + "." + name;

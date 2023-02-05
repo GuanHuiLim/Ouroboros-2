@@ -41,3 +41,4 @@ ScriptCore.pdb
 # Installer/OuroborosInstaller.exe
 *.log
 Editor/imgui.ini
+Editor/stats.txt

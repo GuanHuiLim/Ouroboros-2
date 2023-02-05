@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/ECS.h"
 
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+
 namespace oo
 {
     // Scene specific script stuff
@@ -364,12 +366,34 @@ namespace oo
                 }
             });
     }
+    void ScriptSystem::InvokeForAllEnabled(const char* functionName)
+    {
+        if (!ScriptEngine::IsLoaded())
+            return;
+        if (!isPlaying)
+            return;
+
+        try
+        {
+            scriptDatabase.InvokeForAllEnabled(functionName,
+                [this](ScriptDatabase::UUID uuid)
+                {
+                    std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
+                    return object->ActiveInHierarchy();
+                });
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR(e.what());
+        }
+    }
     void ScriptSystem::InvokeForAllEnabled(const char* functionName, int paramCount, void** params)
     {
         if (!ScriptEngine::IsLoaded())
             return;
         if (!isPlaying)
             return;
+
         scriptDatabase.ForAllEnabled([&functionName, &params, &paramCount](MonoObject* object)
             {
                 try
@@ -461,7 +485,9 @@ namespace oo
     {
         if (!isPlaying)
             return;
+        TRACY_PROFILE_SCOPE(scripts_fixed_update);
         InvokeForAllEnabled("FixedUpdate");
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void ScriptSystem::OnTriggerEvent(PhysicsTriggerEvent* e)
