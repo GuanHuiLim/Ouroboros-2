@@ -1002,7 +1002,7 @@ namespace myPhysx
         }
     }
 
-    void PhysicsObject::setConvexProperty(std::vector<PxVec3> vert) { //  PxConvexMesh* mesh
+    void PhysicsObject::setConvexProperty(std::vector<PxVec3> vert, PxVec3 scale) { //  PxConvexMesh* mesh
 
         if (world->all_objects.contains(id)) {
 
@@ -1010,7 +1010,7 @@ namespace myPhysx
 
             if (underlying_obj->shape_type == shape::convex) {
 
-                underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(vert)));
+                underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(vert), PxMeshScale(scale)));
 
                 //underlying_obj->m_shape->getGeometry().convexMesh().convexMesh->getVertices()
             }
