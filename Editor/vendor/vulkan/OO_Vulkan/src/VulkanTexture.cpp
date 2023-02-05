@@ -538,8 +538,8 @@ namespace vkutils
 		this->device = device;
 		targetSwapchain = forFullscr;
 		renderScale = _renderscale;
-		width = texWidth * renderScale;
-		height = texHeight* renderScale;
+		width = static_cast<uint32_t>(texWidth * renderScale);
+		height = static_cast<uint32_t>(texHeight* renderScale);
 		format = _format;
 		MemProps = properties;
 
@@ -640,8 +640,8 @@ namespace vkutils
 		if (device == nullptr)
 			return;
 
-		width = texWidth * renderScale;
-		height = texHeight * renderScale;
+		width = static_cast<uint32_t>(texWidth * renderScale);
+		height = static_cast<uint32_t>(texHeight * renderScale);
 
 		VkImageView oldview = view;
 		VkDeviceMemory oldMemory = deviceMemory;

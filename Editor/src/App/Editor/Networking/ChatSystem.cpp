@@ -55,7 +55,7 @@ void ChatSystem::Show()
 			{
 				char message[2048];
 				sprintf_s(message, "%s", p->data);
-				client->Send(message, strlen(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, p->systemAddress, true);
+				client->Send(message, static_cast<int>(strlen(message)), HIGH_PRIORITY, RELIABLE_ORDERED, 0, p->systemAddress, true);
 			}
 		}
 	}
@@ -115,7 +115,7 @@ void ChatSystem::SendFile(const std::filesystem::path& path)
 	std::stringstream buffer;
 	buffer << in.rdbuf();
 	std::string file_data = buffer.str();
-	unsigned int file_length = file_data.size();
+	unsigned int file_length = static_cast<unsigned int>(file_data.size());
 	buffer.clear();
 	in.close();
 	if (file_length == 0)
@@ -140,6 +140,7 @@ void ChatSystem::SendFile(NetworkingFileTransferEvent* e)
 	{
 		flt_filePath = e->p.make_preferred().string();
 		size_t startpos = 0;
+		UNREFERENCED_PARAMETER(startpos);
 		//procsssing the string from \\ to /
 		std::replace(flt_filePath.begin(), flt_filePath.end(), '\\', '/');
 		countdown = 3.0f;
@@ -216,17 +217,17 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Sending File");
 		SLNet::IncrementalReadInterface incrementalReadInterface;
 		std::string msg = reinterpret_cast<char*>(pk->data + 1);
-		unsigned short id = (unsigned short)std::stoul(msg);
+		unsigned short msgID = (unsigned short)std::stoul(msg);
 		if (hosting)
 		{
 			//for (auto& address : system_addresses)
 			//{
-			flt.Send(&fileList, client, pk->systemAddress, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
+			flt.Send(&fileList, client, pk->systemAddress, msgID, HIGH_PRIORITY, 0, &incrementalReadInterface);
 			/*}*/
 		}
 		else
 		{
-			flt.Send(&fileList, client, pk->systemAddress, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
+			flt.Send(&fileList, client, pk->systemAddress, msgID, HIGH_PRIORITY, 0, &incrementalReadInterface);
 		}
 	}break;
 	};
@@ -295,9 +296,9 @@ void ChatSystem::HostUI()
 		client->SetTimeoutTime(30000, SLNet::UNASSIGNED_SYSTEM_ADDRESS);
 
 		SLNet::SocketDescriptor socketDescriptors[2];
-		socketDescriptors[0].port = atoi(serverPort.c_str());
+		socketDescriptors[0].port = static_cast<unsigned short>(atoi(serverPort.c_str()));
 		socketDescriptors[0].socketFamily = AF_INET; // Test out IPV4
-		socketDescriptors[1].port = atoi(serverPort.c_str());
+		socketDescriptors[1].port = static_cast<unsigned short>(atoi(serverPort.c_str()));
 		socketDescriptors[1].socketFamily = AF_INET6; // Test out IPV6
 		bool b = client->Startup(4, socketDescriptors, 2) == SLNet::RAKNET_STARTED;
 		if (!b)

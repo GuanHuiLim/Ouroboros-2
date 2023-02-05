@@ -203,8 +203,9 @@ namespace Ecs::testing
 	};
 
 	void AnotherNonMemberFunction(Ecs::ComponentEvent<Ecs::TestComponent>* event) {
-		//auto& comp = event->component;
-		//auto entityID = event->entityID;
+		auto& comp = event->component;
+		UNREFERENCED_PARAMETER(comp);
+		auto entityID = event->entityID;
 	};
 	void test()
 	{
@@ -216,8 +217,9 @@ namespace Ecs::testing
 			};
 			void 
 				AnotherMemberFunction(Ecs::ComponentEvent<Ecs::TestComponent>* event) {
-				//auto& comp = event->component;
-				//auto entityID = event->entityID;
+				auto& comp = event->component;
+				UNREFERENCED_PARAMETER(comp);
+				auto entityID = event->entityID;
 			};
 		};
 

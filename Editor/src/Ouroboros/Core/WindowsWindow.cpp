@@ -82,6 +82,7 @@ namespace oo
             TRACY_PROFILE_SCOPE(SDL_INIT);
 
             int success = SDL_Init(SDL_INIT_VIDEO);
+            UNREFERENCED_PARAMETER(success);
             //ASSERT_CUSTOM_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
             ASSERT_MSG((success != 0), std::string{ "Failed to initialize SDL " } + SDL_GetError());
             s_SDLInitialized = true;
@@ -93,6 +94,7 @@ namespace oo
             TRACY_PROFILE_SCOPE(CONTROLLER_INIT);
 
             int success = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+            UNREFERENCED_PARAMETER(success);
             ASSERT_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
             //Load the gamecontrollerdb.txt and check if there was any problem
             int iNumOfControllers = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
@@ -435,6 +437,7 @@ namespace oo
     {
         // returns 0 if supported.
         auto supported = SDL_WarpMouseGlobal(x, y);
+        UNREFERENCED_PARAMETER(supported);
         ASSERT(supported);  // if not supported will break.
     }
 
