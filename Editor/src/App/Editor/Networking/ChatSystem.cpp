@@ -140,6 +140,7 @@ void ChatSystem::SendFile(NetworkingFileTransferEvent* e)
 	{
 		flt_filePath = e->p.make_preferred().string();
 		size_t startpos = 0;
+		UNREFERENCED_PARAMETER(startpos);
 		//procsssing the string from \\ to /
 		std::replace(flt_filePath.begin(), flt_filePath.end(), '\\', '/');
 		countdown = 3.0f;
@@ -216,17 +217,17 @@ void ChatSystem::MessageTypes(unsigned char id, SLNet::Packet* pk)
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Sending File");
 		SLNet::IncrementalReadInterface incrementalReadInterface;
 		std::string msg = reinterpret_cast<char*>(pk->data + 1);
-		unsigned short id = (unsigned short)std::stoul(msg);
+		unsigned short msgID = (unsigned short)std::stoul(msg);
 		if (hosting)
 		{
 			//for (auto& address : system_addresses)
 			//{
-			flt.Send(&fileList, client, pk->systemAddress, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
+			flt.Send(&fileList, client, pk->systemAddress, msgID, HIGH_PRIORITY, 0, &incrementalReadInterface);
 			/*}*/
 		}
 		else
 		{
-			flt.Send(&fileList, client, pk->systemAddress, id, HIGH_PRIORITY, 0, &incrementalReadInterface);
+			flt.Send(&fileList, client, pk->systemAddress, msgID, HIGH_PRIORITY, 0, &incrementalReadInterface);
 		}
 	}break;
 	};

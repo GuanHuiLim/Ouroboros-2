@@ -284,6 +284,7 @@ void ShadowPass::SetupFramebuffer()
 	VkImageView depthView = shadow_depth.view;
 
 	VkFramebuffer fb;
+	UNREFERENCED_PARAMETER(fb);
 	//FramebufferBuilder::Begin(&vr.fbCache)
 	//	.BindImage(&shadow_depth)
 	//	.Build(fb,renderpass_Shadow);
