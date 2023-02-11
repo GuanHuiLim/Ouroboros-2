@@ -37,6 +37,12 @@ Point3D AABB::min()const
 	return this->center - this->halfExt;
 }
 
+AABB2D::AABB2D(glm::vec2 _min, glm::vec2 _max):
+	min{_min},
+	max{_max}
+{
+}
+
 Sphere::Sphere() : center{}, radius{ 1.0f }
 {
 }
@@ -102,3 +108,5 @@ Triangle::Triangle(const Point3D& a, const Point3D& b, const Point3D& c)
 	v2{c}
 {
 }
+
+}// end namespace oGFX
