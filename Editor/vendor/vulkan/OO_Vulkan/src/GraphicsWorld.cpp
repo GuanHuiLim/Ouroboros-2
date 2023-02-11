@@ -60,7 +60,9 @@ void GraphicsWorld::ClearObjectInstances()
 
 int32_t GraphicsWorld::CreateLightInstance()
 {
-	return CreateLightInstance(OmniLightInstance());
+	auto light = OmniLightInstance();
+	SetLightEnabled(light,true);
+	return CreateLightInstance(light);
 }
 
 int32_t GraphicsWorld::CreateLightInstance(OmniLightInstance obj)
