@@ -13,8 +13,9 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "Collision.h"
 #include <algorithm>
+#include <iostream>
 
-namespace coll
+namespace oGFX::coll
 {
 
 bool PointSphere(const Point3D& p, const Sphere& s)
@@ -361,13 +362,21 @@ bool PlaneSphere(const Plane& p, const Sphere& s)
 
 bool PlaneSphere(const Plane& p, const Sphere& s, float& t)
 {
-	float dist = glm::dot(s.center, glm::vec3(p.normal))-p.normal.w;
+	float dist = glm::dot(s.center, glm::vec3(p.normal)) - p.normal.w;
 	auto result = std::abs(dist) <= s.radius;
-	if (result != true)
+	//if (result != true)
 	{
 		t = dist;
 	}
 	return result;
+}
+
+bool SphereOnOrForwardPlane(const Plane& p, const Sphere& s)
+{
+	float t = 0;
+	PlaneSphere(p, s, t);
+
+	return t < s.radius;
 }
 
 bool PlaneAabb(const Plane& p, const AABB& a)
@@ -396,4 +405,17 @@ bool PlaneAabb(const Plane& p, const AABB& a, float& t)
 	return result;
 }
 
-}// end namespace coll
+
+bool SphereInFrustum(const Frustum& f, const Sphere& s)
+{
+	return (true
+		&& SphereOnOrForwardPlane(f.left,s) 
+		&& SphereOnOrForwardPlane(f.right,s) 
+		&&SphereOnOrForwardPlane(f.planeFar,s)
+		&&SphereOnOrForwardPlane(f.planeNear,s) 
+		&&SphereOnOrForwardPlane(f.top,s) 
+		&&SphereOnOrForwardPlane(f.bottom,s)
+		);
+}
+
+}// end namespace oGFX::coll

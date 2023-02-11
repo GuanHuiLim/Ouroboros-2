@@ -19,6 +19,8 @@ Technology is prohibited.
 #include <memory>
 #include <filesystem>
 
+namespace oGFX {
+
 struct BspNode;
 
 class BspTree
@@ -111,3 +113,5 @@ struct BspNode
 	std::vector<uint32_t> indices;
 	std::unique_ptr<BspNode> children[BspTree::s_num_children];
 };
+
+}// end namespace oGFX

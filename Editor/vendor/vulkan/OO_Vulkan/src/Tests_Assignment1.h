@@ -17,6 +17,8 @@ Technology is prohibited.
 #include <glm/glm.hpp>
 #include <string>
 
+namespace oGFX {
+
 using stdstring = std::string;
 using Vector3 = glm::vec3;
 
@@ -708,3 +710,5 @@ void PlaneAabbTest50(const stdstring& testName);
 
 #pragma endregion
 
+
+}// end namespace oGFX

@@ -14,6 +14,7 @@ Technology is prohibited.
 #pragma once
 
 #include "MathCommon.h"
+#include "Geometry.h" // frustum
 
 class Camera
 {
@@ -77,6 +78,8 @@ public:
 	void SetFarClip(float inFar) { m_zfar = inFar; UpdateProjectionMatrix(); }
 	float GetFarClip() const { return m_zfar; };
 
+	oGFX::Frustum GetFrustum() const;
+
 	void LookAt(const glm::vec3& pos, const glm::vec3& target, const glm::vec3& upVec = {0.0f,1.0f,0.0f});
 
 	void LookAtDirection(const glm::vec3& pos, const glm::vec3& direction, const glm::vec3& upVec = {0.0f,1.0f,0.0f});
@@ -108,10 +111,18 @@ public:
 	// Returns true if view or position has been changed
 	bool UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime);
 
-	void SetFov(float fov) { m_fovDegrees = fov; UpdateProjectionMatrix(); }
+	void SetFov(float fov) { 
+		m_fovDegrees = fov; 
+	UpdateProjectionMatrix(); 
+	}
+
 	float GetFov() const { return m_fovDegrees; }
 
-	void SetAspectRatio(float aspect) { m_aspectRatio = aspect; UpdateProjectionMatrix(); }
+	void SetAspectRatio(float aspect) { 
+		m_aspectRatio = aspect; 
+	UpdateProjectionMatrix(); 
+	}
+
 	float GetAspectRatio() const { return m_aspectRatio; }
 
 	void UpdateProjectionMatrix();

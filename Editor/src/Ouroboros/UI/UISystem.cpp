@@ -220,10 +220,10 @@ namespace oo
                 glm::vec3 top_left = Center - HalfExtentX + HalfExtentY;
                 glm::vec3 bottom_right = Center + HalfExtentX -HalfExtentY;
                 
-                DebugDraw::AddLine(top_left, bottom_left);
-                DebugDraw::AddLine(bottom_left, bottom_right);
-                DebugDraw::AddLine(bottom_right, top_right);
-                DebugDraw::AddLine(top_right, top_left);
+                oGFX::DebugDraw::AddLine(top_left, bottom_left);
+                oGFX::DebugDraw::AddLine(bottom_left, bottom_right);
+                oGFX::DebugDraw::AddLine(bottom_right, top_right);
+                oGFX::DebugDraw::AddLine(top_right, top_left);
             });
     }
 
@@ -241,7 +241,7 @@ namespace oo
 
         Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), oo::input::GetMouseX(), oo::input::GetMouseY());
         //LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
-        DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 10.f);
+        oGFX::DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 10.f);
         //Point2D mouseWorldPoint{ mousePos };
 
         /*SceneCamera* cam = SceneCamera::MainCamera();

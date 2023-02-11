@@ -333,7 +333,7 @@ namespace oo
         });
         m_runtimeCC.Update(oo::timer::dt(), false);
 
-        m_graphicsWorld->cameras[0] = m_runtimeCamera;
+        m_graphicsWorld->cameras[0] = *camera;
         m_graphicsWorld->cameras[1] = EditorViewport::EditorCamera;
     }
     
@@ -347,11 +347,10 @@ namespace oo
             {
                 auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
                 // lighting debug draw
-                Sphere sphere;
+                oGFX::Sphere sphere;
                 sphere.center = vec3{ graphics_light.position };
                 sphere.radius = 0.1f;
-                //sphere.radius = graphics_light.radius.x;
-                DebugDraw::AddSphere(sphere, graphics_light.color);
+                oGFX::DebugDraw::AddSphere(sphere, graphics_light.color);
             });
         }
 
@@ -363,8 +362,17 @@ namespace oo
             {
                 Camera camera;
                 camera.SetPosition(transformComp.GetGlobalPosition());
-                camera.SetRotation(transformComp.GetGlobalRotationQuat());
-                DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::ORANGE);
+                camera.SetRotation(transformComp.GetGlobalRotationQuat());              
+                switch (cameraComp.AspectRatio)
+                {
+                    case CameraAspectRatio::FOUR_BY_THREE: camera.SetAspectRatio(4.0f/3.0f);
+                    break;
+                    case CameraAspectRatio::SIXTEEN_BY_NINE: camera.SetAspectRatio(16.0f/9.0f);
+                    break;
+                    case CameraAspectRatio::SIXTEEN_BY_TEN: camera.SetAspectRatio(16.0f/10.0f);
+                    break;                
+                }
+                oGFX::DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::ORANGE);
             });
         }
 

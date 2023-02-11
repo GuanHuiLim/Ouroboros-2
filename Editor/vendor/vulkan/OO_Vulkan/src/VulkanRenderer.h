@@ -34,6 +34,7 @@ Technology is prohibited.
 #include "DescriptorLayoutCache.h"
 #include "FramebufferCache.h"
 #include "Geometry.h"
+#include "Collision.h"
 
 #include "Camera.h"
 
@@ -49,6 +50,7 @@ Technology is prohibited.
 #include <set>
 #include <string>
 #include <mutex>
+
 
 struct Window;
 
@@ -451,20 +453,20 @@ public:
 		uint32_t bindlessGlobalTextureIndex_Roughness{ 0xFFFFFFFF };
 		uint32_t bindlessGlobalTextureIndex_Metallic{ 0xFFFFFFFF };
 
-		Sphere sphere;
-		AABB aabb;
+		oGFX::Sphere sphere;
+		oGFX::AABB aabb;
 
 		template <typename T>
 		float GetBVHeuristic();
 
 		template <>
-		float GetBVHeuristic<Sphere>()
+		float GetBVHeuristic<oGFX::Sphere>()
 		{
 			return glm::pi<float>()* sphere.radius* sphere.radius;
 		}
 
 		template <>
-		float GetBVHeuristic<AABB>()
+		float GetBVHeuristic<oGFX::AABB>()
 		{
 			const auto width  = aabb.halfExt[0];
 			const auto height = aabb.halfExt[1];

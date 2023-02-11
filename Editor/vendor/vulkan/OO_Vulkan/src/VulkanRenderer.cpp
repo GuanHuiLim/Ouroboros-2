@@ -60,6 +60,7 @@ Technology is prohibited.
 #include "IcoSphereCreator.h"
 
 #include "Profiling.h"
+#include "DebugDraw.h"
 
 #include <vector>
 #include <set>
@@ -1324,9 +1325,33 @@ void VulkanRenderer::UploadLights()
 	std::vector<LocalLightInstance> spotLights;
 	auto& lights = currWorld->GetAllOmniLightInstances();
 	spotLights.reserve(lights.size());
+	oGFX::DebugDraw::AddArrow(currWorld->cameras[0].m_position, currWorld->cameras[0].m_position + currWorld->cameras[0].GetUp(),oGFX::Colors::GREEN);
+	oGFX::DebugDraw::AddArrow(currWorld->cameras[0].m_position, currWorld->cameras[0].m_position + currWorld->cameras[0].GetRight(),oGFX::Colors::RED);
+	oGFX::DebugDraw::AddArrow(currWorld->cameras[0].m_position, currWorld->cameras[0].m_position + currWorld->cameras[0].GetFront(),oGFX::Colors::BLUE);
+	oGFX::Frustum frust = currWorld->cameras[0].GetFrustum();
+	//{
+	//	oGFX::DebugDraw::DrawCameraFrustrumDebugArrows(frust);
+	//}
+			
 	int viewIter{};
+	int sss{};
 	for (auto& e : lights)
 	{
+		//oGFX::Sphere s;
+		//s.center = e.position;
+		//s.radius = e.radius.x;
+		//oGFX::DebugDraw::AddSphere(s);
+		// 
+		/// WIP Light Culling. Sorta works just need to fix lights.
+		//if (oGFX::coll::SphereInFrustum(frust, s))		
+		//{
+		//	SetLightEnabled(e, true);
+		//}
+		//else
+		//{
+		//	SetLightEnabled(e, false);
+		//}
+
 		if (GetLightEnabled(e) == false)
 		{
 			continue;
@@ -1957,6 +1982,7 @@ void VulkanRenderer::UploadInstanceData()
 		uint32_t matCnt = 0;
 		for (auto& ent : currWorld->GetAllObjectInstances())
 		{
+			
 			auto& mdl = g_globalModels[ent.modelID];
 			for (size_t i = 0; i < mdl.m_subMeshes.size(); i++)
 			{

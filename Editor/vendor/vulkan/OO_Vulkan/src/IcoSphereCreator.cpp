@@ -14,7 +14,7 @@ Technology is prohibited.
 #include "IcoSphereCreator.h"
 
 
-std::vector<Point3D> IcoSphereCreator::CreateIcosphere(uint8_t order)
+std::vector<oGFX::Point3D> IcoSphereCreator::CreateIcosphere(uint8_t order)
 {
 
 

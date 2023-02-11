@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "MathCommon.h"
 #include <tuple>
 
+namespace oGFX {
 using Point3D = glm::vec3;
 using Mat3 = glm::mat3;
 constexpr static float EPSILON = { 0.001f };
@@ -42,6 +43,25 @@ struct Plane
 	Plane(const Point3D& n, float d);
 	glm::vec4 normal{ 0.0f };
 	std::pair<glm::vec3, glm::vec3> ToPointNormal() const;
+};
+
+
+struct Frustum
+{
+	Plane top;
+	Plane bottom;
+	Plane right;
+	Plane left;
+	Plane planeFar;
+	Plane planeNear;
+
+
+	Point3D pt_top;
+	Point3D pt_bottom;
+	Point3D pt_right;
+	Point3D pt_left;
+	Point3D pt_planeFar;
+	Point3D pt_planeNear;
 };
 
 struct Triangle
@@ -79,3 +99,5 @@ struct Ray
 	Point3D start{0.0f};
 	glm::vec3 direction{ 0.0f };
 };
+
+} // namespace oGFX

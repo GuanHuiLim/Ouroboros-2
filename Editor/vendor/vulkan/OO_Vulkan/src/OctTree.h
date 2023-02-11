@@ -18,6 +18,7 @@ Technology is prohibited.
 #include <tuple>
 #include <memory>
 
+namespace oGFX {
 
 struct OctNode;
 
@@ -79,3 +80,5 @@ struct OctNode
 	std::vector<uint32_t> indices;
 	std::unique_ptr<OctNode> children[OctTree::s_num_children];
 };
+
+}// end namespace oGFX
