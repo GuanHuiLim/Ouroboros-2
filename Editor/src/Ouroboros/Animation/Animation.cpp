@@ -202,6 +202,7 @@ namespace oo::Anim
 		flags |= aiProcess_GenSmoothNormals;
 		flags |= aiProcess_ImproveCacheLocality;
 		flags |= aiProcess_CalcTangentSpace;
+		flags |= aiProcess_FindInvalidData;
 		flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
 		//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 		const aiScene* scene = importer.ReadFile(filepath, flags
