@@ -599,9 +599,9 @@ namespace oo
 
             ptse.TriggerEvents.emplace_back(pte);
 
-            TRACY_PROFILE_SCOPE_NC(broadcast_physics_trigger_event, tracy::Color::PeachPuff);
+            /*TRACY_PROFILE_SCOPE_NC(broadcast_physics_trigger_event, tracy::Color::PeachPuff);
             EventManager::Broadcast(&pte);
-            TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();*/
 
             trigger_queue->pop();
         }
@@ -669,9 +669,9 @@ namespace oo
 
             /*jobsystem::submit(collision_resolution, [&]()
             {*/
-                TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
+                /*TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
                 EventManager::Broadcast(&pce);
-                TRACY_PROFILE_SCOPE_END();
+                TRACY_PROFILE_SCOPE_END();*/
             //});
 
             collision_queue->pop();

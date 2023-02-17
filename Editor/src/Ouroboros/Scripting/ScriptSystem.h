@@ -82,6 +82,8 @@ namespace oo
         void OnPhysicsTick(PhysicsTickEvent* e);
         void OnTriggerEvent(PhysicsTriggerEvent* e);
         void OnCollisionEvent(PhysicsCollisionEvent* e);
+        void OnTriggerAllEvent(PhysicsTriggersEvent* e);
+        void OnCollisionAllEvent(PhysicsCollisionsEvent* e);
 
         Scene& scene;
         ScriptDatabase& scriptDatabase;

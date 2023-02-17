@@ -232,6 +232,54 @@ namespace oo
             }
         }
     }
+    void ScriptDatabase::ForAllEnabled(UUIDCallback callback, ObjectCheck filter)
+    {
+        for (InstancePool& scriptPool : poolList)
+        {
+            for (auto& [uuid, instance] : scriptPool)
+            {
+                if (!instance.enabled)
+                    continue;
+                if (filter && !filter(uuid))
+                    continue;
+                MonoObject* object = mono_gchandle_get_target(instance.handle);
+                callback(uuid, object);
+            }
+        }
+    }
+
+    void ScriptDatabase::ForAllEnabledByClass(UUIDCallback callback, ClassCheck classFilter, ObjectCheck filter)
+    {
+        for (InstancePool& scriptPool : poolList)
+        {
+            if (scriptPool.size() <= 0)
+                continue;
+
+            bool classChecked = false;
+            //MonoObject* object = mono_gchandle_get_target(scriptPool[0].handle);
+            //MonoClass* klass = mono_object_get_class(object);
+            //if(!classFilter(klass))
+            //    continue;
+
+            for (auto& [uuid, instance] : scriptPool)
+            {
+                if (!instance.enabled)
+                    continue;
+                if (filter && !filter(uuid))
+                    continue;
+                MonoObject* object = mono_gchandle_get_target(instance.handle);
+
+                if (!classChecked)
+                {
+                    MonoClass* klass = mono_object_get_class(object);
+                    if(!classFilter(klass))
+                        break;
+                }
+
+                callback(uuid, object);
+            }
+        }
+    }
 
     void ScriptDatabase::InvokeForAllEnabled(const char* functionName, ObjectCheck filter)
     {
@@ -245,7 +293,6 @@ namespace oo
             if (method == nullptr)
                 continue;
             LifeCycleFunction function = static_cast<LifeCycleFunction>(mono_method_get_unmanaged_thunk(method));
-            MonoException* exception = NULL;
 
             for (auto& [uuid, instance] : scriptPool)
             {
@@ -254,13 +301,7 @@ namespace oo
                 if (filter && !filter(uuid))
                     continue;
                 MonoObject* object = mono_gchandle_get_target(instance.handle);
-                function(object, &exception);
-                if (exception)
-                {
-                    MonoMethod* stringMethod = mono_class_get_method_from_name(mono_get_exception_class(), "ToString", 0);
-                    MonoString* excString = (MonoString*)mono_runtime_invoke(stringMethod, exception, NULL, NULL);
-                    throw std::exception(mono_string_to_utf8(excString));
-                }
+                ScriptEngine::InvokeFunctionThunk(object, function);
             }
         }
     }
