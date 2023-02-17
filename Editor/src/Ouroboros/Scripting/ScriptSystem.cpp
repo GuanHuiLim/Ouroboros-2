@@ -806,7 +806,7 @@ namespace oo
                 onEnterThunk = (onStayMethod == nullptr) ? nullptr : static_cast<CollisionFunction>(mono_method_get_unmanaged_thunk(onStayMethod));
                 MonoMethod* onExitMethod = ScriptEngine::GetFunction(klass, "OnCollisionExit", 1);
                 onEnterThunk = (onExitMethod == nullptr) ? nullptr : static_cast<CollisionFunction>(mono_method_get_unmanaged_thunk(onExitMethod));
-                return onEnterMethod != nullptr && onStayMethod != nullptr && onExitMethod != nullptr;
+                return onEnterMethod != nullptr || onStayMethod != nullptr || onExitMethod != nullptr;
             });
     }
 }
