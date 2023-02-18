@@ -45,12 +45,14 @@ Technology is prohibited.
 #include "GraphicsWorld.h"
 #include "GraphicsBatch.h"
 
+#include "TexturePacker.h"
+#include "Font.h"
+
 #include <vector>
 #include <array>
 #include <set>
 #include <string>
 #include <mutex>
-
 
 struct Window;
 
@@ -253,6 +255,7 @@ public:
 	void DestroyRenderBuffers();
 	void GenerateCPUIndirectDrawCommands();
 	void UploadInstanceData();
+	void UploadUIData();
 	uint32_t objectCount{};
 	// Contains the instanced data
 	GpuVector<oGFX::InstanceData> instanceBuffer;
@@ -273,6 +276,9 @@ public:
 	uint32_t CreateTexture(const std::string& fileName);
 	bool ReloadTexture(uint32_t textureID, const std::string& file);
 	void UnloadTexture(uint32_t textureID);
+
+	oGFX::Font* LoadFont(const std::string& filename);
+	oGFX::TexturePacker CreateFontAtlas(const std::string& filename, oGFX::Font& font);
 
 	struct TextureInfo
 	{
@@ -298,6 +304,7 @@ public:
 
 	std::mutex g_mut_globalMeshBuffers;
 	IndexedVertexBuffer g_GlobalMeshBuffers;
+
 	std::array<GpuVector<ParticleData>,3> g_particleDatas;
 	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer{};
 
@@ -305,6 +312,11 @@ public:
 	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU;
 	std::vector<oGFX::DebugVertex> g_DebugDrawVertexBufferCPU;
 	std::vector<uint32_t> g_DebugDrawIndexBufferCPU;
+
+	// ui pass
+	GpuVector<oGFX::UIVertex> g_UIVertexBufferGPU;
+	GpuVector<uint32_t> g_UIIndexBufferGPU;
+	std::array<GpuVector<UIData>,3> g_UIDatas;
 
 	ModelFileResource* GetDefaultCube();
 

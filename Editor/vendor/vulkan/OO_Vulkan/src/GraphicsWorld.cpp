@@ -1,8 +1,3 @@
-#include "GraphicsWorld.h"
-#include "GraphicsWorld.h"
-#include "GraphicsWorld.h"
-#include "GraphicsWorld.h"
-#include "GraphicsWorld.h"
 /************************************************************************************//*!
 \file           GraphicsWorld.cpp
 \project        Ouroboros
@@ -18,6 +13,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #include "GraphicsWorld.h"
+#include "Font.h"
 
 void GraphicsWorld::BeginFrame()
 {
@@ -57,6 +53,33 @@ void GraphicsWorld::ClearObjectInstances()
 	m_entityCount = 0;
 }
 
+int32_t GraphicsWorld::CreateUIInstance()
+{
+	return CreateUIInstance(UIInstance{});
+}
+
+int32_t GraphicsWorld::CreateUIInstance(UIInstance obj)
+{
+	++m_entityCount;
+	return m_UIInstances.Add(obj);
+}
+
+UIInstance & GraphicsWorld::GetUIInstance(int32_t id)
+{
+	return m_UIInstances.Get(id);
+}
+
+void GraphicsWorld::DestroyUIInstance(int32_t id)
+{
+	m_UIInstances.Remove(id);
+	--m_entityCount;
+}
+
+void GraphicsWorld::ClearUIInstances()
+{
+	m_UIInstances.Clear();
+	m_uiCount = 0;
+}
 
 int32_t GraphicsWorld::CreateLightInstance()
 {
@@ -190,17 +213,32 @@ void ObjectInstance::SetRenderEnabled(bool s)
 
 bool ObjectInstance::isSkinned()
 {
-	return flags & ObjectInstanceFlags::SKINNED;
+	return static_cast<bool>(flags & ObjectInstanceFlags::SKINNED);
 }
 
 bool ObjectInstance::isShadowEnabled()
 {
-	return flags & ObjectInstanceFlags::SHADOW_ENABLED;
+	return static_cast<bool>(flags & ObjectInstanceFlags::SHADOW_ENABLED);
+}
+
+bool ObjectInstance::isShadowCaster()
+{
+	return static_cast<bool>(flags & ObjectInstanceFlags::SHADOW_CASTER);
 }
 
 bool ObjectInstance::isRenderable()
 {
-	return flags & ObjectInstanceFlags::RENDER_ENABLED;
+	return static_cast<bool>(flags & ObjectInstanceFlags::RENDER_ENABLED);
+}
+
+bool ObjectInstance::isDynamic()
+{
+	return static_cast<bool>(flags & ObjectInstanceFlags::DYNAMIC_INSTANCE);
+}
+
+bool ObjectInstance::isTransparent()
+{
+	return static_cast<bool>(flags & ObjectInstanceFlags::TRANSPARENT);
 }
 
 void SetCastsShadows(LocalLightInstance& l, bool s)

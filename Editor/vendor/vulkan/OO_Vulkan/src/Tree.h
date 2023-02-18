@@ -20,7 +20,7 @@ Technology is prohibited.
 #include <vector>
 #include <algorithm>
 
-using BoundingVolume = AABB;
+using BoundingVolume = oGFX::AABB;
 static constexpr size_t numChilden = 2;
 
 template<typename dataT,typename BVType>
@@ -63,9 +63,9 @@ struct TreeNode
 
 template <typename T, typename BVType>
 BVType makeBV(const std::vector<T>& entities, uint32_t objects[], uint32_t numOjbects) {
-	if constexpr (std::is_same_v<BVType, AABB>)
+	if constexpr (std::is_same_v<BVType, oGFX::AABB>)
 	{
-		AABB bv;
+		oGFX::AABB bv;
 
 		glm::vec3 min{FLT_MAX};
 		glm::vec3 max{-FLT_MAX};
@@ -85,10 +85,10 @@ BVType makeBV(const std::vector<T>& entities, uint32_t objects[], uint32_t numOj
 
 		return bv;
 	}
-	if constexpr (std::is_same_v<BVType, Sphere>)
+	if constexpr (std::is_same_v<BVType, oGFX::Sphere>)
 
 	{
-		Sphere bv = entities[objects[0]].sphere;
+		oGFX::Sphere bv = entities[objects[0]].sphere;
 
 		//float dist = 0;
 		//glm::vec3 center{ 0.0f };
@@ -205,11 +205,11 @@ public:
 		for (auto& e : entities)
 		{
 			nodes.emplace_back(std::make_unique<TreeNode<BVType>>());
-			if constexpr (std::is_same_v<BVType, AABB>)
+			if constexpr (std::is_same_v<BVType, oGFX::AABB>)
 			{
 				nodes.back()->BV = e.aabb;
 			}
-			if constexpr (std::is_same_v<BVType, Sphere>)
+			if constexpr (std::is_same_v<BVType, oGFX::Sphere>)
 			{
 				nodes.back()->BV = e.sphere;
 			}
@@ -223,9 +223,9 @@ public:
 
 			nodes.emplace_back(std::make_unique<TreeNode<BVType>>());
 			{
-				if constexpr (std::is_same_v<BVType, AABB>)
+				if constexpr (std::is_same_v<BVType, oGFX::AABB>)
 				{
-					AABB ab;
+					oGFX::AABB ab;
 					glm::vec3 max = left->BV.max();
 					glm::vec3 min = left->BV.min();
 					for (uint32_t i = 0; i < 3; i++)
@@ -237,9 +237,9 @@ public:
 					nodes.back()->BV.center = max - nodes.back()->BV.halfExt;
 					//glm::vec3 cen = max - min;
 				}
-				if constexpr (std::is_same_v<BVType, Sphere>)
+				if constexpr (std::is_same_v<BVType, oGFX::Sphere>)
 				{
-					Sphere s;
+					oGFX::Sphere s;
 					auto lr = left->BV.radius;
 					auto rr = right->BV.radius;
 					glm::vec3 dir = left->BV.center - right->BV.center;
