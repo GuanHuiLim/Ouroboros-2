@@ -25,7 +25,7 @@ project "Vulkan"
     excludes{"vendor/msdf-atlas-gen/main.cpp"}
     excludes{"vendor/msdfgen/main.cpp"}
     excludes{"vendor/msdfgen/ext/import-svg.cpp"}
-    excludes{"vendor/msdfgen/ext/msdfgen.rc"}
+    excludes{"vendor/msdfgen/msdfgen.rc"}
 	
     includedirs
     {
