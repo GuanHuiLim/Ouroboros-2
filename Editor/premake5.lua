@@ -83,6 +83,7 @@ project "Editor"
         -- "%{LibraryDir.physx}/Debug",
         -- "%{LibraryDir.physx}/Release",
         "%{LibraryDir.assimp}/Release",
+        "%{LibraryDir.freetype}",
         "%{LibraryDir.fmod}",
         "%{LibraryDir.discord}",
 		"%{LibraryDir.slikenet}",
@@ -98,6 +99,7 @@ project "Editor"
     links
     {
         "%{Library.Vulkan}",
+        "freetype",
         "ImGui",
         "SDL2",
         "SDL2main",
@@ -204,6 +206,7 @@ project "Editor"
             -- copies vulkan shaders app directory
             { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""},
+			 {"{COPY} \"%{AppVendor}/vulkan/vendor/freetype\" \""  .. binApp .. "\"" },
             
             -- discord sdk
             {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },

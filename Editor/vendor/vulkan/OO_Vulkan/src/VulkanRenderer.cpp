@@ -2769,7 +2769,7 @@ oGFX::TexturePacker VulkanRenderer::CreateFontAtlas(const std::string& filename,
 			ImmediateAtlasGenerator<
 				float, // pixel type of buffer for individual glyphs depends on generator function
 				4, // number of atlas color channels
-				&mtsdfGenerator, // function to generate bitmaps for individual glyphs
+				mtsdfGenerator, // function to generate bitmaps for individual glyphs
 				BitmapAtlasStorage<byte, 4> // class that stores the atlas bitmap
 											// For example, a custom atlas storage class that stores it in VRAM can be used.
 			> generator(width, height);
