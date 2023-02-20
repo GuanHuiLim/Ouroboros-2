@@ -111,7 +111,7 @@ struct UIInstance
 
     uint32_t bindlessGlobalTextureIndex_Albedo{ 0xFFFFFFFF };
     // End temp stuff
-    std::string textData;
+    std::string textData{"SAMPLE TEXT"};
     glm::vec4 colour{1.0f};
 
     oGFX::FontFormatting format;

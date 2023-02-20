@@ -312,12 +312,12 @@ void GraphicsBatch::GenerateTextGeometry()
 		float fontScale = 1.0f;
 
 		float rot = glm::radians(ui.rot);
-		glm::mat4 mdl_xform = {
+		glm::mat4 mdl_xform = ui.localToWorld;/* {
 			cosf(rot), sinf(rot), 0.0f, 0.0f,
 			-sinf(rot), cosf(rot), 0.0f, 0.0f,
 			0.0f	  , 	0.0f , 1.0f, 0.0f,
 			0.0f	  , 	0.0f , 0.0f, 1.0f
-		};
+		};*/
 
 		float boxPixelSizeX = fabsf(ui.format.box.max.x - ui.format.box.min.x);
 		float halfBoxX = boxPixelSizeX/2.0f;
@@ -596,8 +596,8 @@ void GraphicsBatch::GenerateTextGeometry()
 				for (size_t i = 0; i < quadVertexCount; i++)
 				{
 					oGFX::UIVertex vert;
-					vert.pos = glm::vec4(ui.position, 0.0f) + mdl_xform * (verts[i] - glm::vec4(ui.position, 0.0f));
-					vert.pos.z += ui.position.z;
+					vert.pos = mdl_xform * verts[i];
+					//vert.pos.z += ui.position.z;
 					vert.col = ui.colour;
 					vert.tex = glm::vec4(textureCoords[i],fontAtlas->m_atlasID,ui.entityID);
 					m_uiVertices.push_back(vert);

@@ -234,6 +234,8 @@ namespace oo
         // TODO: Temporarily remove destroying the world on load
         m_graphicsWorld->ClearLightInstances();
         m_graphicsWorld->ClearObjectInstances();
+        m_graphicsWorld->ClearEmitterInstances();
+        m_graphicsWorld->ClearUIInstances();
         m_graphicsIdToUUID.clear();
         m_uuidToGraphicsID.clear();
 

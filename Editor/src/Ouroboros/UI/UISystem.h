@@ -28,15 +28,23 @@ namespace oo
     class UIRaycastComponent;
     class Scene;
     class GameObject;
+    class UIComponent;
 
     class UISystem final : public Ecs::System
     {
     public:
 
-        UISystem(Scene* scene);
+        UISystem(GraphicsWorld* graphicsWorld, Scene* scene);
         virtual ~UISystem() = default;
 
         virtual void Run(Ecs::ECSWorld* world) override {};
+
+        void Init();
+
+        void PostSceneLoadInit();
+        void UpdateJustCreated();
+        void UpdateDuplicated();
+        void UpdateExisting();
 
         /*********************************************************************************//*!
         \brief      Update function called per frame in the Editor Scene. Used to perform
@@ -96,6 +104,14 @@ namespace oo
         
 
     private:
+
+        void OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt);
+        void OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt);
+        void InitializeUI(UIComponent& uiComp, TransformComponent& tfComp);
+
+    private:
+        GraphicsWorld* m_graphicsWorld{ nullptr };
+
         Scene* m_scene = nullptr;
         GameObject m_prevSelectedUI;
     };

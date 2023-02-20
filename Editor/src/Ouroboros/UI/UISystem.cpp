@@ -27,6 +27,8 @@ Technology is prohibited.
 #include "UIImageComponent.h"
 #include "UICanvasComponent.h"
 #include "GraphicsRaycasterComponent.h"
+#include "UIComponent.h"
+#include "UITextComponent.h"
 
 #include <OO_Vulkan/src/DebugDraw.h>
 #include "Ouroboros/Core/Input.h"
@@ -41,22 +43,91 @@ namespace oo
     /* Lifecycle Functions                                                         */
     /*-----------------------------------------------------------------------------*/
 
-    UISystem::UISystem(Scene* scene)
-        : m_scene{ scene }
+    UISystem::UISystem(GraphicsWorld* graphicsWorld, Scene* scene)
+        : m_graphicsWorld { graphicsWorld }
+        , m_scene{ scene }
     {
+        assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
+    }
+
+    void UISystem::PostSceneLoadInit()
+    {
+        // Update Lights positions immediately!
+        static Ecs::Query ui_query = Ecs::make_raw_query<UIComponent, TransformComponent>();
+        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& tfComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.localToWorld = tfComp.GetGlobalMatrix();
+            });
+    }
+
+    void UISystem::UpdateJustCreated()
+    {
+    }
+
+    void UISystem::UpdateDuplicated()
+    {
+        // Update Newly Duplicated UI
+        static Ecs::Query duplicated_ui_query = Ecs::make_raw_query<UIComponent, TransformComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+            {
+                InitializeUI(uiComp, transformComp);
+            });
+
+    }
+
+    void UISystem::UpdateExisting()
+    {
+        // Update UI
+        static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent>();
+        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+
+                if (transformComp.HasChangedThisFrame)
+                    ui.localToWorld = transformComp.GetGlobalMatrix();
+            });
+
+        // Update Text UI
+        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent>();
+        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.textData = uiTextComp.text;
+                ui.colour = uiTextComp.color;
+            });
+    }
+
+    void UISystem::Init()
+    {
+        // UI Component
+        m_world->SubscribeOnAddComponent<UISystem, UIComponent>(
+            this, &UISystem::OnUIAssign);
+
+        m_world->SubscribeOnRemoveComponent<UISystem, UIComponent>(
+            this, &UISystem::OnUIRemove);
     }
 
     void UISystem::EditorUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(UI_Editor, tracy::Color::Cyan);
+        UpdateJustCreated();
+        UpdateDuplicated();
+        UpdateExisting();
+
         UpdateRectTransformAll();
         DebugDrawUI();
+        
         TRACY_PROFILE_SCOPE_END();
     }
 
     void UISystem::RuntimeUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(UI, tracy::Color::DarkCyan);
+        UpdateJustCreated();
+        UpdateDuplicated();
+        UpdateExisting();
+
         UpdateRectTransformAll();
         if (Application::Get().GetWindow().IsFocused())
         {
@@ -464,4 +535,27 @@ namespace oo
 
         return { worldpos, glm::normalize(worldpos - pos)};
     }
+
+    void UISystem::OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt)
+    {
+        assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
+        auto& uiComponent = evnt->component;
+        auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
+        InitializeUI(uiComponent, transform_component);
+    }
+    
+    void UISystem::OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt)
+    {
+        auto& comp = evnt->component;
+        m_graphicsWorld->DestroyUIInstance(comp.UI_ID);
+    }
+
+    void UISystem::InitializeUI(UIComponent& uiComp, TransformComponent& transformComp)
+    {
+        uiComp.UI_ID = m_graphicsWorld->CreateUIInstance();
+        //update graphics world side to prevent wrong initial placement
+        auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+        ui.localToWorld = transformComp.GetGlobalMatrix();
+    }
+
 }

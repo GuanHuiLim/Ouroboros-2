@@ -72,6 +72,9 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/UI/UITextComponent.h>
+#include <Ouroboros/UI/UIComponent.h>
+
 #include <Ouroboros/Editor/EditorComponent.h>
 
 Hierarchy::Hierarchy()
@@ -757,9 +760,20 @@ void Hierarchy::RightClickOptions()
 					{
 						go.SetName("UI Image");
 						go.EnsureComponent<oo::RectTransformComponent>();
-						go.EnsureComponent<oo::UICanvasComponent>();
+						go.EnsureComponent<oo::UIComponent>();
 						go.EnsureComponent<oo::UIRaycastComponent>();
 						go.EnsureComponent<oo::UIImageComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Text"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("UI Text");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UIComponent>();
+						go.EnsureComponent<oo::UIRaycastComponent>();
+						go.EnsureComponent<oo::UITextComponent>();
 					});
 			}
 			ImGui::EndMenu();
