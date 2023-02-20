@@ -183,6 +183,7 @@ namespace oo
 
         /// <summary>
         /// Loads and retrieves all assets in a given directory path.
+        /// Use LoadDirectory if you do not need the list of assets.
         /// </summary>
         /// <param name="path">The directory path relative to the AssetManager's root path.</param>
         /// <param name="recursive">Whether to load directories recursively.</param>
@@ -191,6 +192,7 @@ namespace oo
 
         /// <summary>
         /// Loads or retrieves all assets in a given directory path.
+        /// Use LoadDirectoryAsync if you do not need the list of assets.
         /// </summary>
         /// <param name="path">The directory path relative to the AssetManager's root path.</param>
         /// <param name="recursive">Whether to load directories recursively.</param>
@@ -212,6 +214,20 @@ namespace oo
         /// <param name="caseSensitive">Whether the file name is case sensitive.</param>
         /// <returns>The assets matching the criteria.</returns>
         std::future<std::vector<Asset>> GetOrLoadNameAsync(const std::filesystem::path& fn, bool caseSensitive = true);
+
+        /// <summary>
+        /// Loads all assets in a given directory path.
+        /// </summary>
+        /// <param name="path">The directory path relative to the AssetManager's root path.</param>
+        /// <param name="recursive">Whether to load directories recursively.</param>
+        void LoadDirectory(const std::filesystem::path& path, bool recursive = false);
+
+        /// <summary>
+        /// Loads all assets in a given directory path.
+        /// </summary>
+        /// <param name="path">The directory path relative to the AssetManager's root path.</param>
+        /// <param name="recursive">Whether to load directories recursively.</param>
+        void LoadDirectoryAsync(const std::filesystem::path& path, bool recursive = false);
 
         /// <summary>
         /// Unloads all assets.

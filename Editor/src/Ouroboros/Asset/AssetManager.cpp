@@ -294,6 +294,52 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::GetOrLoadDirectory, this, path, recursive);
     }
 
+    void AssetManager::LoadDirectory(const std::filesystem::path& path, bool recursive)
+    {
+        GetOrLoadDirectory(path, recursive);
+    }
+
+    void AssetManager::LoadDirectoryAsync(const std::filesystem::path& path, bool recursive)
+    {
+        const auto PATH = root / path;
+
+        if (!std::filesystem::exists(PATH) || !std::filesystem::is_directory(PATH))
+            return;
+
+        std::vector<std::filesystem::path> files;
+        if (recursive)
+        {
+            for (auto& file : std::filesystem::recursive_directory_iterator(PATH))
+            {
+                if (isMetaPath(file.path()))
+                    continue;
+                files.emplace_back(file);
+            }
+        }
+        else
+        {
+            for (auto& file : std::filesystem::directory_iterator(PATH))
+            {
+                if (isMetaPath(file.path()))
+                    continue;
+                files.emplace_back(file);
+            }
+        }
+        std::vector<std::thread> v;
+        for (auto& file : files)
+        {
+            v.emplace_back(std::thread([this, file]
+            {
+                getLoadedAsset(file);
+            }));
+            //std::async(std::launch::async, &AssetManager::getLoadedAsset, this, file);
+        }
+        for (auto& t : v)
+        {
+            t.join();
+        }
+    }
+
     std::vector<Asset> AssetManager::GetOrLoadName(const std::filesystem::path& fn, bool caseSensitive)
     {
         const std::filesystem::path DIR = std::filesystem::canonical(root);
@@ -529,6 +575,8 @@ namespace oo
         return meta;
     }
 
+    std::mutex storeMutex;
+
     Asset AssetManager::getAsset(const std::filesystem::path& fp)
     {
         // Get file paths
@@ -543,6 +591,8 @@ namespace oo
             fpMeta += Asset::EXT_META;
         }
         const auto FP_EXT = fpContent.extension();
+
+        std::lock_guard<std::mutex> guard(storeMutex);
 
         // Get or index asset
         AssetMetaContent meta = ensureMeta(fpContent);
