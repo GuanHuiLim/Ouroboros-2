@@ -206,6 +206,14 @@ project "Editor"
             -- copies vulkan shaders app directory
             { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""},
+
+            -- vulkan default assets copy
+            { "mkdir \"" .. binApp .. "/defaultAsset\"" },
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/defaultAsset\" \"" .. binApp .. "/defaultAsset\""}, 			
+            -- copies default assets  app directory
+            { "mkdir \"" .. AppDir .. "/defaultAsset\"" },
+            {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/defaultAsset\" \"" .. AppDir .. "/defaultAsset\""},
+
 			 {"{COPY} \"%{AppVendor}/vulkan/vendor/freetype\" \""  .. binApp .. "\"" },
             
             -- discord sdk

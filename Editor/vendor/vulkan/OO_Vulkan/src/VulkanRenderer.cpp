@@ -2487,6 +2487,11 @@ ModelFileResource* VulkanRenderer::GetDefaultCube()
 	return def_cube.get();
 }
 
+oGFX::Font* VulkanRenderer::GetDefaultFont()
+{
+	return def_font.get();
+}
+
 oGFX::Font * VulkanRenderer::LoadFont(const std::string & filename)
 {
 
@@ -3635,7 +3640,9 @@ void VulkanRenderer::InitDefaultPrimatives()
 		DefaultMesh sm = CreateDefaultPlaneXYMesh();
 		def_sprite.reset(LoadMeshFromBuffers(sm.m_VertexBuffer, sm.m_IndexBuffer, nullptr));
 	}
-	
+	{
+		def_font.reset(LoadFont("defaultAsset/Roboto-Medium.ttf"));
+	}
 }
 
 ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)

@@ -303,8 +303,7 @@ void GraphicsBatch::GenerateTextGeometry()
 		auto* fontAtlas = ui.fontAsset;
 		if (!fontAtlas)
 		{
-			assert(false && "plshelp");
-			// get default asset??
+			fontAtlas = VulkanRenderer::get()->GetDefaultFont();
 		}
 
 		const auto& text = ui.textData;
