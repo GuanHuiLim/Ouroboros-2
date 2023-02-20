@@ -26,7 +26,8 @@ using uint = unsigned int;
 
 struct LocalLightInstance
 {
-    ivec4 info;
+    // x:1? cast shadow:dont cast , y: 0? render : dont render
+    ivec4 info;// TODO: does this take up too much space?
     vec4 position;
     vec4 color;
     vec4 radius;
@@ -36,7 +37,7 @@ struct LocalLightInstance
 
 struct OmniLightInstance
 {
-    ivec4 info; // TODO: does this take up too much space?
+    ivec4 info; 
     vec4 position; // XYZ
     vec4 color; // RGB Intensity
     vec4 radius; // Inner rad outer rad etc..
@@ -71,6 +72,7 @@ struct SSAOPC
     vec2 sampleDim; // screenDim_sampleDim
     float radius;
     float bias;
+    float intensity;
     uint numSamples;
 };
 

@@ -34,8 +34,69 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObjectComponent.h"
 #include "Ouroboros/Vulkan/GlobalRendererSettings.h"
 
+#include "Ouroboros/ECS/GameObject.h"
 namespace oo
 {
+    void RendererSystem::UpdateJustCreated()
+    {
+    }
+
+    void RendererSystem::UpdateDuplicated()
+    {
+        // Update Newly Duplicated Lights
+        static Ecs::Query duplicated_lights_query = Ecs::make_raw_query<LightComponent, TransformComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_lights_query, [&](LightComponent& lightComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+            {
+                InitializeLight(lightComp, transformComp);
+            });
+
+        // Update Newly Duplicated Mesh
+        static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
+            {
+                InitializeMesh(meshComp, transformComp, goc);
+            });
+    }
+
+    void RendererSystem::UpdateExisting()
+    {
+        // update meshes
+        static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
+        m_world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
+            {
+                //do nothing if transform did not change
+                auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
+                actualObject.modelID = m_comp.ModelHandle;
+                actualObject.bindlessGlobalTextureIndex_Albedo = m_comp.AlbedoID;
+                actualObject.bindlessGlobalTextureIndex_Normal = m_comp.NormalID;
+                // TODO : Fix this.
+                actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
+                actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
+                actualObject.submesh = m_comp.MeshInformation.submeshBits;
+
+                if (transformComp.HasChangedThisFrame)
+                    actualObject.localToWorld = transformComp.GlobalTransform;
+
+                actualObject.SetShadowCaster(m_comp.CastShadows);
+                actualObject.SetShadowReciever(m_comp.ReceiveShadows);
+            });
+
+        // Update Lights
+        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
+        m_world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+            {
+                auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+
+                if (transformComp.HasChangedThisFrame)
+                    graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+
+                graphics_light.color = glm::vec4{ lightComp.Color.r, lightComp.Color.g, lightComp.Color.b, lightComp.Intensity };
+                graphics_light.radius = vec4{ lightComp.Radius, 0, 0, 0 };
+
+                SetCastsShadows(graphics_light, lightComp.ProduceShadows);
+            });
+    }
+
     void RendererSystem::OnScreenResize(WindowResizeEvent* e)
     {
         auto w = e->GetHeight();
@@ -70,6 +131,7 @@ namespace oo
     {
         m_graphicsWorld->ssaoSettings.bias = RendererSettings::setting.SSAO.Bias;
         m_graphicsWorld->ssaoSettings.radius = RendererSettings::setting.SSAO.Radius;
+        m_graphicsWorld->ssaoSettings.intensity = RendererSettings::setting.SSAO.intensity;
 
         m_graphicsWorld->lightSettings.ambient = RendererSettings::setting.Lighting.Ambient;
         m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;
@@ -126,8 +188,8 @@ namespace oo
         EventManager::Unsubscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         //EventManager::Unsubscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Unsubscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
-        //EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
-        //EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        EventManager::Unsubscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
         EventManager::Unsubscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
     }
 
@@ -146,7 +208,7 @@ namespace oo
             EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
             auto ar = e.Width / e.Height;
             camera.SetAspectRatio(ar);*/
-            static constexpr float defaultAR = 16.0 / 9.0;
+            static constexpr float defaultAR = 16.0f / 9.0f;
             camera.SetAspectRatio(defaultAR);
 #endif
             camera.movementSpeed = 5.0f;
@@ -174,13 +236,32 @@ namespace oo
         //EventManager::Subscribe<RendererSystem, PreviewWindowResizeEvent>(this, &RendererSystem::OnPreviewWindowResize);
         EventManager::Subscribe<RendererSystem, EditorViewportResizeEvent>(this, &RendererSystem::OnEditorViewportResize);
         EventManager::Subscribe<RendererSystem, WindowResizeEvent>(this, &RendererSystem::OnScreenResize);
-        //EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
-        //EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
+        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnEnableEvent>(this, &RendererSystem::OnEnableGameObject);
+        EventManager::Subscribe<RendererSystem, GameObjectComponent::OnDisableEvent>(this, &RendererSystem::OnDisableGameObject);
         
         EventManager::Subscribe<RendererSystem, UpdateRendererSettings>(this, &RendererSystem::OnUpdateRendererSettings);
         // launch the event manually myself once.
         UpdateRendererSettings e;
         oo::EventManager::Broadcast<UpdateRendererSettings>(&e);
+    }
+
+    void RendererSystem::PostSceneLoadInit()
+    {
+        // update meshes positions!
+        static Ecs::Query mesh_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
+        m_world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
+            {
+                auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
+                actualObject.localToWorld = transformComp.GlobalTransform;
+            });
+        
+        // Update Lights positions immediately!
+        static Ecs::Query light_query = Ecs::make_raw_query<LightComponent, TransformComponent>();
+        m_world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+            {
+                auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+                graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
+            });
     }
 
     void RendererSystem::SaveEditorCamera()
@@ -207,64 +288,12 @@ namespace oo
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
-        // Update Newly Duplicated Lights
-        static Ecs::Query duplicated_lights_query = Ecs::make_raw_query<LightComponent, TransformComponent, DuplicatedComponent>();
-        world->for_each(duplicated_lights_query, [&](LightComponent& lightComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
-        {
-            InitializeLight(lightComp, transformComp);
-        });
-
-        // Update Newly Duplicated Mesh
-        static Ecs::Query duplicated_meshes_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
-        world->for_each(duplicated_meshes_query, [&](MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
-        { 
-            InitializeMesh(meshComp, transformComp, goc);
-        });
-
-        // update meshes
-        static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
-        world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc) 
-        {
-            //do nothing if transform did not change
-            auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
-            actualObject.modelID = m_comp.ModelHandle;
-            actualObject.bindlessGlobalTextureIndex_Albedo      = m_comp.AlbedoID;
-            actualObject.bindlessGlobalTextureIndex_Normal      = m_comp.NormalID;
-            actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
-            actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
-            actualObject.submesh = m_comp.MeshInformation.submeshBits;
-
-            if (transformComp.HasChangedThisFrame)
-                actualObject.localToWorld = transformComp.GlobalTransform;
-            
-            actualObject.SetShadowCaster(m_comp.CastShadows);
-            actualObject.SetShadowReciever(m_comp.ReceiveShadows);
-            
-            // update transform if this is the first frame of rendering
-            if (m_firstFrame)
-            {
-                actualObject.localToWorld = transformComp.GlobalTransform;
-                m_firstFrame = false;
-            }
-        });
-
-
-        // Update Lights
-        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-        world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
-        {
-            auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
-
-            //if (transformComp.HasChanged())
-            graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
-            graphics_light.color = glm::vec4{ lightComp.Color.r, lightComp.Color.g, lightComp.Color.b, lightComp.Color.a };
-            graphics_light.radius = vec4{ lightComp.Radius, 0, 0, 0 };
-           
-            SetCastsShadows(graphics_light, lightComp.ProduceShadows);
-        });
+        UpdateJustCreated();
+        UpdateDuplicated();
+        UpdateExisting();
 
         // draw debug stuff
-        RenderDebugDraws(world);
+        RenderDebugDraws();
     }
 
     // additional function that runs during runtime scene only.
@@ -292,13 +321,13 @@ namespace oo
             switch (cameraComp.AspectRatio)
             {
             case CameraAspectRatio::FOUR_BY_THREE:
-                camera->SetAspectRatio(4.0/3.0);
+                camera->SetAspectRatio(4.0f/3.0f);
                 break;
             case CameraAspectRatio::SIXTEEN_BY_NINE:
-                camera->SetAspectRatio(16.0/9.0);
+                camera->SetAspectRatio(16.0f/9.0f);
                 break;
             case CameraAspectRatio::SIXTEEN_BY_TEN:
-                camera->SetAspectRatio(16.0/10.0);
+                camera->SetAspectRatio(16.0f/10.0f);
                 break;
             }
         });
@@ -308,25 +337,29 @@ namespace oo
         m_graphicsWorld->cameras[1] = EditorViewport::EditorCamera;
     }
     
-    void RendererSystem::RenderDebugDraws(Ecs::ECSWorld* world)
+    void RendererSystem::RenderDebugDraws()
     {
-        // Draw Debug Lights
-        static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-        world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+        if (LightsDebugDraw)
         {
-            auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
-            // lighting debug draw
-            Sphere sphere;
-            sphere.center = vec3{ graphics_light.position };
-            sphere.radius = 0.1f;
-            DebugDraw::AddSphere(sphere, graphics_light.color);
-        });
+            // Draw Debug Lights
+            static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
+            m_world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+            {
+                auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+                // lighting debug draw
+                Sphere sphere;
+                sphere.center = vec3{ graphics_light.position };
+                sphere.radius = 0.1f;
+                //sphere.radius = graphics_light.radius.x;
+                DebugDraw::AddSphere(sphere, graphics_light.color);
+            });
+        }
 
         if (CameraDebugDraw)
         {
             // draws camera frustum if enabled.
             static Ecs::Query camera_query = Ecs::make_query<CameraComponent, TransformComponent>();
-            world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
+            m_world->for_each(camera_query, [&](CameraComponent& cameraComp, TransformComponent& transformComp)
             {
                 Camera camera;
                 camera.SetPosition(transformComp.GetGlobalPosition());
@@ -359,33 +392,28 @@ namespace oo
         graphics_object.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
     }
 
-    /*void RendererSystem::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
+    void RendererSystem::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
     {
-        if (m_uuidToGraphicsID.contains(e->Id))
+        // check for lights
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go->HasComponent<LightComponent>())
         {
-            auto& gid = m_uuidToGraphicsID.at(e->Id);
-            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
-            actualObject.SetRenderEnabled(true);
-        }
-        else
-        {
-            LOG_TRACE("invalid graphics ID on gameobject enable {0}", e->Id);
+            auto& lightComp = go->GetComponent<LightComponent>();
+            auto& actualLight = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+            SetLightEnabled(actualLight, true);
         }
     }
 
     void RendererSystem::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
     {
-        if (m_uuidToGraphicsID.contains(e->Id))
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        if (go->HasComponent<LightComponent>())
         {
-            auto& gid = m_uuidToGraphicsID.at(e->Id);
-            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
-            actualObject.SetRenderEnabled(false);
+            auto& lightComp = go->GetComponent<LightComponent>();
+            auto& actualLight = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
+            SetLightEnabled(actualLight, false);
         }
-        else
-        {
-            LOG_TRACE("invalid graphics ID on gameobject disable {0}", e->Id);
-        }
-    }*/
+    }
 
 }
 

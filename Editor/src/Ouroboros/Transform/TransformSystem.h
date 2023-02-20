@@ -28,8 +28,11 @@ namespace oo
         TransformSystem(Scene* scene);
         virtual ~TransformSystem() = default;
 
+        void PostLoadSceneInit();
+
         virtual void Run(Ecs::ECSWorld* world) override;
         void UpdateSubTree(GameObject go, bool includeItself = true);
+        void UpdateEntireTree();
 
         /*void StartOfFrame();
         void EndOfFrame();*/
@@ -38,9 +41,15 @@ namespace oo
         void UpdateLocalTransform(TransformComponent& tf);
         void UpdateLocalTransforms();
         void UpdateTree(scenenode::shared_pointer node, bool updateRoot);
-        void UpdateTransform(std::shared_ptr<GameObject> const& go, TransformComponent& tf);
+        void UpdateTransform(std::shared_ptr<GameObject> const& go);
 
     private:
         Scene* m_scene = nullptr;
+
+        bool m_firstFrame = true;
+
+        // im not expecting anything that's nested beyond 32 depth. its possible but freaking unlikely
+        static constexpr std::size_t MaxDepth = 32;
+        std::array<std::vector<scenegraph::shared_pointer>, MaxDepth> launch_groups;
     };
 }

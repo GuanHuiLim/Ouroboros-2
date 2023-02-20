@@ -75,13 +75,14 @@ void GBufferRenderPass::Draw()
     PROFILE_GPU_EVENT("GBuffer");
 
 	constexpr VkClearColorValue zeroFloat4 = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
+	constexpr VkClearColorValue tangentNormal = VkClearColorValue{ 0.5f,0.5f,1.0f,0.0f };
 	VkClearColorValue rMinusOne = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
 	rMinusOne.int32[0] = -1;
 
 	// Clear values for all attachments written in the fragment shader
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
 	//clearValues[GBufferAttachmentIndex::POSITION].color = zeroFloat4;
-	clearValues[GBufferAttachmentIndex::NORMAL]  .color = zeroFloat4;
+	clearValues[GBufferAttachmentIndex::NORMAL]  .color = tangentNormal;
 	clearValues[GBufferAttachmentIndex::ALBEDO].color =	  zeroFloat4;
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
@@ -112,7 +113,7 @@ void GBufferRenderPass::Draw()
 	// TODO: handle all framebuffer resizes gracefully
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	
-	rhi::CommandList cmd{ cmdlist };
+	rhi::CommandList cmd{ cmdlist, "Gbuffer Pass"};
 	cmd.SetDefaultViewportAndScissor();
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
@@ -139,9 +140,9 @@ void GBufferRenderPass::Draw()
 	};
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, &vr.instanceBuffer.buffer);
+	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer.getBufferPtr());
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.buffer, 0, vr.objectCount);
+	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.getBuffer(), 0, vr.objectCount);
 
 	vkCmdEndRenderPass(cmdlist);
 }

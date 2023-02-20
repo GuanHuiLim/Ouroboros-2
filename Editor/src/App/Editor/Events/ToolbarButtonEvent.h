@@ -13,7 +13,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include "Ouroboros/EventSystem/Event.h"
-
+#include <string>
 class ToolbarButtonEvent : public oo::Event
 {
 public:
@@ -26,6 +26,9 @@ public:
 		PLAY,
 		PAUSE,
 		STOP,
+		OPENLIVESHARE,
+		SET_SIMULATION_MODE,
+		SET_RECORD_ONPLAY,
 	};
 	ToolbarButtonEvent(ToolbarButton button) :m_buttonType{ button } {  };
 	~ToolbarButtonEvent() {};

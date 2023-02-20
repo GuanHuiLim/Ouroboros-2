@@ -54,6 +54,9 @@ namespace oo
         uint32_t m_maxParticles;
 
         // SYSTEM PROPERTIES
+        bool m_randomizePosition = false;
+        bool m_randomizeStartDir = false;
+
         float m_spawnRate;
         float m_systemLifetime;
         float m_duration;

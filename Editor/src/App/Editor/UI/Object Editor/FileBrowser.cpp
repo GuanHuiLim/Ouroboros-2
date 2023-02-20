@@ -404,6 +404,25 @@ void FileBrowser::CreateIconButton(DirectoryInfo& info, ImVec2 size, const float
 		ImGui::Text("Dragging type : %s", info.name.extension().string().c_str());
 		ImGui::EndDragDropSource();
 	}
+	if (std::filesystem::is_directory(info.name))
+	{
+		if (ImGui::BeginDragDropTarget())
+		{
+			auto* payload = ImGui::GetDragDropPayload();
+			//check if payload name has extension else its just a folder
+			if (payload && std::filesystem::path(std::string("a")+payload->DataType).has_extension())
+			{
+				auto* valid_payload = ImGui::AcceptDragDropPayload(payload->DataType);
+				if (valid_payload)
+				{
+					std::filesystem::path p = *reinterpret_cast<std::filesystem::path*>(valid_payload->Data);
+					std::filesystem::rename(p, info.name / p.filename());
+					FileBehaviour(m_currentpath);
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+	}
 	if (ImGui::IsItemClicked(ImGuiMouseButton_Right) && m_selectedList.empty())
 	{
 		info.selected = true;

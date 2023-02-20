@@ -31,6 +31,7 @@ namespace oo
 
         registration::class_<oo::LightComponent>("Light")
         .property("Color", &LightComponent::Color)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
+        .property("Intensity", &LightComponent::Intensity)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         .property("Radius", &LightComponent::Radius)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
         .property("Type", &LightComponent::LightType)
         .property("Produce Shadows", &LightComponent::ProduceShadows)

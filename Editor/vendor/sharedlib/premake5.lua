@@ -17,6 +17,9 @@ project "SharedLib"
 
         "Isolated-Testing-Ground/Scenegraph/include/*.*",
         "Isolated-Testing-Ground/Scenegraph/src/*.*",
+
+        "Isolated-Testing-Ground/JobSystem/src/final/*.*",
+        "Isolated-Testing-Ground/JobSystem/src/containers/*.*",
     }
 
     excludes

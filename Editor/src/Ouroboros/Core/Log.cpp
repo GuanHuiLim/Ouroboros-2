@@ -109,6 +109,8 @@ namespace oo
             return s_debuggerLogger;
         }
 
+
+
         void shutdown()
         {
             s_coreLogger->dump_backtrace();

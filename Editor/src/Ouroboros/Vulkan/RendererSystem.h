@@ -19,7 +19,7 @@ Technology is prohibited.
 #include "LightComponent.h"
 #include "CameraComponent.h"
 
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/ECS/GameObjectComponent.h"
@@ -40,26 +40,31 @@ namespace oo
 
     class RendererSystem : public Ecs::System
     {
-    private:
-        //GraphicsWorld* m_graphicsWorld{nullptr};
-        //Ecs::ECSWorld* m_world{nullptr};
-        /*std::map<uint32_t, UUID> m_graphicsIdToUUID;
-        std::map<UUID, uint32_t> m_uuidToGraphicsID;*/
+    
     public:
         RendererSystem(GraphicsWorld* graphicsWorld, Scene* scene);
         virtual ~RendererSystem();
 
         void Init();
+        void PostSceneLoadInit();
 
         virtual void Run(Ecs::ECSWorld* world) override;
 
         void UpdateCameras(Scene::go_ptr& mainCamera);
         void SaveEditorCamera();
 
+
         //UUID GetUUID(uint32_t graphicsID) const;
         inline static bool CameraDebugDraw = true;
+        inline static bool LightsDebugDraw = true;
 
     private:
+        void RenderDebugDraws();
+
+        void UpdateJustCreated();
+        void UpdateDuplicated();
+        void UpdateExisting();
+
         void OnScreenResize(WindowResizeEvent* e);
         void OnEditorViewportResize(EditorViewportResizeEvent* e);
         //void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
@@ -72,12 +77,11 @@ namespace oo
         void OnMeshAssign(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
         void OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt);
 
-        void RenderDebugDraws(Ecs::ECSWorld* world);
         void InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc);
         void InitializeLight(LightComponent& lightComp, TransformComponent& transformComp);
 
-        /*void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
-        void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);*/
+        void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
+        void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
     private:
 
         GraphicsWorld* m_graphicsWorld{ nullptr };
@@ -85,7 +89,5 @@ namespace oo
 
         CameraController m_runtimeCC;
         Camera m_runtimeCamera;
-        
-        bool m_firstFrame = true; // potentially improvable if this can be run once per creation
     };
 }

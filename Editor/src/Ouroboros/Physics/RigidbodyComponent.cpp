@@ -33,11 +33,11 @@ namespace oo
             .property("Enable Gravity", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
             .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
-            .property_readonly("Velocity", &RigidbodyComponent::GetLinearVelocity)
+            .property_readonly("Velocity", &RigidbodyComponent::GetLinearVel)
             .property("Linear Damping", &RigidbodyComponent::GetLinearDamping, &RigidbodyComponent::SetLinearDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property_readonly("Angular Velocity", &RigidbodyComponent::GetAngularVelocity)
+            .property_readonly("Angular Velocity", &RigidbodyComponent::GetAngularVel)
             .property("Angular Damping", &RigidbodyComponent::GetAngularDamping, &RigidbodyComponent::SetAngularDamping)(metadata(UI_metadata::DRAG_SPEED, 0.1f))
-            .property("Offset", &RigidbodyComponent::Offset)
+            .property("Offset", &RigidbodyComponent::GetOffset, &RigidbodyComponent::SetOffset)
             .property("Lock X Axis Position", &RigidbodyComponent::LockXAxisPosition)
             .property("Lock Y Axis Position", &RigidbodyComponent::LockYAxisPosition)
             .property("Lock Z Axis Position", &RigidbodyComponent::LockZAxisPosition)
@@ -78,10 +78,22 @@ namespace oo
 
     quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
     {
-        auto res = object.getOrientation();
-        return { res.w, res.x, res.y, res.z,  };
+        /*auto res = object.getOrientation();
+        return { res.w, res.x, res.y, res.z,  };*/
+        return object.getOrientation();
     }
 
+    std::vector<physx::PxVec3> oo::RigidbodyComponent::StoreMesh(std::vector<oo::vec3> result) {
+
+        std::vector<physx::PxVec3> vertices{ result.begin(), result.end() };
+        
+        object.storeMeshVertices(vertices);
+
+        vertices = object.getAllMeshVertices();
+
+        return vertices;
+    }
+    
     void oo::RigidbodyComponent::SetStatic(bool result)
     {
         IsStaticObject = result;
@@ -103,8 +115,9 @@ namespace oo
 
     vec3 oo::RigidbodyComponent::GetAngularVelocity() const
     {
-        auto vel = object.getAngularVelocity();
-        return vec3{ vel.x, vel.y, vel.z };
+        /*auto vel = object.getAngularVelocity();
+        return vec3{ vel.x, vel.y, vel.z };*/
+        return object.getAngularVelocity();
     }
 
     float oo::RigidbodyComponent::GetLinearDamping() const
@@ -114,8 +127,9 @@ namespace oo
 
     vec3 oo::RigidbodyComponent::GetLinearVelocity() const
     {
-        auto vel = object.getLinearVelocity();
-        return vec3{ vel.x, vel.y, vel.z };
+        /*auto vel = object.getLinearVelocity();
+        return vec3{ vel.x, vel.y, vel.z };*/
+        return object.getLinearVelocity();
     }
 
     bool oo::RigidbodyComponent::IsGravityEnabled() const
@@ -176,7 +190,7 @@ namespace oo
 
     void RigidbodyComponent::SetPosOrientation(vec3 pos, quat quat) 
     { 
-        object.setPosOrientation({ pos.x, pos.y, pos.z }, { quat.x, quat.y, quat.z, quat.w }); 
+        object.setPosOrientation(pos, quat); 
     }
     
     void oo::RigidbodyComponent::SetGravity(bool enable)
@@ -212,7 +226,7 @@ namespace oo
 
     void RigidbodyComponent::SetAngularVelocity(vec3 angularVelocity)
     {
-        object.setAngularVelocity(PxVec3{ angularVelocity.x, angularVelocity.y, angularVelocity.z });
+        object.setAngularVelocity(angularVelocity);
     }
 
     void RigidbodyComponent::SetLinearDamping(float linearDamping)
@@ -222,27 +236,27 @@ namespace oo
 
     void RigidbodyComponent::SetLinearVelocity(vec3 linearVelocity)
     {
-        object.setLinearVelocity(PxVec3{ linearVelocity.x, linearVelocity.y, linearVelocity.z });
+        object.setLinearVelocity(linearVelocity);
     }
 
-    void oo::RigidbodyComponent::AddForce(vec3 force, ForceMode type)
+    void oo::RigidbodyComponent::AddForce(oo::vec3 force, ForceMode type)
     {
         switch (type)
         {
         case ForceMode::FORCE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::force);
+            object.addForce(force, myPhysx::force::force);
             break;
 
         case ForceMode::ACCELERATION:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::acceleration);
+            object.addForce(force, myPhysx::force::acceleration);
             break;
         
         case ForceMode::IMPULSE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::impulse);
+            object.addForce(force, myPhysx::force::impulse);
             break;
         
         case ForceMode::VELOCITY_CHANGE:
-            object.addForce(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocityChanged);
+            object.addForce(force, myPhysx::force::velocityChanged);
             break;
         }
     }
@@ -252,19 +266,19 @@ namespace oo
         switch (type)
         {
         case ForceMode::FORCE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::force);
+            object.addTorque(force, myPhysx::force::force);
             break;
 
         case ForceMode::ACCELERATION:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::acceleration);
+            object.addTorque(force, myPhysx::force::acceleration);
             break;
 
         case ForceMode::IMPULSE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::impulse);
+            object.addTorque(force, myPhysx::force::impulse);
             break;
 
         case ForceMode::VELOCITY_CHANGE:
-            object.addTorque(PxVec3{ force.x, force.y, force.z }, myPhysx::force::velocityChanged);
+            object.addTorque(force, myPhysx::force::velocityChanged);
             break;
         }
     }
@@ -272,6 +286,26 @@ namespace oo
     oo::UUID oo::RigidbodyComponent::GetUnderlyingUUID() const
     {
         return oo::UUID{ std::uint64_t{object.id} };
+    }
+
+    glm::vec3 oo::RigidbodyComponent::GetLinearVel() const
+    {
+        return GetLinearVelocity();
+    }
+
+    glm::vec3 oo::RigidbodyComponent::GetAngularVel() const
+    {
+        return GetAngularVelocity();
+    }
+
+    void oo::RigidbodyComponent::SetOffset(glm::vec3 offset)
+    {
+        Offset = {offset};
+    }
+
+    glm::vec3 oo::RigidbodyComponent::GetOffset() const
+    {
+        return Offset;
     }
 
 }

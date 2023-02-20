@@ -22,7 +22,7 @@ Technology is prohibited.
 #include "ParticleProperties.h"
 
 #include "OO_Vulkan/src/MeshModel.h"
-#include "Archetypes_Ecs/src/A_Ecs.h"
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "OO_Vulkan/src/DefaultMeshCreator.h"
 
 namespace oo
@@ -99,6 +99,8 @@ namespace oo
 
 		registration::class_<ParticleEmitterComponent>("Particle Emitter")
 		.property_readonly("Graphics World ID", &ParticleEmitterComponent::GraphicsWorldID)
+		.property("Randomize Position", &ParticleEmitterComponent::m_randomizePosition)
+		.property("Randomize Direction", &ParticleEmitterComponent::m_randomizeStartDir)
 		.property("Particle properties", &ParticleEmitterComponent::GetParticleProperties, &ParticleEmitterComponent::SetParticleProperties)
 		.property("Particle renderer", &ParticleEmitterComponent::GetParticleRendererProperties, &ParticleEmitterComponent::SetParticleRendererProperties)
 		.property("Particle shape", &ParticleEmitterComponent::GetParticleShapeProperties, &ParticleEmitterComponent::SetParticleShapeProperties)

@@ -38,7 +38,7 @@ Technology is prohibited.
 #include "Ouroboros/Core/Timer.h"
 #include <Ouroboros/Physics/PhysicsSystem.h>
 #include <Ouroboros/Vulkan/RendererSystem.h>
-
+#include <Ouroboros/Scene/RuntimeController.h>
 static void FileDrop(oo::FileDropEvent* e)
 {
 	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf", ".tga"};
@@ -68,6 +68,10 @@ static void FileDrop(oo::FileDropEvent* e)
 		}
 		std::filesystem::copy(p, Project::GetAssetFolder() / p.filename(),std::filesystem::copy_options::overwrite_existing);
 		Project::GetAssetManager()->Scan();
+		NetworkingFileTransferEvent nfte;
+
+		nfte.p = std::filesystem::relative(Project::GetAssetFolder() / p.filename(), Project::GetProjectFolder());
+		oo::EventManager::Broadcast<NetworkingFileTransferEvent>(&nfte);
 	}
 }
 Editor::Editor()
@@ -82,23 +86,23 @@ Editor::Editor()
 		}, 240.0f));
 	
 	//object editors
-	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); });
-	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); });
-	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); });
-	ImGuiManager::Create("Editor Viewport", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoBackground |ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar), [this] {this->m_EditorViewport.Show(); });
+	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); }, 0, false);
+	ImGuiManager::Create("Inspector", true, ImGuiWindowFlags_MenuBar, [this] {this->m_inspector.Show(); }, 0, false);
+	ImGuiManager::Create("FileBrowser", true, ImGuiWindowFlags_MenuBar, [this] {this->m_fileBrowser.Show(); }, 0, false);
+	ImGuiManager::Create("Editor Viewport", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoBackground |ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar), [this] {this->m_EditorViewport.Show(); }, [this] {this->m_EditorViewport.UpdateWhenNotShown(); }, false);
+	ImGuiManager::Create("Preview Window", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollWithMouse), [this] {this->m_previewWindow.Show(); }, [this] {this->m_previewWindow.UpdateWhenNotShown(); }, false);
 	ImGuiManager::Create("Script Sequencer", false, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
 
 	//tools
-	ImGuiManager::Create("Style Editor", true, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
+	ImGuiManager::Create("Style Editor", false, ImGuiWindowFlags_MenuBar, [this] {this->m_styleEditor.Show(); });
 	ImGuiManager::Create("PenTool", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_NoDecoration), [this] {this->m_pentool.Show(); });
-	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); });
-	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); });
-	ImGuiManager::Create("Animator Controller", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animatorControllerView.Show(); });
-	ImGuiManager::Create("Animation Timeline", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animationTimelineView.Show(); });
+	ImGuiManager::Create("Toolbar", true, ImGuiWindowFlags_None, [this] {this->m_toolbar.Show(); }, 0, false);
+	ImGuiManager::Create("Logger", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_loggingView.Show(); }, 0, false);
+	ImGuiManager::Create("Animator Controller", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animatorControllerView.Show(); });
+	ImGuiManager::Create("Animation Timeline", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar), [this] {this->m_animationTimelineView.Show(); });
 	ImGuiManager::Create("Mesh Hierarchy", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar ), [this] {this->m_meshHierarchy.Show(); });
 	//ImGuiManager::Create("Renderer Debugger", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_rendererDebugger.Show(); });
 	ImGuiManager::Create("Script Sequencer", true, ImGuiWindowFlags_None, [this] {this->m_scriptSequencer.Show(); });
-	ImGuiManager::Create("Preview Window", true, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollWithMouse), [this] {this->m_previewWindow.Show(); });
 
 	//external (project based tools)
 	ImGuiManager::Create("Scene Manager", false, (ImGuiWindowFlags_)(ImGuiWindowFlags_MenuBar), [this] {this->m_sceneOderingWindow.Show(); });
@@ -133,7 +137,11 @@ void Editor::Update()
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
 	m_chatsystem.Show();
+
+	m_Keylogger.Show();
 	helper.Popups();
+	
+
 	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftCtrl))
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_S))
@@ -209,6 +217,10 @@ void Editor::MenuBar()
 				else
 					oo::OO_TracyProfiler::StartTracyServer();
 			}
+			if (ImGui::MenuItem("Style Editor", nullptr, ImGuiManager::GetItem("Style Editor").m_enabled))
+			{
+				ImGuiManager::GetItem("Style Editor").m_enabled = !ImGuiManager::GetItem("Style Editor").m_enabled;
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Windows"))
@@ -229,6 +241,18 @@ void Editor::MenuBar()
 			{
 				ImGuiManager::GetItem("Renderer Fields").m_enabled = !ImGuiManager::GetItem("Renderer Fields").m_enabled;
 			}
+			if (ImGui::BeginMenu("Animation"))
+			{
+				if (ImGui::MenuItem("Animation Timeline", 0, ImGuiManager::GetItem("Animation Timeline").m_enabled))
+				{
+					ImGuiManager::GetItem("Animation Timeline").m_enabled = !ImGuiManager::GetItem("Animation Timeline").m_enabled;
+				}
+				if (ImGui::MenuItem("Animator Controller", 0, ImGuiManager::GetItem("Animator Controller").m_enabled))
+				{
+					ImGuiManager::GetItem("Animator Controller").m_enabled = !ImGuiManager::GetItem("Animator Controller").m_enabled;
+				}
+				ImGui::EndMenu();
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Debugging"))
@@ -245,8 +269,18 @@ void Editor::MenuBar()
 			{
 				oo::RendererSystem::CameraDebugDraw = !oo::RendererSystem::CameraDebugDraw;
 			}
+			if (ImGui::MenuItem("Lights Debug Draw", 0, oo::RendererSystem::LightsDebugDraw))
+			{
+				oo::RendererSystem::LightsDebugDraw = !oo::RendererSystem::LightsDebugDraw;
+			}
 			
 			ImGui::EndMenu();
+		}
+		if (ImGui::MenuItem("Compile Scripts"))
+		{
+			//this is a legacy event but rn im too lazy to make a new event and rename everything
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
+			oo::EventManager::Broadcast(&tbe);
 		}
 		ImGui::EndMainMenuBar();
 	}

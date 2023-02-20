@@ -14,7 +14,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include <Archetypes_ECS/src/A_Ecs.h>
+#include "ArchtypeECS/A_Ecs.h"
 #include "DeferredComponent.h"
 #include "DuplicatedComponent.h"
 #include "GameObjectDisabledComponent.h"

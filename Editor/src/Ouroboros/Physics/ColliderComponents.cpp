@@ -47,5 +47,11 @@ namespace oo
             .property_readonly("Global Radius", &CapsuleColliderComponent::GlobalRadius)
             .property_readonly("Global Half Height", &CapsuleColliderComponent::GlobalHalfHeight)
             ;
+
+        registration::class_<ConvexColliderComponent>("Convex Collider")
+            .property("Reset", &ConvexColliderComponent::Reset)
+            .property_readonly("vertices", &ConvexColliderComponent::Vertices)
+            .property_readonly("World Space Vertices", &ConvexColliderComponent::WorldSpaceVertices)
+            ;
     }
 }

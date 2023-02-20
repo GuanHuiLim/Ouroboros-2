@@ -54,7 +54,7 @@ project "Editor"
         "%{IncludeDir.rttr}",
 
         "%{IncludeDir.launcher}",
-        "%{IncludeDir.ecs}",
+        --"%{IncludeDir.ecs}",
         "%{IncludeDir.sharedlib}",
         
         "%{IncludeDir.physx}",
@@ -103,7 +103,7 @@ project "Editor"
         "SDL2main",
         "SDL2test",
         
-        "ECS",
+        --"ECS",
         "Launcher",
         "SharedLib",
         "Physics",
@@ -227,6 +227,13 @@ project "Editor"
         defines { "EDITOR_RELEASE", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{ "configurations:Production", "platforms:Editor"}
         defines { "EDITOR_PRODUCTION", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    -- remove eventually.
+    -- filter{ "configurations:Debug", "platforms:Executable"}
+    --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    -- filter{ "configurations:Release", "platforms:Executable"}
+    --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    -- filter{ "configurations:Production", "platforms:Executable"}
+    --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{}
     
     filter "configurations:Debug"
@@ -296,6 +303,7 @@ project "Editor"
             {"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
             -- copy iss file for compiling /for production only
             {"{COPY} \"%{AppDir}/engine_portable.iss\" \"" .. binApp .. "\"" },
+            {"{COPY} \"%{AppDir}/executable_portable.iss\" \"" .. binApp .. "\"" },
         }
 
         links

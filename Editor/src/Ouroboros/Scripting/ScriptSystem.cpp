@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/ECS/ECS.h"
 
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+
 namespace oo
 {
     // Scene specific script stuff
@@ -207,6 +209,10 @@ namespace oo
     {
         if (!isPlaying)
             return;
+        MonoObject* script = scriptDatabase.TryRetrieveObject(uuid, name_space, name);
+        if (script == nullptr)
+            return;
+        ScriptEngine::InvokeFunction(script, "OnDestroy");
         scriptDatabase.Delete(uuid, name_space, name);
     }
     void ScriptSystem::SetScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
@@ -360,12 +366,34 @@ namespace oo
                 }
             });
     }
+    void ScriptSystem::InvokeForAllEnabled(const char* functionName)
+    {
+        if (!ScriptEngine::IsLoaded())
+            return;
+        if (!isPlaying)
+            return;
+
+        try
+        {
+            scriptDatabase.InvokeForAllEnabled(functionName,
+                [this](ScriptDatabase::UUID uuid)
+                {
+                    std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
+                    return object->ActiveInHierarchy();
+                });
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR(e.what());
+        }
+    }
     void ScriptSystem::InvokeForAllEnabled(const char* functionName, int paramCount, void** params)
     {
         if (!ScriptEngine::IsLoaded())
             return;
         if (!isPlaying)
             return;
+
         scriptDatabase.ForAllEnabled([&functionName, &params, &paramCount](MonoObject* object)
             {
                 try
@@ -445,6 +473,10 @@ namespace oo
         UUID uuid = e->go->GetInstanceID();
         if (scene.FindWithInstanceID(uuid) == nullptr)
             return;
+        scriptDatabase.ForEachEnabled(uuid, [](MonoObject* object)
+            {
+                ScriptEngine::InvokeFunction(object, "OnDestroy");
+            });
         scriptDatabase.Delete(uuid);
         componentDatabase.Delete(uuid);
     }
@@ -453,7 +485,9 @@ namespace oo
     {
         if (!isPlaying)
             return;
+        TRACY_PROFILE_SCOPE(scripts_fixed_update);
         InvokeForAllEnabled("FixedUpdate");
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void ScriptSystem::OnTriggerEvent(PhysicsTriggerEvent* e)

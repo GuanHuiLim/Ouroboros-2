@@ -127,6 +127,15 @@ bool GetCastsShadows(OmniLightInstance& l);
 void SetCastsShadows(SpotLightInstance& l, bool s);
 bool GetCastsShadows(SpotLightInstance& l);
 
+template <typename T>
+inline void SetLightEnabled(T& l, bool s) {
+    reinterpret_cast<LocalLightInstance*>(&l)->info.z = s ? 1 : -1;
+}
+template <typename T>
+inline bool GetLightEnabled(T& l) {
+   return reinterpret_cast<LocalLightInstance*>(&l)->info.z == 1 ? true : false;
+}
+
 
 struct DecalInstance
 {
@@ -175,6 +184,7 @@ public:
     void SubmitParticles(std::vector<ParticleData>& particleData, uint32_t cnt, int32_t modelID);
 
     uint32_t numCameras = 1;
+    std::array<bool, 2> shouldRenderCamera{ true, false };
     std::array<Camera, 2>cameras;
     std::array<int32_t, 2>targetIDs{ -1,-1 };
     std::array<ImTextureID, 2>imguiID{};
@@ -186,6 +196,7 @@ public:
     {
         float radius = 0.5f;
         float bias = 0.025f;
+        float intensity = 1.0f;
         uint32_t samples = 8;
     }ssaoSettings{};
 

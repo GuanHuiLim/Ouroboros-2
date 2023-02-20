@@ -86,11 +86,12 @@ float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, f
 
 vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular, out float shadow)
 {
-	vec3 result = vec3(0.0f, 0.0f, 0.0f);
+	vec3 result = vec3(0.0f, 0.0f, 0.0f);	
 	vec3 N = normalize(normal);
 	float alpha = roughness;
 	vec3 Kd = albedo;
 	vec3 Ks = vec3(specular);
+	//Ks = vec3(0);
 	
 	// Vector to light
 	vec3 L = Lights_SSBO[lightIndex].position.xyz - fragPos;
@@ -113,7 +114,8 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 	    
 		float r1 = Lights_SSBO[lightIndex].radius.x * 0.9;
 		float r2 = Lights_SSBO[lightIndex].radius.x;
-		vec3 lCol = Lights_SSBO[lightIndex].color.xyz;
+		vec4 lightColInten	= Lights_SSBO[lightIndex].color;
+		vec3 lCol = lightColInten.rgb * lightColInten.w;
 
     		// Attenuation
 		float atten = Lights_SSBO[lightIndex].radius.x / (pow(dist, 2.0) + 1.0);		 
@@ -127,8 +129,8 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 		// Specular map values are stored in alpha of albedo mrt
 		vec3 R = -reflect(L, N);
 		float RdotV = max(0.0, dot(R, V));
-		//vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
 		vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
+		//vec3 spec = lCol  * pow(RdotV, 16.0) * atten;
 	
 		//result = diff;// + spec;	
 		result = diff+spec;
@@ -169,11 +171,16 @@ void main()
 	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
 	//fragPos.z = depth.r;
 	vec3 normal = texture(samplerNormal, inUV).rgb;
+	if(dot(normal,normal) == 0.0)
+	{
+		outFragcolor = vec4(0);
+		return;
+	}
 	vec4 albedo = texture(samplerAlbedo, inUV);
 	vec4 material = texture(samplerMaterial, inUV);
 	float SSAO = texture(samplerSSAO, inUV).r;
 	float specular = material.g;
-	float roughness = material.r;
+	float roughness = 1.0 - material.r;
 
 	// Render-target composition
 	float ambient = PC.ambient;
@@ -181,9 +188,9 @@ void main()
 	{
 		ambient = 1.0;
 	}
-	float gamma = 2.2;
+	float gamma = 1.0;
 	
-	albedo.rgb =  pow(albedo.rgb, vec3(gamma));
+	//albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
 	vec3 result = albedo.rgb  * ambient;
@@ -196,8 +203,12 @@ void main()
 	for(int i = 0; i < PC.numLights; ++i)
 	{
 		float outshadow = 1.0;
-		vec3 res = EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, outshadow);
+		vec3 res = EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, outshadow);		
 		
+		if(any(isnan(res))){
+				outFragcolor = vec4(1.0,0.6,0.3,1.0);
+		}
+
 		result += res;
 	}
 

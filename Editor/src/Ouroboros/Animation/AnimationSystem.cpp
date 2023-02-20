@@ -30,6 +30,7 @@ Technology is prohibited.
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "Ouroboros/Core/Timer.h"
 
 #define DEBUG_ANIMATION false
 namespace oo::Anim
@@ -85,10 +86,10 @@ namespace oo::Anim
 		}
 		
 		TRACY_PROFILE_SCOPE_NC(Animation_Update, 0x00E0E3);
-		//TODO: replace 0.016f with delta time
+
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
-			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), 0.016f };
+			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), timer::dt() };
 			internal::UpdateTracker(info);
 			});
 		TRACY_PROFILE_SCOPE_END();
@@ -184,7 +185,7 @@ namespace oo::Anim
 
 		NodeInfo nodeinfo{
 			.name{ "Test Node" },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f}
 		};
@@ -208,6 +209,7 @@ namespace oo::Anim
 			.value{20.f}
 		};
 		auto condition = comp.AddCondition(group.name, linkName, condition_info);
+		(void)condition;
 		assert(condition);
 
 		//add a timeline to the node's animation
@@ -229,11 +231,13 @@ namespace oo::Anim
 			};
 			auto Keyframe1 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf1);
 			assert(Keyframe1);
+			(void)Keyframe1;
 			KeyFrame kf2{
 				glm::vec3{10.f,0.f,0.f},
 				2.f
 			};
 			auto Keyframe2 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf2);
+			(void)Keyframe2;
 			assert(Keyframe2);
 			KeyFrame kf3{
 				glm::vec3{10.f,10.f,0.f},
@@ -241,11 +245,13 @@ namespace oo::Anim
 			};
 			auto Keyframe3 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf3);
 			assert(Keyframe3);
+			(void)Keyframe3;
 			KeyFrame kf4{
 				glm::vec3{0.f,10.f,0.f},
 				6.f
 			};
 			auto Keyframe4 = comp.AddKeyFrame(group.name, node->name, timeline->name, kf4);
+			(void)Keyframe4;
 			assert(Keyframe4);
 		}
 
@@ -288,7 +294,7 @@ namespace oo::Anim
 		auto tree = internal::RetrieveAnimationTree("Demo Animation Tree");
 		assert(tree);
 		auto animation = internal::RetrieveAnimation("MainChar_Idle_Take 001");
-
+		(void)animation;
 		test_obj = scene->CreateGameObjectImmediate();
 		test_obj->Name() = "AnimationTestObject";
 		auto& comp = test_obj->AddComponent<oo::AnimationComponent>();
@@ -365,6 +371,8 @@ namespace oo::Anim
 	{
 		for (auto& [id, anim] : Animation::animation_storage)
 		{
+			if (anim.animation_ID == internal::empty_animation_UID) continue;
+
 			auto asset = GetAnimationAsset(id);
 			if (asset.IsValid() == false)
 			{
@@ -436,16 +444,19 @@ namespace oo::Anim
 
 	bool AnimationSystem::SaveAnimation(Animation& anim, std::string filepath)
 	{
+		//dont save empty animation
+		if (anim.animation_ID == internal::empty_animation_UID) return true;
+
 		std::ofstream stream{ filepath ,std::ios::trunc };
 		if (!stream)
 		{
 			assert(false);
 			return false;
 		}
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		rapidjson::OStreamWrapper osw(stream);
 		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
-
 		//writer.Key("AnimationTree", static_cast<rapidjson::SizeType>(std::string("AnimationTree").size()));
 		auto serialize_fn = rttr::type::get<Animation>().get_method(internal::serialize_method_name);
 		serialize_fn.invoke({}, writer, anim);
@@ -647,7 +658,7 @@ namespace oo::Anim
 		auto obj = doc.GetObj();
 		auto load_fn = rttr::type::get< Animation>().get_method(internal::load_method_name);
 		load_fn.invoke({}, obj, anim);
-
+		anim.name = std::filesystem::path{ filepath }.stem().string();
 
 		return Animation::AddAnimation(std::move(anim));
 

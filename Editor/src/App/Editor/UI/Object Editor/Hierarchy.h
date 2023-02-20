@@ -22,6 +22,7 @@ Technology is prohibited.
 #include "App/Editor/Events/PasteButtonEvent.h"
 #include "App/Editor/Events/DuplicateButtonEvent.h"
 #include "App/Editor/Events/DestroyGameObjectButtonEvent.h"
+#include "App/Editor/Events/FocusButtonEvent.h"
 #include <Ouroboros/ECS/GameObject.h>
 class Hierarchy
 {
@@ -34,15 +35,18 @@ public:
 	static const uint64_t GetSelectedTime();
 	void PreviewPrefab(const std::filesystem::path& p,const std::filesystem::path& currscene);
 	void PopBackPrefabStack();
+	void OpenItemFocus(FocusButtonEvent* e);
 protected:
 	void NormalView();
 	void FilteredView();
 
 
-	bool TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flag, bool swaping = false, bool rename = false,bool noInteraction = false);
+	bool TreeNodeUI(const char* name, scenenode& node,oo::Scene::go_ptr go, ImGuiTreeNodeFlags_ flag, bool swaping = false, bool rename = false,bool noInteraction = false);
 	void SwappingUI(scenenode& node, bool setbelow = true);
 	void SearchFilter();
 	void RightClickOptions();
+	void TriggerFocusButton();
+
 
 	void Filter_ByName();
 	void Filter_ByComponent();
@@ -66,6 +70,7 @@ private:
 		Scripts = 2,
 	};
 	ColorButton m_colorButton;
+	std::deque<scenenode::handle_type> m_focusList;
 	std::vector<scenenode::handle_type> m_filterList;
 	std::string m_filter = "";
 	FilterTypes m_filterTypes = FilterTypes::Name;

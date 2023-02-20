@@ -25,6 +25,7 @@ Technology is prohibited.
 #include "AnimationTracker.h"
 #include "AnimationSystem.h"
 #include "AnimationComponent.h"
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
 std::unordered_map <StringHash::size_type, rttr::type> oo::Anim::internal::hash_to_rttrType{};
 std::unordered_map <rttr::type::type_id, StringHash::size_type> oo::Anim::internal::rttrType_to_hash = []()
@@ -823,7 +824,7 @@ namespace oo::Anim::internal
 			KeyFrame::DataType result = oo::TransformComponent::quat{ quat.get_value< glm::quat>() };
 			return result;*/
 
-			return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
+			//return oo::TransformComponent::quat{ next.get_value< glm::quat >() };
 		}
 		else if (rttr_type == rttr::type::get< bool>())
 		{
@@ -855,22 +856,6 @@ namespace oo::Anim::internal
 			return;
 		}
 
-		////if looping, set the normalized time based on iterations
-		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
-		//{
-		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
-		//	{
-		//		currentTimer -= timeline.keyframes.back().time;
-		//		num_iterations += 1.f;
-		//	}
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
-		//}
-		//else
-		//{
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		//}
 
 
 		//find the correct gameobject
@@ -938,108 +923,90 @@ namespace oo::Anim::internal
 	}
 
 	//void UpdateFBX_Animation(AnimationComponent& comp, AnimationTracker& tracker, ProgressTracker& progressTracker, float updatedTimer)
-	void UpdateFBX_Animation(UpdateProgressTrackerInfo& info, float updatedTimer)
+	void UpdateFBX_Animation(UpdateProgressTrackerInfo& t_info, float updatedTimer)
 	{
-		assert(info.progressTracker.type == Timeline::TYPE::FBX_ANIM);
+		assert(t_info.progressTracker.type == Timeline::TYPE::FBX_ANIM);
 
-		auto& timeline = *(info.progressTracker.timeline);
+		auto& timeline = *(t_info.progressTracker.timeline);
 
 		//no keyframes so we return
 		if (timeline.keyframes.empty()) return;
 
 		//already hit last and animation not looping so we return
-		if (info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
-			info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
+		if (t_info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
+			t_info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
 		{
 			return;
 		}
-
-		////if looping, set the normalized time based on iterations
-		//if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
+		TRACY_PROFILE_SCOPE_NC(locate_object , 0x004E41);
+		////find the correct gameobject
+		//GameObject go{ t_info.tracker_info.entity,t_info.tracker_info.system.Get_Scene() };
+		//
+		////traverse the hierarchy and find the gameobject if needed
+		//if (t_info.tracker_info.uuid == UUID::Invalid)
 		//{
-		//	if (info.tracker_info.tracker.timer > timeline.keyframes.back().time)
+		//	for (auto& index : timeline.children_index)
 		//	{
-		//		currentTimer -= timeline.keyframes.back().time;
-		//		num_iterations += 1.f;
+		//		auto name = go.Name();
+		//		auto children = go.GetDirectChilds();
+		//		go = children[index];
 		//	}
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = num_iterations + (currentTimer / timeline.keyframes.back().time);
+		//	t_info.tracker_info.uuid = go.GetInstanceID();
 		//}
-		//else
-		//{
-		//	//set normalized timer
-		//	info.tracker_info.tracker.normalized_timer = (updatedTimer / timeline.keyframes.back().time);
-		//}
+		auto ptr_to_go = t_info.tracker_info.system.Get_Scene().FindWithInstanceID(t_info.progressTracker.timeline_gameobject_uid);
+		GameObject go{ *ptr_to_go };
+		TRACY_PROFILE_SCOPE_END();
 
-		//update index to the correct keyframe
-		/*size_t prev_index = info.progressTracker.index;
-		if (timeline.keyframes[info.progressTracker.index + 1u].time < updatedTimer)
-		{
-			size_t increment{ 1 };
-			for (auto iter = timeline.keyframes.begin() + (info.progressTracker.index + 1u); iter != timeline.keyframes.end(); ++iter)
-			{
-				if (iter->time > updatedTimer)
-					break;
 
-				++increment;
-			}
-			info.progressTracker.index += increment;
-		}*/
-
-		//find the correct gameobject
-		GameObject go{ info.tracker_info.entity,info.tracker_info.system.Get_Scene() };
-		//traverse the hierarchy
-		for (auto& index : timeline.children_index)
-		{
-			auto name = go.Name();
-			auto children = go.GetDirectChilds();
-			go = children[index];
-		}
+		TRACY_PROFILE_SCOPE_NC(next_keyframe_check, 0x004E41);
 		//if next keyframe within bounds increment index 
-		auto& nextEvent = *(timeline.keyframes.begin() + info.progressTracker.index + 1ul);
+		auto& nextEvent = *(timeline.keyframes.begin() + t_info.progressTracker.index + 1ul);
 		if (Withinbounds(updatedTimer, nextEvent.time))
 		{
-			++info.progressTracker.index;
+			++t_info.progressTracker.index;
 			//check if passed more than 1 keyframe
 			auto max_index = (timeline.keyframes.size() - 1ul);
-			while(info.progressTracker.index < max_index &&
-				Withinbounds(updatedTimer, timeline.keyframes[info.progressTracker.index + 1ul].time))
-				++info.progressTracker.index;
+			while(t_info.progressTracker.index < max_index &&
+				Withinbounds(updatedTimer, timeline.keyframes[t_info.progressTracker.index + 1ul].time))
+				++t_info.progressTracker.index;
 
 			//went past last keyframe so we set data to last and return
-			if (info.progressTracker.index >= max_index)
+			if (t_info.progressTracker.index >= max_index)
 			{
 				//get the instance
-				auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
-					go.GetEntity(), info.progressTracker.timeline->component_hash);
-				auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
+				auto ptr = t_info.tracker_info.system.Get_Ecs_World()->get_component(
+					go.GetEntity(), t_info.progressTracker.timeline->component_hash);
+				auto rttr_instance = hash_to_instance[t_info.progressTracker.timeline->component_hash](ptr);
 				//set the value
 				if (timeline.keyframes.back().data.get_type() == rttr::type::get<oo::TransformComponent::quat>())
 				{
 					KeyFrame::DataType data = oo::TransformComponent::quat{ timeline.keyframes.back().data.get_value<glm::quat>() };
-					info.progressTracker.timeline->rttr_property.set_value(rttr_instance, 
+					t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, 
 						data);
 				}
 				else
 				{
-					info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
+					t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, timeline.keyframes.back().data);
 				}
 
 				//if animation is looping, reset keyframe index
-				if (info.tracker_info.tracker.currentNode->GetAnimation().looping)
+				if (t_info.tracker_info.tracker.currentNode->GetAnimation().looping)
 				{
-					info.progressTracker.index = 0;
+					t_info.progressTracker.index = 0;
 				}
+				TRACY_PROFILE_SCOPE_END();
 				return;
 			}
 
 		}
+		TRACY_PROFILE_SCOPE_END();
 
 		/*--------------------------------
 		interpolate animation accordingly
 		--------------------------------*/
-		auto& prevKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index);
-		auto& nextKeyframe = *(timeline.keyframes.begin() + info.progressTracker.index + 1u);
+		TRACY_PROFILE_SCOPE_NC(interpolation, 0x004E41);
+		auto& prevKeyframe = *(timeline.keyframes.begin() + t_info.progressTracker.index);
+		auto& nextKeyframe = *(timeline.keyframes.begin() + t_info.progressTracker.index + 1u);
 		auto prevTime = prevKeyframe.time;
 		auto nextTime = nextKeyframe.time;
 
@@ -1047,29 +1014,30 @@ namespace oo::Anim::internal
 		float percentage = (updatedTimer - prevTime) / (nextTime - prevTime);
 
 		KeyFrame::DataType interpolated_value = GetInterpolatedValue(
-			info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
-
+			t_info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
+		TRACY_PROFILE_SCOPE_END();
 		/*--------------------------------
 		set related game object's data
 		--------------------------------*/
+		TRACY_PROFILE_SCOPE_NC(set_game_object, 0x004E41);
 		//get a ptr to the component
-		auto ptr = info.tracker_info.system.Get_Ecs_World()->get_component(
-			go.GetEntity(), info.progressTracker.timeline->component_hash);
+		auto ptr = t_info.tracker_info.system.Get_Ecs_World()->get_component(
+			go.GetEntity(), t_info.progressTracker.timeline->component_hash);
 
 		//get the instance
-		auto rttr_instance = hash_to_instance[info.progressTracker.timeline->component_hash](ptr);
+		auto rttr_instance = hash_to_instance[t_info.progressTracker.timeline->component_hash](ptr);
 		//set the value
 		//if (interpolated_value.get_type() == rttr::type::get< glm::vec3>()) return;
 
-		auto result = info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
+		auto result = t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, interpolated_value);
 		if (result == false)
 		{
 			auto type_name = interpolated_value.get_type().get_name();
-			auto correct_Type_name = info.progressTracker.timeline->rttr_property.get_type().get_name();
+			auto correct_Type_name = t_info.progressTracker.timeline->rttr_property.get_type().get_name();
 			auto temp = rttr::type::get<oo::TransformComponent::quat>().get_name();
 			assert(result);
 		}
-		
+		TRACY_PROFILE_SCOPE_END();
 		//SetComponentData(timeline, interpolated_value);
 		//assert(false);
 	}
@@ -1083,6 +1051,16 @@ namespace oo::Anim::internal
 			UpdateProgressTrackerInfo p_info{ info, progressTracker };
 			//call the respective update function on this tracker
 			progressTracker.updatefunction(p_info, updatedTimer);
+		}
+	}
+
+	void ResetTrackerProgress(AnimationTracker& tracker)
+	{
+		tracker.scripteventTracker.nextEvent_index = 0ull;
+		auto& progress_trackers = tracker.trackers;
+		for (auto& p_tracker : progress_trackers)
+		{
+			p_tracker.index = 0ull;
 		}
 	}
 
@@ -1178,6 +1156,17 @@ namespace oo::Anim::internal
 		animTracker.scripteventTracker = node->scripteventTracker;
 	}
 
+	void ResetTriggers(UpdateTrackerInfo& info, Link& link)
+	{
+		for (auto& condition : link.conditions)
+		{
+			if (condition.type == P_TYPE::TRIGGER)
+			{
+				info.comp.tracker.parameters[condition.parameterIndex].value = false;
+			}
+		}
+	}
+
 	//copy animation tree's parameters to the tracker
 	//set the starting node for the tracker and its respective data
 	/*void InitializeTracker(IAnimationComponent& comp)
@@ -1261,10 +1250,27 @@ namespace oo::Anim::internal
 		return CheckNodeTransitions(info, *(info.tracker.currentNode));
 	}
 
-	void ActivateTransition(UpdateTrackerInfo& info, Link* link)
+	void BindAnimTrackersToGameobject(UpdateTrackerInfo& info, AnimationTracker& animTracker)
+	{
+		GameObject go{ info.entity,info.system.Get_Scene() };
+		for (auto& tracker : animTracker.trackers)
+		{
+			GameObject curr = go;
+			//traverse the hierarchy and find the gameobject
+			for (auto const& index : tracker.timeline->children_index)
+			{
+				auto children = curr.GetDirectChilds();
+				curr = children[index];
+			}
+			tracker.timeline_gameobject_uid = curr.GetInstanceID();
+		}
+	}
+
+	void ActivateTransition(UpdateTrackerInfo& info, Link* link, Node& current_node)
 	{
 		AssignNodeToTracker(info.tracker, link->dst);
-
+		BindAnimTrackersToGameobject(info, info.tracker);
+		ResetTriggers(info, *link);
 		//TODO: transitions
 		/*info.tracker.transition_info.in_transition = true;
 		info.tracker.transition_info.link = link;
@@ -1276,63 +1282,75 @@ namespace oo::Anim::internal
 
 	}
 
-	void UpdateTracker(UpdateTrackerInfo& info)
+	void UpdateTracker(UpdateTrackerInfo& t_info)
 	{
 		//if no animation tree assigned, do nothing
-		if (info.comp.animTree == nullptr) return;
+		if (t_info.comp.animTree == nullptr) return;
 
-		if (info.tracker.currentNode == false)
+		if (t_info.tracker.currentNode == false)
 		{
 			assert(false);
 		}
+		TRACY_PROFILE_SCOPE_NC(Transition, 0x4D0D65);
 		//check transitions for any state node
 		bool has_transitioned = false;
 		{
-			auto& any_state_node = *(info.tracker.currentNode->group->any_state_Node);
-			auto result = CheckNodeTransitions(info, any_state_node);
+			auto& any_state_node = *(t_info.tracker.currentNode->group->any_state_Node);
+			auto result = CheckNodeTransitions(t_info, any_state_node);
 			if (result)
 			{
-				ActivateTransition(info, result);
+				ActivateTransition(t_info, result, any_state_node);
 				has_transitioned = true;
 			}
 		}
-		
-		//check transitions for current node if any state node no transition
+		//check transitions for current node 
 		if (has_transitioned == false)
 		{
-			auto result = CheckNodeTransitions(info);
+			auto result = CheckNodeTransitions(t_info);
 			if (result)
 			{
-				ActivateTransition(info, result);
+				ActivateTransition(t_info, result, *(t_info.tracker.currentNode));
 			}
 		}
-		
-		float updatedTimer = info.tracker.timer + info.tracker.currentNode->speed * info.dt;
+		TRACY_PROFILE_SCOPE_END();
+
+		TRACY_PROFILE_SCOPE_NC(Timer_Update, 0x4D0D65);
+		float updatedTimer = t_info.tracker.timer + t_info.tracker.currentNode->speed * t_info.dt;
 		//update tracker timer and global timer
-		info.tracker.timer = updatedTimer;
-		info.tracker.global_timer += info.tracker.currentNode->speed * info.dt;
-		info.tracker.normalized_timer = updatedTimer / info.tracker.currentNode->GetAnimation().animation_length;
+		t_info.tracker.timer = updatedTimer;
+		t_info.tracker.global_timer += t_info.tracker.currentNode->speed * t_info.dt;
+		t_info.tracker.normalized_timer = updatedTimer / t_info.tracker.currentNode->GetAnimation().animation_length;
+		TRACY_PROFILE_SCOPE_END();
+
 
 		//not in transition
-		if (info.tracker.transition_info.in_transition == false)
+		if (t_info.tracker.transition_info.in_transition == false)
 		{
+			TRACY_PROFILE_SCOPE_NC(ScriptEvent_Update, 0x4D0D65);
 			//check if we passed a script event and invoke
-			UpdateScriptEventProgress(info, updatedTimer);
+			UpdateScriptEventProgress(t_info, updatedTimer);
+			TRACY_PROFILE_SCOPE_END();
 			//check if we passed a keyframe and update
-			UpdateTrackerKeyframeProgress(info, updatedTimer);
+			TRACY_PROFILE_SCOPE_NC(Keyframe_Update, 0x4D0D65);
+			UpdateTrackerKeyframeProgress(t_info, updatedTimer);
+			TRACY_PROFILE_SCOPE_END();
 		}
 		else
 		{
 			//interpolate between src and dst nodes
-			UpdateTrackerTransitionProgress(info, updatedTimer);
+			UpdateTrackerTransitionProgress(t_info, updatedTimer);
 		}
+		TRACY_PROFILE_SCOPE_NC(Looping_Update, 0x4D0D65);
 		//update timer and iterations if animation is looping
-		if (info.tracker.currentNode->GetAnimation().looping &&
-			updatedTimer > info.tracker.currentNode->GetAnimation().animation_length)
+		if (t_info.tracker.currentNode->GetAnimation().looping &&
+			updatedTimer > t_info.tracker.currentNode->GetAnimation().animation_length)
 		{
-			info.tracker.timer = updatedTimer - info.tracker.currentNode->GetAnimation().animation_length;
-			++info.tracker.num_iterations;
+			t_info.tracker.timer = updatedTimer - t_info.tracker.currentNode->GetAnimation().animation_length;
+			ResetTrackerProgress(t_info.tracker);
+
+			++t_info.tracker.num_iterations;
 		}
+		TRACY_PROFILE_SCOPE_END();
 
 	}
 
@@ -1601,7 +1619,7 @@ namespace oo::Anim::internal
 		{
 			NodeInfo start_node_info{
 			.name{ start_node_name },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
 			.group{ internal::CreateGroupReference(tree,group.groupID)},
@@ -1617,7 +1635,7 @@ namespace oo::Anim::internal
 		{
 			NodeInfo any_state_node_info{
 			.name{ any_state_node_name },
-			.animation_name{ Animation::empty_animation_name },
+			.animation_name{ internal::empty_animation_name },
 			.speed{ 1.f },
 			.position{0.f,0.f,0.f},
 			.group{ internal::CreateGroupReference(tree,group.groupID)},

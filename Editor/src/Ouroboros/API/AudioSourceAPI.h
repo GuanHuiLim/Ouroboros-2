@@ -50,6 +50,11 @@ namespace oo
     SCRIPT_API void AudioSourceComponent_SetAudioClip(Scene::ID_type sceneID, UUID uuid, AssetID assetID)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        if (assetID == 0)
+        {
+            obj->GetComponent<AudioSourceComponent>().SetAudioClip(Asset{});
+            return;
+        }
         Asset asset = Project::GetAssetManager()->Get(assetID);
         if (asset.GetID() == Asset::ID_NULL || asset.GetType() != AssetInfo::Type::Audio)
             ScriptEngine::ThrowNullException();

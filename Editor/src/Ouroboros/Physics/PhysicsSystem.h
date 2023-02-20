@@ -15,13 +15,14 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-#include <Archetypes_Ecs/src/A_Ecs.h>
+#include "Ouroboros/ECS/ArchtypeECS/A_Ecs.h"
 #include "Ouroboros/Physics/PhysicsFwd.h"
 #include "PhysicsEvents.h"
 #include "Ouroboros/Core/Timer.h"
 #include <Physics/Source/phy.h>
 #include <bitset>
 #include "Ouroboros/ECS/GameObjectComponent.h"
+#include "Ouroboros/Scene/Scene.h"
 
 #include "Ouroboros/Geometry/Shapes.h"
 #include "Ouroboros/Physics/Raycast.h"
@@ -45,6 +46,7 @@ namespace oo
         virtual void Run(Ecs::ECSWorld*) override {};
 
         void Init(Scene* m_scene);
+        void PostLoadSceneInit();
         void RuntimeUpdate(Timestep deltaTime);
         void EditorUpdate(Timestep deltaTime);
         void RenderDebugColliders();
@@ -65,14 +67,17 @@ namespace oo
         std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max());
 
     private:
-        inline static std::uint64_t MaxIterations = 100;
-        inline static Timestep FixedDeltaTime = 1.0/MaxIterations;                 // physics updates at 100 fps
-        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;  // To prevent spiral of death
+        inline static std::uint64_t MaxIterations = 2;
+        inline static Timestep FixedDeltaTime = 1.0/60;                             // physics updates at 60 fps
+        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;   // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsResolution(Timestep deltaTime);
         
+        void UpdateJustCreated();
         void UpdateDuplicatedObjects();
+        void UpdatedExisting();
+
         void UpdateGlobalBounds();
         void UpdateCallbacks();
         void PostUpdate();
@@ -97,13 +102,17 @@ namespace oo
         void OnCapsuleColliderAdd(Ecs::ComponentEvent<CapsuleColliderComponent>* cc);
         void OnCapsuleColliderRemove(Ecs::ComponentEvent<CapsuleColliderComponent>* cc);
 
-        void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* rb);
-        void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* rb);
-    
+        void OnSphereColliderAdd(Ecs::ComponentEvent<SphereColliderComponent>* sc);
+        void OnSphereColliderRemove(Ecs::ComponentEvent<SphereColliderComponent>* sc);
+
+        void OnMeshColliderAdd(Ecs::ComponentEvent<ConvexColliderComponent>* mc);
+        void OnMeshColliderRemove(Ecs::ComponentEvent<ConvexColliderComponent>* mc);
+
         void InitializeRigidbody(RigidbodyComponent& rb);
         void InitializeBoxCollider(RigidbodyComponent& rb);
         void InitializeCapsuleCollider(RigidbodyComponent& rb);
         void InitializeSphereCollider(RigidbodyComponent& rb);
+        void InitializeMeshCollider(RigidbodyComponent& rb);
 
         void DuplicateRigidbody(RigidbodyComponent& rb);
 

@@ -61,6 +61,7 @@ Technology is prohibited.
 //other components
 #include <Ouroboros/Physics/RigidbodyComponent.h>
 #include <Ouroboros/Physics/ColliderComponents.h>
+#include <Ouroboros/Scripting/ScriptComponent.h>
 //#include <Ouroboros/Vulkan/RendererComponent.h>
 #include <Ouroboros/Vulkan/LightComponent.h>
 #include <Ouroboros/Vulkan/MeshRendererComponent.h>
@@ -71,6 +72,7 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/Editor/EditorComponent.h>
 
 Hierarchy::Hierarchy()
 	:m_colorButton({ "Name","Component","Scripts" }, 
@@ -92,7 +94,7 @@ Hierarchy::Hierarchy()
 		});
 	oo::EventManager::Subscribe<DuplicateButtonEvent>(&DuplicateEvent);
 	oo::EventManager::Subscribe<DestroyGameObjectButtonEvent>(&DestroyEvent);
-
+	oo::EventManager::Subscribe<Hierarchy, FocusButtonEvent>(this, &Hierarchy::OpenItemFocus);
 }
 
 void Hierarchy::Show()
@@ -117,7 +119,7 @@ void Hierarchy::Show()
  * \param no_Interaction - true if there is interaction , false if no interaction
  * \return 
  */
-bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
+bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, oo::Scene::go_ptr gameobj, ImGuiTreeNodeFlags_ flags, bool swaping, bool rename,bool no_Interaction)
 {
 	auto handle = node.get_handle();
 	//networking code////////////
@@ -134,15 +136,62 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 	//end of networking code/////
 	ImGui::PushID(static_cast<int>(handle));
 	bool open = false;
+
+	bool collapsingHeader = false;
+
+
+	if (gameobj->HasComponent<oo::EditorComponent>())
+		collapsingHeader = gameobj->GetComponent<oo::EditorComponent>().m_header;
+
+
 	if (!rename)
 	{
-		if(networking_selected == false)
-			open = (ImGui::TreeNodeEx(name, flags));
+		if (m_focusList.empty() == false && node.get_handle() == m_focusList.front())
+		{
+			ImGui::SetNextItemOpen(true); //next item is treenode
+			m_focusList.pop_front();
+		}
+		if (networking_selected == false)
+		{
+			if (collapsingHeader == false)
+				open = (ImGui::TreeNodeEx(name, flags));
+			else
+			{
+				auto& editorComponent = gameobj->GetComponent<oo::EditorComponent>();
+				auto ecc = editorComponent.m_color;
+				ImVec4 col(ecc.r, ecc.g, ecc.b, ecc.a);
+				ImGui::PushStyleColor(ImGuiCol_HeaderActive, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, col);col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_Header, col);
+				open = ImGui::CollapsingHeader(name, flags);
+				if (open && (flags & ImGuiTreeNodeFlags_Bullet) == 0)//if open and not a bullet
+					ImGui::TreePush(name);
+				ImGui::PopStyleColor(3);
+			}
+
+		}
 		else
 		{
-			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
-			open = (ImGui::TreeNodeEx(name, flags));
-			ImGui::PopStyleColor();
+
+			if (collapsingHeader == false)
+			{
+				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Header, ImVec4(0.3f, 0.8f, 0.1f, 0.8f));
+				open = (ImGui::TreeNodeEx(name, flags));
+				ImGui::PopStyleColor();
+			}
+			else
+			{
+				auto& editorComponent = gameobj->GetComponent<oo::EditorComponent>();
+				auto ecc = editorComponent.m_color;
+				ImVec4 col(ecc.r, ecc.g, ecc.b, ecc.a);
+				ImGui::PushStyleColor(ImGuiCol_HeaderActive, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, col); col.w *= 0.8f;
+				ImGui::PushStyleColor(ImGuiCol_Header, col);
+				open = ImGui::CollapsingHeader(name, flags);
+				if (open && (flags & ImGuiTreeNodeFlags_Bullet) == 0)//if open and not a bullet
+					ImGui::TreePush(name);
+				ImGui::PopStyleColor(3);
+			}
 		}
 	}
 	else
@@ -195,9 +244,9 @@ bool Hierarchy::TreeNodeUI(const char* name, scenenode& node, ImGuiTreeNodeFlags
 					return open;
 				}
 			}
-			if ((mousedown && !clicked) || ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
+			if ((mousedown && !clicked) && ImGui::IsKeyDown(static_cast<int>(oo::input::KeyCode::LCTRL)))
 				s_selected.emplace(handle);//this is hard to broadcast
-			else
+			else if (!mousedown)
 			{
 				using namespace std::chrono;
 				s_selected.clear();
@@ -308,10 +357,24 @@ void Hierarchy::PopBackPrefabStack()
 	OpenPromptEvent<OpenFileEvent> ope(OpenFileEvent(m_prefabsceneList.back().m_curr_sceneFilepath), [this] {m_prefabsceneList.pop_back(); });
 	oo::EventManager::Broadcast(&ope);
 }
+void Hierarchy::OpenItemFocus(FocusButtonEvent*)
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	oo::GameObject go = *scene->FindWithInstanceID(*(s_selected.begin()));
+
+	while (go.HasValidParent() == true)
+	{
+		auto id = go.GetParentUUID();
+		if (id == scene->GetRoot()->GetInstanceID())
+			break;
+		m_focusList.push_front(id);
+		go = go.GetParent();
+	}
+}
 void Hierarchy::NormalView()
 {
 	RightClickOptions();
-
+	TriggerFocusButton();
 	{
 		ImVec2 temp = ImGui::GetCursorPos();
 		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
@@ -444,7 +507,7 @@ void Hierarchy::NormalView()
 		{
 
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
-			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
+			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
 			{
 				open_prefab = true;
@@ -453,7 +516,7 @@ void Hierarchy::NormalView()
 			ImGui::PopStyleColor();
 		}
 		else
-			open = TreeNodeUI(name.c_str(), *curr, flags, swapping, rename_item);
+			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
 
 		if (open == true && (flags & ImGuiTreeNodeFlags_OpenOnArrow))
 		{
@@ -551,9 +614,9 @@ void Hierarchy::FilteredView()
 					}
 				}
 
-				if ((mousedown && !clicked) || ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LCTRL)))
+				if ((mousedown && !clicked) && ImGui::IsKeyPressed(static_cast<int>(oo::input::KeyCode::LCTRL)))
 					s_selected.emplace(handle);
-				else
+				else if (!mousedown)
 				{
 					s_selected.clear();
 					s_selected.emplace(handle);
@@ -569,7 +632,7 @@ void Hierarchy::SearchFilter()
 {
 	{//for drawing the search bar
 		ImVec2 cursor_pos = ImGui::GetCursorPos();
-		ImGui::PushItemWidth(-100.0f);
+		ImGui::PushItemWidth(-145.0f);
 		bool edited = ImGui::InputText("##Search", &m_filter);
 		ImGui::PopItemWidth();
 		ImVec2 cursor_pos2 = ImGui::GetCursorPos();
@@ -595,8 +658,10 @@ void Hierarchy::SearchFilter()
 			Filter_ByName();
 			break;
 		case 1:
+			Filter_ByComponent();
 			break;
 		case 2:
+			Filter_ByScript();
 			break;
 		}
 
@@ -615,6 +680,14 @@ void Hierarchy::RightClickOptions()
 			if (ImGui::MenuItem("New GameObject"))
 			{
 				CreateGameObjectImmediate();
+			}
+			if (ImGui::MenuItem("Header"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("Header");
+						go.EnsureComponent<oo::EditorComponent>();
+					});
 			}
 			if(ImGui::MenuItem("Box"))
 			{
@@ -734,6 +807,17 @@ void Hierarchy::RightClickOptions()
 
 }
 
+void Hierarchy::TriggerFocusButton()
+{
+	if (s_selected.empty() == false && ImGui::IsKeyPressed(ImGuiKey_F) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+	{
+		FocusButtonEvent e;
+		auto go = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->FindWithInstanceID(*s_selected.begin());
+		e.item_globalPosition = go->GetComponent<oo::TransformComponent>().GetGlobalPosition();
+		oo::EventManager::Broadcast(&e);
+	}
+}
+
 void Hierarchy::Filter_ByName()
 {
 	m_filterList.clear();
@@ -744,7 +828,7 @@ void Hierarchy::Filter_ByName()
 	{
 		std::shared_ptr<oo::GameObject> go = scene->FindWithInstanceID(curr_handle);
 		std::string& name = go->Name();
-		
+
 		auto iter = std::search(name.begin(), name.end(),
 			m_filter.begin(), m_filter.end(),
 			[](char ch1, char ch2) 
@@ -758,10 +842,34 @@ void Hierarchy::Filter_ByName()
 
 void Hierarchy::Filter_ByComponent()
 {
+
 }
 
 void Hierarchy::Filter_ByScript()
 {
+	m_filterList.clear();
+	scenegraph instance = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>()->GetGraph();
+	auto handles = instance.hierarchy_traversal_handles();
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	for (auto curr_handle : handles)
+	{
+		std::shared_ptr<oo::GameObject> go = scene->FindWithInstanceID(curr_handle);
+		auto& scriptcomp = go->GetComponent<oo::ScriptComponent>();
+		for (auto& script : scriptcomp.GetScriptInfoAll())
+		{
+			auto iter = std::search(script.first.begin(), script.first.end(),
+				m_filter.begin(), m_filter.end(),
+				[](char ch1, char ch2)
+				{
+					return std::toupper(ch1) == std::toupper(ch2);
+				});
+			if (iter != script.first.end())
+			{
+				m_filterList.emplace_back(curr_handle);
+				break;
+			}
+		}
+	}
 }
 
 std::shared_ptr<oo::GameObject> Hierarchy::CreateGameObjectImmediate(std::function<void(oo::GameObject&)> modifications)

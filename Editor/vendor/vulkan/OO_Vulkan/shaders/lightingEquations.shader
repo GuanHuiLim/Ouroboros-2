@@ -2,7 +2,7 @@ float pi = 3.1415;
 
 float approx_tan(vec3 V, vec3 N)
 {
-    float VN = dot(V,N);
+    float VN = clamp(dot(V,N),0.0,1.0);
     return sqrt( 1.0-pow(VN,2) )/VN;
 }
 
@@ -75,6 +75,7 @@ vec3 BeckhamBRDF(vec3 L ,vec3 V , vec3 H , vec3 N , float alpha , vec3 Kd , vec3
 float D_GGX(vec3 N, vec3 H , float alpha)
 {
     float alphaG = sqrt(2.0/ (alpha+2));
+    alphaG = alpha;
     float aGaG = pow(alphaG,2);
     float invAG = pow(alphaG-1.0,2);
     float NdotH = dot(N,H);
@@ -85,6 +86,7 @@ float D_GGX(vec3 N, vec3 H , float alpha)
 float G_GGX(vec3 V, vec3 M , float a)
 {
     float alphaG = sqrt(2.0/ (a+2));
+    alphaG = a;
 
     float vTan = approx_tan(V,M);
 

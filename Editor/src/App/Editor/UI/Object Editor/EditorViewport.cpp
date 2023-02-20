@@ -59,6 +59,7 @@ EditorViewport::EditorViewport()
 {
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnPlayEvent);
 	oo::EventManager::Subscribe<ToolbarButtonEvent>(&OnStopEvent);
+	oo::EventManager::Subscribe<EditorViewport, FocusButtonEvent>(this, &EditorViewport::OnFocusEvent);
 	ImGuizmo::AllowAxisFlip(false);
 	m_cc.SetCamera(&EditorCamera);
 }
@@ -92,10 +93,11 @@ void EditorViewport::Show()
 
 	ImVec2 vpDim = { vMax.x - vMin.x ,vMax.y - vMin.y };
 
+	auto graphicsworld = scene->GetGraphicsWorld();
+	graphicsworld->shouldRenderCamera[1] = true;
 
 	m_cc.Update(oo::timer::dt(), cameraFocus);
 
-	auto graphicsworld = scene->GetGraphicsWorld();
 	auto& camera_matrices = EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
 	
@@ -304,60 +306,112 @@ void EditorViewport::Show()
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::W)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::TRANSLATE);
-		ChangeGizmoEvent e(m_gizmoOperation);
-		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
+		ChangeGizmoEvent e(m_gizmoOperation,m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 	}
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::E)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::ROTATE);
-		ChangeGizmoEvent e(m_gizmoOperation);
-		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD);
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 	}
+
 	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::R)) && ImGui::IsMouseDown(ImGuiMouseButton_Left) == false)
 	{
 		m_gizmoOperation = static_cast<int>(ImGuizmo::OPERATION::SCALE);
-		ChangeGizmoEvent e(m_gizmoOperation);
-		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 	}
-	//wrong but it helps 
-	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)))
+
+	if (ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_LeftShift))
 	{
-		glm::vec3 target = EditorCamera.GetFront();
-		EditorCamera.SetPosition(transform.GetGlobalPosition() - (target * 10.0f));
+		m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL);
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
 	}
+	else if (ImGui::IsKeyReleased(ImGuiKey_::ImGuiKey_LeftShift))
+	{
+		switch (m_gizmoOperation)
+		{
+		case ImGuizmo::OPERATION::TRANSLATE:
+			m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD); break;
+		case ImGuizmo::OPERATION::ROTATE:
+			m_gizmoMode = static_cast<int>(ImGuizmo::MODE::WORLD); break;
+		case ImGuizmo::OPERATION::SCALE:
+			m_gizmoMode = static_cast<int>(ImGuizmo::MODE::LOCAL); break;
+		}
+		ChangeGizmoEvent e(m_gizmoOperation, m_gizmoMode);
+		oo::EventManager::Broadcast<ChangeGizmoEvent>(&e);
+	}
+	
+	//wrong but it helps 
+	if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(oo::input::KeyCode::F)) && 
+		ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+	{
+		FocusButtonEvent e;
+		e.item_globalPosition = transform.GetGlobalPosition();
+		oo::EventManager::Broadcast<FocusButtonEvent>(&e);
+	}
+}
+
+void EditorViewport::UpdateWhenNotShown()
+{
+	auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+	auto graphicsworld = scene->GetGraphicsWorld();
+	graphicsworld->shouldRenderCamera[1] = false;
 }
 
 void EditorViewport::OnPlayEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY && s_maximizeOnPlay)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::PLAY)
 	{
-		if (s_windowStates.size())
-			return;
-		s_windowStates.clear();
-		for (auto& window : ImGuiManager::s_GUIContainer)
+		if (s_maximizeOnPlay)
 		{
-			s_windowStates.push_back(window.second.m_enabled);
-			window.second.m_enabled = false;
+			if (s_windowStates.size())
+				return;
+			s_windowStates.clear();
+			for (auto& window : ImGuiManager::s_GUIContainer)
+			{
+				s_windowStates.push_back(window.second.m_enabled);
+				window.second.m_enabled = false;
+			}
+			ImGuiManager::GetItem("Toolbar").m_enabled = true;
+			ImGuiManager::GetItem("Preview Window").m_enabled = true;
 		}
-		ImGuiManager::GetItem("Toolbar").m_enabled = true;
-		ImGuiManager::GetItem("Preview Window").m_enabled = true;
+		else
+		{
+			ImGui::SetWindowFocus("Logger");
+			ImGui::SetWindowFocus("Preview Window");
+		}
 	}
 }
 
 void EditorViewport::OnStopEvent(ToolbarButtonEvent* e)
 {
-	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP && s_maximizeOnPlay && s_windowStates.empty() == false)
+	if (e->m_buttonType == ToolbarButtonEvent::ToolbarButton::STOP)
 	{
-		int i = 0;
-		for (auto& window : ImGuiManager::s_GUIContainer)
+		if (s_maximizeOnPlay)
 		{
-			window.second.m_enabled = s_windowStates[i++];
+			if (s_windowStates.empty() == true)
+				return;
+			int i = 0;
+			for (auto& window : ImGuiManager::s_GUIContainer)
+			{
+				window.second.m_enabled = s_windowStates[i++];
+			}
+			s_windowStates.clear();
 		}
-		s_windowStates.clear();
+		ImGui::SetWindowFocus("Editor Viewport");
 	}
+}
+
+void EditorViewport::OnFocusEvent(FocusButtonEvent* e)
+{
+	glm::vec3 target = EditorCamera.GetFront();
+	EditorCamera.SetPosition(e->item_globalPosition - (target * 10.0f));
 }
 
 void EditorViewport::MenuBar()
@@ -378,6 +432,10 @@ void EditorViewport::MenuBar()
 			if (ImGui::MenuItem("Camera Debug Draw", 0, oo::RendererSystem::CameraDebugDraw))
 			{
 				oo::RendererSystem::CameraDebugDraw = !oo::RendererSystem::CameraDebugDraw;
+			}
+			if (ImGui::MenuItem("Light Debug Draw", 0, oo::RendererSystem::LightsDebugDraw))
+			{
+				oo::RendererSystem::LightsDebugDraw = !oo::RendererSystem::LightsDebugDraw;
 			}
 
 			ImGui::EndMenu();

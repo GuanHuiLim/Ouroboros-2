@@ -78,8 +78,7 @@ namespace oo::Anim::internal
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
-				auto tmp_type = val.get_type();
-				auto result = prop.set_value(obj, val);
+				[[maybe_unused]] auto result = prop.set_value(obj, val);
 				assert(result);
 			}
 		}

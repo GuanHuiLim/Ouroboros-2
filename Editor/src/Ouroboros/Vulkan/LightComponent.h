@@ -32,6 +32,7 @@ namespace oo
         std::int32_t Light_ID = -1;
 
         Color Color = { };
+        float Intensity = 1.f;
         //glm::vec4 Color = glm::vec4{ 1.f };
         float Radius = 1.f;
         //glm::vec4 Radius = glm::vec4{ 1.f }; // the true radius is vec4

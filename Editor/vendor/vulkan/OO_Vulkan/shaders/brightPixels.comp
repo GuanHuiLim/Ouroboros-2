@@ -1,0 +1,11 @@
+#version 460
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 1,rgba32f) uniform readonly image2D inputImage;
+layout (binding = 2,rgba32f) uniform writeonly image2D resultImage;
+
+void main()
+{	
+	vec4 res = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
+	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);
+}

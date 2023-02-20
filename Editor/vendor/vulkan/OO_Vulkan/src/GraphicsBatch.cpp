@@ -64,12 +64,12 @@ void GraphicsBatch::GenerateBatches()
 		auto& model = m_renderer->g_globalModels[ent.modelID];
 
 		// skip entities dont want to render
-		if (ent.isRenderable() == false)
-		{
-			// still increment instance
-			++cnt;
-			continue;
-		}
+		//if (ent.isRenderable() == false)
+		//{
+		//	// still increment instance
+		//	++cnt;
+		//	continue;
+		//}
 
 		if (ent.modelID != currModelID) // check if we are using the same model
 		{
@@ -81,7 +81,7 @@ void GraphicsBatch::GenerateBatches()
 					const auto& subMesh = model.m_subMeshes[i];
 					// clear the buffer to prepare for this model
 					oGFX::IndirectCommand indirectCmd{};
-					indirectCmd.instanceCount = 1;
+					indirectCmd.instanceCount = ent.isRenderable();
 
 					// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
 					// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
@@ -156,8 +156,7 @@ void GraphicsBatch::GenerateBatches()
 		light.view[4] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+-forward,	glm::vec3{ 0.0f,-1.0f, 0.0f });
 		light.view[5] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position)+forward,	glm::vec3{ 0.0f,-1.0f, 0.0f });
 
-		light.projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
-		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, light.radius.x);
 	}
 
 	auto& allEmitters = m_world->GetAllEmitterInstances();
@@ -202,7 +201,7 @@ void GraphicsBatch::GenerateBatches()
 		// set up the commands and number of particles
 		oGFX::IndirectCommand cmd{};
 
-		cmd.instanceCount = emitter.particles.size();
+        cmd.instanceCount = static_cast<uint32_t>(emitter.particles.size());
 		// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
 		// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
 		cmd.firstInstance = emitterCnt;

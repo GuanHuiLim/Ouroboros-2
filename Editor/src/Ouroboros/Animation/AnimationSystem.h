@@ -16,8 +16,9 @@ Technology is prohibited.
 #pragma once
 #include "Anim_Utils.h"
 
-#include "Archetypes_Ecs/src/Wrapper.h"
-#include "Archetypes_Ecs/src/System.h"
+
+#include "Ouroboros/ECS/ArchtypeECS/Wrapper.h"
+#include "Ouroboros/ECS/ArchtypeECS/System.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
 namespace oo::Anim

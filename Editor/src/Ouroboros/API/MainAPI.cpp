@@ -17,6 +17,7 @@ Technology is prohibited.
 // Include ALL API header files here, needs to be included in a cpp for them to be included in the build
 
 #include "ApplicationAPI.h"
+#include "DebugAPI.h"
 #include "GameObjectAPI.h"
 #include "InputAPI.h"
 #include "SceneManagerAPI.h"
@@ -26,6 +27,8 @@ Technology is prohibited.
 
 #include "PhysicsAPI.h"
 #include "RigidbodyAPI.h"
+#include "ColliderAPI.h"
 
+#include "LightAPI.h"
 #include "ParticleEmitterAPI.h"
 #include "AnimationAPI.h"

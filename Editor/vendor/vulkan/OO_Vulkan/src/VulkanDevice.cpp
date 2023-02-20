@@ -37,6 +37,10 @@ VulkanDevice::~VulkanDevice()
     {
         vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
     }
+    if (transferPool)
+    {
+        vkDestroyCommandPool(logicalDevice, transferPool, nullptr);
+    }
     // no need destory phys device
 	if (logicalDevice)
 	{
@@ -74,7 +78,7 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
 		{
 			memory = props.limits.maxComputeWorkGroupInvocations;
 			std::swap(deviceList[i], deviceList[best]);
-			best = i;
+            best = static_cast<uint32_t>(i);
 		}
 	}
 
@@ -107,16 +111,15 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
 
     //vector for queue creation information and set for family indices
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<int> queueFamilyIndices = { indices.graphicsFamily,indices.presentationFamily };
+    std::set<int> queueFamilyIndices = { indices.graphicsFamily,indices.presentationFamily, indices.transferFamily };
 
     //queues the logical device needs to create in the info to do so.
     for (int queueFamilyIndex : queueFamilyIndices)
     {
-        (void)queueFamilyIndex;
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         //the index of the family to create a queue from
-        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+        queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
         //number of queues to create
         queueCreateInfo.queueCount = 1;
         //vulkan needs to know how to handle multiple queues and thus we need a priority, 1.0 is the highest priority
@@ -174,6 +177,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     descriptor_indexing_features.runtimeDescriptorArray = VK_TRUE;
     descriptor_indexing_features.descriptorBindingVariableDescriptorCount = VK_TRUE;
     descriptor_indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
+    descriptor_indexing_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE; // needed for image descriptors
 
     deviceCreateInfo.pNext = &descriptor_indexing_features;
     descriptor_indexing_features.pNext = &shaderDrawFeatures;
@@ -195,6 +199,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     // From given logical device of given queue family of given index, place reference in VKqueue
     vkGetDeviceQueue(logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
     vkGetDeviceQueue(logicalDevice, indices.presentationFamily, 0, &presentationQueue);
+    vkGetDeviceQueue(logicalDevice, indices.transferFamily, 0, &transferQueue);
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -204,6 +209,10 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     //create a graphics queue family command pool
     result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool);
     VK_NAME(logicalDevice, "commandPool", commandPool);
+
+    poolInfo.queueFamilyIndex = indices.transferFamily;
+    result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &transferPool);
+    VK_NAME(logicalDevice, "transferPool", transferPool);
     if (result != VK_SUCCESS)
     {
         std::cerr << "Failed to create a command pool!" << std::endl;

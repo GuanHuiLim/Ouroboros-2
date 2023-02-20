@@ -177,32 +177,4 @@ namespace oo
         }
         return arr;
     }
-
-    /*-----------------------------------------------------------------------------*/
-    /* Debug Functions for C#                                                      */
-    /*-----------------------------------------------------------------------------*/
-    SCRIPT_API void Log(const char* msg)
-    {
-        LOG_TRACE(msg);
-    }
-
-    SCRIPT_API void LogInfo(const char* msg)
-    {
-        LOG_INFO(msg);
-    }
-
-    SCRIPT_API void LogWarning(const char* msg)
-    {
-        LOG_WARN(msg);
-    }
-
-    SCRIPT_API void LogError(const char* msg)
-    {
-        LOG_ERROR(msg);
-    }
-
-    SCRIPT_API void LogCritical(const char* msg)
-    {
-        LOG_CRITICAL(msg);
-    }
 }

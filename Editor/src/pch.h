@@ -23,39 +23,6 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
-//#ifdef OO_PLATFORM_WINDOWS
-//#include <Windows.h>
-//#endif
-
-// commonly used internal project files
-//#include <oom/oom.hpp>
-//#include <rttr/registration>
-
-// defines moved to global solution level define
-//#define GLM_FORCE_SILENT_WARNINGS
-//#define GLM_FORCE_PURE
-//#define GLM_FORCE_SSE42 //GLM_FORCE_SSE2 or GLM_FORCE_SSE42 if your processor supports it
-//////#define GLM_FORCE_SIMD_AVX2
-//#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES // POTENTIAL cause of problems : becareful!
-#include <glm/glm.hpp>
-#include <glm/matrix.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
-
-#include <fmod.hpp>
-// ecs
-#include <Archetypes_Ecs/src/A_Ecs.h>
-#include "Ouroboros/ECS/ECS.h"
-#include "Ouroboros/ECS/DeferredComponent.h"
-#include "Ouroboros/ECS/DuplicatedComponent.h"
-
-// Utility files
-//#include "Utility/Bitmask.h"
-//#include "Utility/EventCallback.h"
-#include "Ouroboros/Core/Base.h"
-#include "Utility/Random.h"
-
-
 // Commonly use external libraries
 #include <iostream>
 #include <sstream>
@@ -69,6 +36,7 @@ Technology is prohibited.
 
 #include <functional>
 #include <algorithm>
+#include <execution>
 #include <memory>
 #include <cstdint>
 
@@ -93,3 +61,33 @@ Technology is prohibited.
 #include <queue>
 
 #include <stdexcept>
+
+// glm
+#include <glm/glm.hpp>
+#include <glm/matrix.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+// audio
+#include <fmod.hpp>
+
+// Utility files
+//#include "Utility/Bitmask.h"
+//#include "Utility/EventCallback.h"
+#include "Ouroboros/Core/Base.h"
+#include "Utility/Random.h"
+
+//Tracy
+#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+//Optick
+#include <optick.h>
+
+// ecs
+//#include <Archetypes_Ecs/src/A_Ecs.h>
+#include "Ouroboros/ECS/ECS.h"
+#include "Ouroboros/ECS/DeferredComponent.h"
+#include "Ouroboros/ECS/DuplicatedComponent.h"
+#include "Ouroboros/ECS/JustCreatedComponent.h"
+
+// threadpool
+#include <JobSystem/src/final/jobs.h>

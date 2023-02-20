@@ -57,29 +57,6 @@ namespace oo
 
             GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
-            //Register All Systems
-            //GetWorld().Add_System<ScriptSystem>(*this);
-            /*auto meshObj = oo::Mesh::CreateCubeMeshObject(this, GetGraphicsWorld());
-            meshObj->GetComponent<TransformComponent>().SetScale({ 5.f,5.f,5.f });*/
-            //GetWorld().RegisterSystem<PrefabComponentSystem>();
-            //GetWorld().RegisterSystem<EditorComponentSystem>();
-
-            //GetWorld().RegisterSystem<oo::Renderer2DSystem>(*oo::EditorCamera::g_editorCam);
-            //GetWorld().RegisterSystem<oo::ParticleRenderingSystem>();
-            //GetWorld().RegisterSystem<oo::QuadtreeSystem>();
-            //GetWorld().RegisterSystem<oo::AnimatorSystem>();
-            //GetWorld().RegisterSystem<oo::UIRenderingSystem>();
-            //GetWorld().RegisterSystem<oo::PhysicsSystem>();
-            //GetWorld().RegisterSystem<oo::UISystem>();
-            //GetWorld().RegisterSystem<oo::VideoSystem>();
-
-            //GetWorld().RegisterSystem<oo::AudioSystem>();
-            //GetWorld().RegisterSystem<WaypointSystem>();
-            //GetWorld().RegisterSystem<oo::AnimatorControllersystem>();
-
-            //auto scriptSystem = GetWorld().RegisterSystem<oo::ScriptSystem>();
-            //scriptSystem->SetCallbackInvokes();
-
             TRACY_PROFILE_SCOPE_END();
         }
 
@@ -88,6 +65,7 @@ namespace oo
             // set default debug draws
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = false;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = false;
+            GetWorld().Get_System<RendererSystem>()->LightsDebugDraw = false;
         }
 
         {
@@ -95,9 +73,6 @@ namespace oo
             LoadFromFile();
             TRACY_PROFILE_SCOPE_END();
         }
-        //post load file processes
-        GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
-        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene(*this);
 
         StartSimulation();
 
@@ -111,46 +86,67 @@ namespace oo
 
         TRACY_PROFILE_SCOPE(runtime_scene_update);
 
-
-        GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
-        GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
+        jobsystem::job phase_one{};
         
-        {
-            TRACY_PROFILE_SCOPE(input_update);
-            GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
-            TRACY_PROFILE_SCOPE_END();
-        }
-
-        {
-            TRACY_PROFILE_SCOPE(scripts_update);
-            GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
-            TRACY_PROFILE_SCOPE_END();
-        }
-
-        {
-            TRACY_PROFILE_SCOPE(physics_runtime_update);
-            GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
-            TRACY_PROFILE_SCOPE_END();
-        }
+        jobsystem::submit(phase_one, [&]() {
+          TRACY_PROFILE_SCOPE(transform_first_update);
+          GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
+          TRACY_PROFILE_SCOPE_END();
+            });
         
-        {
-            TRACY_PROFILE_SCOPE(UI_runtime_update);
-            GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
-            TRACY_PROFILE_SCOPE_END();
-        }
+        jobsystem::submit(phase_one, [&]() {
+          TRACY_PROFILE_SCOPE(input_update);
+          GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
+          TRACY_PROFILE_SCOPE_END();
+            });
+        
+        jobsystem::launch_and_wait(phase_one);
 
-        /*{
-            TRACY_PROFILE_SCOPE(physics_runtime_update);
-            GetWorld().Get_System<TransformSystem>()->Run(&GetWorld());
+        // phase 2 : things that rely on transform to complete update 
+        //jobsystem::job phase_two{};
+        //
+        //jobsystem::submit(phase_two, [&]() {
+          TRACY_PROFILE_SCOPE(scripts_update);
+          GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+          TRACY_PROFILE_SCOPE_END();
+        //    });
+        //
+        //jobsystem::submit(phase_two, [&]() {
+            TRACY_PROFILE_SCOPE(scripts_tick_couroutines);
+            GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("TickCoroutines");
             TRACY_PROFILE_SCOPE_END();
-        }*/
+        //    });
+        //
+        //jobsystem::launch_and_wait(phase_two);
 
-        {
+        //jobsystem::submit(phase_three, [&]() {
             TRACY_PROFILE_SCOPE(animation_update);
             GetWorld().Run_System<oo::Anim::AnimationSystem>();
             TRACY_PROFILE_SCOPE_END();
-        }
+        //    });
 
+        jobsystem::job phase_three{};
+        //
+        //jobsystem::submit(phase_three, [&]() {
+          TRACY_PROFILE_SCOPE(physics_runtime_update);
+          GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
+          TRACY_PROFILE_SCOPE_END();
+        //    });
+        
+        jobsystem::submit(phase_three, [&]() {
+          TRACY_PROFILE_SCOPE(audio_update);
+          GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
+          TRACY_PROFILE_SCOPE_END();
+            });
+        
+        jobsystem::submit(phase_three, [&]() {
+            TRACY_PROFILE_SCOPE(UI_runtime_update);
+            GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
+            TRACY_PROFILE_SCOPE_END();
+            });
+        
+        
+        jobsystem::launch_and_wait(phase_three);
             
         TRACY_PROFILE_SCOPE_END();
 
@@ -165,6 +161,11 @@ namespace oo
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
             TRACY_PROFILE_SCOPE_END();
         }
+        {
+            TRACY_PROFILE_SCOPE(inputsystem_late_update);
+            GetWorld().Get_System<InputSystem>()->LateUpdate();
+            TRACY_PROFILE_SCOPE_END();
+        }
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -174,25 +175,6 @@ namespace oo
         Scene::Render();
         GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
         TRACY_PROFILE_SCOPE_END();
-        //constexpr const char* const text_rendering = "Text Rendering";
-        {
-            /*TRACY_PROFILE_SCOPE(text_rendering);
-            GetWorld().GetSystem<oo::UIRenderingSystem>()->Render();
-            TRACY_PROFILE_SCOPE_END();*/
-        }
-
-        //constexpr const char* const particle_rendering = "Particle Rendering";
-        {
-            /*TRACY_TRACK_PERFORMANCE(particle_rendering);
-            GetWorld().GetSystem<oo::ParticleRenderingSystem>()->Render();*/
-        }
-
-        //constexpr const char* const standard_rendering = "Standard Rendering";
-        {
-            /*TRACY_PROFILE_SCOPE(standard_rendering);
-            GetWorld().GetSystem<oo::Renderer2DSystem>()->Render();
-            TRACY_PROFILE_SCOPE_END();*/
-        }
     }
 
     void RuntimeScene::Exit()
@@ -226,13 +208,19 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE(start_simulation);
 
+        //Functions to run upon program starting : Order matters
+        
+        
+
+        GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
+
         GetWorld().Get_System<ScriptSystem>()->StartPlay();
 
-        /*GetWorld().GetSystem<oo::ScriptSystem>()->StartPlay();
-        GetWorld().GetSystem<oo::TransformSystem>()->UpdateTransform();
-        GetWorld().GetSystem<oo::PhysicsSystem>()->Init();
-        GetWorld().GetSystem<oo::ParticleRenderingSystem>()->Init();
-        GetWorld().GetSystem<oo::AudioSystem>()->Init();*/
+        GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
+        GetWorld().Get_System<Anim::AnimationSystem>()->BindPhase();
+        GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
+        
+        GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -242,7 +230,6 @@ namespace oo
         TRACY_PROFILE_SCOPE(stop_simulation);
 
         GetWorld().Get_System<oo::ScriptSystem>()->StopPlay();
-        //GetWorld().GetSystem<oo::ScriptSystem>()->StopPlay();
 
         TRACY_PROFILE_SCOPE_END();
     }

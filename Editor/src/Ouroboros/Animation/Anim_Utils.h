@@ -15,7 +15,7 @@ Technology is prohibited.
 #include <vector>
 #include <variant>
 
-#include "Archetypes_Ecs/src/EcsUtils.h"
+#include "Ouroboros/ECS/ArchtypeECS/EcsUtils.h"
 #include "Ouroboros/EventSystem/EventSystem.h"
 #include "Ouroboros/Scripting/ScriptValue.h"
 #include "Ouroboros/Scripting/ScriptInfo.h"
@@ -117,6 +117,9 @@ namespace oo::Anim
 		constexpr char  load_method_name[] = "Load";
 		constexpr char	start_node_name[] = "Start Node";
 		constexpr char	any_state_node_name[] = "Any State Node";
+
+		static constexpr const char* empty_animation_name = "empty animation";
+		static inline UID empty_animation_UID{ 0ull };
 	}
 
 	struct GroupRef

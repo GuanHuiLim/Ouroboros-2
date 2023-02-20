@@ -16,6 +16,7 @@ Technology is prohibited.
 #pragma once
 
 #include <string>
+#include <functional>
 #include <unordered_map>
 
 #include <mono/jit/jit.h>
@@ -48,6 +49,8 @@ namespace oo
         static MonoImage* GetLibrary(const char* aLibrary);
         static MonoClass* GetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static MonoClass* TryGetClass(const char* aLibrary, const char* aNamespace, const char* aClassName);
+        static MonoType* GetType(const char* aLibrary, const char* aNamespace, const char* aClassName);
+        static MonoType* TryGetType(const char* aLibrary, const char* aNamespace, const char* aClassName);
         static std::vector<MonoClass*> const GetClassesByBaseClass(const char* aLibrary, MonoClass* baseClass);
         static std::string const GetClassInfoNameSpace(MonoClass* klass);
         static std::string const GetClassInfoName(MonoClass* klass);
@@ -58,7 +61,7 @@ namespace oo
 
         static std::vector<MonoType*> GetTypeGenericTypes(MonoType* type);
         static std::vector<std::string> GetEnumOptions(MonoType* type);
-        static std::vector<int> GetEnumOptionValues(MonoType* type);
+        static std::vector<unsigned int> GetEnumOptionValues(MonoType* type);
 
         // Checks
         static bool CheckClassExists(const char* aLibrary, const char* aNamespace, const char* aClassName);
@@ -72,6 +75,8 @@ namespace oo
 
         static bool CheckTypeHasAttribute(MonoType* type, MonoType* attribute);
 
+        static MonoObject* GetClassFieldAttribute(MonoObject* obj, const char* fieldName, MonoType* attributeType);
+
         static bool CheckClassMethodStatic(MonoClass* klass, MonoMethod* method);
         static bool CheckClassMethodPublic(MonoClass* klass, MonoMethod* method);
         static bool CheckClassMethodReturnVoid(MonoClass* klass, MonoMethod* method);
@@ -81,6 +86,10 @@ namespace oo
         // Actions
         static MonoObject* InvokeFunction(MonoObject* obj, MonoMethod* method, void** paramList = nullptr);
         static MonoObject* InvokeFunction(MonoObject* obj, const char* functionName, void** paramList = nullptr,  int paramCount = 0);
+
+        // Iterators
+        using ScriptFieldCallback = std::function<void(MonoClassField* field)>;
+        static void ForEachClassField(MonoClass* klass, ScriptFieldCallback callback);
 
         // Throw Exceptions
         static void ThrowNullException();

@@ -46,10 +46,11 @@ namespace vkutils
 		VkImageAspectFlags aspectMask{};
 		VkMemoryPropertyFlags MemProps{};
 		bool targetSwapchain = true;
+		bool isValid = false;
 		float renderScale = 1.0f;
 		
 		void updateDescriptor();
-		void destroy();
+		void destroy(bool delayed = false);
 	};
 
 	class Texture2D : public Texture
@@ -91,6 +92,20 @@ namespace vkutils
 		);
 
 		void Resize(uint32_t texWidth, uint32_t texHeight);
+
+		void Update(void* buffer,
+			VkDeviceSize bufferSize,
+			VkFormat format,
+			uint32_t texWidth,
+			uint32_t texHeight,
+			std::vector<VkBufferImageCopy> mips,
+			VulkanDevice* device,
+			VkQueue copyQueue,
+			VkFilter filter = VK_FILTER_LINEAR,
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT);
 	};
+
+
+	void TransitionImage(VkCommandBuffer cmd,Texture2D& texture, VkImageLayout targetLayout);
 
 }

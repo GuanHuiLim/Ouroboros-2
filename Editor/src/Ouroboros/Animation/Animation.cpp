@@ -84,7 +84,7 @@ namespace oo::Anim::internal
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
-				auto result = prop.set_value(obj, val);
+				[[maybe_unused]] auto result = prop.set_value(obj, val);
 				assert(result);
 			}
 		}
@@ -141,7 +141,8 @@ namespace oo::Anim
 
 		//create empty animation
 		Animation empty_anim{};
-		empty_anim.name = Animation::empty_animation_name;
+		empty_anim.name			= internal::empty_animation_name;
+		empty_anim.animation_ID	= internal::empty_animation_UID;
 
 		Animation::name_to_ID[empty_anim.name] = empty_anim.animation_ID;
 		//Animation::name_to_index[empty_anim.name] = static_cast<uint>(container.size());
@@ -333,7 +334,7 @@ namespace oo::Anim
 						KeyFrame kf{ glm::vec3{key.mValue.x,key.mValue.y,key.mValue.z},
 						static_cast<float>(key.mTime) / anim.frames_per_second };
 
-						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						[[maybe_unused]] auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
 
 						os << y << "- Keyframe Position: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << std::endl;
@@ -360,7 +361,7 @@ namespace oo::Anim
 						KeyFrame kf{glm::quat{key.mValue.w, key.mValue.x,key.mValue.y,key.mValue.z} ,
 						static_cast<float>(key.mTime) / anim.frames_per_second };
 
-						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						[[maybe_unused]] auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
 						os << y << "- Keyframe rotation: " << key.mValue.x << "," << key.mValue.y << "," << key.mValue.z << "," << key.mValue.w << std::endl;
 					}
@@ -386,7 +387,7 @@ namespace oo::Anim
 						KeyFrame kf{glm::vec3{key.mValue.x,key.mValue.y,key.mValue.z} ,
 						static_cast<float>(key.mTime) / anim.frames_per_second };
 
-						auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
+						[[maybe_unused]] auto keyframe = internal::AddKeyframeToTimeline(*timeline, kf);
 						assert(keyframe);
 					}
 				}
@@ -411,7 +412,7 @@ namespace oo::Anim
 		//remove existing dupe
 		if (Animation::name_to_ID.contains(anim.name))
 		{
-			auto old_anim = internal::RetrieveAnimation(Animation::name_to_ID[anim.name]);
+			[[maybe_unused]] auto old_anim = internal::RetrieveAnimation(Animation::name_to_ID[anim.name]);
 			assert(old_anim);
 			//anim.animation_ID = old_anim->animation_ID;
 			RemoveAnimation(anim.name);
@@ -512,7 +513,10 @@ namespace oo::Anim
 				}
 				end_keyframe_index = index;
 			}
-			assert(end_keyframe_index != keyframes.size());//this shouldnt happen
+			if (end_keyframe_index == keyframes.size()) //end frame is the end
+			{
+				end_keyframe_index = keyframes.size() - 1ull;
+			}
 			auto keyframe_timing = start_keyframe_timing;
 			for (size_t index = start_keyframe_index; index < end_keyframe_index; ++index)
 			{

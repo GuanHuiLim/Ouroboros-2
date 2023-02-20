@@ -67,7 +67,7 @@ InspectorProperties::InspectorProperties()
 			if (variant_speed.is_valid())
 				speed = variant_speed.get_value<float>();
 		}
-		edited = ImGui::DragScalarN(name.c_str(),ImGuiDataType_::ImGuiDataType_U32, &value, speed);
+		edited = ImGui::DragScalarN(name.c_str(),ImGuiDataType_::ImGuiDataType_U32, &value,1, speed);
 		if (edited) { v = value; endEdit = true; };
 	};
 	m_InspectorUI[UI_RTTRType::UItypes::STRING_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)

@@ -22,13 +22,54 @@ namespace Ouroboros
             set { RigidbodyComponent_SetIsTrigger(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
-        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetGravityDisabled(uint sceneID, ulong instanceID);
-        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetGravityDisabled(uint sceneID, ulong instanceID, bool value);
+        [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetGravity(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetGravity(uint sceneID, ulong instanceID, bool value);
 
-        public bool gravityDisabled
+        public bool useGravity
         {
-            get { return RigidbodyComponent_GetGravityDisabled(gameObject.scene, gameObject.GetInstanceID()); }
-            set { RigidbodyComponent_SetGravityDisabled(gameObject.scene, gameObject.GetInstanceID(), value); }
+            get { return RigidbodyComponent_GetGravity(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetGravity(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern float RigidbodyComponent_GetMass(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetMass(uint sceneID, ulong instanceID, float value);
+
+        public float mass
+        {
+            get { return RigidbodyComponent_GetMass(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetMass(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern float RigidbodyComponent_GetLinearDamping(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetLinearDamping(uint sceneID, ulong instanceID, float value);
+
+        public float linearDamping
+        {
+            get { return RigidbodyComponent_GetLinearDamping(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetLinearDamping(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern float RigidbodyComponent_GetAngularDamping(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetAngularDamping(uint sceneID, ulong instanceID, float value);
+
+        public float angularDamping
+        {
+            get { return RigidbodyComponent_GetAngularDamping(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetAngularDamping(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_GetOffset(uint sceneID, ulong instanceID, out float x, out float y, out float z);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetOffset(uint sceneID, ulong instanceID, float x, float y, float z);
+
+        public Vector3 offset
+        {
+            get
+            {
+                float x, y, z;
+                RigidbodyComponent_GetOffset(gameObject.scene, gameObject.GetInstanceID(), out x, out y, out z);
+                return new Vector3(x, y, z);
+            }
+            set { RigidbodyComponent_SetOffset(gameObject.scene, gameObject.GetInstanceID(), value.x, value.y, value.z); }
         }
 
         [DllImport("__Internal")] private static extern void Rigidbody_GetVelocity(uint sceneID, ulong instanceID, out float x, out float y, out float z);

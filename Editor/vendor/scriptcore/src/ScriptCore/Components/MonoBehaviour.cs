@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Runtime.InteropServices;
 
 namespace Ouroboros
@@ -51,5 +51,43 @@ namespace Ouroboros
             get { return CheckScriptEnabled(gameObject.scene, gameObject.GetInstanceID(), GetType().Namespace ?? "", GetType().Name); ; }
             set { SetScriptEnabled(gameObject.scene, gameObject.GetInstanceID(), GetType().Namespace ?? "", GetType().Name, value); }
         }
+
+        #region Coroutines
+
+        private List<IEnumerator> coroutines = new List<IEnumerator>();
+
+        public void StartCoroutine(IEnumerator coroutine)
+        {
+            coroutines.Add(coroutine);
+        }
+
+        public void StopAllCoroutines()
+        {
+            coroutines.Clear();
+        }
+
+        private void TickCoroutines()
+        {
+            for (int i = coroutines.Count - 1; i >= 0; --i)
+            {
+                if (!TickCoroutine(coroutines[i]))
+                    coroutines.RemoveAt(i);
+            }
+        }
+
+        private bool TickCoroutine(IEnumerator coroutine)
+        {
+            var curr = coroutine.Current;
+            if (curr != null && curr is IEnumerator)
+            {
+                bool subresult = TickCoroutine((IEnumerator)curr);
+                if (subresult)
+                    return true;
+            }
+            bool result = coroutine.MoveNext();
+            return result;
+        }
+
+        #endregion
     }
 }

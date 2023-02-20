@@ -53,10 +53,6 @@ Technology is prohibited.
 #include <App/Editor/Events/LoadProjectEvents.h>
 #include <App/Editor/Events/OpenPromtEvent.h>
 
-//Tracy
-#include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-//Optick
-#include <optick.h>
 // Scripting
 #include <Scripting/Scripting.h>
 
@@ -72,6 +68,9 @@ public:
         : Application{ "Unset Default Name", args }
         , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
+#ifdef OO_EXECUTABLE
+        GetWindow().SetFullScreen(true);
+#endif
         std::ifstream ifs{ EditorVersionFile };
         if (ifs.is_open())
         {
@@ -164,9 +163,19 @@ class EndProduct final : public oo::Application
 public:
     EndProduct(oo::CommandLineArgs args)
         : Application{ std::string{"Minute v"} + GameVersionNumber, args }
+        , m_prefab_controller{ m_sceneManager }
+        , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {
+        GetWindow().SetFullScreen(true);
+
+        // for now
+        ImGuiManager::s_scenemanager = &m_sceneManager;
+        ImGuiManager::s_prefab_controller = &m_prefab_controller;
+        //ImGuiManager::s_runtime_controller = 
+
         //Debug Layers
         // m_layerset.PushLayer(std::make_shared<InputDebugLayer>());
+        //m_layerset.PushLayer(std::make_shared<FPSDisplayLayer>());      //FPS display counter
 
         // Main Layers
         // Scripting Layer
@@ -177,15 +186,19 @@ public:
         m_layerset.PushLayer(std::make_shared<oo::CoreLinkingLayer>());
 
         // only for the end product we do this instead
-        std::filesystem::path p("./Project/Config.json");
+        std::filesystem::path p("./Minute/Config.json");
         Project::LoadProject(p);
     }
 
     void OnUpdate() override
     {
         TRACY_PROFILE_SCOPE_N(end_product_app_update);
+        // TODO : Remove imgui abstract next time. Backend shouldn't be expecting GUI for Final build
+        m_imGuiAbstract->Begin();
 
         m_layerset.Update();
+
+        m_imGuiAbstract->End();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -194,6 +207,8 @@ private:
     // main scene manager
     SceneManager m_sceneManager;
     oo::LayerSet m_layerset;
+    oo::PrefabSceneController m_prefab_controller;
+    std::unique_ptr<oo::ImGuiAbstraction> m_imGuiAbstract;
 };
 
 oo::Application* oo::CreateApplication(oo::CommandLineArgs args)

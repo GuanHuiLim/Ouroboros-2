@@ -76,7 +76,10 @@ Source: "EditorMode.settings"; DestDir: "{app}"; Flags: ignoreversion
 Source: "PlayMode.settings"; DestDir: "{app}"; Flags: ignoreversion
 Source: "imgui.ini"; DestDir: "{app}"; Flags: ignoreversion
 Source: "default.ini"; DestDir: "{app}"; Flags: ignoreversion
-Source: "gamecontrollerdb.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "gamecontrollerdb.txt"; DestDir: "{app}"; Flags: ignoreversion    
+Source: "version.txt"; DestDir: "{app}"; Flags: ignoreversion
+
+
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

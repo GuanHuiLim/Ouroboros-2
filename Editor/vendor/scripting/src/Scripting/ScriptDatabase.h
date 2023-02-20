@@ -56,6 +56,8 @@ namespace oo
         std::unordered_map<Index, std::vector<Index>> inheritanceMap;
         // std::unordered_map<std::string, InstancePool> scriptMap;
 
+        typedef void (__stdcall*LifeCycleFunction)(MonoObject*, MonoException**);
+
     public:
         ScriptDatabase();
         ~ScriptDatabase();
@@ -101,6 +103,8 @@ namespace oo
         void ForEachEnabled(const char* name_space, const char* name, Callback callback, ObjectCheck filter = nullptr);
         void ForEachEnabled(UUID id, Callback callback, ObjectCheck filter = nullptr);
         void ForAllEnabled(Callback callback, ObjectCheck filter = nullptr);
+
+        void InvokeForAllEnabled(const char* functionName, ObjectCheck filter = nullptr);
 
     private:
         Index GetInstancePoolIndex(const char* name_space, const char* name);

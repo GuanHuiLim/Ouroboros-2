@@ -30,7 +30,7 @@ namespace oo
     public:
         bool MainCamera = false;
         int GraphicsWorldIndex = -1;
-        CameraAspectRatio AspectRatio;
+        CameraAspectRatio AspectRatio{CameraAspectRatio::SIXTEEN_BY_NINE};
         RTTR_ENABLE();
     };
 }

@@ -62,7 +62,7 @@ namespace oo
                 // TODO FIX QUATERION STUFF
                 //pd.m_startRotation = trans.GetGlobalRotationRad();
                 pd.m_startRotation = trans.GetGlobalRotationRad().x;
-
+                pd.m_startDirection = { 0, 1, 0 };
 
                 switch (shape.shape)
                 {
@@ -98,22 +98,31 @@ namespace oo
                 break;
                 case ParticleShape::Circle:
                 {
-                    float x = random::generate<float>(-1.f, 1.f);
-                    float y = random::generate<float>(-1.f, 1.f);
-                    float z = random::generate<float>(-1.f, 1.f);
-                    pd.m_startDirection = glm::normalize(glm::vec3{ x, y, z });
+                    if (emitter.m_randomizeStartDir)
+                    {
+                        float x = random::generate<float>(-1.f, 1.f);
+                        float y = random::generate<float>(-1.f, 1.f);
+                        float z = random::generate<float>(-1.f, 1.f);
+                        glm::vec3 randDir{ x, y, z };
+                        pd.m_startDirection = normalize(randDir);
+                    }
                     
-                    //LOG_TRACE("particle direction {0}{1}{2}", pd.m_startDirection.x, pd.m_startDirection.y, pd.m_startDirection.z);
+                    //LOG_TRACE("particle direction {0},{1},{2}", pd.m_startDirection.x, pd.m_startDirection.y, pd.m_startDirection.z);
 
-                    /*std::copysign(pd.m_startDirection.x, x);
-                    std::copysign(pd.m_startDirection.y, y);
-                    std::copysign(pd.m_startDirection.z, z);*/
+                    if (emitter.m_randomizePosition)
+                    {
+                        glm::mat3 rotMat = trans.GetGlobalRotationMatrix();
+                        float x, y, z, d = 0;
+                        do {
+                            x = random::generate<float>(-1.f, 1.f);
+                            y = random::generate<float>(-1.f, 1.f);
+                            z = random::generate<float>(-1.f, 1.f);
+                            d = x * x + y * y + z * z;
+                        } while (d > 1.f);
 
-                    //float val = random::generate<float>(0.0f,2*glm::pi<float>());
-                    //pd.m_startDirection = glm::vec3{cosf(val),sinf(val),0.0f};	
-                    //pd.m_rotationOffset = val - glm::pi<float>()/2.0f;	
-                    glm::mat3 rotMat = trans.GetGlobalRotationMatrix();
-                    pd.m_startOffset = rotMat* pd.m_startDirection * shape.size;
+                        glm::vec3 randomPos { x,y,z };
+                        pd.m_startOffset = rotMat * randomPos * shape.size;
+                    }
                 }
                 break;
                 default:
@@ -132,6 +141,7 @@ namespace oo
             }
         }
     }
+
     void ParticleRendererSystem::UpdateAllParticlesLifetime(ParticleEmitterComponent& emitter, float deltaTime)
     {
         for(size_t i = 0; i < emitter.m_maxParticles; i++)
@@ -281,7 +291,7 @@ namespace oo
             {
                 auto& pD = emitter.m_persistentData[i];
                 auto& particle = emitter.m_particles[i];
-
+                (void)particle;
                 auto dir = pD.m_startDirection + interpDirection;
                 float len = glm::length(dir);
                 if (len > 0.0f)
@@ -307,7 +317,7 @@ namespace oo
             {
                 auto& pD = emitter.m_persistentData[i];
                 auto& particle = emitter.m_particles[i];
-
+                (void)particle;
                 auto dir = pD.m_startDirection + interpDirection;
                 float len = glm::length(dir);
                 if (len > 0.0f)
@@ -371,6 +381,8 @@ namespace oo
 
     ParticleRendererSystem::~ParticleRendererSystem()
     {
+        EventManager::Unsubscribe<ParticleRendererSystem, GameObjectComponent::OnEnableEvent>(this, &ParticleRendererSystem::OnObjectEnabled);
+        EventManager::Unsubscribe<ParticleRendererSystem, GameObjectComponent::OnDisableEvent>(this, &ParticleRendererSystem::OnObjectDisabled);
     }
 
     void ParticleRendererSystem::Init()
@@ -470,8 +482,8 @@ namespace oo
                 PerformBulkPrewarm(emitter, transformComp);
             }
 
-            emitter.m_systemLifetime += FixedDeltaTime;
-            emitter.m_spawnCooldown += FixedDeltaTime;
+            emitter.m_systemLifetime += static_cast<float>(FixedDeltaTime);
+            emitter.m_spawnCooldown +=  static_cast<float>(FixedDeltaTime);
 
             if (emitter.m_looping == false && emitter.m_systemLifetime > emitter.m_duration)
             {
@@ -493,7 +505,7 @@ namespace oo
             }
 
             // update all so we can have dead particles
-            UpdateAllParticlesLifetime(emitter, FixedDeltaTime);
+            UpdateAllParticlesLifetime(emitter, static_cast<float>(FixedDeltaTime));
 
             std::sort(emitter.m_persistentData.begin(), emitter.m_persistentData.end(), [](ParticlePersistence& l, ParticlePersistence& r)
                 {
@@ -503,7 +515,7 @@ namespace oo
 
             SpawnParticles(emitter, transformComp, toSpawnCnt);
 
-            SimulateAllParticles(emitter, transformComp, FixedDeltaTime);
+            SimulateAllParticles(emitter, transformComp, static_cast<float>(FixedDeltaTime));
         });
            
         world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp)
