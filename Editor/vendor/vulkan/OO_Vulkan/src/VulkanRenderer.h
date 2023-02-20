@@ -319,6 +319,7 @@ public:
 	std::array<GpuVector<UIData>,3> g_UIDatas;
 
 	ModelFileResource* GetDefaultCube();
+	oGFX::Font* GetDefaultFont();
 
 	ModelFileResource* LoadModelFromFile(const std::string& file);
 	ModelFileResource* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex, std::vector<uint32_t>& indices, gfxModel* model);
@@ -503,6 +504,7 @@ public:
 		std::unique_ptr<ModelFileResource>def_sprite;
 		std::unique_ptr<ModelFileResource>def_plane;
 		std::unique_ptr<ModelFileResource>def_sphere;
+		std::unique_ptr<oGFX::Font>def_font;
 
 };
 
