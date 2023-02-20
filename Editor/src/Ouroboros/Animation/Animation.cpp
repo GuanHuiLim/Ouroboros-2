@@ -500,9 +500,9 @@ namespace oo::Anim
 					new_anim.timelines.emplace_back(std::move(new_timeline));
 					continue;
 					
-					//assert(false);//start keyframe not found!
-					//result = false;
-					//return {};
+					assert(false);//start keyframe not found!
+					result = false;
+					return {};
 					
 				}
 				start_keyframe_index = index;
