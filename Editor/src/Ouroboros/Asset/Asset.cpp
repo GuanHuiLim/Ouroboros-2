@@ -16,6 +16,7 @@ Technology is prohibited.
 
 #include "Asset.h"
 
+#include "OO_Vulkan/src/Font.h"
 #include "OO_Vulkan/src/MeshModel.h"
 #include "Ouroboros/Animation/Animation.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
@@ -107,6 +108,19 @@ namespace oo
                     // TODO: Unload texture
                     //const auto& value = self.GetData<AssetInfo::TextureData>();
                 };
+                break;
+            }
+            case AssetInfo::Type::Font:
+            {
+                // Load texture
+                onAssetCreate = [](AssetInfo& self)
+                {
+                    auto vc = Application::Get().GetWindow().GetVulkanContext();
+                    auto vr = vc->getRenderer();
+                    auto fp = std::shared_ptr<oGFX::Font>(vr->LoadFont(self.contentPath.string()));
+                    self.data.emplace_back(fp);
+                };
+                onAssetDestroy = [this](AssetInfo& self) {};
                 break;
             }
             case AssetInfo::Type::Audio:
