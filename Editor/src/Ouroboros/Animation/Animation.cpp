@@ -203,7 +203,7 @@ namespace oo::Anim
 		flags |= aiProcess_ImproveCacheLocality;
 		flags |= aiProcess_CalcTangentSpace;
 		//attempt to optimize animation data, currently not working as intended
-		//flags |= aiProcess_FindInvalidData; 
+		flags |= aiProcess_FindInvalidData; 
 		flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
 		//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 		const aiScene* scene = importer.ReadFile(filepath, flags
@@ -495,8 +495,8 @@ namespace oo::Anim
 					auto keyframe = keyframes.back();
 					keyframe.time = 0.f;
 					new_timeline.keyframes.emplace_back(keyframe); //starting keyframe
-					keyframe.time = end_time - start_time;
-					new_timeline.keyframes.emplace_back(keyframe); //ending keyframe
+					//keyframe.time = end_time - start_time;
+					//new_timeline.keyframes.emplace_back(keyframe); //ending keyframe
 					new_anim.timelines.emplace_back(std::move(new_timeline));
 					continue;
 					

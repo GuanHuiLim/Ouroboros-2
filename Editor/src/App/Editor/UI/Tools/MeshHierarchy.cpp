@@ -143,10 +143,11 @@ void MeshHierarchy::Show()
 		{
 			auto anim = anims.front();
 
-			auto const fn = [&](size_t start, size_t end, std::string name, oo::Anim::UID uid = oo::Anim::internal::invalid_ID) {
+			auto const fn = [&](size_t start, size_t end, std::string name, oo::Anim::UID uid = oo::Anim::internal::invalid_ID, bool looping = false) {
 				
 				oo::Anim::SplitAnimationInfo info{
 					.in_frames{true},
+					.looping{looping},
 					.start_frame{start},
 					.end_frame{end},
 					.anim_ID{anim->animation_ID},
@@ -158,11 +159,11 @@ void MeshHierarchy::Show()
 				return result;
 			};
 
-			fn(1, 397, "Char_Idle", 11904289930031233588ull);
+			fn(1, 397, "Char_Idle", 11904289930031233588ull,true);
 			fn(399, 436, "Char_Jump", 14468092223772484637ull);
 			fn(439, 468, "Char_Land", 15483678231358038326ull);
-			fn(481, 550, "Char_Falling", 3027657552290603723ull);
-			fn(552, 600, "Char_Running", 11102568273309958006ull);
+			fn(481, 550, "Char_Falling", 3027657552290603723ull,true);
+			fn(552, 600, "Char_Running", 11102568273309958006ull,true);
 			fn(602, 700, "Char_Punch1", 12842570071285323175ull);
 			fn(702, 780, "Char_Punch2", 14933767867787793757ull);
 			fn(782, 867, "Char_Punch3", 15887215621292314739ull);
@@ -170,12 +171,12 @@ void MeshHierarchy::Show()
 			fn(1047, 1210, "Char_KeyHit2", 16651380583556832464ull);
 			fn(1330, 1526, "Char_KeyHit3", 671498236959028427ull);
 			fn(1528, 1582, "Char_KeyAim", 16386213344299929188ull);
-			fn(1583, 1660, "Char_KeyIdle", 9005349775375630608ull);
+			fn(1583, 1660, "Char_KeyIdle", 9005349775375630608ull,true);
 			fn(1662, 1700, "Char_KeyThrow", 5112540270552868611ull);
-			fn(1702, 1750, "Char_KeyAim_WalkForward", 13369109700108596100ull);
-			fn(1752, 1800, "Char_KeyAim_Strafe_Left", 14080966758555531269ull);
-			fn(1802, 1850, "Char_KeyAim_Strafe_Right", 10825844878584567926ull);
-			fn(1852, 1900, "Char_KeyAim_Walk_Back", 4090995566703906600ull);
+			fn(1702, 1750, "Char_KeyAim_WalkForward", 13369109700108596100ull,true);
+			fn(1752, 1800, "Char_KeyAim_StrafeLeft", 14080966758555531269ull,true);
+			fn(1802, 1850, "Char_KeyAim_StrafeRight", 10825844878584567926ull,true);
+			fn(1852, 1900, "Char_KeyAim_Walk_Back", 4090995566703906600ull,true);
 			fn(1924, 1961, "Char_Key_Calling", 9585537277754178479ull);
 			fn(1963, 2069, "Char_Key_Retrieval", 18114998630772137397ull);
 			fn(2071, 2104, "Char_KeyAim_Jump", 17201684321423207373ull);
@@ -185,7 +186,7 @@ void MeshHierarchy::Show()
 			fn(2210, 2262, "Char_Falling_Key_Calling", 5882446694374748978ull);
 			fn(2262, 2320, "Char_Falling_Key_Retrieval", 8604496732628043322ull);
 			fn(2322, 2360, "Char_Dash", 16915825071909083776ull);
-			fn(2362, 2396, "Char_Sprint", 5237368080912885538ull);
+			fn(2362, 2396, "Char_Sprint", 5237368080912885538ull,true);
 			fn(2398, 2420, "Char_Stagger1", 8203964857723252188ull);
 			fn(2422, 2444, "Char_Stagger2", 15999465100576333431ull);
 			fn(2446, 2468, "Char_Stagger3", 18274652021443959365ull);

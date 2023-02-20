@@ -280,6 +280,7 @@ namespace oo::Anim
 	struct SplitAnimationInfo
 	{
 		bool in_frames{ false };
+		bool looping{ false };
 
 		//if in_frames is set to true use this
 		size_t start_frame{ 0ull };
