@@ -932,6 +932,30 @@ namespace oo::Anim::internal
 		//no keyframes so we return
 		if (timeline.keyframes.empty()) return;
 
+		
+		//if (timeline.keyframes.size() == 1ull && t_info.progressTracker.index == 0ull)
+		//{
+		//	++t_info.progressTracker.index;
+		//	auto ptr_to_go = t_info.tracker_info.system.Get_Scene().FindWithInstanceID(t_info.progressTracker.timeline_gameobject_uid);
+		//	GameObject go{ *ptr_to_go };
+		//	//get the instance
+		//	auto ptr = t_info.tracker_info.system.Get_Ecs_World()->get_component(
+		//		go.GetEntity(), t_info.progressTracker.timeline->component_hash);
+		//	auto rttr_instance = hash_to_instance[t_info.progressTracker.timeline->component_hash](ptr);
+		//	//set the value
+		//	auto data = timeline.keyframes.back().data;
+		//	if (data.get_type() == rttr::type::get<oo::TransformComponent::quat>())
+		//	{
+		//		KeyFrame::DataType data = oo::TransformComponent::quat{ data.get_value<glm::quat>() };
+		//		t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance,
+		//			data);
+		//	}
+		//	else
+		//	{
+		//		t_info.progressTracker.timeline->rttr_property.set_value(rttr_instance, data);
+		//	}
+		//	return;
+		//}
 		//already hit last and animation not looping so we return
 		if (t_info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
 			t_info.tracker_info.tracker.currentNode->GetAnimation().looping == false)

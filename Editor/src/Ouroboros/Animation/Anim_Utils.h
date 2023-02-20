@@ -288,8 +288,10 @@ namespace oo::Anim
 		//if in_frames is set to false use this
 		float start_time{ 0.f };
 		float end_time{ 0.f };
-		//from animation->animation_ID 
+		//original animation->animation_ID 
 		UID anim_ID{internal::invalid_ID};
+		//split anim id
+		UID split_anim_ID{internal::invalid_ID};
 		//desired split_animation_name
 		std::string split_animation_name{};
 

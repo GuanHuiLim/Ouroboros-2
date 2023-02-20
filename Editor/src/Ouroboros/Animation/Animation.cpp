@@ -202,7 +202,8 @@ namespace oo::Anim
 		flags |= aiProcess_GenSmoothNormals;
 		flags |= aiProcess_ImproveCacheLocality;
 		flags |= aiProcess_CalcTangentSpace;
-		flags |= aiProcess_FindInvalidData;
+		//attempt to optimize animation data, currently not working as intended
+		//flags |= aiProcess_FindInvalidData; 
 		flags |= aiProcess_FindInstances; // this step is slow but it finds duplicate instances in FBX
 		//flags |= aiProcess_LimitBoneWeights; // limmits bones to 4
 		const aiScene* scene = importer.ReadFile(filepath, flags
@@ -411,14 +412,16 @@ namespace oo::Anim
 		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
 
 		//remove existing dupe
-		if (Animation::name_to_ID.contains(anim.name))
+		bool existing = Animation::name_to_ID.contains(anim.name);
+		if (existing)
 		{
 			[[maybe_unused]] auto old_anim = internal::RetrieveAnimation(Animation::name_to_ID[anim.name]);
 			assert(old_anim);
 			//anim.animation_ID = old_anim->animation_ID;
 			RemoveAnimation(anim.name);
 		}
-
+		bool existInStorage = Animation::animation_storage.contains(anim.animation_ID);
+		assert(existInStorage == false); 
 		Animation::name_to_ID[anim.name] = anim.animation_ID;
 		size_t key = anim.animation_ID;
 		auto [iter, result] = Animation::animation_storage.emplace(key, std::move(anim));
@@ -460,6 +463,8 @@ namespace oo::Anim
 		//copy keyframes in timelines
 		for (auto& timeline : anim.timelines)
 		{
+			if (timeline.keyframes.empty()) continue;
+
 			Timeline new_timeline{ timeline };
 			new_timeline.keyframes.clear();
 
@@ -484,11 +489,21 @@ namespace oo::Anim
 					}
 					++index;
 				}
+				//if first keyframe is last in array, 
 				if (index == keyframes.size())
 				{
-					assert(false);//start keyframe not found!
-					result = false;
-					return {};
+					auto keyframe = keyframes.back();
+					keyframe.time = 0.f;
+					new_timeline.keyframes.emplace_back(keyframe); //starting keyframe
+					keyframe.time = end_time - start_time;
+					new_timeline.keyframes.emplace_back(keyframe); //ending keyframe
+					new_anim.timelines.emplace_back(std::move(new_timeline));
+					continue;
+					
+					//assert(false);//start keyframe not found!
+					//result = false;
+					//return {};
+					
 				}
 				start_keyframe_index = index;
 			}

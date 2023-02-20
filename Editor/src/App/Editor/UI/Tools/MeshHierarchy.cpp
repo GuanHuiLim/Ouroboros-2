@@ -143,13 +143,14 @@ void MeshHierarchy::Show()
 		{
 			auto anim = anims.front();
 
-			auto const fn = [&](size_t start, size_t end, std::string name) {
+			auto const fn = [&](size_t start, size_t end, std::string name, oo::Anim::UID uid = oo::Anim::internal::invalid_ID) {
 				
 				oo::Anim::SplitAnimationInfo info{
 					.in_frames{true},
 					.start_frame{start},
 					.end_frame{end},
 					.anim_ID{anim->animation_ID},
+					.split_anim_ID{uid},
 					.split_animation_name{name}
 				};
 				auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
@@ -157,86 +158,48 @@ void MeshHierarchy::Show()
 				return result;
 			};
 
-			//{//Idle
-			//	auto result = fn(1, 71, "GruntEnemy_Idle");
-			//}
-
-			{//Idle
-				auto result = fn(1, 397, "Char_Idle");
-			}
-			{//Jump
-				auto result = fn(399, 436, "Char_Jump");
-			}
-			{//Land
-				auto result = fn(439, 455, "Char_Land");
-			}
-			{//KeyHit2
-				auto result = fn(1047, 1234, "Char_KeyHit2");
-			}
-			{//KeyAim
-				auto result = fn(1528, 1582, "Char_KeyAim");
-			}
-			{//KeyIdle
-				auto result = fn(1583, 1660, "Char_KeyIdle");
-			}
-			{//KeyThrow
-				auto result = fn(1662, 1700, "Char_KeyThrow");
-			}
-			{//KeyAim WalkForward
-				auto result = fn(1702, 1750, "Char_KeyAim_WalkForward");
-			}
-			{//KeyAim Strafe Left
-				auto result = fn(1752, 1800, "Char_KeyAim_StrafeLeft");
-			}
-			{//KeyAim Strafe Right
-				auto result = fn(1802, 1850, "Char_KeyAim_StrafeRight");
-			}
-			{//KeyAim Walk Back
-				auto result = fn(1852, 1900, "Char_KeyAim_Walk_Back");
-			}
-			{//Key Calling
-				auto result = fn(1902, 1961, "Char_Key_Calling");
-			}
-			{//Key Retrieval
-				auto result = fn(1963, 2069, "Char_Key_Retrieval");
-			}
-			{//KeyAim Jump
-				auto result = fn(2071, 2092, "Char_KeyAim_Jump");
-			}
-			{//KeyAim Land
-				auto result = fn(2105, 2120, "Char_KeyAim_Land");
-			}
-			{//KeyAim Falling
-				auto result = fn(2122, 2150, "Char_KeyAim_Falling");
-			}
-			{//Falling KeyThrow
-				auto result = fn(2152, 2200, "Char_Falling_KeyThrow");
-			}
-			{//Falling Key Calling
-				auto result = fn(2202, 2262, "Char_Falling_Key_Calling");
-			}
-			{//Falling Key Retrieval
-				auto result = fn(2262, 2320, "Char_Falling_Key_Retrieval");
-			}
-			{//Dash
-				auto result = fn(2322, 2360, "Char_Dash");
-			}
-			{//Sprint
-				auto result = fn(2362, 2396, "Char_Sprint");
-			}
-			{//Stagger1
-				auto result = fn(2398, 2420, "Char_Stagger1");
-			}
-			{//Stagger2
-				auto result = fn(2422, 2444, "Char_Stagger2");
-			}
-			{//Stagger3
-				auto result = fn(2446, 2468, "Char_Stagger3");
-			}
-			{//Death
-				auto result = fn(2470, 2600, "Char_Death");
-			}
-
+			fn(1, 397, "Char_Idle", 11904289930031233588ull);
+			fn(399, 436, "Char_Jump", 14468092223772484637ull);
+			fn(439, 468, "Char_Land", 15483678231358038326ull);
+			fn(481, 550, "Char_Falling", 3027657552290603723ull);
+			fn(552, 600, "Char_Running", 11102568273309958006ull);
+			fn(602, 700, "Char_Punch1", 12842570071285323175ull);
+			fn(702, 780, "Char_Punch2", 14933767867787793757ull);
+			fn(782, 867, "Char_Punch3", 15887215621292314739ull);
+			fn(869, 1045, "Char_KeyHit1", 7976973829188605073ull);
+			fn(1047, 1210, "Char_KeyHit2", 16651380583556832464ull);
+			fn(1330, 1526, "Char_KeyHit3", 671498236959028427ull);
+			fn(1528, 1582, "Char_KeyAim", 16386213344299929188ull);
+			fn(1583, 1660, "Char_KeyIdle", 9005349775375630608ull);
+			fn(1662, 1700, "Char_KeyThrow", 5112540270552868611ull);
+			fn(1702, 1750, "Char_KeyAim_WalkForward", 13369109700108596100ull);
+			fn(1752, 1800, "Char_KeyAim_Strafe_Left", 14080966758555531269ull);
+			fn(1802, 1850, "Char_KeyAim_Strafe_Right", 10825844878584567926ull);
+			fn(1852, 1900, "Char_KeyAim_Walk_Back", 4090995566703906600ull);
+			fn(1924, 1961, "Char_Key_Calling", 9585537277754178479ull);
+			fn(1963, 2069, "Char_Key_Retrieval", 18114998630772137397ull);
+			fn(2071, 2104, "Char_KeyAim_Jump", 17201684321423207373ull);
+			fn(2105, 2120, "Char_KeyAim_Land", 9971078294644923685ull);
+			fn(2122, 2150, "Char_KeyAim_Falling", 395494563579935615ull);
+			fn(2152, 2200, "Char_Falling_KeyThrow", 3040187778218234769ull);
+			fn(2210, 2262, "Char_Falling_Key_Calling", 5882446694374748978ull);
+			fn(2262, 2320, "Char_Falling_Key_Retrieval", 8604496732628043322ull);
+			fn(2322, 2360, "Char_Dash", 16915825071909083776ull);
+			fn(2362, 2396, "Char_Sprint", 5237368080912885538ull);
+			fn(2398, 2420, "Char_Stagger1", 8203964857723252188ull);
+			fn(2422, 2444, "Char_Stagger2", 15999465100576333431ull);
+			fn(2446, 2468, "Char_Stagger3", 18274652021443959365ull);
+			fn(2470, 2600, "Char_Death", 2019095094436478344ull);
+			fn(2601, 2711, "Char_HighKeyHit");
+			fn(2712, 2900, "Char_Respawn_from_Respawner");
+			fn(2902, 2932, "Char_KnockedDown_Key_Pops_Out");
+			fn(2933, 2975, "Char_KnockedDown_Land");
+			fn(2976, 3078, "Char_KnockedDown_Recovery");
+			fn(3080, 3140, "Char_KnockedDown_Falling");
+			fn(3141, 3180, "Char_DoubleJump");
+			fn(3182, 3221, "Char_SprintDrag");
+			fn(3223, 3307, "Char_SprintDragHit");
+			fn(3309, 3349, "Char_TrampolineJump");
 
 
 		}

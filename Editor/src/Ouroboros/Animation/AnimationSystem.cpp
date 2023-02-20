@@ -515,8 +515,9 @@ namespace oo::Anim
 			*existing = new_anim;
 			return true;
 		}
-
-
+		//if uid is specified
+		if (info.split_anim_ID != internal::invalid_ID)
+			new_anim.animation_ID = info.split_anim_ID;
 		auto filepath = info.filepath;
 		//use original animation's filepath
 		if (filepath.empty())
