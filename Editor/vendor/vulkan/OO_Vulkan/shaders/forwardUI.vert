@@ -5,7 +5,7 @@
 #include "shared_structs.h"
 #include "instancing.shader"
 
-layout(location = 0) in vec3 inPosition;
+layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec4 inUV; // tex coord, texid , entity
 layout(location = 2) in vec4 inCol;
 
@@ -45,7 +45,10 @@ layout(std430, set = 0, binding = 5) readonly buffer GPUobject
 void main()
 {
 	outUV = inUV.xy;
-	outInstanceData = uvec4(inUV.zw,0,0);
+
+	uint isSDFFont = uint(inPosition.w<0.0);
+
+	outInstanceData = uvec4(inUV.zw,isSDFFont,0);
 	
 	outColor = inCol;
 
@@ -71,7 +74,7 @@ void main()
 	//	outPosition = inXform*vec4(inPosition,1.0);
 	//}
 	
-	gl_Position = uboFrameContext.viewProjection * vec4(inPosition,1.0);
+	gl_Position = uboFrameContext.viewProjection * vec4(inPosition.xyz,1.0);
 	//float idx = float(gl_VertexIndex); // this is the vertex id
 	//float ins = float(gl_InstanceIndex); // this is the draw call number
 	

@@ -103,13 +103,9 @@ struct ObjectInstance
 struct UIInstance
 {
     std::string name;
-    // Begin These are temp until its fully integrated
-    glm::vec3 position{};
-    glm::vec3 scale{1.0f};
-    float rot{};
-    glm::vec3 rotVec{0.0f,1.0f,0.0f};
 
-    uint32_t bindlessGlobalTextureIndex_Albedo{ 0xFFFFFFFF };
+    // Begin These are temp until its fully integrated 
+    uint32_t bindlessGlobalTextureIndex_Albedo{ 0xFFFFFFFF }; // waiting for material system xd..
     // End temp stuff
     std::string textData{"SAMPLE TEXT"};
     glm::vec4 colour{1.0f};
@@ -120,6 +116,9 @@ struct UIInstance
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
     UIInstanceFlags flags{static_cast<UIInstanceFlags>(UIInstanceFlags::RENDER_ENABLED | UIInstanceFlags::WORLD_SPACE_UI)};
+
+    void SetText(bool s);
+    bool isText();
 
     uint32_t entityID{}; // Unique ID for this entity instance
 };

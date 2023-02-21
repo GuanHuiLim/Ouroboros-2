@@ -39,6 +39,8 @@ void main()
     outEntityID = int(inInstanceData.x);
     outfragCol = vec4(inColor.rgba);
     
+    uint isSDFFont = inInstanceData.z;
+
     if(inColor.a < 0.0001) discard;
     
 
@@ -59,13 +61,15 @@ void main()
     outfragCol.rgba = texture(textureDescriptorArray[inInstanceData.x], inUV.xy).rgba;
      if(outfragCol.a < 0.0001) discard;
     
-    float sd = median(outfragCol.r, outfragCol.g, outfragCol.b);
-    float screenPxDistance = screenPxRange()*(sd - 0.5);
-    float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
-    //color = mix(bgColor, fgColor, opacity);
-    outfragCol = mix(vec4(0),inColor,opacity);
-    if(outfragCol.a < 0.0001) discard; // this is bad and broken
-    //outfragCol *= inColor;
+    if(isSDFFont != 0)
+    {
+        float sd = median(outfragCol.r, outfragCol.g, outfragCol.b);
+        float screenPxDistance = screenPxRange()*(sd - 0.5);
+        float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
+        outfragCol = mix(vec4(0),inColor,opacity);
+        
+        if(outfragCol.a < 0.0001) discard; // this is bad and broken
+    }
 
     // hardcode red
     //outfragCol = vec4(1.0,0.0,0.0,1.0);

@@ -51,7 +51,8 @@ public:
 	const std::vector<oGFX::UIVertex>& GetUIVertices();
 	// TODO :: need to return indices out if i am doing fill
 	
-	void GenerateTextGeometry();
+	void GenerateTextGeometry(const UIInstance& ui);
+	void GenerateSpriteGeometry(const UIInstance& ui);
 
 private:
 	GraphicsWorld* m_world{ nullptr };

@@ -156,7 +156,7 @@ namespace oGFX
 		//float pos[3] ; // Vertex position (x, y, z)
 		//float col[3] ; // Vertex colour (r, g, b)
 		//float tex[2] ; // Texture Coords(u,v)
-		glm::vec3 pos{0.0f}; // Vertex position (x, y, z)
+		glm::vec4 pos{0.0f}; // Vertex position (x, y, z)
 		glm::vec4 tex{}; // Texture Coords(u,v) , imageID , entity
 		glm::vec4 col{};
 	};
