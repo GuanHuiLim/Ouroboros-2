@@ -159,6 +159,14 @@ namespace oo
                 ui.format.alignment = static_cast<oGFX::FontAlignment>(uiTextComp.Alignment);
                 ui.format.verticalLineSpace = uiTextComp.VerticalLineSpace;
             });
+        
+        // Update Image UI
+        static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent>();
+        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.bindlessGlobalTextureIndex_Albedo = uiImageComp.AlbedoID;
+            });
     }
 
 

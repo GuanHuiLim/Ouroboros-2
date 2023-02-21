@@ -22,10 +22,15 @@ namespace oo
     class UIImageComponent final
     {
     public:
-        Asset TextureHandle;
+        Asset AlbedoHandle;
+        std::int32_t AlbedoID = 0xFFFFFFFF;
+        
         //std::shared_ptr<Texture> m_texture;
         Color Tint = { 1.0f, 1.0f, 1.0f, 1.0f };
         //bool RaycastTarget = true;
+
+        Asset GetAlbedoMap() const;
+        void SetAlbedoMap(Asset NewAlbedo);
 
         RTTR_ENABLE();
     };
