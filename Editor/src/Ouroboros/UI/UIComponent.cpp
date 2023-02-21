@@ -22,6 +22,7 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<UIComponent>("UI Component");
+        registration::class_<UIComponent>("UI Component")
+            .property_readonly("Vulkan UI ID", &UIComponent::UI_ID);
     }
 }

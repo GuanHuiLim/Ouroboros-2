@@ -30,9 +30,9 @@ namespace oo
         //bool m_dirty;               // UI elements have changed, need to recalculate
         //bool m_hasChanged;          // UI elements have been recalculated, need to redraw
 
-        RenderMode RenderingMode = RenderMode::Overlay;
+        RenderMode RenderingMode = RenderMode::WorldSpace; // world space by default, overlay not supported yet
         //std::uint32_t Layer = 0;
-        bool ScaleWithScreenSize = true;    // true by default.
+        bool ScaleWithScreenSize = false;    // false by default.
 
         RTTR_ENABLE();
     };

@@ -29,6 +29,8 @@ namespace oo
     class Scene;
     class GameObject;
     class UIComponent;
+    /*class UITextComponent;
+    class UIImageComponent;*/
 
     class UISystem final : public Ecs::System
     {
@@ -108,6 +110,13 @@ namespace oo
         void OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt);
         void OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt);
         void InitializeUI(UIComponent& uiComp, TransformComponent& tfComp);
+
+        /*void OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt);
+        void OnTextRemove(Ecs::ComponentEvent<UITextComponent>* evnt);
+        void InitializeText(UITextComponent& uiTextComp, TransformComponent& tfComp);
+        void OnImageAssign(Ecs::ComponentEvent<UIImageComponent>* evnt);
+        void OnImageRemove(Ecs::ComponentEvent<UIImageComponent>* evnt);
+        void InitializeImage(UIImageComponent& uiImgComp, TransformComponent& tfComp);*/
 
     private:
         GraphicsWorld* m_graphicsWorld{ nullptr };

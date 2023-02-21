@@ -160,9 +160,12 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::PushItemWidth(200.0f);
 	//DisplayComponent<oo::GameObjectComponent>(gameobject);
-	// display either rect transform or base transform
+	// let's display both for now.
 	if (gameobject.HasComponent<oo::RectTransformComponent>())
 	{
+		// for debug purposes.
+		if (m_showReadonly)
+			DisplayComponent<oo::TransformComponent>(gameobject);
 		DisplayComponent<oo::RectTransformComponent>(gameobject);
 	}
 	else

@@ -55,6 +55,7 @@ namespace oo
         };
 
         bool IsDirty = true;    // set to true for the first frame update!
+        bool HasChanged = false;
 
         bool IsWorldSpace = false;
         
@@ -92,6 +93,10 @@ namespace oo
         glm::vec2 GetPivot() const;
         glm::vec2 GetAnchorMin() const;
         glm::vec2 GetAnchorMax() const;
+
+
+        // for EditorViewportOnly!
+        bool EditGlobal = false;
 
         RTTR_ENABLE();
     };

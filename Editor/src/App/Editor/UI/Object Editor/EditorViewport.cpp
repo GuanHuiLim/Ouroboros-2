@@ -28,6 +28,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
 #include "Ouroboros/Transform/TransformComponent.h"
+#include "Ouroboros/UI/RectTransformComponent.h"
 #include "Ouroboros/Commands/CommandStackManager.h"
 #include "Ouroboros/Commands/Component_ActionCommand.h"
 #include "App/Editor/Events/GizmoOperationEvent.h"
@@ -191,6 +192,7 @@ void EditorViewport::Show()
 
 	ImGuizmo::BeginFrame();
 	oo::TransformComponent& transform = gameobject->GetComponent<oo::TransformComponent>();
+	oo::RectTransformComponent* rectTransform = gameobject->TryGetComponent<oo::RectTransformComponent>();
 
 	glm::mat4 m_matrix = transform.GlobalTransform;
 	ImGuizmo::SetOrthographic(false);
@@ -247,6 +249,13 @@ void EditorViewport::Show()
 			// If we can't trust imguizmo, we can still trust glm.
 
 			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
+			
+			// if we are editing UI Component
+			if (rectTransform)
+			{
+				rectTransform->IsDirty = true;
+				rectTransform->EditGlobal = true;
+			}
 			
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
 			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.

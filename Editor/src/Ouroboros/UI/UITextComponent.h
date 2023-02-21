@@ -26,8 +26,24 @@ namespace oo
     class UITextComponent final
     {
     public:
-        std::string text = "Default text here";
-        Color color;
+        enum class FontAlignment : int
+        {
+            Top_Left        = 1 << 0,
+            Top_Right       = 1 << 1,
+            Top_Centre      = 1 << 2,
+            Centre_Left     = 1 << 3,
+            Centre          = 1 << 4,
+            Centre_Right    = 1 << 5,
+            Bottom_Left     = 1 << 6,
+            Bottom_Right    = 1 << 7,
+            Bottom_Centre   = 1 << 8,
+        };
+
+        std::string Text = "Default text here";
+        Color TextColor;
+        float FontSize;
+        float VerticalLineSpace;
+        FontAlignment Alignment = FontAlignment::Centre;
 
         RTTR_ENABLE();
     };

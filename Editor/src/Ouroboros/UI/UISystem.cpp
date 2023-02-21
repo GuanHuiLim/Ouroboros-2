@@ -50,14 +50,54 @@ namespace oo
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
     }
 
+    void UISystem::Init()
+    {
+        // UI Component
+        m_world->SubscribeOnAddComponent<UISystem, UIComponent>(
+            this, &UISystem::OnUIAssign);
+        m_world->SubscribeOnRemoveComponent<UISystem, UIComponent>(
+            this, &UISystem::OnUIRemove);
+
+        //// UI Component
+        //m_world->SubscribeOnAddComponent<UISystem, UITextComponent>(
+        //    this, &UISystem::OnTextAssign);
+        //m_world->SubscribeOnRemoveComponent<UISystem, UITextComponent>(
+        //    this, &UISystem::OnTextRemove);
+
+
+        //// UI Component
+        //m_world->SubscribeOnAddComponent<UISystem, UIImageComponent>(
+        //    this, &UISystem::OnImageAssign);
+        //m_world->SubscribeOnRemoveComponent<UISystem, UIImageComponent>(
+        //    this, &UISystem::OnImageRemove);
+
+
+    }
+
     void UISystem::PostSceneLoadInit()
     {
-        // Update Lights positions immediately!
+        // Update UI positions immediately!
         static Ecs::Query ui_query = Ecs::make_raw_query<UIComponent, TransformComponent>();
         m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& tfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.localToWorld = tfComp.GetGlobalMatrix();
+            });
+
+        // Update UIText 
+        static Ecs::Query ui_text_query = Ecs::make_raw_query<UIComponent, TransformComponent, UITextComponent>();
+        m_world->for_each(ui_text_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UITextComponent& uiTextComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(true);
+            });
+
+        // Update UIImage 
+        static Ecs::Query ui_img_query = Ecs::make_raw_query<UIComponent, TransformComponent, UIImageComponent>();
+        m_world->for_each(ui_img_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UIImageComponent& uiImgComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(false);
             });
     }
 
@@ -79,34 +119,48 @@ namespace oo
     void UISystem::UpdateExisting()
     {
         // Update UI
-        static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent>();
-        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp)
+        static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent, RectTransformComponent>();
+        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
 
                 if (transformComp.HasChangedThisFrame)
+                {
                     ui.localToWorld = transformComp.GetGlobalMatrix();
+                }
+
+                if (rectTfComp.HasChanged)
+                {
+                    glm::vec3 Center = rectTfComp.BoundingVolume.Center;
+                    glm::quat GlobalQuat = rectTfComp.BoundingVolume.Orientation; // tf.GetGlobalRotationQuat().value;
+                    glm::vec3 HalfExtents = rectTfComp.BoundingVolume.HalfExtents; //GlobalScale * (glm::vec3{rectTransform.Size, 0} * 0.5f);
+
+                    glm::vec3 HalfExtentX = glm::rotate(GlobalQuat, glm::vec3{ HalfExtents.x, 0, 0 });
+                    glm::vec3 HalfExtentY = glm::rotate(GlobalQuat, glm::vec3{ 0, HalfExtents.y, 0 });
+
+                    glm::vec3 bottom_left = Center - HalfExtentX - HalfExtentY;
+                    glm::vec3 top_right = Center + HalfExtentX + HalfExtentY;
+
+                    ui.format.box.min = bottom_left;
+                    ui.format.box.max = top_right;
+                }
+                    
             });
 
         // Update Text UI
-        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent>();
-        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp)
+        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent>();
+        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
-                ui.textData = uiTextComp.text;
-                ui.colour = uiTextComp.color;
+                ui.textData = uiTextComp.Text;
+                ui.colour = uiTextComp.TextColor;
+
+                ui.format.fontSize = uiTextComp.FontSize;
+                ui.format.alignment = static_cast<oGFX::FontAlignment>(uiTextComp.Alignment);
+                ui.format.verticalLineSpace = uiTextComp.VerticalLineSpace;
             });
     }
 
-    void UISystem::Init()
-    {
-        // UI Component
-        m_world->SubscribeOnAddComponent<UISystem, UIComponent>(
-            this, &UISystem::OnUIAssign);
-
-        m_world->SubscribeOnRemoveComponent<UISystem, UIComponent>(
-            this, &UISystem::OnUIRemove);
-    }
 
     void UISystem::EditorUpdate()
     {
@@ -214,6 +268,7 @@ namespace oo
                     UpdateIndividualRectTransform(&tf, &rectTransform);
                     // mark rectTransform as no longer dirty
                     rectTransform.IsDirty = false;
+                    rectTransform.HasChanged = true;
                 }
 
                 rectTransform.BoundingVolume.Center       = tf.GetGlobalPosition();
@@ -259,13 +314,23 @@ namespace oo
 
     void UISystem::UpdateIndividualRectTransform(TransformComponent* tf, RectTransformComponent* rect)
     {
-        // assumes parent Offset is properly set prior.
-        glm::vec3 pos = rect->AnchoredPosition + rect->ParentOffset;
+        if (rect->EditGlobal)
+        {
+            rect->AnchoredPosition = tf->GetPosition();
+            rect->EulerAngles = glm::degrees(glm::eulerAngles(tf->GetRotationQuat().value));
+            rect->Scale = tf->GetScale();
+            rect->EditGlobal = false;
+        }
+        else
+        {
+            // assumes parent Offset is properly set prior.
+            glm::vec3 pos = rect->AnchoredPosition + rect->ParentOffset;
 
-        // update transform local data
-        tf->SetPosition(pos);
-        tf->SetRotation(rect->EulerAngles);
-        tf->SetScale(rect->Scale);
+            // update transform local data
+            tf->SetPosition(pos);
+            tf->SetRotation(rect->EulerAngles);
+            tf->SetScale(rect->Scale);
+        }
     }
 
     void UISystem::DebugDrawUI()
@@ -557,5 +622,33 @@ namespace oo
         auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
         ui.localToWorld = transformComp.GetGlobalMatrix();
     }
+
+    /*void UISystem::OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt)
+    {
+        ASSERT_MSG(m_world != nullptr, "it should never be nullptr, was the Init funciton called?");
+        ASSERT_MSG(m_world->has_component<UIComponent>(evnt->entityID), " we should have the ui component by now!");
+        auto& uiComponent = m_world->get_component<UIComponent>(evnt->entityID);
+        uiComponent.SetText(true);
+    }
+
+    void UISystem::OnTextRemove(Ecs::ComponentEvent<UITextComponent>* evnt)
+    {
+    }
+
+    void UISystem::InitializeText(UITextComponent& uiTextComp, TransformComponent& tfComp)
+    {
+    }
+
+    void UISystem::OnImageAssign(Ecs::ComponentEvent<UIImageComponent>* evnt)
+    {
+    }
+
+    void UISystem::OnImageRemove(Ecs::ComponentEvent<UIImageComponent>* evnt)
+    {
+    }
+
+    void UISystem::InitializeImage(UIImageComponent& uiImgComp, TransformComponent& tfComp)
+    {
+    }*/
 
 }

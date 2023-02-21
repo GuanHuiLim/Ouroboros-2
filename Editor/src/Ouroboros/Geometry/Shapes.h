@@ -30,6 +30,8 @@ namespace oo
         glm::vec3 Center = glm::vec3{ 0 };
         glm::vec3 HalfExtents = glm::vec3{ 0 };
         glm::quat Orientation = glm::quat{ 0, 0, 0, 1 };
+        
+        RTTR_ENABLE();
     };
 
     struct Ray

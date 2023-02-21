@@ -22,8 +22,27 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
+
+        registration::enumeration<UITextComponent::FontAlignment>("Font Alignment")
+        (
+            value("Top Left", UITextComponent::FontAlignment::Top_Left),
+            value("Top Centre", UITextComponent::FontAlignment::Top_Centre),
+            value("Top Right", UITextComponent::FontAlignment::Top_Right),
+
+            value("Middle Left", UITextComponent::FontAlignment::Centre_Left),
+            value("Middle Centre", UITextComponent::FontAlignment::Centre),
+            value("Middle Right", UITextComponent::FontAlignment::Centre_Right),
+
+            value("Bottom Left", UITextComponent::FontAlignment::Bottom_Left),
+            value("Bottom Centre", UITextComponent::FontAlignment::Bottom_Centre),
+            value("Bottom Right", UITextComponent::FontAlignment::Bottom_Right)
+        );
+
         registration::class_<UITextComponent>("UI Text")
-            .property("Text", &UITextComponent::text)
-            .property("Color",&UITextComponent::color);
+            .property("Text", &UITextComponent::Text)
+            .property("Color",&UITextComponent::TextColor)
+            .property("Font Size", &UITextComponent::FontSize)
+            .property("Font Alignment", &UITextComponent::Alignment)
+            .property("Vertical Line Space", &UITextComponent::VerticalLineSpace);
     }
 }
