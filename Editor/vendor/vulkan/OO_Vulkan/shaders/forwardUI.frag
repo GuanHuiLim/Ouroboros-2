@@ -61,7 +61,7 @@ void main()
     outfragCol.rgba = texture(textureDescriptorArray[inInstanceData.x], inUV.xy).rgba;
      if(outfragCol.a < 0.0001) discard;
     
-    if(isSDFFont != 0)
+    if(isSDFFont == 1)
     {
         float sd = median(outfragCol.r, outfragCol.g, outfragCol.b);
         float screenPxDistance = screenPxRange()*(sd - 0.5);
