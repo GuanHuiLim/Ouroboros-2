@@ -36,6 +36,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/CameraComponent.h"
 
 #include "Ouroboros/Geometry/Algorithms.h"
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 namespace oo
 {
@@ -50,6 +51,11 @@ namespace oo
         assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
     }
 
+    UISystem::~UISystem()
+    {
+        EventManager::Unsubscribe<UISystem, PreviewWindowResizeEvent>(this, &UISystem::OnPreviewWindowResize);
+    }
+
     void UISystem::Init()
     {
         // UI Component
@@ -57,6 +63,18 @@ namespace oo
             this, &UISystem::OnUIAssign);
         m_world->SubscribeOnRemoveComponent<UISystem, UIComponent>(
             this, &UISystem::OnUIRemove);
+
+        // we initilize preview window size once.
+        {
+            GetPreviewWindowSizeEvent e;
+            EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
+            m_previewStartPos = e.StartPosition;
+            m_previewWidth = e.Width;
+            m_previewHeight = e.Height;
+        }
+
+        // we make sure to keep preview window size updated
+        EventManager::Subscribe<UISystem, PreviewWindowResizeEvent>(this, &UISystem::OnPreviewWindowResize);
 
         //// UI Component
         //m_world->SubscribeOnAddComponent<UISystem, UITextComponent>(
@@ -165,6 +183,7 @@ namespace oo
         m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.colour = uiImageComp.Tint;
                 ui.bindlessGlobalTextureIndex_Albedo = uiImageComp.AlbedoID;
             });
     }
@@ -383,9 +402,23 @@ namespace oo
         if (camera == nullptr)
             return;
 
-        Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), oo::input::GetMouseX(), oo::input::GetMouseY());
+        int32_t mouseX = oo::input::GetMouseX();
+        int32_t mouseY = oo::input::GetMouseY();
+#ifdef OO_EDITOR
+        auto [windowSizeX, windowSizeY] = oo::Application::Get().GetWindow().GetSize();
+        // we need to do extra conversion if we are in editor mode
+        float intermediateX = mouseX - m_previewStartPos.x;
+        intermediateX /= static_cast<float>(m_previewWidth);
+        float intermediateY = mouseY - m_previewStartPos.y;
+        intermediateY /= static_cast<float>(m_previewHeight);
+        intermediateX *= windowSizeX;
+        intermediateY *= windowSizeY;
+        mouseX = intermediateX;
+        mouseY = intermediateY;
+#endif
+        Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), mouseX, mouseY);
         //LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
-        oGFX::DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 10.f);
+        oGFX::DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 20.f);
         //Point2D mouseWorldPoint{ mousePos };
 
         /*SceneCamera* cam = SceneCamera::MainCamera();
@@ -629,6 +662,13 @@ namespace oo
         //update graphics world side to prevent wrong initial placement
         auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
         ui.localToWorld = transformComp.GetGlobalMatrix();
+    }
+
+    void UISystem::OnPreviewWindowResize(PreviewWindowResizeEvent* e)
+    {
+        m_previewStartPos = e->StartPosition;
+        m_previewWidth = e->X;
+        m_previewWidth = e->Y;
     }
 
     /*void UISystem::OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt)

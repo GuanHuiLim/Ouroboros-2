@@ -116,6 +116,7 @@ void EditorViewport::Show()
 		m_viewportHeight = contentHeight;
 
 		EditorViewportResizeEvent e;
+		e.StartPosition = { vMin.x, vMin.y };
 		e.X = m_viewportWidth;
 		e.Y = m_viewportHeight;
 		oo::EventManager::Broadcast<EditorViewportResizeEvent>(&e);

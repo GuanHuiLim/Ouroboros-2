@@ -20,6 +20,8 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Geometry/Shapes.h"
 
+class PreviewWindowResizeEvent;
+
 namespace oo
 {
     // forward declaration
@@ -32,12 +34,13 @@ namespace oo
     /*class UITextComponent;
     class UIImageComponent;*/
 
+
     class UISystem final : public Ecs::System
     {
     public:
 
         UISystem(GraphicsWorld* graphicsWorld, Scene* scene);
-        virtual ~UISystem() = default;
+        virtual ~UISystem();
 
         virtual void Run(Ecs::ECSWorld* world) override {};
 
@@ -111,6 +114,8 @@ namespace oo
         void OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt);
         void InitializeUI(UIComponent& uiComp, TransformComponent& tfComp);
 
+        void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
+
         /*void OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt);
         void OnTextRemove(Ecs::ComponentEvent<UITextComponent>* evnt);
         void InitializeText(UITextComponent& uiTextComp, TransformComponent& tfComp);
@@ -123,5 +128,9 @@ namespace oo
 
         Scene* m_scene = nullptr;
         GameObject m_prevSelectedUI;
+
+        glm::vec2 m_previewStartPos;
+        float m_previewWidth;
+        float m_previewHeight;
     };
 }

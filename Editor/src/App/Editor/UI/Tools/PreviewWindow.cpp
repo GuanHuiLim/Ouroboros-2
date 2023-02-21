@@ -78,11 +78,17 @@ void PreviewWindow::Show()
 	}
 	if ( floorf( m_viewportWidth - contentWidth) != 0 || floorf(m_viewportHeight - contentHeight) != 0)
 	{
+		ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+		vMin.x += ImGui::GetWindowPos().x;
+		vMin.y += ImGui::GetWindowPos().y;
+
 		//resize viewport
+		m_windowStartPosition = { vMin.x, vMin.y };
 		m_viewportWidth = contentWidth;
 		m_viewportHeight = contentHeight;
 
 		PreviewWindowResizeEvent e;
+		e.StartPosition = m_windowStartPosition;
 		e.X = m_viewportWidth;
 		e.Y = m_viewportHeight;
 		oo::EventManager::Broadcast<PreviewWindowResizeEvent>(&e);
@@ -101,6 +107,7 @@ void PreviewWindow::UpdateWhenNotShown()
 
 void PreviewWindow::GetPreviewWindowSize(GetPreviewWindowSizeEvent* e)
 {
+	e->StartPosition = m_windowStartPosition;
 	e->Width = m_viewportWidth;
 	e->Height = m_viewportHeight;
 }
