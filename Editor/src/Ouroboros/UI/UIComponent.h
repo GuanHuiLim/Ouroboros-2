@@ -25,7 +25,7 @@ namespace oo
     {
     public:
         std::int32_t UI_ID;
-        std::int32_t PickingID;
+        std::uint32_t PickingID;
         RTTR_ENABLE();
     };
 }

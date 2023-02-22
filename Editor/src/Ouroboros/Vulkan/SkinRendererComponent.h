@@ -31,7 +31,7 @@ namespace oo
 		
 		//no need to serialize
 		uint32_t graphicsWorld_ID{};
-		int32_t picking_ID;
+		uint32_t picking_ID;
 		uint32_t meshResource{ 0 };
 		size_t num_bones{ 0 };
 

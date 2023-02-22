@@ -671,7 +671,7 @@ namespace oo
         return m_graphicsWorld->cameras[m_mainCamera->GetComponent<CameraComponent>().GraphicsWorldIndex];
     }
 
-    UUID Scene::GetUUIDFromPickingId(std::int32_t pickingID) const
+    UUID Scene::GetUUIDFromPickingId(std::uint32_t pickingID) const
     {
         if (m_pickingIdToUUID.contains(pickingID))
             return m_pickingIdToUUID.at(pickingID);
@@ -679,10 +679,10 @@ namespace oo
         return UUID::Invalid;
     }
 
-    std::int32_t Scene::GeneratePickingID(UUID uuid)
+    std::uint32_t Scene::GeneratePickingID(UUID uuid)
     {
         // need to find a way to generate a 32 bit picking ID uniquely
-        std::int32_t pickingID = UUIDi32{};
+        std::uint32_t pickingID = static_cast<std::uint32_t>(UUID16{});
         
         ASSERT_MSG(m_pickingIdToUUID.contains(pickingID) == true, " this picking id should be new!");
         ASSERT_MSG(m_uuidToPickingId.contains(uuid) == true, " this uuid should not already exist");
@@ -694,12 +694,12 @@ namespace oo
         return pickingID;
     }
 
-    void Scene::RemovePickingID(std::int32_t pickingID)
+    void Scene::RemovePickingID(std::uint32_t pickingID)
     {
         ASSERT_MSG(m_pickingIdToUUID.contains(pickingID) == false, " this picking id should exist! Did you use the id created from the generate function above?");
+        
+        auto& uuid = m_pickingIdToUUID.at(pickingID);
         ASSERT_MSG(m_uuidToPickingId.contains(uuid) == false, " this uuid should exist");
-
-        auto uuid = m_pickingIdToUUID.at(pickingID);
 
         // remove graphics id to uuid of gameobject
         m_pickingIdToUUID.erase(pickingID);

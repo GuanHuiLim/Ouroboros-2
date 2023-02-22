@@ -48,17 +48,17 @@ namespace oo
         value_type m_uuid = Invalid;
     };
     
-    class UUIDi32 final
+    class UUID16 final
     {
     public:
-        using value_type = std::int32_t;
+        using value_type = std::uint16_t;
         static constexpr value_type Invalid = std::numeric_limits<value_type>::max();
 
-        UUIDi32();
-        UUIDi32(UUIDi32 const& other) = default;
+        UUID16();
+        UUID16(UUID16 const& other) = default;
 
         // Conversion constructor
-        UUIDi32(value_type uuid) : m_uuid{ uuid } {};
+        UUID16(value_type uuid) : m_uuid{ uuid } {};
 
         // implicit converseions to value type
         operator value_type() { return m_uuid; }
@@ -85,11 +85,11 @@ namespace std
     };
 
     template<>
-    struct hash<oo::UUIDi32>
+    struct hash<oo::UUID16>
     {
-        std::size_t operator() (oo::UUIDi32 const& uuid) const
+        std::size_t operator() (oo::UUID16 const& uuid) const
         {
-            return hash<int32_t>()((int32_t)uuid);
+            return hash<uint16_t>()((uint16_t)uuid);
         }
     };
 }
