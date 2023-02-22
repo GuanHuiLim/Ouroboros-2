@@ -161,6 +161,7 @@ namespace oo
         private:
             InputAxis& axis;
             float durationHeld;
+            bool pressConsumed;
             unsigned pressCount;
             float pressGapTimeLeft;
             InputAxis::InputCode lastPressed;
