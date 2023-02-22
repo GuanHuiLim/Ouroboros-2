@@ -169,7 +169,8 @@ namespace oo
     void oo::RendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         auto& comp = evnt->component;
-        m_scene->DestroyGraphicsInstance(comp.GraphicsWorldID);
+        m_scene->RemovePickingID(comp.PickingID);
+        m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
         //m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
         //// remove graphics id to uuid of gameobject
         //m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
@@ -380,11 +381,13 @@ namespace oo
 
     void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc)
     {
-        meshComp.GraphicsWorldID = m_scene->CreateGraphicsInstance(goc.Id);
+        meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
+        meshComp.PickingID = m_scene->GeneratePickingID(goc.Id);
         //meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
         
         //update graphics world side
         auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.GraphicsWorldID);
+        graphics_object.entityID = meshComp.PickingID;
         graphics_object.localToWorld = transformComp.GetGlobalMatrix();
 
         //// map graphics id to uuid of gameobject

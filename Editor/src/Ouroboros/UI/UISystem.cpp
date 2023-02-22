@@ -99,6 +99,7 @@ namespace oo
         m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& tfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.entityID = uiComp.PickingID;
                 ui.localToWorld = tfComp.GetGlobalMatrix();
             });
 
@@ -126,10 +127,10 @@ namespace oo
     void UISystem::UpdateDuplicated()
     {
         // Update Newly Duplicated UI
-        static Ecs::Query duplicated_ui_query = Ecs::make_raw_query<UIComponent, TransformComponent, DuplicatedComponent>();
-        m_world->for_each(duplicated_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
+        static Ecs::Query duplicated_ui_query = Ecs::make_raw_query<UIComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, GameObjectComponent& goComp, DuplicatedComponent& dupComp)
             {
-                InitializeUI(uiComp, transformComp);
+                InitializeUI(uiComp, transformComp, goComp);
             });
 
     }
@@ -647,20 +648,24 @@ namespace oo
         assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
         auto& uiComponent = evnt->component;
         auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
-        InitializeUI(uiComponent, transform_component);
+        auto& go_component = m_world->get_component<GameObjectComponent>(evnt->entityID);
+        InitializeUI(uiComponent, transform_component, go_component);
     }
     
     void UISystem::OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt)
     {
         auto& comp = evnt->component;
+        m_scene->RemovePickingID(comp.PickingID);
         m_graphicsWorld->DestroyUIInstance(comp.UI_ID);
     }
 
-    void UISystem::InitializeUI(UIComponent& uiComp, TransformComponent& transformComp)
+    void UISystem::InitializeUI(UIComponent& uiComp, TransformComponent& transformComp, GameObjectComponent& goComp)
     {
         uiComp.UI_ID = m_graphicsWorld->CreateUIInstance();
+        uiComp.PickingID = m_scene->GeneratePickingID(goComp.Id);
         //update graphics world side to prevent wrong initial placement
         auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+        ui.entityID = uiComp.PickingID;
         ui.localToWorld = transformComp.GetGlobalMatrix();
     }
 

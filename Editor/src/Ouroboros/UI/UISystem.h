@@ -112,7 +112,7 @@ namespace oo
 
         void OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt);
         void OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt);
-        void InitializeUI(UIComponent& uiComp, TransformComponent& tfComp);
+        void InitializeUI(UIComponent& uiComp, TransformComponent& tfComp, GameObjectComponent& goComp);
 
         void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
 

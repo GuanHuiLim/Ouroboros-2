@@ -48,6 +48,27 @@ namespace oo
         value_type m_uuid = Invalid;
     };
     
+    class UUIDi32 final
+    {
+    public:
+        using value_type = std::int32_t;
+        static constexpr value_type Invalid = std::numeric_limits<value_type>::max();
+
+        UUIDi32();
+        UUIDi32(UUIDi32 const& other) = default;
+
+        // Conversion constructor
+        UUIDi32(value_type uuid) : m_uuid{ uuid } {};
+
+        // implicit converseions to value type
+        operator value_type() { return m_uuid; }
+        operator const value_type() const { return m_uuid; }
+
+        value_type GetUUID() const { return m_uuid; }
+
+    private:
+        value_type m_uuid = Invalid;
+    };
 
 }
 
@@ -60,6 +81,15 @@ namespace std
         std::size_t operator() (oo::UUID const& uuid) const
         {
             return hash<uint64_t>()((uint64_t)uuid);
+        }
+    };
+
+    template<>
+    struct hash<oo::UUIDi32>
+    {
+        std::size_t operator() (oo::UUIDi32 const& uuid) const
+        {
+            return hash<int32_t>()((int32_t)uuid);
         }
     };
 }

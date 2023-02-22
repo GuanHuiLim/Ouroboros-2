@@ -311,18 +311,20 @@ namespace oo
 	void SkinMeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)
 	{
 		auto& comp = evnt->component; 
-		scene->DestroyGraphicsInstance(comp.graphicsWorld_ID);
+		scene->RemovePickingID(comp.picking_ID);
+		m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
 		// remove graphics id to uuid of gameobject
 		//m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
 	}
 
 	void SkinMeshRendererSystem::Initialize(SkinMeshRendererComponent& renderComp, TransformComponent& transformComp, GameObjectComponent& goComp)
 	{
-
-		renderComp.graphicsWorld_ID = scene->CreateGraphicsInstance(goComp.Id);
+		renderComp.graphicsWorld_ID = m_graphicsWorld->CreateObjectInstance();
+		renderComp.picking_ID = scene->GeneratePickingID(goComp.Id);
 
 		//update initial position
 		auto& graphics_object = m_graphicsWorld->GetObjectInstance(renderComp.graphicsWorld_ID);
+		graphics_object.entityID = renderComp.picking_ID;
 		graphics_object.localToWorld = transformComp.GetGlobalMatrix();
 		graphics_object.flags = ObjectInstanceFlags::SKINNED | ObjectInstanceFlags::RENDER_ENABLED;
 		graphics_object.bones.resize(renderComp.num_bones);

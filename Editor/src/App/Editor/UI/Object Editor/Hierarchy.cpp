@@ -761,7 +761,6 @@ void Hierarchy::RightClickOptions()
 						go.SetName("UI Image");
 						go.EnsureComponent<oo::RectTransformComponent>();
 						go.EnsureComponent<oo::UIComponent>();
-						go.EnsureComponent<oo::UIRaycastComponent>();
 						go.EnsureComponent<oo::UIImageComponent>();
 					});
 			}
@@ -772,8 +771,18 @@ void Hierarchy::RightClickOptions()
 						go.SetName("UI Text");
 						go.EnsureComponent<oo::RectTransformComponent>();
 						go.EnsureComponent<oo::UIComponent>();
-						go.EnsureComponent<oo::UIRaycastComponent>();
 						go.EnsureComponent<oo::UITextComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Button"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("UI Button");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UIComponent>();
+						go.EnsureComponent<oo::UIImageComponent>();
+						go.EnsureComponent<oo::UIRaycastComponent>();
 					});
 			}
 			ImGui::EndMenu();

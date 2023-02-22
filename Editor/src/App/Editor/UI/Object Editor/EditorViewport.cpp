@@ -144,7 +144,7 @@ void EditorViewport::Show()
 			if (graphicsID >= 0)
 			{
 				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+				auto uuid = scene->GetUUIDFromPickingId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
 				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
 				Hierarchy::SetItemSelected(uuid);
 			}
@@ -280,7 +280,7 @@ void EditorViewport::Show()
 				if (graphicsID >= 0)
 				{
 					LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-					auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+					auto uuid = scene->GetUUIDFromPickingId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
 					ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
 					Hierarchy::SetItemSelected(uuid);
 				}

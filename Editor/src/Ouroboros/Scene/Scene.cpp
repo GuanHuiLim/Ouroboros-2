@@ -38,6 +38,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/RendererSystem.h"
 #include "Ouroboros/Vulkan/SkinRendererSystem.h"
 #include "Ouroboros/Vulkan/ParticleRendererSystem.h"
+#include "Ouroboros/UI/UIComponent.h"
 
 #include "Ouroboros/Audio/AudioSystem.h"
 
@@ -236,8 +237,8 @@ namespace oo
         m_graphicsWorld->ClearObjectInstances();
         m_graphicsWorld->ClearEmitterInstances();
         m_graphicsWorld->ClearUIInstances();
-        m_graphicsIdToUUID.clear();
-        m_uuidToGraphicsID.clear();
+        m_pickingIdToUUID.clear();
+        m_uuidToPickingId.clear();
 
         // kill the graphics world
         Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
@@ -562,34 +563,81 @@ namespace oo
 
     void Scene::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
     {
-        // graphics specific logic
-        if (m_uuidToGraphicsID.contains(e->Id))
+        // graphics specific gameobject detected.
+        if (m_uuidToPickingId.contains(e->Id))
         {
-            auto& gid = m_uuidToGraphicsID.at(e->Id);
-            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
-            actualObject.SetRenderEnabled(true);
-            
             // On Enable we have to check!
             auto go = FindWithInstanceID(e->Id);
-            if(go->HasComponent<MeshRendererComponent>())
-                actualObject.SetShadowEnabled(go->GetComponent<MeshRendererComponent>().CastShadows);
-            else if (go->HasComponent<SkinMeshRendererComponent>())
-                actualObject.SetShadowEnabled(go->GetComponent<SkinMeshRendererComponent>().CastShadows);
+            bool renderObject = go->ActiveInHierarchy();
+
+            // if its not UI, it must be mesh or skin mesh
+            if (!go->HasComponent<UIComponent>())
+            {
+                bool castShadows = false;
+                
+                int32_t graphicsID = -1;
+                if (go->HasComponent<MeshRendererComponent>())
+                {
+                    auto const& comp = go->GetComponent<MeshRendererComponent>();
+                    graphicsID = comp.GraphicsWorldID;
+                    castShadows = comp.CastShadows;
+                }
+                else if (go->HasComponent<SkinMeshRendererComponent>())
+                {
+                    auto const& comp = go->GetComponent<SkinMeshRendererComponent>();
+                    graphicsID = comp.graphicsWorld_ID;
+                    castShadows = comp.CastShadows;
+                }
+
+                auto& actualObject = m_graphicsWorld->GetObjectInstance(graphicsID);
+                actualObject.SetRenderEnabled(renderObject);
+                actualObject.SetShadowEnabled(castShadows);
+                
+            }
+            else if (go->HasComponent<UIComponent>())
+            {
+                // ui not supported right now.
+                //auto ui = m_graphicsWorld->GetUIInstance(id);
+                //ui.SetRenderEnabled()
+            }
+
         }
     }
 
     void Scene::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
     {
         // graphics specific logic
-        if (m_uuidToGraphicsID.contains(e->Id))
+        if (m_uuidToPickingId.contains(e->Id))
         {
-            auto& gid = m_uuidToGraphicsID.at(e->Id);
-            auto& actualObject = m_graphicsWorld->GetObjectInstance(gid);
-            actualObject.SetRenderEnabled(false);
+            // On Disable we get go
+            auto go = FindWithInstanceID(e->Id);
 
-            // On Disable, we don't have to check! just set to false
-            actualObject.SetShadowEnabled(false);
+            // if its not UI, it must be mesh or skin mesh
+            if (!go->HasComponent<UIComponent>())
+            {
+                int32_t graphicsID = -1;
+                if (go->HasComponent<MeshRendererComponent>())
+                {
+                    auto const& comp = go->GetComponent<MeshRendererComponent>();
+                    graphicsID = comp.GraphicsWorldID;
+                }
+                else if (go->HasComponent<SkinMeshRendererComponent>())
+                {
+                    auto const& comp = go->GetComponent<SkinMeshRendererComponent>();
+                    graphicsID = comp.graphicsWorld_ID;
+                }
 
+                auto& actualObject = m_graphicsWorld->GetObjectInstance(graphicsID);
+                actualObject.SetRenderEnabled(false);
+                actualObject.SetShadowEnabled(false);
+
+            }
+            else if (go->HasComponent<UIComponent>())
+            {
+                // ui not supported right now.
+                //auto ui = m_graphicsWorld->GetUIInstance(id);
+                //ui.SetRenderEnabled()
+            }
         }
     }
 
@@ -623,42 +671,38 @@ namespace oo
         return m_graphicsWorld->cameras[m_mainCamera->GetComponent<CameraComponent>().GraphicsWorldIndex];
     }
 
-    UUID Scene::GetUUIDFromGraphicsId(std::int32_t graphicsId)
+    UUID Scene::GetUUIDFromPickingId(std::int32_t pickingID) const
     {
-        if (m_graphicsIdToUUID.contains(graphicsId))
-            return m_graphicsIdToUUID.at(graphicsId);
+        if (m_pickingIdToUUID.contains(pickingID))
+            return m_pickingIdToUUID.at(pickingID);
 
         return UUID::Invalid;
     }
 
-    std::int32_t Scene::CreateGraphicsInstance(UUID uuid)
+    std::int32_t Scene::GeneratePickingID(UUID uuid)
     {
-        auto graphicsWorldID = m_graphicsWorld->CreateObjectInstance();
+        // need to find a way to generate a 32 bit picking ID uniquely
+        std::int32_t pickingID = UUIDi32{};
         
-        auto& graphicsObj = m_graphicsWorld->GetObjectInstance(graphicsWorldID);
-        // set entity ID to graphics world ID for now. should be good enough for the time being
-        graphicsObj.entityID = graphicsWorldID;     
-
-        ASSERT_MSG(m_graphicsIdToUUID.contains(graphicsWorldID) == true, " this graphics id should be new! Did you create graphics instance through this function?");
-        ASSERT_MSG(m_uuidToGraphicsID.contains(uuid) == true, " this uuid should not already exist");
+        ASSERT_MSG(m_pickingIdToUUID.contains(pickingID) == true, " this picking id should be new!");
+        ASSERT_MSG(m_uuidToPickingId.contains(uuid) == true, " this uuid should not already exist");
         
         // map graphics id to uuid of gameobject
-        m_graphicsIdToUUID.insert({ graphicsWorldID, uuid });
-        m_uuidToGraphicsID.insert({ uuid, graphicsWorldID });
+        m_pickingIdToUUID.insert({ pickingID, uuid });
+        m_uuidToPickingId.insert({ uuid, pickingID });
         
-        return graphicsWorldID;
+        return pickingID;
     }
 
-    void Scene::DestroyGraphicsInstance(std::int32_t graphicsId)
+    void Scene::RemovePickingID(std::int32_t pickingID)
     {
-        auto uuid = m_graphicsIdToUUID.at(graphicsId);
+        ASSERT_MSG(m_pickingIdToUUID.contains(pickingID) == false, " this picking id should exist! Did you use the id created from the generate function above?");
+        ASSERT_MSG(m_uuidToPickingId.contains(uuid) == false, " this uuid should exist");
 
-        ASSERT_MSG(m_graphicsIdToUUID.contains(graphicsId) == false, " this graphics id should exist! Did you delete graphics instance through this function?");
-        ASSERT_MSG(m_uuidToGraphicsID.contains(uuid) == false, " this uuid should exist");
+        auto uuid = m_pickingIdToUUID.at(pickingID);
 
-        m_graphicsWorld->DestroyObjectInstance(graphicsId);
         // remove graphics id to uuid of gameobject
-        m_graphicsIdToUUID.erase(graphicsId);
-        m_uuidToGraphicsID.erase(uuid);
+        m_pickingIdToUUID.erase(pickingID);
+        m_uuidToPickingId.erase(uuid);
     }
 }

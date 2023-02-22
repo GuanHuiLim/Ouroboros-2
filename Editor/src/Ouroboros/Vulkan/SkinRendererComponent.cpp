@@ -10,6 +10,7 @@ namespace oo
 		using namespace rttr;
 		registration::class_<SkinMeshRendererComponent>("Skinned Mesh Renderer Component")
 		.property_readonly("Model Handle", &SkinMeshRendererComponent::meshResource)
+		.property_readonly("Picking ID", &SkinMeshRendererComponent::picking_ID)
 		.property("Number of bones", &SkinMeshRendererComponent::num_bones)
 		.property("Albedo", &SkinMeshRendererComponent::GetAlbedo, &SkinMeshRendererComponent::SetAlbedo)
 		(

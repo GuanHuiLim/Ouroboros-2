@@ -29,6 +29,7 @@ namespace oo
         using namespace rttr;
         registration::class_<MeshRendererComponent>("Mesh Renderer")
         .property_readonly("Graphics World ID", &MeshRendererComponent::GraphicsWorldID)
+        .property_readonly("Picking ID", &MeshRendererComponent::PickingID)
         .property_readonly("Model Handle", &MeshRendererComponent::ModelHandle)
         .property("Albedo", &MeshRendererComponent::GetAlbedoMap, &MeshRendererComponent::SetAlbedoMap)
         (
