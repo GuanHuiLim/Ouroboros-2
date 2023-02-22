@@ -36,7 +36,7 @@ float median(float r, float g, float b) {
 
 void main()
 {
-    outEntityID = int(inInstanceData.x);
+    outEntityID = int(inInstanceData.y);
     outfragCol = vec4(inColor.rgba);
     
     uint isSDFFont = inInstanceData.z;
