@@ -43,6 +43,12 @@ struct GetPreviewWindowSizeEvent : public oo::Event
     float Width, Height;
 };
 
+struct PreviewWindowImageResizeEvent : public oo::Event 
+{
+    glm::vec2 StartPosition;
+    float Width, Height;
+};
+
 namespace oo
 {
     //forward declare

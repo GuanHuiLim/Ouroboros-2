@@ -20,7 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Geometry/Shapes.h"
 
-class PreviewWindowResizeEvent;
+class PreviewWindowImageResizeEvent;
 
 namespace oo
 {
@@ -114,7 +114,7 @@ namespace oo
         void OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt);
         void InitializeUI(UIComponent& uiComp, TransformComponent& tfComp, GameObjectComponent& goComp);
 
-        void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
+        void OnPreviewWindowImageResize(PreviewWindowImageResizeEvent* e);
 
         /*void OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt);
         void OnTextRemove(Ecs::ComponentEvent<UITextComponent>* evnt);
@@ -129,8 +129,8 @@ namespace oo
         Scene* m_scene = nullptr;
         GameObject m_prevSelectedUI;
 
-        glm::vec2 m_previewStartPos;
-        float m_previewWidth;
-        float m_previewHeight;
+        glm::vec2 m_previewImgStartPos;
+        float m_previewImgWidth;
+        float m_previewImgHeight;
     };
 }

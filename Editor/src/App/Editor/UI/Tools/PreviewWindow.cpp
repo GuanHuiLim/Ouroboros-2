@@ -51,6 +51,13 @@ void PreviewWindow::Show()
 		ImGui::Text("No Camera Detected, Add a Camera Component");
 		return;
 	}
+	
+	// Extra event for others to use
+	ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+	vMin.x += ImGui::GetWindowPos().x;
+	vMin.y += ImGui::GetWindowPos().y;
+	PreviewWindowImageResizeEvent e;
+	e.StartPosition = { vMin.x, vMin.y};
 	// Launch preview window resize event.
 
 	float contentWidth = 0;
@@ -76,11 +83,15 @@ void PreviewWindow::Show()
 		contentWidth = imagesize.x;
 		contentHeight = resize_by_ar.y;
 	}
+
+	e.StartPosition += glm::vec2{ cursorPosition.x, cursorPosition.y };
+	e.Width = contentWidth;
+	e.Height = contentHeight;
+	// blast event 
+	oo::EventManager::Broadcast<PreviewWindowImageResizeEvent>(&e);
+
 	if ( floorf( m_viewportWidth - contentWidth) != 0 || floorf(m_viewportHeight - contentHeight) != 0)
 	{
-		ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-		vMin.x += ImGui::GetWindowPos().x;
-		vMin.y += ImGui::GetWindowPos().y;
 
 		//resize viewport
 		m_windowStartPosition = { vMin.x, vMin.y };

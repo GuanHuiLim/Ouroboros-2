@@ -53,7 +53,7 @@ namespace oo
 
     UISystem::~UISystem()
     {
-        EventManager::Unsubscribe<UISystem, PreviewWindowResizeEvent>(this, &UISystem::OnPreviewWindowResize);
+        EventManager::Unsubscribe<UISystem, PreviewWindowImageResizeEvent>(this, &UISystem::OnPreviewWindowImageResize);
     }
 
     void UISystem::Init()
@@ -65,16 +65,16 @@ namespace oo
             this, &UISystem::OnUIRemove);
 
         // we initilize preview window size once.
-        {
+        /*{
             GetPreviewWindowSizeEvent e;
             EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
-            m_previewStartPos = e.StartPosition;
-            m_previewWidth = e.Width;
-            m_previewHeight = e.Height;
-        }
+            m_previewImgStartPos = e.StartPosition;
+            m_previewImgWidth = e.Width;
+            m_previewImgHeight = e.Height;
+        }*/
 
         // we make sure to keep preview window size updated
-        EventManager::Subscribe<UISystem, PreviewWindowResizeEvent>(this, &UISystem::OnPreviewWindowResize);
+        EventManager::Subscribe<UISystem, PreviewWindowImageResizeEvent>(this, &UISystem::OnPreviewWindowImageResize);
 
         //// UI Component
         //m_world->SubscribeOnAddComponent<UISystem, UITextComponent>(
@@ -408,10 +408,10 @@ namespace oo
 #ifdef OO_EDITOR
         auto [windowSizeX, windowSizeY] = oo::Application::Get().GetWindow().GetSize();
         // we need to do extra conversion if we are in editor mode
-        float intermediateX = mouseX - m_previewStartPos.x;
-        intermediateX /= static_cast<float>(m_previewWidth);
-        float intermediateY = mouseY - m_previewStartPos.y;
-        intermediateY /= static_cast<float>(m_previewHeight);
+        float intermediateX = mouseX - m_previewImgStartPos.x;
+        intermediateX /= static_cast<float>(m_previewImgWidth);
+        float intermediateY = mouseY - m_previewImgStartPos.y;
+        intermediateY /= static_cast<float>(m_previewImgHeight);
         intermediateX *= windowSizeX;
         intermediateY *= windowSizeY;
         mouseX = intermediateX;
@@ -631,12 +631,13 @@ namespace oo
         //return { {point.x, point.y, cameraTf->GetGlobalPosition().z}, dir };
 
         ////TODO: store the inverse of the camera
-        float xProj = 1.0f / proj[0][0];
+        float xProj = -1.0f / proj[0][0];
         float yProj = 1.0f / proj[1][1];
+        float zProj = 1.0f / proj[2][2];
         //oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
         worldpos.x = pos.x + worldpos.x * xProj;
         worldpos.y = pos.y + worldpos.y * yProj;
-        worldpos.z = pos.z;
+        worldpos.z = pos.z + worldpos.z * zProj;
         
         worldpos += transform->GlobalForward();
 
@@ -669,11 +670,11 @@ namespace oo
         ui.localToWorld = transformComp.GetGlobalMatrix();
     }
 
-    void UISystem::OnPreviewWindowResize(PreviewWindowResizeEvent* e)
+    void UISystem::OnPreviewWindowImageResize(PreviewWindowImageResizeEvent* e)
     {
-        m_previewStartPos = e->StartPosition;
-        m_previewWidth = e->X;
-        m_previewWidth = e->Y;
+        m_previewImgStartPos = e->StartPosition;
+        m_previewImgWidth = e->Width;
+        m_previewImgHeight = e->Height;
     }
 
     /*void UISystem::OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt)
