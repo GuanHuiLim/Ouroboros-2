@@ -287,3 +287,20 @@ bool UIInstance::isText()
 {
 	return static_cast<bool>(flags & UIInstanceFlags::TEXT_INSTANCE);
 }
+
+void UIInstance::SetRenderEnabled(bool s)
+{
+	if (s)
+	{
+		flags = flags | UIInstanceFlags::RENDER_ENABLED;
+	}
+	else
+	{
+		flags = flags & (~UIInstanceFlags::RENDER_ENABLED);
+	}
+}
+
+bool UIInstance::isRenderable()
+{
+	return static_cast<bool>(flags & UIInstanceFlags::RENDER_ENABLED);
+}

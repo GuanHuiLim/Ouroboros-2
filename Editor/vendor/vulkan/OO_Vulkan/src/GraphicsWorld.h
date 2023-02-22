@@ -122,6 +122,9 @@ struct UIInstance
     void SetText(bool s);
     bool isText();
 
+    void SetRenderEnabled(bool s);
+    bool isRenderable();
+
     uint32_t entityID{}; // Unique ID for this entity instance
 };
 
