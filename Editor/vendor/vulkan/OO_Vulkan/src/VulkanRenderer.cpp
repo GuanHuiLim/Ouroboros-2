@@ -1294,7 +1294,7 @@ void VulkanRenderer::UploadLights()
 {
 	if (currWorld == nullptr)
 		return;
-
+	return;
 	assert(currWorld->initialized && "World not initialized - did you call VulkanRenderer::InitWorld?");
 
 	PROFILE_SCOPED();

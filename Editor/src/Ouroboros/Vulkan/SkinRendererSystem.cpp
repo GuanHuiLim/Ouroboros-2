@@ -41,7 +41,7 @@ namespace oo
 		}
 	}
 
-	void RecurseChildren_AssignGraphicsWorldID_UID_to_DuplicatedBoneComponents(GameObject obj, uint32_t graphicsID, UUID uid)
+	void RecurseChildren_AssignGraphicsWorldID_UID_to_BoneComponents(GameObject obj, uint32_t graphicsID, UUID uid)
 	{
 		auto children = obj.GetChildren();
 		if (children.empty()) return;
@@ -92,10 +92,41 @@ namespace oo
 					break;
 				}
 
-				RecurseChildren_AssignGraphicsWorldID_UID_to_DuplicatedBoneComponents(
+				RecurseChildren_AssignGraphicsWorldID_UID_to_BoneComponents(
 					rootbone, graphicsID, uid);
 
 			});
+
+		//settle uninitalized objects
+		for (auto& entity : uninitializedEntities)
+		{
+			GameObject go{ entity,*scene };
+			auto& meshComp = go.GetComponent<SkinMeshRendererComponent>();
+			auto& transform_component = go.GetComponent<TransformComponent>();
+			auto& go_component = go.GetComponent<GameObjectComponent>();
+
+			Initialize(meshComp, transform_component, go_component);
+
+			auto graphicsID = meshComp.graphicsWorld_ID;
+
+			auto parent = go.GetParent();
+			auto siblings = parent.GetDirectChilds();
+			auto uid = go.GetInstanceID();
+			oo::GameObject rootbone{};
+			for (auto& child : siblings)
+			{
+				if (child.GetInstanceID() == uid)
+					continue;
+
+				
+				rootbone = child;
+				break;
+			}
+
+			RecurseChildren_AssignGraphicsWorldID_UID_to_BoneComponents(
+				rootbone, graphicsID, uid);
+		}
+		uninitializedEntities.clear();
 
 		//calculate transform
 		world->for_each_entity_and_component(skin_mesh_query,
@@ -149,26 +180,26 @@ namespace oo
 				}
 			});
 
+		/*
+		world->for_each(skin_mesh_query,
+			[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
+			{
+				auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
+				gfx_Object.modelID = m_comp.meshResource;
+				gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
+				gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
+				gfx_Object.submesh = m_comp.meshInfo.submeshBits;
+				gfx_Object.SetShadowCaster(m_comp.CastShadows);
+				gfx_Object.SetShadowReciever(m_comp.ReceiveShadows);
+				//do nothing if transform did not change
+				if (transformComp.HasChangedThisFrame == false) return;
 
-		//world->for_each(skin_mesh_query,
-		//	[&](SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
-		//	{
-		//		auto& gfx_Object = m_graphicsWorld->GetObjectInstance(m_comp.graphicsWorld_ID);
-		//		gfx_Object.modelID = m_comp.meshResource;
-		//		gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
-		//		gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
-		//		gfx_Object.submesh = m_comp.meshInfo.submeshBits;
-		//		gfx_Object.SetShadowCaster(m_comp.CastShadows);
-		//		gfx_Object.SetShadowReciever(m_comp.ReceiveShadows);
-		//		//do nothing if transform did not change
-		//		if (transformComp.HasChangedThisFrame == false) return;
-
-		//		if (gfx_Object.bones.size() != m_comp.num_bones)
-		//			gfx_Object.bones.resize(m_comp.num_bones);
+				if (gfx_Object.bones.size() != m_comp.num_bones)
+					gfx_Object.bones.resize(m_comp.num_bones);
 
 
-		//		gfx_Object.localToWorld = transformComp.GetGlobalMatrix();
-		//	});
+				gfx_Object.localToWorld = transformComp.GetGlobalMatrix();
+			});*/
 
 		//send data to graphics side
 		world->for_each(skin_bone_mesh_query,
@@ -202,14 +233,22 @@ namespace oo
 		return nullptr;
 	}
 
-	/*void AssignGraphicsWorldID_to_Bones_Recursively(oo::GameObject obj, ModelFileResource* model, oGFX::BoneNode* curr)
+	void RecurseChildren_AssignUID_to_BoneComponents(GameObject obj, UUID uid)
 	{
-		uint index = 0;
-		for (auto bone : curr->mChildren)
+		auto children = obj.GetChildren();
+		if (children.empty()) return;
+
+		for (auto& child : children)
 		{
-			 
+			//skip gameobjects that are not bones
+			if (child.HasComponent<SkinMeshBoneComponent>() == false) continue;
+
+			auto& bonecomp = child.GetComponent<SkinMeshBoneComponent>();
+			bonecomp.root_bone_object = uid;
+
+			RecurseChildren_AssignUID_to_BoneComponents(child, uid);
 		}
-	}*/
+	}
 
 	void SkinMeshRendererSystem::PostLoadScene()
 	{
@@ -231,17 +270,23 @@ namespace oo
 				if (gfx_Object.bones.size() != m_comp.num_bones)
 					gfx_Object.bones.resize(m_comp.num_bones);
 
-				//TODO
-				//ModelFileResource* model = FindModel_via_modelID(models, m_comp.meshResource);
-				//assert(model->skeleton);	//should have skeleton
-				//assert(model->skeleton->m_boneNodes);	//should have bones
-				//
-				//oo::GameObject go{ entity,*scene };
-				//AssignGraphicsWorldID_to_Bones_Recursively(go, model, model->skeleton->m_boneNodes);
 			});
 
 		AssignGraphicsWorldID_to_BoneComponents();
+
+
+		//recalculate gameobject uid for all bones
+		scene->GetWorld().for_each_entity_and_component(skin_mesh_query,
+			[&](Ecs::EntityID entity, SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
+			{
+				oo::GameObject go{ entity,*scene };
+
+				RecurseChildren_AssignUID_to_BoneComponents(go, go.GetInstanceID());
+			});
+
 	}
+
+	
 
 	void RecurseChildren_AssignGraphicsWorldID_to_BoneComponents(GameObject obj, uint32_t graphicsID, UUID uid)
 	{
@@ -301,12 +346,12 @@ namespace oo
 	void SkinMeshRendererSystem::OnMeshAssign(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)
 	{
 		assert(m_world != nullptr);
-
-		auto& meshComp = evnt->component;
+		uninitializedEntities.emplace_back(evnt->entityID);
+		/*auto& meshComp = evnt->component;
 		auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
 		auto& go_component = m_world->get_component<GameObjectComponent>(evnt->entityID);
 
-		Initialize(meshComp, transform_component, go_component);
+		Initialize(meshComp, transform_component, go_component);*/
 	}
 	void SkinMeshRendererSystem::OnMeshRemove(Ecs::ComponentEvent<SkinMeshRendererComponent>* evnt)
 	{

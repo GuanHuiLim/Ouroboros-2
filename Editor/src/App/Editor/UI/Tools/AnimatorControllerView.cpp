@@ -743,9 +743,10 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                             .group_name = current_group_name,
                             .link_ID = link->linkID };
                         oo::Anim::TargetConditionInfo condition_info{
-                                .link_info = link_info.group_name,
+                                .link_info = link_info,
                                 .condition_ID = condition.conditionID };
                         animator->RemoveCondition(condition_info);
+                        return;
                     }
 
                 }
