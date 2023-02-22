@@ -307,18 +307,18 @@ void GraphicsBatch::GenerateSpriteGeometry(const UIInstance& ui)
 	constexpr size_t quadVertexCount = 4;
 	oGFX::AABB2D texCoords{ glm::vec2{0.0f}, glm::vec2{1.0f} };
 	glm::vec2 textureCoords[quadVertexCount] = {
-		{ texCoords.min.x, texCoords.max.y },
-		{ texCoords.min.x, texCoords.min.y },
-		{ texCoords.max.x, texCoords.min.y },
 		{ texCoords.max.x, texCoords.max.y },
+		{ texCoords.max.x, texCoords.min.y },
+		{ texCoords.min.x, texCoords.min.y },
+		{ texCoords.min.x, texCoords.max.y },
 	};
 
 	
 	constexpr glm::vec4 verts[quadVertexCount] = {
-		{-0.5f,-0.5f, 0.0f, 1.0f},
-		{-0.5f, 0.5f, 0.0f, 1.0f},
-		{ 0.5f, 0.5f, 0.0f, 1.0f},
 		{ 0.5f,-0.5f, 0.0f, 1.0f},
+		{ 0.5f, 0.5f, 0.0f, 1.0f},
+		{-0.5f, 0.5f, 0.0f, 1.0f},
+		{-0.5f,-0.5f, 0.0f, 1.0f},
 	};
 
 	auto invalidIndex = 0xFFFFFFFF;
@@ -523,7 +523,7 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 
 	// we set the remaining starting offset
 	xStartingOffsets.push_back(sizeTaken);
-	if (ui.format.alignment & (FontAlignment::Centre_Right | FontAlignment::Top_Right | FontAlignment::Bottom_Right))
+	if (ui.format.alignment & (FontAlignment::Centre_Right| FontAlignment::Top_Right| FontAlignment::Bottom_Right))
 	{
 		xStartingOffsets.back() = halfBoxX - xStartingOffsets.back();
 	}
@@ -539,11 +539,11 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 		//auto position = ui.position;
 		if (ui.format.alignment & (FontAlignment::Centre | FontAlignment::Top_Centre | FontAlignment::Bottom_Centre))
 		{
-			x = - x;
+			x = x;
 		}
 		else
 		{
-			x = x;
+			x = -x;
 		}
 	}
 
@@ -552,9 +552,9 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 	int xStartIndex = 0;
 
 	// Select formatting along X axis
-	if (ui.format.alignment & (FontAlignment::Bottom_Left | FontAlignment::Centre_Left | FontAlignment::Top_Left))
+	if (ui.format.alignment & (FontAlignment::Bottom_Left | FontAlignment::Centre_Left| FontAlignment::Top_Left))
 	{
-		startX = -halfBoxX;
+		startX = halfBoxX;
 	}
 	else
 	{
@@ -590,7 +590,7 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 
 			if (c == '\n')
 			{
-				if (ui.format.alignment & (FontAlignment::Centre_Left | FontAlignment::Top_Left | FontAlignment::Bottom_Left))
+				if (ui.format.alignment & (FontAlignment::Centre_Left| FontAlignment::Top_Left| FontAlignment::Bottom_Left))
 				{
 					// provide left alignment which is default
 					cursorPos.x = startX;
@@ -608,7 +608,7 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 
 
 			// calculating glyph positions..
-			float xpos = cursorPos.x + glyph.Bearing.x * /*ui.scale.x * */ fontScale;
+			float xpos = cursorPos.x - glyph.Bearing.x * /*ui.scale.x * */ fontScale;
 			float ypos = cursorPos.y - (glyph.Size.y - glyph.Bearing.y) * /*ui.scale.y * */ fontScale;
 			ypos = cursorPos.y + (glyph.Bearing.y) * /*ui.scale.y * */ fontScale;
 
@@ -619,10 +619,10 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 			std::array<glm::vec4, 4> verts = {
 				glm::vec4{xpos,    ypos,     0.0f, 1.0f},
 				glm::vec4{xpos,    ypos + h, 0.0f, 1.0f},
-				glm::vec4{xpos + w,ypos + h, 0.0f, 1.0f},
-				glm::vec4{xpos + w,ypos,     0.0f, 1.0f},
+				glm::vec4{xpos- w ,ypos + h, 0.0f, 1.0f},
+				glm::vec4{xpos- w ,ypos,     0.0f, 1.0f},
 			};
-			cursorPos.x += (glyph.Advance.x) * /*ui.scale.x * */ fontScale;  // bitshift by 6 to get value in pixels (2^6 = 64)
+			cursorPos.x -= (glyph.Advance.x) * /*ui.scale.x * */ fontScale;  // bitshift by 6 to get value in pixels (2^6 = 64)
 
 																		 // Reference : constexpr glm::vec2 textureCoords[] = { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f } };
 			std::array<glm::vec2, 4> textureCoords = {

@@ -115,7 +115,9 @@ struct UIInstance
 
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
-    UIInstanceFlags flags{static_cast<UIInstanceFlags>(UIInstanceFlags::RENDER_ENABLED | UIInstanceFlags::WORLD_SPACE_UI)};
+    UIInstanceFlags flags{static_cast<UIInstanceFlags>(
+        UIInstanceFlags::RENDER_ENABLED 
+        | UIInstanceFlags::WORLD_SPACE_UI)};
 
     void SetText(bool s);
     bool isText();
