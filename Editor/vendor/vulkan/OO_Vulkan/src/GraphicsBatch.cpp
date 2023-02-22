@@ -357,7 +357,7 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 	const auto& mdl_xform = ui.localToWorld;
 
 	//float fontScale = format.fontSize / fontAtlas->m_pixelSize;
-	float fontScale = 1.0f;
+	float fontScale = ui.format.fontSize;
 
 
 	float boxPixelSizeX = fabsf(ui.format.box.max.x - ui.format.box.min.x);
