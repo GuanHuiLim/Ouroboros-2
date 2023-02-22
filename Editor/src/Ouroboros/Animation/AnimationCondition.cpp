@@ -162,6 +162,7 @@ namespace oo::Anim
 	//if intial value is set, use that, otherwise use default value based on type 
 	, value{ info.value.is_valid() ? info.value : internal::ConditionDefaultValue(info._param->type) }
 	, paramID{ info._paramID }
+	, conditionID{internal::generateUID()}
 	{
 		//for triggers, only care if trigger boolean is true
 		if (type == P_TYPE::TRIGGER)
