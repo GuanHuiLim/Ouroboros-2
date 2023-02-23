@@ -57,7 +57,7 @@ void PreviewWindow::Show()
 	vMin.x += ImGui::GetWindowPos().x;
 	vMin.y += ImGui::GetWindowPos().y;
 	PreviewWindowImageResizeEvent e;
-	e.StartPosition = { vMin.x, vMin.y};
+	//e.StartPosition  = ImGui:://= { vMin.x, vMin.y};
 	// Launch preview window resize event.
 
 	float contentWidth = 0;
@@ -84,9 +84,11 @@ void PreviewWindow::Show()
 		contentHeight = resize_by_ar.y;
 	}
 
-	e.StartPosition += glm::vec2{ cursorPosition.x, cursorPosition.y };
+	ImGui::SetCursorPos(cursorPosition);
+	e.StartPosition = { ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y };
 	e.Width = contentWidth;
 	e.Height = contentHeight;
+	//ImGui::GetForegroundDrawList()->AddRect(ImVec2{e.StartPosition.x, e.StartPosition.y}, ImVec2{e.StartPosition.x + e.Width, e.StartPosition.y + e.Height }, 0xFFFFFFFF);
 	// blast event 
 	oo::EventManager::Broadcast<PreviewWindowImageResizeEvent>(&e);
 

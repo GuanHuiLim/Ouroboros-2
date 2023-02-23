@@ -39,7 +39,7 @@ namespace oo
         );
 
         registration::class_<UITextComponent>("UI Text")
-            .property("Text", &UITextComponent::Text)
+            .property("Text", &UITextComponent::Text)(metadata(UI_metadata::EXTRA_TEXT, true))
             .property("Color",&UITextComponent::TextColor)
             .property("Font Size", &UITextComponent::FontSize)
             .property("Font Alignment", &UITextComponent::Alignment)

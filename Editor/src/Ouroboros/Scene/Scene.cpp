@@ -568,7 +568,7 @@ namespace oo
         {
             // On Enable we have to check!
             auto go = FindWithInstanceID(e->Id);
-            bool renderObject = go->ActiveInHierarchy();
+            bool renderObject = go->IsActive();
 
             // if its not UI, it must be mesh or skin mesh
             if (!go->HasComponent<UIComponent>())
@@ -597,8 +597,9 @@ namespace oo
             else if (go->HasComponent<UIComponent>())
             {
                 // ui not supported right now.
-                //auto ui = m_graphicsWorld->GetUIInstance(id);
+                auto& ui = m_graphicsWorld->GetUIInstance(go->GetComponent<UIComponent>().UI_ID);
                 //ui.SetRenderEnabled()
+                ui.SetRenderEnabled(renderObject);
             }
 
         }
@@ -635,8 +636,9 @@ namespace oo
             else if (go->HasComponent<UIComponent>())
             {
                 // ui not supported right now.
-                //auto ui = m_graphicsWorld->GetUIInstance(id);
+                auto& ui = m_graphicsWorld->GetUIInstance(go->GetComponent<UIComponent>().UI_ID);
                 //ui.SetRenderEnabled()
+                ui.SetRenderEnabled(false);
             }
         }
     }

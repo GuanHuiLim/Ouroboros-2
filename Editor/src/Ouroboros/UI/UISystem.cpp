@@ -122,6 +122,31 @@ namespace oo
 
     void UISystem::UpdateJustCreated()
     {
+        // Update UI
+        static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent, RectTransformComponent, JustCreatedComponent>();
+        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+
+                ui.entityID = uiComp.PickingID;
+                ui.localToWorld = transformComp.GetGlobalMatrix();
+            });
+
+        // Update Text UI
+        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent, JustCreatedComponent>();
+        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(true);
+            });
+
+        // Update Image UI
+        static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent, JustCreatedComponent>();
+        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(false);
+            });
     }
 
     void UISystem::UpdateDuplicated()
@@ -131,6 +156,22 @@ namespace oo
         m_world->for_each(duplicated_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, GameObjectComponent& goComp, DuplicatedComponent& dupComp)
             {
                 InitializeUI(uiComp, transformComp, goComp);
+            });
+
+        // Update Newly Duplicated Text UI
+        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent, DuplicatedComponent>();
+        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(true);
+            });
+
+        // Update Newly Duplicated Image UI
+        static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent, DuplicatedComponent>();
+        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(false);
             });
 
     }
@@ -151,17 +192,11 @@ namespace oo
                 if (rectTfComp.HasChanged)
                 {
                     glm::vec3 Center = rectTfComp.BoundingVolume.Center;
-                    glm::quat GlobalQuat = rectTfComp.BoundingVolume.Orientation; // tf.GetGlobalRotationQuat().value;
-                    glm::vec3 HalfExtents = rectTfComp.BoundingVolume.HalfExtents; //GlobalScale * (glm::vec3{rectTransform.Size, 0} * 0.5f);
+                    
+                    glm::vec2 HalfSize = rectTfComp.Size * 0.5f;
 
-                    glm::vec3 HalfExtentX = glm::rotate(GlobalQuat, glm::vec3{ HalfExtents.x, 0, 0 });
-                    glm::vec3 HalfExtentY = glm::rotate(GlobalQuat, glm::vec3{ 0, HalfExtents.y, 0 });
-
-                    glm::vec3 bottom_left = Center - HalfExtentX - HalfExtentY;
-                    glm::vec3 top_right = Center + HalfExtentX + HalfExtentY;
-
-                    ui.format.box.min = bottom_left;
-                    ui.format.box.max = top_right;
+                    ui.format.box.min = glm::vec2{ Center } - HalfSize;
+                    ui.format.box.max = glm::vec2{ Center } + HalfSize;
                 }
                     
             });
@@ -414,6 +449,7 @@ namespace oo
         intermediateY /= static_cast<float>(m_previewImgHeight);
         intermediateX *= windowSizeX;
         intermediateY *= windowSizeY;
+        //LOG_CORE_INFO("actual mouse pos {0},{1}, mapped mouse pos {2},{3}", mouseX, mouseY, intermediateX, intermediateY);
         mouseX = intermediateX;
         mouseY = intermediateY;
 #endif
