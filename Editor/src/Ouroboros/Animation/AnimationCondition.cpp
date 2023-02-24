@@ -113,12 +113,22 @@ namespace oo::Anim::internal
 			auto properties = rttr::type::get<Condition>().get_properties();
 			for (auto& prop : properties)
 			{
+				//ignore if property not found
+				if (object.HasMember(prop.get_name().data()) == false) continue;
+
 				auto& value = object.FindMember(prop.get_name().data())->value;
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
 				rttr::variant val{ internal::loadDataFn_map.at(prop.get_type().get_id())(value) };
 				prop.set_value(obj, val);
 			}
+		}
+		//fix the uid if its invalid i.e not set
+		auto uid = rttr::type::get<Condition>().get_property_value("conditionID", obj).get_value<UID>();
+		if (uid == internal::invalid_ID)
+		{
+			uid = internal::generateUID();
+			rttr::type::get<Condition>().set_property_value("conditionID", obj, uid);
 		}
 	}
 }
@@ -136,6 +146,7 @@ namespace oo::Anim
 				value("NOT_EQUAL", Condition::CompareType::NOT_EQUAL)
 			)
 			.property("paramID", &Condition::paramID)
+			.property("conditionID", &Condition::conditionID)
 			.property("comparison_type", &Condition::comparison_type)
 			.property("type", &Condition::type)
 			.property("value" , &Condition::value)
@@ -151,6 +162,7 @@ namespace oo::Anim
 	//if intial value is set, use that, otherwise use default value based on type 
 	, value{ info.value.is_valid() ? info.value : internal::ConditionDefaultValue(info._param->type) }
 	, paramID{ info._paramID }
+	, conditionID{internal::generateUID()}
 	{
 		//for triggers, only care if trigger boolean is true
 		if (type == P_TYPE::TRIGGER)
