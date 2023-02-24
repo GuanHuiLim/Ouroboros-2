@@ -107,7 +107,8 @@ namespace oo
 	}
 
     InputAxis::Tracker::Tracker(InputAxis& axis)
-        : axis{ axis }, durationHeld{ 0.0f }, pressConsumed{ false }, pressCount{ 0 }, pressGapTimeLeft{ 0.0f }, lastPressed{ InputAxis::INPUTCODE_INVALID }, isController{ false }
+        : axis{ axis }, durationHeld{ 0.0f }, pressConsumed{ false }, pressConsumedThisFrame{ false }, pressCount{ 0 },
+        pressGapTimeLeft{ 0.0f }, lastPressed{ InputAxis::INPUTCODE_INVALID }, isController{ false }
     {
 
     }
@@ -116,6 +117,13 @@ namespace oo
     {
         if (axis.type == InputType::MouseMovement)
             return;
+
+        // update press consumed
+        if (pressConsumedThisFrame)
+        {
+            pressConsumed = true;
+            pressConsumedThisFrame = false;
+        }
 
         // update last pressed
 
@@ -161,6 +169,8 @@ namespace oo
             if (IsInputCodeHeld(axis.type, lastPressed))
             {
                 durationHeld += deltaTime;
+                if (durationHeld >= axis.settings.holdDurationRequired)
+                    pressConsumedThisFrame = true;
             }
             if (IsInputCodeReleased(axis.type, lastPressed))
             {
@@ -187,6 +197,8 @@ namespace oo
                     if (IsControllerInputCodeHeld(lastPressed))
                     {
                         durationHeld += deltaTime;
+                        if (durationHeld >= axis.controllerSettings.holdDurationRequired)
+                            pressConsumedThisFrame = true;
                     }
                     if (IsControllerInputCodeReleased(lastPressed))
                     {
@@ -211,6 +223,8 @@ namespace oo
                                 pressCount -= axis.controllerSettings.pressesRequired;
                         }
                         durationHeld += deltaTime;
+                        if (durationHeld >= axis.settings.holdDurationRequired)
+                            pressConsumedThisFrame = true;
                     }
                     else
                     {
@@ -255,12 +269,10 @@ namespace oo
                 if (IsInputCodeHeld(axis.type, axis.settings.positiveButton) || IsInputCodeHeld(axis.type, axis.settings.positiveAltButton))
                 {
                     value += 1.0f;
-                    pressConsumed = true;
                 }
                 if (IsInputCodeHeld(axis.type, axis.settings.negativeButton) || IsInputCodeHeld(axis.type, axis.settings.negativeAltButton))
                 {
                     value += -1.0f;
-                    pressConsumed = true;
                 }
             }
 
@@ -314,12 +326,10 @@ namespace oo
                 if (IsControllerInputCodeHeld(axis.controllerSettings.positiveButton) || IsControllerInputCodeHeld(axis.controllerSettings.positiveAltButton))
                 {
                     value += 1.0f;
-                    pressConsumed = true;
                 }
                 if (IsControllerInputCodeHeld(axis.controllerSettings.negativeButton) || IsControllerInputCodeHeld(axis.controllerSettings.negativeAltButton))
                 {
                     value += -1.0f;
-                    pressConsumed = true;
                 }
             }
 
@@ -353,6 +363,7 @@ namespace oo
             lastPressed = potentialButton;
             pressCount = 0;
             durationHeld = 0.0f;
+            pressConsumed = false;
             isController = false;
         }
     }
@@ -363,6 +374,7 @@ namespace oo
             lastPressed = potentialButton;
             pressCount = 0;
             durationHeld = 0.0f;
+            pressConsumed = false;
             isController = true;
         }
     }
@@ -373,6 +385,7 @@ namespace oo
             lastPressed = potentialButton;
             pressCount = 0;
             durationHeld = 0.0f;
+            pressConsumed = false;
             isController = true;
         }
     }
