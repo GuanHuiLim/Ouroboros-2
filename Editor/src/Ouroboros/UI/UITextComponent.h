@@ -41,8 +41,8 @@ namespace oo
 
         std::string Text = "Default text here";
         Color TextColor = { 1, 1, 1, 1 };
-        float FontSize = 12;
-        float VerticalLineSpace = 0;
+        float FontSize = 8;
+        float VerticalLineSpace = 1;
         FontAlignment Alignment = FontAlignment::Centre;
 
         RTTR_ENABLE();
