@@ -683,8 +683,15 @@ namespace oo
 
     std::uint32_t Scene::GeneratePickingID(UUID uuid)
     {
+        // ensure theres enough ids to generate
+        ASSERT_MSG(m_pickingIdToUUID.size() == std::numeric_limits<std::uint16_t>::max(), " ran out of ids, oh no!");
+
         // need to find a way to generate a 32 bit picking ID uniquely
         std::uint32_t pickingID = static_cast<std::uint32_t>(UUID16{});
+        while (m_pickingIdToUUID.contains(pickingID))
+        {
+            pickingID = static_cast<std::uint32_t>(UUID16{});
+        }
         
         ASSERT_MSG(m_pickingIdToUUID.contains(pickingID) == true, " this picking id should be new!");
         ASSERT_MSG(m_uuidToPickingId.contains(uuid) == true, " this uuid should not already exist");
