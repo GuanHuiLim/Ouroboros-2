@@ -40,6 +40,8 @@ namespace oo
         EventManager::Subscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
         EventManager::Subscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
         EventManager::Subscribe<ScriptSystem, PhysicsCollisionEvent>(this, &ScriptSystem::OnCollisionEvent);
+
+        EventManager::Subscribe<ScriptSystem, UIButtonEvent>(this, &ScriptSystem::OnUIButtonEvent);
     }
 
     ScriptSystem::~ScriptSystem()
@@ -54,6 +56,8 @@ namespace oo
         EventManager::Unsubscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
         EventManager::Unsubscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
         EventManager::Unsubscribe<ScriptSystem, PhysicsCollisionEvent>(this, &ScriptSystem::OnCollisionEvent);
+
+        EventManager::Unsubscribe<ScriptSystem, UIButtonEvent>(this, &ScriptSystem::OnUIButtonEvent);
 
         scriptDatabase.DeleteAll();
         componentDatabase.DeleteAll();
@@ -656,6 +660,49 @@ namespace oo
                 });
         }
         break;
+        }
+    }
+
+    void ScriptSystem::OnUIButtonEvent(UIButtonEvent* e)
+    {
+        if (!isPlaying)
+            return;
+        std::shared_ptr<GameObject> object = scene.FindWithInstanceID(e->buttonID);
+        if (!object->ActiveInHierarchy())
+            return;
+
+        switch (e->Type)
+        {
+        case UIButtonEventType::ON_POINTER_ENTER:
+            scriptDatabase.ForEachEnabled(e->buttonID, [](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnPointerEnter");
+                });
+            break;
+        case UIButtonEventType::ON_POINTER_EXIT:
+            scriptDatabase.ForEachEnabled(e->buttonID, [](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnPointerExit");
+                });
+            break;
+        case UIButtonEventType::ON_PRESS:
+            scriptDatabase.ForEachEnabled(e->buttonID, [](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnPointerDown");
+                });
+            break;
+        case UIButtonEventType::ON_RELEASE:
+            scriptDatabase.ForEachEnabled(e->buttonID, [](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnPointerUp");
+                });
+            break;
+        case UIButtonEventType::ON_CLICK:
+            scriptDatabase.ForEachEnabled(e->buttonID, [](MonoObject* script)
+                {
+                    ScriptEngine::InvokeFunction(script, "OnPointerClick");
+                });
+            break;
         }
     }
 }

@@ -139,14 +139,17 @@ namespace oo
           TRACY_PROFILE_SCOPE_END();
             });
         
-        jobsystem::submit(phase_three, [&]() {
-            TRACY_PROFILE_SCOPE(UI_runtime_update);
-            GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
-            TRACY_PROFILE_SCOPE_END();
-            });
-        
+        //jobsystem::submit(phase_three, [&]() {
+        //    TRACY_PROFILE_SCOPE(UI_runtime_update);
+        //    GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
+        //    TRACY_PROFILE_SCOPE_END();
+        //    });
         
         jobsystem::launch_and_wait(phase_three);
+
+        TRACY_PROFILE_SCOPE(UI_runtime_update);
+        GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
+        TRACY_PROFILE_SCOPE_END();
             
         TRACY_PROFILE_SCOPE_END();
 
