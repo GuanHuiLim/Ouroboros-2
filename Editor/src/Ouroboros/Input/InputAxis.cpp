@@ -169,7 +169,7 @@ namespace oo
             if (IsInputCodeHeld(axis.type, lastPressed))
             {
                 durationHeld += deltaTime;
-                if (durationHeld >= axis.settings.holdDurationRequired)
+                if (!pressConsumed && durationHeld >= axis.settings.holdDurationRequired)
                     pressConsumedThisFrame = true;
             }
             if (IsInputCodeReleased(axis.type, lastPressed))
@@ -197,7 +197,7 @@ namespace oo
                     if (IsControllerInputCodeHeld(lastPressed))
                     {
                         durationHeld += deltaTime;
-                        if (durationHeld >= axis.controllerSettings.holdDurationRequired)
+                        if (!pressConsumed && durationHeld >= axis.controllerSettings.holdDurationRequired)
                             pressConsumedThisFrame = true;
                     }
                     if (IsControllerInputCodeReleased(lastPressed))
@@ -223,7 +223,7 @@ namespace oo
                                 pressCount -= axis.controllerSettings.pressesRequired;
                         }
                         durationHeld += deltaTime;
-                        if (durationHeld >= axis.settings.holdDurationRequired)
+                        if (!pressConsumed && durationHeld >= axis.settings.holdDurationRequired)
                             pressConsumedThisFrame = true;
                     }
                     else
