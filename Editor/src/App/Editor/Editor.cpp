@@ -79,11 +79,6 @@ Editor::Editor()
 	oo::CommandStackManager::InitEvents();
 	oo::EventManager::Subscribe<oo::FileDropEvent>(&FileDrop);
 
-	AddSequence(TimedSequence([] {
-		auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
-		Serializer::SaveScene(*(scene));
-		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Auto Saved");
-		}, 240.0f));
 	
 	//object editors
 	ImGuiManager::Create("Hierarchy", true, ImGuiWindowFlags_MenuBar, [this] {this->m_hierarchy.Show(); }, 0, false);
