@@ -307,10 +307,10 @@ void GraphicsBatch::GenerateSpriteGeometry(const UIInstance& ui)
 	constexpr size_t quadVertexCount = 4;
 	oGFX::AABB2D texCoords{ glm::vec2{0.0f}, glm::vec2{1.0f} };
 	glm::vec2 textureCoords[quadVertexCount] = {
-		{ texCoords.max.x, texCoords.max.y },
-		{ texCoords.max.x, texCoords.min.y },
-		{ texCoords.min.x, texCoords.min.y },
 		{ texCoords.min.x, texCoords.max.y },
+		{ texCoords.min.x, texCoords.min.y },
+		{ texCoords.max.x, texCoords.min.y },
+		{ texCoords.max.x, texCoords.max.y },
 	};
 
 	
