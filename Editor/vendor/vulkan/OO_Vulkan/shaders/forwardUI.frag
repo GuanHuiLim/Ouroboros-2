@@ -71,7 +71,7 @@ void main()
         if(outfragCol.a < 0.0001) discard; // this is bad and broken
     }else
 {
-outfragCol = outfragCol * inColor.rgba
+outfragCol = outfragCol * inColor.rgba;
 }
 
     // hardcode red
