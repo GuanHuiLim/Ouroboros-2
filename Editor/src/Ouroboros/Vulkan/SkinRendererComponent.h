@@ -19,12 +19,16 @@ namespace oo
 	{
 		Asset albedo_asset;
 		Asset normal_asset;
+		Asset metallic_asset;
+		Asset roughness_asset;
 		
 		Asset mesh_asset;
 		MeshInfo meshInfo;
 
 		uint32_t albedoID = 0xFFFFFFFF;
 		uint32_t normalID = 0xFFFFFFFF;
+		uint32_t metallicID = 0xFFFFFFFF;
+		uint32_t roughnessID = 0xFFFFFFFF;
 
 		bool CastShadows{	 false };
 		bool ReceiveShadows{ false };
@@ -44,6 +48,12 @@ namespace oo
 
 		void SetNormal(Asset normal);
 		Asset GetNormal() const;
+
+		void SetMetallic(Asset metallic);
+		Asset GetMetallic() const;
+
+		void SetRoughness(Asset roughness);
+		Asset GetRoughness() const;
 
 		Asset GetMesh();
 		void SetMesh(Asset asset);

@@ -165,6 +165,8 @@ namespace oo
 					gfx_Object.modelID = m_comp.meshResource;
 					gfx_Object.bindlessGlobalTextureIndex_Albedo = m_comp.albedoID;
 					gfx_Object.bindlessGlobalTextureIndex_Normal = m_comp.normalID;
+					gfx_Object.bindlessGlobalTextureIndex_Metallic = m_comp.metallicID;
+					gfx_Object.bindlessGlobalTextureIndex_Roughness = m_comp.roughnessID;
 					gfx_Object.submesh = m_comp.meshInfo.submeshBits;
 					gfx_Object.SetShadowCaster(m_comp.CastShadows);
 					gfx_Object.SetShadowReciever(m_comp.ReceiveShadows);
