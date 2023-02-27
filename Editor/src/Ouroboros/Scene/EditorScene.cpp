@@ -66,6 +66,8 @@ namespace oo
         // Some system setup code
         {
             // set default debug draws
+            GetWorld().Get_System<UISystem>()->UIDebugDraw = true;
+            GetWorld().Get_System<UISystem>()->UIDebugRaycast = false;
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = true;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = true;
             GetWorld().Get_System<RendererSystem>()->LightsDebugDraw = true;

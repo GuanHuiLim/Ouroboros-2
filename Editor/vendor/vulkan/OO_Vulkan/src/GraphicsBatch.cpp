@@ -307,10 +307,10 @@ void GraphicsBatch::GenerateSpriteGeometry(const UIInstance& ui)
 	constexpr size_t quadVertexCount = 4;
 	oGFX::AABB2D texCoords{ glm::vec2{0.0f}, glm::vec2{1.0f} };
 	glm::vec2 textureCoords[quadVertexCount] = {
-		{ texCoords.max.x, texCoords.max.y },
-		{ texCoords.max.x, texCoords.min.y },
-		{ texCoords.min.x, texCoords.min.y },
 		{ texCoords.min.x, texCoords.max.y },
+		{ texCoords.min.x, texCoords.min.y },
+		{ texCoords.max.x, texCoords.min.y },
+		{ texCoords.max.x, texCoords.max.y },
 	};
 
 	
@@ -575,7 +575,10 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 	else
 	{
 		// centre alignment takes into account everything
-		startY = /*ui.position.y*/ + (numLines - 2) * fontAtlas->m_characterInfos['L'].Size.y * fontScale / 2.0f * ui.format.verticalLineSpace;
+		const float fullFontSize = fontAtlas->m_characterInfos['L'].Size.y * fontScale;
+		const float halfFontSize = fontAtlas->m_characterInfos['L'].Size.y * fontScale / 2.0f;
+		const float halfLines = std::max(0.0f,float(numLines-1) / 2);
+		startY = /*ui.position.y*/ -halfFontSize + halfLines * fullFontSize * ui.format.verticalLineSpace;
 	}
 
 

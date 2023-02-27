@@ -69,7 +69,11 @@ void main()
         outfragCol = mix(vec4(0),inColor,opacity);
         
         if(outfragCol.a < 0.0001) discard; // this is bad and broken
-    }
+    }else
+{
+outfragCol = outfragCol * inColor.rgba;
+outfragCol.rgb = pow(outfragCol.rgb,vec3(2.2));
+}
 
     // hardcode red
     //outfragCol = vec4(1.0,0.0,0.0,1.0);

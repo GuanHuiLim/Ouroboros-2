@@ -212,6 +212,8 @@ namespace oo
                 ui.format.fontSize = uiTextComp.FontSize;
                 ui.format.alignment = static_cast<oGFX::FontAlignment>(uiTextComp.Alignment);
                 ui.format.verticalLineSpace = uiTextComp.VerticalLineSpace;
+
+                ui.fontAsset = uiTextComp.font;
             });
         
         // Update Image UI
@@ -398,6 +400,9 @@ namespace oo
 
     void UISystem::DebugDrawUI()
     {
+        if (UIDebugDraw == false)
+            return;
+
         static Ecs::Query rect_transform_query = Ecs::make_query<TransformComponent, RectTransformComponent>();
         m_world->for_each(rect_transform_query, [&](TransformComponent& tf, RectTransformComponent& rectTransform)
             {
@@ -455,7 +460,8 @@ namespace oo
 #endif
         Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), mouseX, mouseY);
         //LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
-        oGFX::DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 20.f);
+        if(UIDebugRaycast)
+            oGFX::DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 20.f);
         //Point2D mouseWorldPoint{ mousePos };
 
         /*SceneCamera* cam = SceneCamera::MainCamera();

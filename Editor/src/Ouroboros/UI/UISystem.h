@@ -72,6 +72,9 @@ namespace oo
         //*//**********************************************************************************/
         //void UpdateRectTransformImmediate(RectTransform& rect);
 
+        inline static bool UIDebugDraw = true;
+        inline static bool UIDebugRaycast = false;
+
     private:
         //GameObject selectedButton;
 
