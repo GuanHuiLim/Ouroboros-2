@@ -694,7 +694,7 @@ namespace myPhysx
 
             underlying_obj->m_shape = physx_system::getPhysics()->createShape(data, *material, true);
 
-            underlying_obj->m_shape->setContactOffset(1);
+            //underlying_obj->m_shape->setContactOffset(1);
 
             // ATTACH THE SHAPE TO THE OBJECT
             if (rigidType == rigid::rstatic)
@@ -764,8 +764,7 @@ namespace myPhysx
                 underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(mesh_geometry), *material, true);
             }
 
-            
-            underlying_obj->m_shape->setContactOffset(1);
+            //underlying_obj->m_shape->setContactOffset(1);
 
             // ATTACH THE SHAPE TO THE OBJECT
             if (underlying_obj->rigid_type == rigid::rstatic)
