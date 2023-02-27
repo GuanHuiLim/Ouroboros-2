@@ -35,6 +35,7 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Animation/Animation.h"
 #include "Ouroboros/Animation/AnimationSystem.h"
+#include "Ouroboros/Vulkan/SkinRendererSystem.h"
 MeshHierarchy::MeshHierarchy()
 {
 	oo::EventManager::Subscribe<MeshHierarchy, OpenFileEvent>(this, &MeshHierarchy::OpenFileCallBack);
@@ -178,6 +179,9 @@ void MeshHierarchy::CreateObject(Node* node,oo::AssetID asset_id)
 			if (has_skeleton)
 			{
 				auto& renderer = gameobject->EnsureComponent<oo::SkinMeshRendererComponent>();
+				oo::SkinMeshRendererSystem::InitializeMeshEvent evnt{};
+				evnt.entity = gameobject->GetEntity();
+				oo::EventManager::Broadcast<oo::SkinMeshRendererSystem::InitializeMeshEvent>(&evnt);
 				assert(renderer.gfx_Object);
 				renderer.SetModelHandle(asset, node->meshRef);
 				gfx_ID = renderer.graphicsWorld_ID;
