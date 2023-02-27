@@ -42,6 +42,9 @@ Technology is prohibited.
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
 #include <App/Editor/Events/GizmoOperationEvent.h>
 #include "App/Editor/UI/Tools/Keylogging.h"
+#include <SceneManagement/include/SceneManager.h>
+#include <Ouroboros/Scene/Scene.h>
+#include <App/Editor/Serializer.h>
 void Toolbar::InitAssets()
 {
 	m_iconsSaved.emplace("TranslateButton", *ImGuiManager::s_editorAssetManager.GetOrLoadName("TranslateButton.png").begin());
@@ -128,12 +131,16 @@ void Toolbar::Show()
 	}
 	{
 		ImGui::BeginChild("ChildToolbar2", { 0,0 });
-		if (ImGuiUtilities::ImageButton_ToolTip(4, "Start Simulation", 
+		if (ImGuiUtilities::ImageButton_ToolTip(4, "Start Simulation (Saves your progress)", 
 			m_iconsSaved["PlayButton"].GetData<ImTextureID>(),
 			ImGui_StylePresets::image_small))
 		{
+			auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
+			Serializer::SaveScene(*(scene));
+
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::PLAY);
 			oo::EventManager::Broadcast(&tbe);
+			WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Auto Saved & Started Simulation");
 		};
 
 		ImGui::SameLine();
