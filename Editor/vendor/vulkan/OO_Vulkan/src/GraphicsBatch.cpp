@@ -575,7 +575,10 @@ void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 	else
 	{
 		// centre alignment takes into account everything
-		startY = /*ui.position.y*/ + (numLines - 2) * fontAtlas->m_characterInfos['L'].Size.y * fontScale / 2.0f * ui.format.verticalLineSpace;
+		const float fullFontSize = fontAtlas->m_characterInfos['L'].Size.y * fontScale;
+		const float halfFontSize = fontAtlas->m_characterInfos['L'].Size.y * fontScale / 2.0f;
+		const float halfLines = std::max(0.0f,float(numLines-1) / 2);
+		startY = /*ui.position.y*/ -halfFontSize + halfLines * fullFontSize * ui.format.verticalLineSpace;
 	}
 
 

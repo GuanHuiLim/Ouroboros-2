@@ -72,6 +72,7 @@ void main()
     }else
 {
 outfragCol = outfragCol * inColor.rgba;
+outfragCol.rgb = pow(outfragCol.rgb,vec3(2.2));
 }
 
     // hardcode red
