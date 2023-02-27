@@ -37,11 +37,12 @@ Technology is prohibited.
 #include "Ouroboros/Core/Events/FileDropEvent.h"
 #include "Ouroboros/Core/Timer.h"
 #include <Ouroboros/Physics/PhysicsSystem.h>
+#include <Ouroboros/UI/UISystem.h>
 #include <Ouroboros/Vulkan/RendererSystem.h>
 #include <Ouroboros/Scene/RuntimeController.h>
 static void FileDrop(oo::FileDropEvent* e)
 {
-	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf", ".otf", ".tga"};
+	static std::set<std::string> s{ ".png", ".jpg", ".jpeg", ".ogg" ,".ogg", ".mp3", ".wav" ,".fbx",".FBX",".ttf",".TTF", ".otf", ".tga", ".ttf", ".otf" };
 	if (e->GetType() != oo::FileDropType::DropFile)
 		return;
 	std::filesystem::path p = e->GetFile();
@@ -273,7 +274,15 @@ void Editor::MenuBar()
 			{
 				oo::RendererSystem::LightsDebugDraw = !oo::RendererSystem::LightsDebugDraw;
 			}
-			
+			if (ImGui::MenuItem("UI Debug Draw", 0, oo::UISystem::UIDebugDraw))
+			{
+				oo::UISystem::UIDebugDraw = !oo::UISystem::UIDebugDraw;
+			}
+			if (ImGui::MenuItem("UI Debug Raycast", 0, oo::UISystem::UIDebugRaycast))
+			{
+				oo::UISystem::UIDebugRaycast = !oo::UISystem::UIDebugRaycast;
+			}
+
 			ImGui::EndMenu();
 		}
 		if (ImGui::MenuItem("Compile Scripts"))
