@@ -19,18 +19,23 @@ namespace oo
 	{
 		Asset albedo_asset;
 		Asset normal_asset;
+		Asset metallic_asset;
+		Asset roughness_asset;
 		
 		Asset mesh_asset;
 		MeshInfo meshInfo;
 
 		uint32_t albedoID = 0xFFFFFFFF;
 		uint32_t normalID = 0xFFFFFFFF;
+		uint32_t metallicID = 0xFFFFFFFF;
+		uint32_t roughnessID = 0xFFFFFFFF;
 
 		bool CastShadows{	 false };
 		bool ReceiveShadows{ false };
 		
 		//no need to serialize
 		uint32_t graphicsWorld_ID{};
+		uint32_t picking_ID;
 		uint32_t meshResource{ 0 };
 		size_t num_bones{ 0 };
 
@@ -43,6 +48,12 @@ namespace oo
 
 		void SetNormal(Asset normal);
 		Asset GetNormal() const;
+
+		void SetMetallic(Asset metallic);
+		Asset GetMetallic() const;
+
+		void SetRoughness(Asset roughness);
+		Asset GetRoughness() const;
 
 		Asset GetMesh();
 		void SetMesh(Asset asset);

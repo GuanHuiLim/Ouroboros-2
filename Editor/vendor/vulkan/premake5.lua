@@ -18,8 +18,14 @@ project "Vulkan"
 		
         -- include the relevant files you want exposed to the Editor here
         "OO_Vulkan/src/**.*",
+        "vendor/msdfgen/**.*",
+        "vendor/msdf-atlas-gen/**.*",
     }
     excludes{"OO_Vulkan/src/main.cpp"}
+    excludes{"vendor/msdf-atlas-gen/main.cpp"}
+    excludes{"vendor/msdfgen/main.cpp"}
+    excludes{"vendor/msdfgen/ext/import-svg.cpp"}
+    excludes{"vendor/msdfgen/msdfgen.rc"}
 	
     includedirs
     {
@@ -31,6 +37,9 @@ project "Vulkan"
         "%{IncludeDir.assimp}",
         -- "%{IncludeDir.vulkanIMGUI}",
         "%{IncludeDir.assimpBin}",
+        "%{IncludeDir.msdfatlas}",
+        "%{IncludeDir.msdfgen}",
+        "%{IncludeDir.freetype}",
 
         -- for the case of imgui if you want it to be direct just 
         -- append to the back so that it compiles your stuff properly

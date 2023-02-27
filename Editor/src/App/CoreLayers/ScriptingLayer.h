@@ -36,6 +36,10 @@ Technology is prohibited.
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 #include "Ouroboros/Scene/EditorController.h"
 
+#include "Ouroboros/UI/RectTransformComponent.h"
+#include "Ouroboros/UI/UITextComponent.h"
+#include "Ouroboros/UI/UIImageComponent.h"
+
 #if OO_EDITOR
 #include "App/Editor/UI/Tools/WarningMessage.h"
 #endif // OO_EDITOR
@@ -61,6 +65,10 @@ namespace oo
             ScriptManager::RegisterComponent<SphereColliderComponent>("Ouroboros", "SphereCollider");
             ScriptManager::RegisterComponent<CapsuleColliderComponent>("Ouroboros", "CapsuleCollider");
             ScriptManager::RegisterComponent<ConvexColliderComponent>("Ouroboros", "ConvexCollider");
+
+            ScriptManager::RegisterComponent<RectTransformComponent>("Ouroboros", "RectTransform");
+            ScriptManager::RegisterComponent<UITextComponent>("Ouroboros", "Text");
+            ScriptManager::RegisterComponent<UIImageComponent>("Ouroboros", "Image");
 
             ScriptManager::s_SceneManager = &sceneManager;
 

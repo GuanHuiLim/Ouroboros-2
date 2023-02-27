@@ -15,6 +15,9 @@ Technology is prohibited.
 #include <iostream>
 #include <iomanip>
 
+namespace oGFX {
+
+
 //auto TestSphereSphereFn = coll::SphereSphere;
 bool(*TestSphereSphere)(const Sphere&, const Sphere&) = coll::SphereSphere;
 //auto TestAabbAabb = coll::AabbAabb;
@@ -8590,6 +8593,8 @@ void PrintTestHeader(const std::string& testName)
 		float t{ 0.0f }; 
 		PrintResultPlane(TestPlaneAabb(plane, aabb, t), t);
 	}
+
+} // end namespace oGFX
 
 #pragma endregion
 

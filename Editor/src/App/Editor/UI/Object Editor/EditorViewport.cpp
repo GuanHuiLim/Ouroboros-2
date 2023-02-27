@@ -28,6 +28,7 @@ Technology is prohibited.
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
 #include "Ouroboros/Transform/TransformComponent.h"
+#include "Ouroboros/UI/RectTransformComponent.h"
 #include "Ouroboros/Commands/CommandStackManager.h"
 #include "Ouroboros/Commands/Component_ActionCommand.h"
 #include "App/Editor/Events/GizmoOperationEvent.h"
@@ -115,6 +116,7 @@ void EditorViewport::Show()
 		m_viewportHeight = contentHeight;
 
 		EditorViewportResizeEvent e;
+		e.StartPosition = { vMin.x, vMin.y };
 		e.X = m_viewportWidth;
 		e.Y = m_viewportHeight;
 		oo::EventManager::Broadcast<EditorViewportResizeEvent>(&e);
@@ -142,7 +144,7 @@ void EditorViewport::Show()
 			if (graphicsID >= 0)
 			{
 				LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-				auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+				auto uuid = scene->GetUUIDFromPickingId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
 				ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
 				Hierarchy::SetItemSelected(uuid);
 			}
@@ -191,6 +193,7 @@ void EditorViewport::Show()
 
 	ImGuizmo::BeginFrame();
 	oo::TransformComponent& transform = gameobject->GetComponent<oo::TransformComponent>();
+	oo::RectTransformComponent* rectTransform = gameobject->TryGetComponent<oo::RectTransformComponent>();
 
 	glm::mat4 m_matrix = transform.GlobalTransform;
 	ImGuizmo::SetOrthographic(false);
@@ -248,6 +251,13 @@ void EditorViewport::Show()
 
 			Transform3D::DecomposeValues(m_matrix, mTrans, mRot, mScale);
 			
+			// if we are editing UI Component
+			if (rectTransform)
+			{
+				rectTransform->IsDirty = true;
+				rectTransform->EditGlobal = true;
+			}
+			
 			transform.SetGlobalTransform(mTrans, mRot, mScale);
 			//transform.SetGlobalTransform(m_matrix); <- DONT call this, IT WONT work.
 		}
@@ -270,7 +280,7 @@ void EditorViewport::Show()
 				if (graphicsID >= 0)
 				{
 					LOG_TRACE("valid graphics ID from picking {0}", graphicsID);
-					auto uuid = scene->GetUUIDFromGraphicsId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
+					auto uuid = scene->GetUUIDFromPickingId(graphicsID); //scene->GetWorld().Get_System<oo::RendererSystem>()->GetUUID(graphicsID);
 					ASSERT_MSG(uuid == oo::UUID::Invalid, " Attempting to pick on an object with invalid uuid {0}, this should not occur at this point!!!", uuid);
 					Hierarchy::SetItemSelected(uuid);
 				}

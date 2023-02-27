@@ -59,7 +59,7 @@ namespace oo
             TRACY_PROFILE_SCOPE_N(editor_registration);
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
-            GetWorld().Add_System<oo::UISystem>(this);
+            GetWorld().Add_System<oo::UISystem>(GetGraphicsWorld(), this)->Init();
             TRACY_PROFILE_SCOPE_END();
         }
 
@@ -89,6 +89,7 @@ namespace oo
             GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
             GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
             GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit();
+            GetWorld().Get_System<UISystem>()->PostSceneLoadInit();
             
             TRACY_PROFILE_SCOPE_END();
         }
@@ -138,8 +139,8 @@ namespace oo
         constexpr float gridSize = 100.0f;
         constexpr float gridIncrement = 1.0f / 5.0f;
 
-        DebugDraw::DrawYGrid(gridSize, gridIncrement);
-        DebugDraw::DrawYGrid(gridSize, 1.0f, oGFX::Colors::RED);
+        oGFX::DebugDraw::DrawYGrid(gridSize, gridIncrement);
+        oGFX::DebugDraw::DrawYGrid(gridSize, 1.0f, oGFX::Colors::RED);
 
         Scene::Render();
         

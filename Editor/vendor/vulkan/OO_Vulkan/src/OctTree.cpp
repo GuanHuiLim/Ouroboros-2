@@ -16,6 +16,8 @@ Technology is prohibited.
 #include <algorithm>
 #include <iostream>
 
+namespace oGFX {
+
 OctTree::OctTree(const std::vector<Point3D>& vertices, const std::vector<uint32_t>& indices, int maxTriangles)
 {
 	m_vertices = vertices;
@@ -295,3 +297,5 @@ void OctTree::GatherBox(OctNode* node, std::vector<AABB>& boxes, std::vector<uin
 	}
 
 }
+
+}// end namespace oGFX

@@ -55,6 +55,7 @@ namespace oo
         };
 
         bool IsDirty = true;    // set to true for the first frame update!
+        bool HasChanged = false;
 
         bool IsWorldSpace = false;
         
@@ -64,7 +65,7 @@ namespace oo
         glm::vec3 EulerAngles = { 0, 0, 0 };
         glm::vec3 Scale = { 1, 1, 1 };
 
-        glm::vec2 Size = { 100, 100 };
+        glm::vec2 Size = { 10, 10 };
         glm::vec2 Pivot = { 0.5f, 0.5f };
         glm::vec2 AnchorMin = { 0.5f, 0.5f };
         glm::vec2 AnchorMax = { 0.5f, 0.5f };
@@ -92,6 +93,10 @@ namespace oo
         glm::vec2 GetPivot() const;
         glm::vec2 GetAnchorMin() const;
         glm::vec2 GetAnchorMax() const;
+
+
+        // for EditorViewportOnly!
+        bool EditGlobal = false;
 
         RTTR_ENABLE();
     };

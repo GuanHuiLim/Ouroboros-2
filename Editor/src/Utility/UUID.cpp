@@ -30,8 +30,17 @@ namespace oo
     static std::mt19937_64 s_randomEngine(s_RandomDevice());
     static std::uniform_int_distribution<UUID::value_type> s_uniformDistribution;
 
+
     UUID::UUID()
         : m_uuid{ s_uniformDistribution(s_randomEngine) }
+    {
+    }
+
+    static std::mt19937 s_randomEngine16(s_RandomDevice());
+    static std::uniform_int_distribution<UUID16::value_type> s_uniformDistribution16;
+
+    UUID16::UUID16()
+        : m_uuid{ s_uniformDistribution16(s_randomEngine16) }
     {
     }
 }

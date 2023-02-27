@@ -17,6 +17,7 @@ Technology is prohibited.
 #include <vector>
 #include <array>
 #include "GraphicsWorld.h"
+#include "Font.h"
 
 class VulkanRenderer;
 
@@ -40,10 +41,18 @@ public:
 
 	static GraphicsBatch Init(GraphicsWorld* gw,VulkanRenderer* renderer ,size_t maxObjects);
 	void GenerateBatches();
+	void ProcessLights();
+	void ProcessGeometry();
+	void ProcessUI();
+	void ProcessParticleEmitters();
 	const std::vector<oGFX::IndirectCommand>& GetBatch(int32_t batchIdx);
 	const std::vector<oGFX::IndirectCommand>& GetParticlesBatch();
 	const std::vector<ParticleData>& GetParticlesData();
+	const std::vector<oGFX::UIVertex>& GetUIVertices();
+	// TODO :: need to return indices out if i am doing fill
 	
+	void GenerateTextGeometry(const UIInstance& ui);
+	void GenerateSpriteGeometry(const UIInstance& ui);
 
 private:
 	GraphicsWorld* m_world{ nullptr };
@@ -52,6 +61,7 @@ private:
 	std::array<std::vector<oGFX::IndirectCommand> , DrawBatch::MAX_NUM> m_batches;
 	std::vector<ParticleData>m_particleList;
 	std::vector<oGFX::IndirectCommand>m_particleCommands;
+	std::vector<oGFX::UIVertex>m_uiVertices;
 
 	static inline std::vector<oGFX::IndirectCommand> s_scratchBuffer;
 

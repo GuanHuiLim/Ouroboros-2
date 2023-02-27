@@ -20,6 +20,8 @@ Technology is prohibited.
 #include "MeshModel.h"
 #include "Camera.h"
 #include "VulkanTexture.h"
+#include "VulkanUtils.h"
+#include "Font.h"
 
 #include "imgui/imgui.h"
 #include <vector>
@@ -27,7 +29,7 @@ Technology is prohibited.
 
 // pos windows
 #undef TRANSPARENT 
-enum ObjectInstanceFlags : uint32_t // fuck enum class
+enum class ObjectInstanceFlags : uint32_t 
 {
     RENDER_ENABLED   = 0x1,  // Object will never change after initialization
     STATIC_INSTANCE  = 0x2,  // Object is dynamic (spatial/property)
@@ -42,22 +44,18 @@ enum ObjectInstanceFlags : uint32_t // fuck enum class
     SHADOW_ENABLED   = 0x400, // Object is rendered
                                 // etc
 };
+ENUM_OPERATORS_GEN(ObjectInstanceFlags, uint32_t)
 
-
-inline ObjectInstanceFlags operator|(ObjectInstanceFlags a, ObjectInstanceFlags b)
+enum class UIInstanceFlags : uint32_t
 {
-    return static_cast<ObjectInstanceFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-}
+    RENDER_ENABLED   = 0x1,  // Object will never change after initialization
+    WORLD_SPACE_UI   = 0x2,  // Object is worldspace
+    TEXT_INSTANCE    = 0x4,  // Object is inactive, skip for all render pass
+    SPRITE_INSTANCE  = 0x8,  // Object casts shadows (put it into shadow render pass)  
+    
+};
+ENUM_OPERATORS_GEN(UIInstanceFlags, uint32_t)
 
-inline ObjectInstanceFlags operator&(ObjectInstanceFlags a, ObjectInstanceFlags b)
-{
-    return static_cast<ObjectInstanceFlags>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
-}
-
-inline ObjectInstanceFlags operator~(ObjectInstanceFlags a)
-{
-    return static_cast<ObjectInstanceFlags>(~static_cast<uint32_t>(a));
-}
 
 //CHAR_BIT * sizeof(uint64_t)
 struct ObjectInstance
@@ -77,7 +75,9 @@ struct ObjectInstance
 
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
-    ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(RENDER_ENABLED | SHADOW_RECEIVER | SHADOW_CASTER)};
+    ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(ObjectInstanceFlags::RENDER_ENABLED 
+        | ObjectInstanceFlags::SHADOW_RECEIVER 
+        | ObjectInstanceFlags::SHADOW_CASTER)};
 
     // helper functions
     void SetShadowCaster(bool s);
@@ -88,7 +88,10 @@ struct ObjectInstance
 
     bool isSkinned();
     bool isShadowEnabled();
+    bool isShadowCaster();
     bool isRenderable();
+    bool isDynamic();
+    bool isTransparent();
 
     std::vector<glm::mat4> bones;
 
@@ -97,10 +100,44 @@ struct ObjectInstance
     uint32_t entityID{}; // Unique ID for this entity instance
 };
 
+struct UIInstance
+{
+    std::string name;
+
+    // Begin These are temp until its fully integrated 
+    uint32_t bindlessGlobalTextureIndex_Albedo{ 0xFFFFFFFF }; // waiting for material system xd..
+    // End temp stuff
+    std::string textData{"SAMPLE TEXT"};
+    glm::vec4 colour{1.0f};
+
+    oGFX::FontFormatting format;
+    oGFX::Font* fontAsset;
+
+    uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
+    glm::mat4x4 localToWorld{ 1.0f };
+    UIInstanceFlags flags{static_cast<UIInstanceFlags>(
+        UIInstanceFlags::RENDER_ENABLED 
+        | UIInstanceFlags::WORLD_SPACE_UI)};
+
+    void SetText(bool s);
+    bool isText();
+
+    void SetRenderEnabled(bool s);
+    bool isRenderable();
+
+    uint32_t entityID{}; // Unique ID for this entity instance
+};
+
 struct ParticleData
 {
     glm::mat4 transform{1.0f};
     glm::vec4 colour{1.0f};
+    glm::ivec4 instanceData; // EntityID, flags  ,abledo norm, roughness metal
+};
+
+struct UIData
+{
+    glm::mat4 transform{1.0f};
     glm::ivec4 instanceData; // EntityID, flags  ,abledo norm, roughness metal
 };
 
@@ -162,12 +199,19 @@ public:
     auto& GetAllObjectInstances() { return m_ObjectInstances; }
     auto& GetAllOmniLightInstances() { return m_OmniLightInstances; }
     auto& GetAllEmitterInstances() { return m_EmitterInstances; }
+    auto& GetAllUIInstances() { return m_UIInstances; }
 
     int32_t CreateObjectInstance();
     int32_t CreateObjectInstance(ObjectInstance obj);
     ObjectInstance& GetObjectInstance(int32_t id);
     void DestroyObjectInstance(int32_t id);
     void ClearObjectInstances();
+
+    int32_t CreateUIInstance();
+    int32_t CreateUIInstance(UIInstance obj);
+    UIInstance& GetUIInstance(int32_t id);
+    void DestroyUIInstance(int32_t id);
+    void ClearUIInstances();
 
     int32_t CreateLightInstance();
     int32_t CreateLightInstance(OmniLightInstance obj);
@@ -211,6 +255,8 @@ public:
 private:
     int32_t m_entityCount{};
     BitContainer<ObjectInstance> m_ObjectInstances;
+    int32_t m_uiCount{};
+    BitContainer<UIInstance> m_UIInstances;
     int32_t m_lightCount{};
     BitContainer<OmniLightInstance> m_OmniLightInstances;
     int32_t m_emitterCount{};

@@ -20,6 +20,8 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Geometry/Shapes.h"
 
+class PreviewWindowImageResizeEvent;
+
 namespace oo
 {
     // forward declaration
@@ -28,15 +30,26 @@ namespace oo
     class UIRaycastComponent;
     class Scene;
     class GameObject;
+    class UIComponent;
+    /*class UITextComponent;
+    class UIImageComponent;*/
+
 
     class UISystem final : public Ecs::System
     {
     public:
 
-        UISystem(Scene* scene);
-        virtual ~UISystem() = default;
+        UISystem(GraphicsWorld* graphicsWorld, Scene* scene);
+        virtual ~UISystem();
 
         virtual void Run(Ecs::ECSWorld* world) override {};
+
+        void Init();
+
+        void PostSceneLoadInit();
+        void UpdateJustCreated();
+        void UpdateDuplicated();
+        void UpdateExisting();
 
         /*********************************************************************************//*!
         \brief      Update function called per frame in the Editor Scene. Used to perform
@@ -96,7 +109,28 @@ namespace oo
         
 
     private:
+
+        void OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt);
+        void OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt);
+        void InitializeUI(UIComponent& uiComp, TransformComponent& tfComp, GameObjectComponent& goComp);
+
+        void OnPreviewWindowImageResize(PreviewWindowImageResizeEvent* e);
+
+        /*void OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt);
+        void OnTextRemove(Ecs::ComponentEvent<UITextComponent>* evnt);
+        void InitializeText(UITextComponent& uiTextComp, TransformComponent& tfComp);
+        void OnImageAssign(Ecs::ComponentEvent<UIImageComponent>* evnt);
+        void OnImageRemove(Ecs::ComponentEvent<UIImageComponent>* evnt);
+        void InitializeImage(UIImageComponent& uiImgComp, TransformComponent& tfComp);*/
+
+    private:
+        GraphicsWorld* m_graphicsWorld{ nullptr };
+
         Scene* m_scene = nullptr;
         GameObject m_prevSelectedUI;
+
+        glm::vec2 m_previewImgStartPos;
+        float m_previewImgWidth;
+        float m_previewImgHeight;
     };
 }
