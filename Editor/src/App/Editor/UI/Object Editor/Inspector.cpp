@@ -69,6 +69,9 @@ Technology is prohibited.
 #include <Ouroboros/UI/UIComponent.h>
 #include <Ouroboros/UI/UITextComponent.h>
 
+#include <Ouroboros/Waypoints/WaypointNodeComponent.h>
+#include <Ouroboros/Waypoints/WaypointSetComponent.h>
+
 #include <Ouroboros/Editor/EditorComponent.h>
 
 Inspector::Inspector()
@@ -202,6 +205,9 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::UIImageComponent>(gameobject);
 	DisplayComponent<oo::GraphicsRaycasterComponent>(gameobject);
 
+	DisplayComponent<oo::WaypointNodeComponent>(gameobject);
+	DisplayComponent<oo::WaypointSetComponent>(gameobject);
+
 	if(m_showReadonly)
 		DisplayComponent<oo::GameObjectDebugComponent>(gameobject);
 
@@ -260,6 +266,10 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::GraphicsRaycasterComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UIImageComponent>(gameobject);
+			
+			selected |= AddComponentSelectable<oo::WaypointNodeComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::WaypointSetComponent>(gameobject);
+
 
 			selected |= AddComponentSelectable<oo::EditorComponent>(gameobject);
 

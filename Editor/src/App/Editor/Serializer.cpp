@@ -52,7 +52,8 @@ Technology is prohibited.
 #include <Ouroboros/UI/GraphicsRaycasterComponent.h>
 #include <Ouroboros/UI/UIComponent.h>
 #include <Ouroboros/UI/UITextComponent.h>
-
+#include <Ouroboros/Waypoints/WaypointNodeComponent.h>
+#include <Ouroboros/Waypoints/WaypointSetComponent.h>
 #include <Ouroboros/Transform/TransformSystem.h>
 #include <Ouroboros/Editor/EditorComponent.h>
 
@@ -99,6 +100,9 @@ void Serializer::Init()
 	AddLoadComponent<oo::UIRaycastComponent>();
 	AddLoadComponent<oo::UIImageComponent>();
 	AddLoadComponent<oo::GraphicsRaycasterComponent>();
+
+	AddLoadComponent<oo::WaypointNodeComponent>();
+	AddLoadComponent<oo::WaypointSetComponent>();
 
 #if OO_EDITOR
 	AddLoadComponent<oo::EditorComponent>();
@@ -440,6 +444,8 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::UIImageComponent>(go, val, doc);
 	SaveComponent<oo::GraphicsRaycasterComponent>(go, val, doc);
 
+	SaveComponent<oo::WaypointNodeComponent>(go, val, doc);
+	SaveComponent<oo::WaypointNodeComponent>(go, val, doc);
 #if OO_EDITOR
 	SaveComponent<oo::EditorComponent>(go,val,doc);
 #endif // OO_EDITOR
