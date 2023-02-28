@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "Ouroboros/Audio/AudioSystem.h"
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/UI/UISystem.h"
+#include "Ouroboros/Waypoints/WaypointSystem.h"
 
 //optick
 #include "optick.h"
@@ -60,12 +61,14 @@ namespace oo
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
             GetWorld().Add_System<oo::UISystem>(GetGraphicsWorld(), this)->Init();
+            GetWorld().Add_System<oo::WaypointSystem>(this);
             TRACY_PROFILE_SCOPE_END();
         }
 
         // Some system setup code
         {
             // set default debug draws
+            GetWorld().Get_System<oo::WaypointSystem>()->DebugDrawSetPath = true;
             GetWorld().Get_System<UISystem>()->UIDebugDraw = true;
             GetWorld().Get_System<UISystem>()->UIDebugRaycast = false;
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = true;
@@ -89,6 +92,7 @@ namespace oo
 
             GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
             GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
+            GetWorld().Get_System<WaypointSystem>()->PostLoadSceneInit();
             GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
             GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit();
             GetWorld().Get_System<UISystem>()->PostSceneLoadInit();
@@ -131,6 +135,13 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
         Scene::LateUpdate();
+        
+        {
+            TRACY_PROFILE_SCOPE(waypoint_late_update);
+            GetWorld().Get_System<oo::WaypointSystem>()->EditorUpdate();
+            TRACY_PROFILE_SCOPE_END();
+        }
+
         TRACY_PROFILE_SCOPE_END();
     }
 

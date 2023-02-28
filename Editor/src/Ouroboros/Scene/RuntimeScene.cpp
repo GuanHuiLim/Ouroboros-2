@@ -30,6 +30,7 @@ Technology is prohibited.
 #include "Ouroboros/Transform/TransformSystem.h"
 #include "Ouroboros/Audio/AudioSystem.h"
 #include "Ouroboros/UI/UISystem.h"
+#include "Ouroboros/Waypoints/WaypointSystem.h"
 
 namespace oo
 {
@@ -53,6 +54,8 @@ namespace oo
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
 
             GetWorld().Add_System<PhysicsSystem>()->Init(this);
+            GetWorld().Add_System<WaypointSystem>(this);
+
             GetWorld().Add_System<oo::UISystem>(GetGraphicsWorld(), this)->Init();
 
             GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
@@ -63,6 +66,7 @@ namespace oo
         // Some system setup code
         {
             // set default debug draws
+            GetWorld().Get_System<WaypointSystem>()->DebugDrawSetPath = false;
             GetWorld().Get_System<UISystem>()->UIDebugDraw = false;
             GetWorld().Get_System<UISystem>()->UIDebugRaycast = false;
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = false;
@@ -169,6 +173,11 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE(inputsystem_late_update);
             GetWorld().Get_System<InputSystem>()->LateUpdate();
+            TRACY_PROFILE_SCOPE_END();
+        }
+        {
+            TRACY_PROFILE_SCOPE(waypoint_late_update);
+            GetWorld().Get_System<WaypointSystem>()->RuntimeUpdate();
             TRACY_PROFILE_SCOPE_END();
         }
         TRACY_PROFILE_SCOPE_END();
