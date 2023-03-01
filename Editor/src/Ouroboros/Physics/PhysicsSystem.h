@@ -31,11 +31,6 @@ namespace oo
 {
     class Scene;
 
-    static constexpr std::size_t s_MaxLayerCount = 8;
-    using LayerField    = std::bitset<s_MaxLayerCount>;
-    using LayerMask     = LayerField;
-    using LayerMatrix   = std::unordered_map<LayerField, LayerMask>;
-
     class PhysicsSystem final : public Ecs::System
     {
     public:

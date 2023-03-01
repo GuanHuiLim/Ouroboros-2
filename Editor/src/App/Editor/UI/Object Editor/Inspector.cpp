@@ -144,6 +144,86 @@ void Inspector::Show()
 				oo::PrefabManager::MakePrefab(gameobject);
 			}
 		}
+
+		// Input Layer
+		{
+			ImGui::SameLine();
+
+			ImGui::BeginGroup();
+			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
+			std::string inLayer = "Who Am I?";
+			ImGui::InputText("##InputLayers", &inLayer);
+			ImGui::PopItemFlag();
+
+			ImGui::SameLine();
+			if (ImGui::ArrowButton("##Phy InLayers", ImGuiDir_::ImGuiDir_Down) == true)
+			{
+				ImGui::OpenPopup("##Edit InLayers");
+			}
+			if (ImGui::BeginPopup("##Edit InLayers"))
+			{
+				auto& names = oo::LayerNames;
+				auto& layer = gameobject->GetComponent<oo::GameObjectComponent>().InputLayer;
+				for (size_t i = 0; i < names.size(); ++i)
+				{
+					ImGui::PushID(i);
+					ImGui::InputText("##Layer Name", &names[i]);
+					ImGui::SameLine();
+					bool layerValue = layer[i];
+					if (ImGui::Checkbox("##Layer value", &layerValue))
+					{
+						layer[i] = layerValue;
+					}
+					ImGui::PopID();
+				}
+
+				ImGui::EndPopup();
+			}
+
+			ImGui::EndGroup();
+
+		}
+		
+		// Output Layers
+		{
+			// TODO : Beautify this section so the UI looks better
+			// Somehow only one arrow shows if i same line them
+			//ImGui::SameLine();
+
+			ImGui::BeginGroup();
+			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
+			std::string outLayer = "Who I Collide Against?";
+			ImGui::InputText("##OutLayers", &outLayer);
+			ImGui::PopItemFlag();
+
+			ImGui::SameLine();
+			if (ImGui::ArrowButton("##Phy OutLayers", ImGuiDir_::ImGuiDir_Down) == true)
+			{
+				ImGui::OpenPopup("##Edit OutLayers");
+			}
+			if (ImGui::BeginPopup("##Edit OutLayers"))
+			{
+				auto& names = oo::LayerNames;
+				auto& layer = gameobject->GetComponent<oo::GameObjectComponent>().OutputLayer;
+				for (size_t i = 0; i < names.size(); ++i)
+				{
+					ImGui::PushID(i);
+					ImGui::InputText("##Layer Name", &names[i]);
+					ImGui::SameLine();
+					bool layerValue = layer[i];
+					if (ImGui::Checkbox("##Layer value", &layerValue))
+					{
+						layer[i] = layerValue;
+					}
+					ImGui::PopID();
+				}
+
+				ImGui::EndPopup();
+			}
+
+			ImGui::EndGroup();
+		}		
+
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);

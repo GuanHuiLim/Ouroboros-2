@@ -29,7 +29,8 @@ namespace oo
 		.property("Active", &GameObjectComponent::Active)(metadata(UI_metadata::HIDDEN, true))
 		.property("Name", &GameObjectComponent::Name)(metadata(UI_metadata::HIDDEN, true))
 		.property_readonly("UUID", &GameObjectComponent::Id)
-		//.property("Layer", &GameObjectComponent::GetLayer, &GameObjectComponent::SetLayer)
+		.property("Input Layer", &GameObjectComponent::GetInputLayer, &GameObjectComponent::SetInputLayer)
+		.property("Output Layer", &GameObjectComponent::GetOutputLayer, &GameObjectComponent::SetOutputLayer)
 		.property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy)(metadata(UI_metadata::HIDDEN, true));
     }
 }
