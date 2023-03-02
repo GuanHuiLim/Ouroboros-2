@@ -110,6 +110,7 @@ namespace oo
                         FMOD_ERR_HAND(as.GetChannel()->setLoopCount(as.IsLoop() ? -1 : 0));
                         FMOD_ERR_HAND(as.GetChannel()->setVolume(as.GetVolume()));
                         FMOD_ERR_HAND(as.GetChannel()->setPitch(as.GetPitch()));
+                        FMOD_ERR_HAND(as.GetChannel()->setLoopPoints(as.GetLoopBegin(), FMOD_TIMEUNIT_MS, as.GetLoopEnd(), FMOD_TIMEUNIT_MS));
                         as.ClearDirty();
                     }
                 });
