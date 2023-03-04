@@ -276,7 +276,6 @@ namespace oo
 
 			});
 
-		AssignGraphicsWorldID_to_BoneComponents();
 
 
 		//recalculate gameobject uid for all bones
@@ -288,6 +287,8 @@ namespace oo
 				RecurseChildren_AssignUID_to_BoneComponents(go, go.GetInstanceID());
 			});
 
+		
+		AssignGraphicsWorldID_to_BoneComponents();
 	}
 
 	

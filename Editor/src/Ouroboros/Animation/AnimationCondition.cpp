@@ -129,6 +129,8 @@ namespace oo::Anim::internal
 		{
 			uid = internal::generateUID();
 			rttr::type::get<Condition>().set_property_value("conditionID", obj, uid);
+
+			
 		}
 	}
 }
