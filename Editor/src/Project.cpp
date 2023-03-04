@@ -79,6 +79,8 @@ void Project::LoadProject(std::filesystem::path& config)
 	LoadInputs(GetProjectFolder() / InputFileName);
 	//load script sequence
 	LoadScriptSequence(GetScriptSequencePath());
+	//load layernames
+	LoadLayerNames();
 }
 
 void Project::SaveProject()
@@ -148,6 +150,7 @@ void Project::SaveProject()
 	ifs.close();
 	SaveInputs(GetProjectFolder() / (InputFileName));
 	SaveScriptSequence(GetScriptSequencePath());
+	SaveLayerNames();
 }
 
 void Project::LoadInputs(const std::filesystem::path& loadpath)
@@ -373,6 +376,77 @@ void Project::SaveRendererSettingFile()
 		val.RemoveAllMembers();//its easier to clear everything and key in the value again
 		SaveRenderer(val, doc);
 	}
+	ifs.close();
+}
+
+void Project::LoadLayerNames()
+{
+	std::ifstream ifs(s_configFile.string());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Config File is not valid!");
+		return;
+	}
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	if (doc.HasMember("Layer Names"))
+	{
+		auto& val = doc.FindMember("Layer Names")->value;
+		auto arr = val.GetArray();
+		unsigned largersize = std::min((unsigned)oo::GameObjectComponent::LayerNames.size(), (unsigned)arr.Size());
+		for (unsigned i = 0; i < largersize; ++i)
+		{
+			oo::GameObjectComponent::LayerNames[i] = arr[i].GetString();
+		}
+		int i = 0;
+		i = i + 1;
+	}
+	ifs.close();
+}
+
+void Project::SaveLayerNames()
+{
+	std::ifstream ifs(s_configFile.string());
+	if (ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_ERROR, "Config File is not valid!");
+		return;
+	}
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+	rapidjson::Value& doc_val = doc.GetObj();
+	if (doc_val.HasMember("Layer Names"))
+	{
+		auto& val = doc_val.FindMember("Layer Names")->value;
+		auto arr = val.GetArray();
+		arr.Clear();
+		rapidjson::Value names(rapidjson::kArrayType);
+		for (auto layer : oo::GameObjectComponent::LayerNames)
+		{
+			arr.PushBack(rapidjson::Value(layer.c_str(), layer.size(),doc.GetAllocator()), doc.GetAllocator());
+		}
+	}
+	else
+	{
+		rapidjson::Value names(rapidjson::kArrayType);
+		for (auto& layer : oo::GameObjectComponent::LayerNames)
+		{
+			names.PushBack(rapidjson::Value(layer.c_str(),layer.size(),doc.GetAllocator()), doc.GetAllocator());
+		}
+		doc_val.AddMember("Layer Names", names,doc.GetAllocator());
+	}
+	ifs.close();
+
+
+	std::ofstream ofs(s_configFile);
+	if (!ofs)
+		return;
+	rapidjson::OStreamWrapper osw(ofs);
+	rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+	doc.Accept(writer);
+	ofs.close();
 }
 
 void Project::LoadRendererSetting(rapidjson::Value& setting_val, rttr::variant& v)

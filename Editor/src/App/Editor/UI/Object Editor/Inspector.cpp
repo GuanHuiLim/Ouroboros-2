@@ -151,7 +151,7 @@ void Inspector::Show()
 
 			ImGui::BeginGroup();
 			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
-			std::string inLayer = "Who Am I?";
+			std::string inLayer = "Layers";
 			ImGui::InputText("##InputLayers", &inLayer);
 			ImGui::PopItemFlag();
 
@@ -162,20 +162,40 @@ void Inspector::Show()
 			}
 			if (ImGui::BeginPopup("##Edit InLayers"))
 			{
-				auto& names = oo::LayerNames;
+				auto& names = oo::GameObjectComponent::LayerNames;
 				auto& layer = gameobject->GetComponent<oo::GameObjectComponent>().InputLayer;
-				for (size_t i = 0; i < names.size(); ++i)
+				auto& collideAgainstlayer = gameobject->GetComponent<oo::GameObjectComponent>().OutputLayer;
+				if(ImGui::BeginTable("##layersTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable))
 				{
-					ImGui::PushID(i);
-					ImGui::InputText("##Layer Name", &names[i]);
-					ImGui::SameLine();
-					bool layerValue = layer[i];
-					if (ImGui::Checkbox("##Layer value", &layerValue))
+					ImGui::TableNextColumn();
+					ImGui::Text("Label Name");
+					ImGui::TableNextColumn();
+					ImGui::Text("Identify as");
+					ImGui::TableNextColumn();
+					ImGui::Text("Collide Against");
+					ImGui::TableNextColumn();
+					for (size_t i = 0; i < names.size(); ++i)
 					{
-						layer[i] = layerValue;
+						ImGui::PushID(i);
+						ImGui::InputText("##Layer Name", &names[i]);
+						ImGui::TableNextColumn();
+						bool layerValue = layer[i];
+						if (ImGui::Checkbox("##Layer value", &layerValue))
+						{
+							layer[i] = layerValue;
+						}
+						ImGui::TableNextColumn();
+						bool layerValue2 = collideAgainstlayer[i];
+						if (ImGui::Checkbox("##Layer value2", &layerValue2))
+						{
+							collideAgainstlayer[i] = layerValue2;
+						}
+						ImGui::TableNextColumn();
+						ImGui::PopID();
 					}
-					ImGui::PopID();
+					ImGui::EndTable();
 				}
+
 
 				ImGui::EndPopup();
 			}
@@ -184,45 +204,45 @@ void Inspector::Show()
 
 		}
 		
-		// Output Layers
-		{
-			// TODO : Beautify this section so the UI looks better
-			// Somehow only one arrow shows if i same line them
-			//ImGui::SameLine();
+		//// Output Layers
+		//{
+		//	// TODO : Beautify this section so the UI looks better
+		//	// Somehow only one arrow shows if i same line them
+		//	//ImGui::SameLine();
 
-			ImGui::BeginGroup();
-			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
-			std::string outLayer = "Who I Collide Against?";
-			ImGui::InputText("##OutLayers", &outLayer);
-			ImGui::PopItemFlag();
+		//	ImGui::BeginGroup();
+		//	ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
+		//	std::string outLayer = "Who I Collide Against?";
+		//	ImGui::InputText("##OutLayers", &outLayer);
+		//	ImGui::PopItemFlag();
 
-			ImGui::SameLine();
-			if (ImGui::ArrowButton("##Phy OutLayers", ImGuiDir_::ImGuiDir_Down) == true)
-			{
-				ImGui::OpenPopup("##Edit OutLayers");
-			}
-			if (ImGui::BeginPopup("##Edit OutLayers"))
-			{
-				auto& names = oo::LayerNames;
-				auto& layer = gameobject->GetComponent<oo::GameObjectComponent>().OutputLayer;
-				for (size_t i = 0; i < names.size(); ++i)
-				{
-					ImGui::PushID(i);
-					ImGui::InputText("##Layer Name", &names[i]);
-					ImGui::SameLine();
-					bool layerValue = layer[i];
-					if (ImGui::Checkbox("##Layer value", &layerValue))
-					{
-						layer[i] = layerValue;
-					}
-					ImGui::PopID();
-				}
+		//	ImGui::SameLine();
+		//	if (ImGui::ArrowButton("##Phy OutLayers", ImGuiDir_::ImGuiDir_Down) == true)
+		//	{
+		//		ImGui::OpenPopup("##Edit OutLayers");
+		//	}
+		//	if (ImGui::BeginPopup("##Edit OutLayers"))
+		//	{
+		//		auto& names = oo::LayerNames;
+		//		auto& layer = gameobject->GetComponent<oo::GameObjectComponent>().OutputLayer;
+		//		for (size_t i = 0; i < names.size(); ++i)
+		//		{
+		//			ImGui::PushID(i);
+		//			ImGui::InputText("##Layer Name", &names[i]);
+		//			ImGui::SameLine();
+		//			bool layerValue = layer[i];
+		//			if (ImGui::Checkbox("##Layer value", &layerValue))
+		//			{
+		//				layer[i] = layerValue;
+		//			}
+		//			ImGui::PopID();
+		//		}
 
-				ImGui::EndPopup();
-			}
+		//		ImGui::EndPopup();
+		//	}
 
-			ImGui::EndGroup();
-		}		
+		//	ImGui::EndGroup();
+		//}		
 
 		ImGui::Separator();
 

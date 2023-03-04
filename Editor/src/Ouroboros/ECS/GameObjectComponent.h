@@ -29,12 +29,13 @@ namespace oo
     using LayerMask = LayerField;
     using LayerMatrix = std::unordered_map<LayerField, LayerMask>;
 
-    static std::vector<std::string> LayerNames = { "Layer One", "Layer Two","Layer Three","Layer Four","Layer Five","Layer Six","Layer Seven","Layer Eight" };
 
     class GameObjectComponent
     {
     public:
-        bool IsPrefab = false;
+		inline static std::vector<std::string> LayerNames = { "Layer One", "Layer Two","Layer Three","Layer Four","Layer Five","Layer Six","Layer Seven","Layer Eight" };
+        
+		bool IsPrefab = false;
         bool Active = true;
         bool ActiveInHierarchy = true;
         oo::UUID Id = oo::UUID::Invalid;
