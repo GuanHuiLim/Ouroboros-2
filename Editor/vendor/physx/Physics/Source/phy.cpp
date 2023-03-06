@@ -1155,8 +1155,11 @@ namespace myPhysx
         if (world->all_objects.contains(id)) {
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-           
-            physx_system::setupFiltering(underlying_obj->m_shape, currentGroup, maskGroup);
+
+            if (underlying_obj->m_shape) {
+
+                physx_system::setupFiltering(underlying_obj->m_shape, currentGroup, maskGroup);
+            }
         }
     }
 
