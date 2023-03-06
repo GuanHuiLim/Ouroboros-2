@@ -252,10 +252,10 @@ namespace myPhysx {
 
         // RAYCAST
         RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
-        RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::int32_t filter /*= FilterGroup::All*/);
+        RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter /*= FilterGroup::All*/);
         
         std::vector<RaycastHit> raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance);
-        std::vector<RaycastHit> raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, std::int32_t filter /*= FilterGroup::All*/);
+        std::vector<RaycastHit> raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter /*= FilterGroup::All*/);
 
         // TRIGGER
         void updateTriggerState(phy_uuid::UUID id); // function to update objects for OnTriggerStay
@@ -298,8 +298,8 @@ namespace myPhysx {
         bool is_collider = true;
 
         // Filtering
-        std::int32_t filterIn = FilterGroup::Zero;
-        std::int32_t filterOut = FilterGroup::Zero;
+        std::uint32_t filterIn = FilterGroup::Zero;
+        std::uint32_t filterOut = FilterGroup::Zero;
 
         std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
         //std::vector<PxVec3> meshVertices{ PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
@@ -331,8 +331,8 @@ namespace myPhysx {
         bool isKinematic() const;
         bool isColliderEnabled() const;
 
-        std::int32_t getFilterIn() const;
-        std::int32_t getFilterOut() const;
+        std::uint32_t getFilterIn() const;
+        std::uint32_t getFilterOut() const;
 
         // SETTERS
         void setRigidType(rigid type);
@@ -385,7 +385,7 @@ namespace myPhysx {
         std::vector<PxVec3> getAllMeshVertices();
 
         // Set filter in and out
-        void setFiltering(std::int32_t filterIn, std::int32_t filterOut);
+        void setFiltering(std::uint32_t filterIn, std::uint32_t filterOut);
     };
 
 

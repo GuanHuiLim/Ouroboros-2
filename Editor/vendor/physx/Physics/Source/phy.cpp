@@ -575,7 +575,7 @@ namespace myPhysx
         return hit;
     }
 
-    RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::int32_t filter) {
+    RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter) {
 
         RaycastHit hit{};
         PxRaycastBuffer hitBuffer;
@@ -631,7 +631,7 @@ namespace myPhysx
         return hitAll;
     }
 
-    std::vector<RaycastHit> PhysxWorld::raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, std::int32_t filter) {
+    std::vector<RaycastHit> PhysxWorld::raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter) {
 
         const PxU32 bufferSize = 200;// 256;           // size of the buffer       
         PxRaycastHit hitBuffer[bufferSize];            // storage of the buffer results
@@ -1150,13 +1150,17 @@ namespace myPhysx
         return world->m_meshVertices;
     }
 
-    void PhysicsObject::setFiltering(std::int32_t currentGroup, std::int32_t maskGroup) {
+    void PhysicsObject::setFiltering(std::uint32_t currentGroup, std::uint32_t maskGroup) {
 
         if (world->all_objects.contains(id)) {
 
             PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
             if (underlying_obj->m_shape) {
+
+                underlying_obj->filterIn = currentGroup;
+
+                underlying_obj->filterOut = maskGroup;
 
                 physx_system::setupFiltering(underlying_obj->m_shape, currentGroup, maskGroup);
             }
@@ -1497,7 +1501,7 @@ namespace myPhysx
         return true;
     }
 
-    std::int32_t PhysicsObject::getFilterIn() const {
+    std::uint32_t PhysicsObject::getFilterIn() const {
 
         if (world->all_objects.contains(id)) {
 
@@ -1509,7 +1513,7 @@ namespace myPhysx
         // return default?
     }
 
-    std::int32_t PhysicsObject::getFilterOut() const {
+    std::uint32_t PhysicsObject::getFilterOut() const {
 
         if (world->all_objects.contains(id)) {
 
