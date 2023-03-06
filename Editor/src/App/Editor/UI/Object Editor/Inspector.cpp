@@ -171,7 +171,7 @@ void Inspector::Show()
 				if(ImGui::BeginTable("##layersTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable))
 				{
 					ImGui::TableNextColumn();
-					ImGui::Text("Label Name         ");
+					ImGui::Text("Layer Name         ");
 					ImGui::TableNextColumn();
 					ImGui::Text("Identify as");
 					ImGui::TableNextColumn();
