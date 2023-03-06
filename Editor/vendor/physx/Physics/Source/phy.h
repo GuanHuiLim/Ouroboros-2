@@ -100,7 +100,7 @@ namespace myPhysx {
             Fix = (1 << 5),
             Six = (1 << 6),
             Seven = (1 << 7),
-            All = One | Two | Three | Four | Fix | Six | Seven // New value that combines all filter groups
+            All = Zero | One | Two | Three | Four | Fix | Six | Seven // New value that combines all filter groups
         };
     };
 

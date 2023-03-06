@@ -24,34 +24,16 @@ Technology is prohibited.
 #include "Ouroboros/Asset/Asset.h"
 namespace oo
 {
-    static constexpr std::size_t s_MaxLayerCount = 8;
-    using LayerField = std::bitset<s_MaxLayerCount>;
-    using LayerMask = LayerField;
-    using LayerMatrix = std::unordered_map<LayerField, LayerMask>;
-
 
     class GameObjectComponent
     {
     public:
-		inline static std::vector<std::string> LayerNames = { "Layer One", "Layer Two","Layer Three","Layer Four","Layer Five","Layer Six","Layer Seven","Layer Eight" };
-        
-		bool IsPrefab = false;
+        bool IsPrefab = false;
         bool Active = true;
         bool ActiveInHierarchy = true;
         oo::UUID Id = oo::UUID::Invalid;
         std::string Name = "Default Name Long enough for no short string optimization";
         scenenode::weak_pointer Node = {};
-
-        // Who am I? usually only 1
-        LayerField InputLayer{ "00000001" };
-        // Who can i collide with?
-        LayerField OutputLayer{ "11111111" };
-
-        uint32_t GetInputLayer() const { return InputLayer.to_ulong(); }
-        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; };
-
-        uint32_t GetOutputLayer() const { return OutputLayer.to_ulong(); }
-        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; };
 
         struct OnEnableEvent : public Event
         {

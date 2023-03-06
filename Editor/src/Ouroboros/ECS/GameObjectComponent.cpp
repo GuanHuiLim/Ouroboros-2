@@ -25,12 +25,10 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-	registration::class_<oo::GameObjectComponent>("GameObject")(metadata(UI_metadata::NOT_REMOVABLE,true))
-		.property("Active", &GameObjectComponent::Active)(metadata(UI_metadata::HIDDEN, true))
-		.property("Name", &GameObjectComponent::Name)(metadata(UI_metadata::HIDDEN, true))
-		.property_readonly("UUID", &GameObjectComponent::Id)
-		.property("Input Layer", &GameObjectComponent::GetInputLayer, &GameObjectComponent::SetInputLayer)
-		.property("Output Layer", &GameObjectComponent::GetOutputLayer, &GameObjectComponent::SetOutputLayer)
-		.property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy)(metadata(UI_metadata::HIDDEN, true));
+    registration::class_<oo::GameObjectComponent>("GameObject")(metadata(UI_metadata::NOT_REMOVABLE,true))
+        .property("Active", &GameObjectComponent::Active)(metadata(UI_metadata::HIDDEN, true))
+        .property("Name", &GameObjectComponent::Name)(metadata(UI_metadata::HIDDEN, true))
+        .property_readonly("UUID", &GameObjectComponent::Id)
+        .property("Active In Hierarchy", &GameObjectComponent::ActiveInHierarchy)(metadata(UI_metadata::HIDDEN, true));
     }
 }

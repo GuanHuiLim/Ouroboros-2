@@ -20,6 +20,9 @@
 #include "App/Editor/Properties/SerializerProperties.h"
 #include "Ouroboros/Vulkan/GlobalRendererSettings.h"
 #include "App/Editor/Properties/UI_RTTRType.h"
+
+#include "Ouroboros/Physics/RigidbodyComponent.h"
+
 void Project::LoadProject(std::filesystem::path& config)
 {
 	static bool run_once = []() {	oo::EventManager::Subscribe<CloseProjectEvent>([](CloseProjectEvent*) {SaveProject(); }); return true; }();
@@ -394,10 +397,10 @@ void Project::LoadLayerNames()
 	{
 		auto& val = doc.FindMember("Layer Names")->value;
 		auto arr = val.GetArray();
-		unsigned largersize = std::min((unsigned)oo::GameObjectComponent::LayerNames.size(), (unsigned)arr.Size());
+		unsigned largersize = std::min((unsigned)oo::RigidbodyComponent::LayerNames.size(), (unsigned)arr.Size());
 		for (unsigned i = 0; i < largersize; ++i)
 		{
-			oo::GameObjectComponent::LayerNames[i] = arr[i].GetString();
+			oo::RigidbodyComponent::LayerNames[i] = arr[i].GetString();
 		}
 		int i = 0;
 		i = i + 1;
@@ -423,7 +426,7 @@ void Project::SaveLayerNames()
 		auto arr = val.GetArray();
 		arr.Clear();
 		rapidjson::Value names(rapidjson::kArrayType);
-		for (auto layer : oo::GameObjectComponent::LayerNames)
+		for (auto layer : oo::RigidbodyComponent::LayerNames)
 		{
 			arr.PushBack(rapidjson::Value(layer.c_str(), layer.size(),doc.GetAllocator()), doc.GetAllocator());
 		}
@@ -431,7 +434,7 @@ void Project::SaveLayerNames()
 	else
 	{
 		rapidjson::Value names(rapidjson::kArrayType);
-		for (auto& layer : oo::GameObjectComponent::LayerNames)
+		for (auto& layer : oo::RigidbodyComponent::LayerNames)
 		{
 			names.PushBack(rapidjson::Value(layer.c_str(),layer.size(),doc.GetAllocator()), doc.GetAllocator());
 		}

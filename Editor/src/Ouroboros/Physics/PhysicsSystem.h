@@ -58,9 +58,9 @@ namespace oo
         static void SetFixedDeltaTime(Timestep NewFixedTime);
         static Timestep GetFixedDeltaTime();
         
-        RaycastResult Raycast(Ray ray , float distance = std::numeric_limits<float>::max());
-        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max());
-
+        RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerField collisionFilter = LayerField{ "11111111"});
+        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerField collisionFilter = LayerField{ "11111111" });
+    
     private:
         inline static std::uint64_t MaxIterations = 2;
         inline static Timestep FixedDeltaTime = 1.0/60;                             // physics updates at 60 fps

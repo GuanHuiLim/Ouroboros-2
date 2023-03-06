@@ -145,7 +145,8 @@ void Inspector::Show()
 			}
 		}
 
-		// Input Layer
+		// Input Layer only applies to items with rigidbody
+		if(gameobject->HasComponent<oo::RigidbodyComponent>())
 		{
 			ImGui::SameLine();
 
@@ -162,9 +163,9 @@ void Inspector::Show()
 			}
 			if (ImGui::BeginPopup("##Edit InLayers"))
 			{
-				auto& names = oo::GameObjectComponent::LayerNames;
-				auto& layer = gameobject->GetComponent<oo::GameObjectComponent>().InputLayer;
-				auto& collideAgainstlayer = gameobject->GetComponent<oo::GameObjectComponent>().OutputLayer;
+				auto& names = oo::RigidbodyComponent::LayerNames;
+				auto& layer = gameobject->GetComponent<oo::RigidbodyComponent>().InputLayer;
+				auto& collideAgainstlayer = gameobject->GetComponent<oo::RigidbodyComponent>().OutputLayer;
 				if(ImGui::BeginTable("##layersTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable))
 				{
 					ImGui::TableNextColumn();
@@ -204,46 +205,6 @@ void Inspector::Show()
 
 		}
 		
-		//// Output Layers
-		//{
-		//	// TODO : Beautify this section so the UI looks better
-		//	// Somehow only one arrow shows if i same line them
-		//	//ImGui::SameLine();
-
-		//	ImGui::BeginGroup();
-		//	ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
-		//	std::string outLayer = "Who I Collide Against?";
-		//	ImGui::InputText("##OutLayers", &outLayer);
-		//	ImGui::PopItemFlag();
-
-		//	ImGui::SameLine();
-		//	if (ImGui::ArrowButton("##Phy OutLayers", ImGuiDir_::ImGuiDir_Down) == true)
-		//	{
-		//		ImGui::OpenPopup("##Edit OutLayers");
-		//	}
-		//	if (ImGui::BeginPopup("##Edit OutLayers"))
-		//	{
-		//		auto& names = oo::LayerNames;
-		//		auto& layer = gameobject->GetComponent<oo::GameObjectComponent>().OutputLayer;
-		//		for (size_t i = 0; i < names.size(); ++i)
-		//		{
-		//			ImGui::PushID(i);
-		//			ImGui::InputText("##Layer Name", &names[i]);
-		//			ImGui::SameLine();
-		//			bool layerValue = layer[i];
-		//			if (ImGui::Checkbox("##Layer value", &layerValue))
-		//			{
-		//				layer[i] = layerValue;
-		//			}
-		//			ImGui::PopID();
-		//		}
-
-		//		ImGui::EndPopup();
-		//	}
-
-		//	ImGui::EndGroup();
-		//}		
-
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);

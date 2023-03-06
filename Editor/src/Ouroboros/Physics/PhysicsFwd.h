@@ -68,6 +68,11 @@ namespace oo
     //using mat3 = glm::mat3;
     //using quat = glm::quat;
 
+    static constexpr std::int32_t s_MaxLayerCount = 8;
+    using LayerField = std::bitset<s_MaxLayerCount>;
+    using LayerMask = LayerField;
+    using LayerMatrix = std::unordered_map<LayerField, LayerMask>;
+
     class RigidbodyComponent;
     //class ColliderCore;
 
