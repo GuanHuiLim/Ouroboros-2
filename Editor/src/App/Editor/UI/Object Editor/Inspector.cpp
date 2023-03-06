@@ -153,7 +153,9 @@ void Inspector::Show()
 			ImGui::BeginGroup();
 			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
 			std::string inLayer = "Layers";
+			ImGui::PushItemWidth(100);
 			ImGui::InputText("##InputLayers", &inLayer);
+			ImGui::PopItemWidth();
 			ImGui::PopItemFlag();
 
 			ImGui::SameLine();
@@ -169,7 +171,7 @@ void Inspector::Show()
 				if(ImGui::BeginTable("##layersTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable))
 				{
 					ImGui::TableNextColumn();
-					ImGui::Text("Label Name");
+					ImGui::Text("Label Name         ");
 					ImGui::TableNextColumn();
 					ImGui::Text("Identify as");
 					ImGui::TableNextColumn();
