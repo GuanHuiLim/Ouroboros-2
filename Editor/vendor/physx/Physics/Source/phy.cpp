@@ -1842,7 +1842,7 @@ namespace myPhysx
     // Called before the query is executed and is used to determine whether to include or exclude a shape from the results
     PxQueryHitType::Enum QueryFilterCallback::preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) {
 
-        if (filterData.word0 & (1 << mLayer)) {
+        if (filterData.word0 & mLayer) {
             // Include objects in the specified collision layer
             return PxQueryHitType::eBLOCK;
         }
