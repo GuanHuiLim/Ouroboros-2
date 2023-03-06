@@ -441,7 +441,7 @@ namespace oo
 
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_layer_check, tracy::Color::PeachPuff4);
-                    //rb.object.setFiltering(std::int32_t{ rb.InputLayer.to_ulong() }, std::int32_t{ rb.OutputLayer.to_ulong() });
+                    rb.object.setFiltering(static_cast<std::int32_t>(rb.InputLayer.to_ulong()), static_cast<std::int32_t>(rb.OutputLayer.to_ulong()));
                     TRACY_PROFILE_SCOPE_END();
                 }
 
@@ -833,8 +833,8 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast, tracy::Color::PeachPuff4);
 
-        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
-            //, std::int32_t{ collisionFilter.to_ulong() });
+        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
+            , static_cast<std::int32_t>(collisionFilter.to_ulong()));
         
         ASSERT_MSG(result.intersect && m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
         
@@ -853,8 +853,8 @@ namespace oo
         // normalize our ray just to make sure
         ray.Direction = glm::normalize(ray.Direction);
 
-        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
-            //, std::int32_t{ collisionFilter.to_ulong() });
+        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
+            , static_cast<std::int32_t>(collisionFilter.to_ulong()));
 
         for (auto& hit : allHits)
         {

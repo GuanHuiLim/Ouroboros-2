@@ -28,8 +28,8 @@ namespace oo
 
         registration::class_<RigidbodyComponent>("Rigidbody")
             //.property("type", &RigidbodyComponent::collider_type)
-            .property("Input Layer", &RigidbodyComponent::GetInputLayer, &RigidbodyComponent::SetInputLayer)
-            .property("Output Layer", &RigidbodyComponent::GetOutputLayer, &RigidbodyComponent::SetOutputLayer)
+            .property("Input Layer", &RigidbodyComponent::GetInputLayer, &RigidbodyComponent::SetInputLayer)(metadata(UI_metadata::HIDDEN, true))
+            .property("Output Layer", &RigidbodyComponent::GetOutputLayer, &RigidbodyComponent::SetOutputLayer)(metadata(UI_metadata::HIDDEN, true))
             .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
             .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
             .property("Enable Gravity", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
