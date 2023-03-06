@@ -572,7 +572,7 @@ namespace myPhysx
         return hit;
     }
 
-    RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance, FilterGroup::Enum filter) {
+    RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::int32_t filter) {
 
         RaycastHit hit{};
         PxRaycastBuffer hitBuffer;
@@ -628,7 +628,7 @@ namespace myPhysx
         return hitAll;
     }
 
-    std::vector<RaycastHit> PhysxWorld::raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, FilterGroup::Enum filter = FilterGroup::All) {
+    std::vector<RaycastHit> PhysxWorld::raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, std::int32_t filter) {
 
         const PxU32 bufferSize = 200;// 256;           // size of the buffer       
         PxRaycastHit hitBuffer[bufferSize];            // storage of the buffer results
@@ -1147,7 +1147,7 @@ namespace myPhysx
         return world->m_meshVertices;
     }
 
-    void PhysicsObject::setFiltering(FilterGroup::Enum currentGroup, FilterGroup::Enum maskGroup) {
+    void PhysicsObject::setFiltering(std::int32_t currentGroup, std::int32_t maskGroup) {
 
         if (world->all_objects.contains(id)) {
 
@@ -1491,7 +1491,7 @@ namespace myPhysx
         return true;
     }
 
-    FilterGroup::Enum PhysicsObject::getFilterIn() const {
+    std::int32_t PhysicsObject::getFilterIn() const {
 
         if (world->all_objects.contains(id)) {
 
@@ -1503,7 +1503,7 @@ namespace myPhysx
         // return default?
     }
 
-    FilterGroup::Enum PhysicsObject::getFilterOut() const {
+    std::int32_t PhysicsObject::getFilterOut() const {
 
         if (world->all_objects.contains(id)) {
 
