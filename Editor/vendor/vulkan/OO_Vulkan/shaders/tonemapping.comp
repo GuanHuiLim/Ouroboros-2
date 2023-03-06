@@ -1,9 +1,17 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_nonuniform_qualifier : require
+
+#include "shared_structs.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (binding = 1,rgba16f) uniform readonly image2D inputImage;
 layout (binding = 2,r11f_g11f_b10f) uniform  image2D resultImage;
 
+layout(push_constant)uniform PushColourCorrect
+{
+		ColourCorrectPC pc;
+};
 
 // Based on aces filmic tonemapping http://www.oscars.org/science-technology/sci-tech-projects/aces
 vec3 aces_tonemap(vec3 color){	
@@ -33,8 +41,21 @@ void main()
 
 	vec3 result = aces_tonemap(res.rgb);
 
+	float shadowThreshold = pc.threshold.x;
+	float highlightThreshold = pc.threshold.y;
+
+	float luminance = dot(result.rgb, vec3(0.2126, 0.7152, 0.0722));
+    float shadow = smoothstep(0.0, shadowThreshold, luminance);
+    float highlight = smoothstep(highlightThreshold, 1.0, luminance);
+    float midtones = 1.0 - shadow - highlight;
+
+    vec3 correctedColor = result.rgb;
+    correctedColor = mix(correctedColor, pc.shadowCol.rgb, (1.0-shadow) * pc.shadowCol.a);
+    correctedColor = mix(correctedColor, pc.midCol.rgb, midtones * pc.midCol.a);
+    correctedColor = mix(correctedColor, pc.highCol.rgb, highlight * pc.highCol.a);
+
 	// also gamma correct before returning    
-    result = pow(result, vec3(1.0 / gamma));
+    result = pow(correctedColor, vec3(1.0 / gamma));	
 
     //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
 	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result,1.0));
