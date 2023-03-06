@@ -445,7 +445,7 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::GraphicsRaycasterComponent>(go, val, doc);
 
 	SaveComponent<oo::WaypointNodeComponent>(go, val, doc);
-	SaveComponent<oo::WaypointNodeComponent>(go, val, doc);
+	SaveComponent<oo::WaypointSetComponent>(go, val, doc);
 #if OO_EDITOR
 	SaveComponent<oo::EditorComponent>(go,val,doc);
 #endif // OO_EDITOR
