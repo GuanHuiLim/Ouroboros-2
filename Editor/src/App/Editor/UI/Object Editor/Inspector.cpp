@@ -71,6 +71,8 @@ Technology is prohibited.
 
 #include <Ouroboros/Editor/EditorComponent.h>
 
+#include <Ouroboros/Physics/PhysicsSystem.h>
+
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
@@ -145,8 +147,11 @@ void Inspector::Show()
 			}
 		}
 
-		// Input Layer only applies to items with rigidbody
-		if(gameobject->HasComponent<oo::RigidbodyComponent>())
+		// Input Layer only applies to items with colliders
+		if(gameobject->HasComponent<oo::BoxColliderComponent>() ||
+			gameobject->HasComponent<oo::SphereColliderComponent>() || 
+			gameobject->HasComponent<oo::CapsuleColliderComponent>() ||
+			gameobject->HasComponent<oo::ConvexColliderComponent>() )
 		{
 			ImGui::SameLine();
 
@@ -165,7 +170,7 @@ void Inspector::Show()
 			}
 			if (ImGui::BeginPopup("##Edit InLayers"))
 			{
-				auto& names = oo::RigidbodyComponent::LayerNames;
+				auto& names = oo::PhysicsSystem::LayerNames;
 				auto& layer = gameobject->GetComponent<oo::RigidbodyComponent>().InputLayer;
 				auto& collideAgainstlayer = gameobject->GetComponent<oo::RigidbodyComponent>().OutputLayer;
 				if(ImGui::BeginTable("##layersTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable))

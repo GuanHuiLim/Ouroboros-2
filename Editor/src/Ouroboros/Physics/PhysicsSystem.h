@@ -52,14 +52,17 @@ namespace oo
         inline static bool ColliderDebugDraw = true;
         inline static bool DebugMessages = false;
 
-        // Layering Bitmask Determines collision
-        static LayerMatrix PhysicsBitMask;
+        // Layers  related functions
+        inline static std::vector<std::string> LayerNames = { "Default", "Environment","Player","Enemy","Layer Five","Layer Six","Layer Seven","Layer Eight" };
+        
+        static LayerType GenerateCollisionMask(std::vector<std::string> names);
+
         // Manupilating Fixed DT
         static void SetFixedDeltaTime(Timestep NewFixedTime);
         static Timestep GetFixedDeltaTime();
         
-        RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerField collisionFilter = LayerField{ "11111111"});
-        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerField collisionFilter = LayerField{ "11111111" });
+        RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
+        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
     
     private:
         inline static std::uint64_t MaxIterations = 2;

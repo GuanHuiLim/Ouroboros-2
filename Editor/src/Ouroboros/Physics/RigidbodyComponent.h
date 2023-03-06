@@ -80,8 +80,6 @@ namespace oo
         bool IsStaticObject = true;
 
     public:
-        inline static std::vector<std::string> LayerNames = { "Default", "Environment","Player","Enemy","Layer Five","Layer Six","Layer Seven","Layer Eight" };
-
         // Who am I? usually only 1
         LayerField InputLayer{ "00000001" };
         // Who can i collide with?

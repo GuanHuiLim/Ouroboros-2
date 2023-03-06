@@ -35,6 +35,9 @@ Technology is prohibited.
 // test
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObject.h"
+
+#include "Utility/Hash.h"
+
 namespace oo
 {
     PhysicsSystem::~PhysicsSystem()
@@ -439,12 +442,6 @@ namespace oo
                     TRACY_PROFILE_SCOPE_END();
                 }
 
-                {
-                    TRACY_PROFILE_SCOPE_NC(rigidbody_layer_check, tracy::Color::PeachPuff4);
-                    rb.object.setFiltering(static_cast<std::int32_t>(rb.InputLayer.to_ulong()), static_cast<std::int32_t>(rb.OutputLayer.to_ulong()));
-                    TRACY_PROFILE_SCOPE_END();
-                }
-
                 TRACY_PROFILE_SCOPE_END();
             });
 
@@ -461,6 +458,13 @@ namespace oo
 
                 // set box size
                 rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
+
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(box_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         //Updating capsule collider's bounds 
@@ -477,6 +481,13 @@ namespace oo
 
                 // set capsule size
                 rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
+
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(capsule_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         //Updating sphere collider's bounds 
@@ -493,6 +504,13 @@ namespace oo
 
                 // set capsule size
                 rb.object.setSphereProperty(sc.GlobalRadius);
+                
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(sphere_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         {
@@ -544,6 +562,12 @@ namespace oo
                         rb.object.setConvexProperty(res, scale);
                     }
 
+                    // update filtering
+                    {
+                        TRACY_PROFILE_SCOPE_NC(mesh_setup_filters, tracy::Color::PeachPuff4);
+                        rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                        TRACY_PROFILE_SCOPE_END();
+                    }
                 });
 
 
@@ -817,7 +841,37 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
     }
 
-    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime) 
+    LayerType PhysicsSystem::GenerateCollisionMask(std::vector<std::string> names)
+    {
+        /*static std::vector<std::pair<util::StringHash, unsigned int>> hashedTable; 
+        if (hashedTable.size() == 0)
+        {
+            unsigned int count = 0;
+            for (auto& layer : LayerNames)
+            {
+                hashedTable.emplace_back(std::pair{ util::StringHash::GenerateFNV1aHash(layer), count++ });
+            }
+        }*/
+
+        LayerType result = 0;
+        unsigned int count = 0;
+        std::for_each(LayerNames.cbegin(), LayerNames.cend(),
+            [&](auto&& elem) 
+            {
+                //auto key = util::StringHash::GenerateFNV1aHash(elem);
+                //auto value = std::find_if(hashedTable.cbegin(), hashedTable.cend(), [&](auto&& elem) { return elem.second == key; });
+                //if (value != hashedTable.cend())
+                auto value = std::find(names.cbegin(), names.cend(), elem);
+                if(value != names.cend())
+                    result &= (1 << count);
+
+                count++;
+            });
+
+        return result;
+    }
+
+    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime)
     { 
         FixedDeltaTime = NewFixedTime; 
         auto newLimit = FixedDeltaTime * MaxIterations;
@@ -829,12 +883,12 @@ namespace oo
         return FixedDeltaTime; 
     }
 
-    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance, LayerField collisionFilter)
+    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast, tracy::Color::PeachPuff4);
 
         auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
-            , static_cast<std::int32_t>(collisionFilter.to_ulong()));
+            , static_cast<std::uint32_t>(collisionFilter));
         
         ASSERT_MSG(result.intersect && m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
         
@@ -844,7 +898,7 @@ namespace oo
             { result.normal.x, result.normal.y, result.normal.z }, result.distance };
     }
 
-    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance, LayerField collisionFilter)
+    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast_all, tracy::Color::PeachPuff4);
 
@@ -854,7 +908,7 @@ namespace oo
         ray.Direction = glm::normalize(ray.Direction);
 
         auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
-            , static_cast<std::int32_t>(collisionFilter.to_ulong()));
+            , static_cast<std::uint32_t>(collisionFilter));
 
         for (auto& hit : allHits)
         {

@@ -22,7 +22,7 @@
 #include "App/Editor/Properties/UI_RTTRType.h"
 
 #include "Ouroboros/Physics/RigidbodyComponent.h"
-
+#include <Ouroboros/Physics/PhysicsSystem.h>
 void Project::LoadProject(std::filesystem::path& config)
 {
 	static bool run_once = []() {	oo::EventManager::Subscribe<CloseProjectEvent>([](CloseProjectEvent*) {SaveProject(); }); return true; }();
@@ -397,10 +397,10 @@ void Project::LoadLayerNames()
 	{
 		auto& val = doc.FindMember("Layer Names")->value;
 		auto arr = val.GetArray();
-		unsigned largersize = std::min((unsigned)oo::RigidbodyComponent::LayerNames.size(), (unsigned)arr.Size());
+		unsigned largersize = std::min((unsigned)oo::PhysicsSystem::LayerNames.size(), (unsigned)arr.Size());
 		for (unsigned i = 0; i < largersize; ++i)
 		{
-			oo::RigidbodyComponent::LayerNames[i] = arr[i].GetString();
+			oo::PhysicsSystem::LayerNames[i] = arr[i].GetString();
 		}
 		int i = 0;
 		i = i + 1;
@@ -426,7 +426,7 @@ void Project::SaveLayerNames()
 		auto arr = val.GetArray();
 		arr.Clear();
 		rapidjson::Value names(rapidjson::kArrayType);
-		for (auto layer : oo::RigidbodyComponent::LayerNames)
+		for (auto layer : oo::PhysicsSystem::LayerNames)
 		{
 			arr.PushBack(rapidjson::Value(layer.c_str(), layer.size(),doc.GetAllocator()), doc.GetAllocator());
 		}
@@ -434,7 +434,7 @@ void Project::SaveLayerNames()
 	else
 	{
 		rapidjson::Value names(rapidjson::kArrayType);
-		for (auto& layer : oo::RigidbodyComponent::LayerNames)
+		for (auto& layer : oo::PhysicsSystem::LayerNames)
 		{
 			names.PushBack(rapidjson::Value(layer.c_str(),layer.size(),doc.GetAllocator()), doc.GetAllocator());
 		}
