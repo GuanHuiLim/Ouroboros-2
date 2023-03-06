@@ -107,5 +107,6 @@ namespace vkutils
 
 
 	void TransitionImage(VkCommandBuffer cmd,Texture2D& texture, VkImageLayout targetLayout);
+	void ComputeImageBarrier(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout);
 
 }
