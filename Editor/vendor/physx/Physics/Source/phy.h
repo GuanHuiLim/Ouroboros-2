@@ -55,22 +55,6 @@ namespace myPhysx {
     enum class force { force, acceleration, impulse, velocityChanged };
     enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit};
     enum class collision { none, onCollisionEnter, onCollisionStay, onCollisionExit};
-
-    class QueryFilterCallback : public PxQueryFilterCallback {
-
-    public:
-        QueryFilterCallback(PxU32 layer);
-
-        // Return PxQueryHitType::eNONE if the shape should be ignored
-        PxQueryHitType::Enum preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) override;
-
-        // Return PxQueryHitType::eNONE if the hit should be ignored
-        PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit) override;
-
-    private:
-        PxU32 mLayer;
-    };
-
     
     class EventCallBack : public PxSimulationEventCallback {
 

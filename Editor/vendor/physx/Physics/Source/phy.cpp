@@ -159,7 +159,9 @@ namespace myPhysx
             filterData.word0 = filterGroup; // 1 // word0 = own ID
             filterData.word1 = filterMask;  // 1 // word1 = ID mask to filter pairs that trigger a contact callback;
            
-            shape->setSimulationFilterData(filterData);
+            shape->setSimulationFilterData(filterData); // sets the filter data that is used during the physics simulation
+
+            shape->setQueryFilterData(filterData); // sets the filter data that is used when querying the scene for collision detection
         }
 
         void init() {
@@ -582,11 +584,12 @@ namespace myPhysx
 
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_ANY;
 
-        // Define the filter callback for the raycast
-        QueryFilterCallback filterCallback(filter);
+        // Define the filter data for the raycast
+        PxQueryFilterData filterData = PxQueryFilterData();
+        filterData.data.word0 = filter;
 
-        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, hitFlags, physx::PxQueryFilterData(), &filterCallback);
-
+        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, hitFlags, filterData);
+        
         // HAVE INTERSECTION
         if (hit.intersect) {
 
@@ -609,9 +612,8 @@ namespace myPhysx
         std::vector<RaycastHit> hitAll{}; // store all the raycast hit
 
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
-        PxQueryFlags queryFlags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eNO_BLOCK;
 
-        scene->raycast(origin, direction, distance, buffer, hitFlags, PxQueryFilterData(queryFlags));
+        scene->raycast(origin, direction, distance, buffer, hitFlags);
 
         // loop based on how many touches return by the query
         for (PxU32 i = 0; i < buffer.nbTouches; i++)
@@ -640,12 +642,12 @@ namespace myPhysx
         std::vector<RaycastHit> hitAll{}; // store all the raycast hit
 
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
-        PxQueryFlags queryFlags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eNO_BLOCK;
 
-        // Define the filter callback for the raycast
-        QueryFilterCallback filterCallback(filter);
+        // Define the filter data for the raycast
+        PxQueryFilterData filterData = PxQueryFilterData();
+        filterData.data.word0 = filter;
 
-        scene->raycast(origin, direction, distance, buffer, hitFlags, PxQueryFilterData(queryFlags), &filterCallback);
+        scene->raycast(origin, direction, distance, buffer, hitFlags, filterData);
 
         // loop based on how many touches return by the query
         for (PxU32 i = 0; i < buffer.nbTouches; i++)
@@ -1839,33 +1841,6 @@ namespace myPhysx
     }
     void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
         //printf("CALLBACK: onAdvance\n");
-    }
-
-/*-----------------------------------------------------------------------------*/
-/*                           QUERY FILTER CALLBACK                             */
-/*-----------------------------------------------------------------------------*/
-    QueryFilterCallback::QueryFilterCallback(PxU32 layer) : mLayer(layer) {}
-
-    // Called before the query is executed and is used to determine whether to include or exclude a shape from the results
-    PxQueryHitType::Enum QueryFilterCallback::preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) {
-
-        if (filterData.word0 & mLayer) {
-            // Include objects in the specified collision layer
-            return PxQueryHitType::eBLOCK;
-        }
-        else {
-            // Exclude objects in other collision layers
-            return PxQueryHitType::eNONE;
-        }
-
-        // Return PxQueryHitType::eNONE if the shape should be ignored
-    }
-
-    // Called after the query is executedand can be used to further filter the results, if needed
-    PxQueryHitType::Enum QueryFilterCallback::postFilter(const PxFilterData& filterData, const PxQueryHit& hit) {
-
-        // Add additional filtering here, if needed
-        return PxQueryHitType::eBLOCK;
     }
 
 }
