@@ -863,10 +863,13 @@ namespace oo
                 //if (value != hashedTable.cend())
                 auto value = std::find(names.cbegin(), names.cend(), elem);
                 if(value != names.cend())
-                    result &= (1 << count);
+                    result |= (1 << count);
 
                 count++;
             });
+
+        if(result == 0)
+            LOG_WARN("mask generated won't work against anything");
 
         return result;
     }
