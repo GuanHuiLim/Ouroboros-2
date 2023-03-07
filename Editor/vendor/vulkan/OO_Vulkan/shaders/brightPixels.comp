@@ -1,11 +1,55 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_nonuniform_qualifier : require
+
+#include "shared_structs.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
-layout (binding = 1,rgba32f) uniform readonly image2D inputImage;
-layout (binding = 2,rgba32f) uniform writeonly image2D resultImage;
+layout (binding = 1,r11f_g11f_b10f) uniform readonly image2D inputImage;
+layout (binding = 2,rgba16f) uniform writeonly image2D resultImage;
+
+layout(push_constant)uniform PushBloomConstant
+{
+		BloomPC pc;
+};
+
+
+float Max3 (vec3 v) {
+  return max (max (v.x, v.y), v.z);
+}
+#define EPSILON 0.00001
+//
+// Quadratic color thresholding
+// curve = (threshold - knee, knee * 2, 0.25 / knee)
+//
+vec3 QuadraticThreshold(vec3 color, float threshold, vec3 curve)
+{
+    // Pixel brightness
+    float br = Max3(color.rgb);
+    //float br = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+
+    // Under-threshold part: quadratic curve
+    float rq = clamp(br - curve.x, 0.0, curve.y);
+    rq = curve.z * rq * rq;
+
+    // Combine and apply the brightness response curve.
+    color *= max(rq, br - threshold) / max(br, EPSILON);
+
+    return color;
+}
 
 void main()
 {	
+    // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
 	vec4 res = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
+
+	float brightness = dot(res.rgb, vec3(0.2126, 0.7152, 0.0722));
+    //if(brightness > pc.threshold.x)
+        res = vec4(QuadraticThreshold(res.rgb,pc.threshold.x,pc.threshold.yzw),res.a);
+    //else
+    //    res = vec4(0.0, 0.0, 0.0, 0.0);
+
+
+    //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
 	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);
 }
