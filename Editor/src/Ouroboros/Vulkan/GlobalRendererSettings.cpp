@@ -32,9 +32,22 @@ namespace oo
             .property("Max Bias", &GlobalRendererSettings::LightingSettings::GetMaxBias, &GlobalRendererSettings::LightingSettings::SetMaxBias)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             ;
+        registration::class_<GlobalRendererSettings::BloomSettings>("Bloom Settings")
+            .property("Threshold", &GlobalRendererSettings::BloomSettings::Threshold)
+            .property("Soft Threshold", &GlobalRendererSettings::BloomSettings::SoftThreshold)
+            ;
+        registration::class_<GlobalRendererSettings::ColourCorrectionSettings>("Colour Correction Settings")
+            .property("Highlight Threshold", &GlobalRendererSettings::ColourCorrectionSettings::HighlightThreshold)
+            .property("Soft Threshold", &GlobalRendererSettings::ColourCorrectionSettings::ShadowThreshold)
+            .property("Shadow Colour", &GlobalRendererSettings::ColourCorrectionSettings::ShadowColour)
+            .property("Midtones Colour", &GlobalRendererSettings::ColourCorrectionSettings::MidtonesColour)
+            .property("Highlight Colour", &GlobalRendererSettings::ColourCorrectionSettings::HighlightColour)
+            ;
         registration::class_<GlobalRendererSettings>("Renderer Settings")
             .property("SSAO Configuration", &GlobalRendererSettings::SSAO)
-            .property("Light Configuration", &GlobalRendererSettings::Lighting)
+            .property("Lighting Configuration", &GlobalRendererSettings::Lighting)
+            .property("Global Bloom", &GlobalRendererSettings::Bloom)
+            .property("Global Colour Correction", &GlobalRendererSettings::ColourCorrection)
             ;
     }
     

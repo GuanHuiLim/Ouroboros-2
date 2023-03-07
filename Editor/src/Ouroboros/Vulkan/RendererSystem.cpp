@@ -136,6 +136,15 @@ namespace oo
         m_graphicsWorld->lightSettings.ambient = RendererSettings::setting.Lighting.Ambient;
         m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;
         m_graphicsWorld->lightSettings.maxBias = RendererSettings::setting.Lighting.MaxBias;
+
+        m_graphicsWorld->bloomSettings.threshold = RendererSettings::setting.Bloom.Threshold;
+        m_graphicsWorld->bloomSettings.softThreshold = RendererSettings::setting.Bloom.SoftThreshold;
+
+        m_graphicsWorld->colourSettings.highlightColour = RendererSettings::setting.ColourCorrection.HighlightColour;
+        m_graphicsWorld->colourSettings.shadowThreshold = RendererSettings::setting.ColourCorrection.ShadowThreshold;
+        m_graphicsWorld->colourSettings.shadowColour = RendererSettings::setting.ColourCorrection.ShadowColour;
+        m_graphicsWorld->colourSettings.midtonesColour = RendererSettings::setting.ColourCorrection.MidtonesColour;
+        m_graphicsWorld->colourSettings.highlightColour = RendererSettings::setting.ColourCorrection.HighlightColour;
     }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
