@@ -84,7 +84,7 @@ namespace Ouroboros
             return Physics_RaycastAll(origin, direction, maxDistance);
         }
 
-        public static RaycastHit[] RaycastAll_Filtered(Vector3 origin, Vector3 direction, float maxDistance, uint mask)
+        public static RaycastHit[] RaycastAll(Vector3 origin, Vector3 direction, float maxDistance, uint mask)
         {
             return Physics_RaycastAll_Filtered(origin, direction, maxDistance, mask);
         }
