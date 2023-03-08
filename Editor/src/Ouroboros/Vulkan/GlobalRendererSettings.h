@@ -50,6 +50,7 @@ namespace oo
         {
             float Threshold = 1.1f;
             float SoftThreshold = 0.5f;
+            RTTR_ENABLE();
         }
         Bloom{};
 
@@ -57,9 +58,10 @@ namespace oo
         {
             float HighlightThreshold = 1.0f;
             float ShadowThreshold = 0.0f;
-            Color ShadowColour = Color{};
-            Color MidtonesColour = Color{};
-            Color HighlightColour = Color{};
+            Color ShadowColour = Color{0,0,0,0};
+            Color MidtonesColour = Color{ 0,0,0,0 };
+            Color HighlightColour = Color{ 0,0,0,0 };
+            RTTR_ENABLE();
         }
         ColourCorrection{};
 

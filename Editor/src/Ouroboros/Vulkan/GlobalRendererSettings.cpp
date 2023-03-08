@@ -33,12 +33,12 @@ namespace oo
             .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             ;
         registration::class_<GlobalRendererSettings::BloomSettings>("Bloom Settings")
-            .property("Threshold", &GlobalRendererSettings::BloomSettings::Threshold)
-            .property("Soft Threshold", &GlobalRendererSettings::BloomSettings::SoftThreshold)
+            .property("Threshold", &GlobalRendererSettings::BloomSettings::Threshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Soft Threshold", &GlobalRendererSettings::BloomSettings::SoftThreshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             ;
         registration::class_<GlobalRendererSettings::ColourCorrectionSettings>("Colour Correction Settings")
-            .property("Highlight Threshold", &GlobalRendererSettings::ColourCorrectionSettings::HighlightThreshold)
-            .property("Soft Threshold", &GlobalRendererSettings::ColourCorrectionSettings::ShadowThreshold)
+            .property("Highlight Threshold", &GlobalRendererSettings::ColourCorrectionSettings::HighlightThreshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Soft Threshold", &GlobalRendererSettings::ColourCorrectionSettings::ShadowThreshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             .property("Shadow Colour", &GlobalRendererSettings::ColourCorrectionSettings::ShadowColour)
             .property("Midtones Colour", &GlobalRendererSettings::ColourCorrectionSettings::MidtonesColour)
             .property("Highlight Colour", &GlobalRendererSettings::ColourCorrectionSettings::HighlightColour)
