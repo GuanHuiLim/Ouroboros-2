@@ -114,6 +114,10 @@ vec3 GGXBRDF(vec3 L ,vec3 V , vec3 H , vec3 N , float alpha , vec3 Kd , vec3 Ks)
     vec3 F = Ks + (1.0-Ks) * pow(1-LH,5);
     float G = G_GGX(L,H,alpha) * G_GGX(V,H,alpha);
     
+    if (isnan(D))
+    {
+        return vec3(0.0);
+    }
     vec3 result = Kd / pi + D * F / 4.0 * G;   
 
     return result;
