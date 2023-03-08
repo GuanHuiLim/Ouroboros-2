@@ -184,19 +184,20 @@ void main()
 
 	// Render-target composition
 	float ambient = PC.ambient;
-	if (DecodeFlags(material.z) == 0x1)
-	{
-		ambient = 1.0;
-	}
+	//if (DecodeFlags(material.z) == 0x1)
+	//{
+	//	ambient = 1.0;
+	//}
 	float gamma = 1.0;
 	
 	//albedo.rgb =  pow(albedo.rgb, vec3(gamma));
 
 	// Ambient part
-	vec3 result = albedo.rgb  * ambient;
+	vec3 lightContribution = vec3(0.0);
 
-	if(PC.useSSAO != 0){
-		result *=  SSAO;
+	// remove SSAO if not wanted
+	if(PC.useSSAO == 0){
+		SSAO = 1.0;
 	}
 	
 	// Point Lights
@@ -210,9 +211,12 @@ void main()
 		//		break;
 		//}
 
-		result += res;
+		lightContribution += res;
 	}
-
+	
+	vec3 ambientContribution = albedo.rgb  * ambient ;
+	vec3 result =  ambientContribution + lightContribution * SSAO;
+	
 	result = pow(result, vec3(1.0/gamma));
 
 	outFragcolor = vec4(result, albedo.a);	
