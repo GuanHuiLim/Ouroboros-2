@@ -20,6 +20,8 @@ namespace oo
 
 		m_world->SubscribeOnRemoveComponent<SkinMeshRendererSystem, SkinMeshRendererComponent>(
 			this, &SkinMeshRendererSystem::OnMeshRemove);
+
+		oo::EventManager::Subscribe<SkinMeshRendererSystem,InitializeMeshEvent>(this, &SkinMeshRendererSystem::OnInitializeMeshEvent);
 	}
 
 	void RecurseChildren_AssignparentTransform_to_BoneComponents(GameObject obj, glm::mat4 parentTransform, UUID uid)
@@ -274,7 +276,6 @@ namespace oo
 
 			});
 
-		AssignGraphicsWorldID_to_BoneComponents();
 
 
 		//recalculate gameobject uid for all bones
@@ -286,6 +287,8 @@ namespace oo
 				RecurseChildren_AssignUID_to_BoneComponents(go, go.GetInstanceID());
 			});
 
+		
+		AssignGraphicsWorldID_to_BoneComponents();
 	}
 
 	
@@ -362,6 +365,21 @@ namespace oo
 		m_graphicsWorld->DestroyObjectInstance(comp.graphicsWorld_ID);
 		// remove graphics id to uuid of gameobject
 		//m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
+	}
+
+	void SkinMeshRendererSystem::OnInitializeMeshEvent(InitializeMeshEvent* evnt)
+	{
+		oo::GameObject go{ evnt->entity,*scene };
+
+		auto& meshComp = go.GetComponent<SkinMeshRendererComponent>();
+		auto& transform_component = go.GetComponent<TransformComponent>();
+		auto& go_component = go.GetComponent<GameObjectComponent>();
+
+		Initialize(meshComp, transform_component, go_component);
+
+		auto entity = evnt->entity;
+		std::erase_if(uninitializedEntities, [&](Ecs::EntityID e) { return (e.value == entity.value); });
+
 	}
 
 	void SkinMeshRendererSystem::Initialize(SkinMeshRendererComponent& renderComp, TransformComponent& transformComp, GameObjectComponent& goComp)

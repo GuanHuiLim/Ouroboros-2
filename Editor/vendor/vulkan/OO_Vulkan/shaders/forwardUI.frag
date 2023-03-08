@@ -34,6 +34,11 @@ float median(float r, float g, float b) {
     return max(min(r, g), min(max(r, g), b));
 }
 
+void Remap_float(float In, vec2 InMinMax, vec2 OutMinMax, out float Out)
+{
+    Out = OutMinMax.x + (In - InMinMax.x) * (OutMinMax.y - OutMinMax.x) / (InMinMax.y - InMinMax.x);
+}
+
 void main()
 {
     outEntityID = int(inInstanceData.y);
@@ -67,8 +72,18 @@ void main()
         float screenPxDistance = screenPxRange()*(sd - 0.5);
         float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
         outfragCol = mix(vec4(0),inColor,opacity);
+        Remap_float(outfragCol.a,vec2(0.0,1.0),vec2(0,0.20),outfragCol.a);
         
         if(outfragCol.a < 0.0001) discard; // this is bad and broken
+    }else
+    {
+        vec4 tempcol = inColor.rgba;
+        Remap_float(tempcol.a,vec2(0.0,1.0),vec2(0.0,0.20),tempcol.a);
+        //tempcol.a = min(50.0/255.0 * tempcol.a, 1.0);
+        outfragCol.rgb = outfragCol.rgb * inColor.rgb;
+        outfragCol.a = outfragCol.a * tempcol.a;
+        outfragCol.rgb = pow(outfragCol.rgb,vec3(2.2));
+        //outfragCol.rgb = pow(outfragCol.rgb,vec3(2.2));
     }
 
     // hardcode red

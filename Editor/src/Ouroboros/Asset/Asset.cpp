@@ -71,6 +71,7 @@ namespace oo
     {
         const auto FP_EXT = contentPath.extension();
         REGISTER_TYPE(Asset::EXTS_TEXTURE, Texture);
+        REGISTER_TYPE(Asset::EXTS_FONT, Font);
         REGISTER_TYPE(Asset::EXTS_AUDIO, Audio);
         REGISTER_TYPE(Asset::EXTS_MODEL, Model);
         REGISTER_TYPE(Asset::EXTS_ANIMATION, Animation);

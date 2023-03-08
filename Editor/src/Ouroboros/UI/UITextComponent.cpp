@@ -17,6 +17,8 @@ Technology is prohibited.
 #include "App/Editor/Properties/UI_metadata.h"
 #include <rttr/registration.h>
 
+#include "OO_Vulkan/src/Font.h"
+
 namespace oo
 {
     RTTR_REGISTRATION
@@ -39,10 +41,29 @@ namespace oo
         );
 
         registration::class_<UITextComponent>("UI Text")
+            .property("FontFamily", &UITextComponent::GetTextFont, &UITextComponent::SetTextFont)(metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Font)))
             .property("Text", &UITextComponent::Text)(metadata(UI_metadata::EXTRA_TEXT, true))
             .property("Color",&UITextComponent::TextColor)
             .property("Font Size", &UITextComponent::FontSize)
             .property("Font Alignment", &UITextComponent::Alignment)
             .property("Vertical Line Space", &UITextComponent::VerticalLineSpace);
+    }
+    
+    void oo::UITextComponent::SetTextFont(Asset newFontFamily)
+    {
+        FontFamily = newFontFamily;
+        if (FontFamily.IsValid())
+        {
+            font = FontFamily.GetData<oGFX::Font*>();
+        }
+        else
+        {
+            font = nullptr;
+        }
+    }
+
+    Asset oo::UITextComponent::GetTextFont() const
+    {
+        return FontFamily;
     }
 }

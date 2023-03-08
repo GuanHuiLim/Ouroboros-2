@@ -94,6 +94,18 @@ namespace oo
         isDirty = true;
     }
 
+    void oo::AudioSourceComponent::SetLoopBegin(unsigned int t)
+    {
+        loopBegin = t;
+        isDirty = true;
+    }
+
+    void oo::AudioSourceComponent::SetLoopEnd(unsigned int t)
+    {
+        loopEnd = t;
+        isDirty = true;
+    }
+
     void AudioSourceComponent::SetVolume(float v)
     {
         volume = v;

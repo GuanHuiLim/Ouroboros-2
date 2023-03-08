@@ -508,8 +508,15 @@ void Hierarchy::NormalView()
 		bool open = false;
 		if (source->GetIsPrefab())//prefab
 		{
+			if (source->ActiveInHierarchy() == false)
+			{
+				ImVec4 temp = ImGui_StylePresets::prefab_text_color;
+				temp.w *= 0.3f;
+				ImGui::PushStyleColor(ImGuiCol_Text, temp);
+			}
+			else
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
 
-			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
 			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
 			{
@@ -519,7 +526,19 @@ void Hierarchy::NormalView()
 			ImGui::PopStyleColor();
 		}
 		else
-			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
+		{
+			if (source->ActiveInHierarchy() == false)
+			{
+				ImVec4 temp = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+				temp.w *= 0.3f;
+				ImGui::PushStyleColor(ImGuiCol_Text, temp);
+
+				open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
+				ImGui::PopStyleColor();
+			}
+			else
+				open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
+		}
 
 		if (open == true && (flags & ImGuiTreeNodeFlags_OpenOnArrow))
 		{

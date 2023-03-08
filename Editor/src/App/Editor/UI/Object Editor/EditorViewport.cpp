@@ -44,6 +44,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
 #include "Ouroboros/Vulkan/RendererSystem.h"
+#include "Ouroboros/UI/UISystem.h"
 
 
 // Default settings for editor camera
@@ -446,6 +447,14 @@ void EditorViewport::MenuBar()
 			if (ImGui::MenuItem("Light Debug Draw", 0, oo::RendererSystem::LightsDebugDraw))
 			{
 				oo::RendererSystem::LightsDebugDraw = !oo::RendererSystem::LightsDebugDraw;
+			}
+			if (ImGui::MenuItem("UI Debug Draw", 0, oo::UISystem::UIDebugDraw))
+			{
+				oo::UISystem::UIDebugDraw = !oo::UISystem::UIDebugDraw;
+			}
+			if (ImGui::MenuItem("UI Debug Raycast", 0, oo::UISystem::UIDebugRaycast))
+			{
+				oo::UISystem::UIDebugRaycast = !oo::UISystem::UIDebugRaycast;
 			}
 
 			ImGui::EndMenu();

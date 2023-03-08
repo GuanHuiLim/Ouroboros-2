@@ -20,7 +20,10 @@ Technology is prohibited.
 #include <rttr/type>
 
 #include "Ouroboros/Vulkan/Color.h"
-
+namespace oGFX 
+{
+    class Font;
+}
 namespace oo
 {
     class UITextComponent final
@@ -44,6 +47,12 @@ namespace oo
         float FontSize = 8;
         float VerticalLineSpace = 1;
         FontAlignment Alignment = FontAlignment::Centre;
+
+        Asset FontFamily;
+        oGFX::Font* font = nullptr;
+
+        Asset GetTextFont() const;
+        void SetTextFont(Asset NewFontFamily);
 
         RTTR_ENABLE();
     };

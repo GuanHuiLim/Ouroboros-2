@@ -1,0 +1,47 @@
+#version 460
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 1/*,rgba16f*/) uniform sampler2D inputImage;
+layout (binding = 2,rgba16f) uniform writeonly image2D resultImage;
+
+void main()
+{	
+	// Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
+	vec4 res;
+	//vec4 res = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
+
+    vec2 srcSize = textureSize(inputImage,0);
+    vec2 dstSize = imageSize(resultImage);
+
+    vec2 uv = vec2(gl_GlobalInvocationID.xy)/dstSize;///imageSize(resultImage);
+	vec2 texelSize = vec2(1.0);///imageSize(inputImage); 
+	
+    vec2 srcUV = uv*srcSize;
+	
+	vec4 A = texture(inputImage, vec2(srcUV + texelSize * vec2(-1.0, -1.0)));
+    vec4 B = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.0, -1.0)));
+    vec4 C = texture(inputImage, vec2(srcUV + texelSize * vec2( 1.0, -1.0)));
+    vec4 D = texture(inputImage, vec2(srcUV + texelSize * vec2(-0.5, -0.5)));
+    vec4 E = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.5, -0.5)));
+    vec4 F = texture(inputImage, vec2(srcUV + texelSize * vec2(-1.0,  0.0)));
+    vec4 G = texture(inputImage, vec2(srcUV                               ));
+    vec4 H = texture(inputImage, vec2(srcUV + texelSize * vec2( 1.0,  0.0)));
+    vec4 I = texture(inputImage, vec2(srcUV + texelSize * vec2(-0.5,  0.5)));
+    vec4 J = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.5,  0.5)));
+    vec4 K = texture(inputImage, vec2(srcUV + texelSize * vec2(-1.0,  1.0)));
+    vec4 L = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.0,  1.0)));
+    vec4 M = texture(inputImage, vec2(srcUV + texelSize * vec2( 1.0,  1.0)));
+	
+	vec2 div = (1.0 / 4.0) * vec2(0.5, 0.125);
+
+    vec4 o = (D + E + I + J) * div.x;
+    o += (A + B + G + F) * div.y;
+    o += (B + C + H + G) * div.y;
+    o += (F + G + L + K) * div.y;
+    o += (G + H + M + L) * div.y;
+	
+    res = vec4(o.rgba);
+
+	 //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
+	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);
+}
