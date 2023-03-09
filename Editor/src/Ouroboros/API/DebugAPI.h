@@ -48,45 +48,45 @@ namespace oo
 
     SCRIPT_API void Debug_DrawLine(ScriptValue::vec3_type p0, ScriptValue::vec3_type p1)
     {
-        DebugDraw::AddLine(p0, p1);
+        oGFX::DebugDraw::AddLine(p0, p1);
     }
 
     SCRIPT_API void Debug_DrawLine_Color(ScriptValue::vec3_type p0, ScriptValue::vec3_type p1, Color color)
     {
-        DebugDraw::AddLine(p0, p1, color);
+        oGFX::DebugDraw::AddLine(p0, p1, color);
     }
 
     SCRIPT_API void Debug_DrawWireCube(ScriptValue::vec3_type center, ScriptValue::vec3_type size)
     {
         glm::vec3 min = static_cast<glm::vec3>(center) - (static_cast<glm::vec3>(size) / 2.0f);
         glm::vec3 max = static_cast<glm::vec3>(center) + (static_cast<glm::vec3>(size) / 2.0f);
-        DebugDraw::AddAABB({ min, max });
+        oGFX::DebugDraw::AddAABB({ min, max });
     }
 
     SCRIPT_API void Debug_DrawWireCube_Color(ScriptValue::vec3_type center, ScriptValue::vec3_type size, Color color)
     {
         glm::vec3 min = static_cast<glm::vec3>(center) - (static_cast<glm::vec3>(size) / 2.0f);
         glm::vec3 max = static_cast<glm::vec3>(center) + (static_cast<glm::vec3>(size) / 2.0f);
-        DebugDraw::AddAABB({ min, max }, color);
+        oGFX::DebugDraw::AddAABB({ min, max }, color);
     }
 
     SCRIPT_API void Debug_DrawWireSphere(ScriptValue::vec3_type center, float radius)
     {
-        DebugDraw::AddSphere({ center, radius });
+        oGFX::DebugDraw::AddSphere({ center, radius });
     }
 
     SCRIPT_API void Debug_DrawWireSphere_Color(ScriptValue::vec3_type center, float radius, Color color)
     {
-        DebugDraw::AddSphere({ center, radius }, color);
+        oGFX::DebugDraw::AddSphere({ center, radius }, color);
     }
 
     SCRIPT_API void Debug_DrawArrow(ScriptValue::vec3_type p0, ScriptValue::vec3_type p1)
     {
-        DebugDraw::AddArrow(p0, p1);
+        oGFX::DebugDraw::AddArrow(p0, p1);
     }
 
     SCRIPT_API void Debug_DrawArrow_Color(ScriptValue::vec3_type p0, ScriptValue::vec3_type p1, Color color)
     {
-        DebugDraw::AddArrow(p0, p1, color);
+        oGFX::DebugDraw::AddArrow(p0, p1, color);
     }
 }

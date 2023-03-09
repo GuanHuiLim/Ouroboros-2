@@ -33,6 +33,8 @@ namespace oo
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Muted, bool, IsMuted, SetMuted)
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, PlayOnAwake, bool, IsPlayOnAwake, SetPlayOnAwake)
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Loop, bool, IsLoop, SetLoop)
+    SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, LoopBegin, uint, GetLoopBegin, SetLoopBegin)
+    SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, LoopEnd, uint, GetLoopEnd, SetLoopEnd)
 
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Volume, float, GetVolume, SetVolume)
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Pitch, float, GetPitch, SetPitch)

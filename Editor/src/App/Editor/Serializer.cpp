@@ -50,6 +50,8 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/GraphicsRaycasterComponent.h>
+#include <Ouroboros/UI/UIComponent.h>
+#include <Ouroboros/UI/UITextComponent.h>
 
 #include <Ouroboros/Transform/TransformSystem.h>
 #include <Ouroboros/Editor/EditorComponent.h>
@@ -90,6 +92,8 @@ void Serializer::Init()
 	AddLoadComponent<oo::AudioSourceComponent>();
 	AddLoadComponent<oo::AnimationComponent>();
 
+	AddLoadComponent<oo::UIComponent>();
+	AddLoadComponent<oo::UITextComponent>();
 	AddLoadComponent<oo::RectTransformComponent>();
 	AddLoadComponent<oo::UICanvasComponent>();
 	AddLoadComponent<oo::UIRaycastComponent>();
@@ -429,8 +433,10 @@ void Serializer::SaveObject(oo::GameObject& go, rapidjson::Value& val,rapidjson:
 	SaveComponent<oo::AnimationComponent>(go, val, doc);
 
 	SaveComponent<oo::RectTransformComponent>(go, val, doc);
+	SaveComponent<oo::UIComponent>(go, val, doc);
 	SaveComponent<oo::UICanvasComponent>(go, val, doc);
 	SaveComponent<oo::UIRaycastComponent>(go, val, doc);
+	SaveComponent<oo::UITextComponent>(go, val, doc);
 	SaveComponent<oo::UIImageComponent>(go, val, doc);
 	SaveComponent<oo::GraphicsRaycasterComponent>(go, val, doc);
 

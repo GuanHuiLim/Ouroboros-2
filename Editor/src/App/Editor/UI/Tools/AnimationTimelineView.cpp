@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <Ouroboros/Scene/Scene.h>
 #include "App/Editor/UI/Object Editor/Hierarchy.h"
 #include "App/Editor/Utility/ImGuiManager.h"
+#include "Ouroboros/Animation/AnimationSystem.h"
 
 
 void AnimationTimelineView::Show()
@@ -116,6 +117,9 @@ void AnimationTimelineView::SelectAnimation(oo::AnimationComponent* _animator,
                             animation = &it2->second.GetAnimation();
                             scriptevent = nullptr;
                             _animOpen = !_animOpen;
+
+                            //notify animation system of possible animation modification
+                            oo::Anim::AnimationSystem::NotifyModifiedAnimation(animation->name);
                         }
                     }
                 }
@@ -125,6 +129,7 @@ void AnimationTimelineView::SelectAnimation(oo::AnimationComponent* _animator,
     }
     ImGui::EndGroup();
     ImGui::PopItemWidth();
+
 }
 
 void AnimationTimelineView::AnimationFrameTime(oo::Anim::Animation* _animation)

@@ -18,6 +18,7 @@ Technology is prohibited.
 #include "RectTransformComponent.h"
 #include <rttr/registration.h>
 #include "App/Editor/Properties/UI_metadata.h"
+#include <glm/gtc/matrix_transform.hpp>
 namespace oo
 {
     RTTR_REGISTRATION
@@ -57,9 +58,9 @@ namespace oo
             .property("Rotation Angles", &RectTransformComponent::GetEulerAngles, &RectTransformComponent::SetEulerAngles)
             .property("Scaling", &RectTransformComponent::GetScale, & RectTransformComponent::SetScale)
             .property("Size", &RectTransformComponent::GetSize, &RectTransformComponent::SetSize)
-            .property("Pivot", &RectTransformComponent::GetPivot, &RectTransformComponent::SetPivot)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
-            .property("Anchor Min", &RectTransformComponent::GetAnchorMin, &RectTransformComponent::SetAnchorMin)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
-            .property("Anchor Max", &RectTransformComponent::GetAnchorMax, &RectTransformComponent::SetAnchorMax)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            //.property("Pivot", &RectTransformComponent::GetPivot, &RectTransformComponent::SetPivot)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            //.property("Anchor Min", &RectTransformComponent::GetAnchorMin, &RectTransformComponent::SetAnchorMin)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
+            //.property("Anchor Max", &RectTransformComponent::GetAnchorMax, &RectTransformComponent::SetAnchorMax)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
             .property_readonly("Parent Offset", &RectTransformComponent::ParentOffset)
             .property_readonly("IsDirty", &RectTransformComponent::IsDirty)
             .property_readonly("Bounding Volume", &RectTransformComponent::BoundingVolume)
@@ -77,48 +78,48 @@ namespace oo
         switch (Preset)
         {
         case AnchorPreset::AnchorTopLeft:
-            AnchorMin = AnchorMax = glm::vec2{ 0, 1 };
-            Pivot = glm::vec2{ 0.0f, 1.0f };
+            AnchorMin = AnchorMax = glm::vec2{ 1, 1 };
+            Pivot = glm::vec2{ 1.0f, 1.0f };
             break;
         case AnchorPreset::AnchorTopCentre:
             AnchorMin = AnchorMax = glm::vec2{ 0.5f, 1 };
             Pivot = glm::vec2{ 0.5f, 1.0f };
             break;
         case AnchorPreset::AnchorTopRight:
-            AnchorMin = AnchorMax = glm::vec2{ 1, 1 };
-            Pivot = glm::vec2{ 1.0f, 1.0f };
+            AnchorMin = AnchorMax = glm::vec2{ 0, 1 };
+            Pivot = glm::vec2{ 0.0f, 1.0f };
             break;
 
         case AnchorPreset::AnchorMiddleLeft:
-            AnchorMin = AnchorMax = glm::vec2{ 0, 0.5f };
-            Pivot = glm::vec2{ 0.0f, 0.5f };
+            AnchorMin = AnchorMax = glm::vec2{ 1, 0.5f };
+            Pivot = glm::vec2{ 1.0f, 0.5f };
             break;
         case AnchorPreset::AnchorMiddleCentre:
             AnchorMin = AnchorMax = glm::vec2{ 0.5f, 0.5f };
             Pivot = glm::vec2{ 0.5f, 0.5f };
             break;
         case AnchorPreset::AnchorMiddleRight:
-            AnchorMin = AnchorMax = glm::vec2{ 1, 0.5f };
-            Pivot = glm::vec2{ 1.0f, 0.5f };
+            AnchorMin = AnchorMax = glm::vec2{ 0, 0.5f };
+            Pivot = glm::vec2{ 0.0f, 0.5f };
             break;
 
         case AnchorPreset::AnchorBottomLeft:
-            AnchorMin = AnchorMax = glm::vec2{ 0, 0 };
-            Pivot = glm::vec2{ 0.0f, 0.0f };
+            AnchorMin = AnchorMax = glm::vec2{ 1, 0 };
+            Pivot = glm::vec2{ 1.0f, 0.0f };
             break;
         case AnchorPreset::AnchorBottomCentre:
             AnchorMin = AnchorMax = glm::vec2{ 0.5f, 0 };
             Pivot = glm::vec2{ 0.5f, 0.0f };
             break;
         case AnchorPreset::AnchorBottomRight:
-            AnchorMin = AnchorMax = glm::vec2{ 1, 0 };
-            Pivot = glm::vec2{ 1.0f, 0.0f };
+            AnchorMin = AnchorMax = glm::vec2{ 0, 0 };
+            Pivot = glm::vec2{ 0.0f, 0.0f };
             break;
 
         case AnchorPreset::StretchLeft:
-            AnchorMin = glm::vec2{ 0, 0 };
-            AnchorMax = glm::vec2{ 0, 1 };
-            Pivot = glm::vec2{ 0, 0.5f };
+            AnchorMin = glm::vec2{ 1, 0 };
+            AnchorMax = glm::vec2{ 1, 1 };
+            Pivot = glm::vec2{ 1, 0.5f };
             break;
         case AnchorPreset::StretchCentre:
             AnchorMin = glm::vec2{ 0.5f, 0 };
@@ -126,9 +127,9 @@ namespace oo
             Pivot = glm::vec2{ 0.5f, 0.5f };
             break;
         case AnchorPreset::StretchRight:
-            AnchorMin = glm::vec2{ 1, 0 };
-            AnchorMax = glm::vec2{ 1, 1 };
-            Pivot = glm::vec2{ 1, 0.5f };
+            AnchorMin = glm::vec2{ 0, 0 };
+            AnchorMax = glm::vec2{ 0, 1 };
+            Pivot = glm::vec2{ 0, 0.5f };
             break;
 
         case AnchorPreset::StretchTop:
@@ -223,4 +224,5 @@ namespace oo
     {
         return AnchorMax;
     }
+
 }

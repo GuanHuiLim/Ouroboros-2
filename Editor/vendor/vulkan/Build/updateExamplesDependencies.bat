@@ -41,6 +41,22 @@ git clone -b docking https://github.com/ocornut/imgui.git "../vendor/imgui/imgui
 if %ERRORLEVEL% GEQ 1 goto :ERROR
 
 rem ------------------------------------------------------------
+rem  MSDF
+rem ------------------------------------------------------------
+:GLM
+rmdir "../vendor/msdfgen" /S /Q
+git clone https://github.com/Chlumsky/msdfgen.git "../vendor/msdfgen"
+if %ERRORLEVEL% GEQ 1 goto :ERROR
+
+rem ------------------------------------------------------------
+rem  MSDF atlas
+rem ------------------------------------------------------------
+:GLM
+rmdir "../vendor/msdf-atlas-gen" /S /Q
+git clone https://github.com/Chlumsky/msdf-atlas-gen.git "../vendor/msdf-atlas-gen"
+if %ERRORLEVEL% GEQ 1 goto :ERROR
+
+rem ------------------------------------------------------------
 rem  ASSIMP 
 rem ------------------------------------------------------------
 :ASSIMP

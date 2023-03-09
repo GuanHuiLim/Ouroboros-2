@@ -98,9 +98,9 @@ namespace oo
         Camera MainCamera() const;
 
         // Graphics Specific code
-        UUID GetUUIDFromGraphicsId(std::int32_t graphicsId);
-        std::int32_t CreateGraphicsInstance(UUID uuid);
-        void DestroyGraphicsInstance(std::int32_t graphicsId);
+        UUID GetUUIDFromPickingId(std::uint32_t pickingID) const;
+        std::uint32_t GeneratePickingID(UUID uuid);
+        void RemovePickingID(std::uint32_t pickingID);
 
     protected:
         void SetFilePath(std::string_view filepath);
@@ -139,8 +139,8 @@ namespace oo
         std::set<std::shared_ptr<oo::GameObject>> m_gameObjects;
 
         // graphics related ids
-        std::unordered_map<std::int32_t, UUID> m_graphicsIdToUUID;
-        std::unordered_map<UUID, std::int32_t> m_uuidToGraphicsID;
+        std::unordered_map<std::uint32_t, UUID> m_pickingIdToUUID;
+        std::unordered_map<UUID, std::uint32_t> m_uuidToPickingId;
 
         //TODO : temporarily only have one graphics world
         inline static std::unique_ptr<GraphicsWorld> m_graphicsWorld;

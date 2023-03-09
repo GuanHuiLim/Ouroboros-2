@@ -14,7 +14,7 @@ Technology is prohibited.
 #pragma once
 #include "Geometry.h"
 
-namespace coll
+namespace oGFX::coll
 {
 	constexpr static float BARY_EPSILON = { 0.01f };
 
@@ -67,8 +67,11 @@ bool PointInTriangle(const Triangle& t, const Point3D& p);
 
 bool PlaneSphere(const Plane& p, const Sphere& s);
 bool PlaneSphere(const Plane& p, const Sphere& s, float& t);
+bool SphereOnOrForwardPlane(const Plane& p, const Sphere& s);
 
 bool PlaneAabb(const Plane& p, const AABB& a);
 bool PlaneAabb(const Plane& p, const AABB& a, float& t);
 
-}// end namespace coll
+bool SphereInFrustum(const Frustum& f, const Sphere& s);
+
+}// end namespace oGFX::coll

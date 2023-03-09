@@ -717,22 +717,22 @@ namespace oo
             auto top_right_front    = pos + rotatedX + rotatedY + rotatedZ;
 
             //Debug draw the bounds
-            DebugDraw::AddLine(bottom_left_back, bottom_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_left_front, bottom_right_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_front, bottom_right_back, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_back, bottom_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_front, bottom_right_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_front, bottom_right_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
 
-            DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
 
-            DebugDraw::AddLine(bottom_left_back, top_left_back, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_left_front, top_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_front, top_right_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_back, top_right_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_back, top_left_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_front, top_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_front, top_right_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_back, top_right_back, oGFX::Colors::GREEN);
 
-            //DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
+            //oGFX::DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing
@@ -747,11 +747,11 @@ namespace oo
             glm::vec3 GlobalHalfExtents = { cc.GlobalRadius, cc.GlobalHalfHeight , cc.GlobalRadius };
             
             //Debug draw the bounds
-            DebugDraw::AddAABB({ pos - GlobalHalfExtents  , pos + GlobalHalfExtents }, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddAABB({ pos - GlobalHalfExtents  , pos + GlobalHalfExtents }, oGFX::Colors::GREEN);
             // draw top sphere
-            DebugDraw::AddSphere({ pos + vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddSphere({ pos + vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
             // draw bottom sphere
-            DebugDraw::AddSphere({ pos - vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddSphere({ pos - vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing
@@ -763,7 +763,7 @@ namespace oo
                 auto quat = rb.GetOrientationInPhysicsWorld();
 
                 // debug Draw the sphere collider
-                DebugDraw::AddSphere({ pos, sc.GlobalRadius }, oGFX::Colors::GREEN);
+                oGFX::DebugDraw::AddSphere({ pos, sc.GlobalRadius }, oGFX::Colors::GREEN);
             });
 
         static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent>();
@@ -783,13 +783,13 @@ namespace oo
                 {
                     auto first = mc.WorldSpaceVertices.back(); 
                     auto next = mc.WorldSpaceVertices.front();
-                    DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                    oGFX::DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
 
                     for (auto curr : mc.WorldSpaceVertices)
                     {
                         first = next;
                         next = curr;
-                        DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                        oGFX::DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
                     }
 
                     //auto first = mc.WorldSpaceVertices.back();

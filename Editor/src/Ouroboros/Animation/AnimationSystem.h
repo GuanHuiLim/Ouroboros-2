@@ -28,7 +28,17 @@ namespace oo::Anim
 		Ecs::ECSWorld* world{ nullptr };
 		Scene* scene{ nullptr };
 		Scene::go_ptr test_obj{};
+
+		static std::set<std::string> modified_animations;
+		static std::set<std::string> modified_animation_trees;
 	public:
+		struct ModifyAnimationEvent : oo::Event {
+			std::string name{};
+		};
+		struct ModifyAnimationTreeEvent : oo::Event {
+			std::string name{};
+		};
+
 		AnimationSystem() = default;
 		~AnimationSystem();
 		//to be run before main gameplay loop
@@ -56,6 +66,10 @@ namespace oo::Anim
 		static bool SaveAnimationTree(size_t id, std::string filepath);
 		//save all animation trees in respective asset filepath
 		static bool SaveAllAnimationTree();
+		//save all modified animation trees in respective asset filepath
+		static bool SaveAllModifiedAnimationTree();
+		static void NotifyModifiedAnimationTree(std::string const tree_name);
+		
 		//save all animation trees in filepath
 		static bool SaveAllAnimationTree(std::string filepath);
 		static AnimationTree* LoadAnimationTree(std::string filepath);
@@ -65,6 +79,9 @@ namespace oo::Anim
 		---------*/
 		//save all animations in respective asset filepath
 		static bool SaveAllAnimations();
+		//save all modified animations in respective asset filepath
+		static bool SaveModifiedAnimations();
+		static void NotifyModifiedAnimation(std::string const anim_name);
 		//save all animations in filepath
 		static bool SaveAllAnimations(std::string filepath);
 		static bool SaveAnimation(std::string name, std::string filepath);
@@ -77,6 +94,9 @@ namespace oo::Anim
 		static bool LoadAssets(std::string filepath);
 		static void OpenFileCallback(OpenFileEvent* evnt);
 		static void CloseProjectCallback(CloseProjectEvent* evnt);
+		static void ModifyAnimationCallback(ModifyAnimationEvent* evnt);
+		static void ModifyAnimationTreeCallback(ModifyAnimationTreeEvent* evnt);
+		
 
 		static Animation* AddAnimation(std::string const& name);
 		static AnimationTree* CreateAnimationTree(std::string const& name);

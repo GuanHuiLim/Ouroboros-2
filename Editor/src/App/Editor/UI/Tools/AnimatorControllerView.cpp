@@ -23,6 +23,7 @@ Technology is prohibited.
 #include "Ouroboros/Animation/AnimationSystem.h"
 
 #include "App/Editor/Utility/ImGuiManager.h"
+#include "Ouroboros/EventSystem/EventManager.h"
 
 uintptr_t GetNextId()
 {
@@ -509,6 +510,9 @@ void AnimatorControllerView::DisplayInspector()
                 ImGui::Text("Looping");
                 ImGui::SameLine(textsize.x * 12);
                 ImGui::Checkbox("##looping", &id->anim_node->GetAnimation().looping);
+                
+                //notify animation system of potential change
+				oo::Anim::AnimationSystem::NotifyModifiedAnimation(id->anim_node->GetAnimation().name);
             }
         }
         else if (linkCount != 0)
@@ -743,9 +747,10 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
                             .group_name = current_group_name,
                             .link_ID = link->linkID };
                         oo::Anim::TargetConditionInfo condition_info{
-                                .link_info = link_info.group_name,
+                                .link_info = link_info,
                                 .condition_ID = condition.conditionID };
                         animator->RemoveCondition(condition_info);
+                        return;
                     }
 
                 }
@@ -999,6 +1004,8 @@ void AnimatorControllerView::LoadGraph(oo::AnimationComponent* _animator)
     ed::End();
     //no need to load data again after this
     m_firstFrame = false;
+    //let the aniamtion system know this has potentially been modified so it will save it on project close
+    oo::Anim::AnimationSystem::NotifyModifiedAnimationTree(_animator->GetAnimationTreeName());
 }
 
 //void AnimatorControllerView::BuildNodes()

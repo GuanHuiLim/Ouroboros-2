@@ -66,6 +66,9 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/GraphicsRaycasterComponent.h>
+#include <Ouroboros/UI/UIComponent.h>
+#include <Ouroboros/UI/UITextComponent.h>
+
 #include <Ouroboros/Editor/EditorComponent.h>
 
 Inspector::Inspector()
@@ -157,9 +160,12 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::PushItemWidth(200.0f);
 	//DisplayComponent<oo::GameObjectComponent>(gameobject);
-	// display either rect transform or base transform
+	// let's display both for now.
 	if (gameobject.HasComponent<oo::RectTransformComponent>())
 	{
+		// for debug purposes.
+		if (m_showReadonly)
+			DisplayComponent<oo::TransformComponent>(gameobject);
 		DisplayComponent<oo::RectTransformComponent>(gameobject);
 	}
 	else
@@ -189,6 +195,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	DisplayComponent<oo::AnimationComponent>(gameobject);
 
+	DisplayComponent<oo::UIComponent>(gameobject);
+	DisplayComponent<oo::UITextComponent>(gameobject);
 	DisplayComponent<oo::UIRaycastComponent>(gameobject);
 	DisplayComponent<oo::UICanvasComponent>(gameobject);
 	DisplayComponent<oo::UIImageComponent>(gameobject);
@@ -244,6 +252,9 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
 
+			
+			selected |= AddComponentSelectable<oo::UITextComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::RectTransformComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UIRaycastComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);

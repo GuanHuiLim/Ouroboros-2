@@ -35,5 +35,7 @@ public:
 	//for oo::Asset (affects asset browser)
 	//takes in an integer corresponding to the AssetInfo::Type enum
 	static const constexpr unsigned char ASSET_TYPE = 255;
-
+	// for std::string
+	//takes in boolean and allows the textbox to be multiline
+	static const constexpr unsigned char EXTRA_TEXT = 124;
 };

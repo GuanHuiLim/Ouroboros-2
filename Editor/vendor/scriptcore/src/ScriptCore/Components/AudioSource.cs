@@ -59,6 +59,24 @@ namespace Ouroboros
             set { AudioSourceComponent_SetLoop(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
+        [DllImport("__Internal")] private static extern uint AudioSourceComponent_GetLoopBegin(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetLoopBegin(uint sceneID, ulong instanceID, uint value);
+
+        public uint loopBegin
+        {
+            get { return AudioSourceComponent_GetLoopBegin(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetLoopBegin(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern uint AudioSourceComponent_GetLoopEnd(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetLoopEnd(uint sceneID, ulong instanceID, uint value);
+
+        public uint loopEnd
+        {
+            get { return AudioSourceComponent_GetLoopEnd(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetLoopEnd(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
         [DllImport("__Internal")] private static extern float AudioSourceComponent_GetVolume(uint sceneID, ulong instanceID);
         [DllImport("__Internal")] private static extern void AudioSourceComponent_SetVolume(uint sceneID, ulong instanceID, float value);
 
