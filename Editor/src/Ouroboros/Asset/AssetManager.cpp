@@ -255,6 +255,29 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::GetOrLoadPath, this, fp);
     }
 
+#define DIR_ITER(_CALLBACK)                                                                         \
+if (recursive) for (auto& file : std::filesystem::recursive_directory_iterator(PATH)) { _CALLBACK; }\
+else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
+
+    std::vector<Asset> AssetManager::GetDirectory(const std::filesystem::path& path, bool recursive)
+    {
+        const auto PATH = root / path;
+
+        if (!std::filesystem::exists(PATH) || !std::filesystem::is_directory(PATH))
+            return {};
+
+        std::vector<std::filesystem::path> files;
+        DIR_ITER({ if (isMetaPath(file.path())) continue; files.emplace_back(file); });
+        std::vector<Asset> v;
+        std::transform(files.begin(), files.end(), std::back_inserter(v), [this](const auto& file) { return getAsset(file); });
+        return v;
+    }
+
+    std::future<std::vector<Asset>> AssetManager::GetDirectoryAsync(const std::filesystem::path& path, bool recursive)
+    {
+        return std::async(std::launch::async, &AssetManager::GetDirectory, this, path, recursive);
+    }
+
     std::vector<Asset> AssetManager::GetOrLoadDirectory(const std::filesystem::path& path, bool recursive)
     {
         const auto PATH = root / path;
@@ -263,29 +286,9 @@ namespace oo
             return {};
 
         std::vector<std::filesystem::path> files;
-        if (recursive)
-        {
-            for (auto& file : std::filesystem::recursive_directory_iterator(PATH))
-            {
-                if (isMetaPath(file.path()))
-                    continue;
-                files.emplace_back(file);
-            }
-        }
-        else
-        {
-            for (auto& file : std::filesystem::directory_iterator(PATH))
-            {
-                if (isMetaPath(file.path()))
-                    continue;
-                files.emplace_back(file);
-            }
-        }
+        DIR_ITER({ if (isMetaPath(file.path())) continue; files.emplace_back(file); });
         std::vector<Asset> v;
-        for (auto& file : files)
-        {
-            v.emplace_back(getLoadedAsset(file));
-        }
+        std::transform(files.begin(), files.end(), std::back_inserter(v), [this](const auto& file) { return getLoadedAsset(file); });
         return v;
     }
 
@@ -294,51 +297,7 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::GetOrLoadDirectory, this, path, recursive);
     }
 
-    void AssetManager::LoadDirectory(const std::filesystem::path& path, bool recursive)
-    {
-        GetOrLoadDirectory(path, recursive);
-    }
-
-    void AssetManager::LoadDirectoryAsync(const std::filesystem::path& path, bool recursive)
-    {
-        const auto PATH = root / path;
-
-        if (!std::filesystem::exists(PATH) || !std::filesystem::is_directory(PATH))
-            return;
-
-        std::vector<std::filesystem::path> files;
-        if (recursive)
-        {
-            for (auto& file : std::filesystem::recursive_directory_iterator(PATH))
-            {
-                if (isMetaPath(file.path()))
-                    continue;
-                files.emplace_back(file);
-            }
-        }
-        else
-        {
-            for (auto& file : std::filesystem::directory_iterator(PATH))
-            {
-                if (isMetaPath(file.path()))
-                    continue;
-                files.emplace_back(file);
-            }
-        }
-        std::vector<std::thread> v;
-        for (auto& file : files)
-        {
-            v.emplace_back(std::thread([this, file]
-            {
-                getLoadedAsset(file);
-            }));
-            //std::async(std::launch::async, &AssetManager::getLoadedAsset, this, file);
-        }
-        for (auto& t : v)
-        {
-            t.join();
-        }
-    }
+#undef DIR_ITER
 
     std::vector<Asset> AssetManager::GetOrLoadName(const std::filesystem::path& fn, bool caseSensitive)
     {
