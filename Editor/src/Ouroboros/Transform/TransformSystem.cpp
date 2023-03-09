@@ -24,11 +24,21 @@ Technology is prohibited.
 
 #include <JobSystem/src/final/jobs.h>
 
+#include "Ouroboros/EventSystem/EventManager.h"
+
 namespace oo
 {
     TransformSystem::TransformSystem(Scene* scene)
         : m_scene{ scene }
     {
+        EventManager::Subscribe<TransformSystem, GameObjectComponent::OnEnableEvent>(this, &TransformSystem::OnEnableGameObject);
+        //EventManager::Subscribe<TransformSystem, GameObjectComponent::OnDisableEvent>(this, &TransformSystem::OnDisableGameObject);
+    }
+
+    TransformSystem::~TransformSystem()
+    {
+        EventManager::Unsubscribe<TransformSystem, GameObjectComponent::OnEnableEvent>(this, &TransformSystem::OnEnableGameObject);
+        //EventManager::Unsubscribe<TransformSystem, GameObjectComponent::OnDisableEvent>(this, &TransformSystem::OnDisableGameObject);
     }
 
     void TransformSystem::PostLoadSceneInit()
@@ -345,6 +355,20 @@ namespace oo
         
         TRACY_PROFILE_SCOPE_END();
     }
+
+    void TransformSystem::OnEnableGameObject(GameObjectComponent::OnEnableEvent* e)
+    { 
+        // check for lights
+        auto go = m_scene->FindWithInstanceID(e->Id);
+        // assumption: Everything should have transform!
+        auto& tf = go->Transform();
+        tf.SetPosition(tf.GetPosition());
+    }
+
+    /*void TransformSystem::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
+    {
+
+    }*/
 
 
 }
