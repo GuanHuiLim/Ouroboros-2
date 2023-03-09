@@ -361,8 +361,8 @@ namespace oo
         // check for lights
         auto go = m_scene->FindWithInstanceID(e->Id);
         // assumption: Everything should have transform!
-        auto& tf = go->Transform();
-        tf.SetPosition(tf.GetPosition());
+        auto& tf = go->Transform().LocalMatrixDirty = true;
+        //tf.SetPosition(tf.GetPosition());
     }
 
     /*void TransformSystem::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
