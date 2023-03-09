@@ -129,20 +129,18 @@ namespace myPhysx
                                                 PxFilterObjectAttributes attributes1, PxFilterData filterData1,
                                                 PxPairFlags& pairFlags, const void* /*constantBlock*/,
                                                 PxU32 /*constantBlockSize*/) {
-
-            //let triggers through
-            if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1)) {
             
-                pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
-                return PxFilterFlag::eDEFAULT;
-            }
-            
-            // generate contacts for all that were not filtered above
-            //pairFlags = PxPairFlag::eCONTACT_DEFAULT | PxPairFlag::eNOTIFY_CONTACT_POINTS | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eSOLVE_CONTACT; // |
-                        //PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST; 
-
             // trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa.
             if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1)) {
+
+                //let triggers through but also within the layering
+                if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1)) {
+
+                    pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
+                    return PxFilterFlag::eDEFAULT;
+                }
+
+                // generate contacts for all that were not filtered above
                 pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST | 
                              PxPairFlag::eNOTIFY_CONTACT_POINTS | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eSOLVE_CONTACT;
             }
@@ -1755,17 +1753,17 @@ namespace myPhysx
 
                 if (current.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnCollisionEnter
                     state = collision::onCollisionEnter;
-                    printf("Shape is ENTERING CONTACT volume\n");
+                    //printf("Shape is ENTERING CONTACT volume\n");
                 }
 
                 if (current.events & PxPairFlag::eNOTIFY_TOUCH_PERSISTS) { // OnCollisionStay
                     state = collision::onCollisionStay;
-                    printf("Shape is STAYING CONTACT volume\n");
+                    //printf("Shape is STAYING CONTACT volume\n");
                 }
 
                 if (current.events & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnCollisionExit
                     state = collision::onCollisionExit;
-                    printf("Shape is LEAVING CONTACT volume\n");
+                    //printf("Shape is LEAVING CONTACT volume\n");
                 }
 
                 // Store all the ID of the actors that collided
@@ -1799,13 +1797,13 @@ namespace myPhysx
                 if (current.status & PxPairFlag::eNOTIFY_TOUCH_FOUND) { // OnTriggerEnter
                     //stayTrigger = true;
                     state = trigger::onTriggerEnter;
-                    printf("Shape is ENTERING TRIGGER volume\n");
+                    //printf("Shape is ENTERING TRIGGER volume\n");
                 }
                 if (current.status & PxPairFlag::eNOTIFY_TOUCH_LOST) { // OnTriggerExit
                     //stayTrigger = false;
                     state = trigger::onTriggerExit;
                     //printf("trigger actor %llu, other actor %llu, state: %d\n", current.triggerActor->userData, current.otherActor->userData, state);
-                    printf("Shape is LEAVING TRIGGER volume\n");
+                    //printf("Shape is LEAVING TRIGGER volume\n");
                 }
 
                 // Store all the ID of the actors that collided with trigger)
