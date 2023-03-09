@@ -188,12 +188,12 @@ void main()
 	//{
 	//	ambient = 1.0;
 	//}
-	float gamma = 1.0;
 	
-	//albedo.rgb =  pow(albedo.rgb, vec3(gamma));
+	const float gamma = 2.2;
+	albedo.rgb =  pow(albedo.rgb, vec3(1.0/gamma));
 
 	// Ambient part
-	vec3 lightContribution = vec3(0.0);
+	vec3 result = albedo.rgb  * ambient;
 
 	// remove SSAO if not wanted
 	if(PC.useSSAO == 0){
@@ -201,23 +201,17 @@ void main()
 	}
 	
 	// Point Lights
+	vec3 lightContribution = vec3(0.0);
 	for(int i = 0; i < PC.numLights; ++i)
 	{
 		float outshadow = 1.0;
-		vec3 res = EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, outshadow);		
-		
-		//if(any(isnan(res))){
-		//		result.rgb = vec3(1.0,0.0,0.0);
-		//		break;
-		//}
+		vec3 res = EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, outshadow);	
 
 		lightContribution += res;
 	}
 	
 	vec3 ambientContribution = albedo.rgb  * ambient ;
-	vec3 result =  ambientContribution + lightContribution * SSAO;
-	
-	result = pow(result, vec3(1.0/gamma));
+	result =  (ambientContribution * SSAO + lightContribution);
 
 	outFragcolor = vec4(result, albedo.a);	
 

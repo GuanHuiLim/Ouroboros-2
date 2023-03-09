@@ -40,6 +40,7 @@ void main()
 	vec4 res = imageLoad(resultImage, ivec2(gl_GlobalInvocationID.xy) );
 
 	vec3 result = aces_tonemap(res.rgb);
+	//result = res.rgb;
 
 	float shadowThreshold = pc.threshold.x;
 	float highlightThreshold = pc.threshold.y;
@@ -55,7 +56,7 @@ void main()
     correctedColor = mix(correctedColor, pc.highCol.rgb, highlight * pc.highCol.a);
 
 	// also gamma correct before returning    
-    result = pow(correctedColor, vec3(1.0 / gamma));	
+    result = pow(correctedColor, vec3(gamma));	
 
     //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
 	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result,1.0));
