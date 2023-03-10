@@ -23,9 +23,25 @@ namespace oo
     {
         using namespace rttr;
         registration::class_<UIImageComponent>("UI Image")
-        .property("Texture", &UIImageComponent::TextureHandle)(metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture)))
+        .property("Albedo", &UIImageComponent::GetAlbedoMap, &UIImageComponent::SetAlbedoMap)(metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture)))
         .property("Colour Tint", &UIImageComponent::Tint)
-        //.property("Raycast Target", &UIImageComponent::RaycastTarget)
         ;
+    }
+    void oo::UIImageComponent::SetAlbedoMap(Asset newAlbedoMap)
+    {
+        AlbedoHandle = newAlbedoMap;
+        if (AlbedoHandle.IsValid())
+        {
+            AlbedoID = AlbedoHandle.GetData<uint32_t>();
+        }
+        else
+        {
+            AlbedoID = 0xFFFFFFFF;
+        }
+    }
+
+    Asset oo::UIImageComponent::GetAlbedoMap() const
+    {
+        return AlbedoHandle;
     }
 }

@@ -271,6 +271,15 @@ void FileBrowser::PopupOptions()
 		{
 			oo::Anim::AnimationSystem::CreateAnimationTree("New Animation Tree");
 		}
+		if (ImGui::MenuItem("Show FBX Mesh Hierarchy"))
+		{
+			if (m_currentpath.extension().string() == ".fbx" ||
+				m_currentpath.extension().string() == ".FBX")
+			{
+				OpenFileEvent evnt{ m_currentpath };
+				oo::EventManager::Broadcast< OpenFileEvent>(&evnt);
+			}
+		}
 		if (ImGui::MenuItem("Create Animation"))
 		{
 			//oo::Anim::AnimationSystem::crea

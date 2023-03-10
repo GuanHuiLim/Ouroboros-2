@@ -15,6 +15,7 @@ Technology is prohibited.
 #pragma once
 
 #include "Ouroboros/Scripting/ScriptManager.h"
+#include "Ouroboros/Scripting/ScriptValue.h"
 
 /*-----------------------------------------------------------------------------*/
 /* C# Export Function Guide                                                    */
@@ -145,40 +146,102 @@ SCRIPT_API_SET_FUNC_A(Component, Set##Name, Type, SetFunction, Additional)
 */
 // C# DLLImport code for Setting a Vector3
 /*
-[DllImport("__Internal")] private static extern void { Component }_{ Name }(uint sceneID, ulong instanceID, float x, float y, float z);
+[DllImport("__Internal")] private static extern void { Component }_{ Name }(uint sceneID, ulong instanceID, Vector3 value);
 */
 
-#define SCRIPT_API_GET_VECTOR3(Component, Name, GetFunction) \
-SCRIPT_API glm::vec3 Component##_##Name(Scene::ID_type sceneID, UUID uuid) \
+#define SCRIPT_API_GET_VECTOR3(Component, Name, Variable) \
+SCRIPT_API ScriptValue::vec3_type Component##_##Name(Scene::ID_type sceneID, UUID uuid) \
 { \
     std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
     Component& component = obj->GetComponent<Component>(); \
-    return component.GetFunction(); \
+    return ScriptValue::vec3_type{ component.Variable.x, component.Variable.y, component.Variable.z };\
 }
 
-#define SCRIPT_API_SET_VECTOR3(Component, Name, SetFunction) \
-SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, float x, float y, float z) \
+#define SCRIPT_API_SET_VECTOR3(Component, Name, Variable) \
+SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, ScriptValue::vec3_type value) \
 { \
     std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
     Component& component = obj->GetComponent<Component>(); \
-    component.SetFunction({ x, y, z }); \
+    component.Variable = { value.x, value.y, value.z }; \
 }
 
-#define SCRIPT_API_SET_A_VECTOR3(Component, Name, SetFunction, Additional) \
-SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, float x, float y, float z) \
+#define SCRIPT_API_GET_SET_VECTOR3(Component, Name, Variable) \
+SCRIPT_API_GET_VECTOR3(Component, Get##Name, Variable) \
+SCRIPT_API_SET_VECTOR3(Component, Set##Name, Variable)
+
+#define SCRIPT_API_GET_FUNC_VECTOR3(Component, Name, GetFunction) \
+SCRIPT_API ScriptValue::vec3_type Component##_##Name(Scene::ID_type sceneID, UUID uuid) \
 { \
     std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
     Component& component = obj->GetComponent<Component>(); \
-    component.SetFunction({ x, y, z }); \
-    Additional \
+    glm::vec3 vec = component.GetFunction();\
+    return ScriptValue::vec3_type{ vec.x, vec.y, vec.z };\
 }
 
-#define SCRIPT_API_GET_SET_VECTOR3(Component, Name, GetFunction, SetFunction) \
-SCRIPT_API_GET_VECTOR3(Component, Get##Name, GetFunction) \
-SCRIPT_API_SET_VECTOR3(Component, Set##Name, SetFunction)
+#define SCRIPT_API_SET_FUNC_VECTOR3(Component, Name, SetFunction) \
+SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, ScriptValue::vec3_type value) \
+{ \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    component.SetFunction({ value.x, value.y, value.z }); \
+}
 
-#define SCRIPT_API_GET_SET_A_VECTOR3(Component, Name, GetFunction, SetFunction, Additional) \
-SCRIPT_API_GET_VECTOR3(Component, Get##Name, GetFunction) \
-SCRIPT_API_SET_A_VECTOR3(Component, Set##Name, SetFunction, Additional)
+#define SCRIPT_API_GET_SET_FUNC_VECTOR3(Component, Name, GetFunction, SetFunction) \
+SCRIPT_API_GET_FUNC_VECTOR3(Component, Get##Name, GetFunction) \
+SCRIPT_API_SET_FUNC_VECTOR3(Component, Set##Name, SetFunction)
+
+#pragma endregion
+
+#pragma region Vector2
+
+// C# DLLImport code for Getting a Vector2
+/*
+[DllImport("__Internal")] private static extern Vector2 { Component }_{ Name }(uint sceneID, ulong instanceID);
+*/
+// C# DLLImport code for Setting a Vector2
+/*
+[DllImport("__Internal")] private static extern void { Component }_{ Name }(uint sceneID, ulong instanceID, Vector2 value);
+*/
+
+#define SCRIPT_API_GET_VECTOR2(Component, Name, Variable) \
+SCRIPT_API ScriptValue::vec2_type Component##_##Name(Scene::ID_type sceneID, UUID uuid) \
+{ \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    return ScriptValue::vec2_type{ component.Variable.x, component.Variable.y };\
+}
+
+#define SCRIPT_API_SET_VECTOR2(Component, Name, Variable) \
+SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, ScriptValue::vec2_type value) \
+{ \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    component.Variable = { value.x, value.y }; \
+}
+
+#define SCRIPT_API_GET_SET_VECTOR2(Component, Name, Variable) \
+SCRIPT_API_GET_VECTOR2(Component, Get##Name, Variable) \
+SCRIPT_API_SET_VECTOR2(Component, Set##Name, Variable)
+
+#define SCRIPT_API_GET_FUNC_VECTOR2(Component, Name, GetFunction) \
+SCRIPT_API ScriptValue::vec2_type Component##_##Name(Scene::ID_type sceneID, UUID uuid) \
+{ \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    glm::vec2 vec = component.GetFunction();\
+    return ScriptValue::vec2_type{ vec.x, vec.y };\
+}
+
+#define SCRIPT_API_SET_FUNC_VECTOR2(Component, Name, SetFunction) \
+SCRIPT_API void Component##_##Name(Scene::ID_type sceneID, UUID uuid, ScriptValue::vec2_type value) \
+{ \
+    std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid); \
+    Component& component = obj->GetComponent<Component>(); \
+    component.SetFunction({ value.x, value.y }); \
+}
+
+#define SCRIPT_API_GET_SET_FUNC_VECTOR2(Component, Name, GetFunction, SetFunction) \
+SCRIPT_API_GET_FUNC_VECTOR2(Component, Get##Name, GetFunction) \
+SCRIPT_API_SET_FUNC_VECTOR2(Component, Set##Name, SetFunction)
 
 #pragma endregion

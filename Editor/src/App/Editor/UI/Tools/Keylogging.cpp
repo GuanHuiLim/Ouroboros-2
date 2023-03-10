@@ -6,7 +6,7 @@
 #include <imgui/imgui.h>
 #include <sdl2/SDL.h>
 #include "App/Editor/Events/ToolbarButtonEvent.h"
-#include "Ouroboros/EventSystem/EventManager.h".
+#include "Ouroboros/EventSystem/EventManager.h"
 #include "App/Editor/UI/Tools/WarningMessage.h"
 
 #include "App/Editor/Utility/FileSystemUtills.h"
@@ -406,7 +406,7 @@ void KeyLogging::LoadKeylogs(const std::filesystem::path& path)
 		float t = arr[0].GetFloat();
 		auto keycommands = arr[1].GetArray();
 		std::vector<oo::input::KeyCode> key;
-		for (auto i = 0; i < keycommands.Size(); ++i)
+		for (unsigned i = 0; i < keycommands.Size(); ++i)
 		{
 			key.push_back((oo::input::KeyCode)keycommands[0].GetInt());
 		}
@@ -418,7 +418,7 @@ void KeyLogging::LoadKeylogs(const std::filesystem::path& path)
 		float t = arr[0].GetFloat();
 		auto keycommands = arr[1].GetArray();
 		std::vector<oo::input::KeyCode> key;
-		for (auto i = 0; i < keycommands.Size(); ++i)
+		for (unsigned i = 0; i < keycommands.Size(); ++i)
 		{
 			key.push_back((oo::input::KeyCode)keycommands[0].GetInt());
 		}
@@ -430,10 +430,10 @@ void KeyLogging::LoadKeylogs(const std::filesystem::path& path)
 		auto arr = iter->value.GetArray();
 		float t = arr[0].GetFloat();
 		MousePos mp;
-		mp.dx = arr[1].GetInt();
-		mp.dy = arr[2].GetInt();
-		mp.x = arr[3].GetInt();
-		mp.y = arr[4].GetInt();
+		mp.dx = static_cast<short>(arr[1].GetInt());
+		mp.dy = static_cast<short>(arr[2].GetInt());
+		mp.x = static_cast<short>(arr[3].GetInt());
+		mp.y = static_cast<short>(arr[4].GetInt());
 
 		m_mousePosition.push_back(std::pair(t, mp));
 	}

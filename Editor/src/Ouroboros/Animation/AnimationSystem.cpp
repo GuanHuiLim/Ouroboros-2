@@ -35,10 +35,15 @@ Technology is prohibited.
 #define DEBUG_ANIMATION false
 namespace oo::Anim
 {
+	std::set<std::string> AnimationSystem::modified_animations{};
+	std::set<std::string> AnimationSystem::modified_animation_trees{};
+
 	AnimationSystem::~AnimationSystem()
 	{
 		EventManager::Unsubscribe<OpenFileEvent>(&AnimationSystem::OpenFileCallback);
 		EventManager::Unsubscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
+		EventManager::Unsubscribe<ModifyAnimationEvent>(&AnimationSystem::ModifyAnimationCallback);
+		EventManager::Unsubscribe<ModifyAnimationTreeEvent>(&AnimationSystem::ModifyAnimationTreeCallback);
 	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
@@ -53,6 +58,8 @@ namespace oo::Anim
 
 		EventManager::Subscribe<OpenFileEvent>(&AnimationSystem::OpenFileCallback);
 		EventManager::Subscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
+		EventManager::Subscribe<ModifyAnimationEvent>(&AnimationSystem::ModifyAnimationCallback);
+		EventManager::Subscribe<ModifyAnimationTreeEvent>(&AnimationSystem::ModifyAnimationTreeCallback);
 
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
@@ -124,6 +131,9 @@ namespace oo::Anim
 			internal::InitialiseComponent(animationComp.GetActualComponent());
 
 			});
+
+		
+
 
 		
 	}
@@ -387,6 +397,46 @@ namespace oo::Anim
 		return true;
 	}
 
+	bool AnimationSystem::SaveModifiedAnimations()
+	{
+		for (auto& anim_name : AnimationSystem::modified_animations)
+		{
+			auto anim = internal::RetrieveAnimation(anim_name);
+			if (anim == nullptr)
+			{
+				assert(anim);
+				continue;
+			}
+			if (anim->animation_ID == internal::empty_animation_UID)
+			{
+				assert(anim->animation_ID == internal::empty_animation_UID);//empty animation shouldnt be modified!!
+				continue;
+			}
+
+			auto asset = GetAnimationAsset(anim->animation_ID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			anim->name = asset.GetFilePath().stem().string();
+			auto result = AnimationSystem::SaveAnimation(*anim, asset.GetFilePath().string());
+			if (result == false)
+				return false;
+		}
+
+		AnimationSystem::modified_animations.clear();
+		return true;
+	}
+
+	void AnimationSystem::NotifyModifiedAnimation(std::string const anim_name)
+	{
+
+		AnimationSystem::ModifyAnimationEvent event{};
+		event.name = anim_name;
+		oo::EventManager::Broadcast<oo::Anim::AnimationSystem::ModifyAnimationEvent>(&event);
+	}
+
 	bool AnimationSystem::SaveAllAnimations(std::string filepath)
 	{
 		for (auto& [id, anim] : Animation::animation_storage)
@@ -418,6 +468,45 @@ namespace oo::Anim
 				return false;
 		}
 		return true;
+	}
+
+	bool AnimationSystem::SaveAllModifiedAnimationTree()
+	{
+		for (auto& tree_name : AnimationSystem::modified_animation_trees)
+		{
+			auto tree = internal::RetrieveAnimationTree(tree_name);
+			if (tree == nullptr)
+			{
+				assert(tree);
+				continue;
+			}
+			
+			internal::CalculateAnimationLength(*tree);
+			internal::ReAssignReferences(*tree);
+			internal::ReloadReferences(*tree);
+
+			auto asset = GetAnimationTreeAsset(tree->treeID);
+			if (asset.IsValid() == false)
+			{
+				assert(false);
+				continue;
+			}
+			tree->name = asset.GetFilePath().stem().string();
+			auto result = AnimationSystem::SaveAnimationTree(*tree, asset.GetFilePath().string());
+			if (result == false)
+				return false;
+		}
+
+		AnimationSystem::modified_animation_trees.clear();
+		return true;
+	}
+
+
+	void AnimationSystem::NotifyModifiedAnimationTree(std::string const tree_name)
+	{
+		AnimationSystem::ModifyAnimationTreeEvent event{};
+		event.name = tree_name;
+		oo::EventManager::Broadcast<oo::Anim::AnimationSystem::ModifyAnimationTreeEvent>(&event);
 	}
 
 	bool AnimationSystem::SaveAllAnimationTree(std::string filepath)
@@ -588,10 +677,22 @@ namespace oo::Anim
 
 	void AnimationSystem::CloseProjectCallback(CloseProjectEvent* evnt)
 	{
-		SaveAllAnimations();
-		SaveAllAnimationTree();
+		//SaveAllAnimations();
+		SaveModifiedAnimations();
 
+		//SaveAllAnimationTree();
+		SaveAllModifiedAnimationTree();
 	}
+
+	void AnimationSystem::ModifyAnimationCallback(ModifyAnimationEvent* evnt)
+	{
+		modified_animations.emplace(evnt->name);
+	}
+	void AnimationSystem::ModifyAnimationTreeCallback(ModifyAnimationTreeEvent* evnt)
+	{
+		modified_animation_trees.emplace(evnt->name);
+	}
+		 
 
 	bool AnimationSystem::LoadAssets(std::string filepath)
 	{

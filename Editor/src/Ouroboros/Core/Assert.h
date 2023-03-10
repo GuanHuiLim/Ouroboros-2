@@ -18,7 +18,12 @@ Technology is prohibited.
 /****************************************************************************//*!
  @brief     Windows only, visual studios only debug definition.
 *//*****************************************************************************/
-//#define ASSERTS_DISABLED
+#if defined OO_DEBUG or OO_RELEASE
+    //#define ASSERTS_DISABLED
+#elif OO_PRODUCTION
+    #define ASSERTS_DISABLED    // for building actual project lets disable! Otherwise we can alwyas enable for extra safety checks!
+#endif
+
 #if not defined (ASSERTS_DISABLED) //OO_DEBUG || OO_RELEASE
 
 /****************************************************************************//*!

@@ -72,6 +72,9 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/UIRaycastComponent.h>
+#include <Ouroboros/UI/UITextComponent.h>
+#include <Ouroboros/UI/UIComponent.h>
+
 #include <Ouroboros/Editor/EditorComponent.h>
 
 Hierarchy::Hierarchy()
@@ -505,8 +508,15 @@ void Hierarchy::NormalView()
 		bool open = false;
 		if (source->GetIsPrefab())//prefab
 		{
+			if (source->ActiveInHierarchy() == false)
+			{
+				ImVec4 temp = ImGui_StylePresets::prefab_text_color;
+				temp.w *= 0.3f;
+				ImGui::PushStyleColor(ImGuiCol_Text, temp);
+			}
+			else
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
 
-			ImGui::PushStyleColor(ImGuiCol_Text, ImGui_StylePresets::prefab_text_color);
 			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item, !source->HasComponent<oo::PrefabComponent>());
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && source->HasComponent<oo::PrefabComponent>())
 			{
@@ -516,7 +526,19 @@ void Hierarchy::NormalView()
 			ImGui::PopStyleColor();
 		}
 		else
-			open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
+		{
+			if (source->ActiveInHierarchy() == false)
+			{
+				ImVec4 temp = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+				temp.w *= 0.3f;
+				ImGui::PushStyleColor(ImGuiCol_Text, temp);
+
+				open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
+				ImGui::PopStyleColor();
+			}
+			else
+				open = TreeNodeUI(name.c_str(), *curr, source, flags, swapping, rename_item);
+		}
 
 		if (open == true && (flags & ImGuiTreeNodeFlags_OpenOnArrow))
 		{
@@ -757,9 +779,29 @@ void Hierarchy::RightClickOptions()
 					{
 						go.SetName("UI Image");
 						go.EnsureComponent<oo::RectTransformComponent>();
-						go.EnsureComponent<oo::UICanvasComponent>();
-						go.EnsureComponent<oo::UIRaycastComponent>();
+						go.EnsureComponent<oo::UIComponent>();
 						go.EnsureComponent<oo::UIImageComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Text"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("UI Text");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UIComponent>();
+						go.EnsureComponent<oo::UITextComponent>();
+					});
+			}
+			if (ImGui::MenuItem("UI Button"))
+			{
+				CreateGameObjectImmediate([](oo::GameObject& go)
+					{
+						go.SetName("UI Button");
+						go.EnsureComponent<oo::RectTransformComponent>();
+						go.EnsureComponent<oo::UIComponent>();
+						go.EnsureComponent<oo::UIImageComponent>();
+						go.EnsureComponent<oo::UIRaycastComponent>();
 					});
 			}
 			ImGui::EndMenu();

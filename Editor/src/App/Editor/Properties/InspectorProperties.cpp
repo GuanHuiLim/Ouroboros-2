@@ -73,7 +73,14 @@ InspectorProperties::InspectorProperties()
 	m_InspectorUI[UI_RTTRType::UItypes::STRING_TYPE] = [](rttr::property& prop,std::string& name, rttr::variant& v, bool& edited, bool& endEdit)
 	{
 		auto value = v.to_string();
-		edited = ImGui::InputText(name.c_str(), &value);
+		
+		{
+			rttr::variant variant_text_newline= prop.get_metadata(UI_metadata::EXTRA_TEXT);
+			if (variant_text_newline.is_valid())
+				edited = ImGui::InputTextMultiline(name.c_str(), &value);
+			else
+				edited = ImGui::InputText(name.c_str(), &value);
+		}
 		if (edited) { v = value; };
 		endEdit = ImGui::IsItemDeactivatedAfterEdit();
 	};

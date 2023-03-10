@@ -31,6 +31,12 @@ namespace oo
         registration::class_<Sphere>("Sphere")
             .property_readonly("Center", &oo::Sphere::center)
             .property_readonly("Radius", &oo::Sphere::radius);
+        
+        registration::class_<OrientedBoundingBox>("OBB")
+            .property_readonly("Center", &oo::OrientedBoundingBox::Center)
+            .property_readonly("Half Extents", &oo::OrientedBoundingBox::HalfExtents)
+            .property_readonly("Orientation", &oo::OrientedBoundingBox::Orientation)
+            ;
     }
 
     AABB::AABB(glm::vec3 min, glm::vec3 max)

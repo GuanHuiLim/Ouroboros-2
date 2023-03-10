@@ -66,7 +66,12 @@ Technology is prohibited.
 #include <Ouroboros/UI/UICanvasComponent.h>
 #include <Ouroboros/UI/UIImageComponent.h>
 #include <Ouroboros/UI/GraphicsRaycasterComponent.h>
+#include <Ouroboros/UI/UIComponent.h>
+#include <Ouroboros/UI/UITextComponent.h>
+
 #include <Ouroboros/Editor/EditorComponent.h>
+
+#include <Ouroboros/Physics/PhysicsSystem.h>
 
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
@@ -141,6 +146,72 @@ void Inspector::Show()
 				oo::PrefabManager::MakePrefab(gameobject);
 			}
 		}
+
+		// Input Layer only applies to items with colliders
+		if(gameobject->HasComponent<oo::BoxColliderComponent>() ||
+			gameobject->HasComponent<oo::SphereColliderComponent>() || 
+			gameobject->HasComponent<oo::CapsuleColliderComponent>() ||
+			gameobject->HasComponent<oo::ConvexColliderComponent>() )
+		{
+			ImGui::SameLine();
+
+			ImGui::BeginGroup();
+			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
+			std::string inLayer = "Layers";
+			ImGui::PushItemWidth(100);
+			ImGui::InputText("##InputLayers", &inLayer);
+			ImGui::PopItemWidth();
+			ImGui::PopItemFlag();
+
+			ImGui::SameLine();
+			if (ImGui::ArrowButton("##Phy InLayers", ImGuiDir_::ImGuiDir_Down) == true)
+			{
+				ImGui::OpenPopup("##Edit InLayers");
+			}
+			if (ImGui::BeginPopup("##Edit InLayers"))
+			{
+				auto& names = oo::PhysicsSystem::LayerNames;
+				auto& layer = gameobject->GetComponent<oo::RigidbodyComponent>().InputLayer;
+				auto& collideAgainstlayer = gameobject->GetComponent<oo::RigidbodyComponent>().OutputLayer;
+				if(ImGui::BeginTable("##layersTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable))
+				{
+					ImGui::TableNextColumn();
+					ImGui::Text("Layer Name         ");
+					ImGui::TableNextColumn();
+					ImGui::Text("Identify as");
+					ImGui::TableNextColumn();
+					ImGui::Text("Collide Against");
+					ImGui::TableNextColumn();
+					for (size_t i = 0; i < names.size(); ++i)
+					{
+						ImGui::PushID(i);
+						ImGui::InputText("##Layer Name", &names[i]);
+						ImGui::TableNextColumn();
+						bool layerValue = layer[i];
+						if (ImGui::Checkbox("##Layer value", &layerValue))
+						{
+							layer[i] = layerValue;
+						}
+						ImGui::TableNextColumn();
+						bool layerValue2 = collideAgainstlayer[i];
+						if (ImGui::Checkbox("##Layer value2", &layerValue2))
+						{
+							collideAgainstlayer[i] = layerValue2;
+						}
+						ImGui::TableNextColumn();
+						ImGui::PopID();
+					}
+					ImGui::EndTable();
+				}
+
+
+				ImGui::EndPopup();
+			}
+
+			ImGui::EndGroup();
+
+		}
+		
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);
@@ -157,9 +228,12 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 {
 	ImGui::PushItemWidth(200.0f);
 	//DisplayComponent<oo::GameObjectComponent>(gameobject);
-	// display either rect transform or base transform
+	// let's display both for now.
 	if (gameobject.HasComponent<oo::RectTransformComponent>())
 	{
+		// for debug purposes.
+		if (m_showReadonly)
+			DisplayComponent<oo::TransformComponent>(gameobject);
 		DisplayComponent<oo::RectTransformComponent>(gameobject);
 	}
 	else
@@ -189,6 +263,8 @@ void Inspector::DisplayAllComponents(oo::GameObject& gameobject)
 	DisplayComponent<oo::AudioSourceComponent>(gameobject);
 	DisplayComponent<oo::AnimationComponent>(gameobject);
 
+	DisplayComponent<oo::UIComponent>(gameobject);
+	DisplayComponent<oo::UITextComponent>(gameobject);
 	DisplayComponent<oo::UIRaycastComponent>(gameobject);
 	DisplayComponent<oo::UICanvasComponent>(gameobject);
 	DisplayComponent<oo::UIImageComponent>(gameobject);
@@ -244,6 +320,9 @@ void Inspector::DisplayAddComponents(const std::vector<std::shared_ptr<oo::GameO
 			selected |= AddComponentSelectable<oo::AudioSourceComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::AnimationComponent>(gameobject);
 
+			
+			selected |= AddComponentSelectable<oo::UITextComponent>(gameobject);
+			selected |= AddComponentSelectable<oo::UIComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::RectTransformComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UIRaycastComponent>(gameobject);
 			selected |= AddComponentSelectable<oo::UICanvasComponent>(gameobject);

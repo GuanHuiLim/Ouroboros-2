@@ -69,15 +69,15 @@ namespace oo
                 actualObject.modelID = m_comp.ModelHandle;
                 actualObject.bindlessGlobalTextureIndex_Albedo = m_comp.AlbedoID;
                 actualObject.bindlessGlobalTextureIndex_Normal = m_comp.NormalID;
-                // TODO : Fix this.
-                //actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
-                //actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
+                actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
+                actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
                 actualObject.submesh = m_comp.MeshInformation.submeshBits;
 
                 if (transformComp.HasChangedThisFrame)
                     actualObject.localToWorld = transformComp.GlobalTransform;
 
                 actualObject.SetShadowCaster(m_comp.CastShadows);
+                actualObject.SetShadowEnabled(m_comp.CastShadows);
                 actualObject.SetShadowReciever(m_comp.ReceiveShadows);
             });
 
@@ -169,7 +169,8 @@ namespace oo
     void oo::RendererSystem::OnMeshRemove(Ecs::ComponentEvent<MeshRendererComponent>* evnt)
     {
         auto& comp = evnt->component;
-        m_scene->DestroyGraphicsInstance(comp.GraphicsWorldID);
+        m_scene->RemovePickingID(comp.PickingID);
+        m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
         //m_graphicsWorld->DestroyObjectInstance(comp.GraphicsWorldID);
         //// remove graphics id to uuid of gameobject
         //m_graphicsIdToUUID.erase(comp.GraphicsWorldID);
@@ -333,7 +334,7 @@ namespace oo
         });
         m_runtimeCC.Update(oo::timer::dt(), false);
 
-        m_graphicsWorld->cameras[0] = m_runtimeCamera;
+        m_graphicsWorld->cameras[0] = *camera;
         m_graphicsWorld->cameras[1] = EditorViewport::EditorCamera;
     }
     
@@ -347,11 +348,10 @@ namespace oo
             {
                 auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
                 // lighting debug draw
-                Sphere sphere;
+                oGFX::Sphere sphere;
                 sphere.center = vec3{ graphics_light.position };
                 sphere.radius = 0.1f;
-                //sphere.radius = graphics_light.radius.x;
-                DebugDraw::AddSphere(sphere, graphics_light.color);
+                oGFX::DebugDraw::AddSphere(sphere, graphics_light.color);
             });
         }
 
@@ -363,8 +363,17 @@ namespace oo
             {
                 Camera camera;
                 camera.SetPosition(transformComp.GetGlobalPosition());
-                camera.SetRotation(transformComp.GetGlobalRotationQuat());
-                DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::ORANGE);
+                camera.SetRotation(transformComp.GetGlobalRotationQuat());              
+                switch (cameraComp.AspectRatio)
+                {
+                    case CameraAspectRatio::FOUR_BY_THREE: camera.SetAspectRatio(4.0f/3.0f);
+                    break;
+                    case CameraAspectRatio::SIXTEEN_BY_NINE: camera.SetAspectRatio(16.0f/9.0f);
+                    break;
+                    case CameraAspectRatio::SIXTEEN_BY_TEN: camera.SetAspectRatio(16.0f/10.0f);
+                    break;                
+                }
+                oGFX::DebugDraw::DrawCameraFrustrum(camera, oGFX::Colors::ORANGE);
             });
         }
 
@@ -372,11 +381,13 @@ namespace oo
 
     void RendererSystem::InitializeMesh(MeshRendererComponent& meshComp, TransformComponent& transformComp, GameObjectComponent& goc)
     {
-        meshComp.GraphicsWorldID = m_scene->CreateGraphicsInstance(goc.Id);
+        meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
+        meshComp.PickingID = m_scene->GeneratePickingID(goc.Id);
         //meshComp.GraphicsWorldID = m_graphicsWorld->CreateObjectInstance();
         
         //update graphics world side
         auto& graphics_object = m_graphicsWorld->GetObjectInstance(meshComp.GraphicsWorldID);
+        graphics_object.entityID = meshComp.PickingID;
         graphics_object.localToWorld = transformComp.GetGlobalMatrix();
 
         //// map graphics id to uuid of gameobject

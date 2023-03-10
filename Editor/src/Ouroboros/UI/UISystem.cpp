@@ -27,6 +27,8 @@ Technology is prohibited.
 #include "UIImageComponent.h"
 #include "UICanvasComponent.h"
 #include "GraphicsRaycasterComponent.h"
+#include "UIComponent.h"
+#include "UITextComponent.h"
 
 #include <OO_Vulkan/src/DebugDraw.h>
 #include "Ouroboros/Core/Input.h"
@@ -34,6 +36,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/CameraComponent.h"
 
 #include "Ouroboros/Geometry/Algorithms.h"
+#include "Ouroboros/EventSystem/EventTypes.h"
 
 namespace oo
 {
@@ -41,22 +44,209 @@ namespace oo
     /* Lifecycle Functions                                                         */
     /*-----------------------------------------------------------------------------*/
 
-    UISystem::UISystem(Scene* scene)
-        : m_scene{ scene }
+    UISystem::UISystem(GraphicsWorld* graphicsWorld, Scene* scene)
+        : m_graphicsWorld { graphicsWorld }
+        , m_scene{ scene }
     {
+        assert(graphicsWorld != nullptr);	// it should never be nullptr, who's calling this?
     }
+
+    UISystem::~UISystem()
+    {
+        EventManager::Unsubscribe<UISystem, PreviewWindowImageResizeEvent>(this, &UISystem::OnPreviewWindowImageResize);
+    }
+
+    void UISystem::Init()
+    {
+        // UI Component
+        m_world->SubscribeOnAddComponent<UISystem, UIComponent>(
+            this, &UISystem::OnUIAssign);
+        m_world->SubscribeOnRemoveComponent<UISystem, UIComponent>(
+            this, &UISystem::OnUIRemove);
+
+        // we initilize preview window size once.
+        /*{
+            GetPreviewWindowSizeEvent e;
+            EventManager::Broadcast<GetPreviewWindowSizeEvent>(&e);
+            m_previewImgStartPos = e.StartPosition;
+            m_previewImgWidth = e.Width;
+            m_previewImgHeight = e.Height;
+        }*/
+
+        // we make sure to keep preview window size updated
+        EventManager::Subscribe<UISystem, PreviewWindowImageResizeEvent>(this, &UISystem::OnPreviewWindowImageResize);
+
+        //// UI Component
+        //m_world->SubscribeOnAddComponent<UISystem, UITextComponent>(
+        //    this, &UISystem::OnTextAssign);
+        //m_world->SubscribeOnRemoveComponent<UISystem, UITextComponent>(
+        //    this, &UISystem::OnTextRemove);
+
+
+        //// UI Component
+        //m_world->SubscribeOnAddComponent<UISystem, UIImageComponent>(
+        //    this, &UISystem::OnImageAssign);
+        //m_world->SubscribeOnRemoveComponent<UISystem, UIImageComponent>(
+        //    this, &UISystem::OnImageRemove);
+
+
+    }
+
+    void UISystem::PostSceneLoadInit()
+    {
+        // Update UI positions immediately!
+        static Ecs::Query ui_query = Ecs::make_raw_query<UIComponent, TransformComponent>();
+        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& tfComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.entityID = uiComp.PickingID;
+                ui.localToWorld = tfComp.GetGlobalMatrix();
+            });
+
+        // Update UIText 
+        static Ecs::Query ui_text_query = Ecs::make_raw_query<UIComponent, TransformComponent, UITextComponent>();
+        m_world->for_each(ui_text_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UITextComponent& uiTextComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(true);
+            });
+
+        // Update UIImage 
+        static Ecs::Query ui_img_query = Ecs::make_raw_query<UIComponent, TransformComponent, UIImageComponent>();
+        m_world->for_each(ui_img_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UIImageComponent& uiImgComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(false);
+            });
+    }
+
+    void UISystem::UpdateJustCreated()
+    {
+        // Update UI
+        static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent, RectTransformComponent, JustCreatedComponent>();
+        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+
+                ui.entityID = uiComp.PickingID;
+                ui.localToWorld = transformComp.GetGlobalMatrix();
+            });
+
+        // Update Text UI
+        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent, JustCreatedComponent>();
+        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(true);
+            });
+
+        // Update Image UI
+        static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent, JustCreatedComponent>();
+        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(false);
+            });
+    }
+
+    void UISystem::UpdateDuplicated()
+    {
+        // Update Newly Duplicated UI
+        static Ecs::Query duplicated_ui_query = Ecs::make_raw_query<UIComponent, TransformComponent, GameObjectComponent, DuplicatedComponent>();
+        m_world->for_each(duplicated_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, GameObjectComponent& goComp, DuplicatedComponent& dupComp)
+            {
+                InitializeUI(uiComp, transformComp, goComp);
+            });
+
+        // Update Newly Duplicated Text UI
+        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent, DuplicatedComponent>();
+        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(true);
+            });
+
+        // Update Newly Duplicated Image UI
+        static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent, DuplicatedComponent>();
+        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetText(false);
+            });
+
+    }
+
+    void UISystem::UpdateExisting()
+    {
+        // Update UI
+        static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent, RectTransformComponent>();
+        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+
+                if (transformComp.HasChangedThisFrame)
+                {
+                    ui.localToWorld = transformComp.GetGlobalMatrix();
+                }
+
+                if (rectTfComp.HasChanged)
+                {
+                    glm::vec3 Center = rectTfComp.BoundingVolume.Center;
+                    
+                    glm::vec2 HalfSize = rectTfComp.Size * 0.5f;
+
+                    ui.format.box.min = glm::vec2{ Center } - HalfSize;
+                    ui.format.box.max = glm::vec2{ Center } + HalfSize;
+                }
+                    
+            });
+
+        // Update Text UI
+        static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent>();
+        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.textData = uiTextComp.Text;
+                ui.colour = uiTextComp.TextColor;
+
+                ui.format.fontSize = uiTextComp.FontSize;
+                ui.format.alignment = static_cast<oGFX::FontAlignment>(uiTextComp.Alignment);
+                ui.format.verticalLineSpace = uiTextComp.VerticalLineSpace;
+
+                ui.fontAsset = uiTextComp.font;
+            });
+        
+        // Update Image UI
+        static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent>();
+        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp)
+            {
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.colour = uiImageComp.Tint;
+                ui.bindlessGlobalTextureIndex_Albedo = uiImageComp.AlbedoID;
+            });
+    }
+
 
     void UISystem::EditorUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(UI_Editor, tracy::Color::Cyan);
+        UpdateJustCreated();
+        UpdateDuplicated();
+        UpdateExisting();
+
         UpdateRectTransformAll();
         DebugDrawUI();
+        
         TRACY_PROFILE_SCOPE_END();
     }
 
     void UISystem::RuntimeUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(UI, tracy::Color::DarkCyan);
+        UpdateJustCreated();
+        UpdateDuplicated();
+        UpdateExisting();
+
         UpdateRectTransformAll();
         if (Application::Get().GetWindow().IsFocused())
         {
@@ -143,6 +333,7 @@ namespace oo
                     UpdateIndividualRectTransform(&tf, &rectTransform);
                     // mark rectTransform as no longer dirty
                     rectTransform.IsDirty = false;
+                    rectTransform.HasChanged = true;
                 }
 
                 rectTransform.BoundingVolume.Center       = tf.GetGlobalPosition();
@@ -188,17 +379,30 @@ namespace oo
 
     void UISystem::UpdateIndividualRectTransform(TransformComponent* tf, RectTransformComponent* rect)
     {
-        // assumes parent Offset is properly set prior.
-        glm::vec3 pos = rect->AnchoredPosition + rect->ParentOffset;
+        if (rect->EditGlobal)
+        {
+            rect->AnchoredPosition = tf->GetPosition();
+            rect->EulerAngles = glm::degrees(glm::eulerAngles(tf->GetRotationQuat().value));
+            rect->Scale = tf->GetScale();
+            rect->EditGlobal = false;
+        }
+        else
+        {
+            // assumes parent Offset is properly set prior.
+            glm::vec3 pos = rect->AnchoredPosition + rect->ParentOffset;
 
-        // update transform local data
-        tf->SetPosition(pos);
-        tf->SetRotation(rect->EulerAngles);
-        tf->SetScale(rect->Scale);
+            // update transform local data
+            tf->SetPosition(pos);
+            tf->SetRotation(rect->EulerAngles);
+            tf->SetScale(rect->Scale);
+        }
     }
 
     void UISystem::DebugDrawUI()
     {
+        if (UIDebugDraw == false)
+            return;
+
         static Ecs::Query rect_transform_query = Ecs::make_query<TransformComponent, RectTransformComponent>();
         m_world->for_each(rect_transform_query, [&](TransformComponent& tf, RectTransformComponent& rectTransform)
             {
@@ -220,10 +424,10 @@ namespace oo
                 glm::vec3 top_left = Center - HalfExtentX + HalfExtentY;
                 glm::vec3 bottom_right = Center + HalfExtentX -HalfExtentY;
                 
-                DebugDraw::AddLine(top_left, bottom_left);
-                DebugDraw::AddLine(bottom_left, bottom_right);
-                DebugDraw::AddLine(bottom_right, top_right);
-                DebugDraw::AddLine(top_right, top_left);
+                oGFX::DebugDraw::AddLine(top_left, bottom_left);
+                oGFX::DebugDraw::AddLine(bottom_left, bottom_right);
+                oGFX::DebugDraw::AddLine(bottom_right, top_right);
+                oGFX::DebugDraw::AddLine(top_right, top_left);
             });
     }
 
@@ -239,9 +443,25 @@ namespace oo
         if (camera == nullptr)
             return;
 
-        Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), oo::input::GetMouseX(), oo::input::GetMouseY());
+        int32_t mouseX = oo::input::GetMouseX();
+        int32_t mouseY = oo::input::GetMouseY();
+#ifdef OO_EDITOR
+        auto [windowSizeX, windowSizeY] = oo::Application::Get().GetWindow().GetSize();
+        // we need to do extra conversion if we are in editor mode
+        float intermediateX = mouseX - m_previewImgStartPos.x;
+        intermediateX /= static_cast<float>(m_previewImgWidth);
+        float intermediateY = mouseY - m_previewImgStartPos.y;
+        intermediateY /= static_cast<float>(m_previewImgHeight);
+        intermediateX *= windowSizeX;
+        intermediateY *= windowSizeY;
+        //LOG_CORE_INFO("actual mouse pos {0},{1}, mapped mouse pos {2},{3}", mouseX, mouseY, intermediateX, intermediateY);
+        mouseX = intermediateX;
+        mouseY = intermediateY;
+#endif
+        Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), mouseX, mouseY);
         //LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
-        DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 10.f);
+        if(UIDebugRaycast)
+            oGFX::DebugDraw::AddLine(mouseWorldRay.Position, mouseWorldRay.Position + mouseWorldRay.Direction * 20.f);
         //Point2D mouseWorldPoint{ mousePos };
 
         /*SceneCamera* cam = SceneCamera::MainCamera();
@@ -434,10 +654,11 @@ namespace oo
         // TODO : additional call to get viewport of window instead!
         //editorGameViewCallback(viewport_x, viewport_y, mouse_x, mouse_y);
 
-        glm::vec3 worldpos{ static_cast<float>(mouse_x),static_cast<float>(mouse_y), 0 };
+        glm::vec3 screenPosition{ static_cast<float>(mouse_x),static_cast<float>(mouse_y), 0 };
         // convert to -1 to 1
-        worldpos.x = (worldpos.x / viewport_x) * 2.0f - 1.0f;
-        worldpos.y = -(worldpos.y / viewport_y) * 2.0f + 1.0f;
+        glm::vec3 clipPosition{ 0 };
+        clipPosition.x = (screenPosition.x / viewport_x) * 2.0f - 1.0f;
+        clipPosition.y = -(screenPosition.y / viewport_y) * 2.0f + 1.0f;
 
         auto& transform = cameraTf;
         // camera's Project Matrix
@@ -452,16 +673,85 @@ namespace oo
         //// we use the camera's Z as the starting point.
         //return { {point.x, point.y, cameraTf->GetGlobalPosition().z}, dir };
 
-        ////TODO: store the inverse of the camera
-        float xProj = 1.0f / proj[0][0];
-        float yProj = 1.0f / proj[1][1];
-        //oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
-        worldpos.x = pos.x + worldpos.x * xProj;
-        worldpos.y = pos.y + worldpos.y * yProj;
-        worldpos.z = pos.z;
-        
-        worldpos += transform->GlobalForward();
+        glm::vec4 viewPosition = glm::inverse(proj) * glm::vec4{ clipPosition, 1 };
+        viewPosition.z = -1.f;
 
-        return { worldpos, glm::normalize(worldpos - pos)};
+        glm::vec4 world_pos = glm::inverse(camera.matrices.view) * viewPosition;
+        glm::vec3 divided_pos = glm::vec3{ world_pos } / world_pos.w;
+
+        //////TODO: store the inverse of the camera
+        //float xProj = -1.0f / proj[0][0];
+        //float yProj = 1.0f / proj[1][1];
+        //float zProj = 1.0f / proj[2][2];
+        ////oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
+        //worldpos.x = pos.x + worldpos.x * xProj;
+        //worldpos.y = pos.y + worldpos.y * yProj;
+        //worldpos.z = pos.z + worldpos.z * zProj;
+        //
+        //worldpos += transform->GlobalForward();
+
+        return { pos, glm::normalize(divided_pos - pos)};
     }
+
+    void UISystem::OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt)
+    {
+        assert(m_world != nullptr); // it should never be nullptr, was the Init funciton called?
+        auto& uiComponent = evnt->component;
+        auto& transform_component = m_world->get_component<TransformComponent>(evnt->entityID);
+        auto& go_component = m_world->get_component<GameObjectComponent>(evnt->entityID);
+        InitializeUI(uiComponent, transform_component, go_component);
+    }
+    
+    void UISystem::OnUIRemove(Ecs::ComponentEvent<UIComponent>* evnt)
+    {
+        auto& comp = evnt->component;
+        m_scene->RemovePickingID(comp.PickingID);
+        m_graphicsWorld->DestroyUIInstance(comp.UI_ID);
+    }
+
+    void UISystem::InitializeUI(UIComponent& uiComp, TransformComponent& transformComp, GameObjectComponent& goComp)
+    {
+        uiComp.UI_ID = m_graphicsWorld->CreateUIInstance();
+        uiComp.PickingID = m_scene->GeneratePickingID(goComp.Id);
+        //update graphics world side to prevent wrong initial placement
+        auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+        ui.entityID = uiComp.PickingID;
+        ui.localToWorld = transformComp.GetGlobalMatrix();
+    }
+
+    void UISystem::OnPreviewWindowImageResize(PreviewWindowImageResizeEvent* e)
+    {
+        m_previewImgStartPos = e->StartPosition;
+        m_previewImgWidth = e->Width;
+        m_previewImgHeight = e->Height;
+    }
+
+    /*void UISystem::OnTextAssign(Ecs::ComponentEvent<UITextComponent>* evnt)
+    {
+        ASSERT_MSG(m_world != nullptr, "it should never be nullptr, was the Init funciton called?");
+        ASSERT_MSG(m_world->has_component<UIComponent>(evnt->entityID), " we should have the ui component by now!");
+        auto& uiComponent = m_world->get_component<UIComponent>(evnt->entityID);
+        uiComponent.SetText(true);
+    }
+
+    void UISystem::OnTextRemove(Ecs::ComponentEvent<UITextComponent>* evnt)
+    {
+    }
+
+    void UISystem::InitializeText(UITextComponent& uiTextComp, TransformComponent& tfComp)
+    {
+    }
+
+    void UISystem::OnImageAssign(Ecs::ComponentEvent<UIImageComponent>* evnt)
+    {
+    }
+
+    void UISystem::OnImageRemove(Ecs::ComponentEvent<UIImageComponent>* evnt)
+    {
+    }
+
+    void UISystem::InitializeImage(UIImageComponent& uiImgComp, TransformComponent& tfComp)
+    {
+    }*/
+
 }

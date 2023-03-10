@@ -24,6 +24,7 @@ Technology is prohibited.
 
 #include "Ouroboros/Physics/PhysicsEvents.h"
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
+#include "Ouroboros/UI/UIRaycastComponent.h"
 
 namespace oo
 {
@@ -84,6 +85,8 @@ namespace oo
         void OnCollisionEvent(PhysicsCollisionEvent* e);
         void OnTriggerAllEvent(PhysicsTriggersEvent* e);
         void OnCollisionAllEvent(PhysicsCollisionsEvent* e);
+
+        void OnUIButtonEvent(UIButtonEvent* e);
 
         Scene& scene;
         ScriptDatabase& scriptDatabase;

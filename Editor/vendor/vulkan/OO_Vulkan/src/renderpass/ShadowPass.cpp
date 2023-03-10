@@ -119,7 +119,7 @@ void ShadowPass::Draw()
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	// calculate shadowmap grid dim
-	float smGridDim = ceilf(sqrtf(vr.m_numShadowcastLights));
+	float smGridDim = ceilf(sqrtf(static_cast<float>(vr.m_numShadowcastLights)));
 	
 	glm::vec2 increment{ vpWidth, vpHeight};
 	if (smGridDim)
@@ -143,10 +143,10 @@ void ShadowPass::Draw()
 				constexpr size_t cubeFaces = 6;
 				for (size_t face = 0; face < cubeFaces; face++)
 				{
-					int lightGrid = light.info.y + face;
+					int lightGrid = light.info.y + static_cast<int>(face);
 					// set custom viewport for each view
-					int ly = lightGrid / smGridDim;
-					int lx = lightGrid - (ly * smGridDim);
+					int ly = static_cast<int>(lightGrid / smGridDim);
+					int lx = static_cast<int>(lightGrid - (ly * smGridDim));
 					vec2 customVP = increment * glm::vec2{ lx,smGridDim - ly };
 
 					//light.info.z = customVP.x; // this is actually wasted
@@ -184,7 +184,7 @@ void ShadowPass::Draw()
 						sizeof(glm::mat4),			// size of data being pushed
 						glm::value_ptr(mm));		// actualy data being pushed (could be an array));
 
-					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, vr.shadowCasterCommandsBuffer.size());
+					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, static_cast<uint32_t>(vr.shadowCasterCommandsBuffer.size()));
 				}
 				
 			}			
@@ -284,6 +284,7 @@ void ShadowPass::SetupFramebuffer()
 	VkImageView depthView = shadow_depth.view;
 
 	VkFramebuffer fb;
+	UNREFERENCED_PARAMETER(fb);
 	//FramebufferBuilder::Begin(&vr.fbCache)
 	//	.BindImage(&shadow_depth)
 	//	.Build(fb,renderpass_Shadow);

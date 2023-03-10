@@ -56,7 +56,6 @@ namespace myPhysx {
     enum class trigger { none, onTriggerEnter, onTriggerStay, onTriggerExit};
     enum class collision { none, onCollisionEnter, onCollisionStay, onCollisionExit};
     
-    
     class EventCallBack : public PxSimulationEventCallback {
 
     public:
@@ -71,6 +70,22 @@ namespace myPhysx {
         void onTrigger(PxTriggerPair* pairs, PxU32 count) override;
 
         void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
+    };
+
+    struct FilterGroup
+    {
+        enum Enum
+        {
+            Zero = (1 << 0),
+            One = (1 << 1), 
+            Two = (1 << 2),
+            Three = (1 << 3),
+            Four = (1 << 4),
+            Fix = (1 << 5),
+            Six = (1 << 6),
+            Seven = (1 << 7),
+            All = Zero | One | Two | Three | Four | Fix | Six | Seven // New value that combines all filter groups
+        };
     };
 
     struct RaycastHit {
@@ -169,7 +184,7 @@ namespace myPhysx {
                                                 PxPairFlags& pairFlags, const void* constantBlock,
                                                 PxU32 constantBlockSize);
 
-        void setupFiltering(PxShape* shape);
+        void setupFiltering(PxShape* shape, PxU32 filterGroup, PxU32 filterMask);
     };
 
     // describes a physics scene
@@ -221,7 +236,10 @@ namespace myPhysx {
 
         // RAYCAST
         RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
+        RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter /*= FilterGroup::All*/);
+        
         std::vector<RaycastHit> raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance);
+        std::vector<RaycastHit> raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter /*= FilterGroup::All*/);
 
         // TRIGGER
         void updateTriggerState(phy_uuid::UUID id); // function to update objects for OnTriggerStay
@@ -263,7 +281,10 @@ namespace myPhysx {
         bool is_kinematic = false;
         bool is_collider = true;
 
-     
+        // Filtering
+        std::uint32_t filterIn = FilterGroup::Zero;
+        std::uint32_t filterOut = FilterGroup::Zero;
+
         std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
         //std::vector<PxVec3> meshVertices{ PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
     };
@@ -293,6 +314,9 @@ namespace myPhysx {
         bool isGravityEnabled() const;
         bool isKinematic() const;
         bool isColliderEnabled() const;
+
+        std::uint32_t getFilterIn() const;
+        std::uint32_t getFilterOut() const;
 
         // SETTERS
         void setRigidType(rigid type);
@@ -337,13 +361,15 @@ namespace myPhysx {
         void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
         void setSphereProperty(float radius);
         void setCapsuleProperty(float radius, float halfHeight);
-        void setConvexProperty(std::vector<PxVec3> vert);
+        void setConvexProperty(std::vector<PxVec3> vert, PxVec3 scale);
         //void setPlaneProperty(float radius);
 
         void storeMeshVertices(std::vector<PxVec3> vert);
         PxConvexMesh* createConvexMesh(std::vector<PxVec3> vert); // testing
         std::vector<PxVec3> getAllMeshVertices();
-        
+
+        // Set filter in and out
+        void setFiltering(std::uint32_t filterIn, std::uint32_t filterOut);
     };
 
 

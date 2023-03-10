@@ -15,9 +15,7 @@ Technology is prohibited.
 #include <iostream>
 #include <algorithm> // std min
 
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/mat4x4.hpp>
+#include "MathCommon.h"
 
 void Camera::UpdateViewMatrixQuaternion()
 {
@@ -82,7 +80,7 @@ void Camera::UpdateViewMatrixQuaternion()
 
 	m_right = glm::rotate(view_orientation, glm::vec3{ 1, 0, 0 });
 	m_forward = glm::rotate(view_orientation, glm::vec3{ 0, 0, 1 });
-	//m_up = glm::rotate(view_orientation, glm::vec3{ 0, 1, 0 });
+	m_up = -glm::cross(m_right, m_forward);
 	
 	matrices.view = glm::lookAt(m_position, m_position + m_forward, { 0, 1, 0}); // = glm::inverse(translate * rotate);
 	updated = true;
@@ -183,6 +181,58 @@ void Camera::UpdateViewMatrixQuaternion()
 //	matrices.view = glm::lookAtRH(m_position, m_position + m_forward, worldUp);
 //	updated = true;
 //}
+
+oGFX::Frustum Camera::GetFrustum() const
+{
+	oGFX::Frustum frustum;
+
+	glm::vec3 near_center = m_position + m_forward * m_znear;
+	glm::vec3 far_center = m_position + m_forward * m_zfar;
+
+	float near_half_height = tan(glm::radians(m_fovDegrees )/ 2) * m_znear;
+	float near_half_width = near_half_height * m_aspectRatio;
+	float far_half_height = tan(glm::radians(m_fovDegrees )/ 2) * m_zfar;
+	float far_half_width = far_half_height * m_aspectRatio;
+
+	glm::vec3 ntl = near_center + m_up * near_half_height - m_right * near_half_width;
+	glm::vec3 ntr = near_center + m_up * near_half_height + m_right * near_half_width;
+	glm::vec3 nbl = near_center - m_up * near_half_height - m_right * near_half_width;
+	glm::vec3 nbr = near_center - m_up * near_half_height + m_right * near_half_width;
+	glm::vec3 ftl = far_center  + m_up * far_half_height  - m_right * far_half_width;
+	glm::vec3 ftr = far_center  + m_up * far_half_height  + m_right * far_half_width;
+	glm::vec3 fbl = far_center  - m_up * far_half_height  - m_right * far_half_width;
+	glm::vec3 fbr = far_center  - m_up * far_half_height  + m_right * far_half_width;
+
+	glm::vec3 near_plane =	 -glm::normalize(glm::cross(ntr - ntl, ntl - nbl));
+	glm::vec3 far_plane =	 glm::normalize(glm::cross(ftr - ftl, ftl - fbl));
+	glm::vec3 left_plane =	 -glm::normalize(glm::cross(ntl - fbl, ftl - ntl));
+	glm::vec3 right_plane =  glm::normalize(glm::cross(nbr - fbr, ftr - fbr));
+	glm::vec3 top_plane =	 -glm::normalize(glm::cross(ntr - ftr, ftr - ntl));
+	glm::vec3 bottom_plane = -glm::normalize(glm::cross(nbl - fbl, fbl - nbr));
+
+	frustum.planeNear = { near_plane,		glm::dot(near_plane, ntl) };
+	frustum.planeFar =	{ far_plane,		glm::dot(far_plane, ftl) };
+	frustum.left =		{ left_plane,		glm::dot(left_plane, ntl) };
+	frustum.right =		{ right_plane,		glm::dot(right_plane, nbr) };
+	frustum.top =		{ top_plane,		glm::dot(top_plane, ntr) };
+	frustum.bottom =	{ bottom_plane,		glm::dot(bottom_plane, nbl) };
+	
+	//frust.right.normal.w = glm::dot(glm::vec3{ frust.right.normal }, start);
+	
+	glm::vec3 act_centre = m_position + m_forward * ((m_zfar - m_znear)/2.0f);
+	act_centre = m_position + m_forward * 5.0f; // hardcoded
+	float centre_half_height = tan(glm::radians(m_fovDegrees)/ 2) * 5.0f;
+	float centre_half_width = centre_half_height * m_aspectRatio;
+
+	frustum.pt_left  = act_centre - centre_half_width * m_right;
+	frustum.pt_right = act_centre + centre_half_width * m_right;
+	frustum.pt_top = act_centre + centre_half_height * m_up;
+	frustum.pt_bottom = act_centre - centre_half_height * m_up;
+	frustum.pt_planeNear = near_center;
+	frustum.pt_planeFar = act_centre;
+
+	return frustum;
+}
 
 void Camera::LookAt(const glm::vec3& pos, const glm::vec3& target, const glm::vec3& upVec)
 {

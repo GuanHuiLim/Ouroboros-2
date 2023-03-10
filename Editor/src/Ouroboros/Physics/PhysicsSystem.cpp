@@ -35,6 +35,9 @@ Technology is prohibited.
 // test
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObject.h"
+
+#include "Utility/Hash.h"
+
 namespace oo
 {
     PhysicsSystem::~PhysicsSystem()
@@ -142,16 +145,18 @@ namespace oo
                     mc.Reset = false;
                 }
 
-                // update the world vertex position based on matrix of current object
+                // update the world vertex position based on matrix of current object(this is now just for visualization purposes only!)
                 auto globalMat = tf.GetGlobalMatrix();
                 for (auto& worldSpaceVert : mc.WorldSpaceVertices)
                 {
                     worldSpaceVert = globalMat * glm::vec4{ worldSpaceVert, 1 };
                 }
                 
-                std::vector<oo::vec3> temp{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
+                // we update using the same local vertices but update its scale
+                std::vector<oo::vec3> temp{ mc.Vertices.begin(), mc.Vertices.end() };
                 std::vector<PxVec3> res{ temp.begin(), temp.end() };
-                rb.object.setConvexProperty(res);
+                oo::vec3 scale = tf.GetGlobalScale();
+                rb.object.setConvexProperty(res, scale);
 
             });
 
@@ -436,6 +441,7 @@ namespace oo
                         rb.object.setTriggerShape(rb.IsTrigger());
                     TRACY_PROFILE_SCOPE_END();
                 }
+
                 TRACY_PROFILE_SCOPE_END();
             });
 
@@ -452,6 +458,13 @@ namespace oo
 
                 // set box size
                 rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
+
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(box_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         //Updating capsule collider's bounds 
@@ -468,6 +481,13 @@ namespace oo
 
                 // set capsule size
                 rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
+
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(capsule_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         //Updating sphere collider's bounds 
@@ -484,6 +504,13 @@ namespace oo
 
                 // set capsule size
                 rb.object.setSphereProperty(sc.GlobalRadius);
+                
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(sphere_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         {
@@ -520,7 +547,7 @@ namespace oo
                         justEdited = true;
                     }
 
-                    if (tf.HasChangedThisFrame || justEdited && !mc.Vertices.empty())
+                    if (tf.HasChangedThisFrame || (justEdited && !mc.Vertices.empty()))
                     {
                         // update the world vertex position based on matrix of current object
                         auto globalMat = tf.GetGlobalMatrix();
@@ -529,11 +556,18 @@ namespace oo
                             {
                                 v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
                             });
-                        std::vector<oo::vec3>temp{ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end() };
-                        std::vector<PxVec3> res{ temp.begin(), temp.end() };
-                        rb.object.setConvexProperty(res);
+                        std::vector<oo::vec3>temp{ mc.Vertices.begin(), mc.Vertices.end() };
+                        std::vector<PxVec3> res{ temp.begin(), temp.end() }; 
+                        oo::vec3 scale = tf.GetGlobalScale();
+                        rb.object.setConvexProperty(res, scale);
                     }
 
+                    // update filtering
+                    {
+                        TRACY_PROFILE_SCOPE_NC(mesh_setup_filters, tracy::Color::PeachPuff4);
+                        rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                        TRACY_PROFILE_SCOPE_END();
+                    }
                 });
 
 
@@ -735,22 +769,22 @@ namespace oo
             auto top_right_front    = pos + rotatedX + rotatedY + rotatedZ;
 
             //Debug draw the bounds
-            DebugDraw::AddLine(bottom_left_back, bottom_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_left_front, bottom_right_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_front, bottom_right_back, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_back, bottom_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_front, bottom_right_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_front, bottom_right_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_back, bottom_left_back, oGFX::Colors::GREEN);
 
-            DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_left_back, top_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_left_front, top_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_right_front, top_right_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(top_right_back, top_left_back, oGFX::Colors::GREEN);
 
-            DebugDraw::AddLine(bottom_left_back, top_left_back, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_left_front, top_left_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_front, top_right_front, oGFX::Colors::GREEN);
-            DebugDraw::AddLine(bottom_right_back, top_right_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_back, top_left_back, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_left_front, top_left_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_front, top_right_front, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddLine(bottom_right_back, top_right_back, oGFX::Colors::GREEN);
 
-            //DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
+            //oGFX::DebugDraw::AddAABB({ pos + bc.GlobalHalfExtents  , pos - bc.GlobalHalfExtents }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing
@@ -765,11 +799,11 @@ namespace oo
             glm::vec3 GlobalHalfExtents = { cc.GlobalRadius, cc.GlobalHalfHeight , cc.GlobalRadius };
             
             //Debug draw the bounds
-            DebugDraw::AddAABB({ pos - GlobalHalfExtents  , pos + GlobalHalfExtents }, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddAABB({ pos - GlobalHalfExtents  , pos + GlobalHalfExtents }, oGFX::Colors::GREEN);
             // draw top sphere
-            DebugDraw::AddSphere({ pos + vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddSphere({ pos + vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
             // draw bottom sphere
-            DebugDraw::AddSphere({ pos - vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
+            oGFX::DebugDraw::AddSphere({ pos - vec3{ 0, GlobalHalfExtents.y, 0}, cc.GlobalRadius }, oGFX::Colors::GREEN);
         });
 
         //Updating capsule collider's bounds and debug drawing
@@ -781,7 +815,7 @@ namespace oo
                 auto quat = rb.GetOrientationInPhysicsWorld();
 
                 // debug Draw the sphere collider
-                DebugDraw::AddSphere({ pos, sc.GlobalRadius }, oGFX::Colors::GREEN);
+                oGFX::DebugDraw::AddSphere({ pos, sc.GlobalRadius }, oGFX::Colors::GREEN);
             });
 
         static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent>();
@@ -801,13 +835,13 @@ namespace oo
                 {
                     auto first = mc.WorldSpaceVertices.back(); 
                     auto next = mc.WorldSpaceVertices.front();
-                    DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                    oGFX::DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
 
                     for (auto curr : mc.WorldSpaceVertices)
                     {
                         first = next;
                         next = curr;
-                        DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
+                        oGFX::DebugDraw::AddLine(first, next, oGFX::Colors::GREEN);
                     }
 
                     //auto first = mc.WorldSpaceVertices.back();
@@ -828,7 +862,40 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
     }
 
-    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime) 
+    LayerType PhysicsSystem::GenerateCollisionMask(std::vector<std::string> names)
+    {
+        /*static std::vector<std::pair<util::StringHash, unsigned int>> hashedTable; 
+        if (hashedTable.size() == 0)
+        {
+            unsigned int count = 0;
+            for (auto& layer : LayerNames)
+            {
+                hashedTable.emplace_back(std::pair{ util::StringHash::GenerateFNV1aHash(layer), count++ });
+            }
+        }*/
+
+        LayerType result = 0;
+        unsigned int count = 0;
+        std::for_each(LayerNames.cbegin(), LayerNames.cend(),
+            [&](auto&& elem) 
+            {
+                //auto key = util::StringHash::GenerateFNV1aHash(elem);
+                //auto value = std::find_if(hashedTable.cbegin(), hashedTable.cend(), [&](auto&& elem) { return elem.second == key; });
+                //if (value != hashedTable.cend())
+                auto value = std::find(names.cbegin(), names.cend(), elem);
+                if(value != names.cend())
+                    result |= (1 << count);
+
+                count++;
+            });
+
+        if(result == 0)
+            LOG_WARN("mask generated won't work against anything");
+
+        return result;
+    }
+
+    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime)
     { 
         FixedDeltaTime = NewFixedTime; 
         auto newLimit = FixedDeltaTime * MaxIterations;
@@ -840,23 +907,22 @@ namespace oo
         return FixedDeltaTime; 
     }
 
-    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance)
+    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast, tracy::Color::PeachPuff4);
 
-        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
+            , static_cast<std::uint32_t>(collisionFilter));
         
-        if(result.intersect)
-            ASSERT_MSG(m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
+        ASSERT_MSG(result.intersect && m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
         
-
         TRACY_PROFILE_SCOPE_END();
 
         return { result.intersect, m_physicsToGameObjectLookup.at(result.object_ID), {result.position.x,result.position.y, result.position.z}, 
             { result.normal.x, result.normal.y, result.normal.z }, result.distance };
     }
 
-    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
+    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast_all, tracy::Color::PeachPuff4);
 
@@ -865,7 +931,8 @@ namespace oo
         // normalize our ray just to make sure
         ray.Direction = glm::normalize(ray.Direction);
 
-        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
+            , static_cast<std::uint32_t>(collisionFilter));
 
         for (auto& hit : allHits)
         {

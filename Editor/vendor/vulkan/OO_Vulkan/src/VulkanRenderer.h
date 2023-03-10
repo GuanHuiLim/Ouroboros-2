@@ -34,6 +34,7 @@ Technology is prohibited.
 #include "DescriptorLayoutCache.h"
 #include "FramebufferCache.h"
 #include "Geometry.h"
+#include "Collision.h"
 
 #include "Camera.h"
 
@@ -43,6 +44,9 @@ Technology is prohibited.
 
 #include "GraphicsWorld.h"
 #include "GraphicsBatch.h"
+
+#include "TexturePacker.h"
+#include "Font.h"
 
 #include <vector>
 #include <array>
@@ -251,6 +255,7 @@ public:
 	void DestroyRenderBuffers();
 	void GenerateCPUIndirectDrawCommands();
 	void UploadInstanceData();
+	void UploadUIData();
 	uint32_t objectCount{};
 	// Contains the instanced data
 	GpuVector<oGFX::InstanceData> instanceBuffer;
@@ -271,6 +276,9 @@ public:
 	uint32_t CreateTexture(const std::string& fileName);
 	bool ReloadTexture(uint32_t textureID, const std::string& file);
 	void UnloadTexture(uint32_t textureID);
+
+	oGFX::Font* LoadFont(const std::string& filename);
+	oGFX::TexturePacker CreateFontAtlas(const std::string& filename, oGFX::Font& font);
 
 	struct TextureInfo
 	{
@@ -296,6 +304,7 @@ public:
 
 	std::mutex g_mut_globalMeshBuffers;
 	IndexedVertexBuffer g_GlobalMeshBuffers;
+
 	std::array<GpuVector<ParticleData>,3> g_particleDatas;
 	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer{};
 
@@ -304,7 +313,13 @@ public:
 	std::vector<oGFX::DebugVertex> g_DebugDrawVertexBufferCPU;
 	std::vector<uint32_t> g_DebugDrawIndexBufferCPU;
 
+	// ui pass
+	GpuVector<oGFX::UIVertex> g_UIVertexBufferGPU;
+	GpuVector<uint32_t> g_UIIndexBufferGPU;
+	std::array<GpuVector<UIData>,3> g_UIDatas;
+
 	ModelFileResource* GetDefaultCube();
+	oGFX::Font* GetDefaultFont();
 
 	ModelFileResource* LoadModelFromFile(const std::string& file);
 	ModelFileResource* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex, std::vector<uint32_t>& indices, gfxModel* model);
@@ -451,20 +466,20 @@ public:
 		uint32_t bindlessGlobalTextureIndex_Roughness{ 0xFFFFFFFF };
 		uint32_t bindlessGlobalTextureIndex_Metallic{ 0xFFFFFFFF };
 
-		Sphere sphere;
-		AABB aabb;
+		oGFX::Sphere sphere;
+		oGFX::AABB aabb;
 
 		template <typename T>
 		float GetBVHeuristic();
 
 		template <>
-		float GetBVHeuristic<Sphere>()
+		float GetBVHeuristic<oGFX::Sphere>()
 		{
 			return glm::pi<float>()* sphere.radius* sphere.radius;
 		}
 
 		template <>
-		float GetBVHeuristic<AABB>()
+		float GetBVHeuristic<oGFX::AABB>()
 		{
 			const auto width  = aabb.halfExt[0];
 			const auto height = aabb.halfExt[1];
@@ -489,6 +504,7 @@ public:
 		std::unique_ptr<ModelFileResource>def_sprite;
 		std::unique_ptr<ModelFileResource>def_plane;
 		std::unique_ptr<ModelFileResource>def_sphere;
+		std::unique_ptr<oGFX::Font>def_font;
 
 };
 

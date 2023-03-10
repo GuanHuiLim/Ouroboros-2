@@ -10,6 +10,7 @@ namespace oo
 		using namespace rttr;
 		registration::class_<SkinMeshRendererComponent>("Skinned Mesh Renderer Component")
 		.property_readonly("Model Handle", &SkinMeshRendererComponent::meshResource)
+		.property_readonly("Picking ID", &SkinMeshRendererComponent::picking_ID)
 		.property("Number of bones", &SkinMeshRendererComponent::num_bones)
 		.property("Albedo", &SkinMeshRendererComponent::GetAlbedo, &SkinMeshRendererComponent::SetAlbedo)
 		(
@@ -19,6 +20,14 @@ namespace oo
 		(
 			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
 		)
+		.property("Metallic", &SkinMeshRendererComponent::GetMetallic, &SkinMeshRendererComponent::SetMetallic)
+		(
+			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
+		)
+		.property("Roughness", &SkinMeshRendererComponent::GetRoughness, &SkinMeshRendererComponent::SetRoughness)
+		(
+			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
+			)
 		.property("Mesh", &SkinMeshRendererComponent::GetMesh, &SkinMeshRendererComponent::SetMesh)
 		(
 			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
@@ -62,6 +71,34 @@ namespace oo
 	Asset SkinMeshRendererComponent::GetNormal() const
 	{
 		return normal_asset;
+	}
+
+	void oo::SkinMeshRendererComponent::SetMetallic(Asset metallic)
+	{
+		metallic_asset = metallic;
+		if (metallic_asset.IsValid())
+		{
+			metallicID = metallic_asset.GetData<uint32_t>();
+		}
+	}
+
+	Asset oo::SkinMeshRendererComponent::GetMetallic() const
+	{
+		return metallic_asset;
+	}
+
+	void oo::SkinMeshRendererComponent::SetRoughness(Asset roughness)
+	{
+		roughness_asset = roughness;
+		if (roughness_asset.IsValid())
+		{
+			roughnessID = roughness_asset.GetData<uint32_t>();
+		}
+	}
+
+	Asset oo::SkinMeshRendererComponent::GetRoughness() const
+	{
+		return roughness_asset;
 	}
 
 	Asset SkinMeshRendererComponent::GetMesh()

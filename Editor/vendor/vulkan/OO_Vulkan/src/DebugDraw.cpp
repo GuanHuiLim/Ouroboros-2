@@ -17,6 +17,9 @@ Technology is prohibited.
 #include "IcoSphereCreator.h"
 #include <cmath>
 
+namespace oGFX {
+
+
 template<typename T>
 void CalculateTangentSpace(const T& normal, T& out0, T& out1)
 {
@@ -186,6 +189,52 @@ void DebugDraw::AddArrow(const glm::vec3& p0, const glm::vec3& p1, const oGFX::C
 
 void DebugDraw::DrawCameraFrustrum(const Camera& camera, const oGFX::Color& col)
 {
+    auto m_forward = camera.GetFront();
+    auto m_up = camera.GetUp();
+    auto m_right= camera.GetRight();
+
+    auto fov = camera.GetFov();
+    auto ar = camera.GetAspectRatio();
+    auto znear = camera.GetNearClip();
+    auto zfar = camera.GetFarClip();
+
+    glm::vec3 near_center = camera.m_position + m_forward * znear;
+    glm::vec3 far_center = camera.m_position + m_forward * zfar;
+
+    float near_half_height = tan(glm::radians(fov )/ 2) * znear;
+    float near_half_width = near_half_height * ar;
+    float far_half_height = tan(glm::radians(fov )/ 2) * zfar;
+    float far_half_width = far_half_height * ar;
+
+    glm::vec3 ntl = near_center + m_up * near_half_height - m_right * near_half_width;
+    glm::vec3 ntr = near_center + m_up * near_half_height + m_right * near_half_width;
+    glm::vec3 nbl = near_center - m_up * near_half_height - m_right * near_half_width;
+    glm::vec3 nbr = near_center - m_up * near_half_height + m_right * near_half_width;
+    glm::vec3 ftl = far_center  + m_up * far_half_height  - m_right * far_half_width;
+    glm::vec3 ftr = far_center  + m_up * far_half_height  + m_right * far_half_width;
+    glm::vec3 fbl = far_center  - m_up * far_half_height  - m_right * far_half_width;
+    glm::vec3 fbr = far_center  - m_up * far_half_height  + m_right * far_half_width;
+
+    // near plane
+    AddLine(ntl,ntr, col); // top
+    AddLine(ntr,nbr, oGFX::Colors::BLUE); // right
+    AddLine(ntl,nbl, oGFX::Colors::RED); // left
+    AddLine(nbl,nbr, col); // bottom
+
+    // far plane
+    AddLine(ftl,ftr, col); // top
+    AddLine(ftr,fbr, col); // right
+    AddLine(ftl,fbl, col); // left
+    AddLine(fbl,fbr, col); // bottom
+
+                              // connectors
+    AddLine(ftr,ntr,col); // TR
+    AddLine(ftl,ntl,col); // TL
+    AddLine(fbl,nbl,col); // BL
+    AddLine(fbr,nbr,col); // BR
+
+    return;
+
     DrawCameraFrustrum(camera.m_position, camera.matrices.view, camera.GetAspectRatio() , camera.GetFov(), camera.GetNearClip(), camera.GetFarClip(), col);
 }
 
@@ -225,20 +274,74 @@ void DebugDraw::DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& v
         v[i].z = ff.z / ff.w;
     }
 
-    AddLine(v[0], v[1], col);
-    AddLine(v[0], v[2], col);
-    AddLine(v[3], v[1], col);
-    AddLine(v[3], v[2], col);
+  
 
-    AddLine(v[4], v[5], col);
-    AddLine(v[4], v[6], col);
-    AddLine(v[7], v[5], col);
-    AddLine(v[7], v[6], col);
 
-    AddLine(v[0], v[4], col);
-    AddLine(v[1], v[5], col);
-    AddLine(v[3], v[7], col);
-    AddLine(v[2], v[6], col);
+    // near plane
+    AddLine(v[0], v[1], col); // top
+    AddLine(v[0], v[2], col); // right
+    AddLine(v[3], v[1], col); // left
+    AddLine(v[3], v[2], col); // bottom
+
+    // far plane
+    AddLine(v[4], v[5], col); // top
+    AddLine(v[4], v[6], col); // right
+    AddLine(v[7], v[5], col); // left
+    AddLine(v[7], v[6], col); // bottom
+    
+    // connectors
+    AddLine(v[0], v[4],col); // TR
+    AddLine(v[1], v[5],col); // TL
+    AddLine(v[3], v[7],col); // BL
+    AddLine(v[2], v[6],col); // BR
+}
+
+void DebugDraw::DrawCameraFrustrumDebugArrows(const Camera& c, const oGFX::Color& col)
+{
+    auto frust = c.GetFrustum();
+    DrawCameraFrustrumDebugArrows(frust, col);
+
+}
+
+void DebugDraw::DrawCameraFrustrumDebugArrows(const Frustum& frust, const oGFX::Color& col)
+{
+    const float arrowLen = 5.0f;
+    {
+        glm::vec3 start = glm::vec3(frust.top.normal)* frust.top.normal.w;
+        glm::vec3 end = start + glm::vec3(frust.top.normal) * arrowLen;
+        oGFX::DebugDraw::AddArrow(start,end , col);
+    }
+
+    {
+        glm::vec3 start = glm::vec3(frust.bottom.normal)* frust.bottom.normal.w;
+        glm::vec3 end = start + glm::vec3(frust.bottom.normal) * arrowLen;
+        oGFX::DebugDraw::AddArrow(start,end , col);
+    }
+
+    {
+        glm::vec3 start = glm::vec3(frust.right.normal)* frust.right.normal.w;
+        glm::vec3 end = start + glm::vec3(frust.right.normal) * arrowLen;
+        oGFX::DebugDraw::AddArrow(start,end , col);
+    }
+
+    {
+        glm::vec3 start = glm::vec3(frust.left.normal) * frust.left.normal.w;
+        glm::vec3 end = start + glm::vec3(frust.left.normal) * arrowLen;
+        oGFX::DebugDraw::AddArrow(start, end, col); 
+    }
+
+    {
+        glm::vec3 start = glm::vec3(frust.planeFar.normal)* frust.planeFar.normal.w;
+        glm::vec3 end = start + glm::vec3(frust.planeFar.normal) * arrowLen;
+        oGFX::DebugDraw::AddArrow(start,end , col);
+    }
+
+    {
+        glm::vec3 start = glm::vec3(frust.planeNear.normal)* frust.planeNear.normal.w;
+        glm::vec3 end = start + glm::vec3(frust.planeNear.normal) * arrowLen;
+        oGFX::DebugDraw::AddArrow(start,end , col);
+    }
+
 }
 
 void DebugDraw::AddDisc(const glm::vec3& center, float radius, const glm::vec3& basis0, const glm::vec3& basis1, const oGFX::Color& color)
@@ -335,3 +438,5 @@ void DebugDraw::DrawYGrid(float gridSize, float gapSize, const oGFX::Color & col
     DebugDraw::AddLine(bottomLeft + Point3D{ 0.0f,0.0f, gridSize }, topRight , oGFX::Colors::LIGHT_GREY);
 
 }
+
+} // end namesace oGFX

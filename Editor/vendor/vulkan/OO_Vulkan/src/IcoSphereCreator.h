@@ -32,8 +32,8 @@ namespace icosahedron
 		Index vertex[3];
 	};
 
-	using TriangleList = std::vector<Triangle>;
-	using VertexList = std::vector<Point3D>;
+	using TriangleList = std::vector<icosahedron::Triangle>;
+	using VertexList = std::vector<oGFX::Point3D>;
 	using Lookup=std::map<std::pair<Index, Index>, Index>;
 
 	const float X=.525731112119133606f;
@@ -71,7 +71,7 @@ IndexedMesh make_icosphere(int subdivisions, bool normalized = true);
 class IcoSphereCreator
 {
 	
-	static std::vector<Point3D> CreateIcosphere(uint8_t order);
+	static std::vector<oGFX::Point3D> CreateIcosphere(uint8_t order);
 
 };
 

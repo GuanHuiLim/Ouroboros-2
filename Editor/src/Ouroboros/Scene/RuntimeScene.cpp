@@ -53,7 +53,7 @@ namespace oo
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
 
             GetWorld().Add_System<PhysicsSystem>()->Init(this);
-            GetWorld().Add_System<oo::UISystem>(this);
+            GetWorld().Add_System<oo::UISystem>(GetGraphicsWorld(), this)->Init();
 
             GetWorld().Get_System<Anim::AnimationSystem>()->CreateAnimationTestObject();
 
@@ -63,6 +63,8 @@ namespace oo
         // Some system setup code
         {
             // set default debug draws
+            GetWorld().Get_System<UISystem>()->UIDebugDraw = false;
+            GetWorld().Get_System<UISystem>()->UIDebugRaycast = false;
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = false;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = false;
             GetWorld().Get_System<RendererSystem>()->LightsDebugDraw = false;
@@ -119,6 +121,12 @@ namespace oo
         //
         //jobsystem::launch_and_wait(phase_two);
 
+        //jobsystem::submit(phase_three, [&]() {
+            TRACY_PROFILE_SCOPE(animation_update);
+            GetWorld().Run_System<oo::Anim::AnimationSystem>();
+            TRACY_PROFILE_SCOPE_END();
+        //    });
+
         jobsystem::job phase_three{};
         //
         //jobsystem::submit(phase_three, [&]() {
@@ -133,19 +141,17 @@ namespace oo
           TRACY_PROFILE_SCOPE_END();
             });
         
-        jobsystem::submit(phase_three, [&]() {
-            TRACY_PROFILE_SCOPE(UI_runtime_update);
-            GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
-            TRACY_PROFILE_SCOPE_END();
-            });
-        
         //jobsystem::submit(phase_three, [&]() {
-            TRACY_PROFILE_SCOPE(animation_update);
-            GetWorld().Run_System<oo::Anim::AnimationSystem>();
-            TRACY_PROFILE_SCOPE_END();
+        //    TRACY_PROFILE_SCOPE(UI_runtime_update);
+        //    GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
+        //    TRACY_PROFILE_SCOPE_END();
         //    });
         
         jobsystem::launch_and_wait(phase_three);
+
+        TRACY_PROFILE_SCOPE(UI_runtime_update);
+        GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
+        TRACY_PROFILE_SCOPE_END();
             
         TRACY_PROFILE_SCOPE_END();
 
@@ -210,7 +216,6 @@ namespace oo
         //Functions to run upon program starting : Order matters
         
         
-
         GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
 
         GetWorld().Get_System<ScriptSystem>()->StartPlay();
@@ -220,6 +225,8 @@ namespace oo
         GetWorld().Get_System<SkinMeshRendererSystem>()->PostLoadScene();
         
         GetWorld().Get_System<RendererSystem>()->PostSceneLoadInit();
+
+        GetWorld().Get_System<UISystem>()->PostSceneLoadInit();
 
         TRACY_PROFILE_SCOPE_END();
     }

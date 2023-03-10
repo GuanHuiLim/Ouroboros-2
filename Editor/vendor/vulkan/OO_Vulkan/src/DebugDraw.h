@@ -23,6 +23,8 @@ Technology is prohibited.
 #include <vector>
 #include <array>
 
+namespace oGFX{
+
 // Debug draw interface, to decouple with the "god class".
 struct DebugDraw
 {
@@ -35,6 +37,9 @@ struct DebugDraw
 
 	static void DrawCameraFrustrum(const Camera&, const oGFX::Color& col = oGFX::Colors::WHITE);
 	static void DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& view, float ar,float fov ,float znear, float zfar, const oGFX::Color& col = oGFX::Colors::WHITE);
+
+	static void DrawCameraFrustrumDebugArrows(const Camera& f, const oGFX::Color& col = oGFX::Colors::WHITE);
+	static void DrawCameraFrustrumDebugArrows(const Frustum& f, const oGFX::Color& col = oGFX::Colors::WHITE);
 
 	// Debug draws a circular disc, spanned by the 2 given basis vectors
 	static void AddDisc(const glm::vec3& center, float radius, const glm::vec3& basis0, const glm::vec3& basis1, const oGFX::Color& color = oGFX::Colors::WHITE);
@@ -51,3 +56,5 @@ struct DebugDraw
 	// This requires the camera position!!
 	static void AddSphereAs3Disc1HorizonDisc(const glm::vec3& center, float radius, const glm::vec3& cameraPosition, const oGFX::Color& color = oGFX::Colors::WHITE);
 };
+
+} // end namesace oGFX

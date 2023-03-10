@@ -51,6 +51,13 @@ void PreviewWindow::Show()
 		ImGui::Text("No Camera Detected, Add a Camera Component");
 		return;
 	}
+	
+	// Extra event for others to use
+	ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+	vMin.x += ImGui::GetWindowPos().x;
+	vMin.y += ImGui::GetWindowPos().y;
+	PreviewWindowImageResizeEvent e;
+	//e.StartPosition  = ImGui:://= { vMin.x, vMin.y};
 	// Launch preview window resize event.
 
 	float contentWidth = 0;
@@ -76,13 +83,25 @@ void PreviewWindow::Show()
 		contentWidth = imagesize.x;
 		contentHeight = resize_by_ar.y;
 	}
+
+	ImGui::SetCursorPos(cursorPosition);
+	e.StartPosition = { ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y };
+	e.Width = contentWidth;
+	e.Height = contentHeight;
+	//ImGui::GetForegroundDrawList()->AddRect(ImVec2{e.StartPosition.x, e.StartPosition.y}, ImVec2{e.StartPosition.x + e.Width, e.StartPosition.y + e.Height }, 0xFFFFFFFF);
+	// blast event 
+	oo::EventManager::Broadcast<PreviewWindowImageResizeEvent>(&e);
+
 	if ( floorf( m_viewportWidth - contentWidth) != 0 || floorf(m_viewportHeight - contentHeight) != 0)
 	{
+
 		//resize viewport
+		m_windowStartPosition = { vMin.x, vMin.y };
 		m_viewportWidth = contentWidth;
 		m_viewportHeight = contentHeight;
 
 		PreviewWindowResizeEvent e;
+		e.StartPosition = m_windowStartPosition;
 		e.X = m_viewportWidth;
 		e.Y = m_viewportHeight;
 		oo::EventManager::Broadcast<PreviewWindowResizeEvent>(&e);
@@ -101,6 +120,7 @@ void PreviewWindow::UpdateWhenNotShown()
 
 void PreviewWindow::GetPreviewWindowSize(GetPreviewWindowSizeEvent* e)
 {
+	e->StartPosition = m_windowStartPosition;
 	e->Width = m_viewportWidth;
 	e->Height = m_viewportHeight;
 }

@@ -19,6 +19,8 @@ Technology is prohibited.
 #include <fstream>
 #include <string>
 
+namespace oGFX{
+
 BspTree::BspTree()
 {
 	m_maxNodesTriangles = 400;
@@ -658,3 +660,5 @@ std::string BspTree::GetPartitionTypeString()
 	break;
 	}
 }
+
+}// end namespace oGFX

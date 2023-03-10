@@ -27,16 +27,25 @@ struct UpdateRendererSettings : public oo::Event
 
 struct EditorViewportResizeEvent : public oo::Event
 {
+    glm::vec2 StartPosition;
     float X, Y;
 };
 
 struct PreviewWindowResizeEvent : public oo::Event
 {
+    glm::vec2 StartPosition;
     float X, Y;
 };
 
 struct GetPreviewWindowSizeEvent : public oo::Event
 {
+    glm::vec2 StartPosition;
+    float Width, Height;
+};
+
+struct PreviewWindowImageResizeEvent : public oo::Event 
+{
+    glm::vec2 StartPosition;
     float Width, Height;
 };
 

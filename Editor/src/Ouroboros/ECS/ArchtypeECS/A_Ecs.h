@@ -551,12 +551,12 @@ namespace Ecs::internal
 			//const ComponentInfo* mtCp1 = mergarray[i].mtype;
 
 			//pointer for old location in old chunk
-			void* ptrOld = (void*)((byte*)oldChunk + oldClist->components[mergarray[i].idxOld].chunkOffset + 
-				(mergarray[i].msize * oldindex));
+			void* ptrOld = (void*)((byte*)oldChunk + (int)(oldClist->components[mergarray[i].idxOld].chunkOffset) + 
+				(mergarray[i].msize * (long)oldindex));
 
 			//pointer for new location in new chunk
-			void* ptrNew = (void*)((byte*)newChunk + newClist->components[mergarray[i].idxNew].chunkOffset + 
-				(mergarray[i].msize * newindex));
+			void* ptrNew = (void*)((byte*)newChunk + (int)(newClist->components[mergarray[i].idxNew].chunkOffset) +
+				(mergarray[i].msize * (long)newindex));
 
 			//memcopy component data from old to new
 			//memcpy(ptrNew, ptrOld, mergarray[i].msize);
@@ -632,11 +632,11 @@ namespace Ecs::internal
 
 			//pointer for old location in old chunk
 			void* ptrOriginal = (void*)((byte*)originalChunk + componentList[i].chunkOffset +
-				(componentList[i].type->size * originalindex));
+				(componentList[i].type->size * (long)originalindex));
 
 			//pointer for new location in new chunk
 			void* ptrCopy = (void*)((byte*)copyChunk + componentList[i].chunkOffset +
-				(componentList[i].type->size * copyindex));
+				(componentList[i].type->size * (long)copyindex));
 
 			//memcopy component data from old to new
 			//memcpy(ptrNew, ptrOld, mergarray[i].msize);
@@ -1062,7 +1062,7 @@ namespace Ecs::internal
 					const ComponentInfo* mtype = cmp.type;
 
 					if (!mtype->is_empty()) {
-						void* ptr = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * index));
+						void* ptr = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * (long)index));
 
 						mtype->constructor(ptr);
 					}
@@ -1102,13 +1102,13 @@ namespace Ecs::internal
 			const ComponentInfo* mtype = cmp.type;
 			//if component has data
 			if (!mtype->is_empty()) {
-				void* ptr = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * index));
+				void* ptr = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * (long)index));
 
 				mtype->destructor(ptr);
 
 				if (bPop) {
 					//last index
-					void* lastindex = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * popIndex));
+					void* lastindex = (void*)((byte*)chunk + cmp.chunkOffset + (mtype->size * (long)popIndex));
 					//copy last to deleted's location
 					memcpy(ptr, lastindex, mtype->size);
 				}

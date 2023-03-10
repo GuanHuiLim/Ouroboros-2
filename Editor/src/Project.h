@@ -22,6 +22,9 @@ public:
 	//renderer settings
 	static void LoadRendererSettingFile();
 	static void SaveRendererSettingFile();
+	//physics layer names
+	static void LoadLayerNames();
+	static void SaveLayerNames();
 
 	static std::filesystem::path GetInputFilePath() { return GetProjectFolder() / InputFileName; };
 	static std::filesystem::path GetScriptSequencePath() { return GetProjectFolder() / ScriptSequenceFileName; };
