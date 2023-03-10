@@ -654,10 +654,11 @@ namespace oo
         // TODO : additional call to get viewport of window instead!
         //editorGameViewCallback(viewport_x, viewport_y, mouse_x, mouse_y);
 
-        glm::vec3 worldpos{ static_cast<float>(mouse_x),static_cast<float>(mouse_y), 0 };
+        glm::vec3 screenPosition{ static_cast<float>(mouse_x),static_cast<float>(mouse_y), 0 };
         // convert to -1 to 1
-        worldpos.x = (worldpos.x / viewport_x) * 2.0f - 1.0f;
-        worldpos.y = -(worldpos.y / viewport_y) * 2.0f + 1.0f;
+        glm::vec3 clipPosition{ 0 };
+        clipPosition.x = (screenPosition.x / viewport_x) * 2.0f - 1.0f;
+        clipPosition.y = -(screenPosition.y / viewport_y) * 2.0f + 1.0f;
 
         auto& transform = cameraTf;
         // camera's Project Matrix
@@ -672,18 +673,24 @@ namespace oo
         //// we use the camera's Z as the starting point.
         //return { {point.x, point.y, cameraTf->GetGlobalPosition().z}, dir };
 
-        ////TODO: store the inverse of the camera
-        float xProj = -1.0f / proj[0][0];
-        float yProj = 1.0f / proj[1][1];
-        float zProj = 1.0f / proj[2][2];
-        //oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
-        worldpos.x = pos.x + worldpos.x * xProj;
-        worldpos.y = pos.y + worldpos.y * yProj;
-        worldpos.z = pos.z + worldpos.z * zProj;
-        
-        worldpos += transform->GlobalForward();
+        glm::vec4 viewPosition = glm::inverse(proj) * glm::vec4{ clipPosition, 1 };
+        viewPosition.z = -1.f;
 
-        return { worldpos, glm::normalize(worldpos - pos)};
+        glm::vec4 world_pos = glm::inverse(camera.matrices.view) * viewPosition;
+        glm::vec3 divided_pos = glm::vec3{ world_pos } / world_pos.w;
+
+        //////TODO: store the inverse of the camera
+        //float xProj = -1.0f / proj[0][0];
+        //float yProj = 1.0f / proj[1][1];
+        //float zProj = 1.0f / proj[2][2];
+        ////oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
+        //worldpos.x = pos.x + worldpos.x * xProj;
+        //worldpos.y = pos.y + worldpos.y * yProj;
+        //worldpos.z = pos.z + worldpos.z * zProj;
+        //
+        //worldpos += transform->GlobalForward();
+
+        return { pos, glm::normalize(divided_pos - pos)};
     }
 
     void UISystem::OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt)
