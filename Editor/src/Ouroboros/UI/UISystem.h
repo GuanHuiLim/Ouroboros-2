@@ -74,7 +74,7 @@ namespace oo
 
         inline static bool UIDebugDraw = true;
         inline static bool UIDebugRaycast = false;
-
+        inline static bool UIDebugPrint = false;
     private:
         //GameObject selectedButton;
 
