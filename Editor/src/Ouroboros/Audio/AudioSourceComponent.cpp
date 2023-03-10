@@ -80,7 +80,9 @@ namespace oo
     void AudioSourceComponent::SetMuted(bool m)
     {
         muted = m;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setMute(m));
     }
 
     void AudioSourceComponent::SetPlayOnAwake(bool p)
@@ -91,31 +93,41 @@ namespace oo
     void AudioSourceComponent::SetLoop(bool l)
     {
         loop = l;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setLoopCount(l ? -1 : 0));
     }
 
     void oo::AudioSourceComponent::SetLoopBegin(unsigned int t)
     {
         loopBegin = t;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setLoopPoints(t, FMOD_TIMEUNIT_MS, loopEnd, FMOD_TIMEUNIT_MS));
     }
 
     void oo::AudioSourceComponent::SetLoopEnd(unsigned int t)
     {
         loopEnd = t;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setLoopPoints(loopBegin, FMOD_TIMEUNIT_MS, t, FMOD_TIMEUNIT_MS));
     }
 
     void AudioSourceComponent::SetVolume(float v)
     {
         volume = v;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setVolume(v));
     }
 
     void AudioSourceComponent::SetPitch(float p)
     {
         pitch = p;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setPitch(p));
     }
 
     void AudioSourceComponent::SetPlaybackTime(float t)
@@ -140,7 +152,12 @@ namespace oo
         FMOD::Sound* sound = audio::GetSound(audioClip.GetData<SoundID>());
         FMOD_ERR_HAND(audio::GetSystem()->playSound(sound, nullptr, false, &channel));
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
-        FMOD_ERR_HAND(channel->setVolume(0)); // initialise volume at 0 to prevent spiking
+        SetMuted(muted);
+        SetLoop(loop);
+        SetLoopBegin(loopBegin);
+        SetLoopEnd(loopEnd);
+        SetVolume(volume);
+        SetPitch(pitch);
     }
 
     void AudioSourceComponent::Stop()
@@ -163,10 +180,5 @@ namespace oo
         if (!channel)
             return;
         FMOD_ERR_HAND(channel->setPaused(false));
-    }
-
-    void oo::AudioSourceComponent::ClearDirty()
-    {
-        isDirty = false;
     }
 }

@@ -101,18 +101,6 @@ namespace oo
                     auto tfPos = tf.GetGlobalPosition();
                     FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
                     as.GetChannel()->set3DAttributes(&fmPos, nullptr);
-
-                    // Check dirty flag
-                    if (as.IsDirty())
-                    {
-                        // Update all
-                        FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
-                        FMOD_ERR_HAND(as.GetChannel()->setLoopCount(as.IsLoop() ? -1 : 0));
-                        FMOD_ERR_HAND(as.GetChannel()->setVolume(as.GetVolume()));
-                        FMOD_ERR_HAND(as.GetChannel()->setPitch(as.GetPitch()));
-                        FMOD_ERR_HAND(as.GetChannel()->setLoopPoints(as.GetLoopBegin(), FMOD_TIMEUNIT_MS, as.GetLoopEnd(), FMOD_TIMEUNIT_MS));
-                        as.ClearDirty();
-                    }
                 });
             }
         }
