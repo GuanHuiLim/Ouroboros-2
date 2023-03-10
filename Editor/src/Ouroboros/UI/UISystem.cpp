@@ -544,7 +544,8 @@ namespace oo
                     if (selectedButtonPointer != nullptr /*&& selectedButtonPointer->IsInteractable()*/)
                     {
                         auto& name = currSelectedUI.Name();
-                        LOG_TRACE("newly selected UI {0}", name);
+                        if (UIDebugPrint)
+                            LOG_TRACE("newly selected UI {0}", name);
 
                         UpdateButtonCallback(currSelectedUI.GetInstanceID(), &currSelectedUI.GetComponent<UIRaycastComponent>(), true);
                         m_prevSelectedUI = currSelectedUI;
@@ -583,7 +584,8 @@ namespace oo
             raycastComp->HasEntered = true;
             e.Type = UIButtonEventType::ON_POINTER_ENTER;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On pointer enter!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On pointer enter!");
             //raycastComp->InvokeButtonEvent("OnPointerEnter");
             //if (!raycastComp->IsInteractable()) // for if OnPointerEnter sets interactable false
             //    return false;
@@ -597,7 +599,8 @@ namespace oo
                 raycastComp->IsPressed = false;
                 e.Type = UIButtonEventType::ON_RELEASE;
                 EventManager::Broadcast<UIButtonEvent>(&e);
-                LOG_TRACE("UI On Release!");
+                if (UIDebugPrint)
+                    LOG_TRACE("UI On Release!");
                 //raycastComp->InvokeButtonEvent("OnRelease");
                 //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
                 //    return false;
@@ -605,7 +608,8 @@ namespace oo
             raycastComp->HasEntered = false;
             e.Type = UIButtonEventType::ON_POINTER_EXIT;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Pointer Exit!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Pointer Exit!");
             //raycastComp->InvokeButtonEvent("OnPointerExit");
             return false;
         }
@@ -617,7 +621,8 @@ namespace oo
             raycastComp->IsPressed = true;
             e.Type = UIButtonEventType::ON_PRESS;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Press!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Press!");
             //raycastComp->InvokeButtonEvent("OnPress");
             //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
             //    return false;
@@ -626,7 +631,8 @@ namespace oo
         {
             e.Type = UIButtonEventType::ON_CLICK;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Click!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Click!");
             //raycastComp->InvokeButtonEvent("OnClick");
             // isInteractable check since OnClick could disable the button,
             //if so OnRelease already invoked, shouldn't be invoked again after OnInteractDisabled
@@ -636,7 +642,8 @@ namespace oo
             raycastComp->IsPressed = false;
             e.Type = UIButtonEventType::ON_RELEASE;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Release!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Release!");
             //raycastComp->InvokeButtonEvent("OnRelease");
             //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
             //    return false;
