@@ -40,11 +40,8 @@ namespace oo
         EventManager::Subscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
         //EventManager::Subscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
         //EventManager::Subscribe<ScriptSystem, PhysicsCollisionEvent>(this, &ScriptSystem::OnCollisionEvent);
-
         EventManager::Subscribe<ScriptSystem, PhysicsTriggersEvent>(this, &ScriptSystem::OnTriggerAllEvent);
         EventManager::Subscribe<ScriptSystem, PhysicsCollisionsEvent>(this, &ScriptSystem::OnCollisionAllEvent);
-        EventManager::Subscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
-        EventManager::Subscribe<ScriptSystem, PhysicsCollisionEvent>(this, &ScriptSystem::OnCollisionEvent);
 
         EventManager::Subscribe<ScriptSystem, UIButtonEvent>(this, &ScriptSystem::OnUIButtonEvent);
     }
@@ -61,7 +58,6 @@ namespace oo
         EventManager::Unsubscribe<ScriptSystem, PhysicsTickEvent>(this, &ScriptSystem::OnPhysicsTick);
         //EventManager::Unsubscribe<ScriptSystem, PhysicsTriggerEvent>(this, &ScriptSystem::OnTriggerEvent);
         //EventManager::Unsubscribe<ScriptSystem, PhysicsCollisionEvent>(this, &ScriptSystem::OnCollisionEvent);
-
         EventManager::Unsubscribe<ScriptSystem, PhysicsTriggersEvent>(this, &ScriptSystem::OnTriggerAllEvent);
         EventManager::Unsubscribe<ScriptSystem, PhysicsCollisionsEvent>(this, &ScriptSystem::OnCollisionAllEvent);
 
@@ -685,6 +681,7 @@ namespace oo
         //{
         //    OnCollisionEvent(&ev);
         //}
+        //return;
 
         struct TempContactPoint
         {
@@ -762,16 +759,16 @@ namespace oo
                 search2->second.emplace_back(CallbackData{ collisionData1, ev.State });
         }
 
-        //MonoMethod* onEnterMethod = nullptr;
-        //MonoMethod* onStayMethod = nullptr;
-        //MonoMethod* onExitMethod = nullptr;
+        MonoMethod* onEnterMethod = nullptr;
+        MonoMethod* onStayMethod = nullptr;
+        MonoMethod* onExitMethod = nullptr;
 
         typedef void(__stdcall* CollisionFunction)(MonoObject*, MonoObject*, MonoException**);
         CollisionFunction onEnterThunk = nullptr;
         CollisionFunction onStayThunk = nullptr;
         CollisionFunction onExitThunk = nullptr;
 
-        scriptDatabase.ForAllEnabledByClass([&scriptDataMap, &onEnterThunk, &onStayThunk, &onExitThunk](UUID uuid, MonoObject* script)
+        scriptDatabase.ForAllEnabledByClass([&](UUID uuid, MonoObject* script)
             {
                 auto dataSearch = scriptDataMap.find(uuid);
                 if (dataSearch == scriptDataMap.end())
@@ -780,38 +777,29 @@ namespace oo
 
                 for (CallbackData& data : callbackData)
                 {
-                    //void* params[1];
-                    //params[0] = data.data;
                     switch (data.state)
                     {
                     case PhysicsEventState::ENTER:
-                    {
                         ScriptEngine::InvokeFunctionThunk(script, onEnterThunk, data.data);
-                        //ScriptEngine::InvokeFunction(script, onEnterMethod, params);
-                    }
-                    break;
+                        break;
                     case PhysicsEventState::STAY:
-                    {
                         ScriptEngine::InvokeFunctionThunk(script, onStayThunk, data.data);
-                        //ScriptEngine::InvokeFunction(script, onStayMethod, params);
-                    }
-                    break;
+                        break;
                     case PhysicsEventState::EXIT:
-                    {
                         ScriptEngine::InvokeFunctionThunk(script, onExitThunk, data.data);
-                        //ScriptEngine::InvokeFunction(script, onExitMethod, params);
-                    }
-                    break;
+                        break;
                     }
                 }
-            }, [&onEnterThunk, &onStayThunk, &onExitThunk](MonoClass* klass)
+            }, [&](MonoClass* klass)
             {
-                MonoMethod* onEnterMethod = ScriptEngine::GetFunction(klass, "OnCollisionEnter", 1);
+                onEnterMethod = ScriptEngine::GetFunction(klass, "OnCollisionEnter", 1);
                 onEnterThunk = (onEnterMethod == nullptr) ? nullptr : static_cast<CollisionFunction>(mono_method_get_unmanaged_thunk(onEnterMethod));
-                MonoMethod* onStayMethod = ScriptEngine::GetFunction(klass, "OnCollisionStay", 1);
-                onEnterThunk = (onStayMethod == nullptr) ? nullptr : static_cast<CollisionFunction>(mono_method_get_unmanaged_thunk(onStayMethod));
-                MonoMethod* onExitMethod = ScriptEngine::GetFunction(klass, "OnCollisionExit", 1);
-                onEnterThunk = (onExitMethod == nullptr) ? nullptr : static_cast<CollisionFunction>(mono_method_get_unmanaged_thunk(onExitMethod));
+
+                onStayMethod = ScriptEngine::GetFunction(klass, "OnCollisionStay", 1);
+                onStayThunk = (onStayMethod == nullptr) ? nullptr : static_cast<CollisionFunction>(mono_method_get_unmanaged_thunk(onStayMethod));
+
+                onExitMethod = ScriptEngine::GetFunction(klass, "OnCollisionExit", 1);
+                onExitThunk = (onExitMethod == nullptr) ? nullptr : static_cast<CollisionFunction>(mono_method_get_unmanaged_thunk(onExitMethod));
                 return onEnterMethod != nullptr || onStayMethod != nullptr || onExitMethod != nullptr;
             });
     }

@@ -274,6 +274,7 @@ namespace oo
                     MonoClass* klass = mono_object_get_class(object);
                     if(!classFilter(klass))
                         break;
+                    classChecked = true;
                 }
 
                 callback(uuid, object);
