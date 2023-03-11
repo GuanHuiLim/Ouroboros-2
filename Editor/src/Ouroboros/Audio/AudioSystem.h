@@ -16,6 +16,7 @@ Technology is prohibited.
 
 #include "App/Editor/Events/LoadSceneEvent.h"
 #include "App/Editor/Events/UnloadSceneEvent.h"
+#include "Ouroboros/Audio/AudioSourceComponent.h"
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/ECS/GameObjectComponent.h"
 #include "Ouroboros/Scene/Scene.h"
@@ -37,6 +38,7 @@ namespace oo
         /* Functions                                                                   */
         /* --------------------------------------------------------------------------- */
 
+        void Init();
         virtual void Run(Ecs::ECSWorld* world) override;
 
     private:
@@ -68,5 +70,7 @@ namespace oo
         void onUnloadScene(UnloadSceneEvent* e);
         void onObjectEnabled(GameObjectComponent::OnEnableEvent* e);
         void onObjectDisabled(GameObjectComponent::OnDisableEvent* e);
+        //void onAudioSourceAdd(Ecs::ComponentEvent<AudioSourceComponent>* e);
+        void onAudioSourceRemove(Ecs::ComponentEvent<AudioSourceComponent>* e);
     };
 }

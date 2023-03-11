@@ -18,7 +18,6 @@ Technology is prohibited.
 
 #include "Ouroboros/Audio/Audio.h"
 #include "Ouroboros/Audio/AudioListenerComponent.h"
-#include "Ouroboros/Audio/AudioSourceComponent.h"
 #include "Ouroboros/ECS/ECS.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
@@ -40,6 +39,15 @@ namespace oo
         EventManager::Unsubscribe<AudioSystem, UnloadSceneEvent>(this, &AudioSystem::onUnloadScene);
         EventManager::Unsubscribe<AudioSystem, GameObjectComponent::OnEnableEvent>(this, &AudioSystem::onObjectEnabled);
         EventManager::Unsubscribe<AudioSystem, GameObjectComponent::OnDisableEvent>(this, &AudioSystem::onObjectDisabled);
+    }
+
+    void AudioSystem::Init()
+    {
+        /*m_world->SubscribeOnAddComponent<AudioSystem, AudioSourceComponent>(
+            this, &AudioSystem::onObjectEnabled);*/
+
+        scene->GetWorld().SubscribeOnRemoveComponent<AudioSystem, AudioSourceComponent>(
+            this, &AudioSystem::onAudioSourceRemove);
     }
 
     void AudioSystem::Run(Ecs::ECSWorld* world)
@@ -200,5 +208,10 @@ namespace oo
             return;
 
         go->GetComponent<AudioSourceComponent>().Stop();
+    }
+
+    void AudioSystem::onAudioSourceRemove(Ecs::ComponentEvent<AudioSourceComponent>* e)
+    {
+        e->component.Stop();
     }
 }
