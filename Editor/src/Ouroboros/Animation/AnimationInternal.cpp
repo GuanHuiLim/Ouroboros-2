@@ -1147,7 +1147,6 @@ namespace oo::Anim::internal
 			t_info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
 		TRACY_PROFILE_SCOPE_END();
 		
-		TRACY_PROFILE_SCOPE_END();
 		/*--------------------------------
 		set related game object's data - not set here anymore
 		--------------------------------*/
@@ -1296,7 +1295,6 @@ namespace oo::Anim::internal
 			t_info.progressTracker.timeline->rttr_type, prevKeyframe.data, nextKeyframe.data, percentage);
 		TRACY_PROFILE_SCOPE_END();
 
-		TRACY_PROFILE_SCOPE_END();
 		/*--------------------------------
 		set related game object's data - not set here anymore
 		--------------------------------*/
