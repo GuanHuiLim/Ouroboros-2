@@ -29,6 +29,13 @@ namespace Ouroboros
             get { return AudioClip_GetLength(soundID); }
         }
 
+        [DllImport("__Internal")] private static extern uint AudioClip_GetSampleCount(short id);
+
+        public float samples
+        {
+            get { return AudioClip_GetSampleCount(soundID); }
+        }
+
         public static AudioClip[] GetAll()
         {
             return GetByType<AudioClip>(Type.Audio);
