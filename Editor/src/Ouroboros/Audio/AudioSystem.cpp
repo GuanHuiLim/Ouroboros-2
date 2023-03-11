@@ -102,13 +102,12 @@ namespace oo
                 static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
                 world->for_each(query, [&](AudioSourceComponent& as, TransformComponent& tf)
                 {
-                    if (!as.GetChannel())
-                        return;
-
                     // Set 3D position
                     auto tfPos = tf.GetGlobalPosition();
                     FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
-                    as.GetChannel()->set3DAttributes(&fmPos, nullptr);
+                    as.Set3DPosition(tfPos.x, tfPos.y, tfPos.z);
+                    if (as.GetChannel())
+                        as.GetChannel()->set3DAttributes(&fmPos, nullptr);
                 });
             }
         }
@@ -181,6 +180,9 @@ namespace oo
 
         if (!go->HasComponent<AudioSourceComponent>())
             return;
+
+        auto tfPos = go->Transform().GetGlobalPosition();
+        go->GetComponent<AudioSourceComponent>().Set3DPosition(tfPos.x, tfPos.y, tfPos.z);
 
         if (go->GetComponent<AudioSourceComponent>().IsPlayOnAwake())
             go->GetComponent<AudioSourceComponent>().Play();

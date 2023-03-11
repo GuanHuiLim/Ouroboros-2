@@ -159,6 +159,8 @@ namespace oo
         FMOD::Sound* sound = audio::GetSound(audioClip.GetData<SoundID>());
         FMOD_ERR_HAND(audio::GetSystem()->playSound(sound, nullptr, false, &channel));
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
+        FMOD_VECTOR fmPos = { .x = posX, .y = posY, .z = posZ };
+        FMOD_ERR_HAND(channel->set3DAttributes(&fmPos, nullptr));
         SetMuted(muted);
         SetLoop(loop);
         SetLoopBegin(loopBegin);
