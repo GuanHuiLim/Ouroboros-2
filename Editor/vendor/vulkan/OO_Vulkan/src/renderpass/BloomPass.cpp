@@ -267,19 +267,6 @@ void BloomPass::Draw()
 			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
 			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);	
 
-		auto& colSettings = vr.currWorld->colourSettings;
-		ColourCorrectPC pc;
-		pc.threshold = glm::vec2{ colSettings.shadowThreshold ,colSettings.highlightThreshold };
-		pc.shadowCol = colSettings.shadowColour;
-		pc.midCol = colSettings.midtonesColour;
-		pc.highCol = colSettings.highlightColour;
-
-		pc.shadowCol.a /= 1000.0f;
-		pc.midCol.a /= 1000.0f;
-		pc.highCol.a /= 1000.0f;
-
-		vkCmdPushConstants(cmdlist, PSOLayoutDB::BloomLayout, VK_SHADER_STAGE_ALL, 0, sizeof(ColourCorrectPC), &pc);
-
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::BloomLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
 		vkCmdDispatch(cmdlist, (outputBuffer ->width-1) / 16 + 1, (outputBuffer ->height-1) / 16 + 1, 1);
 	}
