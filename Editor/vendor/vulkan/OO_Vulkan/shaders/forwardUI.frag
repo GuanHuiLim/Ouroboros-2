@@ -82,7 +82,11 @@ void main()
         //tempcol.a = min(50.0/255.0 * tempcol.a, 1.0);
         outfragCol.rgb = outfragCol.rgb * inColor.rgb;
         outfragCol.a = outfragCol.a * tempcol.a;
-        outfragCol.rgb = pow(outfragCol.rgb,vec3(2.2));
+
+        // will be corrected during tone mapping
+        const float gamma = 2.2;
+	    //outfragCol.rgb =  pow(outfragCol.rgb, vec3(1.0/gamma));
+        // handled in post processing
         //outfragCol.rgb = pow(outfragCol.rgb,vec3(2.2));
     }
 
