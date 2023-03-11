@@ -34,6 +34,9 @@ namespace oo::Anim
 		//std::vector<Node> nodes;
 		UID treeID{ internal::invalid_ID };
 		size_t max_blended_anims{ 1 };
+
+
+		float default_quick_blend_duration{ 0.15f };
 	
 		RTTR_ENABLE();
 
