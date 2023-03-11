@@ -31,7 +31,7 @@ namespace Ouroboros
 
         [DllImport("__Internal")] private static extern uint AudioClip_GetSampleCount(short id);
 
-        public float samples
+        public uint samples
         {
             get { return AudioClip_GetSampleCount(soundID); }
         }
