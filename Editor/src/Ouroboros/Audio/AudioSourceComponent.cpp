@@ -144,6 +144,13 @@ namespace oo
         FMOD_ERR_HAND(channel->setPosition(t, FMOD_TIMEUNIT_PCM));
     }
 
+    void AudioSourceComponent::Set3DPosition(float x, float y, float z)
+    {
+        posX = x;
+        posY = y;
+        posZ = z;
+    }
+
     void AudioSourceComponent::Play()
     {
         if (!audioClip.IsValid())
