@@ -118,6 +118,7 @@ namespace oo::Anim
 			.property("name", &AnimationTree::name)
 			.property("treeID", &AnimationTree::treeID)
 			.property("max_blended_anims", &AnimationTree::max_blended_anims)
+			.property("default_quick_blend_duration", &AnimationTree::default_quick_blend_duration)
 			.method(internal::serialize_method_name, &internal::SerializeTree)
 			.method(internal::load_method_name, &internal::LoadTree)
 			;

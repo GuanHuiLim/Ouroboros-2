@@ -1,8 +1,8 @@
 float pi = 3.1415;
-float EPSILON = 0.0001;
+
 float approx_tan(vec3 V, vec3 N)
 {
-    float VN = clamp(dot(V,N),EPSILON,1.0);
+    float VN = clamp(dot(V,N),0.0,1.0);
     return sqrt( 1.0-pow(VN,2) )/VN;
 }
 
@@ -74,30 +74,19 @@ vec3 BeckhamBRDF(vec3 L ,vec3 V , vec3 H , vec3 N , float alpha , vec3 Kd , vec3
 
 float D_GGX(vec3 N, vec3 H , float alpha)
 {
-    //float alphaG = sqrt(2.0/ (alpha+2));
-    float alphaG = alpha;
+    float alphaG = sqrt(2.0/ (alpha+2));
+    alphaG = alpha;
     float aGaG = pow(alphaG,2);
-    //float invAG = pow(alphaG-1.0,2);
+    float invAG = pow(alphaG-1.0,2);
     float NdotH = dot(N,H);
-    float NdotH_sqr = NdotH * NdotH;
 
-    float internalCacl = NdotH_sqr * (aGaG - 1.0);
-
-    //if (internalCacl == -1.0)
-    //{
-    //    return 1.0;
-    //}
-
-    float denom = (pi * pow( internalCacl + 1.0 , 2));
-    float result = aGaG / (denom+0.0001);
-    
-    return result;
+    return aGaG / (pi*pow( NdotH*NdotH*(aGaG-1.0) + 1.0  , 2));
 }
 
 float G_GGX(vec3 V, vec3 M , float a)
 {
-    //float alphaG = sqrt(2.0/ (a+2));
-    float alphaG = a;
+    float alphaG = sqrt(2.0/ (a+2));
+    alphaG = a;
 
     float vTan = approx_tan(V,M);
 
@@ -107,14 +96,10 @@ float G_GGX(vec3 V, vec3 M , float a)
 vec3 GGXBRDF(vec3 L ,vec3 V , vec3 H , vec3 N , float alpha , vec3 Kd , vec3 Ks)
 {
     float LH = dot(L,H);
-
-    alpha = clamp(alpha, 0.001, 0.999);
     
     float D = D_GGX(N,H,alpha);
     vec3 F = Ks + (1.0-Ks) * pow(1-LH,5);
     float G = G_GGX(L,H,alpha) * G_GGX(V,H,alpha);
     
-    vec3 result = Kd / pi + D * F / 4.0 * G;   
-
-    return result;
+    return Kd/pi + D*F/4.0 * G;
 }

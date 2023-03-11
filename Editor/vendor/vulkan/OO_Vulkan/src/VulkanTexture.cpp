@@ -799,19 +799,4 @@ namespace vkutils
 		texture.currentLayout = targetLayout;
 	}
 
-	void ComputeImageBarrier(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout)
-	{
-		oGFX::vkutils::tools::insertImageMemoryBarrier(
-			cmd,
-			texture.image,
-			VK_ACCESS_MEMORY_WRITE_BIT,
-			VK_ACCESS_MEMORY_READ_BIT,
-			texture.currentLayout,
-			targetLayout,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-		texture.currentLayout = targetLayout;
-	}
-
 }

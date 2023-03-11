@@ -481,6 +481,10 @@ void AnimatorControllerView::DisplayInspector()
         static float h = 300.0f;
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         ImGui::BeginChild("Nodes/Links", ImVec2(0, h));
+
+        ImGui::Text("Misc Settings");
+        DisplayMiscSettings();
+        
         if (nodeCount != 0)
         {
             static ImGuiID open = 0;
@@ -551,16 +555,20 @@ void AnimatorControllerView::DisplayInspector()
             }
         }
         ImGui::EndChild();
+
+   
+        
         ImGui::Button("##hsplitter", ImVec2(-1, 4.0f));
         if (ImGui::IsItemActive())
-            h += ImGui::GetIO().MouseDelta.y;
+            h += ImGui::GetIO().MouseDelta.y;        
+        
         ImGui::BeginChild("Parameters", ImVec2(0, 0));
         ImGui::Text("Parameters");
         DisplayParameters();
         ImGui::EndChild();
-        ImGui::PopStyleVar();
-
         
+        
+        ImGui::PopStyleVar();
         ImGui::End();
     }
 }
@@ -823,6 +831,21 @@ void AnimatorControllerView::DisplayConditions(oo::Anim::Link* link)
         }
         ImGui::EndPopup();
     }
+}
+
+void AnimatorControllerView::DisplayMiscSettings()
+{
+    ImGui::PushItemWidth(-160);
+    ImGui::Text("Quick Blend Duration");
+
+    ImGui::SameLine();
+    ImGui::PushItemWidth(-1);
+    float temp = animator->GetActualComponent().animTree->default_quick_blend_duration;
+    if (ImGui::DragFloat("##", &temp))
+        animator->GetActualComponent().animTree->default_quick_blend_duration = temp;
+    ImGui::PopItemWidth();
+
+    ImGui::PopItemWidth();
 }
 
 AnimatorControllerView::NodeInfo* AnimatorControllerView::CreateNode(oo::Anim::Node* _anim_node)
