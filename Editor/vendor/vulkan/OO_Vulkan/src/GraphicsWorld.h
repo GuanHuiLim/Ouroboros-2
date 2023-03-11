@@ -251,12 +251,6 @@ public:
         float biasMultiplier = 0.002f;
     }lightSettings{};
 
-    struct BloomSettings
-    {
-        float threshold = 1.1f;
-        float softThreshold = 0.5f;
-    }bloomSettings{};
-
     friend class VulkanRenderer;
 private:
     int32_t m_entityCount{};
