@@ -143,12 +143,14 @@ namespace oo
         if (isEditor)
             return;
 
+        audio::StopAll(); // failsafe
         playAllOnAwake();
     }
 
     void AudioSystem::onUnloadScene(UnloadSceneEvent* e)
     {
         stopAll();
+        audio::StopAll(); // failsafe
     }
 
     void AudioSystem::onObjectEnabled(GameObjectComponent::OnEnableEvent* e)

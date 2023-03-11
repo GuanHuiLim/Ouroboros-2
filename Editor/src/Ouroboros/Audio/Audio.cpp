@@ -143,6 +143,13 @@ namespace oo
             }
         }
 
+        void StopAll()
+        {
+            FMOD::ChannelGroup* master;
+            FMOD_ERR_HAND(system->getMasterChannelGroup(&master));
+            FMOD_ERR_HAND(master->stop());
+        }
+
         FMOD::Channel* PlayGlobalOneShot(const SoundID& id)
         {
             if (!sounds.at(id))
