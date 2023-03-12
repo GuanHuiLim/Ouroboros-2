@@ -184,7 +184,7 @@ void Inspector::Show()
 					ImGui::TableNextColumn();
 					for (size_t i = 0; i < names.size(); ++i)
 					{
-						ImGui::PushID(i);
+						ImGui::PushID(static_cast<int>(i));
 						ImGui::InputText("##Layer Name", &names[i]);
 						ImGui::TableNextColumn();
 						bool layerValue = layer[i];
