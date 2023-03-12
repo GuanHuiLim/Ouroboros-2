@@ -20,7 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Geometry/Shapes.h"
 
-class PreviewWindowImageResizeEvent;
+struct PreviewWindowImageResizeEvent;
 
 namespace oo
 {

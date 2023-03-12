@@ -428,7 +428,7 @@ void Project::SaveLayerNames()
 		rapidjson::Value names(rapidjson::kArrayType);
 		for (auto layer : oo::PhysicsSystem::LayerNames)
 		{
-			arr.PushBack(rapidjson::Value(layer.c_str(), layer.size(),doc.GetAllocator()), doc.GetAllocator());
+			arr.PushBack(rapidjson::Value(layer.c_str(), static_cast<rapidjson::SizeType>(layer.size()),doc.GetAllocator()), doc.GetAllocator());
 		}
 	}
 	else
@@ -436,7 +436,7 @@ void Project::SaveLayerNames()
 		rapidjson::Value names(rapidjson::kArrayType);
 		for (auto& layer : oo::PhysicsSystem::LayerNames)
 		{
-			names.PushBack(rapidjson::Value(layer.c_str(),layer.size(),doc.GetAllocator()), doc.GetAllocator());
+			names.PushBack(rapidjson::Value(layer.c_str(), static_cast<rapidjson::SizeType>(layer.size()),doc.GetAllocator()), doc.GetAllocator());
 		}
 		doc_val.AddMember("Layer Names", names,doc.GetAllocator());
 	}
