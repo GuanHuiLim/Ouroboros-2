@@ -840,13 +840,13 @@ namespace myPhysx
             //underlying_obj->m_shape->setContactOffset(1);
 
             // ATTACH THE SHAPE TO THE OBJECT
-            if (underlying_obj->rigid_type == rigid::rstatic) {
+            if (underlying_obj->rigid_type == rigid::rstatic && underlying_obj->m_shape != nullptr) {
                 underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
                 //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::ePLAYER, FilterGroup::eDEFAULT | FilterGroup::eENEMY | FilterGroup::eGROUND);
 
             }
 
-            else if (underlying_obj->rigid_type == rigid::rdynamic) {
+            else if (underlying_obj->rigid_type == rigid::rdynamic && underlying_obj->m_shape != nullptr) {
                 underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
                 //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eENEMY, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eGROUND);
 
@@ -1184,7 +1184,10 @@ namespace myPhysx
 
         // Construct the mesh with the cooking library
         PxDefaultMemoryOutputStream buffer;
+
+#pragma warning(disable : 26812)
         PxConvexMeshCookingResult::Enum result;
+#pragma warning(default : 26812)
 
         if (!mCooking->cookConvexMesh(convexDesc, buffer, &result))
             return NULL;
@@ -1510,7 +1513,7 @@ namespace myPhysx
             return underlying_obj->filterIn;
         }
 
-        // return default?
+        return 0;
     }
 
     std::uint32_t PhysicsObject::getFilterOut() const {
@@ -1522,7 +1525,7 @@ namespace myPhysx
             return underlying_obj->filterOut;
         }
 
-        // return default?
+        return 0;
     }
 
     void PhysicsObject::setMass(PxReal mass) {
