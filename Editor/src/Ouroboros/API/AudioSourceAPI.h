@@ -80,4 +80,11 @@ namespace oo
         audio::GetSound(id)->getLength(&length, FMOD_TIMEUNIT_MS);
         return static_cast<float>(length) / 1000;
     }
+
+    SCRIPT_API uint AudioClip_GetSampleCount(SoundID id)
+    {
+        unsigned int length = 0;
+        audio::GetSound(id)->getLength(&length, FMOD_TIMEUNIT_PCM);
+        return length;
+    }
 }

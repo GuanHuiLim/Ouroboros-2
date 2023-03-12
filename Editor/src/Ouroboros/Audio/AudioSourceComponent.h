@@ -60,6 +60,7 @@ namespace oo
         void SetPitch(float p);
         void SetPlaybackTime(float t);
         void SetPlaybackTimeSamples(unsigned int t);
+        void Set3DPosition(float x, float y, float z);
 
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
@@ -106,5 +107,8 @@ namespace oo
         FMOD::Channel* channel = nullptr;
         unsigned int loopBegin = 0;
         unsigned int loopEnd = 0;
+        float posX = 0;
+        float posY = 0;
+        float posZ = 0;
     };
 }

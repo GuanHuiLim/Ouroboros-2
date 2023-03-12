@@ -144,6 +144,13 @@ namespace oo
         FMOD_ERR_HAND(channel->setPosition(t, FMOD_TIMEUNIT_PCM));
     }
 
+    void AudioSourceComponent::Set3DPosition(float x, float y, float z)
+    {
+        posX = x;
+        posY = y;
+        posZ = z;
+    }
+
     void AudioSourceComponent::Play()
     {
         if (!audioClip.IsValid())
@@ -152,6 +159,8 @@ namespace oo
         FMOD::Sound* sound = audio::GetSound(audioClip.GetData<SoundID>());
         FMOD_ERR_HAND(audio::GetSystem()->playSound(sound, nullptr, false, &channel));
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
+        FMOD_VECTOR fmPos = { .x = posX, .y = posY, .z = posZ };
+        FMOD_ERR_HAND(channel->set3DAttributes(&fmPos, nullptr));
         SetMuted(muted);
         SetLoop(loop);
         SetLoopBegin(loopBegin);
