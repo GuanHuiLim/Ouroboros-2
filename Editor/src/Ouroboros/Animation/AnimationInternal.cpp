@@ -1688,9 +1688,11 @@ namespace oo::Anim::internal
 		//info.tracker.transition_info.transition_duration = 0.5f;
 		//info.tracker.transition_info.transition_duration = link->transition_duration;
 
-		//remove later on when transitions can be manualkly adjusted!!!
-		info.tracker.transition_info.quick_blend_duration = info.comp.animTree->default_quick_blend_duration;
+		//remove later on when transitions can be manually adjusted!!!
+		//info.tracker.transition_info.quick_blend_duration = info.comp.animTree->default_quick_blend_duration;
 		//-------------------------------------------------------------------
+		info.tracker.transition_info.quick_blend_duration = link->quick_blend_duration;
+
 		
 		info.tracker.transition_info.trackers = link->dst->trackers;
 		info.tracker.transition_info.pose_index = AnimationSkeleton::NEXT_POSE_INDEX;

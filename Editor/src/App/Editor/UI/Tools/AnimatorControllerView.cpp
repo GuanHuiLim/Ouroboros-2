@@ -482,8 +482,7 @@ void AnimatorControllerView::DisplayInspector()
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         ImGui::BeginChild("Nodes/Links", ImVec2(0, h));
 
-        ImGui::Text("Misc Settings");
-        DisplayMiscSettings();
+        
         
         if (nodeCount != 0)
         {
@@ -546,13 +545,22 @@ void AnimatorControllerView::DisplayInspector()
                         ImGui::Text("Transition Duration");
                         ImGui::SameLine(textsize.x * 25);
                         ImGui::InputFloat("##transitionduration", &id->link->transition_duration, 0.0f, 0.0f, "%.2f");
-
+                        //quick_blend_duration setting
+                        ImGui::Text("Quick Blend Duration");
+                        ImGui::SameLine(textsize.x * 25);
+                        ImGui::InputFloat("##quick_blend_duration", &id->link->quick_blend_duration, 0.0f, 0.0f, "%.2f");
+                        
                     }
                     ImGui::TreePop();
                 }
                 ImGui::Separator();
                 DisplayConditions(id->link);
             }
+        }
+        else
+        {
+            ImGui::Text("Misc Settings");
+            DisplayMiscSettings();
         }
         ImGui::EndChild();
 
