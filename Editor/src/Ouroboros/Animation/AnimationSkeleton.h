@@ -47,7 +47,7 @@ namespace oo::Anim
 		{
 			if (uid_to_boneIndex.contains(boneID) == false)
 			{
-				uid_to_boneIndex[boneID] = static_cast<unsigned int>(bones.size());
+				uid_to_boneIndex[boneID] = static_cast<uint>(bones.size());
 				bones.emplace_back();
 				bones.back().boneID = boneID;
 			}
