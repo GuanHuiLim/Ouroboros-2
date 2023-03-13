@@ -77,6 +77,11 @@ namespace oo
         /// <param name="id">The ID of the sound.</param>
         void FreeSound(const SoundID& id);
 
+        /// <summary>
+        /// Stops all sounds.
+        /// </summary>
+        void StopAll();
+
         /* --------------------------------------------------------------------------- */
         /* Global Audio                                                                */
         /*                                                                             */

@@ -389,7 +389,8 @@ namespace oo
         // check for lights
         auto go = m_scene->FindWithInstanceID(e->Id);
         // assumption: Everything should have transform!
-        auto& tf = go->Transform().LocalMatrixDirty = true;
+        go->Transform().LocalMatrixDirty = true;
+        //auto& tf = go->Transform().LocalMatrixDirty = true;
         //tf.SetPosition(tf.GetPosition());
     }
 

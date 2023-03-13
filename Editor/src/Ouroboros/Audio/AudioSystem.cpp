@@ -18,7 +18,6 @@ Technology is prohibited.
 
 #include "Ouroboros/Audio/Audio.h"
 #include "Ouroboros/Audio/AudioListenerComponent.h"
-#include "Ouroboros/Audio/AudioSourceComponent.h"
 #include "Ouroboros/ECS/ECS.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/EventSystem/EventTypes.h"
@@ -40,6 +39,15 @@ namespace oo
         EventManager::Unsubscribe<AudioSystem, UnloadSceneEvent>(this, &AudioSystem::onUnloadScene);
         EventManager::Unsubscribe<AudioSystem, GameObjectComponent::OnEnableEvent>(this, &AudioSystem::onObjectEnabled);
         EventManager::Unsubscribe<AudioSystem, GameObjectComponent::OnDisableEvent>(this, &AudioSystem::onObjectDisabled);
+    }
+
+    void AudioSystem::Init()
+    {
+        /*m_world->SubscribeOnAddComponent<AudioSystem, AudioSourceComponent>(
+            this, &AudioSystem::onObjectEnabled);*/
+
+        scene->GetWorld().SubscribeOnRemoveComponent<AudioSystem, AudioSourceComponent>(
+            this, &AudioSystem::onAudioSourceRemove);
     }
 
     void AudioSystem::Run(Ecs::ECSWorld* world)
@@ -94,25 +102,12 @@ namespace oo
                 static Ecs::Query query = Ecs::make_query<AudioSourceComponent>();
                 world->for_each(query, [&](AudioSourceComponent& as, TransformComponent& tf)
                 {
-                    if (!as.GetChannel())
-                        return;
-
                     // Set 3D position
                     auto tfPos = tf.GetGlobalPosition();
                     FMOD_VECTOR fmPos = { .x = tfPos.x, .y = tfPos.y, .z = tfPos.z };
-                    as.GetChannel()->set3DAttributes(&fmPos, nullptr);
-
-                    // Check dirty flag
-                    if (as.IsDirty())
-                    {
-                        // Update all
-                        FMOD_ERR_HAND(as.GetChannel()->setMute(as.IsMuted()));
-                        FMOD_ERR_HAND(as.GetChannel()->setLoopCount(as.IsLoop() ? -1 : 0));
-                        FMOD_ERR_HAND(as.GetChannel()->setVolume(as.GetVolume()));
-                        FMOD_ERR_HAND(as.GetChannel()->setPitch(as.GetPitch()));
-                        FMOD_ERR_HAND(as.GetChannel()->setLoopPoints(as.GetLoopBegin(), FMOD_TIMEUNIT_MS, as.GetLoopEnd(), FMOD_TIMEUNIT_MS));
-                        as.ClearDirty();
-                    }
+                    as.Set3DPosition(tfPos.x, tfPos.y, tfPos.z);
+                    if (as.GetChannel())
+                        as.GetChannel()->set3DAttributes(&fmPos, nullptr);
                 });
             }
         }
@@ -155,12 +150,14 @@ namespace oo
         if (isEditor)
             return;
 
+        audio::StopAll(); // failsafe
         playAllOnAwake();
     }
 
     void AudioSystem::onUnloadScene(UnloadSceneEvent* e)
     {
         stopAll();
+        audio::StopAll(); // failsafe
     }
 
     void AudioSystem::onObjectEnabled(GameObjectComponent::OnEnableEvent* e)
@@ -183,6 +180,9 @@ namespace oo
 
         if (!go->HasComponent<AudioSourceComponent>())
             return;
+
+        auto tfPos = go->Transform().GetGlobalPosition();
+        go->GetComponent<AudioSourceComponent>().Set3DPosition(tfPos.x, tfPos.y, tfPos.z);
 
         if (go->GetComponent<AudioSourceComponent>().IsPlayOnAwake())
             go->GetComponent<AudioSourceComponent>().Play();
@@ -210,5 +210,10 @@ namespace oo
             return;
 
         go->GetComponent<AudioSourceComponent>().Stop();
+    }
+
+    void AudioSystem::onAudioSourceRemove(Ecs::ComponentEvent<AudioSourceComponent>* e)
+    {
+        e->component.Stop();
     }
 }

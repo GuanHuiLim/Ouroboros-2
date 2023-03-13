@@ -455,8 +455,8 @@ namespace oo
         intermediateX *= windowSizeX;
         intermediateY *= windowSizeY;
         //LOG_CORE_INFO("actual mouse pos {0},{1}, mapped mouse pos {2},{3}", mouseX, mouseY, intermediateX, intermediateY);
-        mouseX = intermediateX;
-        mouseY = intermediateY;
+        mouseX = static_cast<int32_t>(intermediateX);
+        mouseY = static_cast<int32_t>(intermediateY);
 #endif
         Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), mouseX, mouseY);
         //LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);

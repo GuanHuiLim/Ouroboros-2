@@ -70,6 +70,9 @@ namespace oo
             // Create channel groups
             FMOD_ERR_HAND(system->createChannelGroup("Global", &channelGroupGlobal));
 
+            // Set to 1 listener
+            FMOD_ERR_HAND(system->set3DNumListeners(1));
+
             // Initialise sounds
             std::fill(sounds.begin(), sounds.end(), nullptr);
             soundIDNext = 0;
@@ -138,6 +141,13 @@ namespace oo
                 sounds[id] = nullptr;
                 ReleaseSoundID(id);
             }
+        }
+
+        void StopAll()
+        {
+            FMOD::ChannelGroup* master;
+            FMOD_ERR_HAND(system->getMasterChannelGroup(&master));
+            FMOD_ERR_HAND(master->stop());
         }
 
         FMOD::Channel* PlayGlobalOneShot(const SoundID& id)

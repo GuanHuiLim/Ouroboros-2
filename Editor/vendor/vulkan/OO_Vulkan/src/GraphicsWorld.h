@@ -251,21 +251,6 @@ public:
         float biasMultiplier = 0.002f;
     }lightSettings{};
 
-    struct BloomSettings
-    {
-        float threshold = 1.1f;
-        float softThreshold = 0.5f;
-    }bloomSettings{};
-
-    struct ColourCorrectionSettings
-    {
-        float highlightThreshold = 1.0f;
-        float shadowThreshold = 0.0f;
-        glm::vec4 shadowColour{};
-        glm::vec4 midtonesColour{};
-        glm::vec4 highlightColour{};
-    }colourSettings{};
-
     friend class VulkanRenderer;
 private:
     int32_t m_entityCount{};

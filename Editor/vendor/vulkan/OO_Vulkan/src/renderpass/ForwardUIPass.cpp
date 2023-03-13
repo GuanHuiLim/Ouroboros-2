@@ -173,7 +173,7 @@ void ForwardUIPass::Draw()
 	const auto instanceCnt = uivert.size() / 4;
 	const auto indices =  instanceCnt* 6;
 	// do draw command here
-	cmd.DrawIndexed(indices,instanceCnt);
+	cmd.DrawIndexed(static_cast<uint32_t>(indices), static_cast<uint32_t>(instanceCnt));
 	//cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer.getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer.size()));
 
 	vkCmdEndRenderPass(cmdlist);

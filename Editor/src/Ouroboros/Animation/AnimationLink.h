@@ -35,6 +35,10 @@ namespace oo::Anim
 		std::vector<Condition> conditions{};
 		size_t linkID{ internal::invalid_ID };
 
+		//QUICK BLEND
+		float quick_blend_duration{ 0.0f };
+		
+
 		Link() = default;
 		Link(NodeRef _src, NodeRef _dst);
 
