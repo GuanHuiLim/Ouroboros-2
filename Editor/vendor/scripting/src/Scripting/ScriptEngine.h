@@ -86,6 +86,20 @@ namespace oo
         // Actions
         static MonoObject* InvokeFunction(MonoObject* obj, MonoMethod* method, void** paramList = nullptr);
         static MonoObject* InvokeFunction(MonoObject* obj, const char* functionName, void** paramList = nullptr,  int paramCount = 0);
+        template<typename T, typename... Args>
+        static inline void InvokeFunctionThunk(MonoObject* obj, T function, Args... args)
+        {
+            if (function == nullptr)
+                return;
+            MonoException* exception = NULL;
+            function(obj, args..., &exception);
+            if (exception)
+            {
+                MonoMethod* stringMethod = mono_class_get_method_from_name(mono_get_exception_class(), "ToString", 0);
+                MonoString* excString = (MonoString*)mono_runtime_invoke(stringMethod, exception, NULL, NULL);
+                throw std::exception(mono_string_to_utf8(excString));
+            }
+        }
 
         // Iterators
         using ScriptFieldCallback = std::function<void(MonoClassField* field)>;
