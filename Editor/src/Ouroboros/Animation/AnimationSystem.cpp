@@ -83,21 +83,28 @@ namespace oo::Anim
 		}();
 
 		//test object code
-		if (test_obj)
+		/*if (test_obj)
 		{
 			if (input::IsKeyPressed(input::KeyCode::SPACE))
 			{
 				test_obj->GetComponent<AnimationComponent>()
 					.SetParameter("Test float", 30.f);
 			}
-		}
+		}*/
 		
 		TRACY_PROFILE_SCOPE_NC(Animation_Update, 0x00E0E3);
 
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
-			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), timer::dt() };
+			auto& anim_component = animationComp.GetActualComponent();
+			internal::UpdateTrackerInfo info{ *this,anim_component,animationComp.GetTracker(), entity,go.GetInstanceID(), timer::dt() };
 			internal::UpdateTracker(info);
+			if (anim_component.tracker.transition_info.in_transition)
+			{
+				animationComp.GetActualComponent().skeleton.Apply_NextPose_To_Gameobjects(*scene);
+			}
+			else
+				animationComp.GetActualComponent().skeleton.Apply_CurrentPose_To_Gameobjects(*scene);
 			});
 		TRACY_PROFILE_SCOPE_END();
 		/*world->for_each(query, [&](AnimationComponent& animationComp) {

@@ -95,11 +95,11 @@ public:
         return computedHash;
     }
 
-
     //constexpr bool operator==(StringHash const& other) const noexcept;
     //constexpr bool operator<(StringHash const& other) const noexcept;// { return computedHash < other.computedHash; }
 
     auto operator<=>(StringHash const& other) const = default;
+
 };
 
 // hashing overload for StringHash with std lib
@@ -110,7 +110,7 @@ namespace std
     {
         std::size_t operator() (StringHash const& newhash) const
         {
-            return hash<std::size_t>()((std::uint32_t)newhash);
+            return hash<std::size_t>()((std::uint32_t) newhash);
         }
     };
 }

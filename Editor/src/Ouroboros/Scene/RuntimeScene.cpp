@@ -64,6 +64,7 @@ namespace oo
         {
             // set default debug draws
             GetWorld().Get_System<UISystem>()->UIDebugDraw = false;
+            GetWorld().Get_System<UISystem>()->UIDebugPrint = false;
             GetWorld().Get_System<UISystem>()->UIDebugRaycast = false;
             GetWorld().Get_System<PhysicsSystem>()->ColliderDebugDraw = false;
             GetWorld().Get_System<RendererSystem>()->CameraDebugDraw = false;
@@ -127,7 +128,7 @@ namespace oo
             TRACY_PROFILE_SCOPE_END();
         //    });
 
-        jobsystem::job phase_three{};
+        //jobsystem::job phase_three{};
         //
         //jobsystem::submit(phase_three, [&]() {
           TRACY_PROFILE_SCOPE(physics_runtime_update);
@@ -135,11 +136,11 @@ namespace oo
           TRACY_PROFILE_SCOPE_END();
         //    });
         
-        jobsystem::submit(phase_three, [&]() {
+        //jobsystem::submit(phase_three, [&]() {
           TRACY_PROFILE_SCOPE(audio_update);
           GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
           TRACY_PROFILE_SCOPE_END();
-            });
+        //});
         
         //jobsystem::submit(phase_three, [&]() {
         //    TRACY_PROFILE_SCOPE(UI_runtime_update);
@@ -147,7 +148,7 @@ namespace oo
         //    TRACY_PROFILE_SCOPE_END();
         //    });
         
-        jobsystem::launch_and_wait(phase_three);
+        //jobsystem::launch_and_wait(phase_three);
 
         TRACY_PROFILE_SCOPE(UI_runtime_update);
         GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();

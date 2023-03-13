@@ -39,6 +39,7 @@ namespace oo::Anim::internal
 	void Initialise_hash_to_instance();
 
 	size_t generateUID();
+	size_t generateBoneID(std::vector<int> const& children_index);
 	bool Equal(float lhs, float rhs);
 }
 
@@ -88,9 +89,55 @@ namespace oo::Anim
 	struct ScriptEventTracker;
 	class IAnimationComponent;
 	class AnimationSystem;
+	class AnimationSkeleton;
 
 	namespace internal
 	{
+		struct Skeleton
+		{
+			std::vector<glm::mat4> boneTransforms{};
+			std::unordered_map<UUID, uint> UUIDToIndex{};
+		};
+
+		using DataVariant = std::variant< glm::vec3, glm::quat>;
+
+		struct KeyFrameProcessData
+		{
+			uint timeline_index{};
+
+			bool hasKeyFrames{false};
+			bool animationEnded{ false };
+			bool animationIsLooping{ false };
+
+			/*------------------
+			next keyframe check
+			------------------*/
+			float nextKeyframeTime{};
+			DataVariant	nextKeyFrameData{};
+			size_t tracker_index{};
+			size_t last_keyframe_index{};
+			size_t component_hash{};
+			rttr::property component_property{rttr::type::get<InvalidType>().get_property("no property")};
+			void* component{nullptr};
+			std::vector<KeyFrame> const*  keyframes{};
+
+			DataVariant	lastKeyFrameData{};
+			bool skipFurtherProcessing{ false };
+			/*------------------
+			interpolation
+			------------------*/
+			float interp_prevKeyframeTime{};
+			float interp_nextKeyframeTime{};
+
+			DataVariant	interp_prevKeyFrameData{};
+			DataVariant	interp_nextKeyFrameData{};
+			rttr::variant	interp_finalKeyFrameData{};
+			/*------------------
+			set_game_object
+			------------------*/
+			//nothing for now
+		};
+
 		struct UpdateTrackerInfo
 		{
 			AnimationSystem& system;
@@ -99,6 +146,8 @@ namespace oo::Anim
 			Ecs::EntityID entity;
 			oo::UUID uuid;
 			float dt;
+
+
 		};
 		//info for a single timeline's progress
 		struct UpdateProgressTrackerInfo

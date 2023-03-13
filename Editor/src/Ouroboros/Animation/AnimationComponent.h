@@ -23,7 +23,8 @@ namespace oo::Anim
 		AnimationTree* animTree{ nullptr };
 		AnimationTracker tracker{};
 		Ecs::EntityID root_objectID{};
-
+		AnimationSkeleton skeleton{};
+		
 		inline void Reset()
 		{
 			IAnimationComponent temp{};

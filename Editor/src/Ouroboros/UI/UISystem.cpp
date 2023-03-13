@@ -455,8 +455,8 @@ namespace oo
         intermediateX *= windowSizeX;
         intermediateY *= windowSizeY;
         //LOG_CORE_INFO("actual mouse pos {0},{1}, mapped mouse pos {2},{3}", mouseX, mouseY, intermediateX, intermediateY);
-        mouseX = intermediateX;
-        mouseY = intermediateY;
+        mouseX = static_cast<int32_t>(intermediateX);
+        mouseY = static_cast<int32_t>(intermediateY);
 #endif
         Ray mouseWorldRay = ScreenToWorld(m_scene->MainCamera(), &camera->GetComponent<TransformComponent>(), mouseX, mouseY);
         //LOG_TRACE("Ray From Camera P:{0},{1},{2} D:{3},{4},{5}", mouseWorldRay.Position.x, mouseWorldRay.Position.y, mouseWorldRay.Position.z, mouseWorldRay.Direction.x, mouseWorldRay.Direction.y, mouseWorldRay.Direction.z);
@@ -544,7 +544,8 @@ namespace oo
                     if (selectedButtonPointer != nullptr /*&& selectedButtonPointer->IsInteractable()*/)
                     {
                         auto& name = currSelectedUI.Name();
-                        LOG_TRACE("newly selected UI {0}", name);
+                        if (UIDebugPrint)
+                            LOG_TRACE("newly selected UI {0}", name);
 
                         UpdateButtonCallback(currSelectedUI.GetInstanceID(), &currSelectedUI.GetComponent<UIRaycastComponent>(), true);
                         m_prevSelectedUI = currSelectedUI;
@@ -583,7 +584,8 @@ namespace oo
             raycastComp->HasEntered = true;
             e.Type = UIButtonEventType::ON_POINTER_ENTER;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On pointer enter!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On pointer enter!");
             //raycastComp->InvokeButtonEvent("OnPointerEnter");
             //if (!raycastComp->IsInteractable()) // for if OnPointerEnter sets interactable false
             //    return false;
@@ -597,7 +599,8 @@ namespace oo
                 raycastComp->IsPressed = false;
                 e.Type = UIButtonEventType::ON_RELEASE;
                 EventManager::Broadcast<UIButtonEvent>(&e);
-                LOG_TRACE("UI On Release!");
+                if (UIDebugPrint)
+                    LOG_TRACE("UI On Release!");
                 //raycastComp->InvokeButtonEvent("OnRelease");
                 //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
                 //    return false;
@@ -605,7 +608,8 @@ namespace oo
             raycastComp->HasEntered = false;
             e.Type = UIButtonEventType::ON_POINTER_EXIT;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Pointer Exit!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Pointer Exit!");
             //raycastComp->InvokeButtonEvent("OnPointerExit");
             return false;
         }
@@ -617,7 +621,8 @@ namespace oo
             raycastComp->IsPressed = true;
             e.Type = UIButtonEventType::ON_PRESS;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Press!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Press!");
             //raycastComp->InvokeButtonEvent("OnPress");
             //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
             //    return false;
@@ -626,7 +631,8 @@ namespace oo
         {
             e.Type = UIButtonEventType::ON_CLICK;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Click!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Click!");
             //raycastComp->InvokeButtonEvent("OnClick");
             // isInteractable check since OnClick could disable the button,
             //if so OnRelease already invoked, shouldn't be invoked again after OnInteractDisabled
@@ -636,7 +642,8 @@ namespace oo
             raycastComp->IsPressed = false;
             e.Type = UIButtonEventType::ON_RELEASE;
             EventManager::Broadcast<UIButtonEvent>(&e);
-            LOG_TRACE("UI On Release!");
+            if (UIDebugPrint)
+                LOG_TRACE("UI On Release!");
             //raycastComp->InvokeButtonEvent("OnRelease");
             //if (!raycastComp->IsInteractable()) // for if OnRelease sets interactable false
             //    return false;
@@ -654,10 +661,11 @@ namespace oo
         // TODO : additional call to get viewport of window instead!
         //editorGameViewCallback(viewport_x, viewport_y, mouse_x, mouse_y);
 
-        glm::vec3 worldpos{ static_cast<float>(mouse_x),static_cast<float>(mouse_y), 0 };
+        glm::vec3 screenPosition{ static_cast<float>(mouse_x),static_cast<float>(mouse_y), 0 };
         // convert to -1 to 1
-        worldpos.x = (worldpos.x / viewport_x) * 2.0f - 1.0f;
-        worldpos.y = -(worldpos.y / viewport_y) * 2.0f + 1.0f;
+        glm::vec3 clipPosition{ 0 };
+        clipPosition.x = (screenPosition.x / viewport_x) * 2.0f - 1.0f;
+        clipPosition.y = -(screenPosition.y / viewport_y) * 2.0f + 1.0f;
 
         auto& transform = cameraTf;
         // camera's Project Matrix
@@ -672,18 +680,24 @@ namespace oo
         //// we use the camera's Z as the starting point.
         //return { {point.x, point.y, cameraTf->GetGlobalPosition().z}, dir };
 
-        ////TODO: store the inverse of the camera
-        float xProj = -1.0f / proj[0][0];
-        float yProj = 1.0f / proj[1][1];
-        float zProj = 1.0f / proj[2][2];
-        //oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
-        worldpos.x = pos.x + worldpos.x * xProj;
-        worldpos.y = pos.y + worldpos.y * yProj;
-        worldpos.z = pos.z + worldpos.z * zProj;
-        
-        worldpos += transform->GlobalForward();
+        glm::vec4 viewPosition = glm::inverse(proj) * glm::vec4{ clipPosition, 1 };
+        viewPosition.z = -1.f;
 
-        return { worldpos, glm::normalize(worldpos - pos)};
+        glm::vec4 world_pos = glm::inverse(camera.matrices.view) * viewPosition;
+        glm::vec3 divided_pos = glm::vec3{ world_pos } / world_pos.w;
+
+        //////TODO: store the inverse of the camera
+        //float xProj = -1.0f / proj[0][0];
+        //float yProj = 1.0f / proj[1][1];
+        //float zProj = 1.0f / proj[2][2];
+        ////oo::AABB2D extents{ {pos.x - xProj, pos.y - yProj },{pos.x + xProj , pos.y + yProj } };
+        //worldpos.x = pos.x + worldpos.x * xProj;
+        //worldpos.y = pos.y + worldpos.y * yProj;
+        //worldpos.z = pos.z + worldpos.z * zProj;
+        //
+        //worldpos += transform->GlobalForward();
+
+        return { pos, glm::normalize(divided_pos - pos)};
     }
 
     void UISystem::OnUIAssign(Ecs::ComponentEvent<UIComponent>* evnt)

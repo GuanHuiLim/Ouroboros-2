@@ -55,14 +55,25 @@ namespace oo::Anim::internal
 	inline bool Withinbounds(float current, float target);
 	void TriggerEvent(UpdateProgressTrackerInfo& info, ScriptEvent& event);
 	KeyFrame::DataType GetInterpolatedValue(rttr::type rttr_type, KeyFrame::DataType prev, KeyFrame::DataType next, float percentage);
+	KeyFrame::DataType GetInterpolatedValue(DataVariant prev, DataVariant next, float percentage);
 
+	DataVariant DataVariant_From_RTTRVariant(rttr::variant var);
 
+	//pipeline optimization keyframe update
+	KeyFrameProcessData Pipelined_GatherData(UpdateProgressTrackerInfo& info, uint timeline_index);
+	void Pipelined_NextKeyFrameCheck(KeyFrameProcessData& data, float updatedTimer);
+	void Pipelined_Interpolation_GatherData(KeyFrameProcessData& data, float updatedTimer);
+	void Pipelined_Interpolation(KeyFrameProcessData& data, float updatedTimer);
+	void Pipelined_SetGameObject(KeyFrameProcessData& data);
+	void Pipelined_SetTrackerData(KeyFrameProcessData& data, std::vector<ProgressTracker>& trackers);
 
 	void UpdateProperty_Animation(UpdateProgressTrackerInfo& info, float updatedTimer);
 
-	void UpdateFBX_Animation(UpdateProgressTrackerInfo& info, float updatedTimer);
+	void UpdateFBX_Animation(UpdateProgressTrackerInfo& t_info, float updatedTimer);
+	void UpdateFBX_Animation_Transition(UpdateProgressTrackerInfo& t_info, float updatedTimer);
 	//go through all progress trackers and call their update function
-	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& info, float updatedTimer);
+	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& t_info, float updatedTimer);
+	void UpdateTrackerKeyframeProgress_Transitions(UpdateTrackerInfo & t_info, float updatedTimer, uint pose_index = 0);
 
 	void ResetTrackerProgress(AnimationTracker& tracker);
 
@@ -83,6 +94,7 @@ namespace oo::Anim::internal
 	Link* CheckNodeTransitions(UpdateTrackerInfo& info);
 
 	void BindAnimTrackersToGameobject(UpdateTrackerInfo& info, AnimationTracker& animTracker);
+	void BindAnimTransitionTrackersToGameobject(UpdateTrackerInfo& info, AnimationTracker& animTracker);
 	void ActivateTransition(UpdateTrackerInfo& info, Link* link, Node& current_node);
 	
 

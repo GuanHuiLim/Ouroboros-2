@@ -45,6 +45,7 @@ namespace oo::Anim
 		rttr::type rttr_type{ rttr::type::get<InvalidType>()};
 		rttr::property rttr_property { rttr::type::get<InvalidType>().get_property("no property")};
 		size_t component_hash{};
+		UID boneID{ internal::invalid_ID };
 
 		Timeline() = default;
 		//Timeline(TYPE _type, DATATYPE _datatype, std::string const _name = "Unnamed Timeline");

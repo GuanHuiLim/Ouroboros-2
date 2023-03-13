@@ -26,7 +26,7 @@ namespace oo
     public:
         
         TransformSystem(Scene* scene);
-        virtual ~TransformSystem() = default;
+        virtual ~TransformSystem();
 
         void PostLoadSceneInit();
 
@@ -43,6 +43,8 @@ namespace oo
         void UpdateTree(scenenode::shared_pointer node, bool updateRoot);
         void UpdateTransform(std::shared_ptr<GameObject> const& go);
 
+        void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
+        //void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
     private:
         Scene* m_scene = nullptr;
 
