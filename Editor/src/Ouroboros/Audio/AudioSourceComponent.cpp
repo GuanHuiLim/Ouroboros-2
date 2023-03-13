@@ -42,6 +42,8 @@ namespace oo
         .property("Volume", &AudioSourceComponent::GetVolume, &AudioSourceComponent::SetVolume)
         (metadata(UI_metadata::DRAG_SPEED, 0.01f))
         .property("Pitch", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
+        (metadata(UI_metadata::DRAG_SPEED, 0.01f))
+        .property("Priority", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
         (metadata(UI_metadata::DRAG_SPEED, 0.01f));
     };
 
@@ -130,6 +132,18 @@ namespace oo
         FMOD_ERR_HAND(channel->setPitch(p));
     }
 
+    void AudioSourceComponent::SetPriority(int p)
+    {
+        if (p < 0)
+            p = 0;
+        if (p > 256)
+            p = 256;
+        priority = p;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setPriority(p));
+    }
+
     void AudioSourceComponent::SetPlaybackTime(float t)
     {
         if (!channel)
@@ -167,6 +181,7 @@ namespace oo
         SetLoopEnd(loopEnd);
         SetVolume(volume);
         SetPitch(pitch);
+        SetPriority(priority);
     }
 
     void AudioSourceComponent::Stop()

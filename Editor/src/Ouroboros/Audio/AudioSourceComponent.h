@@ -42,6 +42,7 @@ namespace oo
         [[nodiscard]] inline unsigned int GetLoopEnd() const { return loopEnd; }
         [[nodiscard]] inline float GetVolume() const { return volume; }
         [[nodiscard]] inline float GetPitch() const { return pitch; }
+        [[nodiscard]] inline int GetPriority() const { return priority; }
         [[nodiscard]] bool IsPlaying() const;
         [[nodiscard]] float GetPlaybackTime() const;
         [[nodiscard]] unsigned int GetPlaybackTimeSamples() const;
@@ -58,6 +59,7 @@ namespace oo
         void SetLoopEnd(unsigned int t);
         void SetVolume(float v);
         void SetPitch(float p);
+        void SetPriority(int p);
         void SetPlaybackTime(float t);
         void SetPlaybackTimeSamples(unsigned int t);
         void Set3DPosition(float x, float y, float z);
@@ -99,6 +101,7 @@ namespace oo
         bool loop = false;
         float volume = 1;
         float pitch = 1;
+        int priority = 128;
 
         /* --------------------------------------------------------------------------- */
         /* Non-Serialised Members                                                      */
