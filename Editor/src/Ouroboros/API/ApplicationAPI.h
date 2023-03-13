@@ -124,7 +124,7 @@ namespace oo
 
     SCRIPT_API void Time_SetFixedDeltaTime(float value)
     {
-        return PhysicsSystem::SetFixedDeltaMultiplier(value);
+        return PhysicsSystem::SetFixedDeltaTimescale(value);
     }
 
     /*-----------------------------------------------------------------------------*/

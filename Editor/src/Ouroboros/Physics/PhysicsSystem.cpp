@@ -875,15 +875,20 @@ namespace oo
         return result;
     }
 
-    void PhysicsSystem::SetFixedDeltaMultiplier(Timestep NewFixedTime)
+    void PhysicsSystem::SetFixedDeltaTimescale(Timestep NewFixedTime)
     { 
-        FixedDeltaMultiplier = NewFixedTime;
-        FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaMultiplier;
+        FixedDeltaTimescale = NewFixedTime;
+        FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaTimescale;
         MaxFrameTime = MaxFrameRateMultiplier * FixedDeltaTime;
 
         //FixedDeltaTime = NewFixedTime; 
         //auto newLimit = FixedDeltaTime * MaxIterations;
         //AccumulatorLimit =  AccumulatorLimit < newLimit ? newLimit : AccumulatorLimit;
+    }
+
+    PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTimescale()
+    {
+        return FixedDeltaTimescale;
     }
 
     PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()

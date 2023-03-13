@@ -58,7 +58,8 @@ namespace oo
         static LayerType GenerateCollisionMask(std::vector<std::string> names);
 
         // Manupilating Fixed DT
-        static void SetFixedDeltaMultiplier(Timestep NewFixedTime);
+        static void SetFixedDeltaTimescale(Timestep NewMultiplier);
+        static Timestep GetFixedDeltaTimescale();
         static Timestep GetFixedDeltaTime();
         
         RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
@@ -67,8 +68,8 @@ namespace oo
     private:
         //inline static std::uint64_t MaxIterations = 2;
         inline static Timestep FixedDeltaTimeBase = 1.0/60.0;               // physics updates at 60 fps
-        inline static Timestep FixedDeltaMultiplier = 1.0;                  // additional level of control for scripts
-        inline static Timestep FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaMultiplier;  // physics updates at 60 fps
+        inline static Timestep FixedDeltaTimescale = 1.0;                  // additional level of control for scripts
+        inline static Timestep FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaTimescale;  // physics updates at 60 fps
         inline static Timestep MaxFrameRateMultiplier = 2;
         inline static Timestep MaxFrameTime = FixedDeltaTime * MaxFrameRateMultiplier;
         //inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;   // To prevent spiral of death
