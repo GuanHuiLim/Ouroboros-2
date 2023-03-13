@@ -2498,14 +2498,14 @@ oGFX::Font * VulkanRenderer::LoadFont(const std::string & filename)
 	auto* font = new oGFX::Font;
 	oGFX::TexturePacker atlas = CreateFontAtlas(filename, *font);
 
-	std::stringstream ss;
-	for (auto& car : font->m_characterInfos)
-	{
-		const auto g = car.second;
-		ss << "[" << (char)car.first << "] {" << g.textureCoordinates.x << "," << g.textureCoordinates.y << "}"
-			"] {" << g.textureCoordinates.z << "," << g.textureCoordinates.w << "}\n";
-	}
-	std::cout << ss.str();
+	//std::stringstream ss;
+	//for (auto& car : font->m_characterInfos)
+	//{
+	//	const auto g = car.second;
+	//	ss << "[" << (char)car.first << "] {" << g.textureCoordinates.x << "," << g.textureCoordinates.y << "}"
+	//		"] {" << g.textureCoordinates.z << "," << g.textureCoordinates.w << "}\n";
+	//}
+	//std::cout << ss.str();
 
 	font->m_name = std::filesystem::path(filename).stem().wstring();
 	size_t channels = 4;

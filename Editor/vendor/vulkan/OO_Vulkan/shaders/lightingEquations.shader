@@ -81,7 +81,7 @@ float D_GGX(vec3 N, vec3 H , float alpha)
     float NdotH = dot(N,H);
     float NdotH_sqr = NdotH * NdotH;
 
-    float internalCacl = NdotH_sqr * (aGaG - 1.0);
+    float internalCacl = NdotH_sqr * (aGaG - 1.0) + 1.0;
 
     //if (internalCacl == -1.0)
     //{
