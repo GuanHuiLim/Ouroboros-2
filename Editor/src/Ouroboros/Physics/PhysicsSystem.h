@@ -58,16 +58,20 @@ namespace oo
         static LayerType GenerateCollisionMask(std::vector<std::string> names);
 
         // Manupilating Fixed DT
-        static void SetFixedDeltaTime(Timestep NewFixedTime);
+        static void SetFixedDeltaMultiplier(Timestep NewFixedTime);
         static Timestep GetFixedDeltaTime();
         
         RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
         std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
     
     private:
-        inline static std::uint64_t MaxIterations = 2;
-        inline static Timestep FixedDeltaTime = 1.0/60;                             // physics updates at 60 fps
-        inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;   // To prevent spiral of death
+        //inline static std::uint64_t MaxIterations = 2;
+        inline static Timestep FixedDeltaTimeBase = 1.0/60.0;               // physics updates at 60 fps
+        inline static Timestep FixedDeltaMultiplier = 1.0;                  // additional level of control for scripts
+        inline static Timestep FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaMultiplier;  // physics updates at 60 fps
+        inline static Timestep MaxFrameRateMultiplier = 2;
+        inline static Timestep MaxFrameTime = FixedDeltaTime * MaxFrameRateMultiplier;
+        //inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;   // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsResolution(Timestep deltaTime);
