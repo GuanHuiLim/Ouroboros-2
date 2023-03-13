@@ -122,9 +122,14 @@ namespace oo
         return static_cast<float>(PhysicsSystem::GetFixedDeltaTime());
     }
 
-    SCRIPT_API void Time_SetFixedDeltaTime(float value)
+    SCRIPT_API float Time_GetFixedTimeScale()
     {
-        return PhysicsSystem::SetFixedDeltaTimescale(value);
+        return PhysicsSystem::GetFixedDeltaTimescale();
+    }
+
+    SCRIPT_API void Time_SetFixedTimeScale(float value)
+    {
+        PhysicsSystem::SetFixedDeltaTimescale(value);
     }
 
     /*-----------------------------------------------------------------------------*/
