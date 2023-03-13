@@ -1064,10 +1064,14 @@ namespace oo::Anim::internal
 		//no keyframes so we return
 		if (timeline.keyframes.empty()) return;
 
-		//already hit last and animation not looping so we return
-		if (t_info.progressTracker.index >= (timeline.keyframes.size() - 1ul) &&
-			t_info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
+		//already hit last 
+		if (t_info.progressTracker.index >= (timeline.keyframes.size() - 1ul))
 		{
+			//animation not looping so we return
+			if (t_info.tracker_info.tracker.currentNode->GetAnimation().looping == false)
+				return;
+			//reset tracker index otherwise
+			t_info.progressTracker.index = 0;
 			return;
 		}
 		// get the gameobject
