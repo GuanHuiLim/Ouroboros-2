@@ -88,7 +88,7 @@ namespace oo
             m_ecsWorld->Add_System<oo::DuplicatedSystem>(this);
             m_ecsWorld->Add_System<oo::TransformSystem>(this);
             m_ecsWorld->Add_System<oo::ScriptSystem>(*this, *m_scriptDatabase, *m_componentDatabase);
-            m_ecsWorld->Add_System<oo::AudioSystem>(this);
+            m_ecsWorld->Add_System<oo::AudioSystem>(this)->Init();
             //rendering system initialization
             // temporarily initialize number of cameras to 2 [0 is Scene camera] [1 is Editor Camera]
 #if defined OO_EXECUTABLE

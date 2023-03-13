@@ -2498,14 +2498,14 @@ oGFX::Font * VulkanRenderer::LoadFont(const std::string & filename)
 	auto* font = new oGFX::Font;
 	oGFX::TexturePacker atlas = CreateFontAtlas(filename, *font);
 
-	std::stringstream ss;
-	for (auto& car : font->m_characterInfos)
-	{
-		const auto g = car.second;
-		ss << "[" << (char)car.first << "] {" << g.textureCoordinates.x << "," << g.textureCoordinates.y << "}"
-			"] {" << g.textureCoordinates.z << "," << g.textureCoordinates.w << "}\n";
-	}
-	std::cout << ss.str();
+	//std::stringstream ss;
+	//for (auto& car : font->m_characterInfos)
+	//{
+	//	const auto g = car.second;
+	//	ss << "[" << (char)car.first << "] {" << g.textureCoordinates.x << "," << g.textureCoordinates.y << "}"
+	//		"] {" << g.textureCoordinates.z << "," << g.textureCoordinates.w << "}\n";
+	//}
+	//std::cout << ss.str();
 
 	font->m_name = std::filesystem::path(filename).stem().wstring();
 	size_t channels = 4;
@@ -2748,7 +2748,7 @@ oGFX::TexturePacker VulkanRenderer::CreateFontAtlas(const std::string& filename,
 			Charset charSet;
 			for (size_t i = 0; i < 255; i++)
 			{
-				charSet.add(i);
+				charSet.add(static_cast<msdf_atlas::unicode_t>(i));
 			}
 			fontGeometry.loadCharset(fontHdl, 1.0, charSet);
 			// Apply MSDF edge coloring. See edge-coloring.h for other coloring strategies.
@@ -2766,7 +2766,7 @@ oGFX::TexturePacker VulkanRenderer::CreateFontAtlas(const std::string& filename,
 			packer.setPixelRange(2.0);
 			packer.setMiterLimit(1.0);
 			// Compute atlas layout - pack glyphs
-			packer.pack(glyphs.data(), glyphs.size());
+			packer.pack(glyphs.data(), static_cast<int>(glyphs.size()));
 			// Get final atlas dimensions
 			int width = 0, height = 0;
 			packer.getDimensions(width, height);
@@ -2783,7 +2783,7 @@ oGFX::TexturePacker VulkanRenderer::CreateFontAtlas(const std::string& filename,
 			generator.setAttributes(attributes);
 			generator.setThreadCount(4);
 			// Generate atlas bitmap
-			generator.generate(glyphs.data(), glyphs.size());
+			generator.generate(glyphs.data(), static_cast<int>(glyphs.size()));
 			// The atlas bitmap can now be retrieved via atlasStorage as a BitmapConstRef.
 			// The glyphs array (or fontGeometry) contains positioning data for typesetting text.
 			auto bitmap = generator.atlasStorage().operator msdfgen::BitmapConstRef<msdfgen::byte, 4>();
@@ -2803,7 +2803,7 @@ oGFX::TexturePacker VulkanRenderer::CreateFontAtlas(const std::string& filename,
 
 				auto c = glyph.getCodepoint();
 				auto& infos = font.m_characterInfos[c];
-				infos.Advance.x = glyph.getAdvance();
+				infos.Advance.x = static_cast<float>(glyph.getAdvance());
 				infos.Advance.y = {};
 				int wd{}, ht{};
 				glyph.getBoxSize(wd,ht);
@@ -2817,8 +2817,8 @@ oGFX::TexturePacker VulkanRenderer::CreateFontAtlas(const std::string& filename,
 				auto val1 = pr - pl;
 				auto val2 = pt - pb;
 
-				infos.Size.x = val1;
-				infos.Size.y = val2;
+				infos.Size.x = static_cast<float>(val1);
+				infos.Size.y = static_cast<float>(val2);
 				
 				infos.Bearing = glm::vec2{ pl,pb};
 				//infos.Bearing = glm::ivec2{ 1 };
@@ -2829,8 +2829,8 @@ oGFX::TexturePacker VulkanRenderer::CreateFontAtlas(const std::string& filename,
 				};
 				if constexpr (FLIP_Y == true)
 				{
-					infos.textureCoordinates.y = 1.0 - infos.textureCoordinates.y;
-					infos.textureCoordinates.w = 1.0 - infos.textureCoordinates.w;
+					infos.textureCoordinates.y = 1.0f - infos.textureCoordinates.y;
+					infos.textureCoordinates.w = 1.0f - infos.textureCoordinates.w;
 				}
 			}
 

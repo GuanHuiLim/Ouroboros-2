@@ -98,7 +98,7 @@ void EditorViewport::Show()
 	auto graphicsworld = scene->GetGraphicsWorld();
 	graphicsworld->shouldRenderCamera[1] = true;
 
-	m_cc.Update(oo::timer::dt(), cameraFocus);
+	m_cc.Update(oo::timer::unscaled_dt(), cameraFocus);
 
 	auto& camera_matrices = EditorCamera.matrices;//perspective
 	auto& window = oo::Application::Get().GetWindow();
@@ -455,6 +455,10 @@ void EditorViewport::MenuBar()
 			if (ImGui::MenuItem("UI Debug Raycast", 0, oo::UISystem::UIDebugRaycast))
 			{
 				oo::UISystem::UIDebugRaycast = !oo::UISystem::UIDebugRaycast;
+			}
+			if (ImGui::MenuItem("UI Debug Print", 0, oo::UISystem::UIDebugPrint))
+			{
+				oo::UISystem::UIDebugPrint = !oo::UISystem::UIDebugPrint;
 			}
 
 			ImGui::EndMenu();

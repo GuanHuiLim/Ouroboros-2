@@ -69,6 +69,7 @@ namespace oo
         VELOCITY_CHANGE,
     };
 
+
     /*-----------------------------------------------------------------------------*/
     /* Describes and Enables Entites with this component attached to               */
     /* abide by the laws of physics.                                               */
@@ -78,6 +79,18 @@ namespace oo
     private:
         bool IsStaticObject = true;
 
+    public:
+        // Who am I? usually only 1
+        LayerField InputLayer{ "00000001" };
+        // Who can i collide with?
+        LayerField OutputLayer{ "11111111" };
+
+        uint32_t GetInputLayer() const { return InputLayer.to_ulong(); }
+        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; };
+
+        uint32_t GetOutputLayer() const { return OutputLayer.to_ulong(); }
+        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; };
+    
     public:
         bool IsTriggerObject = false;
         

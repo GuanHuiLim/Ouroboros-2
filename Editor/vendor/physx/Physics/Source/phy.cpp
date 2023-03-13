@@ -129,34 +129,37 @@ namespace myPhysx
                                                 PxFilterObjectAttributes attributes1, PxFilterData filterData1,
                                                 PxPairFlags& pairFlags, const void* /*constantBlock*/,
                                                 PxU32 /*constantBlockSize*/) {
-
-            //let triggers through
-            if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1)) {
             
-                pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
-                return PxFilterFlag::eDEFAULT;
-            }
-            
-            // generate contacts for all that were not filtered above
-            pairFlags = PxPairFlag::eNOTIFY_CONTACT_POINTS | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eCONTACT_DEFAULT;
-
             // trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa.
             if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1)) {
-                pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST
-                           | PxPairFlag::eNOTIFY_CONTACT_POINTS;
+
+                //let triggers through but also within the layering
+                if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1)) {
+
+                    pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
+                    return PxFilterFlag::eDEFAULT;
+                }
+
+                // generate contacts for all that were not filtered above
+                pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST | 
+                             PxPairFlag::eNOTIFY_CONTACT_POINTS | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eSOLVE_CONTACT;
+            }
+            else {
+                return PxFilterFlag::eSUPPRESS;
             }
             
             return PxFilterFlag::eDEFAULT;
-
         }
 
-        void setupFiltering(PxShape* shape) {
+        void setupFiltering(PxShape* shape, PxU32 filterGroup, PxU32 filterMask) {
             
             PxFilterData filterData;
-            filterData.word0 = 1; //filterGroup; // word0 = own ID
-            filterData.word1 = 1; //filterMask;  // word1 = ID mask to filter pairs that trigger a contact callback;
+            filterData.word0 = filterGroup; // 1 // word0 = own ID
+            filterData.word1 = filterMask;  // 1 // word1 = ID mask to filter pairs that trigger a contact callback;
            
-            shape->setSimulationFilterData(filterData);
+            shape->setSimulationFilterData(filterData); // sets the filter data that is used during the physics simulation
+
+            shape->setQueryFilterData(filterData); // sets the filter data that is used when querying the scene for collision detection
         }
 
         void init() {
@@ -355,6 +358,8 @@ namespace myPhysx
                                                          is_collider(other.is_collider),
                                                          m_shape{nullptr},
                                                          rb {},
+                                                         filterIn(other.filterIn),
+                                                         filterOut(other.filterOut),
                                                          // Create new UUID when u attempt to make a copy
                                                          id{ std::make_unique<phy_uuid::UUID>() }   {}
 
@@ -431,6 +436,9 @@ namespace myPhysx
         //    PxPlaneGeometry plane = m_objects.at(index).m_shape->getGeometry().plane();
         //    physicsObj.setPlaneProperty();
         //}
+
+        // Set in the filtering
+        physicsObj.setFiltering(initObj.filterIn, initObj.filterOut);
 
         // LOCK POSTION AXIS
         LockingAxis posLock = initObj.lockPositionAxis;
@@ -567,6 +575,32 @@ namespace myPhysx
         return hit;
     }
 
+    RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter) {
+
+        RaycastHit hit{};
+        PxRaycastBuffer hitBuffer;
+
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_ANY;
+
+        // Define the filter data for the raycast
+        PxQueryFilterData filterData = PxQueryFilterData();
+        filterData.data.word0 = filter;
+
+        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, hitFlags, filterData);
+        
+        // HAVE INTERSECTION
+        if (hit.intersect) {
+
+            hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(hitBuffer.block.actor->userData);
+
+            hit.position = hitBuffer.block.position;
+            hit.normal = hitBuffer.block.normal;
+            hit.distance = hitBuffer.block.distance;
+        }
+
+        return hit;
+    }
+
     std::vector<RaycastHit> PhysxWorld::raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance) {
 
         const PxU32 bufferSize = 200;// 256;           // size of the buffer       
@@ -576,9 +610,42 @@ namespace myPhysx
         std::vector<RaycastHit> hitAll{}; // store all the raycast hit
 
         PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
-        PxQueryFlags queryFlags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eNO_BLOCK;
 
-        scene->raycast(origin, direction, distance, buffer, hitFlags, PxQueryFilterData(queryFlags));
+        scene->raycast(origin, direction, distance, buffer, hitFlags);
+
+        // loop based on how many touches return by the query
+        for (PxU32 i = 0; i < buffer.nbTouches; i++)
+        {
+            RaycastHit hit{};
+
+            hit.intersect = true;
+            hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(buffer.touches[i].actor->userData);
+
+            hit.position = buffer.touches[i].position;
+            hit.normal = buffer.touches[i].normal;
+            hit.distance = buffer.touches[i].distance;
+
+            hitAll.emplace_back(hit); // store each hit data into the container
+        }
+
+        return hitAll;
+    }
+
+    std::vector<RaycastHit> PhysxWorld::raycastAll(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter) {
+
+        const PxU32 bufferSize = 200;// 256;           // size of the buffer       
+        PxRaycastHit hitBuffer[bufferSize];            // storage of the buffer results
+        PxRaycastBuffer buffer(hitBuffer, bufferSize); // blocking and touching hits stored here
+
+        std::vector<RaycastHit> hitAll{}; // store all the raycast hit
+
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV | PxHitFlag::eMESH_MULTIPLE;
+
+        // Define the filter data for the raycast
+        PxQueryFilterData filterData = PxQueryFilterData();
+        filterData.data.word0 = filter;
+
+        scene->raycast(origin, direction, distance, buffer, hitFlags, filterData);
 
         // loop based on how many touches return by the query
         for (PxU32 i = 0; i < buffer.nbTouches; i++)
@@ -670,6 +737,9 @@ namespace myPhysx
 
                     else if (underlying_obj->shape_type == shape::convex)
                         reAttachShape(type, underlying_obj->m_shape->getGeometry().convexMesh());
+
+                    // Set the filtering back
+                    setFiltering(underlying_obj->filterIn, underlying_obj->filterOut);
                 }
             }
 
@@ -693,16 +763,20 @@ namespace myPhysx
 
             underlying_obj->m_shape = physx_system::getPhysics()->createShape(data, *material, true);
 
-            underlying_obj->m_shape->setContactOffset(1);
+            //underlying_obj->m_shape->setContactOffset(1);
 
             // ATTACH THE SHAPE TO THE OBJECT
-            if (rigidType == rigid::rstatic)
+            if (rigidType == rigid::rstatic) {
                 underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::ePLAYER, FilterGroup::eDEFAULT | FilterGroup::eENEMY | FilterGroup::eGROUND);
+            }
 
-            else if (rigidType == rigid::rdynamic)
+            else if (rigidType == rigid::rdynamic) {
                 underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eENEMY, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eGROUND);
+            }
 
-            physx_system::setupFiltering(underlying_obj->m_shape);
+            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eDEFAULT, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eENEMY | FilterGroup::eGROUND);
         }
     }
 
@@ -763,20 +837,25 @@ namespace myPhysx
                 underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(mesh_geometry), *material, true);
             }
 
-            
-            underlying_obj->m_shape->setContactOffset(1);
+            //underlying_obj->m_shape->setContactOffset(1);
 
             // ATTACH THE SHAPE TO THE OBJECT
-            if (underlying_obj->rigid_type == rigid::rstatic)
+            if (underlying_obj->rigid_type == rigid::rstatic && underlying_obj->m_shape != nullptr) {
                 underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::ePLAYER, FilterGroup::eDEFAULT | FilterGroup::eENEMY | FilterGroup::eGROUND);
 
-            else if (underlying_obj->rigid_type == rigid::rdynamic)
+            }
+
+            else if (underlying_obj->rigid_type == rigid::rdynamic && underlying_obj->m_shape != nullptr) {
                 underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eENEMY, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eGROUND);
+
+            }
 
             // later check where need to release shape
             //underlying_obj->m_shape->release();
 
-            physx_system::setupFiltering(underlying_obj->m_shape);
+            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eDEFAULT, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eENEMY | FilterGroup::eGROUND);
         }
     }
 
@@ -1071,6 +1150,24 @@ namespace myPhysx
         return world->m_meshVertices;
     }
 
+    void PhysicsObject::setFiltering(std::uint32_t currentGroup, std::uint32_t maskGroup) {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            if (underlying_obj->m_shape) {
+
+                underlying_obj->filterIn = currentGroup;
+
+                underlying_obj->filterOut = maskGroup;
+
+                physx_system::setupFiltering(underlying_obj->m_shape, currentGroup, maskGroup);
+            }
+        }
+    }
+
+
     PxConvexMesh* PhysicsObject::createConvexMesh(std::vector<PxVec3> vert) {
 
         // vertices
@@ -1087,7 +1184,10 @@ namespace myPhysx
 
         // Construct the mesh with the cooking library
         PxDefaultMemoryOutputStream buffer;
+
+#pragma warning(disable : 26812)
         PxConvexMeshCookingResult::Enum result;
+#pragma warning(default : 26812)
 
         if (!mCooking->cookConvexMesh(convexDesc, buffer, &result))
             return NULL;
@@ -1402,6 +1502,30 @@ namespace myPhysx
 
         // default return.
         return true;
+    }
+
+    std::uint32_t PhysicsObject::getFilterIn() const {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            return underlying_obj->filterIn;
+        }
+
+        return 0;
+    }
+
+    std::uint32_t PhysicsObject::getFilterOut() const {
+
+        if (world->all_objects.contains(id)) {
+
+            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+            return underlying_obj->filterOut;
+        }
+
+        return 0;
     }
 
     void PhysicsObject::setMass(PxReal mass) {
@@ -1719,4 +1843,5 @@ namespace myPhysx
     void EventCallBack::onAdvance(const PxRigidBody* const* /*bodyBuffer*/, const PxTransform* /*poseBuffer*/, const PxU32 /*count*/) {
         //printf("CALLBACK: onAdvance\n");
     }
+
 }

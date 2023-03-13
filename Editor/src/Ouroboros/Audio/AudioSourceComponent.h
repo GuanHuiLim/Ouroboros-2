@@ -34,15 +34,14 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         [[nodiscard]] inline Asset GetAudioClip() const { return audioClip; }
-        [[nodiscard]] inline bool IsMuted() const { return muted; }
+        [[nodiscard]] inline FMOD::Channel* GetChannel() const { return channel; }
         [[nodiscard]] inline bool IsPlayOnAwake() const { return playOnAwake; }
+        [[nodiscard]] inline bool IsMuted() const { return muted; }
         [[nodiscard]] inline bool IsLoop() const { return loop; }
         [[nodiscard]] inline unsigned int GetLoopBegin() const { return loopBegin; }
         [[nodiscard]] inline unsigned int GetLoopEnd() const { return loopEnd; }
         [[nodiscard]] inline float GetVolume() const { return volume; }
         [[nodiscard]] inline float GetPitch() const { return pitch; }
-        [[nodiscard]] inline FMOD::Channel* GetChannel() const { return channel; }
-        [[nodiscard]] inline bool IsDirty() const { return isDirty; }
         [[nodiscard]] bool IsPlaying() const;
         [[nodiscard]] float GetPlaybackTime() const;
         [[nodiscard]] unsigned int GetPlaybackTimeSamples() const;
@@ -61,6 +60,7 @@ namespace oo
         void SetPitch(float p);
         void SetPlaybackTime(float t);
         void SetPlaybackTimeSamples(unsigned int t);
+        void Set3DPosition(float x, float y, float z);
 
         /* --------------------------------------------------------------------------- */
         /* Functions                                                                   */
@@ -86,11 +86,6 @@ namespace oo
         /// </summary>
         void UnPause();
 
-        /// <summary>
-        /// Clears the dirty flag.
-        /// </summary>
-        void ClearDirty();
-
         RTTR_ENABLE();
 
     private:
@@ -99,11 +94,9 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         Asset audioClip;
-        bool muted = false;
         bool playOnAwake = true;
+        bool muted = false;
         bool loop = false;
-        unsigned int loopBegin = 0;
-        unsigned int loopEnd = 0;
         float volume = 1;
         float pitch = 1;
 
@@ -112,6 +105,10 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         FMOD::Channel* channel = nullptr;
-        bool isDirty = true;
+        unsigned int loopBegin = 0;
+        unsigned int loopEnd = 0;
+        float posX = 0;
+        float posY = 0;
+        float posZ = 0;
     };
 }

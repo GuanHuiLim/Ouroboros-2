@@ -71,6 +71,8 @@ Technology is prohibited.
 
 #include <Ouroboros/Editor/EditorComponent.h>
 
+#include <Ouroboros/Physics/PhysicsSystem.h>
+
 Inspector::Inspector()
 	:m_AddComponentButton("Add Component", false, {200,50},ImGui_StylePresets::disabled_color,ImGui_StylePresets::prefab_text_color)
 {
@@ -144,6 +146,72 @@ void Inspector::Show()
 				oo::PrefabManager::MakePrefab(gameobject);
 			}
 		}
+
+		// Input Layer only applies to items with colliders
+		if(gameobject->HasComponent<oo::BoxColliderComponent>() ||
+			gameobject->HasComponent<oo::SphereColliderComponent>() || 
+			gameobject->HasComponent<oo::CapsuleColliderComponent>() ||
+			gameobject->HasComponent<oo::ConvexColliderComponent>() )
+		{
+			ImGui::SameLine();
+
+			ImGui::BeginGroup();
+			ImGui::PushItemFlag(ImGuiItemFlags_::ImGuiItemFlags_Disabled, true);
+			std::string inLayer = "Layers";
+			ImGui::PushItemWidth(100);
+			ImGui::InputText("##InputLayers", &inLayer);
+			ImGui::PopItemWidth();
+			ImGui::PopItemFlag();
+
+			ImGui::SameLine();
+			if (ImGui::ArrowButton("##Phy InLayers", ImGuiDir_::ImGuiDir_Down) == true)
+			{
+				ImGui::OpenPopup("##Edit InLayers");
+			}
+			if (ImGui::BeginPopup("##Edit InLayers"))
+			{
+				auto& names = oo::PhysicsSystem::LayerNames;
+				auto& layer = gameobject->GetComponent<oo::RigidbodyComponent>().InputLayer;
+				auto& collideAgainstlayer = gameobject->GetComponent<oo::RigidbodyComponent>().OutputLayer;
+				if(ImGui::BeginTable("##layersTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable))
+				{
+					ImGui::TableNextColumn();
+					ImGui::Text("Layer Name         ");
+					ImGui::TableNextColumn();
+					ImGui::Text("Identify as");
+					ImGui::TableNextColumn();
+					ImGui::Text("Collide Against");
+					ImGui::TableNextColumn();
+					for (size_t i = 0; i < names.size(); ++i)
+					{
+						ImGui::PushID(static_cast<int>(i));
+						ImGui::InputText("##Layer Name", &names[i]);
+						ImGui::TableNextColumn();
+						bool layerValue = layer[i];
+						if (ImGui::Checkbox("##Layer value", &layerValue))
+						{
+							layer[i] = layerValue;
+						}
+						ImGui::TableNextColumn();
+						bool layerValue2 = collideAgainstlayer[i];
+						if (ImGui::Checkbox("##Layer value2", &layerValue2))
+						{
+							collideAgainstlayer[i] = layerValue2;
+						}
+						ImGui::TableNextColumn();
+						ImGui::PopID();
+					}
+					ImGui::EndTable();
+				}
+
+
+				ImGui::EndPopup();
+			}
+
+			ImGui::EndGroup();
+
+		}
+		
 		ImGui::Separator();
 
 		DisplayAllComponents(*gameobject);

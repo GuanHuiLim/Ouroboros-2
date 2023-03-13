@@ -24,6 +24,7 @@ Technology is prohibited.
 #include "Ouroboros/Asset/Asset.h"
 namespace oo
 {
+
     class GameObjectComponent
     {
     public:

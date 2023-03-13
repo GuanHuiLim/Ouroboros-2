@@ -171,6 +171,7 @@ namespace oo
 					gfx_Object.bindlessGlobalTextureIndex_Roughness = m_comp.roughnessID;
 					gfx_Object.submesh = m_comp.meshInfo.submeshBits;
 					gfx_Object.SetShadowCaster(m_comp.CastShadows);
+					gfx_Object.SetShadowEnabled(m_comp.CastShadows);
 					gfx_Object.SetShadowReciever(m_comp.ReceiveShadows);
 					//do nothing if transform did not change
 					if (transformComp.HasChangedThisFrame == false) return;
@@ -276,7 +277,6 @@ namespace oo
 
 			});
 
-		AssignGraphicsWorldID_to_BoneComponents();
 
 
 		//recalculate gameobject uid for all bones
@@ -288,6 +288,8 @@ namespace oo
 				RecurseChildren_AssignUID_to_BoneComponents(go, go.GetInstanceID());
 			});
 
+		
+		AssignGraphicsWorldID_to_BoneComponents();
 	}
 
 	
