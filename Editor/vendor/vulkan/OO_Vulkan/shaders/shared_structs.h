@@ -76,6 +76,11 @@ struct SSAOPC
     uint numSamples;
 };
 
+struct BloomPC
+{
+    vec4 threshold;
+};
+
 struct GPUTransform
 {
 	vec4 row0;
