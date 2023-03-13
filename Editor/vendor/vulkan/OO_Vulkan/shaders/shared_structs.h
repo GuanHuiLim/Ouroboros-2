@@ -81,6 +81,15 @@ struct BloomPC
     vec4 threshold;
 };
 
+struct ColourCorrectPC
+{
+    vec4 shadowCol;
+    vec4 midCol;
+    vec4 highCol;
+    vec2 threshold;
+
+};
+
 struct GPUTransform
 {
 	vec4 row0;
