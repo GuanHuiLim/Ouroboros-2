@@ -2,6 +2,16 @@
 
 namespace Ouroboros
 {
+    public enum AudioSourceGroup
+    {
+        None = 0,
+        SFXGeneral,
+        SFXVoice,
+        SFXEnvironment,
+        Music,
+        _MAX,
+    }
+
     public class AudioSource : Component
     {
         [DllImport("__Internal")] private static extern void AudioSourceComponent_Play(uint sceneID, ulong instanceID);
@@ -30,6 +40,15 @@ namespace Ouroboros
         public void UnPause()
         {
             AudioSourceComponent_UnPause(gameObject.scene, gameObject.GetInstanceID());
+        }
+
+        [DllImport("__Internal")] private static extern int AudioSourceComponent_GetGroup(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetGroup(uint sceneID, ulong instanceID, int value);
+
+        public AudioSourceGroup group
+        {
+            get { return (AudioSourceGroup)AudioSourceComponent_GetGroup(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetGroup(gameObject.scene, gameObject.GetInstanceID(), (int)value); }
         }
 
         [DllImport("__Internal")] private static extern bool AudioSourceComponent_GetMuted(uint sceneID, ulong instanceID);
