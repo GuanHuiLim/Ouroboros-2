@@ -2,16 +2,6 @@
 
 namespace Ouroboros
 {
-    public enum AudioSourceGroup
-    {
-        None = 0,
-        SFXGeneral,
-        SFXVoice,
-        SFXEnvironment,
-        Music,
-        _MAX,
-    }
-
     public class AudioSource : Component
     {
         [DllImport("__Internal")] private static extern void AudioSourceComponent_Play(uint sceneID, ulong instanceID);
