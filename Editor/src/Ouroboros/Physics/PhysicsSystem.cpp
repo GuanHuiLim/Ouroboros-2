@@ -167,11 +167,12 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
-        m_accumulator += deltaTime;
-        
         //avoids spiral of death.
-        if (m_accumulator > AccumulatorLimit)
-            m_accumulator = AccumulatorLimit;
+        /*if (m_accumulator > AccumulatorLimit)
+            m_accumulator = AccumulatorLimit;*/
+
+        Timestep frametime = deltaTime > MaxFrameTime ? MaxFrameTime : deltaTime;
+        m_accumulator += frametime;
 
         while (m_accumulator >= FixedDeltaTime)
         {
@@ -895,11 +896,20 @@ namespace oo
         return result;
     }
 
-    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime)
+    void PhysicsSystem::SetFixedDeltaTimescale(Timestep NewFixedTime)
     { 
-        FixedDeltaTime = NewFixedTime; 
-        auto newLimit = FixedDeltaTime * MaxIterations;
-        AccumulatorLimit =  AccumulatorLimit < newLimit ? newLimit : AccumulatorLimit;
+        FixedDeltaTimescale = NewFixedTime;
+        FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaTimescale;
+        MaxFrameTime = MaxFrameRateMultiplier * FixedDeltaTime;
+
+        //FixedDeltaTime = NewFixedTime; 
+        //auto newLimit = FixedDeltaTime * MaxIterations;
+        //AccumulatorLimit =  AccumulatorLimit < newLimit ? newLimit : AccumulatorLimit;
+    }
+
+    PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTimescale()
+    {
+        return FixedDeltaTimescale;
     }
 
     PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()
