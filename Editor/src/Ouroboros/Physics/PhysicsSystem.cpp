@@ -581,6 +581,8 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_trigger_resoltion, tracy::Color::PeachPuff);
         auto trigger_queue = m_physicsWorld.getTriggerData();
+        PhysicsTriggersEvent ptse;
+        ptse.TriggerEvents.reserve(trigger_queue->size());
         while (!trigger_queue->empty())
         {
             myPhysx::TriggerManifold trigger_manifold = trigger_queue->front();
@@ -629,14 +631,17 @@ namespace oo
                 break;
             }
 
+            ptse.TriggerEvents.emplace_back(pte);
 
-            TRACY_PROFILE_SCOPE_NC(broadcast_physics_trigger_event, tracy::Color::PeachPuff);
+            /*TRACY_PROFILE_SCOPE_NC(broadcast_physics_trigger_event, tracy::Color::PeachPuff);
             EventManager::Broadcast(&pte);
-            TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();*/
 
             trigger_queue->pop();
         }
         m_physicsWorld.clearTriggerData();
+
+
         TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_NC(physics_collision_resoltion, tracy::Color::PeachPuff);
@@ -644,6 +649,8 @@ namespace oo
         //jobsystem::job collision_resolution;
 
         auto collision_queue = m_physicsWorld.getCollisionData();
+        PhysicsCollisionsEvent pcse;
+        pcse.CollisionEvents.reserve(collision_queue->size());
         while (!collision_queue->empty())
         {
             myPhysx::ContactManifold contact_manifold = collision_queue->front();
@@ -691,18 +698,32 @@ namespace oo
                 pce.State = PhysicsEventState::EXIT;
                 break;
             }
+            
+            pcse.CollisionEvents.emplace_back(pce);
 
             /*jobsystem::submit(collision_resolution, [&]()
             {*/
-                TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
+                /*TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
                 EventManager::Broadcast(&pce);
-                TRACY_PROFILE_SCOPE_END();
+                TRACY_PROFILE_SCOPE_END();*/
             //});
 
             collision_queue->pop();
         }
         m_physicsWorld.clearCollisionData();
 
+
+        // resolve all events at the end
+        {
+            TRACY_PROFILE_SCOPE_NC(broadcast_physics_triggers_bulk_event, tracy::Color::PeachPuff);
+            EventManager::Broadcast(&ptse);
+            TRACY_PROFILE_SCOPE_END();
+        }
+        {
+            TRACY_PROFILE_SCOPE_NC(broadcast_physics_collisions_bulk_event, tracy::Color::PeachPuff);
+            EventManager::Broadcast(&pcse);
+            TRACY_PROFILE_SCOPE_END();
+        }
         //jobsystem::wait(collision_resolution);
 
         TRACY_PROFILE_SCOPE_END();

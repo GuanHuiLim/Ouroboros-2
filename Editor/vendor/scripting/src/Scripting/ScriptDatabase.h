@@ -35,7 +35,9 @@ namespace oo
         using UUID = uint64_t;
         using IntPtr = uint32_t;
         using Callback = std::function<void(MonoObject* object)>;
+        using UUIDCallback = std::function<void(UUID uuid, MonoObject* object)>;
         using ObjectCheck = std::function<bool(UUID)>;
+        using ClassCheck = std::function<bool(MonoClass*)>;
 
         static constexpr IntPtr InvalidPtr = 0;
 
@@ -103,6 +105,9 @@ namespace oo
         void ForEachEnabled(const char* name_space, const char* name, Callback callback, ObjectCheck filter = nullptr);
         void ForEachEnabled(UUID id, Callback callback, ObjectCheck filter = nullptr);
         void ForAllEnabled(Callback callback, ObjectCheck filter = nullptr);
+        void ForAllEnabled(UUIDCallback callback, ObjectCheck filter = nullptr);
+
+        void ForAllEnabledByClass(UUIDCallback callback, ClassCheck classFilter, ObjectCheck filter = nullptr);
 
         void InvokeForAllEnabled(const char* functionName, ObjectCheck filter = nullptr);
 
