@@ -90,6 +90,13 @@ struct ColourCorrectPC
 
 };
 
+struct VignettePC
+{
+    vec4 colour;
+    vec4 vignetteValues;
+
+};
+
 struct GPUTransform
 {
 	vec4 row0;

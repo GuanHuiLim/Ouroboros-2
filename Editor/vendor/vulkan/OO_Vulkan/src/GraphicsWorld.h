@@ -268,6 +268,13 @@ public:
         glm::vec4 highlightColour{};
     }colourSettings{};
 
+    struct VignetteSettings
+    {
+        vec4 colour;
+        float innerRadius;
+        float outerRadius;
+    }vignetteSettings{};
+
     friend class VulkanRenderer;
 private:
     int32_t m_entityCount{};
