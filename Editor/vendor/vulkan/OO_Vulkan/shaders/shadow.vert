@@ -54,7 +54,7 @@ void main()
 	// inefficient
 
 	vec4 outPosition;
-	bool skinned = (inInstanceData.y & 0xFF00 ) > 1;
+	bool skinned = UnpackSkinned(inInstanceData.y);
     if(skinned)
 	{
 		mat4x4 boneToModel; // what do i do with this

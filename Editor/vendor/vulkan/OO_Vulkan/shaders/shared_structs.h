@@ -105,6 +105,7 @@ struct GPUObjectInformation
     int entityID;
     uint materialIdx;
     uint unused;
+    vec4 emissiveColour;
 };
 
 #endif //! COMMON_HOST_DEVICE

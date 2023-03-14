@@ -13,8 +13,9 @@ layout (set = 0, binding = 1) uniform sampler2D samplerDepth;
 layout (set = 0, binding = 2) uniform sampler2D samplerNormal;
 layout (set = 0, binding = 3) uniform sampler2D samplerAlbedo;
 layout (set = 0, binding = 4) uniform sampler2D samplerMaterial;
-layout (set = 0, binding = 5) uniform sampler2D samplerShadows;
-layout (set = 0, binding = 6) uniform sampler2D samplerSSAO;
+layout (set = 0, binding = 5) uniform sampler2D samplerEmissive;
+layout (set = 0, binding = 6) uniform sampler2D samplerShadows;
+layout (set = 0, binding = 7) uniform sampler2D samplerSSAO;
 
 #include "lights.shader"
 
@@ -157,7 +158,9 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 		// Specular map values are stored in alpha of albedo mrt
 		vec3 R = -reflect(L, N);
 		float RdotV = max(0.0, dot(R, V));
-		vec3 spec = lCol * specular * pow(RdotV, 16.0) * atten;
+		vec3 spec = lCol * specular 
+		* pow(RdotV, 2.0) 
+		* atten;
 		//vec3 spec = lCol  * pow(RdotV, 16.0) * atten;
 	
 		//result = diff;// + spec;	
@@ -238,8 +241,9 @@ void main()
 		lightContribution += res;
 	}
 	
-	vec3 ambientContribution = albedo.rgb  * ambient ;
-	result =  (ambientContribution * SSAO + lightContribution);
+	vec3 ambientContribution = albedo.rgb  * ambient;
+	vec3 emissive = texture(samplerEmissive,inUV).rgb;
+	result =  (ambientContribution * SSAO + lightContribution) + emissive;
 
 	outFragcolor = vec4(result, albedo.a);	
 

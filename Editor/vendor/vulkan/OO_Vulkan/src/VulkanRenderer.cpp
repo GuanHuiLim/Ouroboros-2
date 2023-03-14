@@ -2000,8 +2000,8 @@ void VulkanRenderer::UploadInstanceData()
 	// TODO: Must the entire buffer be uploaded every frame?
 
 	uint32_t indexCounter = 0;
-	std::vector<oGFX::InstanceData> instanceData;
-	instanceData.reserve(objectCount);
+	std::vector<oGFX::InstanceData> instanceDataBuff;
+	instanceDataBuff.reserve(objectCount);
 	if (currWorld)
 	{
 		uint32_t matCnt = 0;
@@ -2013,7 +2013,7 @@ void VulkanRenderer::UploadInstanceData()
 			{
 				if (ent.submesh[i] == true)
 				{
-					oGFX::InstanceData id;
+					oGFX::InstanceData instData;
 					//size_t sz = instanceData.size();
 					//for (size_t x = 0; x < g_globalModels[ent.modelID].meshCount; x++)
 					{
@@ -2024,6 +2024,7 @@ void VulkanRenderer::UploadInstanceData()
 						uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
 						uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
 						uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
+						uint32_t emissive = ent.bindlessGlobalTextureIndex_Emissive;
 						const uint8_t perInstanceData = ent.instanceData;
 
 						if (albedo == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Albedo].isValid == false)
@@ -2034,6 +2035,8 @@ void VulkanRenderer::UploadInstanceData()
 							roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
 						if (metallic == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Metallic].isValid == false)
 							metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
+						if (emissive == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Emissive].isValid == false)
+							emissive = blackTextureID; // TODO: Dont hardcode this bindless texture index
 
 						// Important: Make sure this index packing matches the unpacking in the shader
 						const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
@@ -2041,7 +2044,7 @@ void VulkanRenderer::UploadInstanceData()
 						const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
 						auto res = ent.flags & ObjectInstanceFlags::SKINNED; 
 						auto isSkin = (res== ObjectInstanceFlags::SKINNED);
-						const uint32_t unused = (uint32_t)perInstanceData | isSkin << 8; //matCnt;
+						const uint32_t emissive_skinned = emissive << 16 | (uint32_t)perInstanceData | isSkin << 8; //matCnt;
 
 																						 // Putting these ranges here for easy reference:
 																						 // 9-bit:  [0 to 511]
@@ -2055,8 +2058,9 @@ void VulkanRenderer::UploadInstanceData()
 
 																						 // TODO: This is the solution for now.
 																						 // In the future, we can just use an index for all the materials (indirection) to fetch from another buffer.
-						id.instanceAttributes = uvec4(instanceID, unused, albedo_normal, roughness_metallic);
-						instanceData.emplace_back(id);
+						instData.instanceAttributes = uvec4(instanceID, emissive_skinned, albedo_normal, roughness_metallic);
+						
+						instanceDataBuff.emplace_back(instData);
 					}
 				}				
 
@@ -2077,6 +2081,7 @@ void VulkanRenderer::UploadInstanceData()
 			GPUObjectInformation oi;
 			oi.entityID = ent.entityID;
 			oi.materialIdx = 7; // tem,p
+			oi.emissiveColour = ent.emissiveColour;
 			if ((ent.flags & ObjectInstanceFlags::SKINNED) == ObjectInstanceFlags::SKINNED)
 			{
 				auto& mdl = g_globalModels[ent.modelID];
@@ -2107,7 +2112,7 @@ void VulkanRenderer::UploadInstanceData()
 	}
 	
 
-	if (instanceData.empty())
+	if (instanceDataBuff.empty())
 	{
 		return;
 	}
@@ -2119,12 +2124,12 @@ void VulkanRenderer::UploadInstanceData()
 
     // Better to catch this on the software side early than the Vulkan validation layer
 	// TODO: Fix this gracefully
-    if (instanceData.size() > MAX_OBJECTS)
+    if (instanceDataBuff.size() > MAX_OBJECTS)
     {
 		MESSAGE_BOX_ONCE(windowPtr->GetRawHandle(), L"You just busted the max size of instance buffer.", L"BAD ERROR");
     }
 
-	instanceBuffer.writeTo(instanceData.size(), instanceData.data());
+	instanceBuffer.writeTo(instanceDataBuff.size(), instanceDataBuff.data());
 
 }
 
@@ -3549,6 +3554,14 @@ uint32_t VulkanRenderer::CreateTextureImage(const std::string& fileName)
 	oGFX::FileImageData imageData;
 	imageData.Create(fileName);
 	
+//#define OVERIDE_TEXTURE_SIZE_ONE
+#ifdef OVERIDE_TEXTURE_SIZE_ONE
+	imageData.w = 1;
+	imageData.h = 1;
+	imageData.dataSize = 1 * 1 * 4;
+	imageData.mipInformation.front().imageExtent = VkExtent3D{ 1,1,1 };
+#endif // OVERIDE_TEXTURE_SIZE_ONE
+
 	//int width{}, height{};
 	//VkDeviceSize imageSize;
 	//unsigned char *imageData = oGFX::LoadTextureFromFile(fileName, width, height, imageSize);
@@ -3562,6 +3575,7 @@ uint32_t VulkanRenderer::CreateTextureImage(const std::string& fileName)
 uint32_t VulkanRenderer::CreateTextureImage(const oGFX::FileImageData& imageInfo)
 {
 	VkDeviceSize imageSize = imageInfo.dataSize;
+
 	totalTextureSizeLoaded += imageSize;
 
 	auto indx = [&]{

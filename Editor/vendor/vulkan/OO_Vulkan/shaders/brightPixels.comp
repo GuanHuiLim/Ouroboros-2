@@ -5,7 +5,7 @@
 #include "shared_structs.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
-layout (binding = 1,r11f_g11f_b10f) uniform readonly image2D inputImage;
+layout (binding = 1/*,r11f_g11f_b10f*/)  uniform sampler2D inputImage;
 layout (binding = 2,rgba16f) uniform writeonly image2D resultImage;
 
 layout(push_constant)uniform PushBloomConstant
@@ -41,7 +41,7 @@ vec3 QuadraticThreshold(vec3 color, float threshold, vec3 curve)
 void main()
 {	
     // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
-	vec4 res = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
+	vec4 res = texture(inputImage, ivec2(gl_GlobalInvocationID.xy) );
 
 	float brightness = dot(res.rgb, vec3(0.2126, 0.7152, 0.0722));
     //if(brightness > pc.threshold.x)

@@ -7,6 +7,9 @@ layout(std430, set = 0, binding = 4) readonly buffer BoneBuffer
     mat4x4 BoneBuffer_SSBO[];
 };
 
+bool UnpackSkinned(uint skinnedflag) {
+    return (skinnedflag & 0xFF00 ) > 1;
+}
 
 mat4x4 GetBoneMatrix(uint boneIndex)
 {
