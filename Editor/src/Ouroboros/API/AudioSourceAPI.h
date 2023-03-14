@@ -38,6 +38,7 @@ namespace oo
 
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Volume, float, GetVolume, SetVolume)
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Pitch, float, GetPitch, SetPitch)
+    SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Priority, int, GetPriority, SetPriority)
 
     SCRIPT_API_GET_FUNC(AudioSourceComponent, IsPlaying, bool, IsPlaying)
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, PlaybackTime, float, GetPlaybackTime, SetPlaybackTime)

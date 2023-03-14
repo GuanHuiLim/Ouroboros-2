@@ -95,6 +95,15 @@ namespace Ouroboros
             set { AudioSourceComponent_SetPitch(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
+        [DllImport("__Internal")] private static extern int AudioSourceComponent_GetPriority(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetPriority(uint sceneID, ulong instanceID, int value);
+
+        public int priority
+        {
+            get { return AudioSourceComponent_GetPriority(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetPriority(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
         [DllImport("__Internal")] private static extern bool AudioSourceComponent_IsPlaying(uint sceneID, ulong instanceID);
 
         public bool isPlaying
