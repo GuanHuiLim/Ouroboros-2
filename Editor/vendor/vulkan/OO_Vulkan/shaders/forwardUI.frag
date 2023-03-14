@@ -83,11 +83,11 @@ void main()
         outfragCol.rgb = outfragCol.rgb * inColor.rgb;
         outfragCol.a = outfragCol.a * tempcol.a;
 
-        // will be corrected during tone mapping
+        // done after tonemapping so correct here
         const float gamma = 2.2;
 	    //outfragCol.rgb =  pow(outfragCol.rgb, vec3(1.0/gamma));
         // handled in post processing
-        //outfragCol.rgb = pow(outfragCol.rgb,vec3(2.2));
+        outfragCol.rgb = pow(outfragCol.rgb,vec3(gamma));
     }
 
     // hardcode red

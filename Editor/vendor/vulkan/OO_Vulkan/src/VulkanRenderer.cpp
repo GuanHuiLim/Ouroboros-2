@@ -2300,8 +2300,8 @@ void VulkanRenderer::RenderFrame()
 
 				RenderPassDatabase::GetRenderPass<DeferredCompositionRenderpass>()->Draw();
 				RenderPassDatabase::GetRenderPass<ForwardParticlePass>()->Draw();
-				RenderPassDatabase::GetRenderPass<ForwardUIPass>()->Draw();
 				RenderPassDatabase::GetRenderPass<BloomPass>()->Draw();
+				RenderPassDatabase::GetRenderPass<ForwardUIPass>()->Draw();
 				//RenderPassDatabase::GetRenderPass<ForwardRenderpass>()->Draw();
 #if defined		(ENABLE_DECAL_IMPLEMENTATION)
 				RenderPassDatabase::GetRenderPass<ForwardDecalRenderpass>()->Draw();
