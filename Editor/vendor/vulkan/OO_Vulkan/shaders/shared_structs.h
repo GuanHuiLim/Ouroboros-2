@@ -63,7 +63,7 @@ struct LightPC
     float ambient;
     float maxBias;
     float mulBias;
-    uint PADDING;
+    float specularModifier;
 };
 
 struct SSAOPC

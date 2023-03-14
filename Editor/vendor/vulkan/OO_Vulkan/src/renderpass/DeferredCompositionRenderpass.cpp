@@ -111,6 +111,7 @@ void DeferredCompositionRenderpass::Draw()
 
 	LightPC pc{};
 	pc.useSSAO = vr.useSSAO ? 1 : 0;
+	pc.specularModifier = vr.currWorld->lightSettings.specularModifier;
 
 	size_t lightCnt = 0;
 	auto& lights = vr.currWorld->GetAllOmniLightInstances();

@@ -159,7 +159,7 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 		vec3 R = -reflect(L, N);
 		float RdotV = max(0.0, dot(R, V));
 		vec3 spec = lCol * specular 
-		* pow(RdotV, 2.0) 
+		* pow(RdotV, max(PC.specularModifier,1.0)) 
 		* atten;
 		//vec3 spec = lCol  * pow(RdotV, 16.0) * atten;
 	

@@ -251,6 +251,7 @@ public:
         float ambient = 0.002f;
         float maxBias = 0.0001f;
         float biasMultiplier = 0.002f;
+        float specularModifier = 16.0f;
     }lightSettings{};
 
     struct BloomSettings
