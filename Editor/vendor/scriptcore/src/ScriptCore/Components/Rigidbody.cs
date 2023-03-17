@@ -58,6 +58,24 @@ namespace Ouroboros
             set { RigidbodyComponent_SetAngularDamping(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
+        [DllImport("__Internal")] private static extern uint RigidbodyComponent_GetInputLayer(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetInputLayer(uint sceneID, ulong instanceID, uint value);
+
+        public uint inputLayer
+        {
+            get { return RigidbodyComponent_GetInputLayer(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetInputLayer(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern uint RigidbodyComponent_GetOutputLayer(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void RigidbodyComponent_SetOutputLayer(uint sceneID, ulong instanceID, uint value);
+
+        public uint outputLayer
+        {
+            get { return RigidbodyComponent_GetOutputLayer(gameObject.scene, gameObject.GetInstanceID()); }
+            set { RigidbodyComponent_SetOutputLayer(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
         [DllImport("__Internal")] private static extern void RigidbodyComponent_GetOffset(uint sceneID, ulong instanceID, out float x, out float y, out float z);
         [DllImport("__Internal")] private static extern void RigidbodyComponent_SetOffset(uint sceneID, ulong instanceID, float x, float y, float z);
 
