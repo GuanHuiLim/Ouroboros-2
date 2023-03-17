@@ -35,6 +35,7 @@ namespace oo
 
         [[nodiscard]] inline Asset GetAudioClip() const { return audioClip; }
         [[nodiscard]] inline FMOD::Channel* GetChannel() const { return channel; }
+        [[nodiscard]] inline AudioSourceGroup GetGroup() const { return group; }
         [[nodiscard]] inline bool IsPlayOnAwake() const { return playOnAwake; }
         [[nodiscard]] inline bool IsMuted() const { return muted; }
         [[nodiscard]] inline bool IsLoop() const { return loop; }
@@ -52,6 +53,7 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         void SetAudioClip(Asset a);
+        void SetGroup(AudioSourceGroup g);
         void SetMuted(bool m);
         void SetPlayOnAwake(bool p);
         void SetLoop(bool l);
@@ -96,6 +98,7 @@ namespace oo
         /* --------------------------------------------------------------------------- */
 
         Asset audioClip;
+        AudioSourceGroup group = AudioSourceGroup::None;
         bool playOnAwake = true;
         bool muted = false;
         bool loop = false;

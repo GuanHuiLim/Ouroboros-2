@@ -64,6 +64,20 @@ namespace oo
         obj->GetComponent<AudioSourceComponent>().SetAudioClip(asset);
     }
 
+    SCRIPT_API int AudioSourceComponent_GetGroup(Scene::ID_type sceneID, UUID uuid)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        AudioSourceComponent& component = obj->GetComponent<AudioSourceComponent>();
+        return static_cast<int>(component.GetGroup());
+    }
+
+    SCRIPT_API void AudioSourceComponent_SetGroup(Scene::ID_type sceneID, UUID uuid, int group)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        AudioSourceComponent& component = obj->GetComponent<AudioSourceComponent>();
+        component.SetGroup(static_cast<AudioSourceGroup>(group));
+    }
+
     /*-----------------------------------------------------------------------------*/
     /* AudioClip Functions for C#                                                  */
     /*-----------------------------------------------------------------------------*/

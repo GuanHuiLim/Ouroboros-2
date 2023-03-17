@@ -22,6 +22,16 @@ Technology is prohibited.
 
 namespace oo
 {
+    enum class AudioSourceGroup : int
+    {
+        None = 0,
+        SFXGeneral,
+        SFXVoice,
+        SFXEnvironment,
+        Music,
+        _MAX,
+    };
+
     using SoundID = int16_t;
 
     namespace audio
@@ -36,7 +46,7 @@ namespace oo
         /// </summary>
         /// <param name="channelCount">The maximum number of channels.</param>
         void Init(size_t channelCount = 255);
-        
+
         /// <summary>
         /// Updates the audio system.
         /// </summary>
@@ -81,6 +91,13 @@ namespace oo
         /// Stops all sounds.
         /// </summary>
         void StopAll();
+
+        /// <summary>
+        /// Retrieves a channel group from an audio source group.
+        /// </summary>
+        /// <param name="group">The audio source group.</param>
+        /// <returns>The channel group pointer.</returns>
+        FMOD::ChannelGroup* GetChannelGroup(AudioSourceGroup group);
 
         /* --------------------------------------------------------------------------- */
         /* Global Audio                                                                */

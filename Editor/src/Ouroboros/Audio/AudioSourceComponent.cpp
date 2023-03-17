@@ -33,9 +33,18 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
+    registration::enumeration<AudioSourceGroup>("Audio Group")
+        (
+        value("None", AudioSourceGroup::None),
+        value("SFX", AudioSourceGroup::SFXGeneral),
+        value("SFX - Voice", AudioSourceGroup::SFXVoice),
+        value("SFX - Environment", AudioSourceGroup::SFXEnvironment),
+        value("Music", AudioSourceGroup::Music)
+        );
     registration::class_<AudioSourceComponent>("Audio Source")
         .property("Audio Clip", &AudioSourceComponent::GetAudioClip, &AudioSourceComponent::SetAudioClip)
         (metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Audio)))
+        .property("Audio Group", &AudioSourceComponent::GetGroup, &AudioSourceComponent::SetGroup)
         .property("Mute", &AudioSourceComponent::IsMuted, &AudioSourceComponent::SetMuted)
         .property("Play On Awake", &AudioSourceComponent::IsPlayOnAwake, &AudioSourceComponent::SetPlayOnAwake)
         .property("Loop", &AudioSourceComponent::IsLoop, &AudioSourceComponent::SetLoop)
@@ -43,8 +52,7 @@ namespace oo
         (metadata(UI_metadata::DRAG_SPEED, 0.01f))
         .property("Pitch", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
         (metadata(UI_metadata::DRAG_SPEED, 0.01f))
-        .property("Priority", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
-        (metadata(UI_metadata::DRAG_SPEED, 0.01f));
+        .property("Priority", &AudioSourceComponent::GetPriority, &AudioSourceComponent::SetPriority);
     };
 
     bool AudioSourceComponent::IsPlaying() const
@@ -77,6 +85,17 @@ namespace oo
     void AudioSourceComponent::SetAudioClip(Asset a)
     {
         audioClip = a;
+        if (!channel)
+            return;
+        Play();
+    }
+
+    void AudioSourceComponent::SetGroup(AudioSourceGroup g)
+    {
+        group = g;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setChannelGroup(audio::GetChannelGroup(g)));
     }
 
     void AudioSourceComponent::SetMuted(bool m)
@@ -175,6 +194,7 @@ namespace oo
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
         FMOD_VECTOR fmPos = { .x = posX, .y = posY, .z = posZ };
         FMOD_ERR_HAND(channel->set3DAttributes(&fmPos, nullptr));
+        SetGroup(group);
         SetMuted(muted);
         SetLoop(loop);
         SetLoopBegin(loopBegin);

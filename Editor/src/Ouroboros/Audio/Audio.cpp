@@ -33,6 +33,7 @@ namespace oo
 
         FMOD::System* system;
         FMOD::ChannelGroup* channelGroupGlobal;
+        std::array<FMOD::ChannelGroup*, static_cast<size_t>(AudioSourceGroup::_MAX)> channelGroups;
         std::array<FMOD::Sound*, MAX_SOUNDS> sounds;
         SoundID soundIDNext;
 
@@ -69,6 +70,27 @@ namespace oo
 
             // Create channel groups
             FMOD_ERR_HAND(system->createChannelGroup("Global", &channelGroupGlobal));
+            channelGroups[static_cast<size_t>(AudioSourceGroup::None)] = channelGroupGlobal;
+            {
+                FMOD_ERR_HAND(system->createChannelGroup("SFX", &channelGroups[static_cast<size_t>(AudioSourceGroup::SFXGeneral)]));
+                channelGroups[static_cast<size_t>(AudioSourceGroup::None)]
+                    ->addGroup(channelGroups[static_cast<size_t>(AudioSourceGroup::SFXGeneral)]);
+                {
+                    FMOD_ERR_HAND(system->createChannelGroup("SFX_Voice", &channelGroups[static_cast<size_t>(AudioSourceGroup::SFXVoice)]));
+                    channelGroups[static_cast<size_t>(AudioSourceGroup::SFXGeneral)]
+                        ->addGroup(channelGroups[static_cast<size_t>(AudioSourceGroup::SFXVoice)]);
+                }
+                {
+                    FMOD_ERR_HAND(system->createChannelGroup("SFX_Environment", &channelGroups[static_cast<size_t>(AudioSourceGroup::SFXEnvironment)]));
+                    channelGroups[static_cast<size_t>(AudioSourceGroup::SFXGeneral)]
+                        ->addGroup(channelGroups[static_cast<size_t>(AudioSourceGroup::SFXEnvironment)]);
+                }
+            }
+            {
+                FMOD_ERR_HAND(system->createChannelGroup("Music", &channelGroups[static_cast<size_t>(AudioSourceGroup::Music)]));
+                channelGroups[static_cast<size_t>(AudioSourceGroup::None)]
+                    ->addGroup(channelGroups[static_cast<size_t>(AudioSourceGroup::Music)]);
+            }
 
             // Set to 1 listener
             FMOD_ERR_HAND(system->set3DNumListeners(1));
@@ -151,6 +173,11 @@ namespace oo
             FMOD::ChannelGroup* master;
             FMOD_ERR_HAND(system->getMasterChannelGroup(&master));
             FMOD_ERR_HAND(master->stop());
+        }
+
+        FMOD::ChannelGroup* GetChannelGroup(AudioSourceGroup group)
+        {
+            return channelGroups[static_cast<size_t>(group)];
         }
 
         FMOD::Channel* PlayGlobalOneShot(const SoundID& id)

@@ -133,6 +133,21 @@ namespace oo
     }
 
     /*-----------------------------------------------------------------------------*/
+    /* Audio Functions for C#                                                       */
+    /*-----------------------------------------------------------------------------*/
+    SCRIPT_API float Audio_GetGroupVolume(int group)
+    {
+        float value;
+        FMOD_ERR_HAND(audio::GetChannelGroup(static_cast<AudioSourceGroup>(group))->getVolume(&value));
+        return value;
+    }
+
+    SCRIPT_API void Audio_SetGroupVolume(int group, float value)
+    {
+        FMOD_ERR_HAND(audio::GetChannelGroup(static_cast<AudioSourceGroup>(group))->setVolume(value));
+    }
+
+    /*-----------------------------------------------------------------------------*/
     /* Asset Functions for C#                                                      */
     /*-----------------------------------------------------------------------------*/
     
