@@ -111,6 +111,7 @@ void DeferredCompositionRenderpass::Draw()
 
 	LightPC pc{};
 	pc.useSSAO = vr.useSSAO ? 1 : 0;
+	pc.specularModifier = vr.currWorld->lightSettings.specularModifier;
 
 	size_t lightCnt = 0;
 	auto& lights = vr.currWorld->GetAllOmniLightInstances();
@@ -201,6 +202,11 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         gbuffer->attachments[GBufferAttachmentIndex::MATERIAL].view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+	VkDescriptorImageInfo texDescriptorEmissive = oGFX::vkutils::inits::descriptorImageInfo(
+		GfxSamplerManager::GetSampler_Deferred(),
+		gbuffer->attachments[GBufferAttachmentIndex::EMISSIVE].view,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
     VkDescriptorImageInfo texDescriptorDepth = oGFX::vkutils::inits::descriptorImageInfo(
         GfxSamplerManager::GetSampler_Deferred(),
         gbuffer->attachments[GBufferAttachmentIndex::DEPTH]   .view,
@@ -227,10 +233,10 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        //.BindImage(5, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(5, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
-        .BindImage(6, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
-        .BindBuffer(7, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .BindImage(5, &texDescriptorEmissive, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .BindImage(6, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
+        .BindImage(7, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
+        .BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .Build(vr.descriptorSet_DeferredComposition, SetLayoutDB::DeferredLightingComposition);
 }
 

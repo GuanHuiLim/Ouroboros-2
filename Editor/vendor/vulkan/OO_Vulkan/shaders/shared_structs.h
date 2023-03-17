@@ -63,7 +63,7 @@ struct LightPC
     float ambient;
     float maxBias;
     float mulBias;
-    uint PADDING;
+    float specularModifier;
 };
 
 struct SSAOPC
@@ -74,6 +74,27 @@ struct SSAOPC
     float bias;
     float intensity;
     uint numSamples;
+};
+
+struct BloomPC
+{
+    vec4 threshold;
+};
+
+struct ColourCorrectPC
+{
+    vec4 shadowCol;
+    vec4 midCol;
+    vec4 highCol;
+    vec2 threshold;
+
+};
+
+struct VignettePC
+{
+    vec4 colour;
+    vec4 vignetteValues;
+
 };
 
 struct GPUTransform
@@ -91,6 +112,7 @@ struct GPUObjectInformation
     int entityID;
     uint materialIdx;
     uint unused;
+    vec4 emissiveColour;
 };
 
 #endif //! COMMON_HOST_DEVICE

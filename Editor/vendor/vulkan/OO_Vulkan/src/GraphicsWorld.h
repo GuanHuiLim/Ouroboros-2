@@ -71,8 +71,10 @@ struct ObjectInstance
     uint32_t bindlessGlobalTextureIndex_Normal{ 0xFFFFFFFF };
     uint32_t bindlessGlobalTextureIndex_Roughness{ 0xFFFFFFFF };
     uint32_t bindlessGlobalTextureIndex_Metallic{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Emissive{ 0xFFFFFFFF };
     // End temp stuff
 
+    glm::vec4 emissiveColour{};
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
     ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(ObjectInstanceFlags::RENDER_ENABLED 
@@ -249,7 +251,30 @@ public:
         float ambient = 0.002f;
         float maxBias = 0.0001f;
         float biasMultiplier = 0.002f;
+        float specularModifier = 16.0f;
     }lightSettings{};
+
+    struct BloomSettings
+    {
+        float threshold = 1.1f;
+        float softThreshold = 0.5f;
+    }bloomSettings{};
+
+    struct ColourCorrectionSettings
+    {
+        float highlightThreshold = 1.0f;
+        float shadowThreshold = 0.0f;
+        glm::vec4 shadowColour{};
+        glm::vec4 midtonesColour{};
+        glm::vec4 highlightColour{};
+    }colourSettings{};
+
+    struct VignetteSettings
+    {
+        vec4 colour;
+        float innerRadius;
+        float outerRadius;
+    }vignetteSettings{};
 
     friend class VulkanRenderer;
 private:

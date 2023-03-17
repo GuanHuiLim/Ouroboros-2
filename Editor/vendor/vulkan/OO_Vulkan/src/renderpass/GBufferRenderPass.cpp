@@ -85,15 +85,18 @@ void GBufferRenderPass::Draw()
 	clearValues[GBufferAttachmentIndex::NORMAL]  .color = tangentNormal;
 	clearValues[GBufferAttachmentIndex::ALBEDO].color =	  zeroFloat4;
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
+	clearValues[GBufferAttachmentIndex::EMISSIVE].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 	
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
 		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
 		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&attachments[GBufferAttachmentIndex::EMISSIVE])
 		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
 		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
 		.Build(currentFB,renderpass_GBuffer);
@@ -115,6 +118,8 @@ void GBufferRenderPass::Draw()
 	
 	rhi::CommandList cmd{ cmdlist, "Gbuffer Pass"};
 	cmd.SetDefaultViewportAndScissor();
+
+	
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
@@ -182,6 +187,8 @@ void GBufferRenderPass::SetupRenderpass()
 	attachments[GBufferAttachmentIndex::ENTITY_ID].forFrameBuffer(&m_device, VK_FORMAT_R32_SINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::DEPTH	].name = "GB_DEPTH";
 	attachments[GBufferAttachmentIndex::DEPTH	].forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::EMISSIVE	].name = "GB_Emissive";
+	attachments[GBufferAttachmentIndex::EMISSIVE	].forFrameBuffer(&m_device, vr.G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 
 	// Set up separate renderpass with references to the color and depth attachments
 	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};
@@ -211,6 +218,7 @@ void GBufferRenderPass::SetupRenderpass()
 	attachmentDescs[GBufferAttachmentIndex::NORMAL]  .format = attachments[GBufferAttachmentIndex::NORMAL]  .format;
 	attachmentDescs[GBufferAttachmentIndex::ALBEDO]  .format = attachments[GBufferAttachmentIndex::ALBEDO]  .format;
 	attachmentDescs[GBufferAttachmentIndex::MATERIAL].format = attachments[GBufferAttachmentIndex::MATERIAL].format;
+	attachmentDescs[GBufferAttachmentIndex::EMISSIVE].format = attachments[GBufferAttachmentIndex::EMISSIVE].format;
 	attachmentDescs[GBufferAttachmentIndex::ENTITY_ID].format = attachments[GBufferAttachmentIndex::ENTITY_ID].format;
 	attachmentDescs[GBufferAttachmentIndex::DEPTH]   .format = attachments[GBufferAttachmentIndex::DEPTH]   .format;
 	
@@ -220,6 +228,7 @@ void GBufferRenderPass::SetupRenderpass()
 	colorReferences.push_back({ GBufferAttachmentIndex::NORMAL,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::ALBEDO,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::MATERIAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	colorReferences.push_back({ GBufferAttachmentIndex::EMISSIVE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::ENTITY_ID, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 	VkAttachmentReference depthReference = {};
@@ -351,6 +360,7 @@ void GBufferRenderPass::CreatePipeline()
 	// won't see anything rendered to the attachment
 	std::array<VkPipelineColorBlendAttachmentState, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> blendAttachmentStates =
 	{
+		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),

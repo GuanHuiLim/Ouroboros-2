@@ -30,6 +30,7 @@ enum GBufferAttachmentIndex
     NORMAL ,
     ALBEDO ,
     MATERIAL ,
+    EMISSIVE ,
     ENTITY_ID,
     DEPTH ,
 
