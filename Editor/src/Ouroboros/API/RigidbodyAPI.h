@@ -32,6 +32,9 @@ namespace oo
     SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LinearDamping, float, GetLinearDamping, SetLinearDamping)
     SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, AngularDamping, float, GetAngularDamping, SetAngularDamping)
 
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, InputLayer, uint32_t, GetInputLayer, SetInputLayer)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, OutputLayer, uint32_t, GetOutputLayer, SetOutputLayer)
+
     SCRIPT_API void RigidbodyComponent_GetOffset(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
