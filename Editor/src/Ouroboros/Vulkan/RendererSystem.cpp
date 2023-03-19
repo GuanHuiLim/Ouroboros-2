@@ -72,6 +72,9 @@ namespace oo
                 actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
                 actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
                 actualObject.submesh = m_comp.MeshInformation.submeshBits;
+                
+                actualObject.bindlessGlobalTextureIndex_Emissive = m_comp.EmissiveID;
+                actualObject.emissiveColour = m_comp.EmissiveColor;
 
                 if (transformComp.HasChangedThisFrame)
                     actualObject.localToWorld = transformComp.GlobalTransform;
@@ -145,6 +148,11 @@ namespace oo
         m_graphicsWorld->colourSettings.shadowColour = RendererSettings::setting.ColourCorrection.ShadowColour;
         m_graphicsWorld->colourSettings.midtonesColour = RendererSettings::setting.ColourCorrection.MidtonesColour;
         m_graphicsWorld->colourSettings.highlightColour = RendererSettings::setting.ColourCorrection.HighlightColour;
+
+        m_graphicsWorld->vignetteSettings.colour = RendererSettings::setting.Vignette.Colour;
+        m_graphicsWorld->vignetteSettings.innerRadius = RendererSettings::setting.Vignette.InnerRadius;
+        m_graphicsWorld->vignetteSettings.outerRadius = RendererSettings::setting.Vignette.OuterRadius;
+
     }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)

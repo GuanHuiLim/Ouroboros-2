@@ -65,6 +65,15 @@ namespace oo
         }
         ColourCorrection{};
 
+        struct VignetteSettings
+        {
+            Color Colour = Color{ 0, 0, 0, 255 };
+            float InnerRadius = 0.001f;
+            float OuterRadius = 0.0f;
+            RTTR_ENABLE();
+        }
+        Vignette{};
+
         RTTR_ENABLE();
     };
 	class RendererSettings
