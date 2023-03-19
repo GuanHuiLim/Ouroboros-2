@@ -43,11 +43,17 @@ namespace oo
             .property("Midtones Colour", &GlobalRendererSettings::ColourCorrectionSettings::MidtonesColour)
             .property("Highlight Colour", &GlobalRendererSettings::ColourCorrectionSettings::HighlightColour)
             ;
+        registration::class_<GlobalRendererSettings::VignetteSettings>("Vignette Settings")
+            .property("Colour", &GlobalRendererSettings::VignetteSettings::Colour)(metadata(UI_metadata::COLOR_PICKER, true))
+            .property("Inner Radius", &GlobalRendererSettings::VignetteSettings::InnerRadius)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Outer Radius", &GlobalRendererSettings::VignetteSettings::OuterRadius)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            ;
         registration::class_<GlobalRendererSettings>("Renderer Settings")
             .property("SSAO Configuration", &GlobalRendererSettings::SSAO)
             .property("Lighting Configuration", &GlobalRendererSettings::Lighting)
             .property("Global Bloom", &GlobalRendererSettings::Bloom)
             .property("Global Colour Correction", &GlobalRendererSettings::ColourCorrection)
+            .property("Vignette", &GlobalRendererSettings::Vignette)
             ;
     }
     

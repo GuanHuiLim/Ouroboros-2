@@ -27,31 +27,36 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
-        registration::class_<MeshRendererComponent>("Mesh Renderer")
+    registration::class_<MeshRendererComponent>("Mesh Renderer")
         .property_readonly("Graphics World ID", &MeshRendererComponent::GraphicsWorldID)
         .property_readonly("Picking ID", &MeshRendererComponent::PickingID)
         .property_readonly("Model Handle", &MeshRendererComponent::ModelHandle)
         .property("Albedo", &MeshRendererComponent::GetAlbedoMap, &MeshRendererComponent::SetAlbedoMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-        )
+            )
         .property("Normal", &MeshRendererComponent::GetNormalMap, &MeshRendererComponent::SetNormalMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-        )
+            )
         .property("Metallic", &MeshRendererComponent::GetMetallicMap, &MeshRendererComponent::SetMetallicMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-        )
+            )
         .property("Roughness", &MeshRendererComponent::GetRoughnessMap, &MeshRendererComponent::SetRoughnessMap)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-        )
+            )
         .property("Mesh", &MeshRendererComponent::GetMesh, &MeshRendererComponent::SetMesh)
         (
             metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
-        )
+            )
         .property("MeshInfo", &MeshRendererComponent::GetMeshInfo, &MeshRendererComponent::SetMeshInfo)
+        .property("Emissive Map", &MeshRendererComponent::GetEmissiveMap, &MeshRendererComponent::SetEmissiveMap)
+        (
+            metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
+        )
+        .property("Emissive Colour", &MeshRendererComponent::EmissiveColor)(metadata(UI_metadata::COLOR_PICKER, true))
         .property("Cast Shadows", &MeshRendererComponent::CastShadows)
         .property("Receive Shadows", &MeshRendererComponent::ReceiveShadows)
             ;
@@ -185,4 +190,21 @@ namespace oo
         return RoughnessHandle;
     }
 
+    void oo::MeshRendererComponent::SetEmissiveMap(Asset emissiveMap)
+    {
+        EmissiveHandle = emissiveMap;
+        if (EmissiveHandle.IsValid())
+        {
+            EmissiveID = EmissiveHandle.GetData<uint32_t>();
+        }
+        else
+        {
+            EmissiveID = 0xFFFFFFFF;
+        }
+    }
+
+    Asset oo::MeshRendererComponent::GetEmissiveMap() const
+    {
+        return EmissiveHandle;
+    }
 }

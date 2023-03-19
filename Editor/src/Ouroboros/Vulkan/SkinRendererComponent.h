@@ -13,6 +13,7 @@
 #include "MeshInfo.h"
 #include "Utility/UUID.h"
 #include <rttr/type>
+#include "Color.h"
 namespace oo
 {
 	struct SkinMeshRendererComponent
@@ -29,6 +30,10 @@ namespace oo
 		uint32_t normalID = 0xFFFFFFFF;
 		uint32_t metallicID = 0xFFFFFFFF;
 		uint32_t roughnessID = 0xFFFFFFFF;
+
+		Asset EmissiveHandle;
+		uint32_t EmissiveID = 0xFFFFFFFF;
+		Color EmissiveColor;
 
 		bool CastShadows{	 false };
 		bool ReceiveShadows{ false };
@@ -62,6 +67,9 @@ namespace oo
 
 		MeshInfo GetMeshInfo();
 		void SetMeshInfo(MeshInfo info);
+
+		void SetEmissiveMap(Asset emissiveMap);
+		Asset GetEmissiveMap() const;
 
 		RTTR_ENABLE();
 	};
