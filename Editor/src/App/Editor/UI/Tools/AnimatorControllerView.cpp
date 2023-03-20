@@ -61,6 +61,11 @@ AnimatorControllerView::NodeInfo* AnimatorControllerView::FindNode(oo::Anim::Nod
     return nullptr;
 }
 
+inline void AnimatorControllerView::UpdateGraphLink(LinkInfo const& linkinfo)
+{
+    ed::Link(linkinfo.id, linkinfo.inputID, linkinfo.outputID,linkinfo.color,linkinfo.thickness);
+}
+
 void AnimatorControllerView::ReturnID(ed::NodeId id)
 {
     free_Node_IDs.emplace(id.Get());
@@ -178,9 +183,10 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     }
 
 
-    for (auto& LinkInfo : m_links_)
+    for (auto& linkInfo : m_links_)
     {
-        ed::Link(LinkInfo.id, LinkInfo.inputID, LinkInfo.outputID);
+        //ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
+        UpdateGraphLink(linkInfo);
     }
 
     //
@@ -218,7 +224,8 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                     auto linkinfo = CreateLink(link.operator->(), inputPinId, outputPinId);
 
                     // Draw new link.
-                    ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+                    //ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+                    UpdateGraphLink(*linkinfo);
                 }
 
                 // You may choose to reject connection between these nodes
@@ -1028,7 +1035,8 @@ void AnimatorControllerView::LoadGraph(oo::AnimationComponent* _animator)
 
             auto linkinfo = CreateLink(&link, inputPin, outputPin);
 
-            ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+            //ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+            UpdateGraphLink(*linkinfo);
         }
     }
     
@@ -1098,6 +1106,9 @@ void AnimatorControllerView::Clear()
     m_nodes.clear();
     m_links_.clear();
 
+    //clear temporary info
+    ClearTempInfo();
+
     //clear the delete queue
     if (ed::BeginDelete())
     {
@@ -1122,4 +1133,10 @@ void AnimatorControllerView::Clear()
 
     //be ready to load data again
     m_firstFrame = true;
+}
+
+void AnimatorControllerView::ClearTempInfo()
+{
+    m_tempInfo.selectedLinks.clear();
+    m_tempInfo.selectedNodes.clear();
 }

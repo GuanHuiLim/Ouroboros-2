@@ -103,6 +103,8 @@ private: //Member Variables
 		oo::Anim::Link* link;
 		ed::PinId inputID;
 		ed::PinId outputID;
+		ImVec4 color{ 1,1,1,1 };
+		float thickness{ 1.f };
 		bool selected;
 
 		LinkInfo(/*ed::LinkId _id,*/ 
@@ -128,6 +130,12 @@ private: //Member Variables
 	std::stack<uintptr_t> free_Node_IDs{};		//track free ids
 
 	std::string current_group_name{};
+
+	//struct to hold temporary information
+	struct TempInfo {
+		std::vector<ed::NodeId> selectedNodes{};
+		std::vector<ed::LinkId> selectedLinks{};
+	} m_tempInfo{};
 private: //Member Functions
 
 	void BuildNode(NodeInfo* node);
@@ -149,6 +157,8 @@ private: //Member Functions
 	NodeInfo* FindNode(ed::NodeId id);
 	NodeInfo* FindNode(oo::Anim::Node* _node);
 
+	inline void UpdateGraphLink(LinkInfo const& linkinfo);
+
 	//managing node unique IDs
 	void ReturnID(ed::NodeId id);
 	void ReturnID(ed::PinId id);
@@ -160,4 +170,11 @@ private: //Member Functions
 	//void BuildNodes();
 	void BuildNodeOnEditor(NodeInfo& info);
 	void Clear();
+
+	//temporary information management
+	
+	//reset it to default state
+	inline void ClearTempInfo();
+	void TempInfo_UpdateSelectedNode(ed::NodeId id);
+	void TempInfo_UpdateSelectedLink(ed::LinkId id);
 };
