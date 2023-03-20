@@ -32,6 +32,7 @@ Technology is prohibited.
 #include "LightAPI.h"
 #include "ParticleEmitterAPI.h"
 #include "AnimationAPI.h"
+#include "RendererSettingsAPI.h"
 
 #include "RectTransformAPI.h"
 #include "UIAPI.h"
