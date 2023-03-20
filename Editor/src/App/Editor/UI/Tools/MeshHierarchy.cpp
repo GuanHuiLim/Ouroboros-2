@@ -135,7 +135,7 @@ void MeshHierarchy::Show()
 	{
 		CreateObject(modeldata->sceneInfo,m_current_id);
 	}
-	if (ImGui::Button("Generate Animation"))
+	/*if (ImGui::Button("Generate Animation"))
 	{
 		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
 
@@ -201,9 +201,94 @@ void MeshHierarchy::Show()
 			fn(3182, 3221, "Char_SprintDrag");
 			fn(3223, 3307, "Char_SprintDragHit");
 			fn(3309, 3348, "Char_TrampolineJump");
-
-
 		}
+	}*/
+
+	/*if (ImGui::Button("Generate Key"))
+	{
+		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
+		auto anim = anims.front();
+		auto const fn = [&](size_t start, size_t end, std::string name, oo::Anim::UID uid = oo::Anim::internal::invalid_ID, bool looping = false) {
+			oo::Anim::SplitAnimationInfo info{
+				.in_frames{true},
+				.looping{looping},
+				.start_frame{start},
+				.end_frame{end},
+				.anim_ID{anim->animation_ID},
+				.split_anim_ID{uid},
+				.split_animation_name{name}
+			};
+			auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
+			assert(result);
+			return result;
+		};
+		fn(1, 60, "Key_Open");
+		fn(61, 120, "Key_Close");
+		fn(121, 159, "Key_OpenIdle");
+		fn(171, 250, "Key_Trampoline");
+	}*/	
+	/*if (ImGui::Button("Generate Chest"))
+	{
+		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
+		auto anim = anims.front();
+		auto const fn = [&](size_t start, size_t end, std::string name, oo::Anim::UID uid = oo::Anim::internal::invalid_ID, bool looping = false) {
+			oo::Anim::SplitAnimationInfo info{
+				.in_frames{true},
+				.looping{looping},
+				.start_frame{start},
+				.end_frame{end},
+				.anim_ID{anim->animation_ID},
+				.split_anim_ID{uid},
+				.split_animation_name{name}
+			};
+			auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
+			assert(result);
+			return result;
+		};
+		fn(0, 130, "Chest_Open");
+	}*/
+
+	if (ImGui::Button("Generate Respawner"))
+	{
+		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
+		auto anim = anims.front();
+		auto const fn = [&](size_t start, size_t end, std::string name, oo::Anim::UID uid = oo::Anim::internal::invalid_ID, bool looping = false) {
+			oo::Anim::SplitAnimationInfo info{
+				.in_frames{true},
+				.looping{looping},
+				.start_frame{start},
+				.end_frame{end},
+				.anim_ID{anim->animation_ID},
+				.split_anim_ID{uid},
+				.split_animation_name{name}
+			};
+			auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
+			assert(result);
+			return result;
+		};
+		fn(0, 55, "Respawner_Idle");
+		fn(56, 300, "Respawner_Respawn");
+	}
+
+	if (ImGui::Button("Generate Clock"))
+	{
+		auto anims = oo::Anim::AnimationSystem::LoadAnimationFromFBX(asset.GetFilePath().string(), modeldata);
+		auto anim = anims.front();
+		auto const fn = [&](size_t start, size_t end, std::string name, oo::Anim::UID uid = oo::Anim::internal::invalid_ID, bool looping = false) {
+			oo::Anim::SplitAnimationInfo info{
+				.in_frames{true},
+				.looping{looping},
+				.start_frame{start},
+				.end_frame{end},
+				.anim_ID{anim->animation_ID},
+				.split_anim_ID{uid},
+				.split_animation_name{name}
+			};
+			auto result = oo::Anim::AnimationSystem::SplitAnimation(info);
+			assert(result);
+			return result;
+		};
+		fn(0, 604, "Clock_Idle");
 	}
 }
 

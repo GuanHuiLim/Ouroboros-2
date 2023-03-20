@@ -470,6 +470,20 @@ namespace oo::Anim
 
 			auto& keyframes = timeline.keyframes;
 
+			//handle 1 keyframe case
+			if (keyframes.size() == 1ull)
+			{
+				auto start_keyframe = keyframes[0];
+				auto end_keyframe = start_keyframe;
+				end_keyframe.time += end_time - start_time;
+				new_timeline.keyframes.emplace_back(start_keyframe);
+				new_timeline.keyframes.emplace_back(end_keyframe);
+				assert(new_timeline.keyframes.size() > 1ull);
+				new_anim.timelines.emplace_back(std::move(new_timeline));
+				continue;
+			}
+
+
 			size_t start_keyframe_index{ 0 };
 			size_t end_keyframe_index{ keyframes.size() };
 			float start_keyframe_timing{ 0.f};
