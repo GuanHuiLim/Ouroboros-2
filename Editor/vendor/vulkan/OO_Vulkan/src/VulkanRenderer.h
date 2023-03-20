@@ -80,6 +80,7 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout util_fullscreenBlit;
 
 	inline static VkDescriptorSetLayout compute_singleTexture;
+	inline static VkDescriptorSetLayout compute_doubleImageStore;
 
 };
 
@@ -93,6 +94,7 @@ struct PSOLayoutDB
 	inline static VkPipelineLayout SSAOPSOLayout;
 	inline static VkPipelineLayout SSAOBlurLayout;
 	inline static VkPipelineLayout BloomLayout; 
+	inline static VkPipelineLayout doubleImageStoreLayout; 
 };
 
 // Moving all constant buffer structures into this CB namespace.

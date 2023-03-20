@@ -27,6 +27,7 @@ public:
     static const VkSampler GetSampler_ShowMapClamp() { return shadowSampler; }
     static const VkSampler GetSampler_SSAOEdgeClamp() { return edgeClampSampler; }
     static const VkSampler GetSampler_BlackBorder() { return blackBorderSampler; }
+    static const VkSampler GetSampler_BlackBorderFloat() { return blackBorderFloatSampler; }
     // TODO: Add more sampler objects as needed...
 
     // List of some default sampler types to consider:
@@ -49,5 +50,6 @@ private:
     static VkSampler shadowSampler;
     static VkSampler edgeClampSampler;
     static VkSampler blackBorderSampler;
+    static VkSampler blackBorderFloatSampler;
     // TODO: Add more sampler objects as needed...
 };
