@@ -41,7 +41,14 @@ public:	//Default Functions
 
 	void Show();
 
-private: //Member Variables
+private: 
+	//constants
+	static constexpr ImVec4 NODE_SELECTED_COLOR{		1.f,1.f,1.f,1.f };
+	static constexpr ImVec4 NODE_NOT_SELECTED_COLOR{	1.f,1.f,1.f,0.5f };
+	static constexpr ImVec4 LINK_SELECTED_COLOR{		1.f,1.f,1.f,1.f };
+	static constexpr ImVec4 LINK_NOT_SELECTED_COLOR{	1.f,1.f,1.f,0.5f };
+	
+	//Member Variables
 	oo::AnimationComponent* animator = nullptr;
 	ed::EditorContext* m_Context	  = nullptr;
 
@@ -82,7 +89,7 @@ private: //Member Variables
 
 		NodeInfo(/*uintptr_t _id,*/
 				 oo::Anim::Node* _anim_node = nullptr,
-				 ImColor _color = ImColor(255, 255, 255)) 
+				 ImColor _color = NODE_SELECTED_COLOR)
 		:id(static_cast<void*>(_anim_node)),
 		anim_node{ _anim_node },
 		color(_color), 
@@ -103,7 +110,7 @@ private: //Member Variables
 		oo::Anim::Link* link;
 		ed::PinId inputID;
 		ed::PinId outputID;
-		ImVec4 color{ 1,1,1,1 };
+		ImVec4 color{ LINK_SELECTED_COLOR };
 		float thickness{ 1.f };
 		bool selected;
 
@@ -132,9 +139,13 @@ private: //Member Variables
 	std::string current_group_name{};
 
 	//struct to hold temporary information
+	//about the current state of selections
 	struct TempInfo {
-		std::vector<ed::NodeId> selectedNodes{};
+		/*std::vector<ed::NodeId> selectedNodes{};
 		std::vector<ed::LinkId> selectedLinks{};
+		bool changed{ false };*/
+		ed::NodeId selectedNode{};
+		ed::LinkId selectedLink{};
 	} m_tempInfo{};
 private: //Member Functions
 

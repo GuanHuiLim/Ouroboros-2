@@ -489,10 +489,8 @@ void AnimatorControllerView::DisplayInspector()
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         ImGui::BeginChild("Nodes/Links", ImVec2(0, h));
 
-        
-        
         if (nodeCount != 0)
-        {
+        {            
             static ImGuiID open = 0;
             for (int i = 0; i < nodeCount; ++i)
             {
@@ -523,6 +521,9 @@ void AnimatorControllerView::DisplayInspector()
                 
                 //notify animation system of potential change
 				oo::Anim::AnimationSystem::NotifyModifiedAnimation(id->anim_node->GetAnimation().name);
+                
+                //update temp information state
+                TempInfo_UpdateSelectedNode(temp);
             }
         }
         else if (linkCount != 0)
@@ -562,6 +563,10 @@ void AnimatorControllerView::DisplayInspector()
                 }
                 ImGui::Separator();
                 DisplayConditions(id->link);
+
+
+                //update temp information state
+                TempInfo_UpdateSelectedLink(temp);
             }
         }
         else
@@ -1137,6 +1142,68 @@ void AnimatorControllerView::Clear()
 
 void AnimatorControllerView::ClearTempInfo()
 {
-    m_tempInfo.selectedLinks.clear();
-    m_tempInfo.selectedNodes.clear();
+    m_tempInfo.selectedNode = 0;
+    m_tempInfo.selectedLink = 0;
+}
+
+void AnimatorControllerView::TempInfo_UpdateSelectedNode(ed::NodeId id)
+{
+    //no need to update if selection did not change
+    if (m_tempInfo.selectedNode == id)
+        return;
+
+    auto nodeIterator = std::find_if(m_nodes.begin(), m_nodes.end(), [id](auto& node) { return node.id == id; });
+    assert(nodeIterator != m_nodes.end());
+
+	m_tempInfo.selectedNode = id;
+
+    //all connected links should be highlighted
+    for (auto& link : m_links_)
+    {
+        if (link.inputID.Get() == id.Get() || link.outputID.Get() == id.Get())
+            link.color = LINK_SELECTED_COLOR;
+        else
+            link.color = LINK_NOT_SELECTED_COLOR;
+    }
+    //only selected node should be highlighted
+    for (auto& node : m_nodes)
+    {
+        if (node.id == id)
+            node.color = NODE_SELECTED_COLOR;
+        else
+            node.color = NODE_NOT_SELECTED_COLOR;
+    }
+}
+void AnimatorControllerView::TempInfo_UpdateSelectedLink(ed::LinkId id)
+{
+    //no need to update if selection did not change
+    if (m_tempInfo.selectedLink == id)
+        return;
+
+    auto linkIterator = std::find_if(m_links_.begin(), m_links_.end(), [id](auto& link) { return link.id == id; });
+    assert(linkIterator != m_links_.end());
+
+    m_tempInfo.selectedLink = id;
+
+    auto inputID = linkIterator->inputID;
+    auto outputID = linkIterator->outputID;
+
+    //all connected nodes should be highlighted
+    for (auto& node : m_nodes)
+    {
+        if (node.id.Get() == inputID.Get() || node.id.Get() == outputID.Get())
+            node.color = NODE_SELECTED_COLOR;
+        else
+            node.color = NODE_NOT_SELECTED_COLOR;
+    }
+    //only selected link should be highlighted
+    for (auto& link : m_links_)
+    {
+        if (link.id == id)
+            link.color = LINK_SELECTED_COLOR;
+        else
+            link.color = LINK_NOT_SELECTED_COLOR;
+    }
+
+    
 }
