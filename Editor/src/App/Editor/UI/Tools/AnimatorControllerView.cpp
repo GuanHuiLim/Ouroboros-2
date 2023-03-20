@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "pch.h"
 #include "Project.h"
 #include "../Object Editor/AssetBrowser.h"
+#include <imgui/imgui_extra_math.h>
 #include "AnimatorControllerView.h"
 #include <SceneManagement/include/SceneManager.h>
 #include <Ouroboros/Scene/Scene.h>
@@ -24,6 +25,9 @@ Technology is prohibited.
 
 #include "App/Editor/Utility/ImGuiManager.h"
 #include "Ouroboros/EventSystem/EventManager.h"
+
+#include "AnimatorController_Internal.h"
+
 
 uintptr_t GetNextId()
 {
@@ -61,6 +65,22 @@ AnimatorControllerView::NodeInfo* AnimatorControllerView::FindNode(oo::Anim::Nod
     return nullptr;
 }
 
+inline void AnimatorControllerView::UpdateGraphLink(LinkInfo const& linkinfo)
+{
+    ed::Link(linkinfo.id, linkinfo.inputID, linkinfo.outputID,linkinfo.color,linkinfo.thickness);
+    if (linkinfo.flowing)
+    {
+        Flow(linkinfo);
+    }
+}
+
+void AnimatorControllerView::Flow(LinkInfo const& linkinfo)
+{
+    ed::PushStyleColor(ed::StyleColor_Flow, linkinfo.color);
+    ed::Flow(linkinfo.id);
+    ed::PopStyleColor();
+}
+
 void AnimatorControllerView::ReturnID(ed::NodeId id)
 {
     free_Node_IDs.emplace(id.Get());
@@ -83,8 +103,19 @@ uintptr_t AnimatorControllerView::GetAvailableNodeID()
     return id;
 }
 
+
+AnimatorControllerView::AnimatorControllerView()
+{
+    m_Context = ed::CreateEditor();
+}
+AnimatorControllerView::~AnimatorControllerView()
+{
+    ed::DestroyEditor(m_Context);
+}
+
 void AnimatorControllerView::Show()
 {
+    
     //Get Info From the GameObject
     auto& selected_items = Hierarchy::GetSelected();    //temporary fix, ideally wanna get from animatorcontroller file
     auto scene = ImGuiManager::s_scenemanager->GetActiveScene<oo::Scene>();
@@ -143,6 +174,15 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
         return;
     }
 
+    static bool init = [this]()
+    {
+        auto ctx = ACI::GetNodeEditor();
+		auto& style = ctx->GetStyle();
+        style.FlowDuration = linkSettings.FLOW_DURATION;
+        style.FlowSpeed = linkSettings.FLOW_SPEED;
+        return true;
+    }();
+
     //if (!_animator->GetActualComponent().animTree)
     //{
     //    auto tree = oo::Anim::AnimationSystem::CreateAnimationTree("Test Animation Tree");
@@ -178,9 +218,10 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     }
 
 
-    for (auto& LinkInfo : m_links_)
+    for (auto& linkInfo : m_links_)
     {
-        ed::Link(LinkInfo.id, LinkInfo.inputID, LinkInfo.outputID);
+        //ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
+        UpdateGraphLink(linkInfo);
     }
 
     //
@@ -218,7 +259,8 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
                     auto linkinfo = CreateLink(link.operator->(), inputPinId, outputPinId);
 
                     // Draw new link.
-                    ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+                    //ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+                    UpdateGraphLink(*linkinfo);
                 }
 
                 // You may choose to reject connection between these nodes
@@ -270,7 +312,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
         for (auto& link : m_links_)
-            ed::Flow(link.id);
+            Flow(link);
 
     // End of interaction with imgui node editor.
     ed::End();
@@ -482,10 +524,8 @@ void AnimatorControllerView::DisplayInspector()
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         ImGui::BeginChild("Nodes/Links", ImVec2(0, h));
 
-        
-        
         if (nodeCount != 0)
-        {
+        {            
             static ImGuiID open = 0;
             for (int i = 0; i < nodeCount; ++i)
             {
@@ -516,6 +556,9 @@ void AnimatorControllerView::DisplayInspector()
                 
                 //notify animation system of potential change
 				oo::Anim::AnimationSystem::NotifyModifiedAnimation(id->anim_node->GetAnimation().name);
+                
+                //update temp information state
+                TempInfo_UpdateSelectedNode(temp);
             }
         }
         else if (linkCount != 0)
@@ -555,12 +598,17 @@ void AnimatorControllerView::DisplayInspector()
                 }
                 ImGui::Separator();
                 DisplayConditions(id->link);
+
+
+                //update temp information state
+                TempInfo_UpdateSelectedLink(temp);
             }
         }
         else
         {
             ImGui::Text("Misc Settings");
             DisplayMiscSettings();
+            ClearTempInfo();
         }
         ImGui::EndChild();
 
@@ -1028,7 +1076,8 @@ void AnimatorControllerView::LoadGraph(oo::AnimationComponent* _animator)
 
             auto linkinfo = CreateLink(&link, inputPin, outputPin);
 
-            ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+            //ed::Link(linkinfo->id, linkinfo->inputID, linkinfo->outputID);
+            UpdateGraphLink(*linkinfo);
         }
     }
     
@@ -1050,18 +1099,23 @@ void AnimatorControllerView::LoadGraph(oo::AnimationComponent* _animator)
 
 void AnimatorControllerView::BuildNodeOnEditor(NodeInfo& info)
 {
+    //ed::PushStyleColor(ed::StyleColor_Bg, info.color);
+
     ed::SetNodePosition(info.id, info.pos);
     ed::BeginNode(info.id);
     ed::BeginPin(info.Input[0].id, ed::PinKind::Input);
-    ImGui::Text("O");
+    ImGui::TextColored(nodeSettings.INPUT_COLOR, "O");
     ed::EndPin();
     ImGui::SameLine();
-    ImGui::Text(info.anim_node->name.c_str());
+    ImGui::TextColored(info.color, info.anim_node->name.c_str());
     ImGui::SameLine();
     ed::BeginPin(info.Output[0].id, ed::PinKind::Output);
-    ImGui::Text(">");
+    ImGui::TextColored(nodeSettings.OUTPUT_COLOR, ">");
     ed::EndPin();
     ed::EndNode();
+
+
+    //ed::PopStyleColor();
 }
 
 void AnimatorControllerView::Clear()
@@ -1098,6 +1152,9 @@ void AnimatorControllerView::Clear()
     m_nodes.clear();
     m_links_.clear();
 
+    //clear temporary info
+    ClearTempInfo();
+
     //clear the delete queue
     if (ed::BeginDelete())
     {
@@ -1123,3 +1180,121 @@ void AnimatorControllerView::Clear()
     //be ready to load data again
     m_firstFrame = true;
 }
+
+void AnimatorControllerView::ClearTempInfo()
+{
+    if (m_tempInfo.selectedNode.Get() != 0)
+    {
+        auto nodeIterator = std::find_if(m_nodes.begin(), m_nodes.end(), [&](auto& node) { return node.id == m_tempInfo.selectedNode; });
+        if (nodeIterator != m_nodes.end())
+            nodeIterator->color = linkSettings.NOT_SELECTED_COLOR;
+    }
+    if (m_tempInfo.selectedLink.Get() != 0)
+    {
+        auto linkIterator = std::find_if(m_links_.begin(), m_links_.end(), [&](auto& link) { return link.id == m_tempInfo.selectedLink; });
+        if (linkIterator != m_links_.end())
+            linkIterator->color = linkSettings.NOT_SELECTED_COLOR;
+    }
+    for (auto& link : m_links_)
+    {
+        link.flowing = false;
+        link.color = linkSettings.NOT_SELECTED_COLOR;
+    }
+
+
+
+    m_tempInfo.selectedNode = 0;
+    m_tempInfo.selectedLink = 0;
+}
+
+void AnimatorControllerView::TempInfo_UpdateSelectedNode(ed::NodeId id)
+{
+    //no need to update if selection did not change
+    if (m_tempInfo.selectedNode == id)
+        return;
+
+    auto nodeIterator = std::find_if(m_nodes.begin(), m_nodes.end(), [id](auto& node) { return node.id == id; });
+    assert(nodeIterator != m_nodes.end());
+
+	m_tempInfo.selectedNode = id;
+
+    //all connected links should be highlighted only
+    for (auto& link : m_links_)
+    {
+        auto linkptr = ACI::GetNodeEditor()->FindLink(link.id);
+		if (linkptr == nullptr) continue;
+
+        //outgoing
+        if (linkptr->m_StartPin->m_Node->m_ID == id)
+        {
+            link.color = linkSettings.OUTPUT_COLOR;
+            link.flowing = true;
+        }
+        //incoming
+        else if (linkptr->m_EndPin->m_Node->m_ID == id)
+        {
+            link.color = linkSettings.INPUT_COLOR;
+            link.flowing = true;
+        }
+        else
+        {
+            link.color = linkSettings.NOT_SELECTED_COLOR;
+            link.flowing = false;
+        }
+    }
+    //only selected node should be highlighted
+    for (auto& node : m_nodes)
+    {
+        if (node.id == id)
+        {
+            node.color = nodeSettings.SELECTED_COLOR;
+            //ACI::GetNodeEditor()->
+        }
+        else
+        {
+            node.color = nodeSettings.NOT_SELECTED_COLOR;
+            //ACI::GetNodeEditor()->FindNode(id)->m_HighlightConnectedLinks = false;
+        }
+    }
+}
+void AnimatorControllerView::TempInfo_UpdateSelectedLink(ed::LinkId id)
+{
+    //no need to update if selection did not change
+    if (m_tempInfo.selectedLink == id)
+        return;
+
+    auto linkIterator = std::find_if(m_links_.begin(), m_links_.end(), [id](auto& link) { return link.id == id; });
+    assert(linkIterator != m_links_.end());
+
+    m_tempInfo.selectedLink = id;
+
+    auto inputID = linkIterator->inputID;
+    auto outputID = linkIterator->outputID;
+
+    //all connected nodes should be highlighted
+    for (auto& node : m_nodes)
+    {
+        if (node.id.Get() == inputID.Get() || node.id.Get() == outputID.Get())
+            node.color = nodeSettings.SELECTED_COLOR;
+        else
+            node.color = nodeSettings.NOT_SELECTED_COLOR;
+    }
+    //only selected link should be highlighted
+    for (auto& link : m_links_)
+    {
+        if (link.id == id)
+        {
+            link.color = linkSettings.SELECTED_COLOR;
+            link.flowing = true;
+        }
+        else
+        {
+            link.color = linkSettings.NOT_SELECTED_COLOR;
+            link.flowing = false;
+        }
+    }
+    //ed::GetCurrentEditor()
+    //ed::Flow(id);
+    
+}
+
