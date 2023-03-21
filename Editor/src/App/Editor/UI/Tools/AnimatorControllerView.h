@@ -30,23 +30,33 @@ constexpr ImGuiID popUpOptionId = 600;
 class AnimatorControllerView
 {
 public:	//Default Functions
-	AnimatorControllerView() 
-	{
-		m_Context = ed::CreateEditor();
-	}
-	~AnimatorControllerView() 
-	{
-		ed::DestroyEditor(m_Context);
-	}
+	AnimatorControllerView();
+	~AnimatorControllerView();
 
 	void Show();
 
 private: 
 	//constants
-	static constexpr ImVec4 NODE_SELECTED_COLOR{		1.f,1.f,1.f,1.f };
-	static constexpr ImVec4 NODE_NOT_SELECTED_COLOR{	1.f,1.f,1.f,0.5f };
-	static constexpr ImVec4 LINK_SELECTED_COLOR{		1.f,1.f,1.f,1.f };
-	static constexpr ImVec4 LINK_NOT_SELECTED_COLOR{	1.f,1.f,1.f,0.5f };
+	struct LinkSettings {
+		ImVec4 SELECTED_COLOR	 { 1.f,1.f,1.f,1.f };
+		ImVec4 NOT_SELECTED_COLOR{ 1.f,1.f,1.f,0.2f };
+		
+
+		ImVec4 INPUT_COLOR { 0.67843f, 0.84706f, 0.90196f, 1.f};
+		ImVec4 OUTPUT_COLOR{ 0.49804f, 1.00000f, 0.00000f,0.2f };
+		
+		float FLOW_DURATION = 0.5f; //default 2.0f
+		float FLOW_SPEED = 100.f; //default 150.0f
+	};
+	static constexpr LinkSettings linkSettings{};
+	struct NodeSettings {
+		ImVec4 SELECTED_COLOR{ 1.f,1.f,1.f,1.f };
+		ImVec4 NOT_SELECTED_COLOR{ 1.f,1.f,1.f,0.2f };
+
+		ImVec4 INPUT_COLOR{ 0.67843f, 0.84706f, 0.90196f, 1.f };
+		ImVec4 OUTPUT_COLOR{ 0.49804f, 1.00000f, 0.00000f,0.2f };
+	};
+	static constexpr NodeSettings nodeSettings{};
 	
 	//Member Variables
 	oo::AnimationComponent* animator = nullptr;
@@ -89,7 +99,7 @@ private:
 
 		NodeInfo(/*uintptr_t _id,*/
 				 oo::Anim::Node* _anim_node = nullptr,
-				 ImColor _color = NODE_SELECTED_COLOR)
+				 ImColor _color = nodeSettings.NOT_SELECTED_COLOR)
 		:id(static_cast<void*>(_anim_node)),
 		anim_node{ _anim_node },
 		color(_color), 
@@ -110,8 +120,9 @@ private:
 		oo::Anim::Link* link;
 		ed::PinId inputID;
 		ed::PinId outputID;
-		ImVec4 color{ LINK_SELECTED_COLOR };
-		float thickness{ 1.f };
+		ImVec4 color{ linkSettings.NOT_SELECTED_COLOR };
+		float thickness{ 0.5f };
+		bool flowing{ false };
 		bool selected;
 
 		LinkInfo(/*ed::LinkId _id,*/ 
@@ -169,6 +180,7 @@ private: //Member Functions
 	NodeInfo* FindNode(oo::Anim::Node* _node);
 
 	inline void UpdateGraphLink(LinkInfo const& linkinfo);
+	inline void Flow(LinkInfo const& linkinfo);
 
 	//managing node unique IDs
 	void ReturnID(ed::NodeId id);
