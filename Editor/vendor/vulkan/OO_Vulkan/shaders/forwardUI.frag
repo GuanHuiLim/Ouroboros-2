@@ -64,7 +64,6 @@ void main()
     uint perInstanceData              = inInstanceData.y & 0xFF;
    
     outfragCol.rgba = texture(textureDescriptorArray[inInstanceData.x], inUV.xy).rgba;
-     if(outfragCol.a < 0.0001) discard;
     
     if(isSDFFont == 1)
     {
@@ -74,7 +73,7 @@ void main()
         outfragCol = mix(vec4(0),inColor,opacity);
         Remap_float(outfragCol.a,vec2(0.0,1.0),vec2(0,0.20),outfragCol.a);
         
-        if(outfragCol.a < 0.0001) discard; // this is bad and broken
+        
     }else
     {
         vec4 tempcol = inColor.rgba;
@@ -90,6 +89,7 @@ void main()
         outfragCol.rgb = pow(outfragCol.rgb,vec3(gamma));
     }
 
+	if(outfragCol.a < 0.0001) discard; // this is bad and broken
     // hardcode red
     //outfragCol = vec4(1.0,0.0,0.0,1.0);
    
