@@ -126,7 +126,6 @@ namespace oo
         std::vector<std::string> layerNames{ static_cast<size_t>(u_size) };
         for (size_t i = 0; i < u_size; ++i)
         {
-            LOG_TRACE(strArray[i]);
             layerNames.emplace_back(strArray[i]);
         }
         return PhysicsSystem::GenerateCollisionMask(layerNames);
