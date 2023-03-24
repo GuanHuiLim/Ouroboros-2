@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "Project.h"
 #include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/EventSystem/EventTypes.h"
 #include "App/Editor/UI/Tools/MeshHierarchy.h"
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
@@ -44,6 +45,7 @@ namespace oo::Anim
 		EventManager::Unsubscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 		EventManager::Unsubscribe<ModifyAnimationEvent>(&AnimationSystem::ModifyAnimationCallback);
 		EventManager::Unsubscribe<ModifyAnimationTreeEvent>(&AnimationSystem::ModifyAnimationTreeCallback);
+		EventManager::Unsubscribe<AnimationSystem, PrefabSpawnedEvent>(this, &AnimationSystem::OnSpawnPrefab);
 	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
@@ -60,6 +62,8 @@ namespace oo::Anim
 		EventManager::Subscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 		EventManager::Subscribe<ModifyAnimationEvent>(&AnimationSystem::ModifyAnimationCallback);
 		EventManager::Subscribe<ModifyAnimationTreeEvent>(&AnimationSystem::ModifyAnimationTreeCallback);
+		EventManager::Subscribe<AnimationSystem, PrefabSpawnedEvent>(this, &AnimationSystem::OnSpawnPrefab);
+		 
 
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
@@ -141,7 +145,7 @@ namespace oo::Anim
 
 		
 
-
+		bindPhaseOver = true;
 		
 	}
 
@@ -352,6 +356,27 @@ namespace oo::Anim
 
 			return nullptr;
 		}
+	}
+
+	void AnimationSystem::OnSpawnPrefab(oo::PrefabSpawnedEvent* evnt)
+	{
+		//only process spawned prefabs after scene loading
+		if (bindPhaseOver == false) return;
+
+		static Ecs::Query query = []() {
+			Ecs::Query _query;
+			_query.with<AnimationComponent>().build();
+			return _query;
+		}();
+		
+		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
+			
+			if (animationComp.GetActualComponent().root_objectID.value == entity.value) return;
+			
+			animationComp.Set_Root_Entity(entity);
+			internal::InitialiseComponent(animationComp.GetActualComponent());
+
+			});
 	}
 
 	bool AnimationSystem::SaveAnimationTree(AnimationTree& tree, std::string filepath)
