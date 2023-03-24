@@ -5,6 +5,16 @@ using System.Runtime.InteropServices;
 
 namespace Ouroboros
 {
+    public class Coroutine
+    {
+        public Coroutine(IEnumerator enumerator)
+        {
+            Enumerator = enumerator;
+        }
+
+        public IEnumerator Enumerator { get; private set; }
+    }
+
     public class MonoBehaviour : Component
     {
         protected MonoBehaviour()
@@ -54,25 +64,39 @@ namespace Ouroboros
 
         #region Coroutines
 
-        private List<IEnumerator> coroutines = new List<IEnumerator>();
+        private List<Coroutine> coroutines = new List<Coroutine>();
+        private List<Coroutine> coroutineStopList = new List<Coroutine>();
 
-        public void StartCoroutine(IEnumerator coroutine)
+        public Coroutine StartCoroutine(IEnumerator coroutine)
         {
-            coroutines.Add(coroutine);
+            Coroutine cor = new Coroutine(coroutine);
+            coroutines.Add(cor);
+            return cor;
+        }
+
+        public void StopCoroutine(Coroutine coroutine)
+        {
+            coroutineStopList.Add(coroutine);
         }
 
         public void StopAllCoroutines()
         {
-            coroutines.Clear();
+            coroutineStopList.AddRange(coroutines);
         }
 
         private void TickCoroutines()
         {
             for (int i = coroutines.Count - 1; i >= 0; --i)
             {
-                if (!TickCoroutine(coroutines[i]))
+                if (!TickCoroutine(coroutines[i].Enumerator))
                     coroutines.RemoveAt(i);
             }
+            foreach (var coroutine in coroutineStopList)
+            {
+                if (coroutines.Contains(coroutine))
+                    coroutines.Remove(coroutine);
+            }
+            coroutineStopList.Clear();
         }
 
         private bool TickCoroutine(IEnumerator coroutine)
