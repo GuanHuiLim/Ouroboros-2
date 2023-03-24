@@ -67,6 +67,11 @@ namespace Ouroboros
         private List<Coroutine> coroutines = new List<Coroutine>();
         private List<Coroutine> coroutineStopList = new List<Coroutine>();
 
+        /// <summary>
+        /// Starts execution of a coroutine.
+        /// </summary>
+        /// <param name="coroutine">The IEnumerator run by the coroutine.</param>
+        /// <returns>The newly created coroutine.</returns>
         public Coroutine StartCoroutine(IEnumerator coroutine)
         {
             Coroutine cor = new Coroutine(coroutine);
@@ -74,11 +79,29 @@ namespace Ouroboros
             return cor;
         }
 
+        /// <summary>
+        /// Starts execution of a coroutine.
+        /// </summary>
+        /// <param name="coroutine">The coroutine.</param>
+        /// <returns>The newly created coroutine.</returns>
+        public Coroutine StartCoroutine(Coroutine coroutine)
+        {
+            coroutines.Add(coroutine);
+            return coroutine;
+        }
+
+        /// <summary>
+        /// Stops execution of a running coroutine.
+        /// </summary>
+        /// <param name="coroutine">The coroutine.</param>
         public void StopCoroutine(Coroutine coroutine)
         {
             coroutineStopList.Add(coroutine);
         }
 
+        /// <summary>
+        /// Stops execution of all running coroutines.
+        /// </summary>
         public void StopAllCoroutines()
         {
             coroutineStopList.AddRange(coroutines);
@@ -86,17 +109,17 @@ namespace Ouroboros
 
         private void TickCoroutines()
         {
-            for (int i = coroutines.Count - 1; i >= 0; --i)
-            {
-                if (!TickCoroutine(coroutines[i].Enumerator))
-                    coroutines.RemoveAt(i);
-            }
             foreach (var coroutine in coroutineStopList)
             {
                 if (coroutines.Contains(coroutine))
                     coroutines.Remove(coroutine);
             }
             coroutineStopList.Clear();
+            for (int i = coroutines.Count - 1; i >= 0; --i)
+            {
+                if (!TickCoroutine(coroutines[i].Enumerator))
+                    coroutines.RemoveAt(i);
+            }
         }
 
         private bool TickCoroutine(IEnumerator coroutine)
