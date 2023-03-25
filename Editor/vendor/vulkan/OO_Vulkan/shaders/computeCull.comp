@@ -70,7 +70,7 @@ void main()
 								max(sy,sz));
 		float sphereRadius = maxSize* val.sphere.w;
 
-		bool show = SphereInFrustum(pc.top,pc.bottom,pc.right,pc.left,pc.pFar,pc.pNear,
+		bool show = bool(val.instanceCount) && SphereInFrustum(pc.top,pc.bottom,pc.right,pc.left,pc.pFar,pc.pNear,
 									vec4(sphereCenter,sphereRadius));
 
 		val.instanceCount = uint(show);
