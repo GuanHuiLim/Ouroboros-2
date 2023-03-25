@@ -67,7 +67,7 @@ namespace oo
     
     private:
         //inline static std::uint64_t MaxIterations = 2;
-        inline static Timestep FixedDeltaTimeBase = 1.0/60.0;               // physics updates at 60 fps
+        inline static Timestep FixedDeltaTimeBase = 1.0/100.0;               // physics updates at 60 fps
         inline static Timestep FixedDeltaTimescale = 1.0;                  // additional level of control for scripts
         inline static Timestep FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaTimescale;  // physics updates at 60 fps
         inline static Timestep MaxFrameRateMultiplier = 2;
