@@ -3052,9 +3052,14 @@ void VulkanRenderer::LoadSubmesh(gfxModel& mdl,
 	plainVertices.resize(aimesh->mNumVertices);
 	for (size_t i = 0; i < plainVertices.size(); i++)
 	{
-		plainVertices[i] = vertices[cacheVoffset+i].pos;
+		plainVertices[i] = vertices[cacheVoffset+i].pos; 
 	}
-	oGFX::BV::RitterSphere(submesh.boundingSphere, plainVertices);
+	oGFX::BV::LarsonSphere(submesh.boundingSphere, plainVertices);
+	//submesh.boundingSphere.radius *= 1.5f;
+	//std::cout << "Sphere generated :" << submesh.name << " [" 
+	//	<< submesh.boundingSphere.center.x << ", "
+	//	<< submesh.boundingSphere.center.y << ", "
+	//	<< submesh.boundingSphere.center.z << "] r: " << submesh.boundingSphere.radius << "\n";
 }
 
 ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(

@@ -21,13 +21,10 @@ layout(std430, set = 0, binding = 3) readonly buffer GPUScene
 	GPUTransform GPUScene_SSBO[];
 };
 
-
 layout(push_constant)uniform PushCull
 {
 		CullingPC pc;
 };
-
-
 
 bool SphereOnOrForwardPlane(in vec3 pN, float pD, in vec3 spherePos, float sphereRad)
 {
@@ -63,10 +60,14 @@ void main()
 		uint instanceID = val.firstInstance;
 		uint transformIdx = InstanceData[instanceID].x;
 		mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[transformIdx]);
+
+		float sx = length(vec3(dInsMatrix[0][0],dInsMatrix[1][0],dInsMatrix[2][0]));
+		float sy = length(vec3(dInsMatrix[0][1],dInsMatrix[1][1],dInsMatrix[2][1]));
+		float sz = length(vec3(dInsMatrix[0][2],dInsMatrix[1][2],dInsMatrix[2][2]));
 		
 		vec3 sphereCenter = vec3(dInsMatrix * vec4(val.sphere.xyz,1.0));
-		float maxSize = max(dInsMatrix[0][0],
-								max(dInsMatrix[1][1],dInsMatrix[2][2]));
+		float maxSize = max(sx,
+								max(sy,sz));
 		float sphereRadius = maxSize* val.sphere.w;
 
 		bool show = SphereInFrustum(pc.top,pc.bottom,pc.right,pc.left,pc.pFar,pc.pNear,
