@@ -33,6 +33,7 @@ DECLARE_RENDERPASS(GBufferRenderPass);
 
 void GBufferRenderPass::Init()
 {
+	CreatePSOLayout();
 	SetupRenderpass();
 	SetupFramebuffer();
 }
@@ -72,7 +73,55 @@ void GBufferRenderPass::Draw()
 
     const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
     PROFILE_GPU_CONTEXT(cmdlist);
-    PROFILE_GPU_EVENT("GBuffer");
+
+
+	
+	{
+		glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
+		auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
+		auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
+
+		VkDebugMarkerMarkerInfoEXT marker = {};
+		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+		memcpy(marker.color, &col[0], sizeof(float) * 4);
+		marker.pMarkerName = "CullCOMP";
+		if (regionBegin)
+		{
+			regionBegin(cmdlist, &marker);
+		}
+		
+		vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_ComputeCull);
+		
+		VkDescriptorSet cullDset;
+		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+			.BindBuffer(1, vr.indirectCommandsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindBuffer(2, vr.instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindBuffer(3, vr.gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.Build(cullDset, SetLayoutDB::compute_singleSSBO);
+		
+		oGFX::Frustum frust = vr.currWorld->cameras[vr.renderIteration].GetFrustum();
+		struct CullingPC pc;
+		pc. top = frust.top.normal;
+		pc. bottom = frust.bottom.normal;
+		pc. right = frust.right.normal;
+		pc. left = frust.left.normal;
+		pc. pFar = frust.planeFar.normal;
+		pc. pNear = frust.planeNear.normal;
+		pc.numItems = vr.indirectCommandsBuffer.size();
+
+		vkCmdPushConstants(cmdlist, PSOLayoutDB::singleSSBOlayout, VK_SHADER_STAGE_ALL, 0, sizeof(CullingPC), &pc);
+		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::singleSSBOlayout, 0, 1, &cullDset, 0, 0);
+		
+		vkCmdDispatch(cmdlist, (vr.indirectCommandsBuffer.size()-1) / 128 + 128, 1, 1);
+
+		if (regionEnd)
+		{
+			regionEnd(cmdlist);
+		}
+	}
+
+	PROFILE_GPU_EVENT("GBuffer");
+	rhi::CommandList cmd{ cmdlist, "Gbuffer Pass"};
 
 	constexpr VkClearColorValue zeroFloat4 = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
 	constexpr VkClearColorValue tangentNormal = VkClearColorValue{ 0.5f,0.5f,1.0f,0.0f };
@@ -116,7 +165,7 @@ void GBufferRenderPass::Draw()
 	// TODO: handle all framebuffer resizes gracefully
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	
-	rhi::CommandList cmd{ cmdlist, "Gbuffer Pass"};
+	
 	cmd.SetDefaultViewportAndScissor();
 
 	
@@ -154,12 +203,17 @@ void GBufferRenderPass::Draw()
 
 void GBufferRenderPass::Shutdown()
 {
-	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
-	
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
+	auto& device = m_device.logicalDevice;
+
 	for (auto& att : attachments)
 	{
 		att.destroy();
 	}
+
+	vkDestroyPipelineLayout(device, PSOLayoutDB::singleSSBOlayout, nullptr);
+	vkDestroyPipeline(device, pso_ComputeCull, nullptr);
 
 	renderpass_GBuffer.destroy();
 	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
@@ -318,6 +372,7 @@ void GBufferRenderPass::CreatePipeline()
 
 	const char* shaderVS = "Shaders/bin/gbuffer.vert.spv";
 	const char* shaderPS = "Shaders/bin/gbuffer.frag.spv";
+	const char* compute = "Shaders/bin/computeCull.comp.spv";
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
 	{
 		vr.LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
@@ -376,4 +431,42 @@ void GBufferRenderPass::CreatePipeline()
 
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
+
+
+	VkComputePipelineCreateInfo computeCI = oGFX::vkutils::inits::computeCreateInfo(PSOLayoutDB::singleSSBOlayout);
+	computeCI.stage = vr.LoadShader(m_device, compute, VK_SHADER_STAGE_COMPUTE_BIT);
+	VK_CHK(vkCreateComputePipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &computeCI, nullptr, &pso_ComputeCull));
+	vkDestroyShaderModule(m_device.logicalDevice, computeCI.stage.module, nullptr); // destroy compute
+
+
+}
+
+void GBufferRenderPass::CreatePSOLayout()
+{
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
+
+	VkDescriptorSet dummy;
+	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+		.BindBuffer(1, vr.indirectCommandsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.BindBuffer(2, vr.instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.BindBuffer(3, vr.gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.Build(dummy, SetLayoutDB::compute_singleSSBO);
+
+	{
+		std::vector<VkDescriptorSetLayout> setLayouts
+		{
+			SetLayoutDB::compute_singleSSBO, // (set = 0)
+		};
+
+		VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(
+			setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
+
+		VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
+		plci.pushConstantRangeCount = 1;
+		plci.pPushConstantRanges = &pushConstantRange;
+
+		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::singleSSBOlayout));
+		VK_NAME(m_device.logicalDevice, "SingleSSBO_PSOLayout", PSOLayoutDB::singleSSBOlayout);
+	}	
 }

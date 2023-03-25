@@ -15,6 +15,7 @@ Technology is prohibited.
 #include "vulkan/vulkan.h"
 #include "MeshModel.h"
 #include <functional>
+#include "../shaders/shared_structs.h"
 
 namespace oGFX
 {
@@ -28,7 +29,7 @@ struct SetupInfo
 	std::vector<const char*> extensions;
 };
 
-using IndirectCommand = VkDrawIndexedIndirectCommand;
+using IndirectCommand = CustomIndirectCommand;
 
 void IndirectCommandsHelper(Node* node, std::vector<oGFX::IndirectCommand>& m_DrawIndirectCommandsCPU, uint32_t& counter);
 
