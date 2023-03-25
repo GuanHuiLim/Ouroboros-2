@@ -59,6 +59,7 @@ Technology is prohibited.
 #include "DelayedDeleter.h"
 
 #include "IcoSphereCreator.h"
+#include "BoudingVolume.h"
 
 #include "Profiling.h"
 #include "DebugDraw.h"
@@ -1405,7 +1406,7 @@ void VulkanRenderer::UploadLights()
 		
 		spotLights.emplace_back(si);
 	}
-
+	//std::cout << "Lights culled: " << sss << "\n";
 	globalLightBuffer.writeTo(spotLights.size(),spotLights.data());
 
 }
@@ -1839,7 +1840,7 @@ void VulkanRenderer::InitializeRenderBuffers()
 	// In this function, all global rendering related buffers should be initialized, ONCE.
 
 	// Note: Moved here from VulkanRenderer::UpdateIndirectCommands
-	indirectCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT );
+	indirectCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT );
     VK_NAME(m_device.logicalDevice, "Indirect Command Buffer", indirectCommandsBuffer.getBuffer()); 
 
 	shadowCasterCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT );
@@ -1847,7 +1848,7 @@ void VulkanRenderer::InitializeRenderBuffers()
 	VK_NAME(m_device.logicalDevice, "Shadow Command Buffer", shadowCasterCommandsBuffer.m_buffer);
 
 	// Note: Moved here from VulkanRenderer::UpdateInstanceData
-	instanceBuffer.Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	instanceBuffer.Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT );
     VK_NAME(m_device.logicalDevice, "Instance Buffer", instanceBuffer.getBuffer());
 
 	objectInformationBuffer.Init(&m_device,  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -3046,6 +3047,14 @@ void VulkanRenderer::LoadSubmesh(gfxModel& mdl,
 	submesh.baseVertex = static_cast<uint32_t>(cacheVoffset);
 	submesh.indicesCount = indicesCnt;
 	submesh.baseIndices = static_cast<uint32_t>(cacheIoffset);
+
+	std::vector<glm::vec3> plainVertices;
+	plainVertices.resize(aimesh->mNumVertices);
+	for (size_t i = 0; i < plainVertices.size(); i++)
+	{
+		plainVertices[i] = vertices[cacheVoffset+i].pos;
+	}
+	oGFX::BV::RitterSphere(submesh.boundingSphere, plainVertices);
 }
 
 ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
@@ -3072,6 +3081,14 @@ ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
 		sm.baseVertex = static_cast<uint32_t>(0);
 		sm.indicesCount = static_cast<uint32_t>(indices.size());
 		sm.vertexCount = static_cast<uint32_t>(vertex.size());
+
+		std::vector<glm::vec3> plainVertices;
+		plainVertices.resize(vertex.size());
+		for (size_t i = 0; i < plainVertices.size(); i++)
+		{
+			plainVertices[i] = vertex[i].pos;
+		}
+		oGFX::BV::RitterSphere(sm.boundingSphere, plainVertices);
 
 		model->m_subMeshes.push_back(sm);
 

@@ -44,9 +44,12 @@ struct GBufferRenderPass : public GfxRenderpass
 	//VkPushConstantRange pushConstantRange;
 	VkPipeline pso_GBufferDefault{};
 
+	VkPipeline pso_ComputeCull{};
+
 private:
 	void SetupRenderpass();
 	void SetupFramebuffer();
 	void CreatePipeline();
+	void CreatePSOLayout();
 
 };

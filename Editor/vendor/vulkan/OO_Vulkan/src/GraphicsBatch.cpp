@@ -133,11 +133,14 @@ void GraphicsBatch::ProcessGeometry()
 
 					// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
 					// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
-					indirectCmd.firstInstance = cnt++;
+					indirectCmd.firstInstance = cnt++; 
 
 					indirectCmd.firstIndex = model.baseIndices + subMesh.baseIndices;
 					indirectCmd.indexCount = subMesh.indicesCount;
 					indirectCmd.vertexOffset = model.baseVertex + subMesh.baseVertex;
+
+					auto& s = model.m_subMeshes[i].boundingSphere;
+					indirectCmd.sphere = glm::vec4(s.center,s.radius);
 
 					s_scratchBuffer.emplace_back(indirectCmd);
 				}
