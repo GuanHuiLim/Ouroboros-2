@@ -167,7 +167,7 @@ project "Editor"
         -- if Editor need any prebuild commands regardless of debug/release/production
         prebuildcommands
         {
-            {"call \"%{AppVendor}/vulkan/OO_Vulkan/shaders/compileShaders.bat\"" }
+            {"call \"%{AppVendor}/vulkan/OO_Vulkan/shaders/compileShaders.bat\"" },
         }
 
         -- if Editor needs any postbuild commands regardless of debug/release/production
@@ -221,6 +221,8 @@ project "Editor"
             
 			--copy version.txt
 			{"{COPY} \"%{AppDir}/version.txt\" \"" .. binApp .. "\""},
+
+            
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -228,6 +230,19 @@ project "Editor"
         {
 
         }
+
+    -- icon depending on version
+    filter {"platforms:Editor"}
+        prebuildcommands
+        {
+            {"{COPY} \"%{AppDir}/icons/Ouroboros.ico\" \"%{AppDir}/icons/FinalIcon.ico\""},
+        }
+    filter {"platforms:Executable"}
+        prebuildcommands
+        {
+            {"{COPY} \"%{AppDir}/icons/Minute.ico\" \"%{AppDir}/icons/FinalIcon.ico\""},
+        }
+    filter{}
 
     filter{ "configurations:Debug", "platforms:Editor"}
         defines { "EDITOR_DEBUG", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
@@ -240,7 +255,8 @@ project "Editor"
     --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     -- filter{ "configurations:Release", "platforms:Executable"}
     --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
-    -- filter{ "configurations:Production", "platforms:Executable"}
+    --filter{ "configurations:Production", "platforms:Executable"}
+        
     --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
     filter{}
     
@@ -312,6 +328,7 @@ project "Editor"
             -- copy iss file for compiling /for production only
             {"{COPY} \"%{AppDir}/engine_portable.iss\" \"" .. binApp .. "\"" },
             {"{COPY} \"%{AppDir}/executable_portable.iss\" \"" .. binApp .. "\"" },
+
         }
 
         links

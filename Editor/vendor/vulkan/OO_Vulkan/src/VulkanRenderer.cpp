@@ -1355,20 +1355,20 @@ void VulkanRenderer::UploadLights()
 	int sss{};
 	for (auto& e : lights)
 	{
-		//oGFX::Sphere s;
-		//s.center = e.position;
-		//s.radius = e.radius.x;
-		//oGFX::DebugDraw::AddSphere(s);
-		// 
-		/// WIP Light Culling. Sorta works just need to fix lights.
-		//if (oGFX::coll::SphereInFrustum(frust, s))		
-		//{
-		//	SetLightEnabled(e, true);
-		//}
-		//else
-		//{
-		//	SetLightEnabled(e, false);
-		//}
+		oGFX::Sphere s;
+		s.center = e.position;
+		s.radius = e.radius.x;
+		//oGFX::DebugDraw::AddSphere(s,e.color);
+		
+		if (oGFX::coll::SphereInFrustum(frust, s))		
+		{ 
+			SetLightEnabled(e, true);
+		}
+		else
+		{
+			sss++;
+			SetLightEnabled(e, false);
+		}
 
 		if (GetLightEnabled(e) == false)
 		{

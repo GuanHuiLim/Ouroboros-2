@@ -59,6 +59,7 @@ namespace oo
 
     void VulkanContext::Init()
     {
+
         EventManager::Subscribe<VulkanContext, WindowResizeEvent>(this, &VulkanContext::OnWindowResize);
         EventManager::Subscribe<VulkanContext, WindowMinimizeEvent>(this, &VulkanContext::OnWindowMinimize);
         EventManager::Subscribe<VulkanContext, WindowRestoredEvent>(this, &VulkanContext::OnWindowRestored);
@@ -73,6 +74,8 @@ namespace oo
 
         //// Setup Camera Internally, not used
         vr = VulkanRenderer::get();
+
+
         //auto& camera = vr->camera;
         ////m_runtimeCC.SetCamera(&camera);
         //camera.m_CameraMovementType = Camera::CameraMovementType::firstperson;
@@ -172,6 +175,10 @@ namespace oo
         }        
 
         gw.numCameras = 1;
+        
+        // TODO : Temp present to start off with a black screen instead of flashbang
+        vr->Present();
+
         // TODO: BAD fix this..
         vr->InitWorld(&gw);
         vr->SetWorld(&gw);

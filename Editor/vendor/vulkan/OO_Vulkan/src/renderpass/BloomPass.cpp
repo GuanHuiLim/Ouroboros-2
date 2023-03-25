@@ -88,7 +88,23 @@ void BloomPass::Draw()
 	auto& mainImage = vr.renderTargets[vr.renderTargetInUseID];
 	auto lastLayout = mainImage.texture.currentLayout;
 
+	glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
+	auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
+	auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
+	
+	VkDebugMarkerMarkerInfoEXT marker = {};
+	marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+	memcpy(marker.color, &col[0], sizeof(float) * 4);
+	
+	
+
 	{// bright threshold pass
+		marker.pMarkerName = "BrightCOMP";
+		if (regionBegin)
+		{		
+			regionBegin(cmdlist, &marker);
+		}
+
 		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
 			GfxSamplerManager::GetSampler_BlackBorderFloat(),
 			mainImage.texture.view,
@@ -120,9 +136,18 @@ void BloomPass::Draw()
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::doubleImageStoreLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
 
 		vkCmdDispatch(cmdlist, (Bloom_brightTarget .width-1) / 16 + 1, (Bloom_brightTarget .height-1) / 16 + 1, 1);
+		if (regionEnd)
+		{
+			regionEnd(cmdlist);
+		}
 	}
 	
 	{// downsample scope
+		marker.pMarkerName = "DownsampleCOMP";
+		if (regionBegin)
+		{		
+			regionBegin(cmdlist, &marker);
+		}
 		vkutils::Texture2D* prevImage = &Bloom_brightTarget;
 		vkutils::Texture2D* currImage;
 		//downsample
@@ -157,10 +182,19 @@ void BloomPass::Draw()
 			vkCmdDispatch(cmdlist, (currImage ->width-1) / 16 + 1, (currImage ->height-1) / 16 + 1, 1);
 			prevImage = currImage;
 		} 
+		if (regionEnd)
+		{
+			regionEnd(cmdlist);
+		}
 	}// end downsample scope
 	
 
 	//6 pass iterative upsamping 9tap tent
+	marker.pMarkerName = "UpsampleCOMP";
+	if (regionBegin)
+	{		
+		regionBegin(cmdlist, &marker);
+	}
 	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_bloom_up);
 	for (int i = static_cast<int>(MAX_BLOOM_SAMPLES - 1ull); i > 0; --i)	
 	{
@@ -188,7 +222,9 @@ void BloomPass::Draw()
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::doubleImageStoreLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
 		vkCmdDispatch(cmdlist, (outputBuffer ->width-1) / 16 + 1, (outputBuffer ->height-1) / 16 + 1, 1);
 	} 
+	
 		
+	
 	{ // we reuse the bright output to place the boom
 		auto* outputBuffer = (&Bloom_brightTarget);
 		auto* inputBuffer = &Bloom_downsampleTargets[0];
@@ -214,10 +250,19 @@ void BloomPass::Draw()
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::doubleImageStoreLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
 		vkCmdDispatch(cmdlist, (outputBuffer ->width-1) / 16 + 1, (outputBuffer ->height-1) / 16 + 1, 1);
 	}
+	if (regionEnd)
+	{
+		regionEnd(cmdlist);
+	}
+	//carried over from last blit
 
-	
+	marker.pMarkerName = "AdditiveCOMP";
+	if (regionBegin)
+	{		
+		regionBegin(cmdlist, &marker);
+	}	
 	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_additive_composite);
-	if(vr.m_ShaderDebugValues.vector4_values1.x <= 0.0){// composite online main buffer
+	{// composite online main buffer
 		auto* outputBuffer = (&mainImage.texture);
 		auto* inputBuffer = &Bloom_brightTarget;
 	
@@ -242,8 +287,18 @@ void BloomPass::Draw()
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::BloomLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
 		vkCmdDispatch(cmdlist, (outputBuffer ->width-1) / 16 + 1, (outputBuffer ->height-1) / 16 + 1, 1);
 	}
+	if (regionEnd)
+	{
+		regionEnd(cmdlist);
+	}
 
-	// tone mapping and vigneette
+	
+	marker.pMarkerName = "TonemappingCOMP";
+	if (regionBegin)
+	{		
+		regionBegin(cmdlist, &marker);
+	}	
+	// tone mapping 
 	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_tone_mapping);
 	{// composite online main buffer
 		auto* outputBuffer = (&mainImage.texture);
@@ -283,8 +338,54 @@ void BloomPass::Draw()
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::BloomLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
 		vkCmdDispatch(cmdlist, (outputBuffer ->width-1) / 16 + 1, (outputBuffer ->height-1) / 16 + 1, 1);
 	}
+	if (regionEnd)
+	{
+		regionEnd(cmdlist);
+	}
+
+	// FXAA 
+	marker.pMarkerName = "FXAACOMP";
+	if (regionBegin)
+	{		
+		regionBegin(cmdlist, &marker);
+	}	
+	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_fxaa);
+	{// composite online main buffer
+		auto* outputBuffer = &Bloom_brightTarget;
+		auto* inputBuffer = (&mainImage.texture);
+
+		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
+			GfxSamplerManager::GetSampler_BlackBorder(),
+			inputBuffer->view,
+			VK_IMAGE_LAYOUT_GENERAL);
+		vkutils::ComputeImageBarrier(cmdlist,*inputBuffer,VK_IMAGE_LAYOUT_GENERAL);
+
+		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
+			GfxSamplerManager::GetSampler_Deferred(),  
+			outputBuffer  ->view,
+			VK_IMAGE_LAYOUT_GENERAL);
+		vkutils::ComputeImageBarrier(cmdlist,*outputBuffer,VK_IMAGE_LAYOUT_GENERAL);
+
+		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+			//.BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // to remove
+			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
+			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);	
+
+		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::BloomLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
+		vkCmdDispatch(cmdlist, (outputBuffer ->width-1) / 16 + 1, (outputBuffer ->height-1) / 16 + 1, 1);
+	}
+	if (regionEnd)
+	{
+		regionEnd(cmdlist);
+	}
 
 	//  vigneette
+	marker.pMarkerName = "VignetteCOMP";
+	if (regionBegin)
+	{		
+		regionBegin(cmdlist, &marker);
+	}	
 	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_vignette);
 	{// composite online main buffer
 		auto* outputBuffer = (&mainImage.texture);
@@ -319,6 +420,11 @@ void BloomPass::Draw()
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::BloomLayout, 0, 1, &vr.descriptorSet_fullscreenBlit, 0, 0);
 		vkCmdDispatch(cmdlist, (outputBuffer ->width-1) / 16 + 1, (outputBuffer ->height-1) / 16 + 1, 1);
 	}
+	if (regionEnd)
+	{
+		regionEnd(cmdlist);
+	}
+
 
 	vkutils::TransitionImage(cmdlist,mainImage.texture,lastLayout);
 
@@ -346,6 +452,7 @@ void BloomPass::Shutdown()
 	vkDestroyPipeline(device, pso_additive_composite, nullptr);
 	vkDestroyPipeline(device, pso_tone_mapping, nullptr);
 	vkDestroyPipeline(device, pso_vignette, nullptr);
+	vkDestroyPipeline(device, pso_fxaa, nullptr);
 }
 
 void BloomPass::CreateDescriptors()
@@ -429,6 +536,7 @@ void BloomPass::CreatePipeline()
 	const char* compositeAdditive = "Shaders/bin/additiveComposite.comp.spv";
 	const char* toneMap = "Shaders/bin/tonemapping.comp.spv";
 	const char* vignette = "Shaders/bin/vignette.comp.spv";
+	const char* fxaa = "Shaders/bin/fxaa.comp.spv";
 
 	VkComputePipelineCreateInfo computeCI = oGFX::vkutils::inits::computeCreateInfo(PSOLayoutDB::doubleImageStoreLayout);
 	computeCI.stage = vr.LoadShader(m_device, shaderCS, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -456,6 +564,10 @@ void BloomPass::CreatePipeline()
 
 	computeCI.stage = vr.LoadShader(m_device, vignette, VK_SHADER_STAGE_COMPUTE_BIT);
 	VK_CHK(vkCreateComputePipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &computeCI, nullptr, &pso_vignette));
+	vkDestroyShaderModule(m_device.logicalDevice, computeCI.stage.module, nullptr); // destroy compute
+
+	computeCI.stage = vr.LoadShader(m_device, fxaa, VK_SHADER_STAGE_COMPUTE_BIT);
+	VK_CHK(vkCreateComputePipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &computeCI, nullptr, &pso_fxaa));
 	vkDestroyShaderModule(m_device.logicalDevice, computeCI.stage.module, nullptr); // destroy compute
 	
 }
