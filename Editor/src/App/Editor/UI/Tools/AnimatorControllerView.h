@@ -158,6 +158,8 @@ private:
 		ed::NodeId selectedNode{};
 		ed::LinkId selectedLink{};
 	} m_tempInfo{};
+
+	bool itemDeleted{ false };
 private: //Member Functions
 
 	void BuildNode(NodeInfo* node);

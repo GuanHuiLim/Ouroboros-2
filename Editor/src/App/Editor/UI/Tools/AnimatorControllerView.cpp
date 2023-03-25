@@ -212,17 +212,7 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     //    ed::EndPin();
     //    ed::EndNode();
     //}
-    for (auto& nodeinfo : m_nodes)
-    {
-        BuildNodeOnEditor(nodeinfo);
-    }
-
-
-    for (auto& linkInfo : m_links_)
-    {
-        //ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
-        UpdateGraphLink(linkInfo);
-    }
+    
 
     //
     // 2) Handle interactions
@@ -274,45 +264,66 @@ void AnimatorControllerView::DisplayAnimatorController(oo::AnimationComponent* _
     // Handle deletion action
     OnDelete();
 
-    ed::Suspend();
-    if (ed::ShowBackgroundContextMenu())
+    if (itemDeleted)
     {
-        ImGui::OpenPopup("Animator Editor Popup");
+        itemDeleted = false;
     }
-    ed::Resume();
-
-    ed::Suspend();
-    if (ImGui::BeginPopup("Animator Editor Popup"))
+    else
     {
-        if (ImGui::MenuItem("Create State"))
+        for (auto& nodeinfo : m_nodes)
         {
-            //Need to find a way to store the oo::Anim::NodeInfo
-            //Temporary Solution
-            auto& temp = _animator->GetActualComponent().animTree->groups;
-            for (auto it = temp.begin(); it != temp.end(); ++it)
-            {
-                if (it == temp.begin())
-                {
-                    oo::Anim::NodeInfo nodeinfo{
-                        .name{ "New Node" /*+ std::to_string(uniqueId)*/ },
-                        .animation_name{ oo::Anim::internal::empty_animation_name },
-                        .speed{ 1.f },
-                        .position{0.f,0.f,0.f}
-                    };
+            BuildNodeOnEditor(nodeinfo);
+        }
 
-                    auto node = _animator->AddNode(it->second.name, nodeinfo);
-                    assert(node);
-                    if (node) CreateNode(node.operator->());
+
+        for (auto& linkInfo : m_links_)
+        {
+            //ed::Link(linkInfo.id, linkInfo.inputID, linkInfo.outputID);
+            UpdateGraphLink(linkInfo);
+        }
+
+        ed::Suspend();
+        if (ed::ShowBackgroundContextMenu())
+        {
+            ImGui::OpenPopup("Animator Editor Popup");
+        }
+        ed::Resume();
+
+        ed::Suspend();
+        if (ImGui::BeginPopup("Animator Editor Popup"))
+        {
+            if (ImGui::MenuItem("Create State"))
+            {
+                //Need to find a way to store the oo::Anim::NodeInfo
+                //Temporary Solution
+                auto& temp = _animator->GetActualComponent().animTree->groups;
+                for (auto it = temp.begin(); it != temp.end(); ++it)
+                {
+                    if (it == temp.begin())
+                    {
+                        oo::Anim::NodeInfo nodeinfo{
+                            .name{ "New Node" /*+ std::to_string(uniqueId)*/ },
+                            .animation_name{ oo::Anim::internal::empty_animation_name },
+                            .speed{ 1.f },
+                            .position{0.f,0.f,0.f}
+                        };
+
+                        auto node = _animator->AddNode(it->second.name, nodeinfo);
+                        assert(node);
+                        if (node) CreateNode(node.operator->());
+                    }
                 }
             }
+            ImGui::EndPopup();
         }
-        ImGui::EndPopup();
-    }
-    ed::Resume();
+        ed::Resume();
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
-        for (auto& link : m_links_)
-            Flow(link);
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
+            for (auto& link : m_links_)
+                Flow(link);
+    }
+
+    
 
     // End of interaction with imgui node editor.
     ed::End();
@@ -948,6 +959,7 @@ void AnimatorControllerView::OnDelete()
                     auto deletingLink = id->link;
                     animator->RemoveLink(oo::Anim::TargetLinkInfo{ .group_name{deletingLink->dst->group->name}, .link_ID{deletingLink->linkID} });
                     m_links_.erase(id);
+                    itemDeleted = true;
                 }
             }
         }
@@ -996,6 +1008,7 @@ void AnimatorControllerView::OnDelete()
                     auto deletingNode = deletingNodeContainer->anim_node;
                     animator->RemoveNode(oo::Anim::TargetNodeInfo{ .group_name{deletingNode->group->name}, .node_ID{deletingNode->node_ID} });
                     m_nodes.erase(id);
+                    itemDeleted = true;
                 }
             }
         }
