@@ -122,7 +122,7 @@ public:
         m_imGuiAbstract->End();
         
         // only present in the non-final version
-        if (oo::input::IsKeyPressed(KEY_ESCAPE))
+        if (oo::input::IsKeyPressed(KEY_LEFT_CONTROL) && oo::input::IsKeyPressed(KEY_ESCAPE))
         {
             oo::WindowCloseEvent ununsed;
             CloseApp(&ununsed);

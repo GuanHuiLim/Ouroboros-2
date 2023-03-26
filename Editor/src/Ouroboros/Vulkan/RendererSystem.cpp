@@ -132,6 +132,15 @@ namespace oo
 
     void RendererSystem::OnUpdateRendererSettings(UpdateRendererSettings*)
     {
+        m_updateRendererSettings = true;
+    }
+
+    void RendererSystem::UpdateUnderlyingRendererSettings()
+    {
+        if (!m_updateRendererSettings)
+            return;
+        m_updateRendererSettings = false;
+
         m_graphicsWorld->ssaoSettings.bias = RendererSettings::setting.SSAO.Bias;
         m_graphicsWorld->ssaoSettings.radius = RendererSettings::setting.SSAO.Radius;
         m_graphicsWorld->ssaoSettings.intensity = RendererSettings::setting.SSAO.intensity;
@@ -142,7 +151,7 @@ namespace oo
 
         m_graphicsWorld->bloomSettings.threshold = RendererSettings::setting.Bloom.Threshold;
         m_graphicsWorld->bloomSettings.softThreshold = RendererSettings::setting.Bloom.SoftThreshold;
-        
+
         m_graphicsWorld->colourSettings.highlightThreshold = RendererSettings::setting.ColourCorrection.HighlightThreshold;
         m_graphicsWorld->colourSettings.shadowThreshold = RendererSettings::setting.ColourCorrection.ShadowThreshold;
         m_graphicsWorld->colourSettings.shadowColour = RendererSettings::setting.ColourCorrection.ShadowColour;
@@ -152,7 +161,6 @@ namespace oo
         m_graphicsWorld->vignetteSettings.colour = RendererSettings::setting.Vignette.Colour;
         m_graphicsWorld->vignetteSettings.innerRadius = RendererSettings::setting.Vignette.InnerRadius;
         m_graphicsWorld->vignetteSettings.outerRadius = RendererSettings::setting.Vignette.OuterRadius;
-
     }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
@@ -306,6 +314,8 @@ namespace oo
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
+        UpdateUnderlyingRendererSettings();
+
         UpdateJustCreated();
         UpdateDuplicated();
         UpdateExisting();
