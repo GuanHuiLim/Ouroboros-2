@@ -176,12 +176,12 @@ namespace oo
 
         gw.numCameras = 1;
         
-        // TODO : Temp present to start off with a black screen instead of flashbang
-        vr->Present();
-
         // TODO: BAD fix this..
         vr->InitWorld(&gw);
         vr->SetWorld(&gw);
+
+        OnImGuiEnd();
+        SwapBuffers();
     }
 
     void VulkanContext::OnUpdateBegin()
