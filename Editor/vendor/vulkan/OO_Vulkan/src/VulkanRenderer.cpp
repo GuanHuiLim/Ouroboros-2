@@ -1741,7 +1741,8 @@ void VulkanRenderer::DebugGUIcalls()
 void VulkanRenderer::DrawGUI()
 {
 	PROFILE_SCOPED();
-	
+	if (m_imguiInitialized == false) return;
+
 	VkRenderPassBeginInfo GUIpassInfo = {};
 	GUIpassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	GUIpassInfo.renderPass  = m_imguiConfig.renderPass;
