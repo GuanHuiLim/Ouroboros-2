@@ -47,6 +47,22 @@ void BloomPass::Init()
 		renderScale /= 2.0f;
 	}
 
+	VkFramebufferCreateInfo blankInfo{};
+	std::vector<VkImageView> dummyViews;
+	std::vector<vkutils::Texture2D*> textures;
+
+	textures.push_back(&Bloom_brightTarget);
+	dummyViews.push_back(Bloom_brightTarget.view);
+	for (size_t i = 0; i < MAX_BLOOM_SAMPLES; i++)
+	{
+		dummyViews.push_back(Bloom_downsampleTargets[i].view);
+		textures.push_back(&Bloom_downsampleTargets[i]);
+	}
+
+	blankInfo.attachmentCount = dummyViews.size();
+	blankInfo.pAttachments = dummyViews.data();
+	// we add this to resize resource tracking
+	vr.fbCache.CreateFramebuffer(&blankInfo, std::move(textures), textures.front()->targetSwapchain);
 
 	SetupRenderpass();
 
