@@ -124,7 +124,7 @@ namespace oo
 
     SCRIPT_API float Time_GetFixedTimeScale()
     {
-        return PhysicsSystem::GetFixedDeltaTimescale();
+        return static_cast<float>(PhysicsSystem::GetFixedDeltaTimescale());
     }
 
     SCRIPT_API void Time_SetFixedTimeScale(float value)
