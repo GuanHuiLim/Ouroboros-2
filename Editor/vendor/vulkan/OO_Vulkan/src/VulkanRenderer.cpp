@@ -1361,9 +1361,10 @@ void VulkanRenderer::UploadLights()
 		s.radius = e.radius.x;
 		//oGFX::DebugDraw::AddSphere(s,e.color);
 		
+		auto existing = GetLightEnabled(e);
 		if (oGFX::coll::SphereInFrustum(frust, s))		
-		{ 
-			SetLightEnabled(e, true);
+		{ 			
+			SetLightEnabled(e, existing && true);
 		}
 		else
 		{
