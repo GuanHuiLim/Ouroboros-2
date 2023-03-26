@@ -15,7 +15,7 @@ SCRIPT_API void RendererSettings_##Struct##_##SetFunc(Type value) \
 { \
 	RendererSettings::setting.Struct.SetFunc(value);\
 	UpdateRendererSettings e; \
-	oo:EventManager::Broadcast<UpdateRendererSettings>(&e); \
+	EventManager::Broadcast<UpdateRendererSettings>(&e); \
 }
 
 #define SCRIPT_API_EXPORT_RENDERER_SETTINGS(Type, Struct, Variable) \
@@ -27,7 +27,7 @@ SCRIPT_API void RendererSettings_##Struct##_Set##Variable(Type value) \
 { \
 	RendererSettings::setting.Struct.Variable = value;\
 	UpdateRendererSettings e; \
-	oo:EventManager::Broadcast<UpdateRendererSettings>(&e); \
+	EventManager::Broadcast<UpdateRendererSettings>(&e); \
 }
 
 	SCRIPT_API_EXPORT_RENDERER_SETTINGS(float, SSAO, Radius)
