@@ -63,6 +63,13 @@ namespace RRES
             rresCompressionType compType = rresCompressionType::RRES_COMP_NONE,
             rresEncryptionType cipherType = rresEncryptionType::RRES_CIPHER_NONE, 
             unsigned int flags = 0);
+
+        Asset(rresResourceChunkInfo* chunkinfo);
+
+        inline void* Get()
+        {
+            m_data.get();
+        }
     };
     
     //class for packing assets into a bundle
@@ -87,8 +94,18 @@ namespace RRES
         void AddAsset(const char* filepath, const unsigned char* type = FILE_TYPES::RAWDATA, rresCompressionType compType = rresCompressionType::RRES_COMP_NONE,
             rresEncryptionType cipherType = rresEncryptionType::RRES_CIPHER_NONE, unsigned int flags = 0);
 
+		//write assets to file this AssetBundle was initialized with
 		void WriteToFile();
+        //write assets to filepath this AssetBundle was initialized with
         void WriteToFile(const char* filepath);
+        
+        /*-------------TODO------------------*/
+        //Load assets from file this AssetBundle was initialized with
+        void LoadFromFile();
+        //Load assets from filepath
+		void LoadFromFile(const char* filepath);
+        /*-----------------------------------*/
+
     };
 }; //namespace RRES
 
