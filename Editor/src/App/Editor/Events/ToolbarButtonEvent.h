@@ -23,6 +23,7 @@ public:
 		ROTATE,
 		SCALE,
 		COMPILE,
+		BUNDLE_ASSETS,
 		PLAY,
 		PAUSE,
 		STOP,

@@ -290,6 +290,12 @@ void Editor::MenuBar()
 			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::COMPILE);
 			oo::EventManager::Broadcast(&tbe);
 		}
+		if (ImGui::MenuItem("Bundle Assets"))
+		{
+			//this is a legacy event but rn im too lazy to make a new event and rename everything
+			ToolbarButtonEvent tbe(ToolbarButtonEvent::ToolbarButton::BUNDLE_ASSETS);
+			oo::EventManager::Broadcast(&tbe);
+		}
 		ImGui::EndMainMenuBar();
 	}
 }

@@ -22,7 +22,12 @@ Technology is prohibited.
 #include "Ouroboros/Core/Application.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 #include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+#include "App/Editor/Events/ToolbarButtonEvent.h"
 #include "Utility/IEqual.h"
+
+#include "Project.h"
+
+#include <Ouroboros/Asset/rres.h>
 
 namespace
 {
@@ -200,12 +205,15 @@ namespace oo
         EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
         for (int i = 0; i < static_cast<int>(AssetInfo::Type::_COUNT); ++i)
             store.byType.emplace(static_cast<AssetInfo::Type>(i), AssetInfoMap());
+
+        EventManager::Subscribe<AssetManager, ToolbarButtonEvent>(this, &AssetManager::OnBundleAssetsEvent);
     }
 
     AssetManager::~AssetManager()
     {
         EventManager::Unsubscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
         EventManager::Unsubscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
+        EventManager::Unsubscribe<AssetManager, ToolbarButtonEvent>(this, &AssetManager::OnBundleAssetsEvent);
         store.clear();
     }
 
@@ -292,6 +300,54 @@ namespace oo
     std::future<std::vector<Asset>> AssetManager::GetOrLoadDirectoryAsync(const std::filesystem::path& path, bool recursive)
     {
         return std::async(std::launch::async, &AssetManager::GetOrLoadDirectory, this, path, recursive);
+    }
+
+    std::vector<std::string> AssetManager::BundleAssetsInDirectory(const std::filesystem::path& path, bool recursive)
+    {
+        const auto PATH = root / path;
+
+        if (!std::filesystem::exists(PATH) || !std::filesystem::is_directory(PATH))
+            return {};
+
+        std::vector<std::filesystem::path> files;
+        if (recursive)
+        {
+            for (auto& file : std::filesystem::recursive_directory_iterator(PATH))
+            {
+                if (isMetaPath(file.path()))
+                    continue;
+                files.emplace_back(file);
+            }
+        }
+        else
+        {
+            for (auto& file : std::filesystem::directory_iterator(PATH))
+            {
+                if (isMetaPath(file.path()))
+                    continue;
+                files.emplace_back(file);
+            }
+        }
+        std::vector<std::string> v;
+        for (auto& file : files)
+        {
+            v.emplace_back(getLoadedAsset(file));
+        }
+        return v;
+    }
+
+    std::future<std::vector<std::string>> AssetManager::BundleAssestsInDirectoryAsync(const std::filesystem::path& path, bool recursive)
+    {
+        return std::async(std::launch::async, &AssetManager::BundleAssetsInDirectory, this, path, recursive);
+    }
+
+    void AssetManager::OnBundleAssetsEvent(ToolbarButtonEvent* evnt)
+    {
+        auto future = BundleAssestsInDirectoryAsync(Project::GetAssetFolder(), true);
+        future.wait();
+        auto result = future.get();
+
+        
     }
 
     std::vector<Asset> AssetManager::GetOrLoadName(const std::filesystem::path& fn, bool caseSensitive)

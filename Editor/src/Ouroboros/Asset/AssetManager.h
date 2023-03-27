@@ -198,6 +198,26 @@ namespace oo
         std::future<std::vector<Asset>> GetOrLoadDirectoryAsync(const std::filesystem::path& path, bool recursive = false);
 
         /// <summary>
+        /// Bundles all assets in a given directory path into an asset file.
+        /// </summary>
+        /// <param name="path">The directory path relative to the AssetManager's root path.</param>
+        /// <param name="recursive">Whether to load directories recursively.</param>
+        /// <returns>The bundled assets.</returns>
+        std::vector<std::string> BundleAssetsInDirectory(const std::filesystem::path& path, bool recursive = false);
+
+
+
+        /// <summary>
+        /// Bundles all assets in a given directory path into an asset file.
+        /// </summary>
+        /// <param name="path">The directory path relative to the AssetManager's root path.</param>
+        /// <param name="recursive">Whether to bundle assets recursively.</param>
+        /// <returns>The bundled assets.</returns>
+        std::future<std::vector<std::string>> BundleAssestsInDirectoryAsync(const std::filesystem::path& path, bool recursive = false);
+
+        void OnBundleAssetsEvent(ToolbarButtonEvent* evnt);
+
+        /// <summary>
         /// Loads or retrieves an asset by a given file name.
         /// </summary>
         /// <param name="fn">The file name.</param>
@@ -302,6 +322,13 @@ namespace oo
         /// <param name="fp">The file path.</param>
         /// <returns>The asset.</returns>
         Asset getLoadedAsset(const std::filesystem::path& fp);
+
+        /// <summary>
+        /// Bundles an asset at a given absolute file path.
+        /// </summary>
+        /// <param name="fp">The file path.</param>
+        /// <returns>The bundled asset.</returns>
+        std::string getBundledAsset(const std::filesystem::path& fp);
 
         /// <summary>
         /// Indexes an asset from a given file into the store.
