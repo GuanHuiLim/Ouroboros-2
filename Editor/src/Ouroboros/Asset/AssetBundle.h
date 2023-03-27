@@ -65,6 +65,7 @@ namespace RRES
             unsigned int flags = 0);
     };
     
+    //class for packing assets into a bundle
     class AssetBundle
     {
     private:
@@ -82,12 +83,12 @@ namespace RRES
         AssetBundle(const char* filename);
 
         ~AssetBundle();
-
-        void AddAsset(const char* filename, const unsigned char* type = FILE_TYPES::RAWDATA, rresCompressionType compType = rresCompressionType::RRES_COMP_NONE,
+        //add an asset to this bundle
+        void AddAsset(const char* filepath, const unsigned char* type = FILE_TYPES::RAWDATA, rresCompressionType compType = rresCompressionType::RRES_COMP_NONE,
             rresEncryptionType cipherType = rresEncryptionType::RRES_CIPHER_NONE, unsigned int flags = 0);
 
 		void WriteToFile();
-        void WriteToFile(const char* filename);
+        void WriteToFile(const char* filepath);
     };
 }; //namespace RRES
 

@@ -62,9 +62,9 @@ inline AssetBundle::~AssetBundle()
     // m_file will be closed automatically when it goes out of scope
 }
 
-inline void AssetBundle::AddAsset(const char* filename, const unsigned char* type, rresCompressionType compType, rresEncryptionType cipherType, unsigned int flags)
+inline void AssetBundle::AddAsset(const char* filepath, const unsigned char* type, rresCompressionType compType, rresEncryptionType cipherType, unsigned int flags)
 {
-	m_assets.emplace_back(filename, type, compType, cipherType, flags);
+	m_assets.emplace_back(filepath, type, compType, cipherType, flags);
     m_header.chunkCount = static_cast<unsigned short>(m_assets.size());
 
     /*
@@ -138,9 +138,9 @@ void WriteAssetToFile(std::ofstream& m_file, Asset const& asset)
     /*--------------------------------------------------------------------------*/
 }
 
-void AssetBundle::WriteToFile(const char* filename)
+void AssetBundle::WriteToFile(const char* filepath)
 {
-    std::ofstream m_file(filename, std::ios::binary);
+    std::ofstream m_file(filepath, std::ios::binary);
     if (!m_file.is_open())
         throw std::runtime_error("Failed to open file");
     m_file.write(reinterpret_cast<const char*>(&m_header), sizeof(m_header));
