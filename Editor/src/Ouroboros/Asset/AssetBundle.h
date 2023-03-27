@@ -1,85 +1,94 @@
+#pragma once
 #include "rres.h"
 
-#include <cstdio>
-#include <cstring>
+#include <fstream>
 #include <stdexcept>
 
-class rresFile
+namespace RRES
 {
-public:
-    rresFile(const char* filename)
-        : m_file(fopen(filename, "wb"))
+    namespace FILE_TYPES
     {
-        if (!m_file)
-            throw std::runtime_error("Failed to open file");
-        fwrite(&m_header, sizeof(m_header), 1, m_file);
-    }
+		static inline const unsigned char* NULLDATA = []() { return reinterpret_cast<const unsigned char*>("NULL"); }();
+		static inline const unsigned char* RAWDATA  = []() { return reinterpret_cast<const unsigned char*>("RAWD"); }();
+        static inline const unsigned char* TEXT     = []() { return reinterpret_cast<const unsigned char*>("TEXT"); }();
+        static inline const unsigned char* IMGE     = []() { return reinterpret_cast<const unsigned char*>("IMGE"); }();
+        static inline const unsigned char* WAVE     = []() { return reinterpret_cast<const unsigned char*>("WAVE"); }();
+        static inline const unsigned char* VRTX     = []() { return reinterpret_cast<const unsigned char*>("VRTX"); }();
+        static inline const unsigned char* FNTG     = []() { return reinterpret_cast<const unsigned char*>("FNTG"); }();
+        static inline const unsigned char* LINK     = []() { return reinterpret_cast<const unsigned char*>("LINK"); }();
+        static inline const unsigned char* CDIR     = []() { return reinterpret_cast<const unsigned char*>("CDIR"); }();
+    }; //namespace FILE_TYPES
 
-    ~rresFile()
+    static constexpr inline const unsigned int CHUNK_DATA_PROPS_SIZE = 5 * sizeof(unsigned int);
+    struct Asset
     {
-        if (m_file)
-            fclose(m_file);
-    }
+        rresResourceChunkInfo m_info = []() {
+            decltype(m_info) info;
+            memcpy(info.type, FILE_TYPES::RAWDATA, sizeof(info.type));
+			info.id = 0;
+            info.compType = rresCompressionType::RRES_COMP_NONE;
+            info.cipherType = rresEncryptionType::RRES_CIPHER_NONE;
+            info.flags = 0;
+            info.baseSize = 0;
+            info.packedSize = 0;
+            info.nextOffset = 0;
+            info.reserved = 0;
+            info.crc32 = 0;
+			return info;
+        }();
 
-    void addResourceChunk(const char* filename, const char* type, rresCompressionType compType = rresCompressionType::RRES_COMP_NONE,
-        rresEncryptionType cipherType = rresEncryptionType::RRES_CIPHER_NONE, unsigned int flags = 0)
-    {
-        unsigned char* buffer = nullptr;
-        unsigned int rawSize = 0;
+		std::array<unsigned int, 1> m_props = []() {
+			decltype(m_props) props;
+			props[0] = 0;
+			return props;
+		}();
 
-        // Load file data
-        FILE* file = fopen(filename, "rb");
-        if (file)
+        rresResourceChunkData m_chunkData = [&]() {
+            decltype(m_chunkData) chunkData;
+            chunkData.propCount = 1;
+            chunkData.props = m_props.data();
+            return chunkData;
+        }();
+
+        std::unique_ptr<unsigned char[]> m_data{};
+
+        inline unsigned int CalculateChunkID(const char* filename) const noexcept
         {
-            fseek(file, 0, SEEK_END);
-            rawSize = static_cast<unsigned int>(ftell(file));
-            fseek(file, 0, SEEK_SET);
-            buffer = new unsigned char[rawSize];
-            fread(buffer, 1, rawSize, file);
-            fclose(file);
-        }
-        else
-        {
-            throw std::runtime_error("Failed to open file");
+            std::string filename_str(filename);
+            return rresComputeCRC32(reinterpret_cast<unsigned char*>(filename_str.data()), filename_str.length());;
         }
 
-        // Define chunk info
-        rresResourceChunkInfo chunkInfo = { 0 };
-        memcpy(chunkInfo.type, type, sizeof(chunkInfo.type));
-        chunkInfo.id = rresComputeCRC32(filename, strlen(filename));
-        chunkInfo.compType = compType;
-        chunkInfo.cipherType = cipherType;
-        chunkInfo.flags = flags;
-        chunkInfo.baseSize = 5 * sizeof(unsigned int) + rawSize;
-        chunkInfo.packedSize = chunkInfo.baseSize;
-        chunkInfo.nextOffset = 0;
-        chunkInfo.reserved = 0;
-
-        // Define chunk data
-        rresResourceChunkData chunkData = { 0 };
-        chunkData.propCount = 1;
-        chunkData.props = new unsigned int[chunkData.propCount];
-        chunkData.props[0] = rawSize;
-
-        fwrite(&chunkInfo, sizeof(rresResourceChunkInfo), 1, m_file);
-        fwrite(chunkData.props, sizeof(unsigned int), chunkData.propCount, m_file);
-        fwrite(buffer, 1, rawSize, m_file);
-
-        // Free resources
-        delete[] chunkData.props;
-        delete[] buffer;
-
-        // Increment chunk count in header
-        ++m_header.chunkCount;
-    }
-
-private:
-    FILE* m_file = nullptr;
-    rresFileHeader m_header = {
-        { 'r', 'r', 'e', 's' },
-        100,
-        0,
-        0,
-        0
+    public:
+        Asset(const char* filename, const unsigned char* type = FILE_TYPES::RAWDATA,
+            rresCompressionType compType = rresCompressionType::RRES_COMP_NONE,
+            rresEncryptionType cipherType = rresEncryptionType::RRES_CIPHER_NONE, 
+            unsigned int flags = 0);
     };
-};
+    
+    class AssetBundle
+    {
+    private:
+        std::string m_filename{};
+        rresFileHeader m_header = {
+            { 'r', 'r', 'e', 's' }, // File identifier: rres
+            100,                    // File version: 100 for version 1.0
+            0,                      // Number of resource chunks in the file (MAX: 65535)
+            0,                      // Central Directory offset in file (0 if not available)
+            0                       // <reserved>
+        };
+
+        std::vector<Asset> m_assets{};
+    public:
+        AssetBundle(const char* filename);
+
+        ~AssetBundle();
+
+        void AddAsset(const char* filename, const unsigned char* type = FILE_TYPES::RAWDATA, rresCompressionType compType = rresCompressionType::RRES_COMP_NONE,
+            rresEncryptionType cipherType = rresEncryptionType::RRES_CIPHER_NONE, unsigned int flags = 0);
+
+		void WriteToFile();
+        void WriteToFile(const char* filename);
+    };
+}; //namespace RRES
+
+
