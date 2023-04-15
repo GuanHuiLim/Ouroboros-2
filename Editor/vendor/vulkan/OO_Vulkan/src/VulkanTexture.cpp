@@ -573,6 +573,7 @@ namespace vkutils
 		//	| VK_IMAGE_USAGE_STORAGE_BIT
 		//	| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
+
 		bool n = name.empty();
 	
 		VkImageCreateInfo imageinfo = oGFX::vkutils::inits::imageCreateInfo();
@@ -587,6 +588,8 @@ namespace vkutils
 		imageinfo.usage = usage;
 		imageinfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VkImageFormatProperties props{};
+		vkGetPhysicalDeviceImageFormatProperties(device->physicalDevice, imageinfo.format, imageinfo.imageType, imageinfo.tiling, imageinfo.usage, imageinfo.flags, &props);
 		VK_CHK(vkCreateImage(device->logicalDevice, &imageinfo, nullptr, &image));
 		VK_NAME(device->logicalDevice, n? "forFramebuffer::image" :name.c_str(), image);
 

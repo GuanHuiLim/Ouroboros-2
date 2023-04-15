@@ -34,6 +34,7 @@ struct GBufferRenderPass : public GfxRenderpass
 	void CreatePSO() override;
 
 	std::array<vkutils::Texture2D, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachments{};
+	vkutils::Texture2D shadowMask{};
 
 	// This is for ImGui
 	std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
@@ -45,11 +46,13 @@ struct GBufferRenderPass : public GfxRenderpass
 	VkPipeline pso_GBufferDefault{};
 
 	VkPipeline pso_ComputeCull{};
+	VkPipeline pso_ComputeShadowPrepass{};
 
 private:
 	void SetupRenderpass();
 	void SetupFramebuffer();
 	void CreatePipeline();
 	void CreatePSOLayout();
+	void SetupResources();
 
 };

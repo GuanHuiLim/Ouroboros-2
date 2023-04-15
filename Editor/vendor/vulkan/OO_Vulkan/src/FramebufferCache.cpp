@@ -28,7 +28,10 @@ void FramebufferCache::Cleanup()
 {
 	//delete every descriptor layout held
 	for (auto pair : bufferCache){
-		vkDestroyFramebuffer(device, pair.second, nullptr);
+		if (pair.second)
+		{
+			vkDestroyFramebuffer(device, pair.second, nullptr);
+		}
 	}
 }
 
@@ -58,9 +61,12 @@ VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info,
 	else {
 		//create a new one (not found)
 		std::cout << "[FBCache] Creating a new framebuffer.." << std::endl;
-		VkFramebuffer frameBuffer;
-		VK_CHK(vkCreateFramebuffer(device, &bufferInfo.createInfo, nullptr, &frameBuffer));
-		VK_NAME(device, "famebufferCache::framebuffer", frameBuffer);
+		VkFramebuffer frameBuffer{};
+		if (bufferInfo.createInfo.renderPass != VK_NULL_HANDLE)
+		{
+			VK_CHK(vkCreateFramebuffer(device, &bufferInfo.createInfo, nullptr, &frameBuffer));
+			VK_NAME(device, "famebufferCache::framebuffer", frameBuffer);
+		}
 		//add to cache
 		
 		//store the pointers

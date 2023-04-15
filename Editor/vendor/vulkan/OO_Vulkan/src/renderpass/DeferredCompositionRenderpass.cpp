@@ -313,4 +313,7 @@ void DeferredCompositionRenderpass::CreatePipeline()
 
 	vkDestroyShaderModule(m_device.logicalDevice,shaderStages[0].module , nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
+
+	const char* shadercs = "Shaders/bin/shadowPrepass.comp.spv";
+
 }

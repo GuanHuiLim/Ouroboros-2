@@ -48,6 +48,7 @@ void BloomPass::Init()
 	}
 
 	VkFramebufferCreateInfo blankInfo{};
+	blankInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	std::vector<VkImageView> dummyViews;
 	std::vector<vkutils::Texture2D*> textures;
 
@@ -498,10 +499,15 @@ void BloomPass::CreateDescriptors()
 		.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
 		.Build(dummy, SetLayoutDB::compute_singleTexture);
 
-	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
-		.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-		.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.Build(dummy, SetLayoutDB::compute_doubleImageStore);
+	if (SetLayoutDB::compute_doubleImageStore == VK_NULL_HANDLE)
+	{
+		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
+			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+			.Build(dummy, SetLayoutDB::compute_doubleImageStore);
+	}
+
+
 
 }
 

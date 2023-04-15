@@ -58,8 +58,9 @@ float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, f
 	
 	// Bounds check for the actual shadow map
 	float closestDepth = 1.0;
-	if(projCoords.x >1.0 || projCoords.x < 0.0
-		|| projCoords.y >1.0 || projCoords.y < 0.0 
+	float boundsLimit = 0.99995;
+	if(projCoords.x >boundsLimit || projCoords.x < 0.0
+		|| projCoords.y >boundsLimit || projCoords.y < 0.0 
 		|| projCoords.z>1)
 	{
 		return 1.0;
