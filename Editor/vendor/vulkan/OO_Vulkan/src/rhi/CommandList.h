@@ -44,7 +44,7 @@ public:
 		VkIndexType indexType
 	);
 
-	void BindPSO(const VkPipeline& pso);
+	void BindPSO(const VkPipeline& pso, const VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
 	void SetPushConstant(VkPipelineLayout layout,
 		const VkPushConstantRange& pcr,
@@ -56,6 +56,7 @@ public:
 		uint32_t firstSet,
 		uint32_t descriptorSetCount,
 		const VkDescriptorSet* pDescriptorSets,
+		VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
 		uint32_t dynamicOffsetCount = 0,
 		const uint32_t* pDynamicOffsets = nullptr
 	);
@@ -65,6 +66,7 @@ public:
 		VkPipelineLayout layout,
 		uint32_t firstSet,
 		const T_ARRAY& array,
+		VkPipelineBindPoint bindpoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
 		uint32_t dynamicOffsetCount = 1,
 		const uint32_t* pDynamicOffsets = nullptr
 	)
@@ -74,6 +76,7 @@ public:
 			firstSet,
 			(uint32_t)array.size(),
 			array.data(),
+			bindpoint,
 			dynamicOffsetCount,
 			pDynamicOffsets);
 	}
@@ -134,6 +137,7 @@ private:
 	VkCommandBuffer m_VkCommandBuffer{};
 
 	VkPipelineLayout m_pipeLayout{};
+	VkPipelineBindPoint m_pipelineBindPoint;
 
 	std::array<VkRect2D, 8> m_scissor;
 	std::array<VkViewport, 8> m_viewport;

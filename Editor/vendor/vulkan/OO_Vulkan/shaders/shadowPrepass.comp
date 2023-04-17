@@ -86,11 +86,8 @@ float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, f
 void main()
 {	
  // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
-	vec4 res = imageLoad(resultImage, ivec2(gl_GlobalInvocationID.xy) );
-	barrier();
-
-	vec2 inUV = vec2(gl_GlobalInvocationID.xy)/imageSize(resultImage);
 	
+	vec2 inUV = vec2(gl_GlobalInvocationID.xy)/imageSize(resultImage);
 
 	vec4 depth = texture(samplerDepth, inUV);
 	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
@@ -99,7 +96,7 @@ void main()
 	//
 	////for..
 	
-	vec4 result = vec4(0.0);
+	vec4 result = vec4(1.0);
 	float shadow = 1.0;
 	
 	for(int lightIndex = 0; lightIndex < PC.numLights; ++lightIndex)
@@ -119,12 +116,12 @@ void main()
 					shadow *= ShadowCalculation(lightIndex,gridID+i,outFragmentLightPos,NdotL);
 				}
 			}
-			result *= shadow;
+			result.rgb *= shadow;
 		}
 	}
 
 
 
 	 //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
-	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);
+	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), result);
 }

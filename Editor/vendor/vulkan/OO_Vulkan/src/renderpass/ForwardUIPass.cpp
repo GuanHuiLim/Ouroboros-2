@@ -142,6 +142,7 @@ void ForwardUIPass::Draw()
 	rhi::CommandList cmd{ cmdlist, "Forward UI Pass"};
 	cmd.SetDefaultViewportAndScissor();
 
+	cmd.BindPSO(pso_Forward_UI);
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
@@ -150,10 +151,10 @@ void ForwardUIPass::Draw()
 			vr.descriptorSets_uniform[swapchainIdx],
 			vr.descriptorSet_bindless,
 	},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1, & dynamicOffset
 	);
 
-	cmd.BindPSO(pso_Forward_UI);
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	std::vector<VkBuffer> vtxBuffers{
 		vr.g_UIVertexBufferGPU.getBuffer(),
@@ -367,8 +368,8 @@ void ForwardUIPass::CreatePipeline()
 	blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 	blendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	blendAttachmentStates[0].colorBlendOp = VK_BLEND_OP_ADD;
-	blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // save background albedo as well
+	blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // save background albedo as well
 	blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
 
 	colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());

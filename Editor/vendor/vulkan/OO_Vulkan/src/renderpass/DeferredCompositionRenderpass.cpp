@@ -101,6 +101,7 @@ void DeferredCompositionRenderpass::Draw()
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	rhi::CommandList cmd{ cmdlist, "Lighting Pass"};
 	cmd.SetDefaultViewportAndScissor();
+	cmd.BindPSO(pso_DeferredLightingComposition);
 
 	const auto& info = vr.globalLightBuffer.GetDescriptorBufferInfo();
 	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[swapchainIdx])
@@ -141,6 +142,7 @@ void DeferredCompositionRenderpass::Draw()
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
+	
 	cmd.BindDescriptorSet(PSOLayoutDB::deferredLightingCompositionPSOLayout, 0,
 		std::array<VkDescriptorSet, 3>
 		{
@@ -148,9 +150,10 @@ void DeferredCompositionRenderpass::Draw()
 			vr.descriptorSets_uniform[swapchainIdx],
 			vr.descriptorSet_lights,
 		},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1,&dynamicOffset
 	);
-	cmd.BindPSO(pso_DeferredLightingComposition);
+	
 
 	cmd.DrawFullScreenQuad();
 

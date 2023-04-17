@@ -101,9 +101,10 @@ void DebugDrawRenderpass::Draw()
 	if (dodebugRendering)
 	{
 		cmd.SetDefaultViewportAndScissor();
-
+		VkPipeline pso = m_DebugDrawPSOSelector.GetPSO(vr.m_DebugDrawDepthTest, false, false);
 		uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 			vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
+		cmd.BindPSO(pso);
 		cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 			std::array<VkDescriptorSet, 3>
 			{
@@ -111,14 +112,15 @@ void DebugDrawRenderpass::Draw()
 				vr.descriptorSets_uniform[swapchainIdx],
 				vr.descriptorSet_bindless
 			},
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			1, &dynamicOffset
 		);
 
 		cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU.getBufferPtr());
 		cmd.BindIndexBuffer(vr.g_DebugDrawIndexBufferGPU.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		VkPipeline pso = m_DebugDrawPSOSelector.GetPSO(vr.m_DebugDrawDepthTest, false, false);
-		cmd.BindPSO(pso);
+		
+		
 		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU.size()), 1);
 	}
 

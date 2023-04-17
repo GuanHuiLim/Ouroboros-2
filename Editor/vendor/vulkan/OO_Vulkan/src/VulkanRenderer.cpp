@@ -565,7 +565,7 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 		vpBufferInfo.range = sizeof(CB::FrameContextUBO);// size of data
 
 		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
-			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT| VK_SHADER_STAGE_COMPUTE_BIT)
 			.Build(descriptorSets_uniform[i], SetLayoutDB::FrameUniform);
 	}
 	
@@ -677,6 +677,7 @@ void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& s
 		{
 			descriptorSet_fullscreenBlit,
 		},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		0
 	);
 
@@ -1078,6 +1079,7 @@ void VulkanRenderer::DestroyWorld(GraphicsWorld* world)
 
 int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
 {
+	return 0;
 
 	uv = glm::clamp(uv, { 0.0,0.0 }, { 1.0,1.0 });
 
@@ -2226,7 +2228,7 @@ void VulkanRenderer::BeginDraw()
 		vpBufferInfo.offset = 0;				// position of start of data
 		vpBufferInfo.range = sizeof(CB::FrameContextUBO);		// size of data
 		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[swapchainIdx])
-			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
 			.Build(descriptorSets_uniform[swapchainIdx], SetLayoutDB::FrameUniform);
 
 
@@ -3354,6 +3356,7 @@ VkCommandBuffer VulkanRenderer::beginSingleTimeCommands()
 
 	VkCommandBuffer commandBuffer;
 	vkAllocateCommandBuffers(m_device.logicalDevice, &allocInfo, &commandBuffer);
+	//std::cout << " Begin single time" << commandBuffer << "\n";
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -3366,6 +3369,8 @@ VkCommandBuffer VulkanRenderer::beginSingleTimeCommands()
 
 void VulkanRenderer::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 {
+
+	//std::cout << " End single time " << commandBuffer << "\n";
 	vkEndCommandBuffer(commandBuffer);
 
 	VkSubmitInfo submitInfo{};

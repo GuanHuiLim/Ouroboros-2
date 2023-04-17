@@ -100,7 +100,8 @@ void BloomPass::Draw()
 	const VkCommandBuffer cmdlist = vr.commandBuffers[swapchainIdx];
 	PROFILE_GPU_CONTEXT(cmdlist);
 	PROFILE_GPU_EVENT("Bloom");
-	vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_bloom_bright);
+	rhi::CommandList cmd{ cmdlist, "Bloom"};
+	cmd.BindPSO(pso_bloom_bright,VK_PIPELINE_BIND_POINT_COMPUTE);
 	
 	auto& mainImage = vr.renderTargets[vr.renderTargetInUseID];
 	auto lastLayout = mainImage.texture.currentLayout;

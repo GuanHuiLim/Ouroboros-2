@@ -109,6 +109,7 @@ void ShadowPass::Draw()
 			vr.descriptorSets_uniform[swapchainIdx],
 			vr.descriptorSet_bindless
 		},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1, &dynamicOffset
 	);
 

@@ -142,6 +142,7 @@ void ForwardParticlePass::Draw()
 	rhi::CommandList cmd{ cmdlist, "Forward Particles Pass"};
 	cmd.SetDefaultViewportAndScissor();
 
+	cmd.BindPSO(pso_GBufferParticles);
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
@@ -150,10 +151,11 @@ void ForwardParticlePass::Draw()
 			vr.descriptorSets_uniform[swapchainIdx],
 			vr.descriptorSet_bindless,
 	},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1, & dynamicOffset
 	);
 
-	cmd.BindPSO(pso_GBufferParticles);
+	
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	std::vector<VkBuffer> vtxBuffers{
 		vr.g_GlobalMeshBuffers.VtxBuffer.getBuffer(),
