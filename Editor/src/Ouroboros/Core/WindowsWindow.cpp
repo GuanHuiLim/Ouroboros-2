@@ -48,6 +48,7 @@ namespace oo
 
     WindowsWindow::WindowsWindow(const WindowProperties& props)
         : m_focused{ true }
+        , m_minimized { false }
     {
         TRACY_PROFILE_SCOPE(windows_constructor);
         
@@ -220,14 +221,14 @@ namespace oo
                 {
                     WindowMinimizeEvent windowMinimizeEvent;
                     EventManager::Broadcast(&windowMinimizeEvent);
-
+                    m_minimized = true;
                     break;
                 }
                 case SDL_WINDOWEVENT_RESTORED:
                 {
                     WindowRestoredEvent windowRestoredEvent;
                     EventManager::Broadcast(&windowRestoredEvent);
-
+                    m_minimized = false;
                     break;
                 }
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
@@ -389,6 +390,101 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
     }
 
+    void WindowsWindow::ProcessWindowEvents()
+    {
+        TRACY_PROFILE_SCOPE(Process_Window_Events);
+
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+                // WINDOWS EVENT
+            case SDL_WINDOWEVENT:
+            {
+                switch (event.window.event)
+                {
+                    // Windows resize event
+                    // both events are resize events
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                case SDL_WINDOWEVENT_RESIZED:
+                {
+                    if (event.window.windowID == SDL_GetWindowID(m_window)) // only care main window
+                    {
+                        m_data.Width = event.window.data1;
+                        m_data.Height = event.window.data2;
+
+                        WindowResizeEvent resizeEvent(m_data.Width, m_data.Height);
+                        EventManager::Broadcast(&resizeEvent);
+                    }
+                    break;
+                }
+                //Windows close event
+                case SDL_WINDOWEVENT_CLOSE:
+                {
+                    WindowCloseEvent closeEvent;
+                    EventManager::Broadcast(&closeEvent);
+                    break;
+                }
+                case SDL_WINDOWEVENT_MAXIMIZED:
+                {
+                    WindowMaximizeEvent windowMaximizeEvent;
+                    EventManager::Broadcast(&windowMaximizeEvent);
+
+                    break;
+                }
+                case SDL_WINDOWEVENT_MINIMIZED:
+                {
+                    WindowMinimizeEvent windowMinimizeEvent;
+                    EventManager::Broadcast(&windowMinimizeEvent);
+                    m_minimized = true;
+                    break;
+                }
+                case SDL_WINDOWEVENT_RESTORED:
+                {
+                    WindowRestoredEvent windowRestoredEvent;
+                    EventManager::Broadcast(&windowRestoredEvent);
+                    m_minimized = false;
+                    break;
+                }
+                case SDL_WINDOWEVENT_FOCUS_GAINED:
+                {
+                    WindowFocusEvent windowFocusEvent;
+                    EventManager::Broadcast(&windowFocusEvent);
+
+                    m_focused = true;
+
+                    break;
+                }
+                case SDL_WINDOWEVENT_FOCUS_LOST:
+                {
+                    WindowLoseFocusEvent windowLoseFocusEvent;
+                    EventManager::Broadcast(&windowLoseFocusEvent);
+
+                    m_focused = false;
+
+                    break;
+                }
+                case SDL_WINDOWEVENT_MOVED:
+                {
+                    WindowMovedEvent windowMovedEvent;
+                    EventManager::Broadcast(&windowMovedEvent);
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+            break;
+
+            default:
+                break;
+            }
+        }
+
+        TRACY_PROFILE_SCOPE_END();
+    }
+
     void WindowsWindow::SwapBuffers()
     {
         TRACY_PROFILE_SCOPE(Swapping_Buffers);
@@ -478,5 +574,10 @@ namespace oo
     bool WindowsWindow::IsFocused() const
     {
         return m_focused;
+    }
+
+    bool WindowsWindow::IsMinimized() const
+    {
+        return m_minimized;
     }
 }
