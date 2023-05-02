@@ -26,6 +26,7 @@ Technology is prohibited.
 //#include <JobSystem/src/final/jobs.h>
 //#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
+
 namespace Ecs
 {
 	template<typename C>
@@ -419,6 +420,7 @@ namespace Ecs::internal
 		newArch->ownerWorld = world;
 		world->archetypes.push_back(newArch);
 		world->archetypeSignatures.push_back(matcher);
+		world->archetypeMatchedSuccess.reserve(world->archetypeSignatures.capacity());
 		world->archetype_signature_map[matcher].push_back(newArch);
 
 		//we want archs to allways have 1 chunk at least, create initial
@@ -771,6 +773,11 @@ namespace Ecs::internal
 	template<typename F>
 	void iterate_matching_archetypes(IECSWorld* world, const IQuery& query, F&& function) {
 
+
+		//world->archetypeMatchedSuccess.clear();
+
+		std::vector<int> archetypesToIterateIndex{};
+
 		for (int i = 0; i < world->archetypeSignatures.size(); i++)
 		{
 			//if there is a good match, doing an and not be 0
@@ -823,13 +830,18 @@ namespace Ecs::internal
 				//all perfect
 				if (matches == query.require_comps.size()) {
 
-					function(world->archetypes[i]);
+					//function(world->archetypes[i]);
+					archetypesToIterateIndex.emplace_back(i);
 				}
 			}
 
-
 		}
 
+		//iterate all matched archetypes
+		for (auto idx : archetypesToIterateIndex)
+		{
+			function(world->archetypes[idx]);
+		}
 	}
 
 
@@ -1259,6 +1271,7 @@ namespace Ecs
 		archetypes.push_back(nullArch);
 
 		archetypeSignatures.push_back(0);
+		archetypeMatchedSuccess.reserve(archetypeSignatures.capacity());
 
 		archetype_signature_map[0].push_back(nullArch);
 
