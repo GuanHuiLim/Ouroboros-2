@@ -829,20 +829,24 @@ namespace Ecs::internal
 
 		}
 
-		TRACY_PROFILE_SCOPE_NC(ecs_parallel_for, tracy::Color::AliceBlue);
+		for (auto index : archetypesToIterateIndex)
+		{
+			function(world->archetypes[index]);
+		}
+		//TRACY_PROFILE_SCOPE_NC(ecs_parallel_for, tracy::Color::AliceBlue);
 
-		//parallelize here
-		//iterate all matched archetypes
-		std::for_each(std::execution::par_unseq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
-			//for (auto idx : archetypesToIterateIndex)
-			{
-				TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
-				function(world->archetypes[idx]);
-				TRACY_PROFILE_SCOPE_END();
-			}
-		);
+		////parallelize here
+		////iterate all matched archetypes
+		//std::for_each(std::execution::par_unseq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
+		//	//for (auto idx : archetypesToIterateIndex)
+		//	{
+		//		TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+		//		function(world->archetypes[idx]);
+		//		TRACY_PROFILE_SCOPE_END();
+		//	}
+		//);
 
-		TRACY_PROFILE_SCOPE_END();
+		//TRACY_PROFILE_SCOPE_END();
 	}
 
 
@@ -1004,6 +1008,34 @@ namespace Ecs::internal
 			function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
 		}
 	}
+
+	template<typename... Args, typename Func>
+	void parallel_entity_chunk_iterate(DataChunk* chnk, Func&& function) {
+		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
+#ifndef NDEBUG
+		//function arguements are incorrect, check if you are using ComponentType&
+		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
+#endif
+
+		
+		/*for (int i = chnk->header.last - 1; i >= 0; i--) {
+			function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
+		}*/
+		
+		auto first = std::make_reverse_iterator(chnk->header.last);
+		auto last = std::make_reverse_iterator(-1);
+		
+
+		/*std::for_each(std::execution::par_unseq,
+			first,
+			last,
+			[&](auto i) {
+				function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
+			});*/
+
+	}
+
+	
 	template<typename Func>
 	void entity_chunk_iterate_with_entity(DataChunk* chnk, Func&& function) {
 		//int popIndex = chunk->header.last - 1;
@@ -1035,6 +1067,13 @@ namespace Ecs::internal
 		(void)types;
 		entity_chunk_iterate<Args...>(chunk, function);
 	}
+
+	template<typename ...Args, typename Func>
+	void parallel_unpack_chunk(type_list<Args...> types, DataChunk* chunk, Func&& function) {
+		(void)types;
+		parallel_entity_chunk_iterate<Args...>(chunk, function);
+	}
+
 	template<typename Func>
 	void unpack_chunk_with_entity(DataChunk* chunk, Func&& function)
 	{
@@ -1358,7 +1397,7 @@ namespace Ecs
 
 			for (auto chnk : arch->chunks) {
 
-				internal::unpack_chunk(params{}, chnk, function);
+				internal::parallel_unpack_chunk(params{}, chnk, function);
 			}
 			});
 

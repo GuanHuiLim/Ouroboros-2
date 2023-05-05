@@ -1475,13 +1475,17 @@ namespace oo::Anim::internal
 		//already hit last event
 		if (tracker.nextEvent_index > last_index) return;
 
-
+		auto& eventqueue = info.system.GetScriptEventQueue();
 		//catch up on all script events to be called & update index
 		while (	tracker.nextEvent_index <= last_index &&
 				events[tracker.nextEvent_index].time < updatedTimer)
 		{
 			//invoke script event
-			events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			//events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			
+			//queue script event
+			eventqueue.emplace_back(info.uuid , events[tracker.nextEvent_index].script_function_info);
+			
 			//update index
 			++tracker.nextEvent_index;
 		}

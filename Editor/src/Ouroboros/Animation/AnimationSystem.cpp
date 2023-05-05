@@ -114,6 +114,13 @@ namespace oo::Anim
 				else
 					animationComp.GetActualComponent().skeleton.Apply_CurrentPose_To_Gameobjects(*scene);
 			});
+
+		for (auto& scriptevent : scriptEventsToBeCalled)
+		{
+			scriptevent.script_function_info.Invoke(scriptevent.uuid);
+		}
+			
+
 		TRACY_PROFILE_SCOPE_END();
 		/*world->for_each(query, [&](AnimationComponent& animationComp) {
 			internal::UpdateTracker(*this, animationComp, animationComp.GetTracker(), 0.016f);
