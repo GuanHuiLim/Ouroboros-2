@@ -1018,37 +1018,11 @@ namespace Ecs::internal
 		//function arguements are incorrect, check if you are using ComponentType&
 		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
 #endif
-
-		/*
-		*  Single threaded version works fine
-		* */
-		/*
+			
 		for (int i = chnk->header.last - 1; i >= 0; i--) {
 			function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
-		}*/
-
-		/*
-		* Multi threaded version doesn't function properly due to data race probably
-		*/
-		std::vector<std::future<void>> futures;
-
-		for (int i = chnk->header.last - 1; i >= 0; i--) 
-		{
-			futures.emplace_back(std::async(std::launch::async, [&]() { function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...); }));
 		}
-		
-		for (auto& future : futures)
-			future.wait();
-				
-		/*auto first = std::make_reverse_iterator(chnk->header.last);
-		auto last = std::make_reverse_iterator(-1);*/
-		
-		/*std::for_each(std::execution::par_unseq,
-			first,
-			last,
-			[&](auto i) {
-				function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
-			});*/
+
 
 	}
 
@@ -1410,13 +1384,18 @@ namespace Ecs
 
 		using params = decltype(internal::args(&Func::operator()));
 
-		internal::parallel_iterate_matching_archetypes(this, query, [&](Archetype* arch) {
-
-			for (auto chnk : arch->chunks) {
-
-				internal::parallel_unpack_chunk(params{}, chnk, function);
-			}
-			});
+		internal::parallel_iterate_matching_archetypes(this, query, [&](Archetype* arch) 
+		{
+			//for (auto chnk : arch->chunks) {
+			TRACY_PROFILE_SCOPE_NC(ecs_parallel_for_per_chunk, tracy::Color::AliceBlue);
+			std::for_each(std::execution::par_unseq, std::begin(arch->chunks), std::end(arch->chunks), [&](auto&& chnk)
+				{
+					TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+					internal::parallel_unpack_chunk(params{}, chnk, function);
+					TRACY_PROFILE_SCOPE_END();
+				});
+			TRACY_PROFILE_SCOPE_END();
+		});
 
 		TRACY_PROFILE_SCOPE_END();
 	}
