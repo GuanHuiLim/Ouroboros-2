@@ -23,6 +23,8 @@ Technology is prohibited.
 #include "System.h"
 #include "Wrapper.h"
 
+#include <future>
+
 //#include <JobSystem/src/final/jobs.h>
 //#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
 
@@ -1017,15 +1019,30 @@ namespace Ecs::internal
 		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
 #endif
 
-		
-		/*for (int i = chnk->header.last - 1; i >= 0; i--) {
+		/*
+		*  Single threaded version works fine
+		* */
+		/*
+		for (int i = chnk->header.last - 1; i >= 0; i--) {
 			function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
 		}*/
-		
-		auto first = std::make_reverse_iterator(chnk->header.last);
-		auto last = std::make_reverse_iterator(-1);
-		
 
+		/*
+		* Multi threaded version doesn't function properly due to data race probably
+		*/
+		std::vector<std::future<void>> futures;
+
+		for (int i = chnk->header.last - 1; i >= 0; i--) 
+		{
+			futures.emplace_back(std::async(std::launch::async, [&]() { function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...); }));
+		}
+		
+		for (auto& future : futures)
+			future.wait();
+				
+		/*auto first = std::make_reverse_iterator(chnk->header.last);
+		auto last = std::make_reverse_iterator(-1);*/
+		
 		/*std::for_each(std::execution::par_unseq,
 			first,
 			last,
