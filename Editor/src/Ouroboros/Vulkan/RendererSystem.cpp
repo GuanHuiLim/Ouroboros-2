@@ -316,6 +316,8 @@ namespace oo
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
+        TRACY_PROFILE_SCOPE_NC(renderer_system_run, tracy::Color::Seashell3);
+
         UpdateUnderlyingRendererSettings();
 
         UpdateJustCreated();
@@ -324,6 +326,8 @@ namespace oo
 
         // draw debug stuff
         RenderDebugDraws();
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     // additional function that runs during runtime scene only.

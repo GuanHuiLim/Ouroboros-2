@@ -831,24 +831,25 @@ namespace Ecs::internal
 
 		}
 
-		for (auto index : archetypesToIterateIndex)
+		/*for (auto index : archetypesToIterateIndex)
 		{
 			function(world->archetypes[index]);
-		}
-		//TRACY_PROFILE_SCOPE_NC(ecs_parallel_for, tracy::Color::AliceBlue);
+		}*/
 
-		////parallelize here
-		////iterate all matched archetypes
-		//std::for_each(std::execution::par_unseq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
-		//	//for (auto idx : archetypesToIterateIndex)
-		//	{
-		//		TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
-		//		function(world->archetypes[idx]);
-		//		TRACY_PROFILE_SCOPE_END();
-		//	}
-		//);
+		TRACY_PROFILE_SCOPE_NC(ecs_parallel_for, tracy::Color::AliceBlue);
 
-		//TRACY_PROFILE_SCOPE_END();
+		//parallelize here
+		//iterate all matched archetypes
+		std::for_each(std::execution::par_unseq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
+			//for (auto idx : archetypesToIterateIndex)
+			{
+				TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+				function(world->archetypes[idx]);
+				TRACY_PROFILE_SCOPE_END();
+			}
+		);
+
+		TRACY_PROFILE_SCOPE_END();
 	}
 
 

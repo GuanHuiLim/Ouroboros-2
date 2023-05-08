@@ -119,6 +119,8 @@ namespace oo::Anim
 		{
 			scriptevent.script_function_info.Invoke(scriptevent.uuid);
 		}
+
+		scriptEventsToBeCalled.clear();
 			
 
 		TRACY_PROFILE_SCOPE_END();
