@@ -34,11 +34,24 @@ namespace oo
         EXIT
     };
 
+    struct PhysicsOnTrigger
+    {
+        UUID TriggerID = UUID{ 0 };
+        UUID OtherID = UUID{ 0 };
+        PhysicsEventState State = PhysicsEventState::NONE;
+    };
+
+
     struct PhysicsTriggerEvent : public Event
     {
         UUID TriggerID = UUID{ 0 };
         UUID OtherID = UUID{ 0 };
         PhysicsEventState State = PhysicsEventState::NONE;
+    };
+
+    struct PhysicsTriggersEvent : public Event
+    {
+        std::vector<PhysicsTriggerEvent> TriggerEvents;
     };
 
     struct ContactPoint
@@ -48,6 +61,15 @@ namespace oo
         glm::vec3 Impulse;
     };
 
+    struct PhysicsOnCollision
+    {
+        UUID Collider1 = UUID{ 0 };
+        UUID Collider2 = UUID{ 0 };
+        PhysicsEventState State = PhysicsEventState::NONE;
+        std::vector<ContactPoint> ContactPoints;
+        std::size_t ContactCount;
+    };
+
     struct PhysicsCollisionEvent : public Event
     {
         UUID Collider1 = UUID{ 0 };
@@ -55,6 +77,11 @@ namespace oo
         PhysicsEventState State = PhysicsEventState::NONE;
         std::vector<ContactPoint> ContactPoints;
         std::size_t ContactCount;
+    };
+
+    struct PhysicsCollisionsEvent : public Event
+    {
+        std::vector<PhysicsCollisionEvent> CollisionEvents;
     };
 
 }

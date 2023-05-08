@@ -62,9 +62,17 @@ namespace oo
         constexpr const char* const update_loop_name = "core app update loop";
         while (m_running)
         {
+            if (m_window->IsMinimized())
+            {
+                m_window->ProcessWindowEvents();
+                Sleep(1);
+                continue;
+            }
+
             /* Update Tracy */
             OO_TracyProfiler::CheckIfServerToBeOpened();
             OO_TracyProfiler::CheckIfServerToBeClosed();
+
 
             /*Calculate dt*/
             timer::Timestep dt = {};
@@ -122,6 +130,7 @@ namespace oo
             
             TRACY_PROFILE_END_OF_FRAME();
         }
+
     }
 
     void Application::Close()

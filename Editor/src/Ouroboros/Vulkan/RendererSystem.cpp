@@ -72,6 +72,9 @@ namespace oo
                 actualObject.bindlessGlobalTextureIndex_Metallic    = m_comp.MetallicID;
                 actualObject.bindlessGlobalTextureIndex_Roughness   = m_comp.RoughnessID;
                 actualObject.submesh = m_comp.MeshInformation.submeshBits;
+                
+                actualObject.bindlessGlobalTextureIndex_Emissive = m_comp.EmissiveID;
+                actualObject.emissiveColour = m_comp.EmissiveColor;
 
                 if (transformComp.HasChangedThisFrame)
                     actualObject.localToWorld = transformComp.GlobalTransform;
@@ -93,6 +96,8 @@ namespace oo
                 graphics_light.color = glm::vec4{ lightComp.Color.r, lightComp.Color.g, lightComp.Color.b, lightComp.Intensity };
                 graphics_light.radius = vec4{ lightComp.Radius, 0, 0, 0 };
 
+                // all lights here are active(because this only goes through active objects)!
+                SetLightEnabled(graphics_light, true);
                 SetCastsShadows(graphics_light, lightComp.ProduceShadows);
             });
     }
@@ -129,13 +134,35 @@ namespace oo
 
     void RendererSystem::OnUpdateRendererSettings(UpdateRendererSettings*)
     {
+        m_updateRendererSettings = true;
+    }
+
+    void RendererSystem::UpdateUnderlyingRendererSettings()
+    {
+        if (!m_updateRendererSettings)
+            return;
+        m_updateRendererSettings = false;
+
         m_graphicsWorld->ssaoSettings.bias = RendererSettings::setting.SSAO.Bias;
         m_graphicsWorld->ssaoSettings.radius = RendererSettings::setting.SSAO.Radius;
         m_graphicsWorld->ssaoSettings.intensity = RendererSettings::setting.SSAO.intensity;
 
         m_graphicsWorld->lightSettings.ambient = RendererSettings::setting.Lighting.Ambient;
-        m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;
         m_graphicsWorld->lightSettings.maxBias = RendererSettings::setting.Lighting.MaxBias;
+        m_graphicsWorld->lightSettings.biasMultiplier = RendererSettings::setting.Lighting.BiasMultiplier;
+
+        m_graphicsWorld->bloomSettings.threshold = RendererSettings::setting.Bloom.Threshold;
+        m_graphicsWorld->bloomSettings.softThreshold = RendererSettings::setting.Bloom.SoftThreshold;
+
+        m_graphicsWorld->colourSettings.highlightThreshold = RendererSettings::setting.ColourCorrection.HighlightThreshold;
+        m_graphicsWorld->colourSettings.shadowThreshold = RendererSettings::setting.ColourCorrection.ShadowThreshold;
+        m_graphicsWorld->colourSettings.shadowColour = RendererSettings::setting.ColourCorrection.ShadowColour;
+        m_graphicsWorld->colourSettings.midtonesColour = RendererSettings::setting.ColourCorrection.MidtonesColour;
+        m_graphicsWorld->colourSettings.highlightColour = RendererSettings::setting.ColourCorrection.HighlightColour;
+
+        m_graphicsWorld->vignetteSettings.colour = RendererSettings::setting.Vignette.Colour;
+        m_graphicsWorld->vignetteSettings.innerRadius = RendererSettings::setting.Vignette.InnerRadius;
+        m_graphicsWorld->vignetteSettings.outerRadius = RendererSettings::setting.Vignette.OuterRadius;
     }
 
     void oo::RendererSystem::OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt)
@@ -289,6 +316,8 @@ namespace oo
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
+        UpdateUnderlyingRendererSettings();
+
         UpdateJustCreated();
         UpdateDuplicated();
         UpdateExisting();

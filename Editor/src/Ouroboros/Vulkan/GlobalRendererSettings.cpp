@@ -32,9 +32,28 @@ namespace oo
             .property("Max Bias", &GlobalRendererSettings::LightingSettings::GetMaxBias, &GlobalRendererSettings::LightingSettings::SetMaxBias)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             .property("Bias Multiplier", &GlobalRendererSettings::LightingSettings::BiasMultiplier)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
             ;
+        registration::class_<GlobalRendererSettings::BloomSettings>("Bloom Settings")
+            .property("Threshold", &GlobalRendererSettings::BloomSettings::Threshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Soft Threshold", &GlobalRendererSettings::BloomSettings::SoftThreshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            ;
+        registration::class_<GlobalRendererSettings::ColourCorrectionSettings>("Colour Correction Settings")
+            .property("Highlight Threshold", &GlobalRendererSettings::ColourCorrectionSettings::HighlightThreshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Soft Threshold", &GlobalRendererSettings::ColourCorrectionSettings::ShadowThreshold)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Shadow Colour", &GlobalRendererSettings::ColourCorrectionSettings::ShadowColour)
+            .property("Midtones Colour", &GlobalRendererSettings::ColourCorrectionSettings::MidtonesColour)
+            .property("Highlight Colour", &GlobalRendererSettings::ColourCorrectionSettings::HighlightColour)
+            ;
+        registration::class_<GlobalRendererSettings::VignetteSettings>("Vignette Settings")
+            .property("Colour", &GlobalRendererSettings::VignetteSettings::Colour)(metadata(UI_metadata::COLOR_PICKER, true))
+            .property("Inner Radius", &GlobalRendererSettings::VignetteSettings::InnerRadius)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            .property("Outer Radius", &GlobalRendererSettings::VignetteSettings::OuterRadius)(metadata(UI_metadata::DRAG_SPEED, 0.001f))
+            ;
         registration::class_<GlobalRendererSettings>("Renderer Settings")
             .property("SSAO Configuration", &GlobalRendererSettings::SSAO)
-            .property("Light Configuration", &GlobalRendererSettings::Lighting)
+            .property("Lighting Configuration", &GlobalRendererSettings::Lighting)
+            .property("Global Bloom", &GlobalRendererSettings::Bloom)
+            .property("Global Colour Correction", &GlobalRendererSettings::ColourCorrection)
+            .property("Vignette", &GlobalRendererSettings::Vignette)
             ;
     }
     

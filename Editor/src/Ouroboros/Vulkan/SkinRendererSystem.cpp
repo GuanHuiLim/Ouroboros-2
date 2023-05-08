@@ -170,7 +170,12 @@ namespace oo
 					gfx_Object.bindlessGlobalTextureIndex_Metallic = m_comp.metallicID;
 					gfx_Object.bindlessGlobalTextureIndex_Roughness = m_comp.roughnessID;
 					gfx_Object.submesh = m_comp.meshInfo.submeshBits;
+
+					gfx_Object.bindlessGlobalTextureIndex_Emissive = m_comp.EmissiveID;
+					gfx_Object.emissiveColour = m_comp.EmissiveColor;
+
 					gfx_Object.SetShadowCaster(m_comp.CastShadows);
+					gfx_Object.SetShadowEnabled(m_comp.CastShadows);
 					gfx_Object.SetShadowReciever(m_comp.ReceiveShadows);
 					//do nothing if transform did not change
 					if (transformComp.HasChangedThisFrame == false) return;

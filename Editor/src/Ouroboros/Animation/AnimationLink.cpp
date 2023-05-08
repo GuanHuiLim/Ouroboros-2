@@ -70,6 +70,11 @@ namespace oo::Anim::internal
 			auto properties = rttr::type::get<Link>().get_properties();
 			for (auto& prop : properties)
 			{
+				if (object.HasMember(prop.get_name().data()) == false)
+				{
+					LOG_CORE_WARN("AnimationTree::LoadLink: Missing property {0}", prop.get_name().data());
+					continue;
+				}
 				auto& value = object.FindMember(prop.get_name().data())->value;
 
 				assert(internal::loadDataFn_map.contains(prop.get_type().get_id()));
@@ -105,6 +110,7 @@ namespace oo::Anim
 		.property("transition_offset", &Link::transition_offset)
 		.property("name", &Link::name)
 		.property("linkID", &Link::linkID)
+		.property("quick_blend_duration", &Link::quick_blend_duration)
 		.property("src", &Link::src)
 		.property("dst", &Link::dst)
 		.method(internal::serialize_method_name, &internal::SerializeLink)

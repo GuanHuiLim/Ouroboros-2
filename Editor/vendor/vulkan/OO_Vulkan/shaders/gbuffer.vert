@@ -21,6 +21,7 @@ layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec2 outUV;
 layout(location = 2) out vec3 outColor;
 layout(location = 3) out flat int outEntityID;
+layout(location = 4) out flat vec4 outEmissive;
 layout(location = 7) out struct
 {
 	mat3 btn;
@@ -54,6 +55,7 @@ void main()
 
 	GPUObjectInformation objectInfo = GPUobjectInfo[inInstanceData.x];
 	outEntityID = objectInfo.entityID;
+	outEmissive = objectInfo.emissiveColour;
 	//decode the matrix into transform matrix
 	mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[instanceIndex]);
 	
@@ -71,7 +73,7 @@ void main()
 
 	outLightData.btn = (mat3(T,B,N));
 
-	bool skinned = (inInstanceData.y & 0xFF00 ) > 1;
+	bool skinned = UnpackSkinned(inInstanceData.y);
     if(skinned)
 	{
 		mat4x4 boneToModel; // what do i do with this

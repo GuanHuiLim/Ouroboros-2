@@ -26,7 +26,7 @@ namespace oo
     public:
         
         TransformSystem(Scene* scene);
-        virtual ~TransformSystem() = default;
+        virtual ~TransformSystem();
 
         void PostLoadSceneInit();
 
@@ -40,8 +40,14 @@ namespace oo
     private:
         void UpdateLocalTransform(TransformComponent& tf);
         void UpdateLocalTransforms();
+        void UpdateRootTree();  // optimized version without pre processing.
         void UpdateTree(scenenode::shared_pointer node, bool updateRoot);
         void UpdateTransform(std::shared_ptr<GameObject> const& go);
+
+        void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
+        //void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
+
+        void StartOfFramePreprocessing();
 
     private:
         Scene* m_scene = nullptr;
@@ -51,5 +57,9 @@ namespace oo
         // im not expecting anything that's nested beyond 32 depth. its possible but freaking unlikely
         static constexpr std::size_t MaxDepth = 32;
         std::array<std::vector<scenegraph::shared_pointer>, MaxDepth> launch_groups;
+        
+        // extra info stored for preprocessing
+        std::stack<scenenode::shared_pointer> s;
+
     };
 }

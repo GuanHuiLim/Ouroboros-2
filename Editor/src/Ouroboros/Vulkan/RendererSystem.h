@@ -70,6 +70,7 @@ namespace oo
         //void OnPreviewWindowResize(PreviewWindowResizeEvent* e);
 
         void OnUpdateRendererSettings(UpdateRendererSettings*);
+        void UpdateUnderlyingRendererSettings();
 
         void OnLightAssign(Ecs::ComponentEvent<LightComponent>* evnt);
         void OnLightRemove(Ecs::ComponentEvent<LightComponent>* evnt);
@@ -89,5 +90,7 @@ namespace oo
 
         CameraController m_runtimeCC;
         Camera m_runtimeCamera;
+
+        bool m_updateRendererSettings = false;
     };
 }

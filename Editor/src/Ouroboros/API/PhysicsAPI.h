@@ -120,6 +120,17 @@ namespace oo
         return arr;
     }
 
+    SCRIPT_API LayerType GenerateCollisionMask(const char* strArray[], int size)
+    {
+        size_t u_size = static_cast<size_t>(size);
+        std::vector<std::string> layerNames{ static_cast<size_t>(u_size) };
+        for (size_t i = 0; i < u_size; ++i)
+        {
+            layerNames.emplace_back(strArray[i]);
+        }
+        return PhysicsSystem::GenerateCollisionMask(layerNames);
+    }
+
     SCRIPT_API bool Physics_RaycastBasic(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
@@ -146,6 +157,23 @@ namespace oo
         try
         {
             result = ps->Raycast(ray, maxDistance);
+        }
+        catch (std::exception const&)
+        {
+            // most likely invalid map key, do nothing
+        }
+        return result.Intersect;
+    }
+
+    SCRIPT_API bool Physics_Raycast_Filtered(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir, float maxDistance, uint layerMask)
+    {
+        PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
+
+        RaycastResult result;
+        try
+        {
+            result = ps->Raycast(ray, maxDistance, layerMask);
         }
         catch (std::exception const&)
         {
@@ -192,6 +220,25 @@ namespace oo
         return mono_gchandle_new(CreateRaycastHit(result), false);
     }
 
+    SCRIPT_API ScriptDatabase::IntPtr Physics_Raycast_WithData_Filtered(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir, float maxDistance, uint layerMask)
+    {
+        PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
+
+        RaycastResult result;
+        try
+        {
+            result = ps->Raycast(ray, maxDistance, layerMask);
+        }
+        catch (std::exception const&)
+        {
+            // most likely invalid map key, do nothing
+        }
+        if (!result.Intersect)
+            return ScriptDatabase::InvalidPtr;
+        return mono_gchandle_new(CreateRaycastHit(result), false);
+    }
+
     SCRIPT_API MonoArray* Physics_RaycastAllBasic(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir)
     {
         PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
@@ -218,6 +265,23 @@ namespace oo
         try
         {
             result = ps->RaycastAll(ray, maxDistance);
+        }
+        catch (std::exception const&)
+        {
+            // most likely invalid map key, do nothing
+        }
+        return CreateRaycastHitArray(result);
+    }
+
+    SCRIPT_API MonoArray* Physics_RaycastAll_Filtered(ScriptValue::vec3_type origin, ScriptValue::vec3_type dir, float maxDistance, uint layerMask)
+    {
+        PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+        oo::Ray ray{ { origin.x, origin.y, origin.z }, { dir.x, dir.y, dir.z } };
+
+        std::vector<RaycastResult> result;
+        try
+        {
+            result = ps->RaycastAll(ray, maxDistance, layerMask);
         }
         catch (std::exception const&)
         {

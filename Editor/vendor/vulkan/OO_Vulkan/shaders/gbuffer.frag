@@ -6,6 +6,7 @@ layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in flat int inEntityID;
+layout(location = 4) in flat vec4 inEmissiveColour;
 
 layout(location = 15) in flat uvec4 inInstanceData;
 layout(location = 7) in struct
@@ -17,7 +18,8 @@ layout(location = 7) in struct
 layout(location = 0) out vec4 outNormal;
 layout(location = 1) out vec4 outAlbedo;
 layout(location = 2) out vec4 outMaterial;
-layout(location = 3) out int outEntityID;
+layout(location = 3) out vec4 outEmissive;
+layout(location = 4) out int outEntityID;
 
 #include "shader_utility.shader"
 
@@ -30,11 +32,10 @@ layout(set = 1, binding = 0) uniform UboFrameContext
 layout (set = 2, binding = 0) uniform sampler2D textureDescriptorArray[];
 //layout(set = 1, binding= 0) uniform sampler2D textureSampler;
 
-vec4 PackPBRMaterialOutputs(in float roughness, in float metallic) // TODO: Add other params as needed
+vec4 PackPBRMaterialOutputs(in float roughness, in float metallic,in float emissive) // TODO: Add other params as needed
 {
     // Precision of 0.03921568627451 for UNORM format, typically should be enough. Try not to change the format.
-    const float todo_something = 0.0f;
-    return vec4(roughness, metallic, todo_something, 1.0f);
+    return vec4(roughness, metallic, emissive, 1.0f);
 }
 
 // Subject to change
@@ -97,6 +98,7 @@ void main()
     const uint textureIndex_Roughness = inInstanceData.w >> 16;
     const uint textureIndex_Metallic  = inInstanceData.w & 0xFFFF;
     uint perInstanceData              = inInstanceData.y & 0xFF;
+    const uint textureIndex_Emissive  = inInstanceData.y >> 16;
    
 
     {
@@ -131,8 +133,13 @@ void main()
         const float roughness = texture(textureDescriptorArray[textureIndex_Roughness], inUV.xy).r;
         const float metallic = texture(textureDescriptorArray[textureIndex_Metallic], inUV.xy).r;
 
-        outMaterial = PackPBRMaterialOutputs(roughness, metallic);
+        outMaterial = PackPBRMaterialOutputs(roughness, metallic, 1.0);
         uint flags = perInstanceData;
         outMaterial.z = EncodeFlags(flags);
     }
+
+    {
+        outEmissive.rgb = texture(textureDescriptorArray[textureIndex_Emissive], inUV.xy).rrr * inEmissiveColour.rgb * inEmissiveColour.a;
+    }
+
 }

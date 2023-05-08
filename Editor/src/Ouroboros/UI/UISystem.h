@@ -20,7 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/Geometry/Shapes.h"
 
-class PreviewWindowImageResizeEvent;
+struct PreviewWindowImageResizeEvent;
 
 namespace oo
 {
@@ -74,7 +74,7 @@ namespace oo
 
         inline static bool UIDebugDraw = true;
         inline static bool UIDebugRaycast = false;
-
+        inline static bool UIDebugPrint = false;
     private:
         //GameObject selectedButton;
 

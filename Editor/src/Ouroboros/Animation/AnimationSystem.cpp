@@ -26,6 +26,7 @@ Technology is prohibited.
 #include "Ouroboros/Vulkan/MeshRendererComponent.h"
 #include "Project.h"
 #include "Ouroboros/EventSystem/EventManager.h"
+#include "Ouroboros/EventSystem/EventTypes.h"
 #include "App/Editor/UI/Tools/MeshHierarchy.h"
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
@@ -44,6 +45,7 @@ namespace oo::Anim
 		EventManager::Unsubscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 		EventManager::Unsubscribe<ModifyAnimationEvent>(&AnimationSystem::ModifyAnimationCallback);
 		EventManager::Unsubscribe<ModifyAnimationTreeEvent>(&AnimationSystem::ModifyAnimationTreeCallback);
+		EventManager::Unsubscribe<AnimationSystem, PrefabSpawnedEvent>(this, &AnimationSystem::OnSpawnPrefab);
 	}
 	void AnimationSystem::Init(Ecs::ECSWorld* _world, Scene* _scene)
 	{
@@ -60,6 +62,8 @@ namespace oo::Anim
 		EventManager::Subscribe<CloseProjectEvent>(&AnimationSystem::CloseProjectCallback);
 		EventManager::Subscribe<ModifyAnimationEvent>(&AnimationSystem::ModifyAnimationCallback);
 		EventManager::Subscribe<ModifyAnimationTreeEvent>(&AnimationSystem::ModifyAnimationTreeCallback);
+		EventManager::Subscribe<AnimationSystem, PrefabSpawnedEvent>(this, &AnimationSystem::OnSpawnPrefab);
+		 
 
 		/*world->for_each(query, [&](oo::AnimationComponent& animationComp) {
 			if (animationComp.GetAnimationTree() == nullptr)
@@ -83,21 +87,28 @@ namespace oo::Anim
 		}();
 
 		//test object code
-		if (test_obj)
+		/*if (test_obj)
 		{
 			if (input::IsKeyPressed(input::KeyCode::SPACE))
 			{
 				test_obj->GetComponent<AnimationComponent>()
 					.SetParameter("Test float", 30.f);
 			}
-		}
+		}*/
 		
 		TRACY_PROFILE_SCOPE_NC(Animation_Update, 0x00E0E3);
 
 		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
 			GameObject go{ entity , *scene };
-			internal::UpdateTrackerInfo info{ *this,animationComp.GetActualComponent(),animationComp.GetTracker(), entity,go.GetInstanceID(), timer::dt() };
+			auto& anim_component = animationComp.GetActualComponent();
+			internal::UpdateTrackerInfo info{ *this,anim_component,animationComp.GetTracker(), entity,go.GetInstanceID(), timer::dt() };
 			internal::UpdateTracker(info);
+			if (anim_component.tracker.transition_info.in_transition)
+			{
+				animationComp.GetActualComponent().skeleton.Apply_NextPose_To_Gameobjects(*scene);
+			}
+			else
+				animationComp.GetActualComponent().skeleton.Apply_CurrentPose_To_Gameobjects(*scene);
 			});
 		TRACY_PROFILE_SCOPE_END();
 		/*world->for_each(query, [&](AnimationComponent& animationComp) {
@@ -134,7 +145,7 @@ namespace oo::Anim
 
 		
 
-
+		bindPhaseOver = true;
 		
 	}
 
@@ -345,6 +356,27 @@ namespace oo::Anim
 
 			return nullptr;
 		}
+	}
+
+	void AnimationSystem::OnSpawnPrefab(oo::PrefabSpawnedEvent* evnt)
+	{
+		//only process spawned prefabs after scene loading
+		if (bindPhaseOver == false) return;
+
+		static Ecs::Query query = []() {
+			Ecs::Query _query;
+			_query.with<AnimationComponent>().build();
+			return _query;
+		}();
+		
+		world->for_each_entity_and_component(query, [&](Ecs::EntityID entity, oo::AnimationComponent& animationComp) {
+			
+			if (animationComp.GetActualComponent().root_objectID.value == entity.value) return;
+			
+			animationComp.Set_Root_Entity(entity);
+			internal::InitialiseComponent(animationComp.GetActualComponent());
+
+			});
 	}
 
 	bool AnimationSystem::SaveAnimationTree(AnimationTree& tree, std::string filepath)

@@ -116,6 +116,7 @@ struct SubMesh
     uint32_t vertexCount{};
     uint32_t baseIndices{};
     uint32_t indicesCount{};
+    oGFX::Sphere boundingSphere;
 
     // TODO: Material
 };

@@ -1,0 +1,70 @@
+#version 460
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_nonuniform_qualifier : require
+
+#include "shared_structs.h"
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 1/*,rgba16f*/)  uniform sampler2D inputImage;
+layout (binding = 2,r11f_g11f_b10f) uniform  image2D resultImage;
+
+layout(push_constant)uniform PushVignette
+{
+		VignettePC pc;
+};
+
+void main()
+{	
+
+
+    // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
+	// vec4 inImg = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
+	
+     // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = vec2(gl_GlobalInvocationID.xy)/imageSize(resultImage);
+    vec4 res = texture(inputImage, uv);
+
+	
+	float InnerVig = pc.vignetteValues.x; // Position for the inner Vignette Ring
+    float OuterVig = pc.vignetteValues.y; // Position for the Outer vignette
+    
+    // Normalized pixel coordinates (from 0 to 1)
+    
+    vec4 color = res;
+    
+    vec2 center = vec2(uv.x,0.5); // Center of Screen
+    center = vec2(0.5,0.5);
+    
+	float dist  = distance(center,uv )*1.414213; // Distance between center and the current Uv. Multiplyed by 1.414213 to fit in the range of 0.0 to 1.0
+
+    float vig = clamp((OuterVig-dist) / (OuterVig-InnerVig),0.0,1.0); // Generate the Vignette with Clamp which go from outer Viggnet ring to inner vignette ring with smooth steps
+	
+    if(vig == 1.0){
+    	color = color;
+    }
+    else{
+        vec3 expectedCol = color.rgb*(1.0-pc.colour.a)+(pc.colour.rgb*pc.colour.a);
+		color.rgb = mix( expectedCol , color.rgb, vig);
+    }
+    
+	center = vec2(0.5,uv.y); // Center of Screen
+     center = vec2(0.5,0.5);
+
+    dist  = distance(center,uv )*1.414213;  
+    
+    //vig = smoothstep(OuterVig, InnerVig, dist);
+    vig = clamp((OuterVig-dist) / (OuterVig-InnerVig),0.0,1.0);
+
+    if(vig == 1.0){
+       color = color;
+    }
+    else{
+        vec3 expectedCol = color.rgb*(1.0-pc.colour.a)+(pc.colour.rgb*pc.colour.a);
+		color.rgb = mix( expectedCol , color.rgb, vig);
+    }
+
+
+    //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
+	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(color.rgb,1.0));
+}
+

@@ -24,6 +24,8 @@ Technology is prohibited.
 
 #include <rapidjson/document.h>
 
+#include <Utility/Hash.h>
+
 RTTR_REGISTRATION
 {
 	using namespace rttr;
@@ -72,7 +74,16 @@ namespace oo::Anim::internal
 		static std::mt19937_64 mt{ std::random_device{}() };
 		static std::uniform_int_distribution<size_t> distrib{ 0 };
 		return distrib(mt);
-	};
+	}
+	size_t generateBoneID(std::vector<int> const& children_index)
+	{
+		std::string str{};
+		for (auto& i : children_index)
+			str += std::to_string(i);
+		auto id = StringHash::GenerateFNV1aHash(str);
+		return id;
+	}
+	
 	
 	bool Equal(float lhs, float rhs)
 	{

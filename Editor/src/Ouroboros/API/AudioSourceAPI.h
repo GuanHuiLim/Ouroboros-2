@@ -38,6 +38,7 @@ namespace oo
 
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Volume, float, GetVolume, SetVolume)
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Pitch, float, GetPitch, SetPitch)
+    SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, Priority, int, GetPriority, SetPriority)
 
     SCRIPT_API_GET_FUNC(AudioSourceComponent, IsPlaying, bool, IsPlaying)
     SCRIPT_API_GET_SET_FUNC(AudioSourceComponent, PlaybackTime, float, GetPlaybackTime, SetPlaybackTime)
@@ -63,6 +64,20 @@ namespace oo
         obj->GetComponent<AudioSourceComponent>().SetAudioClip(asset);
     }
 
+    SCRIPT_API int AudioSourceComponent_GetGroup(Scene::ID_type sceneID, UUID uuid)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        AudioSourceComponent& component = obj->GetComponent<AudioSourceComponent>();
+        return static_cast<int>(component.GetGroup());
+    }
+
+    SCRIPT_API void AudioSourceComponent_SetGroup(Scene::ID_type sceneID, UUID uuid, int group)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        AudioSourceComponent& component = obj->GetComponent<AudioSourceComponent>();
+        component.SetGroup(static_cast<AudioSourceGroup>(group));
+    }
+
     /*-----------------------------------------------------------------------------*/
     /* AudioClip Functions for C#                                                  */
     /*-----------------------------------------------------------------------------*/
@@ -79,5 +94,12 @@ namespace oo
         unsigned int length = 0;
         audio::GetSound(id)->getLength(&length, FMOD_TIMEUNIT_MS);
         return static_cast<float>(length) / 1000;
+    }
+
+    SCRIPT_API uint AudioClip_GetSampleCount(SoundID id)
+    {
+        unsigned int length = 0;
+        audio::GetSound(id)->getLength(&length, FMOD_TIMEUNIT_PCM);
+        return length;
     }
 }

@@ -33,6 +33,7 @@ DECLARE_RENDERPASS(GBufferRenderPass);
 
 void GBufferRenderPass::Init()
 {
+	CreatePSOLayout();
 	SetupRenderpass();
 	SetupFramebuffer();
 }
@@ -72,7 +73,55 @@ void GBufferRenderPass::Draw()
 
     const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
     PROFILE_GPU_CONTEXT(cmdlist);
-    PROFILE_GPU_EVENT("GBuffer");
+
+
+	
+	{
+		glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
+		auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
+		auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
+
+		VkDebugMarkerMarkerInfoEXT marker = {};
+		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+		memcpy(marker.color, &col[0], sizeof(float) * 4);
+		marker.pMarkerName = "CullCOMP";
+		if (regionBegin)
+		{
+			regionBegin(cmdlist, &marker);
+		}
+		
+		vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_ComputeCull);
+		
+		VkDescriptorSet cullDset;
+		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+			.BindBuffer(1, vr.indirectCommandsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindBuffer(2, vr.instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindBuffer(3, vr.gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.Build(cullDset, SetLayoutDB::compute_singleSSBO);
+		
+		oGFX::Frustum frust = vr.currWorld->cameras[vr.renderIteration].GetFrustum();
+		struct CullingPC pc;
+		pc. top = frust.top.normal;
+		pc. bottom = frust.bottom.normal;
+		pc. right = frust.right.normal;
+		pc. left = frust.left.normal;
+		pc. pFar = frust.planeFar.normal;
+		pc. pNear = frust.planeNear.normal;
+		pc.numItems = vr.indirectCommandsBuffer.size();
+
+		vkCmdPushConstants(cmdlist, PSOLayoutDB::singleSSBOlayout, VK_SHADER_STAGE_ALL, 0, sizeof(CullingPC), &pc);
+		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::singleSSBOlayout, 0, 1, &cullDset, 0, 0);
+		
+		vkCmdDispatch(cmdlist, (vr.indirectCommandsBuffer.size()-1) / 128 + 128, 1, 1);
+
+		if (regionEnd)
+		{
+			regionEnd(cmdlist);
+		}
+	}
+
+	PROFILE_GPU_EVENT("GBuffer");
+	rhi::CommandList cmd{ cmdlist, "Gbuffer Pass"};
 
 	constexpr VkClearColorValue zeroFloat4 = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
 	constexpr VkClearColorValue tangentNormal = VkClearColorValue{ 0.5f,0.5f,1.0f,0.0f };
@@ -85,15 +134,18 @@ void GBufferRenderPass::Draw()
 	clearValues[GBufferAttachmentIndex::NORMAL]  .color = tangentNormal;
 	clearValues[GBufferAttachmentIndex::ALBEDO].color =	  zeroFloat4;
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
+	clearValues[GBufferAttachmentIndex::EMISSIVE].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 	
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
 		//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
 		.BindImage(&attachments[GBufferAttachmentIndex::NORMAL  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::ALBEDO  ])
 		.BindImage(&attachments[GBufferAttachmentIndex::MATERIAL])
+		.BindImage(&attachments[GBufferAttachmentIndex::EMISSIVE])
 		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
 		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH   ])
 		.Build(currentFB,renderpass_GBuffer);
@@ -113,8 +165,10 @@ void GBufferRenderPass::Draw()
 	// TODO: handle all framebuffer resizes gracefully
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	
-	rhi::CommandList cmd{ cmdlist, "Gbuffer Pass"};
+	
 	cmd.SetDefaultViewportAndScissor();
+
+	
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
@@ -149,12 +203,17 @@ void GBufferRenderPass::Draw()
 
 void GBufferRenderPass::Shutdown()
 {
-	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
-	
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
+	auto& device = m_device.logicalDevice;
+
 	for (auto& att : attachments)
 	{
 		att.destroy();
 	}
+
+	vkDestroyPipelineLayout(device, PSOLayoutDB::singleSSBOlayout, nullptr);
+	vkDestroyPipeline(device, pso_ComputeCull, nullptr);
 
 	renderpass_GBuffer.destroy();
 	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
@@ -182,6 +241,8 @@ void GBufferRenderPass::SetupRenderpass()
 	attachments[GBufferAttachmentIndex::ENTITY_ID].forFrameBuffer(&m_device, VK_FORMAT_R32_SINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::DEPTH	].name = "GB_DEPTH";
 	attachments[GBufferAttachmentIndex::DEPTH	].forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::EMISSIVE	].name = "GB_Emissive";
+	attachments[GBufferAttachmentIndex::EMISSIVE	].forFrameBuffer(&m_device, vr.G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 
 	// Set up separate renderpass with references to the color and depth attachments
 	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};
@@ -211,6 +272,7 @@ void GBufferRenderPass::SetupRenderpass()
 	attachmentDescs[GBufferAttachmentIndex::NORMAL]  .format = attachments[GBufferAttachmentIndex::NORMAL]  .format;
 	attachmentDescs[GBufferAttachmentIndex::ALBEDO]  .format = attachments[GBufferAttachmentIndex::ALBEDO]  .format;
 	attachmentDescs[GBufferAttachmentIndex::MATERIAL].format = attachments[GBufferAttachmentIndex::MATERIAL].format;
+	attachmentDescs[GBufferAttachmentIndex::EMISSIVE].format = attachments[GBufferAttachmentIndex::EMISSIVE].format;
 	attachmentDescs[GBufferAttachmentIndex::ENTITY_ID].format = attachments[GBufferAttachmentIndex::ENTITY_ID].format;
 	attachmentDescs[GBufferAttachmentIndex::DEPTH]   .format = attachments[GBufferAttachmentIndex::DEPTH]   .format;
 	
@@ -220,6 +282,7 @@ void GBufferRenderPass::SetupRenderpass()
 	colorReferences.push_back({ GBufferAttachmentIndex::NORMAL,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::ALBEDO,   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::MATERIAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	colorReferences.push_back({ GBufferAttachmentIndex::EMISSIVE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 	colorReferences.push_back({ GBufferAttachmentIndex::ENTITY_ID, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 	VkAttachmentReference depthReference = {};
@@ -309,6 +372,7 @@ void GBufferRenderPass::CreatePipeline()
 
 	const char* shaderVS = "Shaders/bin/gbuffer.vert.spv";
 	const char* shaderPS = "Shaders/bin/gbuffer.frag.spv";
+	const char* compute = "Shaders/bin/computeCull.comp.spv";
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
 	{
 		vr.LoadShader(m_device, shaderVS, VK_SHADER_STAGE_VERTEX_BIT),
@@ -355,6 +419,7 @@ void GBufferRenderPass::CreatePipeline()
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
 	};
 
@@ -366,4 +431,42 @@ void GBufferRenderPass::CreatePipeline()
 
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
+
+
+	VkComputePipelineCreateInfo computeCI = oGFX::vkutils::inits::computeCreateInfo(PSOLayoutDB::singleSSBOlayout);
+	computeCI.stage = vr.LoadShader(m_device, compute, VK_SHADER_STAGE_COMPUTE_BIT);
+	VK_CHK(vkCreateComputePipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &computeCI, nullptr, &pso_ComputeCull));
+	vkDestroyShaderModule(m_device.logicalDevice, computeCI.stage.module, nullptr); // destroy compute
+
+
+}
+
+void GBufferRenderPass::CreatePSOLayout()
+{
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
+
+	VkDescriptorSet dummy;
+	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
+		.BindBuffer(1, vr.indirectCommandsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.BindBuffer(2, vr.instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.BindBuffer(3, vr.gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.Build(dummy, SetLayoutDB::compute_singleSSBO);
+
+	{
+		std::vector<VkDescriptorSetLayout> setLayouts
+		{
+			SetLayoutDB::compute_singleSSBO, // (set = 0)
+		};
+
+		VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(
+			setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
+
+		VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
+		plci.pushConstantRangeCount = 1;
+		plci.pPushConstantRanges = &pushConstantRange;
+
+		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::singleSSBOlayout));
+		VK_NAME(m_device.logicalDevice, "SingleSSBO_PSOLayout", PSOLayoutDB::singleSSBOlayout);
+	}	
 }

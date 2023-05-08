@@ -27,11 +27,17 @@ namespace oo
 		.property("Roughness", &SkinMeshRendererComponent::GetRoughness, &SkinMeshRendererComponent::SetRoughness)
 		(
 			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
-			)
+		)
 		.property("Mesh", &SkinMeshRendererComponent::GetMesh, &SkinMeshRendererComponent::SetMesh)
 		(
 			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Model))
 		)
+		.property("MeshInfo", &SkinMeshRendererComponent::GetMeshInfo, &SkinMeshRendererComponent::SetMeshInfo)
+		.property("Emissive Map", &SkinMeshRendererComponent::GetEmissiveMap, &SkinMeshRendererComponent::SetEmissiveMap)
+		(
+			metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Texture))
+		)
+		.property("Emissive Colour", &SkinMeshRendererComponent::EmissiveColor)(metadata(UI_metadata::COLOR_PICKER, true))
 		.property("MeshInfo", &SkinMeshRendererComponent::GetMeshInfo, &SkinMeshRendererComponent::SetMeshInfo)
 		.property("Cast Shadows",    &SkinMeshRendererComponent::CastShadows)
 		.property("Receive Shadows", &SkinMeshRendererComponent::ReceiveShadows)
@@ -135,6 +141,23 @@ namespace oo
 		meshInfo.submeshBits = info.submeshBits;
 	}
 
+	void oo::SkinMeshRendererComponent::SetEmissiveMap(Asset emissiveMap)
+	{
+		EmissiveHandle = emissiveMap;
+		if (EmissiveHandle.IsValid())
+		{
+			EmissiveID = EmissiveHandle.GetData<uint32_t>();
+		}
+		else
+		{
+			EmissiveID = 0xFFFFFFFF;
+		}
+	}
+
+	Asset oo::SkinMeshRendererComponent::GetEmissiveMap() const
+	{
+		return EmissiveHandle;
+	}
 
 	void SkinMeshBoneComponent::SetInverseBindPoseInfo_BoneIdx(uint32_t boneIdx)
 	{

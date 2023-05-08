@@ -59,6 +59,7 @@ namespace oo
         /*-----------------------------------------------------------------------------*/
         //double CalcDeltaTime();
 
+        void ProcessWindowEvents();
         void ProcessEvents();
         void SwapBuffers();
         void Maximize();
@@ -82,6 +83,7 @@ namespace oo
         bool IsVSync() const;
         bool IsFullscreen() const;
         bool IsFocused() const;
+        bool IsMinimized() const;
 
         /*-----------------------------------------------------------------------------*/
         /* Setters                                                                     */
@@ -102,6 +104,6 @@ namespace oo
         SDL_Window* m_window;
         std::unique_ptr<VulkanContext> m_context;
         WindowProperties m_data;
-        bool m_focused;
+        bool m_focused, m_minimized;
     };
 }

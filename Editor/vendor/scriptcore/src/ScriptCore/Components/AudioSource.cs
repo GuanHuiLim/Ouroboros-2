@@ -32,6 +32,15 @@ namespace Ouroboros
             AudioSourceComponent_UnPause(gameObject.scene, gameObject.GetInstanceID());
         }
 
+        [DllImport("__Internal")] private static extern int AudioSourceComponent_GetGroup(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetGroup(uint sceneID, ulong instanceID, int value);
+
+        public AudioSourceGroup group
+        {
+            get { return (AudioSourceGroup)AudioSourceComponent_GetGroup(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetGroup(gameObject.scene, gameObject.GetInstanceID(), (int)value); }
+        }
+
         [DllImport("__Internal")] private static extern bool AudioSourceComponent_GetMuted(uint sceneID, ulong instanceID);
         [DllImport("__Internal")] private static extern void AudioSourceComponent_SetMuted(uint sceneID, ulong instanceID, bool value);
 
@@ -93,6 +102,15 @@ namespace Ouroboros
         {
             get { return AudioSourceComponent_GetPitch(gameObject.scene, gameObject.GetInstanceID()); }
             set { AudioSourceComponent_SetPitch(gameObject.scene, gameObject.GetInstanceID(), value); }
+        }
+
+        [DllImport("__Internal")] private static extern int AudioSourceComponent_GetPriority(uint sceneID, ulong instanceID);
+        [DllImport("__Internal")] private static extern void AudioSourceComponent_SetPriority(uint sceneID, ulong instanceID, int value);
+
+        public int priority
+        {
+            get { return AudioSourceComponent_GetPriority(gameObject.scene, gameObject.GetInstanceID()); }
+            set { AudioSourceComponent_SetPriority(gameObject.scene, gameObject.GetInstanceID(), value); }
         }
 
         [DllImport("__Internal")] private static extern bool AudioSourceComponent_IsPlaying(uint sceneID, ulong instanceID);

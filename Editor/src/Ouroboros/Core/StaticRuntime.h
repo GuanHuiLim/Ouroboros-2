@@ -34,7 +34,7 @@ namespace oo
             LOG_CORE_INFO("Begin loading static lifetime objects");
             timer::init();
             myPhysx::physx_system::init();
-            audio::Init();
+            audio::Init(2048);
         }
     
         void terminate()

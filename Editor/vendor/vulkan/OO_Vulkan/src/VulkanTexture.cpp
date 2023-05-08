@@ -786,6 +786,12 @@ namespace vkutils
 
 	void TransitionImage(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout)
 	{
+		
+		auto subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		if (texture.format == VK_FORMAT_D32_SFLOAT_S8_UINT)
+		{
+			subresrange =  VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
+		}
 		oGFX::vkutils::tools::insertImageMemoryBarrier(
 			cmd,
 			texture.image,
@@ -795,7 +801,7 @@ namespace vkutils
 			targetLayout,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+			subresrange);
 		texture.currentLayout = targetLayout;
 	}
 

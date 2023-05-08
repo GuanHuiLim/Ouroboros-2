@@ -25,6 +25,9 @@ Technology is prohibited.
 #include "Project.h"
 #include "App/Editor/Serializer.h"
 
+#include "Ouroboros/EventSystem/EventTypes.h"
+#include "Ouroboros/EventSystem/EventManager.h"
+
 namespace oo
 {
     SCRIPT_API uint64_t CreateEntity(uint32_t sceneID)
@@ -51,6 +54,10 @@ namespace oo
         std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
         std::shared_ptr<GameObject> parent = ScriptManager::GetObjectFromScene(sceneID, parentID);
         UUID uuid = Serializer::LoadPrefab(Project::GetPrefabFolder().string() + "/" + filePath, parent, *scene);
+
+        oo::PrefabSpawnedEvent evnt{};
+        evnt.gameobjectUUID = uuid;
+        oo::EventManager::Broadcast(&evnt);
 
         ScriptSystem* ss = scene->GetWorld().Get_System<ScriptSystem>();
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);

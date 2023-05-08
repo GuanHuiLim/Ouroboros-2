@@ -18,6 +18,8 @@ Technology is prohibited.
 #include "Ouroboros/Asset/AssetManager.h"
 #include "MeshInfo.h"
 #include <rttr/type>
+#include "Color.h"
+
 namespace oo
 {
     class Material;
@@ -37,6 +39,10 @@ namespace oo
         
         Asset RoughnessHandle;
         uint32_t RoughnessID = 0xFFFFFFFF;
+
+        Asset EmissiveHandle;
+        uint32_t EmissiveID = 0xFFFFFFFF;
+        Color EmissiveColor;
 
         //no need to serialize
         uint32_t ModelHandle{ 0 };
@@ -71,6 +77,9 @@ namespace oo
 
         void SetRoughnessMap(Asset roughnessMap);
         Asset GetRoughnessMap() const;
+
+        void SetEmissiveMap(Asset emissiveMap);
+        Asset GetEmissiveMap() const;
 
         RTTR_ENABLE();
     };

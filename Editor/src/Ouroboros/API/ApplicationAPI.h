@@ -122,9 +122,29 @@ namespace oo
         return static_cast<float>(PhysicsSystem::GetFixedDeltaTime());
     }
 
-    SCRIPT_API void Time_SetFixedDeltaTime(float value)
+    SCRIPT_API float Time_GetFixedTimeScale()
     {
-        return PhysicsSystem::SetFixedDeltaTime(value);
+        return static_cast<float>(PhysicsSystem::GetFixedDeltaTimescale());
+    }
+
+    SCRIPT_API void Time_SetFixedTimeScale(float value)
+    {
+        PhysicsSystem::SetFixedDeltaTimescale(value);
+    }
+
+    /*-----------------------------------------------------------------------------*/
+    /* Audio Functions for C#                                                       */
+    /*-----------------------------------------------------------------------------*/
+    SCRIPT_API float Audio_GetGroupVolume(int group)
+    {
+        float value;
+        FMOD_ERR_HAND(audio::GetChannelGroup(static_cast<AudioSourceGroup>(group))->getVolume(&value));
+        return value;
+    }
+
+    SCRIPT_API void Audio_SetGroupVolume(int group, float value)
+    {
+        FMOD_ERR_HAND(audio::GetChannelGroup(static_cast<AudioSourceGroup>(group))->setVolume(value));
     }
 
     /*-----------------------------------------------------------------------------*/

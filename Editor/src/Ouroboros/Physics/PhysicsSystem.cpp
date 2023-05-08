@@ -35,6 +35,9 @@ Technology is prohibited.
 // test
 #include "Ouroboros/Scene/Scene.h"
 #include "Ouroboros/ECS/GameObject.h"
+
+#include "Utility/Hash.h"
+
 namespace oo
 {
     PhysicsSystem::~PhysicsSystem()
@@ -164,11 +167,12 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
-        m_accumulator += deltaTime;
-        
         //avoids spiral of death.
-        if (m_accumulator > AccumulatorLimit)
-            m_accumulator = AccumulatorLimit;
+        /*if (m_accumulator > AccumulatorLimit)
+            m_accumulator = AccumulatorLimit;*/
+
+        Timestep frametime = deltaTime > MaxFrameTime ? MaxFrameTime : deltaTime;
+        m_accumulator += frametime;
 
         while (m_accumulator >= FixedDeltaTime)
         {
@@ -422,7 +426,7 @@ namespace oo
         m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 TRACY_PROFILE_SCOPE_NC(submit_update_rigidbodies, tracy::Color::PeachPuff2);
-                if(tf.HasChangedThisFrame)
+                if(tf.HasChangedThisFrame || rb.IsTrigger())
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                     oo::vec3 pos = tf.GetGlobalPosition();
@@ -438,6 +442,7 @@ namespace oo
                         rb.object.setTriggerShape(rb.IsTrigger());
                     TRACY_PROFILE_SCOPE_END();
                 }
+
                 TRACY_PROFILE_SCOPE_END();
             });
 
@@ -454,6 +459,13 @@ namespace oo
 
                 // set box size
                 rb.object.setBoxProperty(bc.GlobalHalfExtents.x, bc.GlobalHalfExtents.y, bc.GlobalHalfExtents.z);
+
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(box_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         //Updating capsule collider's bounds 
@@ -470,6 +482,13 @@ namespace oo
 
                 // set capsule size
                 rb.object.setCapsuleProperty(cc.GlobalRadius, cc.GlobalHalfHeight);
+
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(capsule_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         //Updating sphere collider's bounds 
@@ -486,6 +505,13 @@ namespace oo
 
                 // set capsule size
                 rb.object.setSphereProperty(sc.GlobalRadius);
+                
+                // update filtering
+                {
+                    TRACY_PROFILE_SCOPE_NC(sphere_update_filters, tracy::Color::PeachPuff4);
+                    rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                    TRACY_PROFILE_SCOPE_END();
+                }
             });
 
         {
@@ -537,6 +563,12 @@ namespace oo
                         rb.object.setConvexProperty(res, scale);
                     }
 
+                    // update filtering
+                    {
+                        TRACY_PROFILE_SCOPE_NC(mesh_setup_filters, tracy::Color::PeachPuff4);
+                        rb.object.setFiltering(static_cast<std::uint32_t>(rb.InputLayer.to_ulong()), static_cast<std::uint32_t>(rb.OutputLayer.to_ulong()));
+                        TRACY_PROFILE_SCOPE_END();
+                    }
                 });
 
 
@@ -550,6 +582,8 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_trigger_resoltion, tracy::Color::PeachPuff);
         auto trigger_queue = m_physicsWorld.getTriggerData();
+        PhysicsTriggersEvent ptse;
+        ptse.TriggerEvents.reserve(trigger_queue->size());
         while (!trigger_queue->empty())
         {
             myPhysx::TriggerManifold trigger_manifold = trigger_queue->front();
@@ -598,14 +632,17 @@ namespace oo
                 break;
             }
 
+            ptse.TriggerEvents.emplace_back(pte);
 
-            TRACY_PROFILE_SCOPE_NC(broadcast_physics_trigger_event, tracy::Color::PeachPuff);
+            /*TRACY_PROFILE_SCOPE_NC(broadcast_physics_trigger_event, tracy::Color::PeachPuff);
             EventManager::Broadcast(&pte);
-            TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();*/
 
             trigger_queue->pop();
         }
         m_physicsWorld.clearTriggerData();
+
+
         TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_NC(physics_collision_resoltion, tracy::Color::PeachPuff);
@@ -613,6 +650,8 @@ namespace oo
         //jobsystem::job collision_resolution;
 
         auto collision_queue = m_physicsWorld.getCollisionData();
+        PhysicsCollisionsEvent pcse;
+        pcse.CollisionEvents.reserve(collision_queue->size());
         while (!collision_queue->empty())
         {
             myPhysx::ContactManifold contact_manifold = collision_queue->front();
@@ -660,18 +699,32 @@ namespace oo
                 pce.State = PhysicsEventState::EXIT;
                 break;
             }
+            
+            pcse.CollisionEvents.emplace_back(pce);
 
             /*jobsystem::submit(collision_resolution, [&]()
             {*/
-                TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
+                /*TRACY_PROFILE_SCOPE_NC(broadcast_physics_collision_event, tracy::Color::PeachPuff);
                 EventManager::Broadcast(&pce);
-                TRACY_PROFILE_SCOPE_END();
+                TRACY_PROFILE_SCOPE_END();*/
             //});
 
             collision_queue->pop();
         }
         m_physicsWorld.clearCollisionData();
 
+
+        // resolve all events at the end
+        {
+            TRACY_PROFILE_SCOPE_NC(broadcast_physics_triggers_bulk_event, tracy::Color::PeachPuff);
+            EventManager::Broadcast(&ptse);
+            TRACY_PROFILE_SCOPE_END();
+        }
+        {
+            TRACY_PROFILE_SCOPE_NC(broadcast_physics_collisions_bulk_event, tracy::Color::PeachPuff);
+            EventManager::Broadcast(&pcse);
+            TRACY_PROFILE_SCOPE_END();
+        }
         //jobsystem::wait(collision_resolution);
 
         TRACY_PROFILE_SCOPE_END();
@@ -810,11 +863,53 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
     }
 
-    void PhysicsSystem::SetFixedDeltaTime(Timestep NewFixedTime) 
+    LayerType PhysicsSystem::GenerateCollisionMask(std::vector<std::string> names)
+    {
+        /*static std::vector<std::pair<util::StringHash, unsigned int>> hashedTable; 
+        if (hashedTable.size() == 0)
+        {
+            unsigned int count = 0;
+            for (auto& layer : LayerNames)
+            {
+                hashedTable.emplace_back(std::pair{ util::StringHash::GenerateFNV1aHash(layer), count++ });
+            }
+        }*/
+
+        LayerType result = 0;
+        unsigned int count = 0;
+        std::for_each(LayerNames.cbegin(), LayerNames.cend(),
+            [&](auto&& elem) 
+            {
+                //auto key = util::StringHash::GenerateFNV1aHash(elem);
+                //auto value = std::find_if(hashedTable.cbegin(), hashedTable.cend(), [&](auto&& elem) { return elem.second == key; });
+                //if (value != hashedTable.cend())
+                auto value = std::find(names.cbegin(), names.cend(), elem);
+                if(value != names.cend())
+                    result |= (1 << count);
+
+                count++;
+            });
+
+        if(result == 0)
+            LOG_WARN("mask generated won't work against anything");
+
+        return result;
+    }
+
+    void PhysicsSystem::SetFixedDeltaTimescale(Timestep NewFixedTime)
     { 
-        FixedDeltaTime = NewFixedTime; 
-        auto newLimit = FixedDeltaTime * MaxIterations;
-        AccumulatorLimit =  AccumulatorLimit < newLimit ? newLimit : AccumulatorLimit;
+        FixedDeltaTimescale = NewFixedTime;
+        FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaTimescale;
+        MaxFrameTime = MaxFrameRateMultiplier * FixedDeltaTime;
+
+        //FixedDeltaTime = NewFixedTime; 
+        //auto newLimit = FixedDeltaTime * MaxIterations;
+        //AccumulatorLimit =  AccumulatorLimit < newLimit ? newLimit : AccumulatorLimit;
+    }
+
+    PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTimescale()
+    {
+        return FixedDeltaTimescale;
     }
 
     PhysicsSystem::Timestep PhysicsSystem::GetFixedDeltaTime()
@@ -822,11 +917,12 @@ namespace oo
         return FixedDeltaTime; 
     }
 
-    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance)
+    RaycastResult PhysicsSystem::Raycast(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast, tracy::Color::PeachPuff4);
 
-        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+        auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
+            , static_cast<std::uint32_t>(collisionFilter));
         
         ASSERT_MSG(result.intersect && m_physicsToGameObjectLookup.contains(result.object_ID) == false, "Why am i hitting something that's not in the current world?");
         
@@ -836,7 +932,7 @@ namespace oo
             { result.normal.x, result.normal.y, result.normal.z }, result.distance };
     }
 
-    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance)
+    std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast_all, tracy::Color::PeachPuff4);
 
@@ -845,7 +941,8 @@ namespace oo
         // normalize our ray just to make sure
         ray.Direction = glm::normalize(ray.Direction);
 
-        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance);
+        auto allHits = m_physicsWorld.raycastAll({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
+            , static_cast<std::uint32_t>(collisionFilter));
 
         for (auto& hit : allHits)
         {

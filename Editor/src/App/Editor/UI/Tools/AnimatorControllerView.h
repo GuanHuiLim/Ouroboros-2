@@ -30,18 +30,35 @@ constexpr ImGuiID popUpOptionId = 600;
 class AnimatorControllerView
 {
 public:	//Default Functions
-	AnimatorControllerView() 
-	{
-		m_Context = ed::CreateEditor();
-	}
-	~AnimatorControllerView() 
-	{
-		ed::DestroyEditor(m_Context);
-	}
+	AnimatorControllerView();
+	~AnimatorControllerView();
 
 	void Show();
 
-private: //Member Variables
+private: 
+	//constants
+	struct LinkSettings {
+		ImVec4 SELECTED_COLOR	 { 1.f,1.f,1.f,1.f };
+		ImVec4 NOT_SELECTED_COLOR{ 1.f,1.f,1.f,0.2f };
+		
+
+		ImVec4 INPUT_COLOR { 0.67843f, 0.84706f, 0.90196f, 1.f};
+		ImVec4 OUTPUT_COLOR{ 0.49804f, 1.00000f, 0.00000f,0.2f };
+		
+		float FLOW_DURATION = 0.5f; //default 2.0f
+		float FLOW_SPEED = 100.f; //default 150.0f
+	};
+	static constexpr LinkSettings linkSettings{};
+	struct NodeSettings {
+		ImVec4 SELECTED_COLOR{ 1.f,1.f,1.f,1.f };
+		ImVec4 NOT_SELECTED_COLOR{ 1.f,1.f,1.f,0.2f };
+
+		ImVec4 INPUT_COLOR{ 0.67843f, 0.84706f, 0.90196f, 1.f };
+		ImVec4 OUTPUT_COLOR{ 0.49804f, 1.00000f, 0.00000f,0.2f };
+	};
+	static constexpr NodeSettings nodeSettings{};
+	
+	//Member Variables
 	oo::AnimationComponent* animator = nullptr;
 	ed::EditorContext* m_Context	  = nullptr;
 
@@ -82,7 +99,7 @@ private: //Member Variables
 
 		NodeInfo(/*uintptr_t _id,*/
 				 oo::Anim::Node* _anim_node = nullptr,
-				 ImColor _color = ImColor(255, 255, 255)) 
+				 ImColor _color = nodeSettings.NOT_SELECTED_COLOR)
 		:id(static_cast<void*>(_anim_node)),
 		anim_node{ _anim_node },
 		color(_color), 
@@ -103,6 +120,9 @@ private: //Member Variables
 		oo::Anim::Link* link;
 		ed::PinId inputID;
 		ed::PinId outputID;
+		ImVec4 color{ linkSettings.NOT_SELECTED_COLOR };
+		float thickness{ 0.5f };
+		bool flowing{ false };
 		bool selected;
 
 		LinkInfo(/*ed::LinkId _id,*/ 
@@ -128,6 +148,18 @@ private: //Member Variables
 	std::stack<uintptr_t> free_Node_IDs{};		//track free ids
 
 	std::string current_group_name{};
+
+	//struct to hold temporary information
+	//about the current state of selections
+	struct TempInfo {
+		/*std::vector<ed::NodeId> selectedNodes{};
+		std::vector<ed::LinkId> selectedLinks{};
+		bool changed{ false };*/
+		ed::NodeId selectedNode{};
+		ed::LinkId selectedLink{};
+	} m_tempInfo{};
+
+	bool itemDeleted{ false };
 private: //Member Functions
 
 	void BuildNode(NodeInfo* node);
@@ -137,6 +169,7 @@ private: //Member Functions
 	void DisplayInspector();
 	void DisplayAnimationSelector(oo::Anim::Node* _anim_node, ImGuiID& openID);
 	void DisplayConditions(oo::Anim::Link* link);
+	void DisplayMiscSettings();
 	NodeInfo* CreateNode(oo::Anim::Node* _anim_node);
 	LinkInfo* CreateLink(oo::Anim::Link* link, ed::PinId inputPinId, ed::PinId outputPinId);
 	void OnDelete();
@@ -147,6 +180,9 @@ private: //Member Functions
 	NodeInfo* FindNode(ed::PinId pinID);
 	NodeInfo* FindNode(ed::NodeId id);
 	NodeInfo* FindNode(oo::Anim::Node* _node);
+
+	inline void UpdateGraphLink(LinkInfo const& linkinfo);
+	inline void Flow(LinkInfo const& linkinfo);
 
 	//managing node unique IDs
 	void ReturnID(ed::NodeId id);
@@ -159,4 +195,11 @@ private: //Member Functions
 	//void BuildNodes();
 	void BuildNodeOnEditor(NodeInfo& info);
 	void Clear();
+
+	//temporary information management
+	
+	//reset it to default state
+	inline void ClearTempInfo();
+	void TempInfo_UpdateSelectedNode(ed::NodeId id);
+	void TempInfo_UpdateSelectedLink(ed::LinkId id);
 };

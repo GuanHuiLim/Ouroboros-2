@@ -33,16 +33,26 @@ namespace oo
     RTTR_REGISTRATION
     {
         using namespace rttr;
+    registration::enumeration<AudioSourceGroup>("Audio Group")
+        (
+        value("None", AudioSourceGroup::None),
+        value("SFX", AudioSourceGroup::SFXGeneral),
+        value("SFX - Voice", AudioSourceGroup::SFXVoice),
+        value("SFX - Environment", AudioSourceGroup::SFXEnvironment),
+        value("Music", AudioSourceGroup::Music)
+        );
     registration::class_<AudioSourceComponent>("Audio Source")
         .property("Audio Clip", &AudioSourceComponent::GetAudioClip, &AudioSourceComponent::SetAudioClip)
         (metadata(UI_metadata::ASSET_TYPE, static_cast<int>(AssetInfo::Type::Audio)))
+        .property("Audio Group", &AudioSourceComponent::GetGroup, &AudioSourceComponent::SetGroup)
         .property("Mute", &AudioSourceComponent::IsMuted, &AudioSourceComponent::SetMuted)
         .property("Play On Awake", &AudioSourceComponent::IsPlayOnAwake, &AudioSourceComponent::SetPlayOnAwake)
         .property("Loop", &AudioSourceComponent::IsLoop, &AudioSourceComponent::SetLoop)
         .property("Volume", &AudioSourceComponent::GetVolume, &AudioSourceComponent::SetVolume)
         (metadata(UI_metadata::DRAG_SPEED, 0.01f))
         .property("Pitch", &AudioSourceComponent::GetPitch, &AudioSourceComponent::SetPitch)
-        (metadata(UI_metadata::DRAG_SPEED, 0.01f));
+        (metadata(UI_metadata::DRAG_SPEED, 0.01f))
+        .property("Priority", &AudioSourceComponent::GetPriority, &AudioSourceComponent::SetPriority);
     };
 
     bool AudioSourceComponent::IsPlaying() const
@@ -75,12 +85,25 @@ namespace oo
     void AudioSourceComponent::SetAudioClip(Asset a)
     {
         audioClip = a;
+        if (!channel)
+            return;
+        Play();
+    }
+
+    void AudioSourceComponent::SetGroup(AudioSourceGroup g)
+    {
+        group = g;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setChannelGroup(audio::GetChannelGroup(g)));
     }
 
     void AudioSourceComponent::SetMuted(bool m)
     {
         muted = m;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setMute(m));
     }
 
     void AudioSourceComponent::SetPlayOnAwake(bool p)
@@ -91,31 +114,53 @@ namespace oo
     void AudioSourceComponent::SetLoop(bool l)
     {
         loop = l;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setLoopCount(l ? -1 : 0));
     }
 
     void oo::AudioSourceComponent::SetLoopBegin(unsigned int t)
     {
         loopBegin = t;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setLoopPoints(t, FMOD_TIMEUNIT_MS, loopEnd, FMOD_TIMEUNIT_MS));
     }
 
     void oo::AudioSourceComponent::SetLoopEnd(unsigned int t)
     {
         loopEnd = t;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setLoopPoints(loopBegin, FMOD_TIMEUNIT_MS, t, FMOD_TIMEUNIT_MS));
     }
 
     void AudioSourceComponent::SetVolume(float v)
     {
         volume = v;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setVolume(v));
     }
 
     void AudioSourceComponent::SetPitch(float p)
     {
         pitch = p;
-        isDirty = true;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setPitch(p));
+    }
+
+    void AudioSourceComponent::SetPriority(int p)
+    {
+        if (p < 0)
+            p = 0;
+        if (p > 256)
+            p = 256;
+        priority = p;
+        if (!channel)
+            return;
+        FMOD_ERR_HAND(channel->setPriority(p));
     }
 
     void AudioSourceComponent::SetPlaybackTime(float t)
@@ -132,6 +177,13 @@ namespace oo
         FMOD_ERR_HAND(channel->setPosition(t, FMOD_TIMEUNIT_PCM));
     }
 
+    void AudioSourceComponent::Set3DPosition(float x, float y, float z)
+    {
+        posX = x;
+        posY = y;
+        posZ = z;
+    }
+
     void AudioSourceComponent::Play()
     {
         if (!audioClip.IsValid())
@@ -140,7 +192,16 @@ namespace oo
         FMOD::Sound* sound = audio::GetSound(audioClip.GetData<SoundID>());
         FMOD_ERR_HAND(audio::GetSystem()->playSound(sound, nullptr, false, &channel));
         FMOD_ERR_HAND(channel->setMode(FMOD_3D));
-        FMOD_ERR_HAND(channel->setVolume(0)); // initialise volume at 0 to prevent spiking
+        FMOD_VECTOR fmPos = { .x = posX, .y = posY, .z = posZ };
+        FMOD_ERR_HAND(channel->set3DAttributes(&fmPos, nullptr));
+        SetGroup(group);
+        SetMuted(muted);
+        SetLoop(loop);
+        SetLoopBegin(loopBegin);
+        SetLoopEnd(loopEnd);
+        SetVolume(volume);
+        SetPitch(pitch);
+        SetPriority(priority);
     }
 
     void AudioSourceComponent::Stop()
@@ -163,10 +224,5 @@ namespace oo
         if (!channel)
             return;
         FMOD_ERR_HAND(channel->setPaused(false));
-    }
-
-    void oo::AudioSourceComponent::ClearDirty()
-    {
-        isDirty = false;
     }
 }

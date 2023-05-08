@@ -5,7 +5,7 @@
 #include "shared_structs.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
-layout (binding = 1,rgba16f) uniform readonly image2D inputImage;
+layout (binding = 1/*,rgba16f*/)  uniform sampler2D inputImage;
 layout (binding = 2,r11f_g11f_b10f) uniform  image2D resultImage;
 
 layout(push_constant)uniform PushColourCorrect
@@ -33,29 +33,32 @@ vec3 aces_tonemap(vec3 color){
 
 void main()
 {	
-	const float gamma = 2.2;
+
 
     // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
 	// vec4 inImg = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
 	vec4 res = imageLoad(resultImage, ivec2(gl_GlobalInvocationID.xy) );
 
-	vec3 result = aces_tonemap(res.rgb);
+	
 
 	float shadowThreshold = pc.threshold.x;
 	float highlightThreshold = pc.threshold.y;
 
-	float luminance = dot(result.rgb, vec3(0.2126, 0.7152, 0.0722));
+	float luminance = dot(res.rgb, vec3(0.2126, 0.7152, 0.0722));
     float shadow = smoothstep(0.0, shadowThreshold, luminance);
     float highlight = smoothstep(highlightThreshold, 1.0, luminance);
     float midtones = 1.0 - shadow - highlight;
 
-    vec3 correctedColor = result.rgb;
+    vec3 correctedColor = res.rgb;
     correctedColor = mix(correctedColor, pc.shadowCol.rgb, (1.0-shadow) * pc.shadowCol.a);
     correctedColor = mix(correctedColor, pc.midCol.rgb, midtones * pc.midCol.a);
     correctedColor = mix(correctedColor, pc.highCol.rgb, highlight * pc.highCol.a);
 
+	vec3 result = aces_tonemap(correctedColor.rgb);
+
 	// also gamma correct before returning    
-    result = pow(correctedColor, vec3(1.0 / gamma));	
+	const float gamma = 2.2;
+    result = pow(result, vec3(gamma));	
 
     //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
 	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result,1.0));

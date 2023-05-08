@@ -15,6 +15,8 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 
+#include "Color.h"
+
 namespace oo
 {
     struct GlobalRendererSettings
@@ -43,6 +45,34 @@ namespace oo
             RTTR_ENABLE();
         }
         Lighting{};
+
+        struct BloomSettings
+        {
+            float Threshold = 1.1f;
+            float SoftThreshold = 0.5f;
+            RTTR_ENABLE();
+        }
+        Bloom{};
+
+        struct ColourCorrectionSettings
+        {
+            float HighlightThreshold = 1.0f;
+            float ShadowThreshold = 0.0f;
+            Color ShadowColour = Color{0,0,0,0};
+            Color MidtonesColour = Color{ 0,0,0,0 };
+            Color HighlightColour = Color{ 0,0,0,0 };
+            RTTR_ENABLE();
+        }
+        ColourCorrection{};
+
+        struct VignetteSettings
+        {
+            Color Colour = Color{ 0, 0, 0, 255 };
+            float InnerRadius = 0.001f;
+            float OuterRadius = 0.0f;
+            RTTR_ENABLE();
+        }
+        Vignette{};
 
         RTTR_ENABLE();
     };

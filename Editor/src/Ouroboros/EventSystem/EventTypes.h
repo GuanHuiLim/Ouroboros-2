@@ -69,5 +69,8 @@ namespace oo
         SCENE_STATE state = SCENE_STATE::EDITING;
     };
 
-
+    struct PrefabSpawnedEvent : public Event
+    {
+        oo::UUID gameobjectUUID{};
+    };
 }

@@ -21,6 +21,11 @@ Technology is prohibited.
 #include "Ouroboros/ECS/ArchtypeECS/System.h"
 #include "App/Editor/Events/OpenFileEvent.h"
 #include "App/Editor/Events/LoadProjectEvents.h"
+namespace oo
+{
+	struct PrefabSpawnedEvent;
+}
+
 namespace oo::Anim
 {
 	class AnimationSystem : public Ecs::System
@@ -31,6 +36,7 @@ namespace oo::Anim
 
 		static std::set<std::string> modified_animations;
 		static std::set<std::string> modified_animation_trees;
+		bool bindPhaseOver{false};
 	public:
 		struct ModifyAnimationEvent : oo::Event {
 			std::string name{};
@@ -59,6 +65,8 @@ namespace oo::Anim
 		}
 		//test function
 		Scene::go_ptr CreateAnimationTestObject();
+		
+		void OnSpawnPrefab(PrefabSpawnedEvent* evnt);
 		
 		/*------------
 		animation tree

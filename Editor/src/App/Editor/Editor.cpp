@@ -277,6 +277,10 @@ void Editor::MenuBar()
 			{
 				oo::UISystem::UIDebugRaycast = !oo::UISystem::UIDebugRaycast;
 			}
+			if (ImGui::MenuItem("UI Debug Print", 0, oo::UISystem::UIDebugPrint))
+			{
+				oo::UISystem::UIDebugPrint = !oo::UISystem::UIDebugPrint;
+			}
 
 			ImGui::EndMenu();
 		}
