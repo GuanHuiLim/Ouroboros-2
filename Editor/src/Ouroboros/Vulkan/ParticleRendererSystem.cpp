@@ -443,7 +443,8 @@ namespace oo
 
         // update Emitter
         static Ecs::Query emitter_query = Ecs::make_query<ParticleEmitterComponent, TransformComponent>();
-        world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp) 
+        //world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp) 
+        m_world->parallel_for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp)
         {
             emitter.m_partRenderer.MeshInformation.submeshBits[0] = true;
             //do nothing if transform did not change

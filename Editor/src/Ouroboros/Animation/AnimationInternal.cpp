@@ -1352,13 +1352,15 @@ namespace oo::Anim::internal
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& t_info, float updatedTimer)
 	{
 		for (auto& progressTracker : t_info.tracker.trackers)
-		{
-			//it should have an update function!!
-			assert(progressTracker.updatefunction != nullptr);
-			UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
-			//call the respective update function on this tracker
-			progressTracker.updatefunction(p_info, updatedTimer);
-		}
+		//std::for_each(std::execution::par_unseq, std::begin(t_info.tracker.trackers), std::end(t_info.tracker.trackers), [&](auto&& progressTracker)
+			{
+				//it should have an update function!!
+				assert(progressTracker.updatefunction != nullptr);
+				UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
+				//call the respective update function on this tracker
+				progressTracker.updatefunction(p_info, updatedTimer);
+			}
+		//);
 		return;
 		/*--------------------------
 		pipeline optimization way - unused for now
