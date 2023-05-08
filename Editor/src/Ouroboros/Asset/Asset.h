@@ -294,6 +294,8 @@ namespace oo
     template<typename T>
     inline T AssetInfo::GetData() const
     {
+        if (!isDataLoaded)
+            return {};
         for (auto& d : data)
         {
             if constexpr (std::is_pointer<T>::value)
@@ -318,8 +320,6 @@ namespace oo
     {
         if (auto sp = info.lock())
         {
-            if (!IsDataLoaded())
-                sp->Reload();
             return sp->GetData<T>();
         }
         return {};
