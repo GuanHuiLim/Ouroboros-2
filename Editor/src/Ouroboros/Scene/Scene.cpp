@@ -15,6 +15,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "pch.h"
 #include "Scene.h"
+#include "Project.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
 #include "Ouroboros/Core/Log.h"
@@ -80,6 +81,9 @@ namespace oo
 
         Scene::OnInitEvent e;
         EventManager::Broadcast(&e);
+
+        // Load assets
+        //Project::GetAssetManager()->Load stuff
         
         // Initialize Default Systems
         {

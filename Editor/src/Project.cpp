@@ -49,6 +49,10 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_scriptmodulePath = (*prj_setting).value.FindMember("ScriptModulePath")->value.GetString();
 	s_scriptbuildPath = (*prj_setting).value.FindMember("ScriptBuildPath")->value.GetString();
 
+	//load assets here
+	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
+	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
+
     // create/load scripting stuff
     UpdateScriptingFiles();
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
@@ -72,12 +76,6 @@ void Project::LoadProject(std::filesystem::path& config)
 
 	//end
 	ifs.close();
-
-	//load assets here
-	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
-	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
-	s_AssetManager->GetOrLoadDirectoryAsync(hard_assetfolderpath, true);
-	//s_AssetManager->GetDirectoryAsync(hard_assetfolderpath, true);		<-- replace above line once anims dont crash
 
 	//load input manager
 	LoadInputs(GetProjectFolder() / InputFileName);

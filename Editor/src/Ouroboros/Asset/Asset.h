@@ -320,6 +320,8 @@ namespace oo
     {
         if (auto sp = info.lock())
         {
+            if (!IsDataLoaded())
+                sp->Reload();
             return sp->GetData<T>();
         }
         return {};

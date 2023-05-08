@@ -200,6 +200,7 @@ namespace oo
         EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
         for (int i = 0; i < static_cast<int>(AssetInfo::Type::_COUNT); ++i)
             store.byType.emplace(static_cast<AssetInfo::Type>(i), AssetInfoMap());
+        GetDirectory(root, true);
     }
 
     AssetManager::~AssetManager()
@@ -509,13 +510,7 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
 
     AssetMetaContent AssetManager::ensureMeta(const std::filesystem::path& fp)
     {
-        // Get meta path
-        auto fpMeta = fp;
-        if (fp.extension() != Asset::EXT_META)
-        {
-            fpMeta += Asset::EXT_META;
-        }
-
+        auto [fpContent, fpMeta, fpExt] = getAssetPathParts(fp);
         AssetMetaContent meta;
         if (!std::filesystem::exists(fpMeta))
         {
@@ -536,22 +531,24 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
 
     std::mutex storeMutex;
 
+    Asset AssetManager::indexAsset(const std::filesystem::path& fp, AssetID id)
+    {
+        //LOG_INFO("Indexed asset {0}", fp.filename());
+        std::lock_guard<std::mutex> guard(storeMutex);
+
+        AssetInfoPtr info = std::make_shared<AssetInfo>();
+        info->id = id;
+        info->contentPath = std::filesystem::canonical(fp);
+        info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
+        info->timeLoaded = std::chrono::file_clock::now();
+        info->type = info->GetType();
+        //LOG_INFO("Indexed asset {0}", fp.filename());
+        return Asset(store.emplace(info->id, info));
+    }
+
     Asset AssetManager::getAsset(const std::filesystem::path& fp)
     {
-        // Get file paths
-        auto fpContent = fp;
-        auto fpMeta = fpContent;
-        if (isMetaPath(fpContent))
-        {
-            fpContent.replace_extension();
-        }
-        else
-        {
-            fpMeta += Asset::EXT_META;
-        }
-        const auto FP_EXT = fpContent.extension();
-
-        std::lock_guard<std::mutex> guard(storeMutex);
+        auto [fpContent, fpMeta, fpExt] = getAssetPathParts(fp);
 
         // Get or index asset
         AssetMetaContent meta = ensureMeta(fpContent);
@@ -575,15 +572,19 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
         return asset;
     }
 
-    Asset AssetManager::indexAsset(const std::filesystem::path& fp, AssetID id)
+    std::tuple<std::filesystem::path, std::filesystem::path, std::filesystem::path> AssetManager::getAssetPathParts(const std::filesystem::path& fp)
     {
-        AssetInfoPtr info = std::make_shared<AssetInfo>();
-        info->id = id;
-        info->contentPath = std::filesystem::canonical(fp);
-        info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
-        info->timeLoaded = std::chrono::file_clock::now();
-        info->type = info->GetType();
-        //LOG_INFO("Indexed asset {0}", fp.filename());
-        return Asset(store.emplace(info->id, info));
+        auto fpContent = fp;
+        auto fpMeta = fpContent;
+        if (isMetaPath(fpContent))
+        {
+            fpContent.replace_extension();
+        }
+        else
+        {
+            fpMeta += Asset::EXT_META;
+        }
+        const auto FP_EXT = fpContent.extension();
+        return std::tuple(fpContent, fpMeta, FP_EXT);
     }
 }

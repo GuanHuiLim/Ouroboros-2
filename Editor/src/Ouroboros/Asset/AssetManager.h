@@ -28,6 +28,18 @@ Technology is prohibited.
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/EventSystem/Event.h"
 
+/****************************************************************************************
+*
+* Asset Management Architecture
+*
+* 1) Assets have three states: Unindexed, Unloaded, and Loaded.
+*   a) Unindexed: asset exists in file directory but not tracked by system.
+*   b) Unloaded: asset is indexed by system but data not loaded.
+*   c) Loaded: asset is indexed by system and loaded.
+* 2) Avoid loading all assets on system/project startup. Index all assets only.
+*
+****************************************************************************************/
+
 class FileWatchEvent :public oo::Event
 {
 public:
@@ -160,11 +172,10 @@ namespace oo
         std::future<Asset> GetAsync(const AssetID& id);
 
         /// <summary>
-        /// Retrieves all loaded assets of a given type.
-        /// Does not load the assets' associated file data.
+        /// Retrieves all assets of a given type.
         /// </summary>
         /// <param name="type">The type of asset.</param>
-        /// <returns>The loaded assets.</returns>
+        /// <returns>The assets.</returns>
         std::vector<Asset> GetAssetsByType(AssetInfo::Type type) const;
 
         /// <summary>
@@ -182,18 +193,18 @@ namespace oo
         std::future<Asset> GetOrLoadPathAsync(const std::filesystem::path& fp);
 
         /// <summary>
-        /// Retrieves all assets in a given directory path. Assets may not be loaded.
+        /// Retrieves all assets in a given directory path.
         /// </summary>
         /// <param name="path">The directory path relative to the AssetManager's root path.</param>
-        /// <param name="recursive">Whether to load directories recursively.</param>
+        /// <param name="recursive">Whether to retrieve directories recursively.</param>
         /// <returns>The assets.</returns>
         std::vector<Asset> GetDirectory(const std::filesystem::path& path, bool recursive = false);
 
         /// <summary>
-        /// Asynchronously retrieves all assets in a given directory path. Assets may not be loaded.
+        /// Asynchronously retrieves all assets in a given directory path.
         /// </summary>
         /// <param name="path">The directory path relative to the AssetManager's root path.</param>
-        /// <param name="recursive">Whether to load directories recursively.</param>
+        /// <param name="recursive">Whether to retrieve directories recursively.</param>
         /// <returns>The assets.</returns>
         std::future<std::vector<Asset>> GetDirectoryAsync(const std::filesystem::path& path, bool recursive = false);
 
@@ -306,6 +317,14 @@ namespace oo
         AssetMetaContent ensureMeta(const std::filesystem::path& fp);
 
         /// <summary>
+        /// Indexes an asset from a given file into the store.
+        /// </summary>
+        /// <param name="fp">The file path.</param>
+        /// <param name="id">The asset ID.</param>
+        /// <returns>The asset.</returns>
+        Asset indexAsset(const std::filesystem::path& fp, AssetID id = Asset::GenerateSnowflake());
+
+        /// <summary>
         /// Retrieves an asset at a given absolute file path.
         /// </summary>
         /// <param name="fp">The file path.</param>
@@ -313,19 +332,18 @@ namespace oo
         Asset getAsset(const std::filesystem::path& fp);
 
         /// <summary>
-        /// Loads and retrieves asset at a given absolute file path.
+        /// Loads and retrieves an asset at a given absolute file path.
         /// </summary>
         /// <param name="fp">The file path.</param>
         /// <returns>The asset.</returns>
         Asset getLoadedAsset(const std::filesystem::path& fp);
 
         /// <summary>
-        /// Indexes an asset from a given file into the store.
+        /// Conforms a given file path into the content path, meta path, and extension.
         /// </summary>
         /// <param name="fp">The file path.</param>
-        /// <param name="id">The asset ID.</param>
-        /// <returns>The asset.</returns>
-        Asset indexAsset(const std::filesystem::path& fp, AssetID id = Asset::GenerateSnowflake());
+        /// <returns>The tuple containing the content path, meta path, and extension respectively.</returns>
+        std::tuple<std::filesystem::path, std::filesystem::path, std::filesystem::path> getAssetPathParts(const std::filesystem::path& fp);
 
         friend Asset;
     };
