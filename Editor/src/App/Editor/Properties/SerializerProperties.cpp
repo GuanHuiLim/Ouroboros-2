@@ -140,7 +140,9 @@ SerializerSaveProperties::SerializerSaveProperties()
 		std::string temp = p.get_name().data();
 		rapidjson::Value name;
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
-		obj.AddMember(name, variant.get_value<oo::Asset>().GetID(), doc.GetAllocator());
+		oo::Asset asset = variant.get_value<oo::Asset>();
+		obj.AddMember(name, asset.GetID(), doc.GetAllocator());
+		s_assetUsedThisScene.emplace(asset.GetID());
 		});
 	m_save_commands.emplace(UI_RTTRType::UItypes::MESH_INFO_TYPE, [](rapidjson::Document& doc, rapidjson::Value& obj, rttr::variant variant, rttr::property p) {
 		std::string temp = p.get_name().data();
@@ -149,6 +151,11 @@ SerializerSaveProperties::SerializerSaveProperties()
 		name.SetString(temp.c_str(), static_cast<rapidjson::SizeType>(temp.size()), doc.GetAllocator());
 		obj.AddMember(name, bitset, doc.GetAllocator());
 		});
+}
+
+void SerializerSaveProperties::Reset()
+{
+	s_assetUsedThisScene.clear();
 }
 
 SerializerLoadProperties::SerializerLoadProperties()

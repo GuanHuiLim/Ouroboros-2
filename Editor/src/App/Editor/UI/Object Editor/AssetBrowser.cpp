@@ -81,6 +81,7 @@ void AssetBrowser::TextureUI(rttr::variant& data, bool& edited)
 			data.clear();
 			data = assets;
 			edited = true;
+			
 		}
 		if (listview)
 		{
