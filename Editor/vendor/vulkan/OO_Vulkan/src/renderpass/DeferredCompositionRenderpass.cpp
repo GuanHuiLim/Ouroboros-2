@@ -215,7 +215,7 @@ void DeferredCompositionRenderpass::CreateDescriptors()
         gbuffer->attachments[GBufferAttachmentIndex::DEPTH]   .view,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	
-	auto& shadowTex = RenderPassDatabase::GetRenderPass<ShadowPass>()->shadow_depth;
+	auto& shadowTex = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->shadowMask;
 	VkDescriptorImageInfo texDescriptorShadow = oGFX::vkutils::inits::descriptorImageInfo(
 		GfxSamplerManager::GetSampler_ShowMapClamp(),
 		shadowTex.view,

@@ -76,13 +76,12 @@ void GBufferRenderPass::Draw()
     const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
     PROFILE_GPU_CONTEXT(cmdlist);
 
-
+	glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
+	auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
+	auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
 	
 	{
-		glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
-		auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
-		auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
-
+		
 		VkDebugMarkerMarkerInfoEXT marker = {};
 		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 		memcpy(marker.color, &col[0], sizeof(float) * 4);
@@ -202,6 +201,16 @@ void GBufferRenderPass::Draw()
 	vkCmdEndRenderPass(cmdlist);
 
 	{
+
+		VkDebugMarkerMarkerInfoEXT marker = {};
+		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+		memcpy(marker.color, &col[0], sizeof(float) * 4);
+		marker.pMarkerName = "ShadowMaskCOMP";
+		if (regionBegin)
+		{
+			regionBegin(cmdlist, &marker);
+		}
+
 		VkDescriptorImageInfo depthInput = oGFX::vkutils::inits::descriptorImageInfo(
 			GfxSamplerManager::GetSampler_BlackBorder(),
 			attachments[GBufferAttachmentIndex::DEPTH	].view,
@@ -296,13 +305,19 @@ void GBufferRenderPass::Draw()
 		VkPushConstantRange range;
 		range.offset = 0;
 		range.size = sizeof(LightPC);
-		cmd.SetPushConstant(PSOLayoutDB::shadowPrepassLayout,range,&pc);
+		//cmd.SetPushConstant(PSOLayoutDB::shadowPrepassLayout,range,&pc);
+		vkCmdPushConstants(cmdlist, PSOLayoutDB::shadowPrepassLayout, VK_SHADER_STAGE_ALL,range.offset,range.size,&pc);
 		vkCmdDispatch(cmdlist, (shadowMask.width - 1) / 16 + 1, (shadowMask.height - 1) / 16 + 1, 1);
 
 		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH	],VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 		vkutils::TransitionImage(cmdlist, shadowPass.shadow_depth, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::NORMAL	],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		vkutils::TransitionImage(cmdlist,shadowMask,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		if (regionEnd)
+		{
+			regionEnd(cmdlist);
+		}
 
 	}
 
