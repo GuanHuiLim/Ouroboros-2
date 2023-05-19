@@ -16,6 +16,7 @@ Technology is prohibited.
 
 #include <array>
 #include <filesystem>
+#include <future>
 #include <memory>
 #include <typeinfo>
 #include <typeindex>
@@ -226,6 +227,17 @@ namespace oo
         void Reload(AssetInfo::Type type);
 
         /// <summary>
+        /// Asynchronously reloads the data from the file into the asset.
+        /// </summary>
+        std::future<void> ReloadAsync();
+
+        /// <summary>
+        /// Asynchronously reloads the data from the file into the asset.
+        /// </summary>
+        /// <param name="type">The explicit type of asset to load as.</param>
+        std::future<void> ReloadAsync(AssetInfo::Type type);
+
+        /// <summary>
         /// Unloads the data in the asset.
         /// </summary>
         void Unload();
@@ -282,6 +294,8 @@ namespace oo
     template<typename T>
     inline T AssetInfo::GetData() const
     {
+        if (!isDataLoaded)
+            return {};
         for (auto& d : data)
         {
             if constexpr (std::is_pointer<T>::value)
