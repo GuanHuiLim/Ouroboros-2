@@ -82,4 +82,25 @@ namespace oo
         RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
         component.AddForce(glm::vec3{ x, y, z });
     }
+
+    SCRIPT_API void Rigidbody_AddForceWithMode(Scene::ID_type sceneID, UUID uuid, float x, float y, float z, int forceMode)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        component.AddForce(glm::vec3{ x, y, z }, static_cast<ForceMode>(forceMode));
+    }
+
+    SCRIPT_API void Rigidbody_AddTorque(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        component.AddTorque(glm::vec3{ x, y, z });
+    }
+
+    SCRIPT_API void Rigidbody_AddTorqueWithMode(Scene::ID_type sceneID, UUID uuid, float x, float y, float z, int forceMode)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        component.AddTorque(glm::vec3{ x, y, z }, static_cast<ForceMode>(forceMode));
+    }
 }
