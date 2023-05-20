@@ -94,14 +94,16 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(post_load_scene_init, tracy::Color::PeachPuff2);
 
+        std::mutex m;
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                     oo::vec3 pos = tf.GetGlobalPosition();
                     oo::quat quat = tf.GetGlobalRotationQuat();
+                    std::lock_guard lock(m);
                     rb.SetPosOrientation(pos + rb.Offset, quat);
                     TRACY_PROFILE_SCOPE_END();
                 }
@@ -110,7 +112,10 @@ namespace oo
                     TRACY_PROFILE_SCOPE_NC(rigidbody_is_trigger_check, tracy::Color::PeachPuff4);
                     // test and set trigger boolean based on serialize value
                     if (rb.object.isTrigger() != rb.IsTrigger())
+                    {
+                        std::lock_guard lock(m);
                         rb.object.setTriggerShape(rb.IsTrigger());
+                    }
                     TRACY_PROFILE_SCOPE_END();
                 }
             });
@@ -325,7 +330,7 @@ namespace oo
         static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
         // set position and orientation of our scene's dynamic rigidbodies with updated physics results
-        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->parallel_for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
         {
             // IMPORTANT NOTE!
             // position retrieve is presumably global position in physics world.
@@ -421,9 +426,10 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_update_global_bounds, tracy::Color::PeachPuff);
 
+        std::mutex m;
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 TRACY_PROFILE_SCOPE_NC(submit_update_rigidbodies, tracy::Color::PeachPuff2);
                 if(tf.HasChangedThisFrame || rb.IsTrigger())
@@ -431,6 +437,7 @@ namespace oo
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                     oo::vec3 pos = tf.GetGlobalPosition();
                     oo::quat quat = tf.GetGlobalRotationQuat();
+                    std::lock_guard lock(m);
                     rb.SetPosOrientation(pos + rb.Offset, quat);
                     TRACY_PROFILE_SCOPE_END();
                 }
@@ -439,7 +446,10 @@ namespace oo
                     TRACY_PROFILE_SCOPE_NC(rigidbody_is_trigger_check, tracy::Color::PeachPuff4);
                     // test and set trigger boolean based on serialize value
                     if (rb.object.isTrigger() != rb.IsTrigger())
+                    {
+                        std::lock_guard lock(m);
                         rb.object.setTriggerShape(rb.IsTrigger());
+                    }
                     TRACY_PROFILE_SCOPE_END();
                 }
 

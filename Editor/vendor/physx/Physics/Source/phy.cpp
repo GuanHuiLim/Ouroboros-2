@@ -1189,6 +1189,8 @@ namespace myPhysx
         PxConvexMeshCookingResult::Enum result;
 #pragma warning(default : 26812)
 
+        if (convexDesc.points.count == 0)
+            return NULL;
         if (!mCooking->cookConvexMesh(convexDesc, buffer, &result))
             return NULL;
 

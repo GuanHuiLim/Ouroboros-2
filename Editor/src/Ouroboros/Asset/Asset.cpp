@@ -239,6 +239,16 @@ namespace oo
             sp->Reload(type);
     }
 
+    std::future<void> Asset::ReloadAsync()
+    {
+        return std::async(std::launch::async, [&]() { Reload(); });
+    }
+
+    std::future<void> Asset::ReloadAsync(AssetInfo::Type type)
+    {
+        return std::async(std::launch::async, [&]() { Reload(type); });
+    }
+
     void Asset::Unload()
     {
         if (!IsValid())

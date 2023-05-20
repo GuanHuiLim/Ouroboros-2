@@ -96,7 +96,7 @@ namespace oo
     {
         // Update UI positions immediately!
         static Ecs::Query ui_query = Ecs::make_raw_query<UIComponent, TransformComponent>();
-        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& tfComp)
+        m_world->parallel_for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& tfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.entityID = uiComp.PickingID;
@@ -105,7 +105,7 @@ namespace oo
 
         // Update UIText 
         static Ecs::Query ui_text_query = Ecs::make_raw_query<UIComponent, TransformComponent, UITextComponent>();
-        m_world->for_each(ui_text_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UITextComponent& uiTextComp)
+        m_world->parallel_for_each(ui_text_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UITextComponent& uiTextComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.SetText(true);
@@ -113,7 +113,7 @@ namespace oo
 
         // Update UIImage 
         static Ecs::Query ui_img_query = Ecs::make_raw_query<UIComponent, TransformComponent, UIImageComponent>();
-        m_world->for_each(ui_img_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UIImageComponent& uiImgComp)
+        m_world->parallel_for_each(ui_img_query, [&](UIComponent& uiComp, TransformComponent& tfComp, UIImageComponent& uiImgComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.SetText(false);
@@ -124,7 +124,7 @@ namespace oo
     {
         // Update UI
         static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent, RectTransformComponent, JustCreatedComponent>();
-        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+        m_world->parallel_for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
 
@@ -134,7 +134,7 @@ namespace oo
 
         // Update Text UI
         static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent, JustCreatedComponent>();
-        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+        m_world->parallel_for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.SetText(true);
@@ -142,7 +142,7 @@ namespace oo
 
         // Update Image UI
         static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent, JustCreatedComponent>();
-        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
+        m_world->parallel_for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, JustCreatedComponent& jcComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.SetText(false);
@@ -160,7 +160,7 @@ namespace oo
 
         // Update Newly Duplicated Text UI
         static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent, DuplicatedComponent>();
-        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
+        m_world->parallel_for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.SetText(true);
@@ -168,7 +168,7 @@ namespace oo
 
         // Update Newly Duplicated Image UI
         static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent, DuplicatedComponent>();
-        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
+        m_world->parallel_for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp, DuplicatedComponent& dupComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.SetText(false);
@@ -180,7 +180,7 @@ namespace oo
     {
         // Update UI
         static Ecs::Query ui_query = Ecs::make_query<UIComponent, TransformComponent, RectTransformComponent>();
-        m_world->for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp)
+        m_world->parallel_for_each(ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, RectTransformComponent& rectTfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
 
@@ -203,7 +203,7 @@ namespace oo
 
         // Update Text UI
         static Ecs::Query text_ui_query = Ecs::make_query<UIComponent, TransformComponent, UITextComponent, RectTransformComponent>();
-        m_world->for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp)
+        m_world->parallel_for_each(text_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UITextComponent& uiTextComp, RectTransformComponent& rectTfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.textData = uiTextComp.Text;
@@ -218,7 +218,7 @@ namespace oo
         
         // Update Image UI
         static Ecs::Query image_ui_query = Ecs::make_query<UIComponent, TransformComponent, UIImageComponent, RectTransformComponent>();
-        m_world->for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp)
+        m_world->parallel_for_each(image_ui_query, [&](UIComponent& uiComp, TransformComponent& transformComp, UIImageComponent& uiImageComp, RectTransformComponent& rectTfComp)
             {
                 auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
                 ui.colour = uiImageComp.Tint;
@@ -229,31 +229,65 @@ namespace oo
 
     void UISystem::EditorUpdate()
     {
-        TRACY_PROFILE_SCOPE_NC(UI_Editor, tracy::Color::Cyan);
-        UpdateJustCreated();
-        UpdateDuplicated();
-        UpdateExisting();
-
-        UpdateRectTransformAll();
-        DebugDrawUI();
+        TRACY_PROFILE_SCOPE_NC(UISystem_EditorUpdate, tracy::Color::Cyan);
         
+            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateJustCreated, tracy::Color::Cyan);
+            UpdateJustCreated();
+            TRACY_PROFILE_SCOPE_END(); 
+        
+            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateDuplicated, tracy::Color::Cyan);
+            UpdateDuplicated();
+            TRACY_PROFILE_SCOPE_END(); 
+        
+            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateExisting, tracy::Color::Cyan);
+            UpdateExisting();
+            TRACY_PROFILE_SCOPE_END();
+
+            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateRectTransform, tracy::Color::Cyan);
+            UpdateRectTransformAll();
+            TRACY_PROFILE_SCOPE_END();
+
+            TRACY_PROFILE_SCOPE_NC(UISystem_DebugDrawUI, tracy::Color::Cyan);
+            DebugDrawUI();
+            TRACY_PROFILE_SCOPE_END();
+
         TRACY_PROFILE_SCOPE_END();
     }
 
     void UISystem::RuntimeUpdate()
     {
-        TRACY_PROFILE_SCOPE_NC(UI, tracy::Color::DarkCyan);
-        UpdateJustCreated();
-        UpdateDuplicated();
-        UpdateExisting();
+        TRACY_PROFILE_SCOPE_NC(UISystem_RuntimeUpdate, tracy::Color::DarkCyan);
 
+        TRACY_PROFILE_SCOPE_NC(UISystem_UpdateJustCreated, tracy::Color::DarkCyan);
+        UpdateJustCreated();
+        TRACY_PROFILE_SCOPE_END();
+
+        TRACY_PROFILE_SCOPE_NC(UISystem_UpdateDuplicated, tracy::Color::DarkCyan);
+        UpdateDuplicated();
+        TRACY_PROFILE_SCOPE_END();
+
+        TRACY_PROFILE_SCOPE_NC(UISystem_UpdateExisting, tracy::Color::DarkCyan);
+        UpdateExisting();
+        TRACY_PROFILE_SCOPE_END();
+
+        TRACY_PROFILE_SCOPE_NC(UISystem_UpdateRectTransformAll, tracy::Color::DarkCyan);
         UpdateRectTransformAll();
+        TRACY_PROFILE_SCOPE_END();
+
         if (Application::Get().GetWindow().IsFocused())
         {
+
+            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateButtonCallback, tracy::Color::DarkCyan);
             UpdateButtonCallbackAll();
+            TRACY_PROFILE_SCOPE_END();
+
+            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateRectTransformAll, tracy::Color::DarkCyan);
             UpdateRectTransformAll();
+            TRACY_PROFILE_SCOPE_END();
             
+            TRACY_PROFILE_SCOPE_NC(UISystem_DebugDrawUI, tracy::Color::DarkCyan);
             DebugDrawUI();
+            TRACY_PROFILE_SCOPE_END();
         }
         TRACY_PROFILE_SCOPE_END();
     }
@@ -276,7 +310,7 @@ namespace oo
 
         // Update canvas here. order does matter here. Assumes all rect transform has been updated already.
         static Ecs::Query canvas_query = Ecs::make_query<GameObjectComponent, TransformComponent, UICanvasComponent, RectTransformComponent>();
-        m_world->for_each(canvas_query, [&](GameObjectComponent& goc, TransformComponent& tf, UICanvasComponent& canvas, RectTransformComponent& rectTransform)
+        m_world->parallel_for_each(canvas_query, [&](GameObjectComponent& goc, TransformComponent& tf, UICanvasComponent& canvas, RectTransformComponent& rectTransform)
             {
                 if (canvas.ScaleWithScreenSize)
                 {
@@ -326,7 +360,7 @@ namespace oo
 
         // Update Individual Rect Transform here order of update between each other does not matter here.
         static Ecs::Query rect_transform_query = Ecs::make_query<TransformComponent, RectTransformComponent>();
-        m_world->for_each(rect_transform_query, [&](TransformComponent& tf, RectTransformComponent& rectTransform)
+        m_world->parallel_for_each(rect_transform_query, [&](TransformComponent& tf, RectTransformComponent& rectTransform)
             {
                 if (rectTransform.IsDirty)
                 {

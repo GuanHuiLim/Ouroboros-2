@@ -174,7 +174,7 @@ namespace oo
         
         // Update their local transform
         static Ecs::Query query = Ecs::make_raw_query</*GameObjectComponent, */TransformComponent>();
-        m_world->for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
+        m_world->parallel_for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
             {
                 // TODO: this part of the code doesn't need to be serial.
                 // Update local and global transform immediately

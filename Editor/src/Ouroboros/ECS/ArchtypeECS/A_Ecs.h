@@ -23,8 +23,11 @@ Technology is prohibited.
 #include "System.h"
 #include "Wrapper.h"
 
+#include <future>
+
 //#include <JobSystem/src/final/jobs.h>
 //#include "Ouroboros/TracyProfiling/OO_TracyProfiler.h"
+
 
 namespace Ecs
 {
@@ -419,6 +422,7 @@ namespace Ecs::internal
 		newArch->ownerWorld = world;
 		world->archetypes.push_back(newArch);
 		world->archetypeSignatures.push_back(matcher);
+		world->archetypeMatchedSuccess.reserve(world->archetypeSignatures.capacity());
 		world->archetype_signature_map[matcher].push_back(newArch);
 
 		//we want archs to allways have 1 chunk at least, create initial
@@ -700,74 +704,6 @@ namespace Ecs::internal
 	template<typename C>
 	void remove_component_from_entity(IECSWorld* world, EntityID id);
 
-	//template<typename F>
-	//void parallel_iterate_matching_archetypes(IECSWorld* world, const IQuery& query, F&& function) {
-
-	//	jobsystem::job parallel_search;
-	//	for (int i = 0; i < world->archetypeSignatures.size(); i++)
-	//	{
-	//		//if there is a good match, doing an and not be 0
-	//		uint64_t includeTest = world->archetypeSignatures[i] & query.require_matcher;
-
-	//		//implement later
-	//		uint64_t excludeTest = world->archetypeSignatures[i] & query.exclude_matcher;
-
-	//		jobsystem::submit_and_launch(parallel_search, [&, i]()
-	//			{
-	//				if (includeTest != 0) {
-
-	//					auto componentList = world->archetypes[i]->componentList;
-
-	//					//might match an excluded component, check here
-	//					if (excludeTest != 0) {
-
-	//						bool invalid = false;
-	//						//dumb algo, optimize later					
-	//						for (int mtA = 0; mtA < query.exclude_comps.size(); mtA++) {
-
-	//							for (auto cmp : componentList->components) {
-
-	//								if (cmp.type->hash == query.exclude_comps[mtA]) {
-	//									//any check and we out
-	//									invalid = true;
-	//									break;
-	//								}
-	//							}
-	//							if (invalid) {
-	//								break;
-	//							}
-	//						}
-	//						if (invalid) {
-	//							//continue;
-	//							return;
-	//						}
-	//					}
-
-	//					//dumb algo, optimize later
-	//					int matches = 0;
-	//					for (int mtA = 0; mtA < query.require_comps.size(); mtA++) {
-
-	//						for (auto cmp : componentList->components) {
-
-	//							if (cmp.type->hash == query.require_comps[mtA]) {
-	//								matches++;
-	//								break;
-	//							}
-	//						}
-	//					}
-	//					//all perfect
-	//					if (matches == query.require_comps.size()) {
-
-	//						function(world->archetypes[i]);
-	//					}
-	//				}
-	//			});
-	//	}
-
-	//	jobsystem::wait(parallel_search);
-
-	//}
-
 	template<typename F>
 	void iterate_matching_archetypes(IECSWorld* world, const IQuery& query, F&& function) {
 
@@ -827,11 +763,94 @@ namespace Ecs::internal
 				}
 			}
 
+		}
+	}
+
+	template<typename F>
+	void parallel_iterate_matching_archetypes(IECSWorld* world, const IQuery& query, F&& function) {
+
+
+		std::vector<int> archetypesToIterateIndex{};
+
+		for (int i = 0; i < world->archetypeSignatures.size(); i++)
+		{
+			//if there is a good match, doing an and not be 0
+			uint64_t includeTest = world->archetypeSignatures[i] & query.require_matcher;
+
+			//implement later
+			uint64_t excludeTest = world->archetypeSignatures[i] & query.exclude_matcher;
+
+
+			if (includeTest != 0) {
+
+				auto componentList = world->archetypes[i]->componentList;
+
+				//might match an excluded component, check here
+				if (excludeTest != 0) {
+
+					bool invalid = false;
+					//dumb algo, optimize later					
+					for (int mtA = 0; mtA < query.exclude_comps.size(); mtA++) {
+
+						for (auto cmp : componentList->components) {
+
+							if (cmp.type->hash == query.exclude_comps[mtA]) {
+								//any check and we out
+								invalid = true;
+								break;
+							}
+						}
+						if (invalid) {
+							break;
+						}
+					}
+					if (invalid) {
+						continue;
+					}
+				}
+
+				//dumb algo, optimize later
+				int matches = 0;
+				for (int mtA = 0; mtA < query.require_comps.size(); mtA++) {
+
+					for (auto cmp : componentList->components) {
+
+						if (cmp.type->hash == query.require_comps[mtA]) {
+							matches++;
+							break;
+						}
+					}
+				}
+				//all perfect
+				if (matches == query.require_comps.size()) {
+
+					//function(world->archetypes[i]);
+					archetypesToIterateIndex.emplace_back(i);
+				}
+			}
 
 		}
 
-	}
+		/*for (auto index : archetypesToIterateIndex)
+		{
+			function(world->archetypes[index]);
+		}*/
 
+		TRACY_PROFILE_SCOPE_NC(ecs_parallel_for, tracy::Color::AliceBlue);
+
+		//parallelize here
+		//iterate all matched archetypes
+		std::for_each(std::execution::par_unseq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
+			//for (auto idx : archetypesToIterateIndex)
+			{
+				TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+				function(world->archetypes[idx]);
+				TRACY_PROFILE_SCOPE_END();
+			}
+		);
+
+		TRACY_PROFILE_SCOPE_END();
+	}
 
 
 	template<typename C>
@@ -992,6 +1011,23 @@ namespace Ecs::internal
 			function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
 		}
 	}
+
+	template<typename... Args, typename Func>
+	void parallel_entity_chunk_iterate(DataChunk* chnk, Func&& function) {
+		auto tup = std::make_tuple(get_chunk_array<Args>(chnk)...);
+#ifndef NDEBUG
+		//function arguements are incorrect, check if you are using ComponentType&
+		(assert(std::get<decltype(get_chunk_array<Args>(chnk))>(tup).chunkOwner == chnk), ...);
+#endif
+			
+		for (int i = chnk->header.last - 1; i >= 0; i--) {
+			function(std::get<decltype(get_chunk_array<Args>(chnk))>(tup)[i]...);
+		}
+
+
+	}
+
+	
 	template<typename Func>
 	void entity_chunk_iterate_with_entity(DataChunk* chnk, Func&& function) {
 		//int popIndex = chunk->header.last - 1;
@@ -1023,6 +1059,13 @@ namespace Ecs::internal
 		(void)types;
 		entity_chunk_iterate<Args...>(chunk, function);
 	}
+
+	template<typename ...Args, typename Func>
+	void parallel_unpack_chunk(type_list<Args...> types, DataChunk* chunk, Func&& function) {
+		(void)types;
+		parallel_entity_chunk_iterate<Args...>(chunk, function);
+	}
+
 	template<typename Func>
 	void unpack_chunk_with_entity(DataChunk* chunk, Func&& function)
 	{
@@ -1259,6 +1302,7 @@ namespace Ecs
 		archetypes.push_back(nullArch);
 
 		archetypeSignatures.push_back(0);
+		archetypeMatchedSuccess.reserve(archetypeSignatures.capacity());
 
 		archetype_signature_map[0].push_back(nullArch);
 
@@ -1330,6 +1374,29 @@ namespace Ecs
 				internal::unpack_chunk(params{}, chnk, function);
 			}
 			});
+
+		TRACY_PROFILE_SCOPE_END();
+	}
+
+	template<typename Func>
+	void IECSWorld::parallel_for_each(IQuery& query, Func&& function)
+	{
+		TRACY_PROFILE_SCOPE_NC(ecs_for_each, tracy::Color::OrangeRed1);
+
+		using params = decltype(internal::args(&Func::operator()));
+
+		internal::parallel_iterate_matching_archetypes(this, query, [&](Archetype* arch) 
+		{
+			//for (auto chnk : arch->chunks) {
+			TRACY_PROFILE_SCOPE_NC(ecs_parallel_for_per_chunk, tracy::Color::AliceBlue);
+			std::for_each(std::execution::par_unseq, std::begin(arch->chunks), std::end(arch->chunks), [&](auto&& chnk)
+				{
+					TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+					internal::parallel_unpack_chunk(params{}, chnk, function);
+					TRACY_PROFILE_SCOPE_END();
+				});
+			TRACY_PROFILE_SCOPE_END();
+		});
 
 		TRACY_PROFILE_SCOPE_END();
 	}

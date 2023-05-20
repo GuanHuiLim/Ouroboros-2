@@ -200,6 +200,7 @@ namespace oo
         EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
         for (int i = 0; i < static_cast<int>(AssetInfo::Type::_COUNT); ++i)
             store.byType.emplace(static_cast<AssetInfo::Type>(i), AssetInfoMap());
+        GetDirectory(root, true);
     }
 
     AssetManager::~AssetManager()
@@ -255,6 +256,29 @@ namespace oo
         return std::async(std::launch::async, &AssetManager::GetOrLoadPath, this, fp);
     }
 
+#define DIR_ITER(_CALLBACK)                                                                         \
+if (recursive) for (auto& file : std::filesystem::recursive_directory_iterator(PATH)) { _CALLBACK; }\
+else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
+
+    std::vector<Asset> AssetManager::GetDirectory(const std::filesystem::path& path, bool recursive)
+    {
+        const auto PATH = root / path;
+
+        if (!std::filesystem::exists(PATH) || !std::filesystem::is_directory(PATH))
+            return {};
+
+        std::vector<std::filesystem::path> files;
+        DIR_ITER({ if (isMetaPath(file.path())) continue; files.emplace_back(file); });
+        std::vector<Asset> v;
+        std::transform(files.begin(), files.end(), std::back_inserter(v), [this](const auto& file) { return getAsset(file); });
+        return v;
+    }
+
+    std::future<std::vector<Asset>> AssetManager::GetDirectoryAsync(const std::filesystem::path& path, bool recursive)
+    {
+        return std::async(std::launch::async, &AssetManager::GetDirectory, this, path, recursive);
+    }
+
     std::vector<Asset> AssetManager::GetOrLoadDirectory(const std::filesystem::path& path, bool recursive)
     {
         const auto PATH = root / path;
@@ -263,29 +287,9 @@ namespace oo
             return {};
 
         std::vector<std::filesystem::path> files;
-        if (recursive)
-        {
-            for (auto& file : std::filesystem::recursive_directory_iterator(PATH))
-            {
-                if (isMetaPath(file.path()))
-                    continue;
-                files.emplace_back(file);
-            }
-        }
-        else
-        {
-            for (auto& file : std::filesystem::directory_iterator(PATH))
-            {
-                if (isMetaPath(file.path()))
-                    continue;
-                files.emplace_back(file);
-            }
-        }
+        DIR_ITER({ if (isMetaPath(file.path())) continue; files.emplace_back(file); });
         std::vector<Asset> v;
-        for (auto& file : files)
-        {
-            v.emplace_back(getLoadedAsset(file));
-        }
+        std::transform(files.begin(), files.end(), std::back_inserter(v), [this](const auto& file) { return getLoadedAsset(file); });
         return v;
     }
 
@@ -293,6 +297,8 @@ namespace oo
     {
         return std::async(std::launch::async, &AssetManager::GetOrLoadDirectory, this, path, recursive);
     }
+
+#undef DIR_ITER
 
     std::vector<Asset> AssetManager::GetOrLoadName(const std::filesystem::path& fn, bool caseSensitive)
     {
@@ -504,13 +510,7 @@ namespace oo
 
     AssetMetaContent AssetManager::ensureMeta(const std::filesystem::path& fp)
     {
-        // Get meta path
-        auto fpMeta = fp;
-        if (fp.extension() != Asset::EXT_META)
-        {
-            fpMeta += Asset::EXT_META;
-        }
-
+        auto [fpContent, fpMeta, fpExt] = getAssetPathParts(fp);
         AssetMetaContent meta;
         if (!std::filesystem::exists(fpMeta))
         {
@@ -529,20 +529,26 @@ namespace oo
         return meta;
     }
 
+    std::mutex storeMutex;
+
+    Asset AssetManager::indexAsset(const std::filesystem::path& fp, AssetID id)
+    {
+        //LOG_INFO("Indexed asset {0}", fp.filename());
+        std::lock_guard<std::mutex> guard(storeMutex);
+
+        AssetInfoPtr info = std::make_shared<AssetInfo>();
+        info->id = id;
+        info->contentPath = std::filesystem::canonical(fp);
+        info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
+        info->timeLoaded = std::chrono::file_clock::now();
+        info->type = info->GetType();
+        //LOG_INFO("Indexed asset {0}", fp.filename());
+        return Asset(store.emplace(info->id, info));
+    }
+
     Asset AssetManager::getAsset(const std::filesystem::path& fp)
     {
-        // Get file paths
-        auto fpContent = fp;
-        auto fpMeta = fpContent;
-        if (isMetaPath(fpContent))
-        {
-            fpContent.replace_extension();
-        }
-        else
-        {
-            fpMeta += Asset::EXT_META;
-        }
-        const auto FP_EXT = fpContent.extension();
+        auto [fpContent, fpMeta, fpExt] = getAssetPathParts(fp);
 
         // Get or index asset
         AssetMetaContent meta = ensureMeta(fpContent);
@@ -566,15 +572,19 @@ namespace oo
         return asset;
     }
 
-    Asset AssetManager::indexAsset(const std::filesystem::path& fp, AssetID id)
+    std::tuple<std::filesystem::path, std::filesystem::path, std::filesystem::path> AssetManager::getAssetPathParts(const std::filesystem::path& fp)
     {
-        AssetInfoPtr info = std::make_shared<AssetInfo>();
-        info->id = id;
-        info->contentPath = std::filesystem::canonical(fp);
-        info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;
-        info->timeLoaded = std::chrono::file_clock::now();
-        info->type = info->GetType();
-        //LOG_INFO("Indexed asset {0}", fp.filename());
-        return Asset(store.emplace(info->id, info));
+        auto fpContent = fp;
+        auto fpMeta = fpContent;
+        if (isMetaPath(fpContent))
+        {
+            fpContent.replace_extension();
+        }
+        else
+        {
+            fpMeta += Asset::EXT_META;
+        }
+        const auto FP_EXT = fpContent.extension();
+        return std::tuple(fpContent, fpMeta, FP_EXT);
     }
 }
