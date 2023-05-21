@@ -30,7 +30,10 @@ Technology is prohibited.
 #include "Ouroboros/Prefab/PrefabSceneController.h"
 
 // discord
+#if OO_EDITOR //not supporting discord on exe since we might have to integrate steam api
 #include "App/Editor/DiscordHelper.h"
+#endif
+
 class EditorLayer final : public oo::Layer
 {
 private:
@@ -38,8 +41,9 @@ private:
     bool m_editormode = false;
     oo::PrefabSceneController m_prefab_controller;
     ProjectTracker m_tracker;
-	DiscordHelper m_discord_helper;
+
 #if OO_EDITOR
+	DiscordHelper m_discord_helper;
     Editor m_editor;
 #endif
 
