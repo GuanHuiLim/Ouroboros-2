@@ -62,7 +62,7 @@ namespace oo
     {
         // update meshes
         static Ecs::Query mesh_query = Ecs::make_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
-        m_world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
+        m_world->parallel_for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
             {
                 //do nothing if transform did not change
                 auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
@@ -86,7 +86,7 @@ namespace oo
 
         // Update Lights
         static Ecs::Query light_query = Ecs::make_query<LightComponent, TransformComponent>();
-        m_world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+        m_world->parallel_for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
             {
                 auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
 
@@ -277,7 +277,7 @@ namespace oo
     {
         // update meshes positions!
         static Ecs::Query mesh_query = Ecs::make_raw_query<MeshRendererComponent, TransformComponent, GameObjectComponent>();
-        m_world->for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
+        m_world->parallel_for_each(mesh_query, [&](MeshRendererComponent& m_comp, TransformComponent& transformComp, GameObjectComponent& goc)
             {
                 auto& actualObject = m_graphicsWorld->GetObjectInstance(m_comp.GraphicsWorldID);
                 actualObject.localToWorld = transformComp.GlobalTransform;
@@ -285,7 +285,7 @@ namespace oo
         
         // Update Lights positions immediately!
         static Ecs::Query light_query = Ecs::make_raw_query<LightComponent, TransformComponent>();
-        m_world->for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
+        m_world->parallel_for_each(light_query, [&](LightComponent& lightComp, TransformComponent& transformComp)
             {
                 auto& graphics_light = m_graphicsWorld->GetLightInstance(lightComp.Light_ID);
                 graphics_light.position = glm::vec4{ transformComp.GetGlobalPosition(), 0.f };
@@ -316,6 +316,8 @@ namespace oo
 
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
+        TRACY_PROFILE_SCOPE_NC(renderer_system_run, tracy::Color::Seashell3);
+
         UpdateUnderlyingRendererSettings();
 
         UpdateJustCreated();
@@ -324,6 +326,8 @@ namespace oo
 
         // draw debug stuff
         RenderDebugDraws();
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     // additional function that runs during runtime scene only.
@@ -334,7 +338,7 @@ namespace oo
 
         Camera* camera = m_runtimeCC.GetCamera();
         static Ecs::Query camera_query = Ecs::make_query<GameObjectComponent, CameraComponent, TransformComponent>();
-        m_world->for_each(camera_query, [&](GameObjectComponent& goc, CameraComponent& cameraComp, TransformComponent& transformComp)
+        m_world->parallel_for_each(camera_query, [&](GameObjectComponent& goc, CameraComponent& cameraComp, TransformComponent& transformComp)
         {
             /*if (!transformComp.HasChangedThisFrame)
                 return;*/

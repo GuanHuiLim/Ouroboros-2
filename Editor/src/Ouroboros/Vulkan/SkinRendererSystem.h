@@ -5,6 +5,7 @@
 #include "Ouroboros/Transform/TransformComponent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
+#include <JobSystem/src/containers/threadsafe_map.h>
 namespace oo
 {
 	class SkinMeshRendererSystem : public Ecs::System
@@ -14,7 +15,7 @@ namespace oo
 		oo::Scene* scene{nullptr};
 		std::vector<Ecs::EntityID> uninitializedEntities{};
 
-		std::unordered_map<UUID, glm::mat4> root_bone_inverse_map{};
+		ts::threadsafe_map<UUID, glm::mat4> root_bone_inverse_map = {};
 	public:
 		struct InitializeMeshEvent : oo::Event {
 			Ecs::EntityID entity{};

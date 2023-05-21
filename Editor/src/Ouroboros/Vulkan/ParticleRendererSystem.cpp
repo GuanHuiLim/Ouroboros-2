@@ -432,6 +432,8 @@ namespace oo
 
     void oo::ParticleRendererSystem::Run(Ecs::ECSWorld* world)
     {
+        TRACY_PROFILE_SCOPE_NC(Particle_Renderer_System_Update, tracy::Color::Cyan);
+
         // Update Newly Duplicated Emitter
         static Ecs::Query duplicated_emitter_query = Ecs::make_raw_query<ParticleEmitterComponent, TransformComponent, DuplicatedComponent>();
         world->for_each(duplicated_emitter_query, [&](ParticleEmitterComponent& emitterComp, TransformComponent& transformComp, DuplicatedComponent& dupComp)
@@ -441,7 +443,8 @@ namespace oo
 
         // update Emitter
         static Ecs::Query emitter_query = Ecs::make_query<ParticleEmitterComponent, TransformComponent>();
-        world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp) 
+        //world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp) 
+        m_world->parallel_for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp)
         {
             emitter.m_partRenderer.MeshInformation.submeshBits[0] = true;
             //do nothing if transform did not change
@@ -516,12 +519,15 @@ namespace oo
             SpawnParticles(emitter, transformComp, toSpawnCnt);
 
             SimulateAllParticles(emitter, transformComp, static_cast<float>(FixedDeltaTime));
+
         });
            
         world->for_each(emitter_query, [&](ParticleEmitterComponent& emitter, TransformComponent& transformComp)
         {                
             m_graphicsWorld->SubmitParticles(emitter.m_particles, emitter.m_liveParticles, emitter.GraphicsWorldID);
         });
+
+        TRACY_PROFILE_SCOPE_END();
     }
 
     void ParticleRendererSystem::InitializeEmitter(ParticleEmitterComponent& emitterComp, TransformComponent& transformComp)

@@ -1352,13 +1352,15 @@ namespace oo::Anim::internal
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& t_info, float updatedTimer)
 	{
 		for (auto& progressTracker : t_info.tracker.trackers)
-		{
-			//it should have an update function!!
-			assert(progressTracker.updatefunction != nullptr);
-			UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
-			//call the respective update function on this tracker
-			progressTracker.updatefunction(p_info, updatedTimer);
-		}
+		//std::for_each(std::execution::par_unseq, std::begin(t_info.tracker.trackers), std::end(t_info.tracker.trackers), [&](auto&& progressTracker)
+			{
+				//it should have an update function!!
+				assert(progressTracker.updatefunction != nullptr);
+				UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
+				//call the respective update function on this tracker
+				progressTracker.updatefunction(p_info, updatedTimer);
+			}
+		//);
 		return;
 		/*--------------------------
 		pipeline optimization way - unused for now
@@ -1475,13 +1477,17 @@ namespace oo::Anim::internal
 		//already hit last event
 		if (tracker.nextEvent_index > last_index) return;
 
-
+		auto& eventqueue = info.system.GetScriptEventQueue();
 		//catch up on all script events to be called & update index
 		while (	tracker.nextEvent_index <= last_index &&
 				events[tracker.nextEvent_index].time < updatedTimer)
 		{
 			//invoke script event
-			events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			//events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			
+			//queue script event
+			eventqueue.emplace_back(info.uuid , events[tracker.nextEvent_index].script_function_info);
+			
 			//update index
 			++tracker.nextEvent_index;
 		}

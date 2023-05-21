@@ -41,9 +41,11 @@ namespace Ecs
 		std::unordered_map<uint64_t, Archetype*> archetype_map{};
 		std::vector<Archetype*> archetypes;
 		//unique archetype hashes
-		std::vector<size_t> archetypeHashes;
+		std::vector<size_t> archetypeHashes{};
 		//bytemask hash for checking
-		std::vector<size_t> archetypeSignatures;
+		std::vector<size_t> archetypeSignatures{};
+		//vector for iteration work
+		std::vector<int> archetypeMatchedSuccess{};
 
 		std::unordered_map<uint64_t, void*> singleton_map{};
 		std::unordered_map<uint64_t, ComponentInfo> singleton_info_map{};
