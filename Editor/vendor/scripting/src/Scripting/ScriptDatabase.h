@@ -39,6 +39,9 @@ namespace oo
         using ObjectCheck = std::function<bool(UUID)>;
         using ClassCheck = std::function<bool(MonoClass*)>;
 
+        // mainly for debugging
+        using ClassIndexCallback = std::function<void(size_t index)>;
+
         static constexpr IntPtr InvalidPtr = 0;
 
     private:
@@ -109,7 +112,7 @@ namespace oo
 
         void ForAllEnabledByClass(UUIDCallback callback, ClassCheck classFilter, ObjectCheck filter = nullptr);
 
-        void InvokeForAllEnabled(const char* functionName, ObjectCheck filter = nullptr);
+        void InvokeForAllEnabled(const char* functionName, ObjectCheck filter = nullptr, ClassIndexCallback onPoolStart = nullptr, ClassIndexCallback onPoolEnd = nullptr);
 
     private:
         Index GetInstancePoolIndex(const char* name_space, const char* name);

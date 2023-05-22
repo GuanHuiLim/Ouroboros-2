@@ -1,4 +1,5 @@
 #include "pch.h"
+#ifdef OO_EDITOR
 #include "DiscordHelper.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 DiscordHelper::DiscordHelper()
@@ -59,3 +60,5 @@ void DiscordHelper::UpdateStatus(LoadSceneEvent* e)
 	m_current_activity.SetState(std::filesystem::path(e->m_scene->GetFilePath()).stem().string().c_str());
 	state.core->ActivityManager().UpdateActivity(m_current_activity, 0);
 }
+
+#endif

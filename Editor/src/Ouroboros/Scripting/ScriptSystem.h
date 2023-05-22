@@ -73,6 +73,8 @@ namespace oo
         void UpdateAllScriptFieldsWithInfo();
         void UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script);
 
+        static void StartTracyProfiling(size_t scriptClassIndex);
+
         void OnApplicationFocus(WindowFocusEvent* e);
         void OnApplicationPause(WindowLoseFocusEvent* e);
 
