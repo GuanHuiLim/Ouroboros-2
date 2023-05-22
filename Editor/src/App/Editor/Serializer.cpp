@@ -418,12 +418,7 @@ void Serializer::LoadAssetsList(const oo::Scene& scene)
 		asset_ID.emplace_back(i->GetUint64());
 	}
 
-	/// <summary> Load Your stuff here
-	/// @Petraller
-	/// </summary>
-	/// <param name="scene"></param>
-	
-	//LoadAllAsync(asset_ID);
+	Project::GetAssetManager()->LoadMultipleAsync(asset_ID);
 
 	ifs.close();
 }
