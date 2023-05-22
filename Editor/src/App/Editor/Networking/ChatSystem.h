@@ -1,5 +1,6 @@
 #pragma once
 
+#ifdef OO_EDITOR
 #include "App/Editor/Networking/NetworkingEvent.h"
 #include "App/Editor/Events/ToolbarButtonEvent.h"
 #include "slikenet/peerinterface.h"
@@ -97,3 +98,5 @@ private://imgui stuff
 	std::string m_currentmessage;
 	bool m_scrollToBottom = false;
 };
+
+#endif

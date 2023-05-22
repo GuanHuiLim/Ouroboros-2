@@ -100,11 +100,11 @@ void PreviewWindow::Show()
 		m_viewportWidth = contentWidth;
 		m_viewportHeight = contentHeight;
 
-		PreviewWindowResizeEvent e;
-		e.StartPosition = m_windowStartPosition;
-		e.X = m_viewportWidth;
-		e.Y = m_viewportHeight;
-		oo::EventManager::Broadcast<PreviewWindowResizeEvent>(&e);
+		PreviewWindowResizeEvent pwre;
+		pwre.StartPosition = m_windowStartPosition;
+		pwre.X = m_viewportWidth;
+		pwre.Y = m_viewportHeight;
+		oo::EventManager::Broadcast<PreviewWindowResizeEvent>(&pwre);
 	}
 
 	
