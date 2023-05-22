@@ -62,9 +62,9 @@ namespace oo
         //io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
         
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange; // dont do shit to the mouse curosr
-
+#ifndef OO_END_PRODUCT
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("./icons/Inder-Regular.ttf", 18.0f);
-
+#endif
         //io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", 18.0f);
         //io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", 18.0f);
 

@@ -59,7 +59,7 @@ namespace oo
         std::array<std::vector<scenegraph::shared_pointer>, MaxDepth> launch_groups;
         
         // extra info stored for preprocessing
-        std::stack<scenenode::shared_pointer> s;
+        std::stack<scenenode::shared_pointer> stk;
 
     };
 }

@@ -1,4 +1,5 @@
 #include "pch.h"
+#ifdef OO_EDITOR
 #include "ChatSystem.h"
 #include "slikenet/MessageIdentifiers.h"
 #include <imgui/imgui.h>
@@ -401,3 +402,5 @@ bool FileCallback::OnDownloadComplete(SLNet::FileListTransferCBInterface::Downlo
 	oo::EventManager::Broadcast<NetworkingSendEvent>(&nse);
 	return false;
 }
+
+#endif
