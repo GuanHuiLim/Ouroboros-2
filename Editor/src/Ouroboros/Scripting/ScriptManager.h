@@ -142,6 +142,7 @@ namespace oo
         static void InsertAfterDefaultOrder(ScriptClassInfo const& classInfo, std::vector<ScriptClassInfo>::iterator iter);
         static void RemoveAfterDefaultOrder(ScriptClassInfo const& classInfo);
 
+        static std::vector<ScriptClassInfo> const GetScriptNamesByExecutionOrder();
         static std::vector<MonoClass*> const GetScriptExecutionOrder();
         static inline void ClearScriptExecutionOrder()
         {

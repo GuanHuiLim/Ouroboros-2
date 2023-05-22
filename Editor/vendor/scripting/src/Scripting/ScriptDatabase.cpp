@@ -282,10 +282,11 @@ namespace oo
         }
     }
 
-    void ScriptDatabase::InvokeForAllEnabled(const char* functionName, ObjectCheck filter)
+    void ScriptDatabase::InvokeForAllEnabled(const char* functionName, ObjectCheck filter, ClassIndexCallback onPoolStart, ClassIndexCallback onPoolEnd)
     {
-        for (InstancePool& scriptPool : poolList)
+        for (size_t i = 0; i < poolList.size(); ++i)
         {
+            InstancePool& scriptPool = poolList[i];
             if (scriptPool.empty())
                 continue;
 
@@ -295,6 +296,7 @@ namespace oo
                 continue;
             LifeCycleFunction function = static_cast<LifeCycleFunction>(mono_method_get_unmanaged_thunk(method));
 
+            onPoolStart(i);
             for (auto& [uuid, instance] : scriptPool)
             {
                 if (!instance.enabled)
@@ -304,6 +306,7 @@ namespace oo
                 MonoObject* object = mono_gchandle_get_target(instance.handle);
                 ScriptEngine::InvokeFunctionThunk(object, function);
             }
+            onPoolEnd(i);
         }
     }
 

@@ -233,6 +233,20 @@ namespace oo
         s_AfterDefaultOrder.erase(search);
     }
 
+    std::vector<ScriptClassInfo> const ScriptManager::GetScriptNamesByExecutionOrder()
+    {
+        std::vector<ScriptClassInfo> executionOrder = s_ScriptList;
+
+        for (ScriptClassInfo const& classInfo : s_BeforeDefaultOrder)
+            executionOrder.erase(std::find(executionOrder.begin(), executionOrder.end(), classInfo));
+        for (ScriptClassInfo const& classInfo : s_AfterDefaultOrder)
+            executionOrder.erase(std::find(executionOrder.begin(), executionOrder.end(), classInfo));
+
+        executionOrder.insert(executionOrder.begin(), s_BeforeDefaultOrder.begin(), s_BeforeDefaultOrder.end());
+        executionOrder.insert(executionOrder.end(), s_AfterDefaultOrder.begin(), s_AfterDefaultOrder.end());
+
+        return executionOrder;
+    }
     std::vector<MonoClass*> const ScriptManager::GetScriptExecutionOrder()
     {
         std::vector<MonoClass*> executionOrder;
