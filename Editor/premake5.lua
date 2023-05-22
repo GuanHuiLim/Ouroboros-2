@@ -36,6 +36,7 @@ project "Editor"
     --     "_CRT_SECURE_NO_WARNINGS"
     -- }
 
+    -- global includes regardless of any config/platform
     includedirs
     {
         "src",
@@ -54,7 +55,6 @@ project "Editor"
         "%{IncludeDir.rttr}",
 
         "%{IncludeDir.launcher}",
-        --"%{IncludeDir.ecs}",
         "%{IncludeDir.sharedlib}",
         
         "%{IncludeDir.physx}",
@@ -64,8 +64,7 @@ project "Editor"
         "%{IncludeDir.scripting}",
 		
         "%{IncludeDir.fmod}",
-        "%{IncludeDir.discord}",
-		"%{IncludeDir.slikenet}",
+
         --for tracy
         "%{IncludeDir.tracy}",
 		--for optick
@@ -80,13 +79,9 @@ project "Editor"
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
-        -- "%{LibraryDir.physx}/Debug",
-        -- "%{LibraryDir.physx}/Release",
         "%{LibraryDir.assimp}/Release",
         "%{LibraryDir.freetype}",
         "%{LibraryDir.fmod}",
-        "%{LibraryDir.discord}",
-		"%{LibraryDir.slikenet}",
     }
 
     -- linking External libraries 
@@ -98,40 +93,24 @@ project "Editor"
     --  can be found on Build Dependencies/Add Reference options
     links
     {
+        -- vulkan SDK
         "%{Library.Vulkan}",
-        "freetype",
-        "ImGui",
-        "SDL2",
-        "SDL2main",
-        "SDL2test",
         
-        --"ECS",
+        -- custom libs
         "Launcher",
         "SharedLib",
         "Physics",
-        
-        -- "PhysX_64",
-        -- "PhysXCommon_64",
-        -- "PhysXCooking_64",
-        -- "PhysXFoundation_64",
-        -- "PhysXExtensions_static_64",
-        -- "PhysXPvdSDK_static_64",
-
-        --"mono-2.0-sgen",
         "Scripting",
         "ScriptCore",
-        
-        --Linking to vulkan Library [Uncomment the next line when youre done setting up]
         "Vulkan",
-        "assimp-vc142-mt",
-
-        "dbghelp",
-		"ws2_32",
-        --"srcsrv", are these even needed? might just remove-em altogether.
-        --"symsrv",
         
-        "Discord",
-        "discord_game_sdk_dll",
+        -- external libs
+        "SDL2",
+        "SDL2main",
+        "SDL2test",
+        "assimp-vc142-mt",
+        "freetype",
+        "ImGui",
     }
     
     -- Editor Project Level Disable Warning 
@@ -170,7 +149,7 @@ project "Editor"
             {"call \"%{AppVendor}/vulkan/OO_Vulkan/shaders/compileShaders.bat\"" },
         }
 
-        -- if Editor needs any postbuild commands regardless of debug/release/production
+        -- if Editor needs any post-build commands regardless of debug/release/production
         postbuildcommands
         {
 			-- [IMPORTANT] copy command requires a space after the target directory.
@@ -179,22 +158,9 @@ project "Editor"
             -- Controller Support file
             {"{COPY} \"%{AppDir}/gamecontrollerdb.txt\" \"" .. binApp .. "\""},
 
-            -- ImGui Default ini
-            {"{COPY} \"%{AppDir}/default.ini\" \"" .. binApp .. "\""},
-			-- ImGui EditorMode Style Settings
-            {"{COPY} \"%{AppDir}/EditorMode.settings\" \"" .. binApp .. "\""},
-			-- ImGui PlayMode Style Settings
-            {"{COPY} \"%{AppDir}/PlayMode.settings\" \"" .. binApp .. "\""},
-            -- Copy Imgui.ini
-            {"{COPY} \"%{AppDir}/imgui.ini\" \"" .. binApp .. "\""},
-
             -- copy General DLLs
             {"{COPY} \"%{AppDir}/dlls/\" \"" .. binApp .. "\"" },
-			-- copy Editor Icons Folder in its entirety.
-			{ "mkdir \"" .. binApp .. "/Icons\"" },
-			{"{COPY} \"%{AppDir}/icons\" \"" .. binApp .. "/Icons\"" },
-            -- copy launcher's Data file
-            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
+			
             -- tracy server copy 
             {"{COPY} \"%{AppDir}/tracy_server\" \"" .. binApp .. "/tracy_server\""}, 
             -- optick server copy
@@ -206,23 +172,13 @@ project "Editor"
             -- copies vulkan shaders app directory
             { "mkdir \"" .. AppDir .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. AppDir .. "/shaders/bin\""},
-
             -- vulkan default assets copy
             { "mkdir \"" .. binApp .. "/defaultAsset\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/defaultAsset\" \"" .. binApp .. "/defaultAsset\""}, 			
             -- copies default assets  app directory
             { "mkdir \"" .. AppDir .. "/defaultAsset\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/defaultAsset\" \"" .. AppDir .. "/defaultAsset\""},
-
-			 {"{COPY} \"%{AppVendor}/vulkan/vendor/freetype\" \""  .. binApp .. "\"" },
-            
-            -- discord sdk
-            {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },
-            
-			--copy version.txt
-			{"{COPY} \"%{AppDir}/version.txt\" \"" .. binApp .. "\""},
-
-            
+            {"{COPY} \"%{AppVendor}/vulkan/vendor/freetype\" \""  .. binApp .. "\"" },
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -231,35 +187,76 @@ project "Editor"
 
         }
 
-    -- icon depending on version
+    
+    -- Editor specific 
     filter {"platforms:Editor"}
+        
+        defines
+        {
+            "TRACY_ENABLE", 
+            "TRACY_ON_DEMAND",
+        }
+
+        includedirs
+        {
+            "%{IncludeDir.discord}",
+            "%{IncludeDir.slikenet}",
+        }
+
+        libdirs 
+        {
+            "%{LibraryDir.discord}",
+            "%{LibraryDir.slikenet}",
+        }
+        
+        links
+        {
+            "Discord",
+            "discord_game_sdk_dll",
+        }
+
         prebuildcommands
         {
+            -- copy icon
             {"{COPY} \"%{AppDir}/icons/Ouroboros.ico\" \"%{AppDir}/icons/FinalIcon.ico\""},
         }
+
+        postbuildcommands
+        {
+			-- [IMPORTANT] copy command requires a space after the target directory.
+
+            -- ImGui Default ini
+            {"{COPY} \"%{AppDir}/default.ini\" \"" .. binApp .. "\""},
+			-- ImGui EditorMode Style Settings
+            {"{COPY} \"%{AppDir}/EditorMode.settings\" \"" .. binApp .. "\""},
+			-- ImGui PlayMode Style Settings
+            {"{COPY} \"%{AppDir}/PlayMode.settings\" \"" .. binApp .. "\""},
+            -- Copy Imgui.ini
+            {"{COPY} \"%{AppDir}/imgui.ini\" \"" .. binApp .. "\""},
+
+			-- copy Editor Icons Folder in its entirety.
+			{ "mkdir \"" .. binApp .. "/Icons\"" },
+			{"{COPY} \"%{AppDir}/icons\" \"" .. binApp .. "/Icons\"" },
+            -- copy launcher's Data file
+            {"{COPY} \"%{AppVendor}/launcher/Oroborous-Launcher/Launcher/BaseTemplate\" \"" .. binApp .. "\"" },
+
+            -- discord sdk
+            {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },
+            
+			-- build version number
+			{"{COPY} \"%{AppDir}/version.txt\" \"" .. binApp .. "\""},
+        }
+        
+    -- Executable Specific
     filter {"platforms:Executable"}
         prebuildcommands
         {
+            -- copy icon
             {"{COPY} \"%{AppDir}/icons/Minute.ico\" \"%{AppDir}/icons/FinalIcon.ico\""},
         }
     filter{}
 
-    filter{ "configurations:Debug", "platforms:Editor"}
-        defines { "EDITOR_DEBUG", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
-    filter{ "configurations:Release", "platforms:Editor"}
-        defines { "EDITOR_RELEASE", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
-    filter{ "configurations:Production", "platforms:Editor"}
-        defines { "EDITOR_PRODUCTION", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
-    -- remove eventually.
-    -- filter{ "configurations:Debug", "platforms:Executable"}
-    --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
-    -- filter{ "configurations:Release", "platforms:Executable"}
-    --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
-    --filter{ "configurations:Production", "platforms:Executable"}
-        
-    --     defines { "TRACY_ENABLE", "TRACY_ON_DEMAND" }
-    filter{}
-    
+    -- debug specific
     filter "configurations:Debug"
         runtime "Debug" -- uses the debug Runtime Library
         defines "OO_DEBUG"
@@ -272,7 +269,6 @@ project "Editor"
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Debug/rttr_core_d.dll\" \"" .. binApp .. "\""},
             {"{COPY} \"%{LibraryDir.fmod}/fmodL.dll\" \"" .. binApp .. "\""},
-			{"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Debug_x64.dll\" \"" .. binApp .. "\""},
             -- copy Debug DLLs
             {"{COPY} \"%{AppDir}/dlls/Debug/\" \"" .. binApp .. "\"" },
 			{"{COPY} \"%{AppDir}/engine_portable_debug.iss\" \"" .. binApp .. "\"" },
@@ -282,22 +278,24 @@ project "Editor"
         {
             "rttr_core_d",
             "fmodL_vc",
-			"SLikeNet_DLL_Debug_x64",
+            
+            "dbghelp",
+            "ws2_32",
         }
     
-    filter "configurations:Release"
+    -- common between release and production
+    filter "configurations:Release or Production"
         runtime "Release" -- uses the release Runtime Library
-        defines { "OO_RELEASE", "NDEBUG" }
+        defines {"NDEBUG"}
         optimize "On"
         architecture "x86_64"
-
+        
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
             -- [IMPORTANT] copy command requires a space after the target directory.
             {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
             {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
-			{"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
             -- copy Release DLLs
             {"{COPY} \"%{AppDir}/dlls/Release/\" \"" .. binApp .. "\"" },
         }
@@ -306,36 +304,70 @@ project "Editor"
         {
             "rttr_core",
             "fmod_vc",
-			"SLikeNet_DLL_Release_x64",
+            
+            "dbghelp",
+            "ws2_32",
         }
-        
-    filter "configurations:Production"
-        runtime "Release" -- uses the release Runtime Library
-        defines { "OO_PRODUCTION", "NDEBUG" }
-        optimize "On"
-        architecture "x86_64"
+
+    -- release only
+    filter "configurations:Release"
+        defines { "OO_RELEASE" }
+    
+    -- Production only
+    filter{ "configurations:Production" }
+        defines { "OO_PRODUCTION" }
 
         -- Copy neccesary DLLs to output directory
         postbuildcommands
         {
             -- [IMPORTANT] copy command requires a space after the target directory.
-            {"{COPY} \"%{LibraryDir.rttr}/Release/rttr_core.dll\" \"" .. binApp .. "\""},
-            {"{COPY} \"%{LibraryDir.fmod}/fmod.dll\" \"" .. binApp .. "\""},
-            -- copy Release DLLs
-            {"{COPY} \"%{AppDir}/dlls/release/\" \"" .. binApp .. "\"" },
-            -- slikenet
-            {"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
+            
             -- copy iss file for compiling /for production only
             {"{COPY} \"%{AppDir}/engine_portable.iss\" \"" .. binApp .. "\"" },
             {"{COPY} \"%{AppDir}/executable_portable.iss\" \"" .. binApp .. "\"" },
             
+        }
+
+        
+
+    -- combination specifics
+    filter{ "configurations:Debug", "platforms:Editor"}
+        defines { "EDITOR_DEBUG" }
+        postbuildcommands 
+        { 
+			{"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Debug_x64.dll\" \"" .. binApp .. "\""}, 
+        }
+        links
+        {
+			"SLikeNet_DLL_Debug_x64",
+        }
+
+    filter{ "configurations:Release or Production", "platforms:Editor"}
+        postbuildcommands
+        {
+            {"{COPY} \"%{LibraryDir.slikenet}/SLikeNet_DLL_Release_x64.dll\" \"" .. binApp .. "\""},
+        }
+        links
+        {
+            "SLikeNet_DLL_Release_x64",
+        }
+
+    filter{ "configurations:Release", "platforms:Editor"}
+        defines { "EDITOR_RELEASE" }
+
+    filter{ "configurations:Production", "platforms:Editor"}
+        defines { "EDITOR_PRODUCTION" }
+        
+    -- Production Exe
+    filter{ "configurations:Production", "platforms:Executable"}
+        -- Copy neccesary DLLs to output directory
+        postbuildcommands
+        {
+            -- [IMPORTANT] copy command requires a space after the target directory.
+        
             -- copy licenses folder
             {"{COPY} \"%{AppDir}/licenses\" \"" .. binApp .. "/licenses\""},
         }
-
-        links
-        {
-            "rttr_core",
-            "fmod_vc",
-            "SLikeNet_DLL_Release_x64",
-        }
+    filter{}
+    
+    

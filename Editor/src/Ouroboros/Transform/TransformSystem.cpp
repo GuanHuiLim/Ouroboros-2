@@ -174,7 +174,7 @@ namespace oo
         
         // Update their local transform
         static Ecs::Query query = Ecs::make_raw_query</*GameObjectComponent, */TransformComponent>();
-        m_world->for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
+        m_world->parallel_for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
             {
                 // TODO: this part of the code doesn't need to be serial.
                 // Update local and global transform immediately
@@ -226,7 +226,7 @@ namespace oo
         scenegraph::shared_pointer root_node = node;
         std::stack<scenenode::shared_pointer> s;
         scenenode::shared_pointer curr = root_node; 
-        std::array<std::vector<scenegraph::shared_pointer>, MaxDepth> launch_groups;
+        std::array<std::vector<scenegraph::shared_pointer>, MaxDepth> internal_launch_groups;
 
         // update itself or not
         if (updateRoot)
@@ -296,7 +296,7 @@ namespace oo
                 //auto current_size = launch_groups[child_depth].size();
                 //launch_groups[child_depth].resize(current_size + childs.size());
                 //std::move(std::execution::par_unseq, std::begin(childs), std::end(childs), std::begin(launch_groups[child_depth]) + current_size);
-                launch_groups[child_depth].insert(launch_groups[child_depth].end(), childs.begin(), childs.end());
+                internal_launch_groups[child_depth].insert(internal_launch_groups[child_depth].end(), childs.begin(), childs.end());
                 assert(child_depth != 0);
             }
 
@@ -304,7 +304,7 @@ namespace oo
         }
 
         // Step 2. processing.
-        for (auto& group : launch_groups)
+        for (auto& group : internal_launch_groups)
         {
             if (group.size() <= 0) 
                 continue;

@@ -81,9 +81,9 @@ public:
 	MeshHierarchy m_meshHierarchy;
 	//RendererDebugger m_rendererDebugger;
 	PreviewWindow m_previewWindow;
-
+#ifdef OO_EDITOR
 	ChatSystem m_chatsystem;
-
+#endif
 	SceneOrderingWindow m_sceneOderingWindow;
 	RendererFieldsWindow m_rendererFieldsWindow;
  
