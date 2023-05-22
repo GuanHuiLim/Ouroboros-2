@@ -36,17 +36,21 @@ namespace oo
 //#endif
         void init()
         {
+#ifndef OO_END_PRODUCT
             // Create logging directory if it doesn't exist.
             std::string logsDirectory = "logs";
             if (!std::filesystem::exists(logsDirectory))
                 std::filesystem::create_directories(logsDirectory);
+#endif
 
             std::vector<spdlog::sink_ptr> coreSinks =
             {
                 // Creates a multi-threaded, Colored std out console
                 std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
                 std::make_shared<CallbackSink_mt>(),
+#ifndef OO_END_PRODUCT
                 std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/Engine.log", true)
+#endif
             };
 
             std::vector<spdlog::sink_ptr> clientSinks =
@@ -54,13 +58,17 @@ namespace oo
                 // Creates a multi-threaded, Colored std out console
                 std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
                 std::make_shared<CallbackSink_mt>(),
+#ifndef OO_END_PRODUCT
                 std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/Client.log", true)
+#endif
             };
 
+#ifndef OO_END_PRODUCT
             std::vector<spdlog::sink_ptr> debugLoggerSinks =
             {
                 std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/Debug.log", true)
             };
+#endif
 
             // %^   == Color
             // [%T] == Timestamp
@@ -73,7 +81,9 @@ namespace oo
             clientSinks[0]->set_pattern("%^ [%T] %n: %v%$");
             //clientSinks[1]->set_pattern("[%T] [%l] %n: %v");
 
+#ifndef OO_END_PRODUCT
             debugLoggerSinks[0]->set_pattern("[%T] File:[%@] Function:[%!] : %v");
+#endif
 
             // Create core logger
             s_coreLogger = std::make_shared<spdlog::logger>("ENGINE", coreSinks.begin(), coreSinks.end());
@@ -85,11 +95,13 @@ namespace oo
             // Set logging level to trace : lowest level therefore traces everything
             s_clientLogger->set_level(spdlog::level::trace);
 
+#ifndef OO_END_PRODUCT
             // Create debug logger
             s_debuggerLogger = std::make_shared<spdlog::logger>("DEBUG", debugLoggerSinks.begin(), debugLoggerSinks.end());
             // Set logging level to trace : lowest level therefore traces everything
             s_debuggerLogger->set_level(spdlog::level::trace);
             s_debuggerLogger->enable_backtrace(512);
+#endif
         }
 
         std::shared_ptr<spdlog::logger>& GetCoreLogger()
