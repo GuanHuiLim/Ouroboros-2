@@ -298,7 +298,7 @@ namespace myPhysx
         
         
         // return the object i created
-        return PhysicsObject{ generated_uuid, this }; // a copy
+        return PhysicsObject{ generated_uuid }; // a copy
     }
 
     void PhysxWorld::removeInstance(PhysicsObject obj) {
@@ -347,7 +347,8 @@ namespace myPhysx
         }
     }
 
-    PhysxObject::PhysxObject(const PhysxObject& other) : matID(other.matID),
+    PhysxObject::PhysxObject(const PhysxObject& other) : //matID(other.matID),
+                                                         m_material{ other.m_material },
                                                          shape_type(other.shape_type),
                                                          rigid_type(other.rigid_type),
                                                          lockPositionAxis(other.lockPositionAxis),
@@ -379,7 +380,9 @@ namespace myPhysx
 
             PhysxObject physxObject{ m_objects.at(index) };
 
-            PhysicsObject physicsNewObject { *physxObject.id, this };
+            PhysicsObject physicsNewObject { *physxObject.id };
+
+            setAllData(physicsNewObject, physxObject, true);
 
             // we insert into the list now after constructing the objects properly.
             m_objects.emplace_back(std::move(physxObject));
@@ -392,7 +395,7 @@ namespace myPhysx
             // we set this object's properties to be equal to the object we are copying from.
             // does order matter?
             // are they allocating memory at the back in physX
-            setAllOldData(physicsNewObject, initialized_object, index);
+            //setAllOldData(physicsNewObject, initialized_object, index);
 
             return physicsNewObject; // a copy
         }
@@ -400,79 +403,79 @@ namespace myPhysx
         return PhysicsObject{}; // return empty
     }
 
-    void PhysxWorld::setAllOldData(PhysicsObject& physicsObj, PhysxObject& initObj, size_t index) {
+    //void PhysxWorld::setAllOldData(PhysicsObject& physicsObj, PhysxObject& initObj, size_t index) {
 
-        // MATERIAL
-        PxMaterial* material = physx_system::currentWorld->mat.at(initObj.matID);
-        physicsObj.setMaterial(Material{ material->getStaticFriction(), material->getDynamicFriction(), material->getRestitution() });
+    //    // MATERIAL
+    //    PxMaterial* material = physx_system::currentWorld->mat.at(initObj.matID);
+    //    physicsObj.setMaterial(Material{ material->getStaticFriction(), material->getDynamicFriction(), material->getRestitution() });
 
-        // RIGID
-        physicsObj.setRigidType(initObj.rigid_type);
+    //    // RIGID
+    //    physicsObj.setRigidType(initObj.rigid_type);
 
-        if (initObj.rigid_type == rigid::rdynamic) {
-            PxRigidDynamic* oldDynamicData = m_objects.at(index).rb.rigidDynamic;
-            physicsObj.setMass(oldDynamicData->getMass());
-            physicsObj.setMassSpaceInertia(oldDynamicData->getMassSpaceInertiaTensor());
-            physicsObj.setAngularDamping(oldDynamicData->getAngularDamping());
-            physicsObj.setAngularVelocity(oldDynamicData->getAngularVelocity());
-            physicsObj.setLinearDamping(oldDynamicData->getLinearDamping());
-            physicsObj.setLinearVelocity(oldDynamicData->getLinearVelocity());
-        }
+    //    if (initObj.rigid_type == rigid::rdynamic) {
+    //        PxRigidDynamic* oldDynamicData = m_objects.at(index).rb.rigidDynamic;
+    //        physicsObj.setMass(oldDynamicData->getMass());
+    //        physicsObj.setMassSpaceInertia(oldDynamicData->getMassSpaceInertiaTensor());
+    //        physicsObj.setAngularDamping(oldDynamicData->getAngularDamping());
+    //        physicsObj.setAngularVelocity(oldDynamicData->getAngularVelocity());
+    //        physicsObj.setLinearDamping(oldDynamicData->getLinearDamping());
+    //        physicsObj.setLinearVelocity(oldDynamicData->getLinearVelocity());
+    //    }
 
-        // SHAPE
-        if (initObj.shape_type == shape::box)
-            physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().box());
+    //    // SHAPE
+    //    if (initObj.shape_type == shape::box)
+    //        physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().box());
 
-        else if (initObj.shape_type == shape::sphere)
-            physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().sphere());
+    //    else if (initObj.shape_type == shape::sphere)
+    //        physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().sphere());
 
-        else if (initObj.shape_type == shape::capsule)
-            physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().capsule());
+    //    else if (initObj.shape_type == shape::capsule)
+    //        physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().capsule());
 
-        else if (initObj.shape_type == shape::convex)
-            physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().convexMesh());
+    //    else if (initObj.shape_type == shape::convex)
+    //        physicsObj.reAttachShape(initObj.rigid_type, m_objects.at(index).m_shape->getGeometry().convexMesh());
 
-        //else if (initObj.shape_type == shape::plane) {
-        //    PxPlaneGeometry plane = m_objects.at(index).m_shape->getGeometry().plane();
-        //    physicsObj.setPlaneProperty();
-        //}
+    //    //else if (initObj.shape_type == shape::plane) {
+    //    //    PxPlaneGeometry plane = m_objects.at(index).m_shape->getGeometry().plane();
+    //    //    physicsObj.setPlaneProperty();
+    //    //}
 
-        // Set in the filtering
-        physicsObj.setFiltering(initObj.filterIn, initObj.filterOut);
+    //    // Set in the filtering
+    //    physicsObj.setFiltering(initObj.filterIn, initObj.filterOut);
 
-        // LOCK POSTION AXIS
-        LockingAxis posLock = initObj.lockPositionAxis;
-        if (posLock.x_axis)
-            physicsObj.lockPositionX(true);
-        if (posLock.y_axis)
-            physicsObj.lockPositionY(true);
-        if (posLock.z_axis)
-            physicsObj.lockPositionZ(true);
+    //    // LOCK POSTION AXIS
+    //    LockingAxis posLock = initObj.lockPositionAxis;
+    //    if (posLock.x_axis)
+    //        physicsObj.lockPositionX(true);
+    //    if (posLock.y_axis)
+    //        physicsObj.lockPositionY(true);
+    //    if (posLock.z_axis)
+    //        physicsObj.lockPositionZ(true);
 
-        // LOCK ROTATION AXIS
-        LockingAxis rotLock = initObj.lockRotationAxis;
-        if (rotLock.x_axis)
-            physicsObj.lockRotationX(true);
-        if (rotLock.y_axis)
-            physicsObj.lockRotationY(true);
-        if (rotLock.z_axis)
-            physicsObj.lockRotationZ(true);
+    //    // LOCK ROTATION AXIS
+    //    LockingAxis rotLock = initObj.lockRotationAxis;
+    //    if (rotLock.x_axis)
+    //        physicsObj.lockRotationX(true);
+    //    if (rotLock.y_axis)
+    //        physicsObj.lockRotationY(true);
+    //    if (rotLock.z_axis)
+    //        physicsObj.lockRotationZ(true);
 
-        // TRIGGER
-        physicsObj.setTriggerShape(initObj.is_trigger);
+    //    // TRIGGER
+    //    physicsObj.setTriggerShape(initObj.is_trigger);
 
-        if (initObj.rigid_type == rigid::rdynamic) {
+    //    if (initObj.rigid_type == rigid::rdynamic) {
 
-            // GRAVITY
-            physicsObj.enableGravity(initObj.gravity_enabled);
+    //        // GRAVITY
+    //        physicsObj.enableGravity(initObj.gravity_enabled);
 
-            // KINEMATIC
-            physicsObj.enableKinematic(initObj.is_kinematic);
-        }
+    //        // KINEMATIC
+    //        physicsObj.enableKinematic(initObj.is_kinematic);
+    //    }
 
-        // COLLIDER
-        physicsObj.enableCollider(initObj.is_collider);
-    }
+    //    // COLLIDER
+    //    physicsObj.enableCollider(initObj.is_collider);
+    //}
 
     void PhysxWorld::updateTriggerState(phy_uuid::UUID id) {
 
@@ -513,7 +516,7 @@ namespace myPhysx
        //m_triggerCollisionPairs = temp;
     }
 
-    bool PhysxWorld::hasObject(phy_uuid::UUID id) {
+    bool PhysxWorld::hasObject(phy_uuid::UUID id) const {
 
         if (all_objects.contains(id))
             return true;
@@ -551,6 +554,54 @@ namespace myPhysx
 
         while (!m_collisionPairs.empty())
             m_collisionPairs.pop();
+    }
+
+    RaycastHit PhysxWorld::sweep(PxTransform initialPose, PxVec3 direction, PxReal distance) {
+
+        RaycastHit hit{};
+        PxSweepBuffer hitBuffer;                 // [out] Sweep results
+        PxGeometry sweepShape = PxBoxGeometry{}; // [in] swept shape
+        //PxTransform initialPose = ...;         // [in] initial shape pose (at distance=0)
+        //PxVec3 sweepDirection = ...;           // [in] normalized sweep direction
+
+        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL;
+
+        //PxSweepHit::hadInitialOverlap()
+        
+        hit.intersect = scene->sweep(sweepShape, initialPose, direction, distance, hitBuffer, hitFlags);
+
+        if (hit.intersect) {
+
+            //hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(hitBuffer.block.actor->userData);
+            //hit.position = hitBuffer.block.position;
+            //hit.normal = hitBuffer.block.normal;
+            //hit.distance = hitBuffer.block.distance;
+
+            // Initialize variables to track the closest hit
+            float closestDistance = FLT_MAX;
+            const PxSweepHit* closestHit = nullptr;
+
+            for (int i = 0; i < hitBuffer.nbTouches; ++i) {
+
+                const PxSweepHit& hitTemp = hitBuffer.touches[i];
+
+                // Check if this hit is closer than the previous closest hit
+                if (hitTemp.distance < closestDistance) {
+                    closestDistance = hitTemp.distance;
+                    closestHit = &hitTemp;
+                }
+            }
+
+            if (closestHit) {
+
+                hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(closestHit->actor->userData);
+                hit.position = closestHit->position;
+                hit.distance = closestHit->distance;
+                hit.normal = closestHit->normal;
+            }
+        }
+
+        return hit;
     }
 
     RaycastHit PhysxWorld::raycast(PxVec3 origin, PxVec3 direction, PxReal distance) {
@@ -665,510 +716,927 @@ namespace myPhysx
         return hitAll;
     }
 
-/*-----------------------------------------------------------------------------*/
-/*                               PhysicsObject                                 */
-/*-----------------------------------------------------------------------------*/
-    void PhysicsObject::setRigidType(rigid type) {
+    // NEW FUNCTIONS
+    std::unordered_map<phy_uuid::UUID, PhysicsObject> PhysxWorld::retrieveCurrentObjects() const
+    {
+        std::unordered_map<phy_uuid::UUID, PhysicsObject> updatedObjects;
 
-        PxTransform temp_trans{ PxVec3(0) }; // set default to 0
+        for (auto&& physx_obj : m_objects)
+        {
+            PhysicsObject new_obj;
 
-        // CHECK GOT THE INSTANCE CREATED OR NOT
-        if (world->all_objects.contains(id)) {
+            retrieveOldData(new_obj, physx_obj);
 
-            bool changingType = false;
-
-            //PhysxObject* underlying_obj = world->all_objects.at(id);
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            PxRigidStatic* rstat = underlying_obj->rb.rigidStatic;
-            PxRigidDynamic* rdyna = underlying_obj->rb.rigidDynamic;
-
-            // CHECK IF HAVE RIGIDBODY CREATED OR NOT
-            // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
-            if (rstat) {
-                changingType = true;
-                temp_trans = rstat->getGlobalPose();
-                world->scene->removeActor(*rstat);
-                underlying_obj->rb.rigidStatic = nullptr; // clear the current data
-            }
-            else if (rdyna) {
-                changingType = true;
-                temp_trans = rdyna->getGlobalPose();
-                world->scene->removeActor(*rdyna);
-                underlying_obj->rb.rigidDynamic = nullptr;
-            }
-
-            // ASSIGN TO THE NEW RIGID TYPE
-            underlying_obj->rigid_type = type;
-
-            // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
-            if (type == rigid::rstatic) {
-                underlying_obj->rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
-                underlying_obj->rb.rigidStatic->userData = underlying_obj->id.get();
-                //printf("STAT: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidStatic->userData));
-                world->scene->addActor(*underlying_obj->rb.rigidStatic);
-            }
-            else if (type == rigid::rdynamic) {
-                underlying_obj->rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
-                underlying_obj->rb.rigidDynamic->userData = underlying_obj->id.get();
-                //printf("DYNA: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
-                world->scene->addActor(*underlying_obj->rb.rigidDynamic);
-            }
-
-            // CHECK WHETHER IS CHANGING OF RIGID TYPE
-            if (changingType) {
-
-                // ATTACH THE NEW SHAPE
-                if (underlying_obj->m_shape) {
-
-                    //printf("SHAPE TYPE: %d", underlying_obj->shape);
-                    
-                    // ATTACH THE NEW SHAPE BASED THE SHAPE TYPE
-                    if (underlying_obj->shape_type == shape::box) 
-                        reAttachShape(type, underlying_obj->m_shape->getGeometry().box());
-
-                    else if (underlying_obj->shape_type == shape::sphere) 
-                        reAttachShape(type, underlying_obj->m_shape->getGeometry().sphere());
-
-                    else if (underlying_obj->shape_type == shape::plane) 
-                        reAttachShape(type, underlying_obj->m_shape->getGeometry().plane());
-
-                    else if (underlying_obj->shape_type == shape::capsule) 
-                        reAttachShape(type, underlying_obj->m_shape->getGeometry().capsule());
-
-                    else if (underlying_obj->shape_type == shape::convex)
-                        reAttachShape(type, underlying_obj->m_shape->getGeometry().convexMesh());
-
-                    // Set the filtering back
-                    setFiltering(underlying_obj->filterIn, underlying_obj->filterOut);
-                }
-            }
-
-            // Check how many actors created in the scene
-            //PxActorTypeFlags desiredTypes = PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC;
-            //PxU32 count = world->scene->getNbActors(desiredTypes);
-            //PxActor** buffer = new PxActor * [count];
-            
-            //PxU32 noo = world->scene->getActors(desiredTypes, buffer, count);
-            //printf("%d - actors\n\n", noo);
+            updatedObjects.insert({ new_obj.id, new_obj });
         }
+
+        return updatedObjects;
+    }
+
+    void PhysxWorld::submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects)
+    {
+        std::for_each(/*std::execution::unseq,*/ updatedObjects.begin(), updatedObjects.end(), [&](auto&& updatedObj)
+        {
+            // CHECK WHETHER OBJECT EXISTED
+            if (!all_objects.contains(updatedObj.id))
+                return;
+
+            PhysxObject& underlying_obj = m_objects.at(all_objects.at(updatedObj.id));
+
+            setAllData(updatedObj, underlying_obj, false);
+        });
+
+        //for (auto&& updatedObj : updatedObjects)
+        //{
+        //    // CHECK WHETHER OBJECT EXISTED
+        //    if (!m_objects_lookup.contains(updatedObj.id))
+        //        continue;
+        //    
+        //    PhysxObject& underlying_obj = m_physx_objects[m_objects_lookup.at(updatedObj.id)];
+        //    setAllData(updatedObj, underlying_obj);
+        //}
+    }
+
+    void PhysxWorld::submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand) {
+
+        for (auto&& updatedCommandObj : physicsCommand)
+        {
+            // CHECK WHETHER OBJECT EXISTED
+            if (!all_objects.contains(updatedCommandObj.Id))
+                continue;
+
+            PhysxObject& underlying_obj = m_objects[all_objects.at(updatedCommandObj.Id)];
+
+            if (underlying_obj.rigid_type != rigid::rdynamic)
+                continue;
+
+            setForce(underlying_obj, updatedCommandObj);
+
+            setTorque(underlying_obj, updatedCommandObj);
+        }
+
+    }
+
+    void PhysxWorld::retrieveOldData(PhysicsObject& physics_Obj, const PhysxObject& init_Obj) const {
+
+        physics_Obj.id = *init_Obj.id;
+
+        // MATERIAL PROPERTIES
+        //physics_Obj.matID = init_Obj.matID;
+        //PxMaterial* currentMat = mat.at(init_Obj.matID);
+        physics_Obj.material = Material{ init_Obj.m_material->getStaticFriction(),
+                                         init_Obj.m_material->getDynamicFriction(),
+                                         init_Obj.m_material->getRestitution() };
+
+        // RIGIDBODY PROPERTIES
+        physics_Obj.rigid_type = init_Obj.rigid_type;
+
+        if (physics_Obj.rigid_type == rigid::rstatic) {
+
+            // USE TEMPLATE HERE (STATIC/DYNAMIC) FOR POS & ORIENTATION
+            retrievePosOri(physics_Obj, init_Obj.rb.rigidStatic);
+        }
+        else if (physics_Obj.rigid_type == rigid::rdynamic) {
+
+            retrievePosOri(physics_Obj, init_Obj.rb.rigidDynamic);
+
+            physics_Obj.mass = init_Obj.rb.rigidDynamic->getMass();
+            physics_Obj.invmass = init_Obj.rb.rigidDynamic->getInvMass();
+            physics_Obj.linearDamping = init_Obj.rb.rigidDynamic->getLinearDamping();
+            physics_Obj.angularDamping = init_Obj.rb.rigidDynamic->getAngularDamping();
+            physics_Obj.linearVel = init_Obj.rb.rigidDynamic->getLinearVelocity();
+            physics_Obj.angularVel = init_Obj.rb.rigidDynamic->getAngularVelocity();
+        }
+
+        // SHAPE PROPERTIES
+        physics_Obj.shape_type = init_Obj.shape_type;
+
+        switch (physics_Obj.shape_type)
+        {
+        case shape::box:
+            physics_Obj.box = init_Obj.m_shape->getGeometry().box();
+            break;
+        case shape::sphere:
+            physics_Obj.sphere = init_Obj.m_shape->getGeometry().sphere();
+            break;
+        case shape::plane:
+            physics_Obj.plane = init_Obj.m_shape->getGeometry().plane();
+            break;
+        case shape::capsule:
+            physics_Obj.capsule = init_Obj.m_shape->getGeometry().capsule();
+            break;
+        //case shape::convex:
+        //    physics_Obj.convex = init_Obj.m_shape->getGeometry().convexMesh();
+        //    break;
+        default:
+            break;
+        }
+
+        // AXIS PROPERTIES
+        physics_Obj.lockPositionAxis = init_Obj.lockPositionAxis;
+        physics_Obj.lockRotationAxis = init_Obj.lockRotationAxis;
+
+        physics_Obj.is_trigger = init_Obj.is_trigger;
+        physics_Obj.gravity_enabled = init_Obj.gravity_enabled;
+        physics_Obj.is_kinematic = init_Obj.is_kinematic;
+        physics_Obj.is_collider = init_Obj.is_collider;
+
+        // FILTER
+        physics_Obj.filterIn = init_Obj.filterIn;
+        physics_Obj.filterOut = init_Obj.filterOut;
+
+        //physics_Obj.meshVertices = init_Obj.meshVertices; // not sure need or not
     }
 
     template<typename Type>
-    void PhysicsObject::reAttachShape(rigid rigidType, Type data) {
+    void PhysxWorld::retrievePosOri(PhysicsObject& physics_Obj, Type data) const {
 
-        if (world->all_objects.contains(id)) {
+        physics_Obj.position = PxVec3{ data->getGlobalPose().p.x,
+                                       data->getGlobalPose().p.y,
+                                       data->getGlobalPose().p.z, };
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
-
-            underlying_obj->m_shape = physx_system::getPhysics()->createShape(data, *material, true);
-
-            //underlying_obj->m_shape->setContactOffset(1);
-
-            // ATTACH THE SHAPE TO THE OBJECT
-            if (rigidType == rigid::rstatic) {
-                underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
-                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::ePLAYER, FilterGroup::eDEFAULT | FilterGroup::eENEMY | FilterGroup::eGROUND);
-            }
-
-            else if (rigidType == rigid::rdynamic) {
-                underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
-                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eENEMY, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eGROUND);
-            }
-
-            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eDEFAULT, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eENEMY | FilterGroup::eGROUND);
-        }
+        physics_Obj.orientation = data->getGlobalPose().q;
     }
 
-    void PhysicsObject::setShape(shape shape) {
+    void PhysxWorld::setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate) {
 
-        //PxRigidActorExt::createExclusiveShape (another method)
+        // MATERIAL PROPERTIES
+        underlying_Obj.m_material->setStaticFriction(updatedPhysicsObj.material.staticFriction);
+        underlying_Obj.m_material->setDynamicFriction(updatedPhysicsObj.material.dynamicFriction);
+        underlying_Obj.m_material->setRestitution(updatedPhysicsObj.material.restitution);
 
-        if (world->all_objects.contains(id)) {
+        PxRigidActor* underlying_rigidbody = nullptr;
+        PxTransform transform{ updatedPhysicsObj.position, updatedPhysicsObj.orientation };
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
+        // set our rigidbody to the correct pointer
+        if (underlying_Obj.rigid_type == rigid::rstatic)
+        {
+            underlying_rigidbody = underlying_Obj.rb.rigidStatic;
+        }
+        else // underlying_Obj.rigid_type == rigid::rdynamic
+        {
+            underlying_rigidbody = underlying_Obj.rb.rigidDynamic;
+        }
 
-            //assert(underlying_obj->m_shape);
+        // CHECK IF CHANGING IS RIGID TYPE
+        if (underlying_Obj.rigid_type != updatedPhysicsObj.rigid_type || duplicate)
+        {
+            // no need to remove if duplicate as there's no data
+            if (!duplicate) {
 
-            // CHECK IF HAVE SHAPE CREATED OR NOT
-            if (underlying_obj->m_shape) {
-            //if (underlying_obj->shape != shape::none) {j
+                // what is our existing shape? need to handle removing them first.
+                if (underlying_Obj.rigid_type == rigid::rstatic)
+                {
+                    // clear the current data
+                    scene->removeActor(*underlying_rigidbody);
+                    if (underlying_Obj.m_shape)
+                        underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
+                    underlying_rigidbody = nullptr;
+                }
+                else // underlying_Obj.rigid_type == rigid::rdynamic
+                {
+                    scene->removeActor(*underlying_rigidbody);
+                    if (underlying_Obj.m_shape)
+                        underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
+                    underlying_rigidbody = nullptr;
+                }
+            }
+            else
+                transform = { 0,0,0 };
 
-                // DETACH OLD SHAPE
-                if (underlying_obj->rigid_type == rigid::rstatic)
-                    underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
+            // Update our rigid type to desired type
+            underlying_Obj.rigid_type = updatedPhysicsObj.rigid_type;
 
-                else if (underlying_obj->rigid_type == rigid::rdynamic)
-                    underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
+            // we check with the newly assigned rigid type to determine
+            if (underlying_Obj.rigid_type == rigid::rstatic)
+            {
+                // create new rigidbody
+                underlying_Obj.rb.rigidStatic = mPhysics->createRigidStatic(transform);
+                underlying_rigidbody = underlying_Obj.rb.rigidStatic;
+            }
+            else // underlying_Obj.rigid_type == rigid::rdynamic
+            {
+                underlying_Obj.rb.rigidDynamic = mPhysics->createRigidDynamic(transform);
+                underlying_rigidbody = underlying_Obj.rb.rigidDynamic;
             }
 
-            underlying_obj->shape_type = shape; // set new shape enum
+            assert(underlying_rigidbody, "This should NOT be nullptr at all at this point!");
 
-            // CHECK AGAINST THE TYPE OF SHAPE
-            if (shape == shape::box) {
-                PxBoxGeometry temp_box{ 0.5f,0.5f,0.5f };
-                underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material, true);
-            }
-            else if (shape == shape::sphere) {
-                PxSphereGeometry temp_sphere{ 0.5f };
-                underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_sphere, *material, true);
-            }
-            else if (shape == shape::plane) {
-                //PxCreatePlane()
-                //PxPlaneGeometry temp_sphere{ PxPlane{0.f,1.f,0.f,50.f} };
-                //PxTransformFromPlaneEquation(PxPlane{ 0.f,1.f,0.f,50.f });
-                underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(), *material, true);
-            }
-            else if (shape == shape::capsule) {
-                PxCapsuleGeometry temp_cap{ 0.5f, 1.f };
-                underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_cap, *material, true);
+            underlying_rigidbody->userData = underlying_Obj.id.get();
+            scene->addActor(*underlying_rigidbody);
+
+            // REATTACH SHAPE INTO NEW RIGIDBODY
+            if (underlying_Obj.m_shape)
+            {
+                underlying_rigidbody->attachShape(*underlying_Obj.m_shape);
                 
-                if (underlying_obj->rigid_type == rigid::rdynamic) {
-                    PxTransform relativePose(PxQuat(PxHalfPi, PxVec3(0, 0, 1)));
-                    underlying_obj->m_shape->setLocalPose(relativePose);
-                }
-            }
-            else if (shape == shape::convex) {
-
-                //auto mesh_geometry = createConvexMesh(world->m_meshVertices);
-                auto mesh_geometry = createConvexMesh(underlying_obj->meshVertices);
-               
-                underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(mesh_geometry), *material, true);
-            }
-
-            //underlying_obj->m_shape->setContactOffset(1);
-
-            // ATTACH THE SHAPE TO THE OBJECT
-            if (underlying_obj->rigid_type == rigid::rstatic && underlying_obj->m_shape != nullptr) {
-                underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
-                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::ePLAYER, FilterGroup::eDEFAULT | FilterGroup::eENEMY | FilterGroup::eGROUND);
-
-            }
-
-            else if (underlying_obj->rigid_type == rigid::rdynamic && underlying_obj->m_shape != nullptr) {
-                underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
-                //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eENEMY, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eGROUND);
-
-            }
-
-            // later check where need to release shape
-            //underlying_obj->m_shape->release();
-
-            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eDEFAULT, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eENEMY | FilterGroup::eGROUND);
-        }
-    }
-
-    void PhysicsObject::removeShape() {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->shape_type != shape::none) {
-
-                if (underlying_obj->rigid_type == rigid::rstatic)
-                    underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
-
-                else if (underlying_obj->rigid_type == rigid::rdynamic)
-                    underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
-
-                // release shape
-                underlying_obj->m_shape->release();
-                underlying_obj->shape_type = shape::none; // set new shape enum
+                physx_system::setupFiltering(underlying_Obj.m_shape, underlying_Obj.filterIn, underlying_Obj.filterOut);
             }
         }
-    }
 
-    void PhysicsObject::lockPositionX(bool lock) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
-
-                //// ROTATE IN Z
-                //PxRigidDynamicLockFlag::eLOCK_LINEAR_Z | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y;
-                //// ROTATE IN Y
-                //PxRigidDynamicLockFlag::eLOCK_LINEAR_Y | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z;
-
-                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_X, lock);
-
-                underlying_obj->lockPositionAxis.x_axis = lock;
-            }
+        // next we check for positional changes.
+        if (underlying_rigidbody)
+        {
+            // set new position and orientation
+            underlying_rigidbody->setGlobalPose(transform);
         }
-    }
 
-    void PhysicsObject::lockPositionY(bool lock) {
+        // RIGIDBODY PROPERTIES
 
-        if (world->all_objects.contains(id)) {
+        // we must set shape for all rigidbody
+        setShape(updatedPhysicsObj, underlying_Obj, underlying_rigidbody, duplicate);
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+        // Additional work needs to be done for dynamic object
+        if (underlying_Obj.rigid_type == rigid::rdynamic)
+        {
+            if (updatedPhysicsObj.mass >= 0)
+                underlying_Obj.rb.rigidDynamic->setMass(updatedPhysicsObj.mass);
 
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
+            if (updatedPhysicsObj.linearDamping >= 0)
+                underlying_Obj.rb.rigidDynamic->setLinearDamping(updatedPhysicsObj.linearDamping);
 
-                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lock);
+            if (updatedPhysicsObj.angularDamping >= 0)
+                underlying_Obj.rb.rigidDynamic->setAngularDamping(updatedPhysicsObj.angularDamping);
 
-                underlying_obj->lockPositionAxis.y_axis = lock;
-            }
+            underlying_Obj.rb.rigidDynamic->setAngularVelocity(updatedPhysicsObj.angularVel);
+
+            underlying_Obj.rb.rigidDynamic->setLinearVelocity(updatedPhysicsObj.linearVel);
+
+            // AXIS PROPERTIES
+            underlying_Obj.lockPositionAxis = updatedPhysicsObj.lockPositionAxis;
+            underlying_Obj.lockRotationAxis = updatedPhysicsObj.lockRotationAxis;
+
+            LockingAxis lockPos = underlying_Obj.lockPositionAxis;
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_X, lockPos.x_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lockPos.y_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lockPos.z_axis);
+
+            LockingAxis lockRot = underlying_Obj.lockRotationAxis;
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lockRot.x_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lockRot.y_axis);
+            underlying_Obj.rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lockRot.z_axis);
+
+            // KINE | GRAVITY PROPERTIES
+            underlying_Obj.is_kinematic = updatedPhysicsObj.is_kinematic;
+            underlying_Obj.gravity_enabled = updatedPhysicsObj.gravity_enabled;
+
+            underlying_Obj.rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !underlying_Obj.gravity_enabled);
+            underlying_Obj.rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, underlying_Obj.is_kinematic);
         }
-    }
 
-    void PhysicsObject::lockPositionZ(bool lock) {
+        // COLLIDER | TRIGGER PROPERTIES
+        underlying_Obj.is_collider = updatedPhysicsObj.is_collider;
+        underlying_Obj.is_trigger = updatedPhysicsObj.is_trigger;
 
-        if (world->all_objects.contains(id)) {
+        if (underlying_Obj.shape_type != shape::none)
+        {
+            if (underlying_Obj.is_trigger)
+                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
-
-                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lock);
-
-                underlying_obj->lockPositionAxis.z_axis = lock;
-            }
+            if (!underlying_Obj.is_trigger && underlying_Obj.is_collider)
+                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
         }
+
+        // FILTER (not sure need or not)
+        if (underlying_Obj.filterIn != updatedPhysicsObj.filterIn || underlying_Obj.filterOut != updatedPhysicsObj.filterOut)
+            physx_system::setupFiltering(underlying_Obj.m_shape, updatedPhysicsObj.filterIn, updatedPhysicsObj.filterOut);
     }
 
-    void PhysicsObject::lockRotationX(bool lock) {
+    void PhysxWorld::setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate)
+    {
+        // CHECK IF WE NEED TO CHANGE SHAPE 
+        if (underlying_Obj.shape_type != updated_Obj.shape_type || duplicate)
+        {
+            // if we have an existing shape, we must remove it
+            if (underlying_Obj.shape_type != shape::none && underlying_Obj.m_shape)
+                underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
 
-        if (world->all_objects.contains(id)) {
+            // SHAPE PROPERTIES
+            underlying_Obj.shape_type = updated_Obj.shape_type;
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
-
-                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lock);
-
-                underlying_obj->lockRotationAxis.x_axis = lock;
-            }
-        }
-    }
-
-    void PhysicsObject::lockRotationY(bool lock) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
-
-                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lock);
-
-                underlying_obj->lockRotationAxis.y_axis = lock;
-            }
-        }
-    }
-
-    void PhysicsObject::lockRotationZ(bool lock) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
-
-                underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lock);
-
-                underlying_obj->lockRotationAxis.z_axis = lock;
-            }
-        }
-    }
-
-    void PhysicsObject::enableCollider(bool collide) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->rigid_type != rigid::none) {
-
-                if (underlying_obj->m_shape) {
-
-                    underlying_obj->m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collide);
-
-                    underlying_obj->is_collider = collide;
-                }
-            }
-        }
-    }
-
-    void PhysicsObject::enableKinematic(bool kine) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
-
-                underlying_obj->rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
-
-                underlying_obj->is_kinematic = kine;
-            }
-        }
-    }
-
-    void PhysicsObject::enableGravity(bool enable) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            
-            underlying_obj->rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !enable);
-
-            underlying_obj->gravity_enabled = enable;
-        }
-    }
-
-    void PhysicsObject::setTriggerShape(bool trigger) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->m_shape) {
-
-                underlying_obj->is_trigger = trigger;
-
-                if (trigger)
-                    underlying_obj->m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
-                else
-                    underlying_obj->m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
-            }
-        }
-    }
-
-    void PhysicsObject::setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->shape_type == shape::box)
-                underlying_obj->m_shape->setGeometry(PxBoxGeometry(halfextent_width, halfextent_height, halfextent_depth));
-            //underlying_obj->m_shape->getGeometry().box().halfExtents = PxVec3{ halfextent_width , halfextent_height, halfextent_depth };
-        }
-    }
-
-    void PhysicsObject::setSphereProperty(float radius) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->shape_type == shape::sphere)
-                underlying_obj->m_shape->setGeometry(PxSphereGeometry(radius));
-            //underlying_obj->m_shape->getGeometry().sphere().radius = radius;
-        }
-    }
-
-    void PhysicsObject::setCapsuleProperty(float radius, float halfHeight) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            if (underlying_obj->shape_type == shape::capsule) {
-                underlying_obj->m_shape->setGeometry(PxCapsuleGeometry(radius, halfHeight));
-
-                if (underlying_obj->rigid_type == rigid::rdynamic) {
-                    PxTransform relativePose(PxQuat(PxHalfPi, PxVec3(0, 0, 1)));
-                    underlying_obj->m_shape->setLocalPose(relativePose);
-                }
-
-                //underlying_obj->m_shape->getGeometry().capsule().radius = radius;
-                //underlying_obj->m_shape->getGeometry().capsule().halfHeight = halfHeight;
-            }
-        }
-    }
-
-    void PhysicsObject::setConvexProperty(std::vector<PxVec3> vert, PxVec3 scale) { //  PxConvexMesh* mesh
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->shape_type == shape::convex) {
-
-                underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(vert), PxMeshScale(scale)));
-
-                //underlying_obj->m_shape->getGeometry().convexMesh().convexMesh->getVertices()
-            }
-        }
-    }
-
-    void PhysicsObject::storeMeshVertices(std::vector<PxVec3> vert) {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->shape_type == shape::convex)
+            switch (underlying_Obj.shape_type)
             {
-                underlying_obj->meshVertices = vert;
-
-                //underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(createConvexMesh(world->m_meshVertices)), *world->mat.at(underlying_obj->matID), true);
-                underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(createConvexMesh(underlying_obj->meshVertices)), *world->mat.at(underlying_obj->matID), true);
-            
-                if(underlying_obj->rigid_type == rigid::rdynamic) 
-                    underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
-
-                if (underlying_obj->rigid_type == rigid::rstatic)
-                    underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
-
-                //getAllMeshVertices();
+            case shape::box:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.box, *underlying_Obj.m_material, true);
+                break;
+            case shape::sphere:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.sphere, *underlying_Obj.m_material, true);
+                break;
+            case shape::plane:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.plane, *underlying_Obj.m_material, true);
+                break;
+            case shape::capsule:
+                underlying_Obj.m_shape = mPhysics->createShape(updated_Obj.capsule, *underlying_Obj.m_material, true);
+                // Change the capsule to extend along the Y-axis
+                underlying_Obj.m_shape->setLocalPose(PxTransform{ PxQuat(PxHalfPi, PxVec3(0, 0, 1)) });
+                break;
+            //case shape::convex:
+            //    underlying_Obj.m_shape = mPhysics->createShape(PxConvexMeshGeometry(createConvexMesh(updated_Obj.meshVertices)), *underlying_Obj.m_material, true);
+            //    break;
+            case shape::none:
+            default:
+                return; // NOTE we return here because code below requires a shape!
             }
+
+            // ATTACH THE NEW SHAPE TO THE OBJECT
+            underlying_rigidbody->attachShape(*underlying_Obj.m_shape);
+
+            physx_system::setupFiltering(underlying_Obj.m_shape, underlying_Obj.filterIn, underlying_Obj.filterOut);
         }
-    }
-
-    std::vector<PxVec3> PhysicsObject::getAllMeshVertices() {
-
-        if (world->all_objects.contains(id)) {
-
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-
-            if (underlying_obj->shape_type == shape::convex)
+        // Otherwise we just update our existing values.
+        else
+        {
+            // UPDATING THE GEOMETRY DIMENSIONS (SHAPE NOW CONFIRM CORRECT - UPDATED)
+            switch (underlying_Obj.shape_type)
             {
-                // Retrieve the vertices
-                PxConvexMesh* convexMesh = underlying_obj->m_shape->getGeometry().convexMesh().convexMesh;
-                const PxVec3* convexVerts = convexMesh->getVertices();
-                PxU32 nbVerts = convexMesh->getNbVertices();
-
-                world->m_meshVertices.clear(); // remove old data first
-
-                for (PxU32 i = 0; i < nbVerts; i++) {
-
-                    PxVec3 mesh = { convexVerts[i].x, convexVerts[i].y, convexVerts[i].z };
-
-                    world->m_meshVertices.emplace_back(mesh);
-                }
-
-                //int size = world->m_meshVertices.size();
-                //std::cout << "SIZE: " << size << std::endl;
+            case shape::box:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.box);
+                break;
+            case shape::sphere:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.sphere);
+                break;
+            case shape::plane:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.plane);
+                break;
+            case shape::capsule:
+                underlying_Obj.m_shape->setGeometry(updated_Obj.capsule);
+                // Change the capsule to extend along the Y-axis
+                underlying_Obj.m_shape->setLocalPose(PxTransform{ PxQuat(PxHalfPi, PxVec3(0, 0, 1)) });
+                break;
+            //case shape::convex:
+            //    //underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(vert), PxMeshScale(scale)));
+            //    underlying_Obj.m_shape->setGeometry(updated_Obj.convex);
+            //    break;
+            case shape::none:
+            default:
+                return; // NOTE we return here because code below requires a shape!
             }
         }
 
-        return world->m_meshVertices;
+        //underlying_obj.m_shape->setContactOffset(1);
     }
 
-    void PhysicsObject::setFiltering(std::uint32_t currentGroup, std::uint32_t maskGroup) {
+    void PhysxWorld::setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj) {
 
-        if (world->all_objects.contains(id)) {
+        if (command_Obj.AddForce) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+            switch (command_Obj.Type) {
+            case force::force:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eFORCE);
+                break;
 
-            if (underlying_obj->m_shape) {
+            case force::impulse:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eIMPULSE);
+                break;
 
-                underlying_obj->filterIn = currentGroup;
+            case force::velocityChanged:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eVELOCITY_CHANGE);
+                break;
 
-                underlying_obj->filterOut = maskGroup;
+            case force::acceleration:
+                underlying_Obj.rb.rigidDynamic->addForce(command_Obj.Force, PxForceMode::eACCELERATION);
+                break;
 
-                physx_system::setupFiltering(underlying_obj->m_shape, currentGroup, maskGroup);
+            default:
+                break;
+            }
+        }
+    }
+
+    void PhysxWorld::setTorque(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj) {
+
+        if (command_Obj.AddTorque) {
+
+            switch (command_Obj.Type) {
+            case force::force:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eFORCE);
+                break;
+
+            case force::impulse:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eIMPULSE);
+                break;
+
+            case force::velocityChanged:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eVELOCITY_CHANGE);
+                break;
+
+            case force::acceleration:
+                underlying_Obj.rb.rigidDynamic->addTorque(command_Obj.Force, PxForceMode::eACCELERATION);
+                break;
+
+            default:
+                break;
+
             }
         }
     }
 
 
-    PxConvexMesh* PhysicsObject::createConvexMesh(std::vector<PxVec3> vert) {
+
+
+/*-----------------------------------------------------------------------------*/
+/*                               PhysicsObject                                 */
+/*-----------------------------------------------------------------------------*/
+    //void PhysicsObject::setRigidType(rigid type) {
+
+    //    PxTransform temp_trans{ PxVec3(0) }; // set default to 0
+
+    //    // CHECK GOT THE INSTANCE CREATED OR NOT
+    //    if (world->all_objects.contains(id)) {
+
+    //        bool changingType = false;
+
+    //        //PhysxObject* underlying_obj = world->all_objects.at(id);
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PxRigidStatic* rstat = underlying_obj->rb.rigidStatic;
+    //        PxRigidDynamic* rdyna = underlying_obj->rb.rigidDynamic;
+
+    //        // CHECK IF HAVE RIGIDBODY CREATED OR NOT
+    //        // CHECK IF THIS OBJ HAVE RSTATIC OR RDYAMIC INIT OR NOT
+    //        if (rstat) {
+    //            changingType = true;
+    //            temp_trans = rstat->getGlobalPose();
+    //            world->scene->removeActor(*rstat);
+    //            underlying_obj->rb.rigidStatic = nullptr; // clear the current data
+    //        }
+    //        else if (rdyna) {
+    //            changingType = true;
+    //            temp_trans = rdyna->getGlobalPose();
+    //            world->scene->removeActor(*rdyna);
+    //            underlying_obj->rb.rigidDynamic = nullptr;
+    //        }
+
+    //        // ASSIGN TO THE NEW RIGID TYPE
+    //        underlying_obj->rigid_type = type;
+
+    //        // CREATE RSTATIC OR RDYNAMIC ACCORDINGLY
+    //        if (type == rigid::rstatic) {
+    //            underlying_obj->rb.rigidStatic = physx_system::getPhysics()->createRigidStatic(temp_trans);
+    //            underlying_obj->rb.rigidStatic->userData = underlying_obj->id.get();
+    //            //printf("STAT: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidStatic->userData));
+    //            world->scene->addActor(*underlying_obj->rb.rigidStatic);
+    //        }
+    //        else if (type == rigid::rdynamic) {
+    //            underlying_obj->rb.rigidDynamic = physx_system::getPhysics()->createRigidDynamic(temp_trans);
+    //            underlying_obj->rb.rigidDynamic->userData = underlying_obj->id.get();
+    //            //printf("DYNA: actl value %llu vs pointer value: %llu \n", id, *reinterpret_cast<phy_uuid::UUID*>(underlying_obj->rb.rigidDynamic->userData));
+    //            world->scene->addActor(*underlying_obj->rb.rigidDynamic);
+    //        }
+
+    //        // CHECK WHETHER IS CHANGING OF RIGID TYPE
+    //        if (changingType) {
+
+    //            // ATTACH THE NEW SHAPE
+    //            if (underlying_obj->m_shape) {
+
+    //                //printf("SHAPE TYPE: %d", underlying_obj->shape);
+    //                
+    //                // ATTACH THE NEW SHAPE BASED THE SHAPE TYPE
+    //                if (underlying_obj->shape_type == shape::box) 
+    //                    reAttachShape(type, underlying_obj->m_shape->getGeometry().box());
+
+    //                else if (underlying_obj->shape_type == shape::sphere) 
+    //                    reAttachShape(type, underlying_obj->m_shape->getGeometry().sphere());
+
+    //                else if (underlying_obj->shape_type == shape::plane) 
+    //                    reAttachShape(type, underlying_obj->m_shape->getGeometry().plane());
+
+    //                else if (underlying_obj->shape_type == shape::capsule) 
+    //                    reAttachShape(type, underlying_obj->m_shape->getGeometry().capsule());
+
+    //                else if (underlying_obj->shape_type == shape::convex)
+    //                    reAttachShape(type, underlying_obj->m_shape->getGeometry().convexMesh());
+
+    //                // Set the filtering back
+    //                setFiltering(underlying_obj->filterIn, underlying_obj->filterOut);
+    //            }
+    //        }
+
+    //        // Check how many actors created in the scene
+    //        //PxActorTypeFlags desiredTypes = PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC;
+    //        //PxU32 count = world->scene->getNbActors(desiredTypes);
+    //        //PxActor** buffer = new PxActor * [count];
+    //        
+    //        //PxU32 noo = world->scene->getActors(desiredTypes, buffer, count);
+    //        //printf("%d - actors\n\n", noo);
+    //    }
+    //}
+
+    //template<typename Type>
+    //void PhysicsObject::reAttachShape(rigid rigidType, Type data) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
+
+    //        underlying_obj->m_shape = physx_system::getPhysics()->createShape(data, *material, true);
+
+    //        //underlying_obj->m_shape->setContactOffset(1);
+
+    //        // ATTACH THE SHAPE TO THE OBJECT
+    //        if (rigidType == rigid::rstatic) {
+    //            underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+    //            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::ePLAYER, FilterGroup::eDEFAULT | FilterGroup::eENEMY | FilterGroup::eGROUND);
+    //        }
+
+    //        else if (rigidType == rigid::rdynamic) {
+    //            underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+    //            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eENEMY, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eGROUND);
+    //        }
+
+    //        //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eDEFAULT, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eENEMY | FilterGroup::eGROUND);
+    //    }
+    //}
+
+    //void PhysicsObject::setShape(shape shape) {
+
+    //    //PxRigidActorExt::createExclusiveShape (another method)
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PxMaterial* material = world->mat.at(underlying_obj->matID); // might need check if this set or not
+
+    //        //assert(underlying_obj->m_shape);
+
+    //        // CHECK IF HAVE SHAPE CREATED OR NOT
+    //        if (underlying_obj->m_shape) {
+    //        //if (underlying_obj->shape != shape::none) {j
+
+    //            // DETACH OLD SHAPE
+    //            if (underlying_obj->rigid_type == rigid::rstatic)
+    //                underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
+
+    //            else if (underlying_obj->rigid_type == rigid::rdynamic)
+    //                underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
+    //        }
+
+    //        underlying_obj->shape_type = shape; // set new shape enum
+
+    //        // CHECK AGAINST THE TYPE OF SHAPE
+    //        if (shape == shape::box) {
+    //            PxBoxGeometry temp_box{ 0.5f,0.5f,0.5f };
+    //            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_box, *material, true);
+    //        }
+    //        else if (shape == shape::sphere) {
+    //            PxSphereGeometry temp_sphere{ 0.5f };
+    //            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_sphere, *material, true);
+    //        }
+    //        else if (shape == shape::plane) {
+    //            //PxCreatePlane()
+    //            //PxPlaneGeometry temp_sphere{ PxPlane{0.f,1.f,0.f,50.f} };
+    //            //PxTransformFromPlaneEquation(PxPlane{ 0.f,1.f,0.f,50.f });
+    //            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxPlaneGeometry(), *material, true);
+    //        }
+    //        else if (shape == shape::capsule) {
+    //            PxCapsuleGeometry temp_cap{ 0.5f, 1.f };
+    //            underlying_obj->m_shape = physx_system::getPhysics()->createShape(temp_cap, *material, true);
+    //            
+    //            if (underlying_obj->rigid_type == rigid::rdynamic) {
+    //                PxTransform relativePose(PxQuat(PxHalfPi, PxVec3(0, 0, 1)));
+    //                underlying_obj->m_shape->setLocalPose(relativePose);
+    //            }
+    //        }
+    //        else if (shape == shape::convex) {
+
+    //            //auto mesh_geometry = createConvexMesh(world->m_meshVertices);
+    //            auto mesh_geometry = createConvexMesh(underlying_obj->meshVertices);
+    //           
+    //            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(mesh_geometry), *material, true);
+    //        }
+
+    //        //underlying_obj->m_shape->setContactOffset(1);
+
+    //        // ATTACH THE SHAPE TO THE OBJECT
+    //        if (underlying_obj->rigid_type == rigid::rstatic && underlying_obj->m_shape != nullptr) {
+    //            underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+    //            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::ePLAYER, FilterGroup::eDEFAULT | FilterGroup::eENEMY | FilterGroup::eGROUND);
+
+    //        }
+
+    //        else if (underlying_obj->rigid_type == rigid::rdynamic && underlying_obj->m_shape != nullptr) {
+    //            underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+    //            //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eENEMY, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eGROUND);
+
+    //        }
+
+    //        // later check where need to release shape
+    //        //underlying_obj->m_shape->release();
+
+    //        //physx_system::setupFiltering(underlying_obj->m_shape, FilterGroup::eDEFAULT, FilterGroup::eDEFAULT | FilterGroup::ePLAYER | FilterGroup::eENEMY | FilterGroup::eGROUND);
+    //    }
+    //}
+
+    //void PhysicsObject::removeShape() {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->shape_type != shape::none) {
+
+    //            if (underlying_obj->rigid_type == rigid::rstatic)
+    //                underlying_obj->rb.rigidStatic->detachShape(*underlying_obj->m_shape);
+
+    //            else if (underlying_obj->rigid_type == rigid::rdynamic)
+    //                underlying_obj->rb.rigidDynamic->detachShape(*underlying_obj->m_shape);
+
+    //            // release shape
+    //            underlying_obj->m_shape->release();
+    //            underlying_obj->shape_type = shape::none; // set new shape enum
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::lockPositionX(bool lock) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
+
+    //            //// ROTATE IN Z
+    //            //PxRigidDynamicLockFlag::eLOCK_LINEAR_Z | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y;
+    //            //// ROTATE IN Y
+    //            //PxRigidDynamicLockFlag::eLOCK_LINEAR_Y | PxRigidDynamicLockFlag::eLOCK_ANGULAR_X | PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z;
+
+    //            underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_X, lock);
+
+    //            underlying_obj->lockPositionAxis.x_axis = lock;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::lockPositionY(bool lock) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
+
+    //            underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, lock);
+
+    //            underlying_obj->lockPositionAxis.y_axis = lock;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::lockPositionZ(bool lock) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
+
+    //            underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, lock);
+
+    //            underlying_obj->lockPositionAxis.z_axis = lock;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::lockRotationX(bool lock) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
+
+    //            underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, lock);
+
+    //            underlying_obj->lockRotationAxis.x_axis = lock;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::lockRotationY(bool lock) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
+
+    //            underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, lock);
+
+    //            underlying_obj->lockRotationAxis.y_axis = lock;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::lockRotationZ(bool lock) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
+
+    //            underlying_obj->rb.rigidDynamic->setRigidDynamicLockFlag(PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, lock);
+
+    //            underlying_obj->lockRotationAxis.z_axis = lock;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::enableCollider(bool collide) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type != rigid::none) {
+
+    //            if (underlying_obj->m_shape) {
+
+    //                underlying_obj->m_shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collide);
+
+    //                underlying_obj->is_collider = collide;
+    //            }
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::enableKinematic(bool kine) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
+
+    //            underlying_obj->rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kine);
+
+    //            underlying_obj->is_kinematic = kine;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::enableGravity(bool enable) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        
+    //        underlying_obj->rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !enable);
+
+    //        underlying_obj->gravity_enabled = enable;
+    //    }
+    //}
+
+    //void PhysicsObject::setTriggerShape(bool trigger) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->m_shape) {
+
+    //            underlying_obj->is_trigger = trigger;
+
+    //            if (trigger)
+    //                underlying_obj->m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
+    //            else
+    //                underlying_obj->m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->shape_type == shape::box)
+    //            underlying_obj->m_shape->setGeometry(PxBoxGeometry(halfextent_width, halfextent_height, halfextent_depth));
+    //        //underlying_obj->m_shape->getGeometry().box().halfExtents = PxVec3{ halfextent_width , halfextent_height, halfextent_depth };
+    //    }
+    //}
+
+    //void PhysicsObject::setSphereProperty(float radius) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->shape_type == shape::sphere)
+    //            underlying_obj->m_shape->setGeometry(PxSphereGeometry(radius));
+    //        //underlying_obj->m_shape->getGeometry().sphere().radius = radius;
+    //    }
+    //}
+
+    //void PhysicsObject::setCapsuleProperty(float radius, float halfHeight) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        if (underlying_obj->shape_type == shape::capsule) {
+    //            underlying_obj->m_shape->setGeometry(PxCapsuleGeometry(radius, halfHeight));
+
+    //            if (underlying_obj->rigid_type == rigid::rdynamic) {
+    //                PxTransform relativePose(PxQuat(PxHalfPi, PxVec3(0, 0, 1)));
+    //                underlying_obj->m_shape->setLocalPose(relativePose);
+    //            }
+
+    //            //underlying_obj->m_shape->getGeometry().capsule().radius = radius;
+    //            //underlying_obj->m_shape->getGeometry().capsule().halfHeight = halfHeight;
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::setConvexProperty(std::vector<PxVec3> vert, PxVec3 scale) { //  PxConvexMesh* mesh
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->shape_type == shape::convex) {
+
+    //            underlying_obj->m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(vert), PxMeshScale(scale)));
+
+    //            //underlying_obj->m_shape->getGeometry().convexMesh().convexMesh->getVertices()
+    //        }
+    //    }
+    //}
+
+    //void PhysicsObject::storeMeshVertices(std::vector<PxVec3> vert) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->shape_type == shape::convex)
+    //        {
+    //            underlying_obj->meshVertices = vert;
+
+    //            underlying_obj->m_shape = physx_system::getPhysics()->createShape(PxConvexMeshGeometry(createConvexMesh(underlying_obj->meshVertices)), *world->mat.at(underlying_obj->matID), true);
+    //        
+    //            if(underlying_obj->rigid_type == rigid::rdynamic) 
+    //                underlying_obj->rb.rigidDynamic->attachShape(*underlying_obj->m_shape);
+
+    //            if (underlying_obj->rigid_type == rigid::rstatic)
+    //                underlying_obj->rb.rigidStatic->attachShape(*underlying_obj->m_shape);
+
+    //            //getAllMeshVertices();
+    //        }
+    //    }
+    //}
+
+    //std::vector<PxVec3> PhysicsObject::getAllMeshVertices() {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->shape_type == shape::convex)
+    //        {
+    //            // Retrieve the vertices
+    //            PxConvexMesh* convexMesh = underlying_obj->m_shape->getGeometry().convexMesh().convexMesh;
+    //            const PxVec3* convexVerts = convexMesh->getVertices();
+    //            PxU32 nbVerts = convexMesh->getNbVertices();
+
+    //            world->m_meshVertices.clear(); // remove old data first
+
+    //            for (PxU32 i = 0; i < nbVerts; i++) {
+
+    //                PxVec3 mesh = { convexVerts[i].x, convexVerts[i].y, convexVerts[i].z };
+
+    //                world->m_meshVertices.emplace_back(mesh);
+    //            }
+
+    //            //int size = world->m_meshVertices.size();
+    //            //std::cout << "SIZE: " << size << std::endl;
+    //        }
+    //    }
+
+    //    return world->m_meshVertices;
+    //}
+
+    //void PhysicsObject::setFiltering(std::uint32_t currentGroup, std::uint32_t maskGroup) {
+
+    //    if (world->all_objects.contains(id)) {
+
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+
+    //        if (underlying_obj->m_shape) {
+
+    //            underlying_obj->filterIn = currentGroup;
+
+    //            underlying_obj->filterOut = maskGroup;
+
+    //            physx_system::setupFiltering(underlying_obj->m_shape, currentGroup, maskGroup);
+    //        }
+    //    }
+    //}
+
+
+    PxConvexMesh* PhysxWorld::createConvexMesh(std::vector<PxVec3> vert) {
 
         // vertices
         //static const PxVec3 convexVerts[] = { PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
@@ -1189,6 +1657,8 @@ namespace myPhysx
         PxConvexMeshCookingResult::Enum result;
 #pragma warning(default : 26812)
 
+        if (convexDesc.points.count == 0)
+            return NULL;
         if (!mCooking->cookConvexMesh(convexDesc, buffer, &result))
             return NULL;
 
@@ -1218,445 +1688,445 @@ namespace myPhysx
         return convexMesh;
     }
 
-    LockingAxis PhysicsObject::getLockPositionAxis() const {
+    //LockingAxis PhysicsObject::getLockPositionAxis() const {
 
-        LockingAxis posAxis{ false };
+    //    LockingAxis posAxis{ false };
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            posAxis.x_axis = underlying_obj->lockPositionAxis.x_axis;
-            posAxis.y_axis = underlying_obj->lockPositionAxis.y_axis;
-            posAxis.z_axis = underlying_obj->lockPositionAxis.z_axis;
-        }
+    //        posAxis.x_axis = underlying_obj->lockPositionAxis.x_axis;
+    //        posAxis.y_axis = underlying_obj->lockPositionAxis.y_axis;
+    //        posAxis.z_axis = underlying_obj->lockPositionAxis.z_axis;
+    //    }
 
-        return posAxis;
-    }
+    //    return posAxis;
+    //}
 
-    LockingAxis PhysicsObject::getLockRotationAxis() const {
+    //LockingAxis PhysicsObject::getLockRotationAxis() const {
 
-        LockingAxis rotAxis{ false };
+    //    LockingAxis rotAxis{ false };
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            rotAxis.x_axis = underlying_obj->lockRotationAxis.x_axis;
-            rotAxis.y_axis = underlying_obj->lockRotationAxis.y_axis;
-            rotAxis.z_axis = underlying_obj->lockRotationAxis.z_axis;
-        }
+    //        rotAxis.x_axis = underlying_obj->lockRotationAxis.x_axis;
+    //        rotAxis.y_axis = underlying_obj->lockRotationAxis.y_axis;
+    //        rotAxis.z_axis = underlying_obj->lockRotationAxis.z_axis;
+    //    }
 
-        return rotAxis;
-    }
+    //    return rotAxis;
+    //}
 
-    Material PhysicsObject::getMaterial() const {
+    //Material PhysicsObject::getMaterial() const {
 
-        Material m_material{};
+    //    Material m_material{};
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (world->mat.contains(underlying_obj->matID)) {
-                m_material.staticFriction = world->mat[underlying_obj->matID]->getStaticFriction();
-                m_material.dynamicFriction = world->mat[underlying_obj->matID]->getDynamicFriction();
-                m_material.restitution = world->mat[underlying_obj->matID]->getRestitution();
-            }
-        }
+    //        if (world->mat.contains(underlying_obj->matID)) {
+    //            m_material.staticFriction = world->mat[underlying_obj->matID]->getStaticFriction();
+    //            m_material.dynamicFriction = world->mat[underlying_obj->matID]->getDynamicFriction();
+    //            m_material.restitution = world->mat[underlying_obj->matID]->getRestitution();
+    //        }
+    //    }
 
-        return m_material;
-    }
+    //    return m_material;
+    //}
 
-    void PhysicsObject::setMaterial(Material material) {
+    //void PhysicsObject::setMaterial(Material material) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            // CHECK WHETHER THE OBJ HAVE MATERIAL 
-            if (world->mat.contains(underlying_obj->matID)) {
+    //        // CHECK WHETHER THE OBJ HAVE MATERIAL 
+    //        if (world->mat.contains(underlying_obj->matID)) {
 
-                PxMaterial* temp_mat = world->mat.at(underlying_obj->matID);
+    //            PxMaterial* temp_mat = world->mat.at(underlying_obj->matID);
 
-                temp_mat->setStaticFriction(material.staticFriction);
-                temp_mat->setDynamicFriction(material.dynamicFriction);
-                temp_mat->setRestitution(material.restitution);
-            }
-            else {
+    //            temp_mat->setStaticFriction(material.staticFriction);
+    //            temp_mat->setDynamicFriction(material.dynamicFriction);
+    //            temp_mat->setRestitution(material.restitution);
+    //        }
+    //        else {
 
-                // CREATE NEW MATERIAL
-                PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
-                                                                                material.dynamicFriction,
-                                                                                material.restitution);
+    //            // CREATE NEW MATERIAL
+    //            PxMaterial* newMat = physx_system::getPhysics()->createMaterial(material.staticFriction,
+    //                                                                            material.dynamicFriction,
+    //                                                                            material.restitution);
 
-                phy_uuid::UUID UUID = phy_uuid::UUID{};
+    //            phy_uuid::UUID UUID = phy_uuid::UUID{};
 
-                world->mat.emplace(UUID, newMat);
+    //            world->mat.emplace(UUID, newMat);
 
-                underlying_obj->matID = UUID; // set material id for that object
-            }
-        }
-    }
+    //            underlying_obj->matID = UUID; // set material id for that object
+    //        }
+    //    }
+    //}
 
-    PxVec3 PhysicsObject::getposition() const {
+    //PxVec3 PhysicsObject::getposition() const {
 
-        // contains the key the return the value of that key
-        //all_objects[key]
+    //    // contains the key the return the value of that key
+    //    //all_objects[key]
 
-        // no have then return a default?
+    //    // no have then return a default?
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rstatic) {
+    //        if (underlying_obj->rigid_type == rigid::rstatic) {
 
-                return PxVec3{ underlying_obj->rb.rigidStatic->getGlobalPose().p.x,
-                               underlying_obj->rb.rigidStatic->getGlobalPose().p.y,
-                               underlying_obj->rb.rigidStatic->getGlobalPose().p.z };
-            }
-            else if (underlying_obj->rigid_type == rigid::rdynamic) {
+    //            return PxVec3{ underlying_obj->rb.rigidStatic->getGlobalPose().p.x,
+    //                           underlying_obj->rb.rigidStatic->getGlobalPose().p.y,
+    //                           underlying_obj->rb.rigidStatic->getGlobalPose().p.z };
+    //        }
+    //        else if (underlying_obj->rigid_type == rigid::rdynamic) {
 
-                return PxVec3{ underlying_obj->rb.rigidDynamic->getGlobalPose().p.x,
-                               underlying_obj->rb.rigidDynamic->getGlobalPose().p.y,
-                               underlying_obj->rb.rigidDynamic->getGlobalPose().p.z };
-            }
+    //            return PxVec3{ underlying_obj->rb.rigidDynamic->getGlobalPose().p.x,
+    //                           underlying_obj->rb.rigidDynamic->getGlobalPose().p.y,
+    //                           underlying_obj->rb.rigidDynamic->getGlobalPose().p.z };
+    //        }
 
-        }
+    //    }
 
-        // default return.
-        return PxVec3{};
-    }
+    //    // default return.
+    //    return PxVec3{};
+    //}
 
-    void PhysicsObject::setPosOrientation(PxVec3 pos, PxQuat quat) {
+    //void PhysicsObject::setPosOrientation(PxVec3 pos, PxQuat quat) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            //printf("M_OBJ SIZE: %d\n", world->m_objects.size());
-            //printf("M_OBJ ID: %d\n", world->all_objects.at(id));
+    //        //printf("M_OBJ SIZE: %d\n", world->m_objects.size());
+    //        //printf("M_OBJ ID: %d\n", world->all_objects.at(id));
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rstatic)
-                underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ pos, quat });
+    //        if (underlying_obj->rigid_type == rigid::rstatic)
+    //            underlying_obj->rb.rigidStatic->setGlobalPose(PxTransform{ pos, quat });
 
-            else if (underlying_obj->rigid_type == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ pos, quat });
-        }
-    }
+    //        else if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            underlying_obj->rb.rigidDynamic->setGlobalPose(PxTransform{ pos, quat });
+    //    }
+    //}
 
-    PxQuat PhysicsObject::getOrientation() const {
+    //PxQuat PhysicsObject::getOrientation() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
-            
-            //underlying_obj->rb.rigidStatic->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, true);
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        
+    //        //underlying_obj->rb.rigidStatic->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, true);
 
-            if (underlying_obj->rigid_type == rigid::rstatic)
-                return underlying_obj->rb.rigidStatic->getGlobalPose().q;
+    //        if (underlying_obj->rigid_type == rigid::rstatic)
+    //            return underlying_obj->rb.rigidStatic->getGlobalPose().q;
 
-            else if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->rb.rigidDynamic->getGlobalPose().q;
-        }
+    //        else if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->rb.rigidDynamic->getGlobalPose().q;
+    //    }
 
-        // default return.
-        return PxQuat{};
-    }
+    //    // default return.
+    //    return PxQuat{};
+    //}
 
-    PxReal PhysicsObject::getMass() const {
+    //PxReal PhysicsObject::getMass() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->rb.rigidDynamic->getMass();
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->rb.rigidDynamic->getMass();
+    //    }
 
-        // default return.
-        return PxReal{};
-    }
+    //    // default return.
+    //    return PxReal{};
+    //}
 
-    PxReal PhysicsObject::getInvMass() const {
+    //PxReal PhysicsObject::getInvMass() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->rb.rigidDynamic->getInvMass();
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->rb.rigidDynamic->getInvMass();
+    //    }
 
-        // default return.
-        return PxReal{};
-    }
+    //    // default return.
+    //    return PxReal{};
+    //}
 
-    PxReal PhysicsObject::getAngularDamping() const {
+    //PxReal PhysicsObject::getAngularDamping() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->rb.rigidDynamic->getAngularDamping();
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->rb.rigidDynamic->getAngularDamping();
+    //    }
 
-        // default return.
-        return PxReal{};
-    }
+    //    // default return.
+    //    return PxReal{};
+    //}
 
-    PxVec3 PhysicsObject::getAngularVelocity() const {
+    //PxVec3 PhysicsObject::getAngularVelocity() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->rb.rigidDynamic->getAngularVelocity();
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->rb.rigidDynamic->getAngularVelocity();
+    //    }
 
-        // default return.
-        return PxVec3{};
-    }
+    //    // default return.
+    //    return PxVec3{};
+    //}
 
-    PxReal PhysicsObject::getLinearDamping() const {
+    //PxReal PhysicsObject::getLinearDamping() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->rb.rigidDynamic->getLinearDamping();
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->rb.rigidDynamic->getLinearDamping();
+    //    }
 
-        // default return.
-        return PxReal{};
-    }
+    //    // default return.
+    //    return PxReal{};
+    //}
 
-    PxVec3 PhysicsObject::getLinearVelocity() const {
+    //PxVec3 PhysicsObject::getLinearVelocity() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->rb.rigidDynamic->getLinearVelocity();
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->rb.rigidDynamic->getLinearVelocity();
+    //    }
 
-        // default return.
-        return PxVec3{};
-    }
+    //    // default return.
+    //    return PxVec3{};
+    //}
 
-    bool PhysicsObject::isTrigger() const {
+    //bool PhysicsObject::isTrigger() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            return underlying_obj->is_trigger;
-        }
+    //        return underlying_obj->is_trigger;
+    //    }
 
-        // default return.
-        return false;
-    }
+    //    // default return.
+    //    return false;
+    //}
 
-    bool PhysicsObject::isGravityEnabled() const {
+    //bool PhysicsObject::isGravityEnabled() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->gravity_enabled;
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->gravity_enabled;
+    //    }
 
-        // default return.
-        return false;
-    }
+    //    // default return.
+    //    return false;
+    //}
 
-    bool PhysicsObject::isKinematic() const {
+    //bool PhysicsObject::isKinematic() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                return underlying_obj->is_kinematic;
-        }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            return underlying_obj->is_kinematic;
+    //    }
 
-        // default return.
-        return false;
-    }
+    //    // default return.
+    //    return false;
+    //}
 
-    bool PhysicsObject::isColliderEnabled() const {
+    //bool PhysicsObject::isColliderEnabled() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type != rigid::none)
-                return underlying_obj->is_collider;
-        }
+    //        if (underlying_obj->rigid_type != rigid::none)
+    //            return underlying_obj->is_collider;
+    //    }
 
-        // default return.
-        return true;
-    }
+    //    // default return.
+    //    return true;
+    //}
 
-    std::uint32_t PhysicsObject::getFilterIn() const {
+    //std::uint32_t PhysicsObject::getFilterIn() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            return underlying_obj->filterIn;
-        }
+    //        return underlying_obj->filterIn;
+    //    }
 
-        return 0;
-    }
+    //    return 0;
+    //}
 
-    std::uint32_t PhysicsObject::getFilterOut() const {
+    //std::uint32_t PhysicsObject::getFilterOut() const {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            return underlying_obj->filterOut;
-        }
+    //        return underlying_obj->filterOut;
+    //    }
 
-        return 0;
-    }
+    //    return 0;
+    //}
 
-    void PhysicsObject::setMass(PxReal mass) {
+    //void PhysicsObject::setMass(PxReal mass) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setMass(mass);
-        }
-    }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            underlying_obj->rb.rigidDynamic->setMass(mass);
+    //    }
+    //}
 
-    void PhysicsObject::setMassSpaceInertia(PxVec3 mass) {
+    //void PhysicsObject::setMassSpaceInertia(PxVec3 mass) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setMassSpaceInertiaTensor(mass);
-        }
-    }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            underlying_obj->rb.rigidDynamic->setMassSpaceInertiaTensor(mass);
+    //    }
+    //}
 
-    void PhysicsObject::setAngularDamping(PxReal angularDamping) {
+    //void PhysicsObject::setAngularDamping(PxReal angularDamping) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setAngularDamping(angularDamping);
-        }
-    }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            underlying_obj->rb.rigidDynamic->setAngularDamping(angularDamping);
+    //    }
+    //}
 
-    void PhysicsObject::setAngularVelocity(PxVec3 angularVelocity) {
+    //void PhysicsObject::setAngularVelocity(PxVec3 angularVelocity) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setAngularVelocity(angularVelocity);
-        }
-    }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            underlying_obj->rb.rigidDynamic->setAngularVelocity(angularVelocity);
+    //    }
+    //}
 
-    void PhysicsObject::setLinearDamping(PxReal linearDamping) {
+    //void PhysicsObject::setLinearDamping(PxReal linearDamping) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setLinearDamping(linearDamping);
-        }
-    }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            underlying_obj->rb.rigidDynamic->setLinearDamping(linearDamping);
+    //    }
+    //}
 
-    void PhysicsObject::setLinearVelocity(PxVec3 linearVelocity) {
+    //void PhysicsObject::setLinearVelocity(PxVec3 linearVelocity) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic)
-                underlying_obj->rb.rigidDynamic->setLinearVelocity(linearVelocity);
-        }
-    }
+    //        if (underlying_obj->rigid_type == rigid::rdynamic)
+    //            underlying_obj->rb.rigidDynamic->setLinearVelocity(linearVelocity);
+    //    }
+    //}
 
-    void PhysicsObject::addForce(PxVec3 f_amount, force type) {
+    //void PhysicsObject::addForce(PxVec3 f_amount, force type) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
 
-                switch (type) {
-                case force::force:
-                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eFORCE);
-                    break;
+    //            switch (type) {
+    //            case force::force:
+    //                underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eFORCE);
+    //                break;
 
-                case force::impulse:
-                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eIMPULSE);
-                    break;
+    //            case force::impulse:
+    //                underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eIMPULSE);
+    //                break;
 
-                case force::velocityChanged:
-                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eVELOCITY_CHANGE);
-                    break;
+    //            case force::velocityChanged:
+    //                underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eVELOCITY_CHANGE);
+    //                break;
 
-                case force::acceleration:
-                    underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eACCELERATION);
-                    break;
+    //            case force::acceleration:
+    //                underlying_obj->rb.rigidDynamic->addForce(f_amount, PxForceMode::eACCELERATION);
+    //                break;
 
-                default:
-                    break;
-                }
-            }
-        }
-    }
+    //            default:
+    //                break;
+    //            }
+    //        }
+    //    }
+    //}
 
-    void PhysicsObject::addTorque(PxVec3 f_amount, force type) {
+    //void PhysicsObject::addTorque(PxVec3 f_amount, force type) {
 
-        if (world->all_objects.contains(id)) {
+    //    if (world->all_objects.contains(id)) {
 
-            PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
+    //        PhysxObject* underlying_obj = &world->m_objects[world->all_objects.at(id)];
 
-            if (underlying_obj->rigid_type == rigid::rdynamic) {
+    //        if (underlying_obj->rigid_type == rigid::rdynamic) {
 
-                switch (type) {
-                case force::force:
-                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eFORCE);
-                    break;
+    //            switch (type) {
+    //            case force::force:
+    //                underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eFORCE);
+    //                break;
 
-                case force::impulse:
-                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eIMPULSE);
-                    break;
+    //            case force::impulse:
+    //                underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eIMPULSE);
+    //                break;
 
-                case force::velocityChanged:
-                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eVELOCITY_CHANGE);
-                    break;
+    //            case force::velocityChanged:
+    //                underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eVELOCITY_CHANGE);
+    //                break;
 
-                case force::acceleration:
-                    underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eACCELERATION);
-                    break;
+    //            case force::acceleration:
+    //                underlying_obj->rb.rigidDynamic->addTorque(f_amount, PxForceMode::eACCELERATION);
+    //                break;
 
-                default:
-                    break;
-                }
-            }
-        }
-    }
+    //            default:
+    //                break;
+    //            }
+    //        }
+    //    }
+    //}
 
     
 
