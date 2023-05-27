@@ -76,9 +76,7 @@ Source:"PhysXGpu_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysX_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ;settings files                       
-Source: "imgui.ini"; DestDir: "{app}"; Flags: ignoreversion
 Source: "gamecontrollerdb.txt"; DestDir: "{app}"; Flags: ignoreversion  
-Source: "version.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 ;icon                                                
 Source: {#SetupIconFilepath}; DestDir: "{app}"; DestName: "Icon.ico"; Flags: ignoreversion
