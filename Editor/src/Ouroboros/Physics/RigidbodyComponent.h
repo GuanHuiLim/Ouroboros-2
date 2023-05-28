@@ -76,8 +76,13 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     class RigidbodyComponent final
     {
-    private:
-        bool IsStaticObject = true;
+    public:
+        bool IsDirty = true;    // dirty for the first time.
+
+        myPhysx::PhysicsObject underlying_object{};
+        myPhysx::PhysicsObject desired_object{};
+
+        std::vector<myPhysx::PhysicsCommand> external_commands;
 
     public:
         // Who am I? usually only 1
@@ -91,17 +96,6 @@ namespace oo
         uint32_t GetOutputLayer() const { return OutputLayer.to_ulong(); }
         void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; };
     
-    public:
-        bool IsTriggerObject = false;
-        
-        bool LockXAxisPosition = false;
-        bool LockYAxisPosition = false;
-        bool LockZAxisPosition = false;
-        bool LockXAxisRotation = false;
-        bool LockYAxisRotation = false;
-        bool LockZAxisRotation = false;
-
-        myPhysx::PhysicsObject object{};
         vec3 Offset = { 0.0, 0.0, 0.0 };
 
         PhysicsMaterial GetMaterial() const;
@@ -136,8 +130,6 @@ namespace oo
         void SetPosOrientation(vec3 pos, quat quat);
 
         void SetGravity(bool enable);
-        /*void EnableGravity();
-        void DisableGravity();*/
         
         void SetKinematic(bool kine);
         void SetMass(float mass);
@@ -156,6 +148,20 @@ namespace oo
         glm::vec3 GetAngularVel() const;
         void SetOffset(glm::vec3 offset);
         glm::vec3 GetOffset() const;
+
+        void LockXAxisPos(bool lock);
+        void LockYAxisPos(bool lock);
+        void LockZAxisPos(bool lock);
+        void LockXAxisRot(bool lock);
+        void LockYAxisRot(bool lock);
+        void LockZAxisRot(bool lock);
+
+        bool IsXAxisPosLocked();
+        bool IsYAxisPosLocked();
+        bool IsZAxisPosLocked();
+        bool IsXAxisRotLocked();
+        bool IsYAxisRotLocked();
+        bool IsZAxisRotLocked();
 
         RTTR_ENABLE();
     };

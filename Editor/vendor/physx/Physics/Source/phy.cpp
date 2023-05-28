@@ -290,8 +290,23 @@ namespace myPhysx
 
         PhysxObject obj;
         obj.id = std::make_unique<phy_uuid::UUID>();
+        obj.m_material = mPhysics->createMaterial(.5f, .5f, .1f);
+
         // This is important!
         phy_uuid::UUID generated_uuid = *obj.id;
+        if (obj.rigid_type == rigid::rstatic)
+        {
+            obj.rb.rigidStatic = mPhysics->createRigidStatic(PxTransform{ 0,0,0 });
+            obj.rb.rigidStatic->userData = obj.id.get();
+            scene->addActor(*obj.rb.rigidStatic);
+        }
+        else
+        {
+            obj.rb.rigidDynamic = mPhysics->createRigidDynamic(PxTransform{ 0,0,0 });
+            obj.rb.rigidDynamic->userData = obj.id.get();
+            scene->addActor(*obj.rb.rigidDynamic);
+        }
+
         // store the object
         m_objects.emplace_back(std::move(obj));
         all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
