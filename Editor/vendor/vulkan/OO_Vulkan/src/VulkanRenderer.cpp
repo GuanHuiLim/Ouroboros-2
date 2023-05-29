@@ -134,15 +134,13 @@ VulkanRenderer::~VulkanRenderer()
 	//wait until no actions being run on device before destorying
 	vkDeviceWaitIdle(m_device.logicalDevice);
 
-	std::fstream s("stats.txt", std::ios::out);
-	if (s)
-	{
-		s << "buffer : " << accumulatedBytes << std::endl;
-		s << "texture : " << totalTextureSizeLoaded << std::endl;
-	}
-	s.close();
-
-	
+	//std::fstream s("stats.txt", std::ios::out);
+	//if (s)
+	//{
+	//	s << "buffer : " << accumulatedBytes << std::endl;
+	//	s << "texture : " << totalTextureSizeLoaded << std::endl;
+	//}
+	//s.close();	
 
 	for (size_t i = 0; i < renderTargets.size(); i++)
 	{
