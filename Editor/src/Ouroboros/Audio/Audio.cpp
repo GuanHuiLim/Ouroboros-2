@@ -211,6 +211,13 @@ namespace oo
             FMOD_ERR_HAND(channelGroupGlobal->stop());
         }
 
+        void SetMasterPauseState(bool state)
+        {
+            FMOD::ChannelGroup* master;
+            FMOD_ERR_HAND(system->getMasterChannelGroup(&master));
+            FMOD_ERR_HAND(master->setPaused(state));
+        }
+
         bool ErrorHandler(FMOD_RESULT result, const char* file, int line)
         {
             if (result != FMOD_OK)
