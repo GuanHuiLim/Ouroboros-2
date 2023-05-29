@@ -29,7 +29,7 @@ public:
 
 	VkFramebuffer CreateFramebuffer(VkFramebufferCreateInfo* info,
 		std::vector<vkutils::Texture2D*>&& textures,
-		bool swapchainTarget
+		bool swapchainTarget,
 		bool resourceTrackOnly = false);
 	void ResizeSwapchain(uint32_t width, uint32_t height);
 
