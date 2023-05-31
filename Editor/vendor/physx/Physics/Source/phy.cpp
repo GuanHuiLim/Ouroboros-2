@@ -755,6 +755,7 @@ namespace myPhysx
         physics_Obj.filterOut = init_Obj.filterOut;
 
         // MESH
+        physics_Obj.changeVertices = init_Obj.changeVertices;
         physics_Obj.meshScale = init_Obj.meshScale;
         physics_Obj.uploadVertices = init_Obj.uploadVertices;
 
