@@ -115,7 +115,9 @@ namespace Ecs
 		info.move_assignment = [](void* self, void* other)
 		{
 			T* ptr = static_cast<T*>(self);
+			ptr = new(self) T{};
 			*ptr = std::move(*(static_cast<T*>(other)));
+			//static_cast<T*>(other)->~T();
 		};
 
 		info.get_component = [](IECSWorld& world, EntityID id)
