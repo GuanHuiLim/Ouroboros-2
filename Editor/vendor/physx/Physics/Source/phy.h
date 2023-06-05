@@ -323,6 +323,10 @@ namespace myPhysx {
         std::uint32_t filterIn = FilterGroup::Zero;
         std::uint32_t filterOut = FilterGroup::Zero;
 
+        bool changeVertices = false;
+        PxVec3 meshScale;
+        std::vector<PxVec3> uploadVertices;
+
         std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
         //std::vector<PxVec3> meshVertices{ PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
     };
@@ -364,6 +368,10 @@ namespace myPhysx {
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;
         std::uint32_t filterOut = FilterGroup::Zero;
+
+        bool changeVertices = false;
+        PxVec3 meshScale;
+        std::vector<PxVec3> uploadVertices;
 
         std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
         // END NEW ADDED
