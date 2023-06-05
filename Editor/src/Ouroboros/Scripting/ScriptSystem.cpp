@@ -138,6 +138,11 @@ namespace oo
         return isPlaying;
     }
 
+    void ScriptSystem::ProcessDeletion()
+    {
+        scriptDatabase.ProcessDeleteDelayed();
+    }
+
     void ScriptSystem::ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
     {
         auto& scriptInfoMap = script.GetScriptInfoAll();
@@ -221,7 +226,8 @@ namespace oo
         if (script == nullptr)
             return;
         ScriptEngine::InvokeFunction(script, "OnDestroy");
-        scriptDatabase.Delete(uuid, name_space, name);
+        //scriptDatabase.Delete(uuid, name_space, name);
+        scriptDatabase.DeleteDelayed(uuid, name_space, name);
     }
     void ScriptSystem::SetScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
     {

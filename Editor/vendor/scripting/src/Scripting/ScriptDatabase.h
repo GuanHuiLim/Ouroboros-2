@@ -60,6 +60,7 @@ namespace oo
         std::vector<InstancePool> poolList;
         std::unordered_map<Index, std::vector<Index>> inheritanceMap;
         // std::unordered_map<std::string, InstancePool> scriptMap;
+        std::unordered_map<Index, std::vector<UUID>> deletionMap;
 
         typedef void (__stdcall*LifeCycleFunction)(MonoObject*, MonoException**);
 
@@ -100,6 +101,9 @@ namespace oo
         void Delete(UUID id, const char* name_space, const char* name);
         void Delete(UUID id);
         void DeleteAll();
+
+        void DeleteDelayed(UUID id, const char* name_space, const char* name);
+        void ProcessDeleteDelayed();
 
         void ForEach(const char* name_space, const char* name, Callback callback, ObjectCheck filter = nullptr);
         void ForEach(UUID id, Callback callback, ObjectCheck filter = nullptr);
