@@ -94,14 +94,16 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(post_load_scene_init, tracy::Color::PeachPuff2);
 
+        std::mutex m;
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                     oo::vec3 pos = tf.GetGlobalPosition();
                     oo::quat quat = tf.GetGlobalRotationQuat();
+                    std::lock_guard lock(m);
                     rb.SetPosOrientation(pos + rb.Offset, quat);
                     TRACY_PROFILE_SCOPE_END();
                 }
@@ -243,7 +245,7 @@ namespace oo
                 auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
 
                 static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-                m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+                m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
                     {
                         rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
                     });
@@ -290,9 +292,9 @@ namespace oo
                 auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
             TRACY_PROFILE_SCOPE_END();
 
-            TRACY_PROFILE_SCOPE_NC(physics_update_components_with_rigidbody, tracy::Color::Brown)
+            TRACY_PROFILE_SCOPE_NC(physics_update_physics_properties, tracy::Color::Brown)
                 static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-            m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+            m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
                 {
                     rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
                 });
@@ -399,7 +401,7 @@ namespace oo
         static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
         
         // set position and orientation of our scene's dynamic rigidbodies with updated physics results
-        m_world->for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->parallel_for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
         {
             // IMPORTANT NOTE!
             // position retrieve is presumably global position in physics world.
@@ -498,9 +500,10 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_update_global_bounds, tracy::Color::PeachPuff);
 
+        std::mutex m;
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+        m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 TRACY_PROFILE_SCOPE_NC(submit_update_rigidbodies, tracy::Color::PeachPuff2);
                 if(tf.HasChangedThisFrame || rb.IsTrigger())
@@ -508,6 +511,7 @@ namespace oo
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                     oo::vec3 pos = tf.GetGlobalPosition();
                     oo::quat quat = tf.GetGlobalRotationQuat();
+                    std::lock_guard lock(m);
                     rb.SetPosOrientation(pos + rb.Offset, quat);
                     TRACY_PROFILE_SCOPE_END();
                 }
@@ -526,7 +530,7 @@ namespace oo
 
         //Updating box collider's bounds 
         static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
-        m_world->for_each(boxColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, BoxColliderComponent& bc)
+        m_world->parallel_for_each(boxColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, BoxColliderComponent& bc)
             {
                 auto pos = tf.GetGlobalPosition();
                 auto scale = tf.GetGlobalScale();
@@ -549,7 +553,7 @@ namespace oo
 
         //Updating capsule collider's bounds 
         static Ecs::Query capsuleColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, CapsuleColliderComponent>();
-        m_world->for_each(capsuleColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, CapsuleColliderComponent& cc)
+        m_world->parallel_for_each(capsuleColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, CapsuleColliderComponent& cc)
             {
                 auto pos = tf.GetGlobalPosition();
                 auto scale = tf.GetGlobalScale();
@@ -573,7 +577,7 @@ namespace oo
 
         //Updating sphere collider's bounds 
         static Ecs::Query sphereColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, SphereColliderComponent>();
-        m_world->for_each(sphereColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, SphereColliderComponent& sc)
+        m_world->parallel_for_each(sphereColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, SphereColliderComponent& sc)
             {
                 auto pos = tf.GetGlobalPosition();
                 auto scale = tf.GetGlobalScale();

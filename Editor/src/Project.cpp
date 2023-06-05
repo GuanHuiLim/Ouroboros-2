@@ -49,6 +49,18 @@ void Project::LoadProject(std::filesystem::path& config)
 	s_scriptmodulePath = (*prj_setting).value.FindMember("ScriptModulePath")->value.GetString();
 	s_scriptbuildPath = (*prj_setting).value.FindMember("ScriptBuildPath")->value.GetString();
 
+	//load assets here
+	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
+	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
+	for (auto& it : s_AssetManager->GetAssetsByType(oo::AssetInfo::Type::Animation))
+	{
+		it.Reload();
+	}
+	for (auto& it : s_AssetManager->GetAssetsByType(oo::AssetInfo::Type::AnimationTree))
+	{
+		it.Reload();
+	}
+
     // create/load scripting stuff
     UpdateScriptingFiles();
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
@@ -72,11 +84,6 @@ void Project::LoadProject(std::filesystem::path& config)
 
 	//end
 	ifs.close();
-
-	//load assets here
-	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
-	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
-	s_AssetManager->GetOrLoadDirectoryAsync(hard_assetfolderpath, true);
 
 	//load input manager
 	LoadInputs(GetProjectFolder() / InputFileName);

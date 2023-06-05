@@ -89,21 +89,21 @@ namespace oo
 
         TRACY_PROFILE_SCOPE(runtime_scene_update);
 
-        jobsystem::job phase_one{};
+        //jobsystem::job phase_one{};
         
-        jobsystem::submit(phase_one, [&]() {
+        //jobsystem::submit(phase_one, [&]() {
           TRACY_PROFILE_SCOPE(transform_first_update);
           GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
           TRACY_PROFILE_SCOPE_END();
-            });
+        //});
         
-        jobsystem::submit(phase_one, [&]() {
+        //jobsystem::submit(phase_one, [&]() {
           TRACY_PROFILE_SCOPE(input_update);
           GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
           TRACY_PROFILE_SCOPE_END();
-            });
+        //});
         
-        jobsystem::launch_and_wait(phase_one);
+        //jobsystem::launch_and_wait(phase_one);
 
         // phase 2 : things that rely on transform to complete update 
         //jobsystem::job phase_two{};

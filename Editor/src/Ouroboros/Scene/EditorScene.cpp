@@ -106,24 +106,24 @@ namespace oo
         OPTICK_EVENT();
 
         // jobs in the same phase should not depend on one another's run order.
-        jobsystem::job phase_one{};
-        jobsystem::submit(phase_one, [&]() {
+        //jobsystem::job phase_one{};
+        //jobsystem::submit(phase_one, [&]() {
             GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
-            });
-        jobsystem::launch_and_wait(phase_one);
+        //});
+        //jobsystem::launch_and_wait(phase_one);
 
-        jobsystem::job phase_two{};
-        jobsystem::submit(phase_two, [&]() {
+        //jobsystem::job phase_two{};
+        //jobsystem::submit(phase_two, [&]() {
             GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
-            });
-        jobsystem::submit(phase_two, [&]() {
+        //});
+        //jobsystem::submit(phase_two, [&]() {
             GetWorld().Get_System<PhysicsSystem>()->EditorUpdate(timer::dt());
-            });
-        jobsystem::submit(phase_two, [&]() {
+        //});
+        //jobsystem::submit(phase_two, [&]() {
             GetWorld().Get_System<oo::UISystem>()->EditorUpdate();
-            });
+        //});
         
-        jobsystem::launch_and_wait(phase_two);
+        //jobsystem::launch_and_wait(phase_two);
         
         TRACY_PROFILE_SCOPE_END();
     }

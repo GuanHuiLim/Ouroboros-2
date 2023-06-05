@@ -37,6 +37,13 @@ namespace oo::Anim
 		static std::set<std::string> modified_animations;
 		static std::set<std::string> modified_animation_trees;
 		bool bindPhaseOver{false};
+
+		struct ScriptEventTicket
+		{
+			oo::UUID uuid;
+			oo::ScriptValue::function_info script_function_info{};
+		};
+		std::vector<ScriptEventTicket> scriptEventsToBeCalled{};
 	public:
 		struct ModifyAnimationEvent : oo::Event {
 			std::string name{};
@@ -63,6 +70,11 @@ namespace oo::Anim
 			assert(scene);
 			return *scene;
 		}
+		std::vector<ScriptEventTicket>& GetScriptEventQueue()
+		{
+			return scriptEventsToBeCalled;
+		}
+		
 		//test function
 		Scene::go_ptr CreateAnimationTestObject();
 		
