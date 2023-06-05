@@ -102,7 +102,7 @@ namespace oo
         vec3 GetPositionInPhysicsWorld() const;
         quat GetOrientationInPhysicsWorld() const;
 
-        std::vector<physx::PxVec3> StoreMesh(std::vector<vec3> result);
+        //std::vector<physx::PxVec3> StoreMesh(std::vector<vec3> result);
         void SetStatic(bool result);
 
         float GetMass() const;

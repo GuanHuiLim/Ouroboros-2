@@ -120,10 +120,11 @@ namespace oo
         static Ecs::Query meshColliderJustCreatedQuery = Ecs::make_raw_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent, JustCreatedComponent>();
         m_world->for_each(meshColliderJustCreatedQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr, JustCreatedComponent& jc)
             {
-                if (mc.Vertices.empty() || mc.Reset == true)
+                // we can confirm because anything that has convex-collider wants to use its vertices!
+                if (rb.underlying_object.meshVertices.empty() || mc.Reset == true)
                 {
-                    mc.Vertices.clear();
-                    mc.WorldSpaceVertices.clear();
+                    //mc.Vertices.clear();
+                    //mc.WorldSpaceVertices.clear();
 
                     if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
                     {
@@ -135,27 +136,34 @@ namespace oo
                             new_vertices.emplace_back(vertex.pos);
                             });
 
-                        auto generated_vertices = rb.StoreMesh(new_vertices);
+                        // we submit our desired vertices to let the physics engine decide
+                        rb.desired_object.uploadVertices = new_vertices;
 
-                        std::vector<oo::vec3> temp(generated_vertices.begin(), generated_vertices.end());
-                        std::vector<glm::vec3> actual(temp.begin(), temp.end());
-                        mc.WorldSpaceVertices = mc.Vertices = actual;
+                        //auto generated_vertices = rb.StoreMesh(new_vertices);
+
+                        //std::vector<oo::vec3> temp(generated_vertices.begin(), generated_vertices.end());
+                        //std::vector<glm::vec3> actual(temp.begin(), temp.end());
+                        //mc.WorldSpaceVertices = mc.Vertices = actual;
                     }
 
                     mc.Reset = false;
                 }
 
-                // update the world vertex position based on matrix of current object(this is now just for visualization purposes only!)
-                auto globalMat = tf.GetGlobalMatrix();
-                for (auto& worldSpaceVert : mc.WorldSpaceVertices)
-                {
-                    worldSpaceVert = globalMat * glm::vec4{ worldSpaceVert, 1 };
-                }
+                // set scale to current scale
+                rb.desired_object.meshScale = tf.GetGlobalScale();
+
+                // this function needs to be deferred to later only once it is retrieved.
+                //// update the world vertex position based on matrix of current object(this is now just for visualization purposes only!)
+                //auto globalMat = tf.GetGlobalMatrix();
+                //for (auto& worldSpaceVert : mc.WorldSpaceVertices)
+                //{
+                //    worldSpaceVert = globalMat * glm::vec4{ worldSpaceVert, 1 };
+                //}
                 
                 // we update using the same local vertices but update its scale
-                std::vector<oo::vec3> temp{ mc.Vertices.begin(), mc.Vertices.end() };
+                /*std::vector<oo::vec3> temp{ mc.Vertices.begin(), mc.Vertices.end() };
                 std::vector<PxVec3> res{ temp.begin(), temp.end() };
-                oo::vec3 scale = tf.GetGlobalScale();
+                oo::vec3 scale = tf.GetGlobalScale();*/
                 // TODO : find out what replaces this
                 // rb.object.setConvexProperty(res, scale);
 
@@ -592,12 +600,13 @@ namespace oo
             static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent>();
             m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr)
                 {
-                    bool justEdited = false;
+                    //bool justEdited = false;
 
                     if (mc.Reset == true)
                     {
-                        mc.Vertices.clear();
+                        //mc.Vertices.clear();
                         mc.WorldSpaceVertices.clear();
+                        
 
                         if (mr.MeshInformation.mesh_handle.GetID() != oo::Asset::ID_NULL)
                         {
@@ -609,31 +618,56 @@ namespace oo
                                 new_vertices.emplace_back(vertex.pos);
                                 });
 
-                            auto generated_vertices = rb.StoreMesh(new_vertices);
+                            //auto generated_vertices = rb.StoreMesh(new_vertices);
 
-                            std::vector<oo::vec3> temp{ generated_vertices.begin(), generated_vertices.end() };
+                            // we submit our desired vertices to let the physics engine decide
+                            rb.desired_object.uploadVertices = new_vertices;
+
+                            /*std::vector<oo::vec3> temp{ generated_vertices.begin(), generated_vertices.end() };
                             std::vector<glm::vec3> final_result{temp.begin(), temp.end() };
-                            mc.WorldSpaceVertices = mc.Vertices = final_result;
+                            mc.WorldSpaceVertices = mc.Vertices = final_result;*/
                         }
 
                         mc.Reset = false;
-                        justEdited = true;
+                        //justEdited = true;
+                    }
+                    
+                    if (tf.HasChangedThisFrame)
+                    {
+                        // set scale to current scale
+                        rb.desired_object.meshScale = tf.GetGlobalScale();
+
+
                     }
 
-                    if (tf.HasChangedThisFrame || (justEdited && !mc.Vertices.empty()))
+                    if (physx indicated we have changed vertices)
                     {
-                        // update the world vertex position based on matrix of current object
+                        auto gen_vertices = rb.underlying_object.meshVertices;
+                        std::vector<oo::vec3> temp{ gen_vertices.begin(), gen_vertices.end() };
+                        std::vector<glm::vec3> final_result{ temp.begin(), temp.end() };
+                        mc.WorldSpaceVertices = final_result;
+                        auto vertices = final_result.begin();
                         auto globalMat = tf.GetGlobalMatrix();
-                        auto vertices = mc.Vertices.begin();
                         std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v)
                             {
                                 v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
                             });
-                        std::vector<oo::vec3>temp{ mc.Vertices.begin(), mc.Vertices.end() };
-                        std::vector<PxVec3> res{ temp.begin(), temp.end() }; 
-                        oo::vec3 scale = tf.GetGlobalScale();
-                        //rb.object.setConvexProperty(res, scale);
                     }
+
+                    //if (tf.HasChangedThisFrame || (justEdited && !mc.Vertices.empty()))
+                    //{
+                    //    // update the world vertex position based on matrix of current object
+                    //    auto globalMat = tf.GetGlobalMatrix();
+                    //    auto vertices = mc.Vertices.begin();
+                    //    std::for_each(mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v)
+                    //        {
+                    //            v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
+                    //        });
+                    //    std::vector<oo::vec3>temp{ mc.Vertices.begin(), mc.Vertices.end() };
+                    //    std::vector<PxVec3> res{ temp.begin(), temp.end() }; 
+                    //    oo::vec3 scale = tf.GetGlobalScale();
+                    //    //rb.object.setConvexProperty(res, scale);
+                    //}
 
                     // update filtering
                     {
@@ -1075,7 +1109,7 @@ namespace oo
     void PhysicsSystem::OnRigidbodyRemove(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
         // Remove Data from lookup table
-        ASSERT_MSG(m_physicsToGameObjectLookup.contains(rb->component.object.id) == false, "This should never happen!");
+        ASSERT_MSG(m_physicsToGameObjectLookup.contains(rb->component.underlying_object.id) == false, "This should never happen!");
 
         if (m_physicsToGameObjectLookup.contains(rb->component.underlying_object.id))
         {

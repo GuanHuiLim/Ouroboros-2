@@ -72,52 +72,71 @@ namespace oo
         return underlying_object.orientation;
     }
 
-    std::vector<physx::PxVec3> oo::RigidbodyComponent::StoreMesh(std::vector<oo::vec3> result) {
+    //std::vector<physx::PxVec3> oo::RigidbodyComponent::StoreMesh(std::vector<oo::vec3> result) {
 
-        /*std::vector<physx::PxVec3> vertices{ result.begin(), result.end() };
-        
-        underlying_object.storeMeshVertices(vertices);
+    //    /*std::vector<physx::PxVec3> vertices{ result.begin(), result.end() };
+    //    
+    //    underlying_object.storeMeshVertices(vertices);
 
-        vertices = underlying_object.getAllMeshVertices();
+    //    vertices = underlying_object.getAllMeshVertices();
 
-        return vertices;*/
-        
-        // todo : this is obviously incorrect.
-        IsDirty = true;
-        std::vector<physx::PxVec3> vertices{ result.begin(), result.end() };
-        underlying_object.meshVertices = vertices;
-        vertices = underlying_object.meshVertices;
-        return vertices;
-    }
+    //    return vertices;*/
+    //    
+    //    // todo : this is obviously incorrect.
+    //    IsDirty = true;
+    //    std::vector<physx::PxVec3> vertices{ result.begin(), result.end() };
+    //    underlying_object.meshVertices = vertices;
+    //    vertices = underlying_object.meshVertices;
+    //    return vertices;
+    //}
     
-    void oo::RigidbodyComponent::SetStatic(bool result)
+    void oo::RigidbodyComponent::SetStatic(bool setToStatic)
     {
-        result ? desired_object.rigid_type = myPhysx::rigid::rstatic : desired_object.rigid_type = myPhysx::rigid::rdynamic;
+        if (setToStatic)
+            desired_object.rigid_type = myPhysx::rigid::rstatic;
+        else
+            desired_object.rigid_type = myPhysx::rigid::rdynamic;
+        
         IsDirty = true;
     }
 
     float oo::RigidbodyComponent::GetMass() const
     {
+        if (IsStatic())
+            return 0;
+
         return underlying_object.mass;
     }
 
     float oo::RigidbodyComponent::GetAngularDamping() const
     {
+        if (IsStatic())
+            return 0;
+
         return underlying_object.angularDamping;
     }
 
     vec3 oo::RigidbodyComponent::GetAngularVelocity() const
     {
+        if (IsStatic())
+            return {0};
+
         return underlying_object.angularVel;
     }
 
     float oo::RigidbodyComponent::GetLinearDamping() const
     {
+        if (IsStatic())
+            return 0;
+
         return underlying_object.linearDamping;
     }
 
     vec3 oo::RigidbodyComponent::GetLinearVelocity() const
     {
+        if (IsStatic())
+            return {0};
+
         return underlying_object.linearVel;
     }
 
