@@ -50,7 +50,7 @@ namespace oo
 
         registration::class_<ConvexColliderComponent>("Convex Collider")
             .property("Reset", &ConvexColliderComponent::Reset)
-            .property_readonly("vertices", &ConvexColliderComponent::Vertices)
+            //.property_readonly("vertices", &ConvexColliderComponent::Vertices)
             .property_readonly("World Space Vertices", &ConvexColliderComponent::WorldSpaceVertices)
             ;
     }

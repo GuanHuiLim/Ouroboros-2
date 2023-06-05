@@ -324,10 +324,10 @@ namespace myPhysx {
         std::uint32_t filterOut = FilterGroup::Zero;
 
         bool changeVertices = false;
-        PxVec3 meshScale;
-        std::vector<PxVec3> uploadVertices;
-
-        std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
+        PxVec3 meshScale = PxVec3(1, 1, 1);
+        std::vector<PxVec3> uploadVertices{};
+        std::vector<PxVec3> meshVertices{ PxVec3(0,0,0), PxVec3(0,0,0), PxVec3(0,0,0) };
+        
         //std::vector<PxVec3> meshVertices{ PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
     };
 
@@ -370,90 +370,9 @@ namespace myPhysx {
         std::uint32_t filterOut = FilterGroup::Zero;
 
         bool changeVertices = false;
-        PxVec3 meshScale;
-        std::vector<PxVec3> uploadVertices;
-
+        PxVec3 meshScale = PxVec3(1, 1, 1);
+        std::vector<PxVec3> uploadVertices{};
         std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
-        // END NEW ADDED
-
-        //PhysxWorld* world;
-
-        // ALL HERE NO NEED CHECK WHETHER THIS OBJECT CONTAINS INSIDE THE WORLD
-
-        // GETTERS
-        //LockingAxis getLockPositionAxis() const;
-        //LockingAxis getLockRotationAxis() const;
-        //Material getMaterial() const;
-        //PxVec3 getposition() const;
-        //PxQuat getOrientation() const;
-
-        //PxReal getMass() const;
-        //PxReal getInvMass() const;
-        //PxReal getAngularDamping() const;
-        //PxVec3 getAngularVelocity() const;
-        //PxReal getLinearDamping() const;
-        //PxVec3 getLinearVelocity() const;
-
-        //bool isTrigger() const;
-        //bool isGravityEnabled() const;
-        //bool isKinematic() const;
-        //bool isColliderEnabled() const;
-
-        //std::uint32_t getFilterIn() const;
-        //std::uint32_t getFilterOut() const;
-
-        // SETTERS
-        //void setRigidType(rigid type);
-        //void setMaterial(Material material);
-        //void setPosOrientation(PxVec3 pos, PxQuat quat);
-
-        //void setMass(PxReal mass);
-        //void setMassSpaceInertia(PxVec3 mass);
-        //void setAngularDamping(PxReal angularDamping);
-        //void setAngularVelocity(PxVec3 angularVelocity);
-        //void setLinearDamping(PxReal linearDamping);
-        //void setLinearVelocity(PxVec3 linearVelocity);
-
-        //void enableGravity(bool enable);
-        //void enableKinematic(bool enable);
-        //void enableCollider(bool enable);
-
-        //// AXIS LOCKING
-        //void lockPositionX(bool lock);
-        //void lockPositionY(bool lock);
-        //void lockPositionZ(bool lock);
-
-        //void lockRotationX(bool lock);
-        //void lockRotationY(bool lock);
-        //void lockRotationZ(bool lock);
-
-        //// TRIGGERS
-        //void setTriggerShape(bool trigger);
-
-        //// FORCE
-        //void addForce(PxVec3 f_amount, force f);
-        //void addTorque(PxVec3 f_amount, force f);
-
-        //// set default value for each type of shape & can change shape too
-        //template<typename Type>
-        //void reAttachShape(rigid rigidType, Type data);
-
-        //void setShape(shape shape);
-        //void removeShape();
-
-        //// change each individual property based on its shape
-        //void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
-        //void setSphereProperty(float radius);
-        //void setCapsuleProperty(float radius, float halfHeight);
-        //void setConvexProperty(std::vector<PxVec3> vert, PxVec3 scale);
-        //void setPlaneProperty(float radius);
-
-        //void storeMeshVertices(std::vector<PxVec3> vert);
-        //PxConvexMesh* createConvexMesh(std::vector<PxVec3> vert);
-        //std::vector<PxVec3> getAllMeshVertices();
-
-        // Set filter in and out
-        //void setFiltering(std::uint32_t filterIn, std::uint32_t filterOut);
     };
 
     static constexpr std::size_t sizeofPhysicsObject = sizeof(PhysicsObject);

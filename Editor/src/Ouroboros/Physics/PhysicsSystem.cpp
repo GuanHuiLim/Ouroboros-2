@@ -130,10 +130,10 @@ namespace oo
                     {
                         auto& vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
 
-                        auto new_vertices = std::vector<oo::vec3>();
+                        auto new_vertices = std::vector<physx::PxVec3>();
                         new_vertices.reserve(vertices.size());
                         std::for_each(vertices.begin(), vertices.end(), [&](auto&& vertex) {
-                            new_vertices.emplace_back(vertex.pos);
+                            new_vertices.emplace_back(physx::PxVec3{ vertex.pos.x, vertex.pos.y, vertex.pos.z });
                             });
 
                         // we submit our desired vertices to let the physics engine decide
@@ -150,7 +150,8 @@ namespace oo
                 }
 
                 // set scale to current scale
-                rb.desired_object.meshScale = tf.GetGlobalScale();
+                auto scale = tf.GetGlobalScale();
+                rb.desired_object.meshScale = { scale.x, scale.y, scale.z };
 
                 // this function needs to be deferred to later only once it is retrieved.
                 //// update the world vertex position based on matrix of current object(this is now just for visualization purposes only!)
@@ -612,10 +613,10 @@ namespace oo
                         {
                             auto const vertices = mr.MeshInformation.mesh_handle.GetData<ModelFileResource*>()->vertices;
 
-                            auto new_vertices = std::vector<oo::vec3>();
+                            auto new_vertices = std::vector<physx::PxVec3>();
                             new_vertices.reserve(vertices.size());
                             std::for_each(vertices.begin(), vertices.end(), [&](auto&& vertex) {
-                                new_vertices.emplace_back(vertex.pos);
+                                new_vertices.emplace_back(physx::PxVec3{ vertex.pos.x, vertex.pos.y, vertex.pos.z });
                                 });
 
                             //auto generated_vertices = rb.StoreMesh(new_vertices);
@@ -635,12 +636,11 @@ namespace oo
                     if (tf.HasChangedThisFrame)
                     {
                         // set scale to current scale
-                        rb.desired_object.meshScale = tf.GetGlobalScale();
-
-
+                        auto scale = tf.GetGlobalScale();
+                        rb.desired_object.meshScale = { scale.x, scale.y, scale.z };
                     }
 
-                    if (physx indicated we have changed vertices)
+                    if (rb.underlying_object.changeVertices)
                     {
                         auto gen_vertices = rb.underlying_object.meshVertices;
                         std::vector<oo::vec3> temp{ gen_vertices.begin(), gen_vertices.end() };
@@ -1246,7 +1246,9 @@ namespace oo
     void PhysicsSystem::InitializeRigidbody(RigidbodyComponent& rb)
     {
         //rb.object = m_physicsWorld.createInstance();
-        rb.underlying_object = rb.desired_object = m_physicsWorld.createInstance();
+        myPhysx::PhysicsObject instance = m_physicsWorld.createInstance();
+        rb.desired_object = instance;
+        rb.underlying_object = instance;
 
         rb.SetStatic(true); // default to static objects. Most things in the world should be static.
         //rb.EnableGravity(); // most things in the world should have gravity enabled (?)

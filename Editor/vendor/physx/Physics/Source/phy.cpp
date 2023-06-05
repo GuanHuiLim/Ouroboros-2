@@ -945,6 +945,7 @@ namespace myPhysx
                 underlying_Obj.m_shape->setLocalPose(PxTransform{ PxQuat(PxHalfPi, PxVec3(0, 0, 1)) });
                 break;
             case shape::convex:
+            {
                 PxConvexMesh* defaultMesh = createConvexMesh({ PxVec3{ 0,0,0 }, PxVec3{0,0,0}, PxVec3{0,0,0} });
                 underlying_Obj.m_shape = mPhysics->createShape(PxConvexMeshGeometry(defaultMesh, PxMeshScale(updated_Obj.meshScale)), *underlying_Obj.m_material, true);
                 
@@ -972,6 +973,7 @@ namespace myPhysx
                 underlying_Obj.meshScale = updated_Obj.meshScale;
                 underlying_Obj.m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(underlying_Obj.meshVertices), PxMeshScale(underlying_Obj.meshScale)));
                 break;
+            }
             case shape::none:
             default:
                 return; // NOTE we return here because code below requires a shape!
@@ -1003,7 +1005,7 @@ namespace myPhysx
                 underlying_Obj.m_shape->setLocalPose(PxTransform{ PxQuat(PxHalfPi, PxVec3(0, 0, 1)) });
                 break;
             case shape::convex:
-
+            {
                 underlying_Obj.meshScale = updated_Obj.meshScale;
 
                 if (!updated_Obj.uploadVertices.empty()) {
@@ -1030,6 +1032,7 @@ namespace myPhysx
                     underlying_Obj.m_shape->setGeometry(PxConvexMeshGeometry(createConvexMesh(underlying_Obj.meshVertices), PxMeshScale(underlying_Obj.meshScale)));
                 }
                 break;
+            }
             case shape::none:
             default:
                 return; // NOTE we return here because code below requires a shape!
