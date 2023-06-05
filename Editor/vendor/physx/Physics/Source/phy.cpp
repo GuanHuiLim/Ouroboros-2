@@ -290,7 +290,7 @@ namespace myPhysx
 
         PhysxObject obj;
         obj.id = std::make_unique<phy_uuid::UUID>();
-        obj.m_material = mPhysics->createMaterial(.5f, .5f, .1f);
+        obj.m_material = mPhysics->createMaterial(.4f, .2f, .0f);
 
         // This is important!
         phy_uuid::UUID generated_uuid = *obj.id;

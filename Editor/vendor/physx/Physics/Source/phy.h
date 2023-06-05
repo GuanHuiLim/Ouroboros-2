@@ -315,7 +315,7 @@ namespace myPhysx {
         LockingAxis lockRotationAxis{};
 
         bool is_trigger = false;
-        bool gravity_enabled = true; // static should be false
+        bool gravity_enabled = false; // static should be false
         bool is_kinematic = false;
         bool is_collider = true;
 
@@ -336,7 +336,7 @@ namespace myPhysx {
         phy_uuid::UUID id;
 
         // NEW ADDED
-        Material material = Material{};
+        Material material = Material{.4f,.2f,.0f};
 
         PxVec3 position = {};
         PxQuat orientation = {};
@@ -361,7 +361,7 @@ namespace myPhysx {
         LockingAxis lockRotationAxis{};
 
         bool is_trigger = false;
-        bool gravity_enabled = true; // static should be false
+        bool gravity_enabled = false; // static should be false
         bool is_kinematic = false;
         bool is_collider = true;
 
