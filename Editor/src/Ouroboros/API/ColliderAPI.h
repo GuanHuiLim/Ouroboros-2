@@ -97,12 +97,12 @@ namespace oo
         return arr;
     }
 
-    SCRIPT_API MonoArray* ConvexCollider_GetVertices(Scene::ID_type sceneID, UUID uuid)
+    /*SCRIPT_API MonoArray* ConvexCollider_GetVertices(Scene::ID_type sceneID, UUID uuid)
     {
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         ConvexColliderComponent& component = obj->GetComponent<ConvexColliderComponent>();
         return ConvertVerticeArray(component.Vertices);
-    }
+    }*/
 
     SCRIPT_API MonoArray* ConvexCollider_GetWorldVertices(Scene::ID_type sceneID, UUID uuid)
     {
