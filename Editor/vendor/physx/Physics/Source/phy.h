@@ -222,6 +222,10 @@ namespace myPhysx {
         
         std::vector<PxVec3> m_meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) }; // vector to store the mesh vertices
 
+
+        // map of existing physics objects that are created
+        std::unordered_map<phy_uuid::UUID, PhysicsObject> m_latestPhysicsObjects{};
+
     public:
 
         // SCENE
@@ -276,9 +280,9 @@ namespace myPhysx {
         template<typename Type>
         void retrievePosOri(PhysicsObject& physics_Obj, Type data) const;
 
-        void setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate);
+        void setAllData(PhysicsObject const& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate);
 
-        void setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate);
+        void setShape(PhysicsObject const& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate);
 
         void setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
 
@@ -338,13 +342,13 @@ namespace myPhysx {
         // NEW ADDED
         Material material = Material{.4f,.2f,.0f};
 
-        PxVec3 position = {};
-        PxQuat orientation = {};
+        PxVec3 position = {0,0,0};
+        PxQuat orientation = {0,0,0,1};
 
-        PxReal mass, invmass;
-        PxReal linearDamping, angularDamping;
+        PxReal mass = 0, invmass = 0;
+        PxReal linearDamping = 0.00, angularDamping = 0.00;
 
-        PxVec3 linearVel, angularVel;
+        PxVec3 linearVel = { 0,0,0 }, angularVel = { 0,0,0 };
 
         shape shape_type = shape::none;
 

@@ -16,6 +16,7 @@ Technology is prohibited.
 *//*************************************************************************************/
 
 #include <iostream>
+#include <execution>
 #include "phy.h"
 
 using namespace physx;
@@ -270,6 +271,14 @@ namespace myPhysx
         scene->simulate(dt); // 1.f / 60.f
         //scene->collide(dt);
         scene->fetchResults(true);
+
+        for (auto&& physx_obj : m_objects)
+        {
+            phy_uuid::UUID uid = *physx_obj.id;
+            PhysicsObject& new_obj = m_latestPhysicsObjects[uid];
+
+            retrieveOldData(new_obj, physx_obj);
+        }
     }
 
     PxVec3 PhysxWorld::getWorldGravity() const {
@@ -311,9 +320,12 @@ namespace myPhysx
         m_objects.emplace_back(std::move(obj));
         all_objects.insert({ generated_uuid, m_objects.size() - 1 }); // add back the m_objects last element
         
-        
         // return the object i created
-        return PhysicsObject{ generated_uuid }; // a copy
+        auto physics_obj = PhysicsObject{ generated_uuid }; // a copy
+        m_latestPhysicsObjects.insert({ generated_uuid, physics_obj });
+
+        return physics_obj;
+        
     }
 
     void PhysxWorld::removeInstance(PhysicsObject obj) {
@@ -638,27 +650,20 @@ namespace myPhysx
     // NEW FUNCTIONS
     std::unordered_map<phy_uuid::UUID, PhysicsObject> PhysxWorld::retrieveCurrentObjects() const
     {
-        std::unordered_map<phy_uuid::UUID, PhysicsObject> updatedObjects;
-
-        for (auto&& physx_obj : m_objects)
-        {
-            PhysicsObject new_obj;
-
-            retrieveOldData(new_obj, physx_obj);
-
-            updatedObjects.insert({ new_obj.id, new_obj });
-        }
-
-        return updatedObjects;
+        return m_latestPhysicsObjects;
     }
 
     void PhysxWorld::submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects)
     {
-        std::for_each(/*std::execution::unseq,*/ updatedObjects.begin(), updatedObjects.end(), [&](auto&& updatedObj)
+        std::for_each(/*std::execution::par_unseq,*/ updatedObjects.begin(), updatedObjects.end(), [&](auto&& updatedObj)
         {
             // CHECK WHETHER OBJECT EXISTED
             if (!all_objects.contains(updatedObj.id))
                 return;
+
+            //// this should never be an insert!
+            //assert(m_physicsObjects.contains(updatedObj.id));
+            //m_physicsObjects[updatedObj.id] = updatedObj;
 
             PhysxObject& underlying_obj = m_objects.at(all_objects.at(updatedObj.id));
 
@@ -772,7 +777,7 @@ namespace myPhysx
         physics_Obj.orientation = data->getGlobalPose().q;
     }
 
-    void PhysxWorld::setAllData(PhysicsObject& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate) {
+    void PhysxWorld::setAllData(PhysicsObject const& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate) {
 
         // MATERIAL PROPERTIES
         underlying_Obj.m_material->setStaticFriction(updatedPhysicsObj.material.staticFriction);
@@ -796,24 +801,14 @@ namespace myPhysx
         if (underlying_Obj.rigid_type != updatedPhysicsObj.rigid_type || duplicate)
         {
             // no need to remove if duplicate as there's no data
-            if (!duplicate) {
-
+            if (!duplicate) 
+            {
                 // what is our existing shape? need to handle removing them first.
-                if (underlying_Obj.rigid_type == rigid::rstatic)
-                {
-                    // clear the current data
-                    scene->removeActor(*underlying_rigidbody);
-                    if (underlying_Obj.m_shape)
-                        underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
-                    underlying_rigidbody = nullptr;
-                }
-                else // underlying_Obj.rigid_type == rigid::rdynamic
-                {
-                    scene->removeActor(*underlying_rigidbody);
-                    if (underlying_Obj.m_shape)
-                        underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
-                    underlying_rigidbody = nullptr;
-                }
+                // clear the current data
+                scene->removeActor(*underlying_rigidbody);
+                if (underlying_Obj.m_shape)
+                    underlying_rigidbody->detachShape(*underlying_Obj.m_shape);
+                underlying_rigidbody = nullptr;
             }
             else
                 transform = { 0,0,0 };
@@ -916,7 +911,7 @@ namespace myPhysx
             physx_system::setupFiltering(underlying_Obj.m_shape, updatedPhysicsObj.filterIn, updatedPhysicsObj.filterOut);
     }
 
-    void PhysxWorld::setShape(PhysicsObject& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate)
+    void PhysxWorld::setShape(PhysicsObject const& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate)
     {
         // CHECK IF WE NEED TO CHANGE SHAPE 
         if (underlying_Obj.shape_type != updated_Obj.shape_type || duplicate)
@@ -952,7 +947,7 @@ namespace myPhysx
                 if (!updated_Obj.uploadVertices.empty()) {
                     PxConvexMesh* m = createConvexMesh(updated_Obj.uploadVertices);
                     underlying_Obj.m_shape = mPhysics->createShape(PxConvexMeshGeometry(m, PxMeshScale(updated_Obj.meshScale)), *underlying_Obj.m_material, true);
-                    updated_Obj.uploadVertices.clear();
+                    //updated_Obj.uploadVertices.clear();
 
                     underlying_Obj.changeVertices = true;
                 }
@@ -1011,7 +1006,7 @@ namespace myPhysx
                 if (!updated_Obj.uploadVertices.empty()) {
                     PxConvexMesh* m = createConvexMesh(updated_Obj.uploadVertices);
                     underlying_Obj.m_shape = mPhysics->createShape(PxConvexMeshGeometry(m, PxMeshScale(updated_Obj.meshScale)), *underlying_Obj.m_material, true);
-                    updated_Obj.uploadVertices.clear();
+                    //updated_Obj.uploadVertices.clear();
 
                     underlying_Obj.changeVertices = true;
 
