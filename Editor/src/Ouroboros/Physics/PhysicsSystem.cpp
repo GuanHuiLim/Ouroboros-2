@@ -94,31 +94,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(post_load_scene_init, tracy::Color::PeachPuff2);
 
-        // TODO : Probably initialize physics here for one frame to get the right data
-
-        // Submit update to physics world to reflect changes.[properties only!]
-        SubmitUpdatesToPhysicsWorld();
-
-        TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
-            // update the physics world using fixed dt.
-            m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
-        TRACY_PROFILE_SCOPE_END();
-
-        TRACY_PROFILE_SCOPE_NC(start_of_frame_retrieve_physics_properties, tracy::Color::VioletRed1);
-        // Finally we retrieve the newly updated information from physics world 
-        // and update our affected data.
-        {
-            auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
-
-            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-            m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
-                {
-                    rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
-                });
-        }
-        TRACY_PROFILE_SCOPE_END();
-
-        //std::mutex m;
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
         m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
@@ -127,7 +102,6 @@ namespace oo
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
                     oo::vec3 pos = tf.GetGlobalPosition();
                     oo::quat quat = tf.GetGlobalRotationQuat();
-                    //std::lock_guard lock(m);
                     rb.SetPosOrientation(pos + rb.Offset, quat);
                     TRACY_PROFILE_SCOPE_END();
                 }
@@ -196,6 +170,11 @@ namespace oo
 
             });
 
+        // we run update dynamics once
+        TRACY_PROFILE_SCOPE_NC(start_of_frame_retrieve_physics_properties, tracy::Color::VioletRed1);
+        UpdateDynamics(FixedDeltaTime);
+        TRACY_PROFILE_SCOPE_END();
+
         TRACY_PROFILE_SCOPE_END();
     }
     
@@ -204,9 +183,6 @@ namespace oo
         TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
 
         //avoids spiral of death.
-        /*if (m_accumulator > AccumulatorLimit)
-            m_accumulator = AccumulatorLimit;*/
-
         Timestep frametime = deltaTime > MaxFrameTime ? MaxFrameTime : deltaTime;
         m_accumulator += frametime;
 
@@ -257,25 +233,12 @@ namespace oo
         // Update global bounds of all objects
         UpdateGlobalBounds();
         
-        // New stuff below!
-
         // Submit update to physics world to reflect changes.[properties only!]
         SubmitUpdatesToPhysicsWorld();
 
-        TRACY_PROFILE_SCOPE_NC(physics_update_physics_properties, tracy::Color::VioletRed1);
-            // Finally we retrieve the newly updated information from physics world 
-            // and update our affected data.
-            {
-                auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
-
-                static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-                m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
-                    {
-                        rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
-                    });
-            }
-        TRACY_PROFILE_SCOPE_END();
-
+        // Finally we retrieve the newly updated information from physics world 
+        // and update our affected data.
+        RetrieveUpdatedObjects();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -292,47 +255,20 @@ namespace oo
         SubmitUpdatesToPhysicsWorld();
 
         // additionally we also submit script commands!
-        {
-            std::vector<myPhysx::PhysicsCommand> all_commands;
-            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-            m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
-                {
-                    std::move(rb.external_commands.begin(), rb.external_commands.end(), all_commands.end());
-                });
-            //SubmitCommandsToPhysicsWorld();
-        }
+        SubmitScriptCommands();
 
         // than we tell physics engine to update!
-        auto promise = std::async(std::launch::async, [&]()
-            {
-                TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
-                    // update the physics world using fixed dt.
-                    m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
-                TRACY_PROFILE_SCOPE_END();
-            });
-
-        // block and wait for physics engine to update finish
-        promise.get();
+        TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
+            // update the physics world using fixed dt.
+            m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
+        TRACY_PROFILE_SCOPE_END();
 
         // Finally we retrieve the newly updated information from physics world 
         // and update our affected data.
-        {
-            TRACY_PROFILE_SCOPE_NC(physics_retrieve_updated_objects, tracy::Color::Brown)
-                auto updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
-            TRACY_PROFILE_SCOPE_END();
+        RetrieveUpdatedObjects();
 
-            TRACY_PROFILE_SCOPE_NC(physics_update_physics_properties, tracy::Color::Brown)
-                static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-            m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
-                {
-                    rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
-                });
-            TRACY_PROFILE_SCOPE_END();
-        }
-
-        ///* Single threaded method */
+        /* Update transform to reflect rigidbody changes*/
         static Ecs::Query rb_query = Ecs::make_query<GameObjectComponent, TransformComponent, RigidbodyComponent>();
-        
         // set position and orientation of our scene's dynamic rigidbodies with updated physics results
         m_world->parallel_for_each(rb_query, [&](GameObjectComponent& goc, TransformComponent& tf, RigidbodyComponent& rb)
         {
@@ -624,25 +560,59 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(physics_submit_updates_to_physX_world, tracy::Color::VioletRed1);
 
-        TRACY_PROFILE_SCOPE_NC(compiling_objects_that_requires_update, tracy::Color::VioletRed2);
+        {
+            TRACY_PROFILE_SCOPE_NC(compiling_objects_that_requires_update, tracy::Color::VioletRed2);
 
-        needsUpdating.clear();
-        needsUpdating.reserve(1024);
-        static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
-        m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+            needsUpdating.clear();
+            needsUpdating.reserve(1024);
+            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+            m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+                {
+                    if (rb.IsDirty)
+                        needsUpdating.emplace_back(rb.desired_object);
+
+                    rb.IsDirty = false;
+                });
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        {
+            TRACY_PROFILE_SCOPE_NC(physX_internal_updating, tracy::Color::VioletRed2);
+            // submit to update
+            m_physicsWorld.submitUpdatedObjects(std::move(needsUpdating));
+            TRACY_PROFILE_SCOPE_END();
+        }
+
+        TRACY_PROFILE_SCOPE_END();
+    }
+
+    void oo::PhysicsSystem::SubmitScriptCommands()
+    {
+        TRACY_PROFILE_SCOPE_NC(submit_script_commands, tracy::Color::Brown)
+        {
+            std::vector<myPhysx::PhysicsCommand> all_commands;
+            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+            m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
+                {
+                    std::move(rb.external_commands.begin(), rb.external_commands.end(), all_commands.end());
+                });
+            m_physicsWorld.submitPhysicsCommand(std::move(all_commands));
+        }
+        TRACY_PROFILE_SCOPE_END();
+    }
+
+    void PhysicsSystem::RetrieveUpdatedObjects()
+    {
+        TRACY_PROFILE_SCOPE_NC(physics_retrieve_updated_objects, tracy::Color::Brown)
+            auto const& updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
+        TRACY_PROFILE_SCOPE_END();
+
+        TRACY_PROFILE_SCOPE_NC(physics_update_physics_properties, tracy::Color::Brown)
+            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+        m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
-                if (rb.IsDirty)
-                    needsUpdating.emplace_back(rb.desired_object);
-
-                rb.IsDirty = false;
+                rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
             });
-        TRACY_PROFILE_SCOPE_END();
-
-        TRACY_PROFILE_SCOPE_NC(physX_internal_updating, tracy::Color::VioletRed2);
-        // submit to update
-        m_physicsWorld.submitUpdatedObjects(std::move(needsUpdating));
-        TRACY_PROFILE_SCOPE_END();
-
         TRACY_PROFILE_SCOPE_END();
     }
 

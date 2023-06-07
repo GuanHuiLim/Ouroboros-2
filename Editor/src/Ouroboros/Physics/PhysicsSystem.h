@@ -82,6 +82,8 @@ namespace oo
 
         void UpdateGlobalBounds();
         void SubmitUpdatesToPhysicsWorld();
+        void SubmitScriptCommands();
+        void RetrieveUpdatedObjects();
         void UpdateCallbacks();
         void PostUpdate();
 

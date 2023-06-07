@@ -105,7 +105,8 @@ namespace oo
         if (IsStatic())
             return 0;
 
-        return underlying_object.mass;
+        return desired_object.mass;
+        //return underlying_object.mass;
     }
 
     float oo::RigidbodyComponent::GetAngularDamping() const
@@ -113,7 +114,8 @@ namespace oo
         if (IsStatic())
             return 0;
 
-        return underlying_object.angularDamping;
+        return desired_object.angularDamping;
+        //return underlying_object.angularDamping;
     }
 
     vec3 oo::RigidbodyComponent::GetAngularVelocity() const
@@ -121,7 +123,8 @@ namespace oo
         if (IsStatic())
             return {0};
 
-        return underlying_object.angularVel;
+        return desired_object.angularVel;
+        //return underlying_object.angularVel;
     }
 
     float oo::RigidbodyComponent::GetLinearDamping() const
@@ -129,7 +132,8 @@ namespace oo
         if (IsStatic())
             return 0;
 
-        return underlying_object.linearDamping;
+        return desired_object.linearDamping;
+        //return underlying_object.linearDamping;
     }
 
     vec3 oo::RigidbodyComponent::GetLinearVelocity() const
@@ -137,12 +141,14 @@ namespace oo
         if (IsStatic())
             return {0};
 
-        return underlying_object.linearVel;
+        return desired_object.linearVel;
+        //return underlying_object.linearVel;
     }
 
     bool oo::RigidbodyComponent::IsGravityEnabled() const
     {
-        return underlying_object.gravity_enabled;
+        return desired_object.gravity_enabled;
+        //return underlying_object.gravity_enabled;
     }
 
     bool oo::RigidbodyComponent::IsGravityDisabled() const
@@ -152,22 +158,26 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsStatic() const
     {
-        return underlying_object.rigid_type == myPhysx::rigid::rstatic;
+        return desired_object.rigid_type == myPhysx::rigid::rstatic;
+        //return underlying_object.rigid_type == myPhysx::rigid::rstatic;
     }
 
     bool oo::RigidbodyComponent::IsKinematic() const
     {
-        return !IsStatic() && underlying_object.is_kinematic;
+        return !IsStatic() && desired_object.is_kinematic;
+        //return !IsStatic() && underlying_object.is_kinematic;
     }
 
     bool oo::RigidbodyComponent::IsDynamic() const
     {
-        return !IsStatic() && !underlying_object.is_kinematic;
+        return !IsStatic() && !desired_object.is_kinematic;
+        //return !IsStatic() && !underlying_object.is_kinematic;
     }
 
     bool oo::RigidbodyComponent::IsTrigger() const
     {
-        return underlying_object.is_trigger;
+        return desired_object.is_trigger;
+        //return underlying_object.is_trigger;
     }
 
     bool oo::RigidbodyComponent::IsCollider() const
@@ -195,7 +205,8 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsXAxisPosLocked()
     {
-        return underlying_object.lockPositionAxis.x_axis;
+        return desired_object.lockPositionAxis.x_axis;
+        //return underlying_object.lockPositionAxis.x_axis;
     }
 
     void oo::RigidbodyComponent::LockYAxisPos(bool enable)
@@ -206,7 +217,8 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsYAxisPosLocked()
     {
-        return underlying_object.lockPositionAxis.y_axis;
+        return desired_object.lockPositionAxis.y_axis;
+        //return underlying_object.lockPositionAxis.y_axis;
     }
 
     void oo::RigidbodyComponent::LockZAxisPos(bool enable)
@@ -217,7 +229,8 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsZAxisPosLocked()
     {
-        return underlying_object.lockPositionAxis.z_axis;
+        return desired_object.lockPositionAxis.z_axis;
+        //return underlying_object.lockPositionAxis.z_axis;
     }
 
     void oo::RigidbodyComponent::LockXAxisRot(bool enable)
@@ -228,7 +241,8 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsXAxisRotLocked()
     {
-        return underlying_object.lockRotationAxis.x_axis;
+        return desired_object.lockRotationAxis.x_axis;
+        //return underlying_object.lockRotationAxis.x_axis;
     }
 
     void oo::RigidbodyComponent::LockYAxisRot(bool enable)
@@ -239,7 +253,8 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsYAxisRotLocked()
     {
-        return underlying_object.lockRotationAxis.y_axis;
+        return desired_object.lockRotationAxis.y_axis;
+        //return underlying_object.lockRotationAxis.y_axis;
     }
     
     void oo::RigidbodyComponent::LockZAxisRot(bool enable)
@@ -250,7 +265,8 @@ namespace oo
 
     bool oo::RigidbodyComponent::IsZAxisRotLocked()
     {
-        return underlying_object.lockRotationAxis.z_axis;
+        return desired_object.lockRotationAxis.z_axis;
+        //return underlying_object.lockRotationAxis.z_axis;
     }
 
     void oo::RigidbodyComponent::SetTrigger(bool enable)
