@@ -82,7 +82,7 @@ namespace oo
         myPhysx::PhysicsObject underlying_object{};
         myPhysx::PhysicsObject desired_object{};
 
-        std::vector<myPhysx::PhysicsCommand> external_commands;
+        std::vector<myPhysx::PhysicsCommand> external_commands{};
 
     public:
         // Who am I? usually only 1

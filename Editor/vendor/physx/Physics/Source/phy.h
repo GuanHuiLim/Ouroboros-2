@@ -331,8 +331,6 @@ namespace myPhysx {
         PxVec3 meshScale = PxVec3(1, 1, 1);
         std::vector<PxVec3> uploadVertices{};
         std::vector<PxVec3> meshVertices{ PxVec3(0,0,0), PxVec3(0,0,0), PxVec3(0,0,0) };
-        
-        //std::vector<PxVec3> meshVertices{ PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
     };
 
     struct PhysicsObject { // you store

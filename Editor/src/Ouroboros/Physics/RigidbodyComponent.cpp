@@ -28,6 +28,8 @@ namespace oo
 
         registration::class_<RigidbodyComponent>("Rigidbody")
             //.property("type", &RigidbodyComponent::collider_type)
+            .property_readonly("Underlying Object", &RigidbodyComponent::underlying_object)
+            .property_readonly("Desired Object", &RigidbodyComponent::desired_object)
             .property("Input Layer", &RigidbodyComponent::GetInputLayer, &RigidbodyComponent::SetInputLayer)(metadata(UI_metadata::HIDDEN, true))
             .property("Output Layer", &RigidbodyComponent::GetOutputLayer, &RigidbodyComponent::SetOutputLayer)(metadata(UI_metadata::HIDDEN, true))
             .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
@@ -53,7 +55,66 @@ namespace oo
             .property("Restitution", &PhysicsMaterial::Restitution)
             .property("DynamicFriction", &PhysicsMaterial::DynamicFriction)
             .property("StaticFriction", &PhysicsMaterial::StaticFriction);
+
+        registration::class_<myPhysx::PhysicsObject>("Underlying object")
+            .property("Material", &myPhysx::PhysicsObject::material)
+            //.property("Position", &myPhysx::PhysicsObject::position)
+            //.property("Orientation", &myPhysx::PhysicsObject::orientation)
+            .property("Mass", &myPhysx::PhysicsObject::mass)
+            .property("Inverse Mass", &myPhysx::PhysicsObject::invmass)
+            .property("Linear Damping", &myPhysx::PhysicsObject::linearDamping)
+            .property("Angular Damping", &myPhysx::PhysicsObject::angularDamping)
+            //.property("Linear Velocity", &myPhysx::PhysicsObject::linearVel)
+            //.property("Angular Velocity", &myPhysx::PhysicsObject::angularVel)
+            .property("Shape Type", &myPhysx::PhysicsObject::shape_type)
+            .property("Rigid Type", &myPhysx::PhysicsObject::rigid_type)
+            .property("Lock Position Axis", &myPhysx::PhysicsObject::lockPositionAxis)
+            .property("Lock Rotation Axis", &myPhysx::PhysicsObject::lockRotationAxis)
+            .property("Is Trigger", &myPhysx::PhysicsObject::is_trigger)
+            .property("Gravity Enabled", &myPhysx::PhysicsObject::gravity_enabled)
+            .property("Is Kinematic", &myPhysx::PhysicsObject::is_kinematic)
+            .property("Is Collider", &myPhysx::PhysicsObject::is_collider)
+            .property("Input Layer", &myPhysx::PhysicsObject::filterIn)
+            .property("Output Layer", &myPhysx::PhysicsObject::filterOut)
+            //.property("", &myPhysx::PhysicsObject::meshScale)
+            ;
         
+        registration::class_<myPhysx::Material>("Physics Material")
+            .property("Static friction", &myPhysx::Material::staticFriction)
+            .property("Dynamic friction", &myPhysx::Material::dynamicFriction)
+            .property("Restitution", &myPhysx::Material::restitution)
+            ;
+        
+        //registration::class_<myPhysx::shape>("Physics Material")
+        //    .property("Static friction", &myPhysx::Material::staticFriction)
+        //    .property("Dynamic friction", &myPhysx::Material::dynamicFriction)
+        //    .property("Restitution", &myPhysx::Material::restitution)
+        //    ;
+
+        registration::enumeration<myPhysx::shape>("rigidbody shape")
+            (
+                value("None", myPhysx::shape::none),
+
+                value("Box", myPhysx::shape::box),
+                value("Sphere", myPhysx::shape::sphere),
+                value("Capsule", myPhysx::shape::capsule),
+
+                value("Plane", myPhysx::shape::plane),
+                value("Convex", myPhysx::shape::convex)
+            );
+
+        registration::enumeration<myPhysx::rigid>("rigidbody type")
+            (
+                value("None", myPhysx::rigid::none),
+
+                value("Static", myPhysx::rigid::rstatic),
+                value("Dynamic", myPhysx::rigid::rdynamic)
+            );
+
+        registration::class_<myPhysx::LockingAxis>("Locking Axis")
+            .property("X-axis", &myPhysx::LockingAxis::x_axis)
+            .property("Y-axis", &myPhysx::LockingAxis::y_axis)
+            .property("Z-axis", &myPhysx::LockingAxis::z_axis);
     }
 
     PhysicsMaterial RigidbodyComponent::GetMaterial() const 
