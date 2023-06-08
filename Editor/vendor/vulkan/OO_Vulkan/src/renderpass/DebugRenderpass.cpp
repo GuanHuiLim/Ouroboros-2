@@ -51,7 +51,7 @@ void DebugDrawRenderpass::Draw()
 {
 	auto& vr = *VulkanRenderer::get();
 
-	auto swapchainIdx = vr.swapchainIdx;
+	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 	auto& commandBuffers = vr.commandBuffers;
 
@@ -77,7 +77,7 @@ void DebugDrawRenderpass::Draw()
 
 	renderPassBeginInfo.framebuffer = fb;
 	
-	const VkCommandBuffer cmdlist = vr.commandBuffers[swapchainIdx];
+	const VkCommandBuffer cmdlist = vr.commandBuffers[currFrame];
 	PROFILE_GPU_CONTEXT(cmdlist);
 	PROFILE_GPU_EVENT("DebugDraw");
 
@@ -101,25 +101,27 @@ void DebugDrawRenderpass::Draw()
 	if (dodebugRendering)
 	{
 		cmd.SetDefaultViewportAndScissor();
-
+		VkPipeline pso = m_DebugDrawPSOSelector.GetPSO(vr.m_DebugDrawDepthTest, false, false);
 		uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 			vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
+		cmd.BindPSO(pso);
 		cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 			std::array<VkDescriptorSet, 3>
 			{
 				vr.descriptorSet_gpuscene,
-				vr.descriptorSets_uniform[swapchainIdx],
+				vr.descriptorSets_uniform[currFrame],
 				vr.descriptorSet_bindless
 			},
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			1, &dynamicOffset
 		);
 
-		cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU.getBufferPtr());
-		cmd.BindIndexBuffer(vr.g_DebugDrawIndexBufferGPU.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU[currFrame].getBufferPtr());
+		cmd.BindIndexBuffer(vr.g_DebugDrawIndexBufferGPU[currFrame].getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		VkPipeline pso = m_DebugDrawPSOSelector.GetPSO(vr.m_DebugDrawDepthTest, false, false);
-		cmd.BindPSO(pso);
-		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU.size()), 1);
+		
+		
+		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU[currFrame].size()), 1);
 	}
 
 
@@ -141,8 +143,11 @@ void DebugDrawRenderpass::Shutdown()
 		}
 	}
 
-	vr->g_DebugDrawVertexBufferGPU.destroy();
-	vr->g_DebugDrawIndexBufferGPU.destroy();
+	for (size_t i = 0; i < 2; i++)
+	{
+		vr->g_DebugDrawVertexBufferGPU[i].destroy();
+		vr->g_DebugDrawIndexBufferGPU[i].destroy();
+	}
 }
 
 void DebugDrawRenderpass::CreateDebugRenderpass()

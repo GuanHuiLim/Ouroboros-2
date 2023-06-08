@@ -62,7 +62,7 @@ VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info,
 	else {
 		//create a new one (not found)
 		std::cout << "[FBCache] Creating a new framebuffer.." << std::endl;
-		VkFramebuffer frameBuffer;
+		VkFramebuffer frameBuffer{};
 		if (bufferInfo.resourceTrackOnly == false)
 		{
 			VK_CHK(vkCreateFramebuffer(device, &bufferInfo.createInfo, nullptr, &frameBuffer));
