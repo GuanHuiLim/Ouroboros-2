@@ -3523,6 +3523,10 @@ uint32_t VulkanRenderer::CreateTexture(const std::string& file)
 	auto lam = [this, textureImageLoc]() {
 		UpdateBindlessGlobalTexture(textureImageLoc);
 	};
+	{
+		std::scoped_lock s{ g_mut_workQueue };
+		g_workQueue.emplace_back(lam);
+	}
 
 	//return location of set with texture
 	return textureImageLoc;
@@ -3732,7 +3736,10 @@ uint32_t VulkanRenderer::CreateTextureImage(const oGFX::FileImageData& imageInfo
 		//setup imgui binding
 		g_imguiIDs[indx] = CreateImguiBinding(texture.sampler, texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	};
-	
+	{
+		std::scoped_lock s{ g_mut_workQueue };
+		g_workQueue.emplace_back(lam);
+	}
 
 	// Return index of new texture image
 	return static_cast<uint32_t>(indx);

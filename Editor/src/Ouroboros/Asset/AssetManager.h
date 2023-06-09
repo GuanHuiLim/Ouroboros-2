@@ -118,7 +118,7 @@ namespace oo
         struct LoadProgress
         {
             LoadProgress(size_t total) : loadedCount{ 0 }, totalCount{ total }{};
-            ~LoadProgress() { progressThread.join(); }
+            //~LoadProgress() { progressThread.join(); }
             std::atomic<size_t> loadedCount;
             std::atomic<size_t> totalCount;
             std::thread progressThread;
