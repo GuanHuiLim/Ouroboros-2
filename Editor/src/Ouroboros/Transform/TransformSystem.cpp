@@ -455,5 +455,34 @@ namespace oo
     }*/
 
 
+    void UpdateTransformHierarchy()
+    {
+        auto const& graph = m_scene->GetGraph();
+        scenegraph::shared_pointer root_node = graph.get_root();
+        std::stack<scenenode::shared_pointer> s;
+        scenenode::shared_pointer curr = root_node;
+
+        std::stack<std::pair<scenegraph::shared_pointer, int>> stk{};
+        s.push({curr, 0});
+
+        while (!s.empty())
+        {
+
+            std::pair<scenegraph::shared_pointer, int> pair = stk.top();
+            auto& node = pair.first;
+            auto& updateHierarchy = pair.second;
+
+            stk.pop();
+
+            if (updateHierarchy > 0 || node->isDirty)
+            {
+                //
+
+                // for each student
+            }
+
+        }
+    }
+
 }
 
