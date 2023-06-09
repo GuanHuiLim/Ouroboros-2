@@ -149,7 +149,7 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 
     		// Attenuation
 		float atten = AttenuationFactor(r1,dist);	
-			if(atten<0.001) discard;
+			//if(atten<0.001) discard;
 		atten = getSquareFalloffAttenuation(L,1.0/Lights_SSBO[lightIndex].radius.x);
 		atten = UnrealFalloff(dist,Lights_SSBO[lightIndex].radius.x);
 	
