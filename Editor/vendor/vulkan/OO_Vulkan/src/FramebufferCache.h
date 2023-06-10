@@ -27,7 +27,10 @@ public:
 	void Init(VkDevice newDevice);
 	void Cleanup();
 
-	VkFramebuffer CreateFramebuffer(VkFramebufferCreateInfo* info,std::vector<vkutils::Texture2D*>&& textures, bool swapchainTarget);
+	VkFramebuffer CreateFramebuffer(VkFramebufferCreateInfo* info,
+		std::vector<vkutils::Texture2D*>&& textures,
+		bool swapchainTarget,
+		bool resourceTrackOnly = false);
 	void ResizeSwapchain(uint32_t width, uint32_t height);
 
 	struct FramebufferInfo {
@@ -36,6 +39,7 @@ public:
 		std::vector<vkutils::Texture2D*> textures;
 		VkFramebufferCreateInfo createInfo{};
 		bool targetSwapchain{ true };
+		bool resourceTrackOnly{ false };
 
 		bool operator==(const FramebufferInfo& other) const;
 
