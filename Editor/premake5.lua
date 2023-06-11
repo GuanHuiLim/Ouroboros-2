@@ -179,6 +179,13 @@ project "Editor"
             { "mkdir \"" .. AppDir .. "/defaultAsset\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/defaultAsset\" \"" .. AppDir .. "/defaultAsset\""},
             {"{COPY} \"%{AppVendor}/vulkan/vendor/freetype\" \""  .. binApp .. "\"" },
+
+			-- build version number
+			{"{COPY} \"%{AppDir}/version.txt\" \"" .. binApp .. "\""},
+
+            
+            -- Copy Imgui.ini (for the time being because we need it for exe..)
+            {"{COPY} \"%{AppDir}/imgui.ini\" \"" .. binApp .. "\""},
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -231,8 +238,6 @@ project "Editor"
             {"{COPY} \"%{AppDir}/EditorMode.settings\" \"" .. binApp .. "\""},
 			-- ImGui PlayMode Style Settings
             {"{COPY} \"%{AppDir}/PlayMode.settings\" \"" .. binApp .. "\""},
-            -- Copy Imgui.ini
-            {"{COPY} \"%{AppDir}/imgui.ini\" \"" .. binApp .. "\""},
 
 			-- copy Editor Icons Folder in its entirety.
 			{ "mkdir \"" .. binApp .. "/Icons\"" },
@@ -243,8 +248,6 @@ project "Editor"
             -- discord sdk
             {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },
             
-			-- build version number
-			{"{COPY} \"%{AppDir}/version.txt\" \"" .. binApp .. "\""},
         }
         
     -- Executable Specific
@@ -367,6 +370,10 @@ project "Editor"
         
             -- copy licenses folder
             {"{COPY} \"%{AppDir}/licenses\" \"" .. binApp .. "/licenses\""},
+            
+            -- copy cleanup batch file and run it
+            {"{COPY} \"%{AppDir}/CleanUp-Exe.bat\" \"" .. binApp .. "\"" },
+
         }
     filter{}
     
