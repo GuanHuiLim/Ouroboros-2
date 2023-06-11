@@ -91,10 +91,10 @@ namespace oo
         LayerField OutputLayer{ "11111111" };
 
         uint32_t GetInputLayer() const { return InputLayer.to_ulong(); }
-        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; };
+        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; desired_object.filterIn = GetInputLayer(); IsDirty = true; };
 
-        uint32_t GetOutputLayer() const { return OutputLayer.to_ulong(); }
-        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; };
+        uint32_t GetOutputLayer() const { return OutputLayer.to_ulong();  }
+        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; desired_object.filterOut = GetOutputLayer(); IsDirty = true; };
     
         vec3 Offset = { 0.0, 0.0, 0.0 };
 

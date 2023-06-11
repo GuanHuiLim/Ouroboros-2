@@ -535,6 +535,7 @@ namespace oGFX
 
 	VkCommandBuffer beginCommandBuffer(VkDevice device, VkCommandPool commandPool)
 	{
+
 		//command buffer to hold transfer commands
 		VkCommandBuffer commandBuffer;
 
@@ -547,6 +548,7 @@ namespace oGFX
 
 		//allocate command buffer from pool
 		vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+		//std::cout << " Begin comand buffer 2 " << commandBuffer << "\n";
 
 		//information to begin the command buffer record.
 		VkCommandBufferBeginInfo beginInfo{};
@@ -562,6 +564,7 @@ namespace oGFX
 	void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer)
 
 	{
+		//std::cout << " End comand buffer 2 " << commandBuffer << "\n";
 		// End commands
 		vkEndCommandBuffer(commandBuffer);
 
@@ -578,6 +581,7 @@ namespace oGFX
 
 		// Free temporary command buffer to pool
 		vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+		//std::cout << " Free comand buffer 2 " << commandBuffer << "\n";
 	}
 
 	void TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool commandPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)

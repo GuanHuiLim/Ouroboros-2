@@ -66,7 +66,7 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 
 	//how many images in our swapchain
 	//get one more than the minimum for triple buffering
-	uint32_t imageCount = swapChainDetails.surfaceCapabilities.minImageCount + 1;
+	uint32_t imageCount = swapChainDetails.surfaceCapabilities.minImageCount;// + 1;
 
 	//if image count is higher than max clamp down to max.
 	//if maximagecount is 0, we are unrestricted 

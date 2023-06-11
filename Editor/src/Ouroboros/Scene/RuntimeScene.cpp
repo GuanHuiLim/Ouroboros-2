@@ -165,6 +165,11 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE(scripts_late_update);
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
+
+            TRACY_PROFILE_SCOPE(scripts_delete_delayed);
+            GetWorld().Get_System<ScriptSystem>()->ProcessDeletion();
+            TRACY_PROFILE_SCOPE_END();
+
             TRACY_PROFILE_SCOPE_END();
         }
         {

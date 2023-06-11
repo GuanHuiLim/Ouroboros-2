@@ -91,11 +91,16 @@ public:
 	static std::string SaveSingleScriptField(oo::ScriptFieldInfo& sfi);
 	static void LoadSingleScriptField(oo::ScriptFieldInfo& value,oo::ScriptValue::type_enum type,const  std::string& data);
 private:
+	//assets list
+	static void SaveAssetsList(const oo::Scene& scene);
+	static void LoadAssetsList(const oo::Scene& scene);
+
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);
 	static void SaveObject(oo::GameObject& go, rapidjson::Value & val,rapidjson::Document& doc);
 	static void SavePrefabObject(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
 	static void SavePrefabObject_SubValues(rapidjson::Value& current, const rapidjson::Value& original);
+
 
 	template <typename Component>
 	static void SaveComponent(oo::GameObject& go, rapidjson::Value& val, rapidjson::Document& doc);
@@ -110,6 +115,7 @@ private:
 	static void LoadComponent(oo::GameObject& go, rapidjson::Value&& val);
 	static void LoadSequentialContainer(rttr::variant& variant, rapidjson::Value& val);
 	static void LoadNestedComponent(rttr::variant& variant, rapidjson::Value& val);
+
 	//loading 1 variant
 	template <typename Component>
 	static void LoadVariant(oo::GameObject& go,rttr::variant& var, rttr::property& prop, rapidjson::Document& doc);
@@ -133,6 +139,10 @@ private:
 	inline static SerializerScriptingLoadProperties m_loadScriptProperties;
 	inline static constexpr int rapidjson_precision = 4;
 	inline static constexpr float rapidjson_epsilon = 0.0001f;
+
+	//asset file ext
+	inline static constexpr const char* asset_fileExt = "AssetList";
+
 };
 
 template<typename Component>

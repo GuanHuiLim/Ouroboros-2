@@ -83,6 +83,8 @@ namespace oo
 
     void AssetInfo::Reload()
     {
+        std::string s("Reloading " + std::to_string(this->id) + '\n');
+        std::cout << s;
         Reload(GetType());
     }
 

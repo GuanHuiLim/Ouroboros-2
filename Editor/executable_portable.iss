@@ -33,8 +33,7 @@ SetupIconFile={#SetupIconFilepath}
 ChangesAssociations=yes
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
-;PrivilegesRequired=lowest
-PrivilegesRequired=none
+PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=../../../Installer
 OutputBaseFilename=MinuteSetup
@@ -56,10 +55,8 @@ Source: "{#SourceAppExeName}"; DestDir: "{app}"; DestName: "{#MyAppExeName}"; Fl
 
 ;editor folders
 Source: "shaders\*"; DestDir: "{app}\shaders"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "Data\*"; DestDir: "{app}\Data"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "mono\*"; DestDir: "{app}\mono"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "Icons\*"; DestDir: "{app}\Icons"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "tracy_server\*"; DestDir: "{app}\tracy_server"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "licenses\*"; DestDir : "{app}\licenses"; Flags : ignoreversion recursesubdirs createallsubdirs
 
 ;project folder
 Source: "Minute\*"; DestDir: "{app}\Minute"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -68,10 +65,8 @@ Source: "Minute\*"; DestDir: "{app}\Minute"; Flags: ignoreversion recursesubdirs
 Source:"assimp-vc142-mt.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"fmod.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source:"discord_game_sdk.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"ScriptCore.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"rttr_core.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source:"dbghelp.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"mono-2.0-sgen.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysXCommon_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysXCooking_64.dll"; DestDir: "{app}"; Flags: ignoreversion
@@ -79,15 +74,9 @@ Source:"PhysXDevice64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysXFoundation_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysXGpu_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysX_64.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source:"SLikeNet_DLL_Release_x64.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ;settings files                       
-Source: "EditorMode.settings"; DestDir: "{app}"; Flags: ignoreversion
-Source: "PlayMode.settings"; DestDir: "{app}"; Flags: ignoreversion
-Source: "imgui.ini"; DestDir: "{app}"; Flags: ignoreversion
-Source: "default.ini"; DestDir: "{app}"; Flags: ignoreversion    
 Source: "gamecontrollerdb.txt"; DestDir: "{app}"; Flags: ignoreversion  
-Source: "version.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 ;icon                                                
 Source: {#SetupIconFilepath}; DestDir: "{app}"; DestName: "Icon.ico"; Flags: ignoreversion

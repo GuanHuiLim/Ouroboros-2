@@ -325,7 +325,7 @@ namespace myPhysx {
 
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;
-        std::uint32_t filterOut = FilterGroup::Zero;
+        std::uint32_t filterOut = FilterGroup::All;
 
         bool changeVertices = false;
         PxVec3 meshScale = PxVec3(1, 1, 1);
@@ -369,7 +369,7 @@ namespace myPhysx {
 
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;
-        std::uint32_t filterOut = FilterGroup::Zero;
+        std::uint32_t filterOut = FilterGroup::All;
 
         bool changeVertices = false;
         PxVec3 meshScale = PxVec3(1, 1, 1);
