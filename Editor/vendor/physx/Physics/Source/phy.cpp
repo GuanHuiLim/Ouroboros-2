@@ -566,10 +566,9 @@ namespace myPhysx
 
         // Define the filter data for the raycast
         PxQueryFilterData filterData = PxQueryFilterData();
-        //filterData.data.word0 = filter;
-        filterData.flags |= PxQueryFlag::eANY_HIT;
+        filterData.data.word0 = filter;
 
-        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, PxHitFlags(PxHitFlag::eDEFAULT), filterData);
+        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, hitFlags, filterData);
         
         // HAVE INTERSECTION
         if (hit.intersect) {
