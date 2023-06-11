@@ -90,11 +90,11 @@ namespace oo
         // Who can i collide with?
         LayerField OutputLayer{ "11111111" };
 
-        uint32_t GetInputLayer() const { return InputLayer.to_ulong(); }
-        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; };
+        uint32_t GetInputLayer() const { return desired_object.filterIn; /*return InputLayer.to_ulong();*/ }
+        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; desired_object.filterIn = inLayer; };
 
-        uint32_t GetOutputLayer() const { return OutputLayer.to_ulong(); }
-        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; };
+        uint32_t GetOutputLayer() const { /*return OutputLayer.to_ulong(); */ return desired_object.filterOut; }
+        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; desired_object.filterOut = outLayer; };
     
         vec3 Offset = { 0.0, 0.0, 0.0 };
 

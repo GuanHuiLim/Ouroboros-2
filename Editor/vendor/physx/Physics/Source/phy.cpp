@@ -838,7 +838,9 @@ namespace myPhysx
             if (underlying_Obj.m_shape)
             {
                 underlying_rigidbody->attachShape(*underlying_Obj.m_shape);
-                
+
+                underlying_Obj.filterIn = updatedPhysicsObj.filterIn;
+                underlying_Obj.filterOut = updatedPhysicsObj.filterOut;
                 physx_system::setupFiltering(underlying_Obj.m_shape, underlying_Obj.filterIn, underlying_Obj.filterOut);
             }
         }
@@ -904,11 +906,16 @@ namespace myPhysx
 
             if (!underlying_Obj.is_trigger && underlying_Obj.is_collider)
                 underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
+            
+            // FILTER (not sure need or not)
+            if (underlying_Obj.filterIn != updatedPhysicsObj.filterIn || underlying_Obj.filterOut != updatedPhysicsObj.filterOut)
+            {
+                underlying_Obj.filterIn = updatedPhysicsObj.filterIn;
+                underlying_Obj.filterOut = updatedPhysicsObj.filterOut;
+                physx_system::setupFiltering(underlying_Obj.m_shape, updatedPhysicsObj.filterIn, updatedPhysicsObj.filterOut);
+            }
         }
 
-        // FILTER (not sure need or not)
-        if (underlying_Obj.filterIn != updatedPhysicsObj.filterIn || underlying_Obj.filterOut != updatedPhysicsObj.filterOut)
-            physx_system::setupFiltering(underlying_Obj.m_shape, updatedPhysicsObj.filterIn, updatedPhysicsObj.filterOut);
     }
 
     void PhysxWorld::setShape(PhysicsObject const& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate)
@@ -977,6 +984,8 @@ namespace myPhysx
             // ATTACH THE NEW SHAPE TO THE OBJECT
             underlying_rigidbody->attachShape(*underlying_Obj.m_shape);
 
+            underlying_Obj.filterIn = updated_Obj.filterIn;
+            underlying_Obj.filterOut = updated_Obj.filterOut;
             physx_system::setupFiltering(underlying_Obj.m_shape, underlying_Obj.filterIn, underlying_Obj.filterOut);
         }
         // Otherwise we just update our existing values.
