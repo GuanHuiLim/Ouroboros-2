@@ -58,7 +58,6 @@ Technology is prohibited.
 
 // Should only let guan hui change these variables.
 //static constexpr const char* const EditorVersionNumber = "2.00";
-static constexpr const char* const GameVersionNumber = "1.00";
 static constexpr const char* const EditorVersionFile = "version.txt";
 
 class EditorApp final : public oo::Application
@@ -158,11 +157,12 @@ private:
     std::unique_ptr<oo::ImGuiAbstraction> m_imGuiAbstract;
 };
 
+//static constexpr const char* const GameVersionNumber = "1.00";
 class EndProduct final : public oo::Application
 {
 public:
     EndProduct(oo::CommandLineArgs args)
-        : Application{ std::string{"Minute v"} + GameVersionNumber, args }
+        : Application{ "Minute", args }
         , m_prefab_controller{ m_sceneManager }
         , m_imGuiAbstract{ std::make_unique<oo::ImGuiAbstraction>() }
     {

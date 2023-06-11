@@ -1,4 +1,5 @@
 #pragma once
+#ifdef OO_EDITOR
 #include <discord.h>
 #include "App/Editor/Events/LoadProjectEvents.h"
 #include "App/Editor/Events/LoadSceneEvent.h"
@@ -20,3 +21,4 @@ private:
 	DiscordState state;
 	bool ready = false;
 };
+#endif

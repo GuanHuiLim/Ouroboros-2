@@ -41,6 +41,8 @@ namespace oo
         bool StopPlay();
         bool IsPlaying();
 
+        void ProcessDeletion();
+
         void ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
         void RefreshScriptInfoAll();
 
@@ -72,6 +74,8 @@ namespace oo
 
         void UpdateAllScriptFieldsWithInfo();
         void UpdateScriptFieldsWithInfo(oo::UUID uuid, ScriptComponent& script);
+
+        static void StartTracyProfiling(size_t scriptClassIndex);
 
         void OnApplicationFocus(WindowFocusEvent* e);
         void OnApplicationPause(WindowLoseFocusEvent* e);

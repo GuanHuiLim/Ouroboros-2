@@ -28,10 +28,10 @@ public:
 	void Init(VkBufferUsageFlags usage);
 	void Init(VulkanDevice* device,VkBufferUsageFlags usage);
 
-	void writeTo(size_t size,const void* data, size_t offset = 0);
+	void writeTo(size_t size,const void* data, VkQueue queue, VkCommandPool pool, size_t offset = 0);
 
-	void resize(size_t size);
-	void reserve(size_t size);
+	void resize(size_t size, VkQueue queue, VkCommandPool pool);
+	void reserve(size_t size, VkQueue queue, VkCommandPool pool);
 	size_t size() const;
 
 	VkBuffer getBuffer()const;
@@ -100,7 +100,7 @@ inline void GpuVector<T>::Init(VulkanDevice* device, VkBufferUsageFlags usage)
 }
 
 template <typename T>
-void GpuVector<T>::writeTo(size_t writeSize,const void* data, size_t offset)
+void GpuVector<T>::writeTo(size_t writeSize,const void* data, VkQueue queue, VkCommandPool pool, size_t offset)
 {
 	if (writeSize == 0) 
 		return;
@@ -109,8 +109,8 @@ void GpuVector<T>::writeTo(size_t writeSize,const void* data, size_t offset)
 	{
 		// TODO:  maybe resize some amount instead of perfect amount?
 		assert(true);
-		resize(m_capacity?m_capacity*2 : 64);
-		writeTo(writeSize, data, offset);
+		resize(m_capacity?m_capacity*2 : 64, queue, pool);
+		writeTo(writeSize, data, queue, pool, offset);
 		return;
 	}
 
@@ -130,11 +130,15 @@ void GpuVector<T>::writeTo(size_t writeSize,const void* data, size_t offset)
 
 	//MAP MEMORY TO VERTEX BUFFER
 	void *mappedData = nullptr;												
-	vkMapMemory(m_device->logicalDevice, stagingBufferMemory, 0, bufferBytes, 0, &mappedData);	
+	auto result = vkMapMemory(m_device->logicalDevice, stagingBufferMemory, 0, bufferBytes, 0, &mappedData);
+	if (result != VK_SUCCESS)
+	{
+		assert(false);
+	}
 	memcpy(mappedData, data, (size_t)bufferBytes);					
 	vkUnmapMemory(m_device->logicalDevice, stagingBufferMemory);					
 
-	CopyBuffer(m_device->logicalDevice, m_device->graphicsQueue, m_device->commandPool,
+	CopyBuffer(m_device->logicalDevice, queue,pool,
 		stagingBuffer, m_buffer, bufferBytes, writeBytesOffset);
 
 	//clean up staging buffer parts
@@ -151,15 +155,15 @@ void GpuVector<T>::writeTo(size_t writeSize,const void* data, size_t offset)
 }
 
 template <typename T>
-void GpuVector<T>::resize(size_t size)
+void GpuVector<T>::resize(size_t size, VkQueue queue, VkCommandPool pool)
 {
 	std::cout << "[GpuVector<T>::resize] " << "Resizing from " << m_size << " to " << size << "\n";
-	reserve(size);
+	reserve(size, queue, pool);
 	m_size = size;	
 }
 
 template <typename T>
-void GpuVector<T>::reserve(size_t size)
+void GpuVector<T>::reserve(size_t size, VkQueue queue, VkCommandPool pool)
 {
 	if (size < m_capacity) return;
 	PROFILE_SCOPED();
@@ -177,7 +181,7 @@ void GpuVector<T>::reserve(size_t size)
 
 	if (m_size != 0)
 	{
-		CopyBuffer(m_device->logicalDevice, m_device->graphicsQueue, m_device->commandPool, m_buffer, tempBuffer, m_size* sizeof(T));
+		CopyBuffer(m_device->logicalDevice, queue, pool, m_buffer, tempBuffer, m_size* sizeof(T));
 	}
 
 	//clean up old buffer

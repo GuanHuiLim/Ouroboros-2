@@ -281,7 +281,7 @@ namespace oo
             UpdateButtonCallbackAll();
             TRACY_PROFILE_SCOPE_END();
 
-            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateRectTransformAll, tracy::Color::DarkCyan);
+            TRACY_PROFILE_SCOPE_NC(UISystem_UpdateRectTransformAll_2, tracy::Color::DarkCyan);
             UpdateRectTransformAll();
             TRACY_PROFILE_SCOPE_END();
             

@@ -62,7 +62,9 @@ void Project::LoadProject(std::filesystem::path& config)
 	}
 
     // create/load scripting stuff
+#ifdef OO_EDITOR
     UpdateScriptingFiles();
+#endif
     oo::ScriptManager::LoadProject(GetScriptBuildPath().string(), GetScriptModulePath().string());
 
 	//scenes to add to scene manager

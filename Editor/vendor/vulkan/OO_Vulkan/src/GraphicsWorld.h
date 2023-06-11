@@ -256,8 +256,8 @@ public:
 
     struct BloomSettings
     {
-        float threshold = 1.1f;
-        float softThreshold = 0.5f;
+        float threshold = 10.0f;
+        float softThreshold = 0.01f;
     }bloomSettings{};
 
     struct ColourCorrectionSettings

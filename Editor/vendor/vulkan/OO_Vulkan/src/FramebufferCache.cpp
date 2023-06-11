@@ -32,11 +32,15 @@ void FramebufferCache::Cleanup()
 	}
 }
 
-VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info,std::vector<vkutils::Texture2D*>&& textures, bool swapchainTarget)
+VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info,
+	std::vector<vkutils::Texture2D*>&& textures,
+	bool swapchainTarget,
+	bool resourceTrackOnly)
 {
 	FramebufferInfo bufferInfo;
 	bufferInfo.createInfo = *info;
 	bufferInfo.targetSwapchain = swapchainTarget;
+	bufferInfo.resourceTrackOnly = resourceTrackOnly;
 
 	// this is pretty bad, maybe std::move it here since its just stack based?
 	bufferInfo.textures = std::move(textures);
@@ -58,9 +62,12 @@ VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info,
 	else {
 		//create a new one (not found)
 		std::cout << "[FBCache] Creating a new framebuffer.." << std::endl;
-		VkFramebuffer frameBuffer;
-		VK_CHK(vkCreateFramebuffer(device, &bufferInfo.createInfo, nullptr, &frameBuffer));
-		VK_NAME(device, "famebufferCache::framebuffer", frameBuffer);
+		VkFramebuffer frameBuffer{};
+		if (bufferInfo.resourceTrackOnly == false)
+		{
+			VK_CHK(vkCreateFramebuffer(device, &bufferInfo.createInfo, nullptr, &frameBuffer));
+			VK_NAME(device, "famebufferCache::framebuffer", frameBuffer);
+		}
 		//add to cache
 		
 		//store the pointers
@@ -113,9 +120,12 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 
 		auto& framebuffer = bufferCache[framebufferInfo];
 		std::cout << "[FBCache] Resizing framebuffer.." << std::endl;
-		vkDestroyFramebuffer(device, framebuffer, nullptr);
-		VK_CHK(vkCreateFramebuffer(device, &framebufferInfo.createInfo, nullptr, &framebuffer));
-		VK_NAME(device, "famebufferCache::framebuffer", framebuffer);
+		if (framebufferInfo.resourceTrackOnly == false)
+		{
+			vkDestroyFramebuffer(device, framebuffer, nullptr);
+			VK_CHK(vkCreateFramebuffer(device, &framebufferInfo.createInfo, nullptr, &framebuffer));
+			VK_NAME(device, "famebufferCache::framebuffer", framebuffer);
+		}
 		//add to cache
 
 		//store the pointers

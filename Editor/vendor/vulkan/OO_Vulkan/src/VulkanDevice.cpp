@@ -33,14 +33,18 @@ Technology is prohibited.
 
 VulkanDevice::~VulkanDevice()
 {
-    if (commandPool)
+    for (size_t i = 0; i < 2; i++)
     {
-        vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+        if (commandPools[i])
+        {
+            vkDestroyCommandPool(logicalDevice, commandPools[i], nullptr);
+        }
+        if (transferPools[i])
+        {
+            vkDestroyCommandPool(logicalDevice, transferPools[i], nullptr);
+        }
     }
-    if (transferPool)
-    {
-        vkDestroyCommandPool(logicalDevice, transferPool, nullptr);
-    }
+    
     // no need destory phys device
 	if (logicalDevice)
 	{
@@ -206,18 +210,25 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = indices.graphicsFamily; //Queue family type that buffers from this command pool will use
 
-    //create a graphics queue family command pool
-    result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool);
-    VK_NAME(logicalDevice, "commandPool", commandPool);
-
-    poolInfo.queueFamilyIndex = indices.transferFamily;
-    result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &transferPool);
-    VK_NAME(logicalDevice, "transferPool", transferPool);
-    if (result != VK_SUCCESS)
+    commandPools.resize(2);
+    transferPools.resize(2);
+    for (size_t i = 0; i < 2; i++)
     {
-        std::cerr << "Failed to create a command pool!" << std::endl;
-        throw std::runtime_error("Failed to create a command pool!");
+        //create a graphics queue family command pool
+        poolInfo.queueFamilyIndex = indices.graphicsFamily; //Queue family type that buffers from this command pool will use
+        result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPools[i]);
+        VK_NAME(logicalDevice, "commandPool", commandPools[i]);
+
+        poolInfo.queueFamilyIndex = indices.transferFamily;
+        result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &transferPools[i]);
+        VK_NAME(logicalDevice, "transferPool", transferPools[i]);
+        if (result != VK_SUCCESS)
+        {
+            std::cerr << "Failed to create a command pool!" << std::endl;
+            throw std::runtime_error("Failed to create a command pool!");
+        }
     }
+  
 
 }
 
@@ -357,10 +368,10 @@ VkCommandBuffer VulkanDevice::CreateCommandBuffer(VkCommandBufferLevel level, Vk
     return cmdBuffer;
 }
 
-VkCommandBuffer VulkanDevice::CreateCommandBuffer(VkCommandBufferLevel level, bool begin)
-{
-    return CreateCommandBuffer(level, commandPool, begin);
-}
+//VkCommandBuffer VulkanDevice::CreateCommandBuffer(VkCommandBufferLevel level, bool begin)
+//{
+//    return CreateCommandBuffer(level, commandPool, begin);
+//}
 
 void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free)
 {
@@ -390,16 +401,16 @@ void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue que
     }
 }
 
-void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free)
-{
-    return FlushCommandBuffer(commandBuffer, queue, commandPool, free);
-}
+//void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free)
+//{
+//    return FlushCommandBuffer(commandBuffer, queue, commandPool, free);
+//}
 
 void VulkanDevice::CopyBuffer(vkutils::Buffer* src, vkutils::Buffer* dst, VkQueue queue, VkBufferCopy* copyRegion)
 {
     assert(dst->size >= src->size);
     assert(src->buffer);
-    VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+    VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandPools[0], true);
     VkBufferCopy bufferCopy{};
     if (copyRegion == nullptr)
     {
@@ -412,7 +423,7 @@ void VulkanDevice::CopyBuffer(vkutils::Buffer* src, vkutils::Buffer* dst, VkQueu
 
     vkCmdCopyBuffer(copyCmd, src->buffer, dst->buffer, 1, &bufferCopy);
 
-    FlushCommandBuffer(copyCmd, queue);
+    FlushCommandBuffer(copyCmd, queue,commandPools[0]);
 }
 
 

@@ -32,6 +32,7 @@ struct DeferredCompositionRenderpass : public GfxRenderpass
 	VkRenderPass renderpass_DeferredLightingComposition{};
 	
 	VkPipeline pso_DeferredLightingComposition{};
+	VkPipeline pso_deferredBox{};
 
 	uint64_t uboDynamicAlignment{};
 

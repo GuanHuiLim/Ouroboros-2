@@ -69,10 +69,12 @@ static void FileDrop(oo::FileDropEvent* e)
 		}
 		std::filesystem::copy(p, Project::GetAssetFolder() / p.filename(),std::filesystem::copy_options::overwrite_existing);
 		Project::GetAssetManager()->Scan();
+#ifdef OO_EDITOR
 		NetworkingFileTransferEvent nfte;
 
 		nfte.p = std::filesystem::relative(Project::GetAssetFolder() / p.filename(), Project::GetProjectFolder());
 		oo::EventManager::Broadcast<NetworkingFileTransferEvent>(&nfte);
+#endif
 	}
 }
 Editor::Editor()
@@ -132,7 +134,9 @@ void Editor::Update()
 
 	ImGuiManager::UpdateAllUI();
 	m_warningMessage.Show();
+#ifdef OO_EDITOR
 	m_chatsystem.Show();
+#endif
 
 	m_Keylogger.Show();
 	helper.Popups();
