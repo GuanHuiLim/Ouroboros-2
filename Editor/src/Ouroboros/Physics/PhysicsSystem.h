@@ -62,8 +62,8 @@ namespace oo
         static Timestep GetFixedDeltaTimescale();
         static Timestep GetFixedDeltaTime();
         
-        RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = 255);
-        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = 255);
+        RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
+        std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
     
     private:
 

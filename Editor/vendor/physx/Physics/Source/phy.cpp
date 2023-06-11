@@ -566,9 +566,10 @@ namespace myPhysx
 
         // Define the filter data for the raycast
         PxQueryFilterData filterData = PxQueryFilterData();
-        filterData.data.word0 = filter;
+        //filterData.data.word0 = filter;
+        filterData.flags |= PxQueryFlag::eANY_HIT;
 
-        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, hitFlags, filterData);
+        hit.intersect = scene->raycast(origin, direction, distance, hitBuffer, PxHitFlags(PxHitFlag::eDEFAULT), filterData);
         
         // HAVE INTERSECTION
         if (hit.intersect) {
@@ -905,7 +906,7 @@ namespace myPhysx
                 underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
 
             if (!underlying_Obj.is_trigger && underlying_Obj.is_collider)
-                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE);
+                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE);
             
             // FILTER (not sure need or not)
             if (underlying_Obj.filterIn != updatedPhysicsObj.filterIn || underlying_Obj.filterOut != updatedPhysicsObj.filterOut)
