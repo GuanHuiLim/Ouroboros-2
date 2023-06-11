@@ -487,48 +487,111 @@ namespace myPhysx
             m_collisionPairs.pop();
     }
 
-    RaycastHit PhysxWorld::sweep(PxTransform initialPose, PxVec3 direction, PxReal distance) {
+    RaycastHit PhysxWorld::sweep(phy_uuid::UUID id, PxVec3 direction, PxReal distance) {
 
         RaycastHit hit{};
-        PxSweepBuffer hitBuffer;                 // [out] Sweep results
-        PxGeometry sweepShape = PxBoxGeometry{}; // [in] swept shape
-        //PxTransform initialPose = ...;         // [in] initial shape pose (at distance=0)
-        //PxVec3 sweepDirection = ...;           // [in] normalized sweep direction
 
-        PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL;
+        if (all_objects.contains(id)) {
 
-        //PxSweepHit::hadInitialOverlap()
-        
-        hit.intersect = scene->sweep(sweepShape, initialPose, direction, distance, hitBuffer, hitFlags);
+            PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL;
 
-        if (hit.intersect) {
+            PxSweepBuffer hitBuffer;                   // [out] Sweep results
+            //PxGeometry sweepShape = PxBoxGeometry{}; // [in] swept shape
+            //PxTransform initialPose = ...;           // [in] initial shape pose (at distance=0)
+            //PxVec3 sweepDirection = ...;             // [in] normalized sweep direction
 
-            //hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(hitBuffer.block.actor->userData);
-            //hit.position = hitBuffer.block.position;
-            //hit.normal = hitBuffer.block.normal;
-            //hit.distance = hitBuffer.block.distance;
+            //PxSweepHit::hadInitialOverlap()
 
-            // Initialize variables to track the closest hit
-            float closestDistance = FLT_MAX;
-            const PxSweepHit* closestHit = nullptr;
+            PhysxObject* underlying_obj = &m_objects[all_objects.at(id)];
 
-            for (int i = 0; i < hitBuffer.nbTouches; ++i) {
+            // TRANSFORM
+            PxTransform initialPose{};
 
-                const PxSweepHit& hitTemp = hitBuffer.touches[i];
+            if (underlying_obj->rigid_type == rigid::rstatic)
+                initialPose = underlying_obj->rb.rigidStatic->getGlobalPose();
 
-                // Check if this hit is closer than the previous closest hit
-                if (hitTemp.distance < closestDistance) {
-                    closestDistance = hitTemp.distance;
-                    closestHit = &hitTemp;
-                }
+            else if (underlying_obj->rigid_type == rigid::rdynamic)
+                initialPose = underlying_obj->rb.rigidDynamic->getGlobalPose();
+
+            // GEOMETRY DATA
+            PxGeometry* sweepShape = nullptr;
+           
+            switch (underlying_obj->m_shape->getGeometryType())
+            {
+            case PxGeometryType::eBOX:
+            {
+                const PxBoxGeometry& boxGeometry = underlying_obj->m_shape->getGeometry().box();
+                PxBoxGeometry box{ boxGeometry.halfExtents };
+                sweepShape = &box;
+
+                //sweepShape = PxBoxGeometry(underlying_obj->m_shape->getGeometry().box().halfExtents);
+                break;
+            }
+            case PxGeometryType::eSPHERE:
+            {
+                const PxSphereGeometry& sphereGeometry = underlying_obj->m_shape->getGeometry().sphere();
+                PxSphereGeometry sphere{ sphereGeometry.radius };
+                sweepShape = &sphere;
+
+                //sweepShape = PxSphereGeometry(underlying_obj->m_shape->getGeometry().sphere().radius);
+                break;
+            }
+            case PxGeometryType::eCAPSULE:
+            {
+                const PxCapsuleGeometry& capsuleGeometry = underlying_obj->m_shape->getGeometry().capsule();
+                PxCapsuleGeometry capsule{ capsuleGeometry.radius, capsuleGeometry.halfHeight };
+                sweepShape = &capsule;
+
+                //sweepShape = PxCapsuleGeometry(underlying_obj->m_shape->getGeometry().capsule().radius, underlying_obj->m_shape->getGeometry().capsule().halfHeight);
+                break;
+            }
+            case PxGeometryType::eCONVEXMESH:
+            {
+                const PxConvexMeshGeometry& convexMeshGeometry = underlying_obj->m_shape->getGeometry().convexMesh();
+                PxConvexMeshGeometry convexMesh{ convexMeshGeometry.convexMesh, convexMeshGeometry.scale };
+                sweepShape = &convexMesh;
+
+                //sweepShape = PxConvexMeshGeometry(underlying_obj->m_shape->getGeometry().convexMesh().convexMesh);
+                break;
+            }
+            default:
+                break;
             }
 
-            if (closestHit) {
+            // CHECK IF THERE SHAPE DATA
+            if (sweepShape) {                             // do i need check for PxTransform? (its default = identity matrix)
+                hit.intersect = scene->sweep(*sweepShape, initialPose, direction, distance, hitBuffer, hitFlags);
 
-                hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(closestHit->actor->userData);
-                hit.position = closestHit->position;
-                hit.distance = closestHit->distance;
-                hit.normal = closestHit->normal;
+                if (hit.intersect) {
+
+                    //hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(hitBuffer.block.actor->userData);
+                    //hit.position = hitBuffer.block.position;
+                    //hit.normal = hitBuffer.block.normal;
+                    //hit.distance = hitBuffer.block.distance;
+
+                    // Initialize variables to track the closest hit
+                    float closestDistance = FLT_MAX;
+                    const PxSweepHit* closestHit = nullptr;
+
+                    for (unsigned int i = 0; i < hitBuffer.nbTouches; ++i) {
+
+                        const PxSweepHit& hitTemp = hitBuffer.touches[i];
+
+                        // Check if this hit is closer than the previous closest hit
+                        if (hitTemp.distance < closestDistance) {
+                            closestDistance = hitTemp.distance;
+                            closestHit = &hitTemp;
+                        }
+                    }
+
+                    if (closestHit) {
+
+                        hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(closestHit->actor->userData);
+                        hit.position = closestHit->position;
+                        hit.distance = closestHit->distance;
+                        hit.normal = closestHit->normal;
+                    }
+                }
             }
         }
 

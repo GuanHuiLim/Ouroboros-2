@@ -250,7 +250,7 @@ namespace myPhysx {
         bool hasObject(phy_uuid::UUID id) const;
 
         // SWEEP
-        RaycastHit sweep(PxTransform initialPose, PxVec3 direction, PxReal distance);
+        RaycastHit sweep(phy_uuid::UUID id, PxVec3 direction, PxReal distance);
         
         // RAYCAST
         RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
@@ -350,11 +350,11 @@ namespace myPhysx {
 
         shape shape_type = shape::none;
 
-        PxBoxGeometry box;
-        PxSphereGeometry sphere;
-        PxPlaneGeometry plane;
-        PxCapsuleGeometry capsule;
-        PxConvexMeshGeometry convex;
+        PxBoxGeometry box = { 0.5, 0.5, 0.5 };
+        PxSphereGeometry sphere = { 0.5 };
+        PxPlaneGeometry plane{};
+        PxCapsuleGeometry capsule = { 0.5, 1.0 };
+        PxConvexMeshGeometry convex{};
 
         rigid rigid_type = rigid::rstatic;
 
