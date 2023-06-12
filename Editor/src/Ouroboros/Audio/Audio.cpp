@@ -19,6 +19,7 @@ Technology is prohibited.
 #include <array>
 #include <list>
 #include <limits>
+#include <mutex>
 
 #include <fmod_errors.h>
 
@@ -141,8 +142,10 @@ namespace oo
             return nullptr;
         }
 
+        std::mutex soundMutex;
         SoundID CreateSound(const std::filesystem::path& path)
         {
+            soundMutex.lock();
             SoundID id = GetSoundID();
             if (id != INVALID_SOUND_ID)
             {
@@ -153,6 +156,7 @@ namespace oo
                                                               &sound));
                 sounds[id] = sound;
             }
+            soundMutex.unlock();
             return id;
         }
 
