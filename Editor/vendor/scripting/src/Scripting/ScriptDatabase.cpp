@@ -152,6 +152,30 @@ namespace oo
         }
     }
 
+    void ScriptDatabase::DeleteDelayed(UUID id, const char* name_space, const char* name)
+    {
+        Index index = GetInstancePoolIndex(name_space, name);
+        if (index == INDEX_NOTFOUND)
+            return;
+        deletionMap[index].emplace_back(id);
+    }
+    void ScriptDatabase::ProcessDeleteDelayed()
+    {
+        for (auto const& [index, idList] : deletionMap)
+        {
+            InstancePool& pool = poolList[index];
+            for (UUID id : idList)
+            {
+                auto search = pool.find(id);
+                if (search == pool.end())
+                    continue;
+                mono_gchandle_free(search->second.handle);
+                pool.erase(search);
+            }
+        }
+        deletionMap.clear();
+    }
+
     void ScriptDatabase::ForEach(const char* name_space, const char* name, Callback callback, ObjectCheck filter)
     {
         InstancePool& scriptPool = GetInstancePool(name_space, name);
@@ -282,10 +306,11 @@ namespace oo
         }
     }
 
-    void ScriptDatabase::InvokeForAllEnabled(const char* functionName, ObjectCheck filter)
+    void ScriptDatabase::InvokeForAllEnabled(const char* functionName, ObjectCheck filter, ClassIndexCallback onPoolStart, ClassIndexCallback onPoolEnd)
     {
-        for (InstancePool& scriptPool : poolList)
+        for (size_t i = 0; i < poolList.size(); ++i)
         {
+            InstancePool& scriptPool = poolList[i];
             if (scriptPool.empty())
                 continue;
 
@@ -295,6 +320,7 @@ namespace oo
                 continue;
             LifeCycleFunction function = static_cast<LifeCycleFunction>(mono_method_get_unmanaged_thunk(method));
 
+            onPoolStart(i);
             for (auto& [uuid, instance] : scriptPool)
             {
                 if (!instance.enabled)
@@ -304,6 +330,7 @@ namespace oo
                 MonoObject* object = mono_gchandle_get_target(instance.handle);
                 ScriptEngine::InvokeFunctionThunk(object, function);
             }
+            onPoolEnd(i);
         }
     }
 

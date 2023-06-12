@@ -30,6 +30,35 @@ namespace
     {
         return path.extension().string() == oo::Asset::EXT_META;
     }
+
+    void loadAsync(const oo::AssetManager& am, const oo::AssetID& id)
+    {
+        oo::Asset asset = am.Get(id);
+        if (!asset.IsDataLoaded())
+            asset.Reload();
+    }
+
+    void loadProgress(const std::vector<std::future<void>>& futures, std::weak_ptr<oo::AssetManager::LoadProgress> lpptr)
+    {
+        if (auto sp = lpptr.lock())
+        {
+            while (sp->loadedCount < sp->totalCount)
+            {
+                std::this_thread::sleep_for(oo::AssetManager::LOAD_INTERVAL);
+
+                // Count all ready futures
+                int count = 0;
+                for (const auto& future : futures)
+                {
+                    if (future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+                    {
+                        ++count;
+                    }
+                }
+                sp->loadedCount = count;
+            }
+        }
+    }
 }
 namespace oo
 {
@@ -210,7 +239,7 @@ namespace oo
         store.clear();
     }
 
-    Asset AssetManager::Get(const AssetID& id)
+    Asset AssetManager::Get(const AssetID& id) const
     {
         Asset asset;
         if (store.contains(id))
@@ -218,9 +247,29 @@ namespace oo
         return asset;
     }
 
-    std::future<Asset> AssetManager::GetAsync(const AssetID& id)
+    std::future<Asset> AssetManager::GetAsync(const AssetID& id) const
     {
         return std::async(std::launch::async, &AssetManager::Get, this, id);
+    }
+
+    AssetManager::LoadProgressPtr AssetManager::LoadMultipleAsync(const std::vector<AssetID>& ids)
+    {
+        // Start async functions
+        std::vector<std::future<void>> futures;
+        for (const AssetID& id : ids)
+        {
+            futures.emplace_back(std::async(std::launch::async, &loadAsync, std::cref(*this), id));
+        }
+
+        // Create progress tracker
+        LoadProgressPtr lpptr = std::make_shared<LoadProgress>(futures.size());
+        lpptr->progressThread = std::thread(loadProgress, std::cref(futures), lpptr);
+        for (auto& future : futures)
+        {
+            future.wait();
+        }
+        lpptr->progressThread.join();
+        return lpptr;
     }
 
     std::vector<Asset> AssetManager::GetAssetsByType(AssetInfo::Type type) const

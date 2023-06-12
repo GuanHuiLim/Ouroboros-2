@@ -18,9 +18,12 @@ Technology is prohibited.
 #include "Ouroboros/ECS/GameObject.h"
 #include "rapidjson/document.h"
 #include "rttr/variant.h"
+#include <set>
 struct SerializerSaveProperties
 {
 	SerializerSaveProperties();
+	void Reset();
+	inline static std::set<oo::AssetID> s_assetUsedThisScene;
 	std::unordered_map <UI_RTTRType::UItypes, std::function<void(rapidjson::Document& doc, rapidjson::Value&, rttr::variant, rttr::property)>> m_save_commands;
 };
 

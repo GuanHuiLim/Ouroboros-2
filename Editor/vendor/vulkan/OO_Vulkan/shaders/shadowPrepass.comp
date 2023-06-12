@@ -1,0 +1,133 @@
+#version 460
+
+#include "shared_structs.h"
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0/*,rgba16f*/) uniform sampler2D samplerDepth;
+layout (binding = 1/*,rgba16f*/) uniform sampler2D samplerShadows;
+layout (binding = 2/*,rgba16f*/) uniform sampler2D samplerNormal;
+layout (binding = 6,rgba16f) uniform image2D resultImage;
+
+#include "shader_utility.shader"
+
+#include "frame.shader"
+layout(set = 1, binding = 0) uniform UboFrameContext
+{
+    FrameContext uboFrameContext;
+};
+
+#include "lights.shader"
+
+layout( push_constant ) uniform lightpc
+{
+	LightPC PC;
+};
+
+vec2 GetShadowMapRegion(int gridID, in vec2 uv, in vec2 gridSize)
+{
+	
+	vec2 gridIncrement = vec2(1.0)/gridSize; // size for each cell
+
+	vec2 actualUV = gridIncrement * uv; // uv local to this cell
+
+	// avoid the modolus operator not sure how much that matters
+	int y = gridID/int(gridSize.x);
+	int x = gridID - int(gridSize.x*y);
+
+	vec2 offset = gridIncrement * vec2(x,y); // offset to our cell
+
+	return offset+actualUV; //sampled position
+}
+
+float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, float NdotL)
+{
+
+	// perspective divide
+	vec4 projCoords = fragPosLightSpace/fragPosLightSpace.w;
+	//normalization [0,1] tex coords only.. FOR VULKAN DONT DO Z
+	projCoords.xy = projCoords.xy* 0.5 + 0.5;
+
+	vec2 uvs = vec2(projCoords.x,projCoords.y);
+	uvs = GetShadowMapRegion(gridID,uvs,PC.shadowMapGridDim);
+	
+	// Flip y during sample
+	uvs = vec2(uvs.x, 1.0-uvs.y);
+	
+	// Bounds check for the actual shadow map
+	float closestDepth = 1.0;
+	float boundsLimit = 0.99995;
+	if(projCoords.x >boundsLimit || projCoords.x < 0.0
+		|| projCoords.y >boundsLimit || projCoords.y < 0.0 
+		|| projCoords.z>1)
+	{
+		return 1.0;
+	}
+	else
+	{
+		closestDepth = texture(samplerShadows,uvs).r;
+	}
+	float currDepth = projCoords.z;
+
+	float maxbias =  PC.maxBias;
+	float mulBias = PC.mulBias;
+	float bias = max(mulBias * (1.0 - NdotL),maxbias);
+	float shadow = 1.0;
+	if (projCoords.w > 0.0 && currDepth - bias > closestDepth ) 
+	{
+		if(projCoords.z < 1)
+		{
+			shadow = 0.0;	
+		}
+	}
+
+	return shadow;
+}
+
+void main()
+{	
+ // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
+	
+	vec2 inUV = vec2(gl_GlobalInvocationID.xy)/imageSize(resultImage);
+
+	vec4 depth = texture(samplerDepth, inUV);
+	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
+	if( any( isnan(fragPos)) ){
+		imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
+		return;
+	}
+
+	vec3 normal = texture(samplerNormal, inUV).rgb;
+	vec3 N = normalize(normal);
+	//
+	////for..
+	
+	vec4 result = vec4(1.0);
+	float shadow = 1.0;
+	
+	for(int lightIndex = 0; lightIndex < PC.numLights; ++lightIndex)
+	{
+		if(Lights_SSBO[lightIndex].info.x > 0)
+		{		
+			if(Lights_SSBO[lightIndex].info.x == 1)
+			{
+				vec3 L = Lights_SSBO[lightIndex].position.xyz - fragPos;
+				L = normalize(L);	
+				float NdotL = max(0.0, dot(N, L));
+
+				int gridID = Lights_SSBO[lightIndex].info.y;
+				for(int i = 0; i < 6; ++i)
+				{
+					vec4 outFragmentLightPos = Lights_SSBO[lightIndex].projection * Lights_SSBO[lightIndex].view[i] * vec4(fragPos,1.0);
+					shadow *= ShadowCalculation(lightIndex,gridID+i,outFragmentLightPos,NdotL);
+				}
+			}
+			result.rgb *= shadow;
+		}
+	}
+
+	vec4 res = texture(samplerShadows,inUV).rrrr;
+	//res = vec4(0.0);
+
+	 //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
+	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);
+}

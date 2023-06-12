@@ -241,16 +241,30 @@ void ScriptSequencer::Show()
 	ImGui::BeginGroup();
 	ImGui::Text("Script Lists");
 	ImGui::BeginChild("##scipt lists", { 0,0 }, true);
-	for (auto& scripts : oo::ScriptManager::GetScriptList())
+	size_t count = 1;
+	for (auto& scripts : oo::ScriptManager::GetScriptNamesByExecutionOrder())
 	{
-		ImGui::Selectable(scripts.ToString().c_str(), false);
+		std::string label = std::to_string(count) + ". " + scripts.ToString();
+		++count;
+
+		ImGui::Selectable(label.c_str(), false);
 		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
 		{
 			ImGui::SetDragDropPayload("DEFAULT", &scripts, sizeof(oo::ScriptClassInfo));
-			ImGui::Text(scripts.ToString().c_str());
+			ImGui::Text(label.c_str());
 			ImGui::EndDragDropSource();
 		}
 	}
+	//for (auto& scripts : oo::ScriptManager::GetScriptList())
+	//{
+	//	ImGui::Selectable(scripts.ToString().c_str(), false);
+	//	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_::ImGuiDragDropFlags_SourceAutoExpirePayload))
+	//	{
+	//		ImGui::SetDragDropPayload("DEFAULT", &scripts, sizeof(oo::ScriptClassInfo));
+	//		ImGui::Text(scripts.ToString().c_str());
+	//		ImGui::EndDragDropSource();
+	//	}
+	//}
 	ImGui::EndChild();
 	ImGui::EndGroup();
 

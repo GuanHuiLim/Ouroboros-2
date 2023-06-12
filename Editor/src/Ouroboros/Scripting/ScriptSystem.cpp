@@ -138,6 +138,11 @@ namespace oo
         return isPlaying;
     }
 
+    void ScriptSystem::ProcessDeletion()
+    {
+        scriptDatabase.ProcessDeleteDelayed();
+    }
+
     void ScriptSystem::ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo)
     {
         auto& scriptInfoMap = script.GetScriptInfoAll();
@@ -221,7 +226,8 @@ namespace oo
         if (script == nullptr)
             return;
         ScriptEngine::InvokeFunction(script, "OnDestroy");
-        scriptDatabase.Delete(uuid, name_space, name);
+        //scriptDatabase.Delete(uuid, name_space, name);
+        scriptDatabase.DeleteDelayed(uuid, name_space, name);
     }
     void ScriptSystem::SetScriptEnabled(ScriptDatabase::UUID uuid, const char* name_space, const char* name, bool isEnabled)
     {
@@ -388,6 +394,12 @@ namespace oo
                 {
                     std::shared_ptr<GameObject> object = scene.FindWithInstanceID(uuid);
                     return object->ActiveInHierarchy();
+                }, [](size_t classIndex)
+                {
+                    StartTracyProfiling(classIndex);
+                }, [](size_t classIndex)
+                {
+                    TRACY_PROFILE_SCOPE_END();
                 });
         }
         catch (std::exception const& e)
@@ -442,6 +454,123 @@ namespace oo
                 ScriptValue::SetFieldValue(scriptObj, field, fieldInfo.value);
                 fieldInfo.SetScriptReference(field, scriptPtr);
             }
+        }
+    }
+
+    void ScriptSystem::StartTracyProfiling(size_t scriptClassIndex)
+    {
+        //if (scriptClassIndex == 1)
+        //{
+        //    TRACY_PROFILE_SCOPE(scripts_class_1_invoke);
+        //}
+        //else
+        //{
+        //    TRACY_PROFILE_SCOPE(scripts_class_limit_passed_invoke);
+        //}
+
+        ++scriptClassIndex;
+        switch (scriptClassIndex)
+        {
+        case 1: { TRACY_PROFILE_SCOPE(scripts_class_1_invoke); break; }
+        case 2: { TRACY_PROFILE_SCOPE(scripts_class_2_invoke); break; }
+        case 3: { TRACY_PROFILE_SCOPE(scripts_class_3_invoke); break; }
+        case 4: { TRACY_PROFILE_SCOPE(scripts_class_4_invoke); break; }
+        case 5: { TRACY_PROFILE_SCOPE(scripts_class_5_invoke); break; }
+        case 6: { TRACY_PROFILE_SCOPE(scripts_class_6_invoke); break; }
+        case 7: { TRACY_PROFILE_SCOPE(scripts_class_7_invoke); break; }
+        case 8: { TRACY_PROFILE_SCOPE(scripts_class_8_invoke); break; }
+        case 9: { TRACY_PROFILE_SCOPE(scripts_class_9_invoke); break; }
+        case 10: { TRACY_PROFILE_SCOPE(scripts_class_10_invoke); break; }
+        case 11: { TRACY_PROFILE_SCOPE(scripts_class_11_invoke); break; }
+        case 12: { TRACY_PROFILE_SCOPE(scripts_class_12_invoke); break; }
+        case 13: { TRACY_PROFILE_SCOPE(scripts_class_13_invoke); break; }
+        case 14: { TRACY_PROFILE_SCOPE(scripts_class_14_invoke); break; }
+        case 15: { TRACY_PROFILE_SCOPE(scripts_class_15_invoke); break; }
+        case 16: { TRACY_PROFILE_SCOPE(scripts_class_16_invoke); break; }
+        case 17: { TRACY_PROFILE_SCOPE(scripts_class_17_invoke); break; }
+        case 18: { TRACY_PROFILE_SCOPE(scripts_class_18_invoke); break; }
+        case 19: { TRACY_PROFILE_SCOPE(scripts_class_19_invoke); break; }
+        case 20: { TRACY_PROFILE_SCOPE(scripts_class_20_invoke); break; }
+        case 21: { TRACY_PROFILE_SCOPE(scripts_class_21_invoke); break; }
+        case 22: { TRACY_PROFILE_SCOPE(scripts_class_22_invoke); break; }
+        case 23: { TRACY_PROFILE_SCOPE(scripts_class_23_invoke); break; }
+        case 24: { TRACY_PROFILE_SCOPE(scripts_class_24_invoke); break; }
+        case 25: { TRACY_PROFILE_SCOPE(scripts_class_25_invoke); break; }
+        case 26: { TRACY_PROFILE_SCOPE(scripts_class_26_invoke); break; }
+        case 27: { TRACY_PROFILE_SCOPE(scripts_class_27_invoke); break; }
+        case 28: { TRACY_PROFILE_SCOPE(scripts_class_28_invoke); break; }
+        case 29: { TRACY_PROFILE_SCOPE(scripts_class_29_invoke); break; }
+        case 30: { TRACY_PROFILE_SCOPE(scripts_class_30_invoke); break; }
+        case 31: { TRACY_PROFILE_SCOPE(scripts_class_31_invoke); break; }
+        case 32: { TRACY_PROFILE_SCOPE(scripts_class_32_invoke); break; }
+        case 33: { TRACY_PROFILE_SCOPE(scripts_class_33_invoke); break; }
+        case 34: { TRACY_PROFILE_SCOPE(scripts_class_34_invoke); break; }
+        case 35: { TRACY_PROFILE_SCOPE(scripts_class_35_invoke); break; }
+        case 36: { TRACY_PROFILE_SCOPE(scripts_class_36_invoke); break; }
+        case 37: { TRACY_PROFILE_SCOPE(scripts_class_37_invoke); break; }
+        case 38: { TRACY_PROFILE_SCOPE(scripts_class_38_invoke); break; }
+        case 39: { TRACY_PROFILE_SCOPE(scripts_class_39_invoke); break; }
+        case 40: { TRACY_PROFILE_SCOPE(scripts_class_40_invoke); break; }
+        case 41: { TRACY_PROFILE_SCOPE(scripts_class_41_invoke); break; }
+        case 42: { TRACY_PROFILE_SCOPE(scripts_class_42_invoke); break; }
+        case 43: { TRACY_PROFILE_SCOPE(scripts_class_43_invoke); break; }
+        case 44: { TRACY_PROFILE_SCOPE(scripts_class_44_invoke); break; }
+        case 45: { TRACY_PROFILE_SCOPE(scripts_class_45_invoke); break; }
+        case 46: { TRACY_PROFILE_SCOPE(scripts_class_46_invoke); break; }
+        case 47: { TRACY_PROFILE_SCOPE(scripts_class_47_invoke); break; }
+        case 48: { TRACY_PROFILE_SCOPE(scripts_class_48_invoke); break; }
+        case 49: { TRACY_PROFILE_SCOPE(scripts_class_49_invoke); break; }
+        case 50: { TRACY_PROFILE_SCOPE(scripts_class_50_invoke); break; }
+        case 51: { TRACY_PROFILE_SCOPE(scripts_class_51_invoke); break; }
+        case 52: { TRACY_PROFILE_SCOPE(scripts_class_52_invoke); break; }
+        case 53: { TRACY_PROFILE_SCOPE(scripts_class_53_invoke); break; }
+        case 54: { TRACY_PROFILE_SCOPE(scripts_class_54_invoke); break; }
+        case 55: { TRACY_PROFILE_SCOPE(scripts_class_55_invoke); break; }
+        case 56: { TRACY_PROFILE_SCOPE(scripts_class_56_invoke); break; }
+        case 57: { TRACY_PROFILE_SCOPE(scripts_class_57_invoke); break; }
+        case 58: { TRACY_PROFILE_SCOPE(scripts_class_58_invoke); break; }
+        case 59: { TRACY_PROFILE_SCOPE(scripts_class_59_invoke); break; }
+        case 60: { TRACY_PROFILE_SCOPE(scripts_class_60_invoke); break; }
+        case 61: { TRACY_PROFILE_SCOPE(scripts_class_61_invoke); break; }
+        case 62: { TRACY_PROFILE_SCOPE(scripts_class_62_invoke); break; }
+        case 63: { TRACY_PROFILE_SCOPE(scripts_class_63_invoke); break; }
+        case 64: { TRACY_PROFILE_SCOPE(scripts_class_64_invoke); break; }
+        case 65: { TRACY_PROFILE_SCOPE(scripts_class_65_invoke); break; }
+        case 66: { TRACY_PROFILE_SCOPE(scripts_class_66_invoke); break; }
+        case 67: { TRACY_PROFILE_SCOPE(scripts_class_67_invoke); break; }
+        case 68: { TRACY_PROFILE_SCOPE(scripts_class_68_invoke); break; }
+        case 69: { TRACY_PROFILE_SCOPE(scripts_class_69_invoke); break; }
+        case 70: { TRACY_PROFILE_SCOPE(scripts_class_70_invoke); break; }
+        case 71: { TRACY_PROFILE_SCOPE(scripts_class_71_invoke); break; }
+        case 72: { TRACY_PROFILE_SCOPE(scripts_class_72_invoke); break; }
+        case 73: { TRACY_PROFILE_SCOPE(scripts_class_73_invoke); break; }
+        case 74: { TRACY_PROFILE_SCOPE(scripts_class_74_invoke); break; }
+        case 75: { TRACY_PROFILE_SCOPE(scripts_class_75_invoke); break; }
+        case 76: { TRACY_PROFILE_SCOPE(scripts_class_76_invoke); break; }
+        case 77: { TRACY_PROFILE_SCOPE(scripts_class_77_invoke); break; }
+        case 78: { TRACY_PROFILE_SCOPE(scripts_class_78_invoke); break; }
+        case 79: { TRACY_PROFILE_SCOPE(scripts_class_79_invoke); break; }
+        case 80: { TRACY_PROFILE_SCOPE(scripts_class_80_invoke); break; }
+        case 81: { TRACY_PROFILE_SCOPE(scripts_class_81_invoke); break; }
+        case 82: { TRACY_PROFILE_SCOPE(scripts_class_82_invoke); break; }
+        case 83: { TRACY_PROFILE_SCOPE(scripts_class_83_invoke); break; }
+        case 84: { TRACY_PROFILE_SCOPE(scripts_class_84_invoke); break; }
+        case 85: { TRACY_PROFILE_SCOPE(scripts_class_85_invoke); break; }
+        case 86: { TRACY_PROFILE_SCOPE(scripts_class_86_invoke); break; }
+        case 87: { TRACY_PROFILE_SCOPE(scripts_class_87_invoke); break; }
+        case 88: { TRACY_PROFILE_SCOPE(scripts_class_88_invoke); break; }
+        case 89: { TRACY_PROFILE_SCOPE(scripts_class_89_invoke); break; }
+        case 90: { TRACY_PROFILE_SCOPE(scripts_class_90_invoke); break; }
+        case 91: { TRACY_PROFILE_SCOPE(scripts_class_91_invoke); break; }
+        case 92: { TRACY_PROFILE_SCOPE(scripts_class_92_invoke); break; }
+        case 93: { TRACY_PROFILE_SCOPE(scripts_class_93_invoke); break; }
+        case 94: { TRACY_PROFILE_SCOPE(scripts_class_94_invoke); break; }
+        case 95: { TRACY_PROFILE_SCOPE(scripts_class_95_invoke); break; }
+        case 96: { TRACY_PROFILE_SCOPE(scripts_class_96_invoke); break; }
+        case 97: { TRACY_PROFILE_SCOPE(scripts_class_97_invoke); break; }
+        case 98: { TRACY_PROFILE_SCOPE(scripts_class_98_invoke); break; }
+        case 99: { TRACY_PROFILE_SCOPE(scripts_class_99_invoke); break; }
+        default: { TRACY_PROFILE_SCOPE(scripts_class_passed_99_invoke); break; }
         }
     }
 
