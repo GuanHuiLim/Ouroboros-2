@@ -68,10 +68,10 @@ bool SSAORenderPass::SetupDependencies()
 void SSAORenderPass::Draw()
 {
 	auto& vr = *VulkanRenderer::get();
-	auto swapchainIdx = vr.swapchainIdx;
+	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 
-	const VkCommandBuffer cmdlist = vr.commandBuffers[swapchainIdx];
+	const VkCommandBuffer cmdlist = vr.commandBuffers[currFrame];
 	PROFILE_GPU_CONTEXT(cmdlist);
 	PROFILE_GPU_EVENT("SSAO");
 
@@ -88,7 +88,7 @@ void SSAORenderPass::Draw()
 	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
-	renderPassBeginInfo.framebuffer = vr.swapChainFramebuffers[swapchainIdx];
+	renderPassBeginInfo.framebuffer = vr.swapChainFramebuffers[currFrame];
 
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
@@ -99,30 +99,32 @@ void SSAORenderPass::Draw()
 
 	// transition depth buffer
 	auto gbuffer = RenderPassDatabase::GetRenderPass<GBufferRenderPass>();
-	assert(gbuffer->attachments[GBufferAttachmentIndex::DEPTH].currentLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	oGFX::vkutils::tools::insertImageMemoryBarrier(
-		cmdlist,
-		gbuffer->attachments[GBufferAttachmentIndex::DEPTH].image,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 });
-	gbuffer->attachments[GBufferAttachmentIndex::DEPTH].currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	//assert(gbuffer->attachments[GBufferAttachmentIndex::DEPTH].currentLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	//oGFX::vkutils::tools::insertImageMemoryBarrier(
+	//	cmdlist,
+	//	gbuffer->attachments[GBufferAttachmentIndex::DEPTH].image,
+	//	VK_ACCESS_MEMORY_READ_BIT,
+	//	VK_ACCESS_MEMORY_READ_BIT,
+	//	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+	//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	//	VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+	//	VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+	//	VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 });
+	//gbuffer->attachments[GBufferAttachmentIndex::DEPTH].currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	vkutils::TransitionImage(cmdlist, gbuffer->attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	assert(gbuffer->attachments[GBufferAttachmentIndex::NORMAL].currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	oGFX::vkutils::tools::insertImageMemoryBarrier(
-		cmdlist,
-		gbuffer->attachments[GBufferAttachmentIndex::NORMAL].image,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	//assert(gbuffer->attachments[GBufferAttachmentIndex::NORMAL].currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	//oGFX::vkutils::tools::insertImageMemoryBarrier(
+	//	cmdlist,
+	//	gbuffer->attachments[GBufferAttachmentIndex::NORMAL].image,
+	//	VK_ACCESS_MEMORY_READ_BIT,
+	//	VK_ACCESS_MEMORY_READ_BIT,
+	//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	//	VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+	//	VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+	//	VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	vkutils::TransitionImage(cmdlist, gbuffer->attachments[GBufferAttachmentIndex::NORMAL], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	rhi::CommandList cmd{ cmdlist, "SSAO Pass"};
@@ -151,10 +153,11 @@ void SSAORenderPass::Draw()
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::SSAOPSOLayout, 0,
 		std::array<VkDescriptorSet, 2>
-	{
-		vr.descriptorSet_SSAO,
-			vr.descriptorSets_uniform[swapchainIdx],
-	},
+		{
+			vr.descriptorSet_SSAO,
+				vr.descriptorSets_uniform[currFrame],
+		},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1, & dynamicOffset
 			);
 
@@ -191,8 +194,9 @@ void SSAORenderPass::Draw()
 		std::array<VkDescriptorSet, 2>
 	{
 		vr.descriptorSet_SSAOBlur,
-			vr.descriptorSets_uniform[swapchainIdx],
+			vr.descriptorSets_uniform[currFrame],
 	},
+	VK_PIPELINE_BIND_POINT_GRAPHICS,
 	1, & dynamicOffset);
 
 	cmd.DrawFullScreenQuad();
@@ -253,8 +257,8 @@ void SSAORenderPass::InitRandomFactors()
 		ssaoKernel.push_back(sample);  
 	}
 	randomVectorsSSBO.Init(&vr.m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	randomVectorsSSBO.reserve(ssaoKernel.size());
-	randomVectorsSSBO.writeTo(ssaoKernel.size(), ssaoKernel.data());
+	randomVectorsSSBO.reserve(ssaoKernel.size(),vr.m_device.transferQueue,vr.m_device.transferPools[vr.getFrame()]);
+	randomVectorsSSBO.writeTo(ssaoKernel.size(), ssaoKernel.data(),vr.m_device.transferQueue,vr.m_device.transferPools[vr.getFrame()]);
 
 	uint32_t width = 4;
 	uint32_t height = 4;
@@ -326,7 +330,7 @@ void SSAORenderPass::CreateDescriptors()
 	
 	const auto& ranvecBufer = randomVectorsSSBO.GetDescriptorBufferInfo();
 
-	DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.swapchainIdx])
+	DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.getFrame()])
 		//.BindImage(1, &texDescriptorPosition, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // to remove
 		.BindImage(1, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
 		.BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -339,7 +343,7 @@ void SSAORenderPass::CreateDescriptors()
 		SSAO_renderTarget.view,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.swapchainIdx])
+	DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.getFrame()])
 		.BindImage(1, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
 		.Build(vr.descriptorSet_SSAOBlur, SetLayoutDB::SSAOBlur);
 
@@ -456,7 +460,7 @@ void SSAORenderPass::CreatePipeline()
 	};
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = oGFX::vkutils::inits::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT , VK_FALSE);
 	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
 	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);

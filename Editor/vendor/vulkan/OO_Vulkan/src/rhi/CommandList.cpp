@@ -19,9 +19,10 @@ Technology is prohibited.
 namespace rhi
 {
 
-void CommandList::BindPSO(const VkPipeline& pso)
+void CommandList::BindPSO(const VkPipeline& pso,const VkPipelineBindPoint bindPoint)
 {
-	vkCmdBindPipeline(m_VkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pso);
+	m_pipelineBindPoint = bindPoint;
+	vkCmdBindPipeline(m_VkCommandBuffer, bindPoint, pso);
 }
 
 void CommandList::SetPushConstant(VkPipelineLayout layout, const VkPushConstantRange& pcr, const void* data)
@@ -71,6 +72,7 @@ void CommandList::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint
 void CommandList::BindDescriptorSet(VkPipelineLayout layout,
 	uint32_t firstSet, uint32_t descriptorSetCount,
 	const VkDescriptorSet* pDescriptorSets,
+	VkPipelineBindPoint bindpoint,
 	uint32_t dynamicOffsetCount /*= 1*/, const uint32_t* pDynamicOffsets /*= nullptr */)
 {
 	m_pipeLayout = layout;
@@ -78,7 +80,7 @@ void CommandList::BindDescriptorSet(VkPipelineLayout layout,
 	uint32_t dynamicOffset = 0;
 	vkCmdBindDescriptorSets(
 		m_VkCommandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		bindpoint,
 		layout,
 		firstSet,
 		descriptorSetCount,

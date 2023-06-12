@@ -44,8 +44,8 @@ struct VulkanDevice
 	VkPhysicalDeviceFeatures enabledFeatures{};
 	VkPhysicalDeviceProperties properties{};
 
-	VkCommandPool commandPool{ VK_NULL_HANDLE };
-	VkCommandPool transferPool{ VK_NULL_HANDLE };
+	std::vector<VkCommandPool>commandPools{  };
+	std::vector<VkCommandPool> transferPools{  };
 
 	bool CheckDeviceSuitable(const oGFX::SetupInfo& si,VkPhysicalDevice device);
 	bool CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysicalDevice device);	
@@ -57,9 +57,9 @@ struct VulkanDevice
 			VkBufferCopy* copyRegion = nullptr);
 
 	VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin = false);
-	VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level, bool begin = false);
+	//VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level, bool begin = false);
 	void FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free = true);
-	void FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true);
+	//void FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true);
 
 };
 

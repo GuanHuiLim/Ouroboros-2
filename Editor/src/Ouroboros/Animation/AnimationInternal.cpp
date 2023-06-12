@@ -1485,8 +1485,11 @@ namespace oo::Anim::internal
 			//invoke script event
 			//events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
 			
-			//queue script event
-			eventqueue.emplace_back(info.uuid , events[tracker.nextEvent_index].script_function_info);
+			//queue script event - NOT THREAD SAFE
+			//eventqueue.emplace_back(info.uuid , events[tracker.nextEvent_index].script_function_info);
+			
+			//thread safe version
+			info.system.AddToScriptEventQueue(info.uuid, events[tracker.nextEvent_index].script_function_info);
 			
 			//update index
 			++tracker.nextEvent_index;

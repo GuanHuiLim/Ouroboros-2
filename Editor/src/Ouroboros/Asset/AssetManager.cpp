@@ -268,6 +268,7 @@ namespace oo
         {
             future.wait();
         }
+        lpptr->progressThread.join();
         return lpptr;
     }
 

@@ -44,6 +44,8 @@ namespace oo::Anim
 			oo::ScriptValue::function_info script_function_info{};
 		};
 		std::vector<ScriptEventTicket> scriptEventsToBeCalled{};
+
+		std::mutex scriptEvents_mutex{};
 	public:
 		struct ModifyAnimationEvent : oo::Event {
 			std::string name{};
@@ -73,6 +75,12 @@ namespace oo::Anim
 		std::vector<ScriptEventTicket>& GetScriptEventQueue()
 		{
 			return scriptEventsToBeCalled;
+		}
+
+		void AddToScriptEventQueue(UUID uid, oo::ScriptValue::function_info const& info)
+		{
+			std::scoped_lock lock(scriptEvents_mutex);
+			scriptEventsToBeCalled.emplace_back(uid, info);
 		}
 		
 		//test function

@@ -108,7 +108,7 @@ namespace vkutils
 		VkMemoryRequirements memReqs;
 
 		// Use a separate command buffer for texture loading
-		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, device->commandPools[0],true);
 
 		if (useStaging)
 		{
@@ -224,7 +224,7 @@ namespace vkutils
 				imageLayout,
 				subresourceRange);
 
-			device->FlushCommandBuffer(copyCmd, copyQueue);
+			device->FlushCommandBuffer(copyCmd, copyQueue, device->commandPools[0]);
 
 			// Clean up staging resources
 			vkFreeMemory(device->logicalDevice, stagingMemory, nullptr);
@@ -303,7 +303,7 @@ namespace vkutils
 			// Setup image memory barrier
 			oGFX::vkutils::tools::setImageLayout(copyCmd, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
 
-			device->FlushCommandBuffer(copyCmd, copyQueue);
+			device->FlushCommandBuffer(copyCmd, copyQueue,device->commandPools[0]);
 		}
 
 		stbi_image_free(ktxTextureData);
@@ -380,7 +380,7 @@ namespace vkutils
 		VkMemoryRequirements memReqs;
 
 		// Use a separate command buffer for texture loading
-		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, device->transferPool, true);
+		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, device->transferPools[0], true);
 
 		// Create a host-visible staging buffer that contains the raw image data
 		VkBuffer stagingBuffer;
@@ -483,7 +483,7 @@ namespace vkutils
 			imageLayout,
 			subresourceRange);
 
-		device->FlushCommandBuffer(copyCmd, copyQueue, device->transferPool);
+		device->FlushCommandBuffer(copyCmd, copyQueue, device->transferPools[0]);
 
 		// Clean up staging resources
 		vkFreeMemory(device->logicalDevice, stagingMemory, nullptr);
@@ -573,6 +573,7 @@ namespace vkutils
 		//	| VK_IMAGE_USAGE_STORAGE_BIT
 		//	| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
+
 		bool n = name.empty();
 	
 		VkImageCreateInfo imageinfo = oGFX::vkutils::inits::imageCreateInfo();
@@ -587,6 +588,8 @@ namespace vkutils
 		imageinfo.usage = usage;
 		imageinfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VkImageFormatProperties props{};
+		vkGetPhysicalDeviceImageFormatProperties(device->physicalDevice, imageinfo.format, imageinfo.imageType, imageinfo.tiling, imageinfo.usage, imageinfo.flags, &props);
 		VK_CHK(vkCreateImage(device->logicalDevice, &imageinfo, nullptr, &image));
 		VK_NAME(device->logicalDevice, n? "forFramebuffer::image" :name.c_str(), image);
 
@@ -713,7 +716,7 @@ namespace vkutils
 		VkMemoryRequirements memReqs;
 
 		// Use a separate command buffer for texture loading
-		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY,device->commandPool, true);
+		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY,device->commandPools[0], true);
 
 		// Create a host-visible staging buffer that contains the raw image data
 		VkBuffer stagingBuffer;
@@ -777,7 +780,7 @@ namespace vkutils
 			this->currentLayout,
 			subresourceRange);
 
-		device->FlushCommandBuffer(copyCmd, copyQueue);
+		device->FlushCommandBuffer(copyCmd, copyQueue,device->commandPools[0]);
 
 		// Clean up staging resources
 		vkFreeMemory(device->logicalDevice, stagingMemory, nullptr);

@@ -22,8 +22,6 @@ Technology is prohibited.
 #include "Ouroboros/Animation/AnimationSystem.h"
 #include "Ouroboros/Animation/AnimationTree.h"
 #include "Ouroboros/Audio/Audio.h"
-#include "Ouroboros/Core/Application.h"
-#include "Ouroboros/Vulkan/VulkanContext.h"
 #include "Utility/IEqual.h"
 
 namespace
@@ -83,6 +81,8 @@ namespace oo
 
     void AssetInfo::Reload()
     {
+        std::string s("Reloading " + std::to_string(this->id) + '\n');
+        std::cout << s;
         Reload(GetType());
     }
 
