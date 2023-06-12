@@ -41,6 +41,8 @@ namespace oo
         bool StopPlay();
         bool IsPlaying();
 
+        void ProcessDeletion();
+
         void ResetScriptInfo(oo::UUID uuid, ScriptComponent& script, ScriptClassInfo const& classInfo);
         void RefreshScriptInfoAll();
 
