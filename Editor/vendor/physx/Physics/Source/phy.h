@@ -232,6 +232,7 @@ namespace myPhysx {
         PhysxWorld(PxVec3 gravity = PxVec3(0.0f, -9.81f, 0.0f));
         ~PhysxWorld();
         void updateScene(float dt);
+        void updateInternal();
 
         // GRAVITY
         PxVec3 getWorldGravity() const;

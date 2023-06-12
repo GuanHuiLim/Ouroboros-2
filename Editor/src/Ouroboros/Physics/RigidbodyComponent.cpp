@@ -454,6 +454,12 @@ namespace oo
         external_commands.emplace_back(cmd);
     }
 
+    void oo::RigidbodyComponent::UploadVertices(std::vector<PxVec3> newVertices)
+    {
+        desired_object.uploadVertices = newVertices;
+        IsDirty = true;
+    }
+
     oo::UUID oo::RigidbodyComponent::GetUnderlyingUUID() const
     {
         return oo::UUID{ std::uint64_t{underlying_object.id} };

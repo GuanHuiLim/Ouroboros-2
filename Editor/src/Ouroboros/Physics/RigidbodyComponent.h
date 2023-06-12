@@ -141,6 +141,8 @@ namespace oo
         void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
         void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
 
+        void UploadVertices(std::vector<PxVec3> newVertices);
+
         oo::UUID GetUnderlyingUUID() const;
     
         //for RTTR

@@ -137,7 +137,7 @@ namespace oo
                             });
 
                         // we submit our desired vertices to let the physics engine decide
-                        rb.desired_object.uploadVertices = new_vertices;
+                        rb.UploadVertices(new_vertices);
 
                         //auto generated_vertices = rb.StoreMesh(new_vertices);
 
@@ -235,6 +235,10 @@ namespace oo
         
         // Submit update to physics world to reflect changes.[properties only!]
         SubmitUpdatesToPhysicsWorld();
+
+        TRACY_PROFILE_SCOPE_NC(physics_update_internal, tracy::Color::VioletRed1);
+        m_physicsWorld.updateInternal();
+        TRACY_PROFILE_SCOPE_END();
 
         // Finally we retrieve the newly updated information from physics world 
         // and update our affected data.
@@ -493,7 +497,7 @@ namespace oo
                             //auto generated_vertices = rb.StoreMesh(new_vertices);
 
                             // we submit our desired vertices to let the physics engine decide
-                            rb.desired_object.uploadVertices = new_vertices;
+                            rb.UploadVertices(new_vertices);
 
                             /*std::vector<oo::vec3> temp{ generated_vertices.begin(), generated_vertices.end() };
                             std::vector<glm::vec3> final_result{temp.begin(), temp.end() };

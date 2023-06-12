@@ -272,6 +272,11 @@ namespace myPhysx
         //scene->collide(dt);
         scene->fetchResults(true);
 
+        updateInternal();
+    }
+
+    void PhysxWorld::updateInternal()
+    {
         for (auto&& physx_obj : m_objects)
         {
             phy_uuid::UUID uid = *physx_obj.id;
