@@ -27,16 +27,18 @@ Technology is prohibited.
 
 #include "OO_Vulkan/src/MeshModel.h"
 #include "Ouroboros/Audio/Audio.h"
+#include "Ouroboros/Core/Application.h"
+#include "Ouroboros/Vulkan/VulkanContext.h"
 
 /****************************************************************************************
-* 
+*
 * How to Add Support for a New Asset Type
-* 
+*
 * 1) Add the type of asset to the AssetInfo::Type enum (in Asset.h).
 * 2) Declare the list of supported extensions for the asset type.
 * 3) Implement the loading and unloading procedure for the corresponding asset in the
 *     AssetInfo::Reload(AssetInfo::Type) method (in Asset.cpp).
-* 
+*
 ****************************************************************************************/
 
 namespace oo
@@ -298,7 +300,23 @@ namespace oo
             return {};
         for (auto& d : data)
         {
-            if constexpr (std::is_pointer<T>::value)
+            if constexpr (std::is_same<T, ImTextureID>::value)
+            {
+                if (d.is_type<T>())
+                {
+                    auto val = d.get_value<ImTextureID>();
+                    if (val == 0)
+                    {
+                        // Try reload ImTextureID
+                        auto tid = GetData<uint32_t>();
+                        auto vc = Application::Get().GetWindow().GetVulkanContext();
+                        auto vr = vc->getRenderer();
+                        const_cast<rttr::variant&>(d) = val = vr->GetImguiID(tid);
+                    }
+                    return val;
+                }
+            }
+            else if constexpr (std::is_pointer<T>::value)
             {
                 if (d.is_type<T>())
                     return d.get_value<T>();
