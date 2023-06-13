@@ -784,6 +784,13 @@ namespace myPhysx
 
     void PhysxWorld::setAllData(PhysicsObject const& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate) {
 
+        // reset change vertices manually
+        if (underlying_Obj.changeVertices)
+        {
+            underlying_Obj.changeVertices = false;
+            underlying_Obj.uploadVertices = {};
+        }
+
         // MATERIAL PROPERTIES
         underlying_Obj.m_material->setStaticFriction(updatedPhysicsObj.material.staticFriction);
         underlying_Obj.m_material->setDynamicFriction(updatedPhysicsObj.material.dynamicFriction);

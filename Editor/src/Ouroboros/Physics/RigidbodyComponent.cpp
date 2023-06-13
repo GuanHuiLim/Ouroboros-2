@@ -246,6 +246,11 @@ namespace oo
         return !IsTrigger();
     }
 
+    bool oo::RigidbodyComponent::VerticesChanged() const
+    {
+        return desired_object.changeVertices;
+    }
+
     void oo::RigidbodyComponent::EnableCollider()
     {
         desired_object.is_collider = true;
@@ -457,6 +462,17 @@ namespace oo
     void oo::RigidbodyComponent::UploadVertices(std::vector<PxVec3> newVertices)
     {
         desired_object.uploadVertices = newVertices;
+        IsDirty = true;
+    }
+
+    void oo::RigidbodyComponent::SetMeshScale(PxVec3 newScale)
+    {
+        desired_object.meshScale = newScale;
+        IsDirty = true;
+    }
+
+    void oo::RigidbodyComponent::ForceDirty()
+    {
         IsDirty = true;
     }
 
