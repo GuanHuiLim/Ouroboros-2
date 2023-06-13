@@ -29,6 +29,12 @@ Technology is prohibited.
 
 constexpr bool DEBUG_PRINT = false;
 
+namespace oo::Anim
+{
+	std::mutex Animation::animation_containers_mutex = std::mutex{};
+}
+
+
 namespace oo::Anim::internal
 {
 	void SerializeAnimation(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, Animation& anim)
@@ -407,6 +413,8 @@ namespace oo::Anim
 	}
 	Animation* Animation::AddAnimation(Animation&& anim)
 	{
+		std::scoped_lock lock{ animation_containers_mutex };
+
 		//Animation::ID_to_index[anim.animation_ID] = static_cast<uint>(Animation::animation_storage.size());
 
 		//remove existing dupe
