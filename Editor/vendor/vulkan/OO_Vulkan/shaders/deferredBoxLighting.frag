@@ -255,7 +255,8 @@ void main()
 	//lightContribution *= outshadow;
 	
 	vec3 ambientContribution = albedo.rgb  * ambient;
-	vec3 emissive = texture(samplerEmissive,inUV).rgb;
+	//vec3 emissive = texture(samplerEmissive,inUV).rgb;
+	vec3 emissive = vec3(0);
 	result =  (ambientContribution * SSAO + lightContribution) + emissive;
 
 	outFragcolor = vec4(result, albedo.a);	

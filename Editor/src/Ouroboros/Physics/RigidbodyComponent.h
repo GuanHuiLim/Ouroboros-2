@@ -121,6 +121,8 @@ namespace oo
         bool IsTrigger() const;
         bool IsCollider() const;
         
+        bool VerticesChanged() const;
+
         void EnableCollider();
         void DisableCollider();
 
@@ -140,6 +142,11 @@ namespace oo
 
         void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
         void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
+
+        void UploadVertices(std::vector<PxVec3> newVertices);
+        void SetMeshScale(PxVec3 newScale);
+        
+        void ForceDirty();
 
         oo::UUID GetUnderlyingUUID() const;
     

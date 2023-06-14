@@ -137,7 +137,7 @@ namespace oo
                             });
 
                         // we submit our desired vertices to let the physics engine decide
-                        rb.desired_object.uploadVertices = new_vertices;
+                        rb.UploadVertices(new_vertices);
 
                         //auto generated_vertices = rb.StoreMesh(new_vertices);
 
@@ -151,7 +151,7 @@ namespace oo
 
                 // set scale to current scale
                 auto scale = tf.GetGlobalScale();
-                rb.desired_object.meshScale = { scale.x, scale.y, scale.z };
+                rb.SetMeshScale({scale.x, scale.y, scale.z});
 
                 // this function needs to be deferred to later only once it is retrieved.
                 //// update the world vertex position based on matrix of current object(this is now just for visualization purposes only!)
@@ -235,6 +235,10 @@ namespace oo
         
         // Submit update to physics world to reflect changes.[properties only!]
         SubmitUpdatesToPhysicsWorld();
+
+        TRACY_PROFILE_SCOPE_NC(physics_update_internal, tracy::Color::VioletRed1);
+        m_physicsWorld.updateInternal();
+        TRACY_PROFILE_SCOPE_END();
 
         // Finally we retrieve the newly updated information from physics world 
         // and update our affected data.
@@ -493,7 +497,7 @@ namespace oo
                             //auto generated_vertices = rb.StoreMesh(new_vertices);
 
                             // we submit our desired vertices to let the physics engine decide
-                            rb.desired_object.uploadVertices = new_vertices;
+                            rb.UploadVertices(new_vertices);
 
                             /*std::vector<oo::vec3> temp{ generated_vertices.begin(), generated_vertices.end() };
                             std::vector<glm::vec3> final_result{temp.begin(), temp.end() };
@@ -508,10 +512,10 @@ namespace oo
                     {
                         // set scale to current scale
                         auto scale = tf.GetGlobalScale();
-                        rb.desired_object.meshScale = { scale.x, scale.y, scale.z };
+                        rb.SetMeshScale({ scale.x, scale.y, scale.z });
                     }
 
-                    if (rb.underlying_object.changeVertices)
+                    if (rb.VerticesChanged())
                     {
                         auto gen_vertices = rb.underlying_object.meshVertices;
                         std::vector<oo::vec3> temp{ gen_vertices.begin(), gen_vertices.end() };
@@ -519,10 +523,12 @@ namespace oo
                         mc.WorldSpaceVertices = final_result;
                         auto vertices = final_result.begin();
                         auto globalMat = tf.GetGlobalMatrix();
-                        std::for_each(std::execution::par_unseq, mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v)
+                        std::for_each(/*std::execution::par_unseq,*/ mc.WorldSpaceVertices.begin(), mc.WorldSpaceVertices.end(), [&](auto&& v)
                             {
                                 v = globalMat * glm::vec4{ static_cast<glm::vec3>(*vertices++), 1 };
                             });
+
+                        rb.ForceDirty();
                     }
 
                     //if (tf.HasChangedThisFrame || (justEdited && !mc.Vertices.empty()))

@@ -272,6 +272,11 @@ namespace myPhysx
         //scene->collide(dt);
         scene->fetchResults(true);
 
+        updateInternal();
+    }
+
+    void PhysxWorld::updateInternal()
+    {
         for (auto&& physx_obj : m_objects)
         {
             phy_uuid::UUID uid = *physx_obj.id;
@@ -841,6 +846,13 @@ namespace myPhysx
     }
 
     void PhysxWorld::setAllData(PhysicsObject const& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate) {
+
+        // reset change vertices manually
+        if (underlying_Obj.changeVertices)
+        {
+            underlying_Obj.changeVertices = false;
+            underlying_Obj.uploadVertices = {};
+        }
 
         // MATERIAL PROPERTIES
         underlying_Obj.m_material->setStaticFriction(updatedPhysicsObj.material.staticFriction);

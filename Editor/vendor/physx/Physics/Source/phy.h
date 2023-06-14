@@ -232,6 +232,7 @@ namespace myPhysx {
         PhysxWorld(PxVec3 gravity = PxVec3(0.0f, -9.81f, 0.0f));
         ~PhysxWorld();
         void updateScene(float dt);
+        void updateInternal();
 
         // GRAVITY
         PxVec3 getWorldGravity() const;
@@ -330,7 +331,7 @@ namespace myPhysx {
         bool changeVertices = false;
         PxVec3 meshScale = PxVec3(1, 1, 1);
         std::vector<PxVec3> uploadVertices{};
-        std::vector<PxVec3> meshVertices{ PxVec3(0,0,0), PxVec3(0,0,0), PxVec3(0,0,0) };
+        std::vector<PxVec3> meshVertices{};
     };
 
     struct PhysicsObject { // you store
@@ -374,7 +375,7 @@ namespace myPhysx {
         bool changeVertices = false;
         PxVec3 meshScale = PxVec3(1, 1, 1);
         std::vector<PxVec3> uploadVertices{};
-        std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
+        std::vector<PxVec3> meshVertices{};
     };
 
     static constexpr std::size_t sizeofPhysicsObject = sizeof(PhysicsObject);

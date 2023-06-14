@@ -205,7 +205,8 @@ void main()
 	const float gamma = 2.2;
 	albedo.rgb =  pow(albedo.rgb, vec3(1.0/gamma));
 	// Ambient part
-	vec3 result = albedo.rgb  * ambient;
+	vec3 emissive = texture(samplerEmissive,inUV).rgb;
+	vec3 result = albedo.rgb  * ambient + emissive;
 	outFragcolor = vec4(result, albedo.a);	
 
 }
