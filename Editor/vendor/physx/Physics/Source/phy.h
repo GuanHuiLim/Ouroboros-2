@@ -251,7 +251,7 @@ namespace myPhysx {
         bool hasObject(phy_uuid::UUID id) const;
 
         // SWEEP
-        RaycastHit sweep(phy_uuid::UUID id, PxVec3 direction, PxReal distance);
+        RaycastHit sweep(phy_uuid::UUID id, PxVec3 direction, PxReal distance = PX_MAX_SWEEP_DISTANCE);
         
         // RAYCAST
         RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
