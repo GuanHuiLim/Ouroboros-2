@@ -20,6 +20,7 @@ Technology is prohibited.
 #include "Ouroboros/Scripting/ScriptValue.h"
 
 #include "Ouroboros/Physics/PhysicsSystem.h"
+#include "Ouroboros/Physics/RigidbodyComponent.h"
 
 namespace oo
 {
@@ -288,5 +289,52 @@ namespace oo
             // most likely invalid map key, do nothing
         }
         return CreateRaycastHitArray(result);
+    }
+
+    // For Rigidbody
+    SCRIPT_API ScriptDatabase::IntPtr Rigidbody_SweepTest_Basic(Scene::ID_type sceneID, UUID uuid, ScriptValue::vec3_type dir)
+    {
+        PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        UUID physicsUUID = component.GetUnderlyingUUID();
+        vec3 sweepDir{ dir.x, dir.y, dir.z };
+
+        RaycastResult result;
+        try
+        {
+            result = ps->Sweepcast(static_cast<phy_uuid::UUID>(physicsUUID), sweepDir);
+        }
+        catch (std::exception const&)
+        {
+            // most likely invalid map key, do nothing
+        }
+        if (!result.Intersect)
+            return ScriptDatabase::InvalidPtr;
+        return mono_gchandle_new(CreateRaycastHit(result), false);
+    }
+
+    SCRIPT_API ScriptDatabase::IntPtr Rigidbody_SweepTest(Scene::ID_type sceneID, UUID uuid, ScriptValue::vec3_type dir, float maxDistance)
+    {
+        PhysicsSystem* ps = ScriptManager::s_SceneManager->GetActiveScene<Scene>()->GetWorld().Get_System<PhysicsSystem>();
+
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        UUID physicsUUID = component.GetUnderlyingUUID();
+        vec3 sweepDir{ dir.x, dir.y, dir.z };
+
+        RaycastResult result;
+        try
+        {
+            result = ps->Sweepcast(static_cast<phy_uuid::UUID>(physicsUUID), sweepDir, maxDistance);
+        }
+        catch (std::exception const&)
+        {
+            // most likely invalid map key, do nothing
+        }
+        if (!result.Intersect)
+            return ScriptDatabase::InvalidPtr;
+        return mono_gchandle_new(CreateRaycastHit(result), false);
     }
 }
