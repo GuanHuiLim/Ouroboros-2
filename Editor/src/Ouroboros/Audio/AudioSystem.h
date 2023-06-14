@@ -17,6 +17,7 @@ Technology is prohibited.
 #include "App/Editor/Events/LoadSceneEvent.h"
 #include "App/Editor/Events/UnloadSceneEvent.h"
 #include "Ouroboros/Audio/AudioSourceComponent.h"
+#include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/ECS/GameObject.h"
 #include "Ouroboros/ECS/GameObjectComponent.h"
 #include "Ouroboros/Scene/Scene.h"
@@ -72,5 +73,9 @@ namespace oo
         void onObjectDisabled(GameObjectComponent::OnDisableEvent* e);
         //void onAudioSourceAdd(Ecs::ComponentEvent<AudioSourceComponent>* e);
         void onAudioSourceRemove(Ecs::ComponentEvent<AudioSourceComponent>* e);
+        void onWindowMinimize(WindowMinimizeEvent* e);
+        void onWindowRestored(WindowRestoredEvent* e);
+        void onWindowFocus(WindowFocusEvent* e);
+        void onWindowLoseFocus(WindowLoseFocusEvent* e);
     };
 }
