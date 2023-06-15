@@ -22,6 +22,12 @@ Technology is prohibited.
 #include <rttr/registration>
 #include <rapidjson/document.h>
 
+
+namespace oo::Anim
+{
+	std::mutex AnimationTree::animTree_map_mutex = std::mutex{};
+}
+
 namespace oo::Anim::internal
 {
 	void SerializeTree(rapidjson::PrettyWriter<rapidjson::OStreamWrapper>& writer, AnimationTree& tree)
@@ -144,6 +150,8 @@ namespace oo::Anim
 
 	AnimationTree* AnimationTree::Add(AnimationTree&& tree)
 	{
+		std::scoped_lock lock{ animTree_map_mutex };
+		
 		auto key = tree.treeID;
 		AnimationTree::map.insert_or_assign(key, std::move(tree));
 		return &(AnimationTree::map[key]);
