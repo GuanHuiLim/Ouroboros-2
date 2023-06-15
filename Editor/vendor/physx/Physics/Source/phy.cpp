@@ -979,7 +979,7 @@ namespace myPhysx
         if (underlying_Obj.shape_type != shape::none)
         {
             if (underlying_Obj.is_trigger)
-                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE);
+                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
 
             if (!underlying_Obj.is_trigger && underlying_Obj.is_collider)
                 underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE);
