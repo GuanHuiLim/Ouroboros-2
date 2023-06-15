@@ -24,10 +24,6 @@ Technology is prohibited.
 #include "Ouroboros/Audio/Audio.h"
 #include "Utility/IEqual.h"
 
-// scuffed mutex for scuffed solution
-static std::mutex load_anim_mtx = std::mutex{};
-static std::mutex load_anim_tree_mtx = std::mutex{};
-
 namespace
 {
     template<typename T, typename It>
@@ -167,7 +163,6 @@ namespace oo
                 // Load animation
                 onAssetCreate = [](AssetInfo& self)
                 {
-                    std::scoped_lock lk{ load_anim_mtx };
                     using namespace Anim;
                     Animation* anim = AnimationSystem::LoadAnimation(self.contentPath.string());
                     self.data.emplace_back(anim->name);
@@ -181,7 +176,6 @@ namespace oo
                 // Load animation tree
                 onAssetCreate = [](AssetInfo& self)
                 {
-                    std::scoped_lock lk{ load_anim_tree_mtx };
                     using namespace Anim;
                     AnimationTree* animTree = AnimationSystem::LoadAnimationTree(self.contentPath.string());
                     self.data.emplace_back(animTree->name);
