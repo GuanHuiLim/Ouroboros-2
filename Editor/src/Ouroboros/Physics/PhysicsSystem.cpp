@@ -1011,6 +1011,18 @@ namespace oo
         return result;
     }
 
+    RaycastResult PhysicsSystem::Sweepcast(phy_uuid::UUID uuid, vec3 direction, float distance)
+    {
+        TRACY_PROFILE_SCOPE_NC(physics_sweepcast, tracy::Color::PeachPuff4);
+        
+        auto result = m_physicsWorld.sweep(uuid, { direction.x, direction.y, direction.z }, distance);
+
+        TRACY_PROFILE_SCOPE_END();
+
+        return { result.intersect, m_physicsToGameObjectLookup.at(result.object_ID), {result.position.x,result.position.y, result.position.z},
+            { result.normal.x, result.normal.y, result.normal.z }, result.distance };
+    }
+
     void PhysicsSystem::OnRigidbodyAdd(Ecs::ComponentEvent<RigidbodyComponent>* rb)
     {
         InitializeRigidbody(rb->component);

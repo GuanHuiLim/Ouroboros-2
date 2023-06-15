@@ -64,7 +64,8 @@ namespace oo
         
         RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
         std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
-    
+        RaycastResult Sweepcast(phy_uuid::UUID uuid, vec3 direction, float distance = PX_MAX_SWEEP_DISTANCE);
+
     private:
 
         inline static Timestep FixedDeltaTimeBase = 1.0/60.0;               // physics updates at 60 fps
