@@ -196,8 +196,10 @@ namespace oo
     AssetManager::AssetManager(std::filesystem::path root)
         : root{ root }
     {
+#if not END_PRODUCT
         EventManager::Subscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
         EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
+#endif
         for (int i = 0; i < static_cast<int>(AssetInfo::Type::_COUNT); ++i)
             store.byType.emplace(static_cast<AssetInfo::Type>(i), AssetInfoMap());
         GetDirectory(root, true);
@@ -205,8 +207,10 @@ namespace oo
 
     AssetManager::~AssetManager()
     {
+#if not END_PRODUCT
         EventManager::Unsubscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
         EventManager::Unsubscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
+#endif
         store.clear();
     }
 
@@ -436,7 +440,7 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
                 if (!store.contains(meta.id))
                 {
                     // Created
-                    getLoadedAsset(FP);
+                    getAsset(FP);
                 }
                 else if (store.at(meta.id)->contentPath != FP)
                 {
