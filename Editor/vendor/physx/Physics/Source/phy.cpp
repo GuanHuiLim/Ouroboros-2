@@ -502,7 +502,8 @@ namespace myPhysx
             
             const PxU32 bufferSize = 256;               // size of the buffer       
             PxSweepHit hits[bufferSize];                // storage of the buffer results
-            PxSweepBuffer hitBuffer(hits, bufferSize);      // [out] Sweep results
+            PxSweepBuffer hitBuffer(hits, bufferSize);  // [out] Sweep results
+
             //PxGeometry sweepShape = PxBoxGeometry{}; // [in] swept shape
             //PxTransform initialPose = ...;           // [in] initial shape pose (at distance=0)
             //PxVec3 sweepDirection = ...;             // [in] normalized sweep direction
@@ -529,32 +530,24 @@ namespace myPhysx
             {
                 const PxBoxGeometry& boxGeometry = underlying_obj->m_shape->getGeometry().box();
                 sweepShape = new PxBoxGeometry{ boxGeometry.halfExtents };
-
-                //sweepShape = PxBoxGeometry(underlying_obj->m_shape->getGeometry().box().halfExtents);
                 break;
             }
             case PxGeometryType::eSPHERE:
             {
                 const PxSphereGeometry& sphereGeometry = underlying_obj->m_shape->getGeometry().sphere();
                 sweepShape = new PxSphereGeometry{ sphereGeometry.radius };
-
-                //sweepShape = PxSphereGeometry(underlying_obj->m_shape->getGeometry().sphere().radius);
                 break;
             }
             case PxGeometryType::eCAPSULE:
             {
                 const PxCapsuleGeometry& capsuleGeometry = underlying_obj->m_shape->getGeometry().capsule();
                 sweepShape = new PxCapsuleGeometry{ capsuleGeometry.radius, capsuleGeometry.halfHeight };
-
-                //sweepShape = PxCapsuleGeometry(underlying_obj->m_shape->getGeometry().capsule().radius, underlying_obj->m_shape->getGeometry().capsule().halfHeight);
                 break;
             }
             case PxGeometryType::eCONVEXMESH:
             {
                 const PxConvexMeshGeometry& convexMeshGeometry = underlying_obj->m_shape->getGeometry().convexMesh();
                 sweepShape = new PxConvexMeshGeometry{ convexMeshGeometry.convexMesh, convexMeshGeometry.scale };
-
-                //sweepShape = PxConvexMeshGeometry(underlying_obj->m_shape->getGeometry().convexMesh().convexMesh);
                 break;
             }
             default:
@@ -567,11 +560,6 @@ namespace myPhysx
 
                 if (hit.intersect) {
 
-                    //hit.object_ID = *reinterpret_cast<phy_uuid::UUID*>(hitBuffer.block.actor->userData);
-                    //hit.position = hitBuffer.block.position;
-                    //hit.normal = hitBuffer.block.normal;
-                    //hit.distance = hitBuffer.block.distance;
-
                     // Initialize variables to track the closest hit
                     float closestDistance = PX_MAX_SWEEP_DISTANCE;
                     const PxSweepHit* closestHit = nullptr;
@@ -580,10 +568,13 @@ namespace myPhysx
 
                         const PxSweepHit& hitTemp = hitBuffer.touches[i];
 
-                        // Check if this hit is closer than the previous closest hit
-                        if (hitTemp.distance  > 0 && hitTemp.distance < closestDistance) {
-                            closestDistance = hitTemp.distance;
-                            closestHit = &hitTemp;
+                        if (*reinterpret_cast<phy_uuid::UUID*>(hitTemp.actor->userData) != id) {
+
+                            // Check if this hit is closer than the previous closest hit
+                            if (/*hitTemp.distance > 0 && */hitTemp.distance < closestDistance) {
+                                closestDistance = hitTemp.distance;
+                                closestHit = &hitTemp;
+                            }
                         }
                     }
 
@@ -596,7 +587,6 @@ namespace myPhysx
                     }
                 }
             }
-            
             
             delete sweepShape;
         }
