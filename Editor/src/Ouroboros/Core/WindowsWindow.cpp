@@ -94,7 +94,7 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE(CONTROLLER_INIT);
 
-            int success = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+            int success = SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER);
             UNREFERENCED_PARAMETER(success);
             ASSERT_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
             //Load the gamecontrollerdb.txt and check if there was any problem

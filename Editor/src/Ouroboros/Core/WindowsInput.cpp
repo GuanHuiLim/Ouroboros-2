@@ -55,6 +55,8 @@ namespace oo
         // Controller information
         SDL_GameController* m_pGameController;
         int m_controllerIndex;
+        SDL_Haptic* m_controller_haptic;
+        SDL_Joystick* m_controller_joystick;
 
         // Information about the state of the controller
         Uint8 m_uButtonStates[(size_t)ControllerButtonCode::MAX];
@@ -148,6 +150,12 @@ namespace oo
             m_prevKeyboardState = nullptr;
             m_simulatedKeys = nullptr;
             m_keyboardState = nullptr;
+
+            if (m_pGameController != NULL)
+            {
+                SDL_GameControllerClose(m_pGameController);
+            }
+
         }
 
         void AddController(int index)
@@ -162,6 +170,29 @@ namespace oo
                 memset(m_uButtonStates, 0, sizeof(Uint8) * (size_t)ControllerButtonCode::MAX);
                 memset(m_uButtonStatesPrev, 0, sizeof(Uint8) * (size_t)ControllerButtonCode::MAX);
                 memset(m_fAxisValues, 0, sizeof(float) * (size_t)ControllerAxisCode::MAX);
+
+                //prepare the haptic support
+                if (SDL_GameControllerHasRumble(m_pGameController) == SDL_FALSE)
+                {
+                    std::string str = SDL_GetError();
+                    assert(false && "Controller does not support haptic");
+                    return;
+                }
+                m_controller_joystick = SDL_GameControllerGetJoystick(m_pGameController);
+                m_controller_haptic = SDL_HapticOpenFromJoystick(m_controller_joystick);
+                if (m_controller_haptic == nullptr)
+                {
+					std::string str = SDL_GetError();
+                    assert(false && "Controller does not support haptic");
+                    return;
+                }
+                auto result = SDL_HapticRumbleInit(m_controller_haptic);
+                if (result != 0)
+                {
+                    std::string str = SDL_GetError();
+                    assert(false && "Controller does not support haptic");
+                    return;
+                }
             }
         }
 
@@ -431,6 +462,20 @@ namespace oo
 
         bool IsControllerButtonPressed(ControllerButtonCode iButton)
         {
+            if (iButton == ControllerButtonCode::X &&
+                ((m_uButtonStates[(size_t)iButton] == 0
+                    && m_uButtonStatesPrev[(size_t)iButton] == 1)) )
+            {
+                auto result = SDL_GameControllerRumble(m_pGameController, 0xFFFF * 3 / 4, 0xFFFF * 3 / 4, 500);
+                if (result != 0)
+                {
+                    std::cout << "SDL_JoystickRumble failed: " << SDL_GetError() << std::endl;
+                }
+                else
+                {
+                    //std::cout << "SDL_JoystickRumble SUCCESS: " << std::endl;
+                }
+            }
             return (m_uButtonStates[(size_t)iButton] == 1
                 && m_uButtonStatesPrev[(size_t)iButton] == 0);
         }
@@ -442,6 +487,7 @@ namespace oo
 
         bool IsControllerButtonReleased(ControllerButtonCode iButton)
         {
+
             return (m_uButtonStates[(size_t)iButton] == 0
                 && m_uButtonStatesPrev[(size_t)iButton] == 1);
         }
