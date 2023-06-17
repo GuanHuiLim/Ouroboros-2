@@ -462,20 +462,6 @@ namespace oo
 
         bool IsControllerButtonPressed(ControllerButtonCode iButton)
         {
-            if (iButton == ControllerButtonCode::X &&
-                ((m_uButtonStates[(size_t)iButton] == 0
-                    && m_uButtonStatesPrev[(size_t)iButton] == 1)) )
-            {
-                auto result = SDL_GameControllerRumble(m_pGameController, 0xFFFF * 3 / 4, 0xFFFF * 3 / 4, 500);
-                if (result != 0)
-                {
-                    std::cout << "SDL_JoystickRumble failed: " << SDL_GetError() << std::endl;
-                }
-                else
-                {
-                    //std::cout << "SDL_JoystickRumble SUCCESS: " << std::endl;
-                }
-            }
             return (m_uButtonStates[(size_t)iButton] == 1
                 && m_uButtonStatesPrev[(size_t)iButton] == 0);
         }
@@ -602,6 +588,28 @@ namespace oo
             }
 
             return controllerAxis;
+        }
+
+        bool SetControllerVibration(float time, float intensity)
+        {
+            return SetControllerVibration(time, intensity, intensity);
+        }
+
+        bool SetControllerVibration(float time, float low_frequency_intensity, float high_frequency_intensity)
+        {
+            auto rumbleIntensityHigh = static_cast<Uint16>(0xFFFF * high_frequency_intensity);
+            auto rumbleIntensityLow = static_cast<Uint16>(0xFFFF * low_frequency_intensity);
+            auto rumbleTime = static_cast<Uint32>(time * 1000.f);
+            auto result = SDL_GameControllerRumble(m_pGameController, rumbleIntensityLow, rumbleIntensityHigh, rumbleTime);
+            if (result != 0)
+                std::cout << "SDL_JoystickRumble failed: " << SDL_GetError() << std::endl;
+
+            return result;
+        }
+
+        void StopControllerVibration()
+        {
+            SetControllerVibration(0, 0);
         }
 
         void SimulatedInputUpdate()
