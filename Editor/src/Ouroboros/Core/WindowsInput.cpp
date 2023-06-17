@@ -176,21 +176,7 @@ namespace oo
                 {
                     std::string str = SDL_GetError();
                     assert(false && "Controller does not support haptic");
-                    return;
-                }
-                m_controller_joystick = SDL_GameControllerGetJoystick(m_pGameController);
-                m_controller_haptic = SDL_HapticOpenFromJoystick(m_controller_joystick);
-                if (m_controller_haptic == nullptr)
-                {
-					std::string str = SDL_GetError();
-                    assert(false && "Controller does not support haptic");
-                    return;
-                }
-                auto result = SDL_HapticRumbleInit(m_controller_haptic);
-                if (result != 0)
-                {
-                    std::string str = SDL_GetError();
-                    assert(false && "Controller does not support haptic");
+					std::cout << "Controller does not support haptic: " << str << std::endl;
                     return;
                 }
             }
