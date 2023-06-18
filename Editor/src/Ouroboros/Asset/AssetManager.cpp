@@ -225,10 +225,8 @@ namespace oo
     AssetManager::AssetManager(std::filesystem::path root)
         : root{ root }
     {
-#if not END_PRODUCT
         EventManager::Subscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
         EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
-#endif
         for (int i = 0; i < static_cast<int>(AssetInfo::Type::_COUNT); ++i)
             store.byType.emplace(static_cast<AssetInfo::Type>(i), AssetInfoMap());
         GetDirectory(root, true);
@@ -236,10 +234,8 @@ namespace oo
 
     AssetManager::~AssetManager()
     {
-#if not END_PRODUCT
         EventManager::Unsubscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
         EventManager::Unsubscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
-#endif
         store.clear();
     }
 
@@ -404,7 +400,9 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
         std::chrono::file_clock::time_point tLast = ev->time;
         if (std::filesystem::exists(root))
         {
+#if not OO_END_PRODUCT
             iterateDirectoryOrphans(root, tLast);
+#endif
             iterateDirectoryAdditions(root, tLast);
             iterateDirectoryOmissions(root, tLast);
         }
@@ -567,11 +565,13 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
         AssetMetaContent meta;
         if (!std::filesystem::exists(fpMeta))
         {
+#if not OO_END_PRODUCT
             // Create meta file
             meta.id = Asset::GenerateSnowflake();
             std::ofstream ofs = std::ofstream(fpMeta, std::ios::binary);
             BinaryIO::Write(ofs, meta);
             //LOG_INFO("Created meta {0}", fpMeta.filename());
+#endif
         }
         else
         {
