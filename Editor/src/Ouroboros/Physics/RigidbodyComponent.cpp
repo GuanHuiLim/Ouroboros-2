@@ -73,7 +73,7 @@ namespace oo
             .property("Is Trigger", &myPhysx::PhysicsObject::is_trigger)
             .property("Gravity Enabled", &myPhysx::PhysicsObject::gravity_enabled)
             .property("Is Kinematic", &myPhysx::PhysicsObject::is_kinematic)
-            .property("Is Collider", &myPhysx::PhysicsObject::is_collider)
+            .property("Is Enabled", &myPhysx::PhysicsObject::is_enabled)
             .property("Input Layer", &myPhysx::PhysicsObject::filterIn)
             .property("Output Layer", &myPhysx::PhysicsObject::filterOut)
             //.property("", &myPhysx::PhysicsObject::meshScale)
@@ -253,13 +253,13 @@ namespace oo
 
     void oo::RigidbodyComponent::EnableCollider()
     {
-        desired_object.is_collider = true;
+        desired_object.is_enabled = true;
         IsDirty = true;
     }
 
     void oo::RigidbodyComponent::DisableCollider()
     {
-        desired_object.is_collider = false;
+        desired_object.is_enabled = false;
         IsDirty = true;
     }
 
