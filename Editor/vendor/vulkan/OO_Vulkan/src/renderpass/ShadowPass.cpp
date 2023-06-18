@@ -67,10 +67,10 @@ void ShadowPass::Draw()
 	auto& device = vr.m_device;
 	auto& swapchain = vr.m_swapchain;
 	auto& commandBuffers = vr.commandBuffers;
-	auto& swapchainIdx = vr.swapchainIdx;
+	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 
-    const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
+    const VkCommandBuffer cmdlist = commandBuffers[currFrame];
     PROFILE_GPU_CONTEXT(cmdlist);
     PROFILE_GPU_EVENT("Shadow");
 
@@ -106,16 +106,17 @@ void ShadowPass::Draw()
 		std::array<VkDescriptorSet, 3>
 		{
 			vr.descriptorSet_gpuscene,
-			vr.descriptorSets_uniform[swapchainIdx],
+			vr.descriptorSets_uniform[currFrame],
 			vr.descriptorSet_bindless
 		},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1, &dynamicOffset
 	);
 
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer.getBufferPtr());
+	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	// calculate shadowmap grid dim
@@ -184,7 +185,7 @@ void ShadowPass::Draw()
 						sizeof(glm::mat4),			// size of data being pushed
 						glm::value_ptr(mm));		// actualy data being pushed (could be an array));
 
-					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.m_buffer, 0, static_cast<uint32_t>(vr.shadowCasterCommandsBuffer.size()));
+					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer[currFrame].m_buffer, 0, static_cast<uint32_t>(vr.shadowCasterCommandsBuffer[currFrame].size()));
 				}
 				
 			}			

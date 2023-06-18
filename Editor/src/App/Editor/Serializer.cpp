@@ -150,10 +150,16 @@ void Serializer::SaveScene(oo::Scene& scene)
 		ofs.close();
 	}
 	WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_LOG, "Scene Saved");
+
+	//save assets into another file
+	SaveAssetsList(scene);
 }
 
 void Serializer::LoadScene(oo::Scene& scene)
 {
+	//preload all assets
+	LoadAssetsList(scene);
+
 	std::ifstream ifs(scene.GetFilePath());
 	if (ifs.peek() == std::ifstream::traits_type::eof())
 	{
@@ -355,6 +361,66 @@ void Serializer::LoadSingleScriptField(oo::ScriptFieldInfo& value, oo::ScriptVal
 		return;
 	//loads only 1 value as the name of the function describes
 	sfiLoadIter->second(std::move(doc.MemberBegin()->value), value);
+}
+
+void Serializer::SaveAssetsList(const oo::Scene& scene)
+{
+	rapidjson::Document doc;
+	rapidjson::Value& mainObj = doc.SetObject();
+
+	//write the ids
+	rapidjson::Value arr(rapidjson::kArrayType);
+	for (auto& asset_id : Serializer::m_SaveProperties.s_assetUsedThisScene)
+	{
+		arr.PushBack(asset_id, doc.GetAllocator());
+	}
+	//finish writing all ids
+	mainObj.AddMember("Assets", arr, doc.GetAllocator());
+
+	std::filesystem::path assetListPath = scene.GetFilePath();
+	assetListPath.replace_extension(Serializer::asset_fileExt);//can put .assetList or assetList
+	std::ofstream ofs(assetListPath, std::fstream::out | std::fstream::trunc);
+	if (ofs.good())
+	{
+		rapidjson::OStreamWrapper osw(ofs);
+		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+		writer.SetFormatOptions(rapidjson::PrettyFormatOptions::kFormatDefault);
+		writer.SetMaxDecimalPlaces(rapidjson_precision);
+		doc.Accept(writer);
+		ofs.close();
+	}
+	Serializer::m_SaveProperties.Reset();
+}
+
+void Serializer::LoadAssetsList(const oo::Scene& scene)
+{
+	std::filesystem::path assetList = scene.GetFilePath();
+	assetList.replace_extension(Serializer::asset_fileExt);
+
+	std::ifstream ifs(assetList);
+
+	if (!ifs || ifs.peek() == std::ifstream::traits_type::eof())
+	{
+		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "SLOW LOAD INITIATED");
+		return;
+	}
+	rapidjson::IStreamWrapper isw(ifs);
+	rapidjson::Document doc;
+	doc.ParseStream(isw);
+
+	rapidjson::Value& mainObj = doc.GetObj();
+	auto assetsMember = mainObj.FindMember("Assets");//must exist
+	auto assetArray = assetsMember->value.GetArray();
+
+	std::vector<oo::AssetID> asset_ID;
+	for (auto i = assetArray.begin(); i != assetArray.end(); ++i)
+	{
+		asset_ID.emplace_back(i->GetUint64());
+	}
+
+	Project::GetAssetManager()->LoadMultipleAsync(asset_ID);
+
+	ifs.close();
 }
 
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)

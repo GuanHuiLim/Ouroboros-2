@@ -43,6 +43,9 @@ namespace oo::Anim
 	private:
 		static AnimationTree* Create(std::string const name = "Unnamed Animation Tree");
 		static AnimationTree* Add(AnimationTree&& tree);
+
+
+		static std::mutex animTree_map_mutex;
 	};
 
 

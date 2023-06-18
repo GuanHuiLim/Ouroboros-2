@@ -1352,13 +1352,15 @@ namespace oo::Anim::internal
 	void UpdateTrackerKeyframeProgress(UpdateTrackerInfo& t_info, float updatedTimer)
 	{
 		for (auto& progressTracker : t_info.tracker.trackers)
-		{
-			//it should have an update function!!
-			assert(progressTracker.updatefunction != nullptr);
-			UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
-			//call the respective update function on this tracker
-			progressTracker.updatefunction(p_info, updatedTimer);
-		}
+		//std::for_each(std::execution::par_unseq, std::begin(t_info.tracker.trackers), std::end(t_info.tracker.trackers), [&](auto&& progressTracker)
+			{
+				//it should have an update function!!
+				assert(progressTracker.updatefunction != nullptr);
+				UpdateProgressTrackerInfo p_info{ t_info, progressTracker };
+				//call the respective update function on this tracker
+				progressTracker.updatefunction(p_info, updatedTimer);
+			}
+		//);
 		return;
 		/*--------------------------
 		pipeline optimization way - unused for now
@@ -1475,13 +1477,20 @@ namespace oo::Anim::internal
 		//already hit last event
 		if (tracker.nextEvent_index > last_index) return;
 
-
+		//auto& eventqueue = info.system.GetScriptEventQueue();
 		//catch up on all script events to be called & update index
 		while (	tracker.nextEvent_index <= last_index &&
 				events[tracker.nextEvent_index].time < updatedTimer)
 		{
 			//invoke script event
-			events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			//events[tracker.nextEvent_index].script_function_info.Invoke(info.uuid);
+			
+			//queue script event - NOT THREAD SAFE
+			//eventqueue.emplace_back(info.uuid , events[tracker.nextEvent_index].script_function_info);
+			
+			//thread safe version
+			info.system.AddToScriptEventQueue(info.uuid, events[tracker.nextEvent_index].script_function_info);
+			
 			//update index
 			++tracker.nextEvent_index;
 		}
@@ -1724,6 +1733,8 @@ namespace oo::Anim::internal
 		{
 			assert(false);
 		}
+
+
 		TRACY_PROFILE_SCOPE_NC(Transition, 0x4D0D65);
 		//check transitions for any state node
 		bool has_transitioned = false;
@@ -1747,12 +1758,14 @@ namespace oo::Anim::internal
 		}
 		TRACY_PROFILE_SCOPE_END();
 
+		auto const& current_anim = t_info.tracker.currentNode->GetAnimation();
+		
 		TRACY_PROFILE_SCOPE_NC(Timer_Update, 0x4D0D65);
 		float updatedTimer = t_info.tracker.timer + t_info.tracker.currentNode->speed * t_info.dt;
 		//update tracker timer and global timer
 		t_info.tracker.timer = updatedTimer;
 		t_info.tracker.global_timer += t_info.tracker.currentNode->speed * t_info.dt;
-		t_info.tracker.normalized_timer = updatedTimer / t_info.tracker.currentNode->GetAnimation().animation_length;
+		t_info.tracker.normalized_timer = updatedTimer / current_anim.animation_length;
 		TRACY_PROFILE_SCOPE_END();
 
 
@@ -1778,9 +1791,9 @@ namespace oo::Anim::internal
 		TRACY_PROFILE_SCOPE_NC(Looping_Update, 0x4D0D65);
 		//update timer and iterations if animation is looping
 		if (t_info.tracker.currentNode->GetAnimation().looping &&
-			updatedTimer > t_info.tracker.currentNode->GetAnimation().animation_length)
+			updatedTimer > current_anim.animation_length)
 		{
-			t_info.tracker.timer = updatedTimer - t_info.tracker.currentNode->GetAnimation().animation_length;
+			t_info.tracker.timer = updatedTimer - current_anim.animation_length;
 			ResetTrackerProgress(t_info.tracker);
 
 			++t_info.tracker.num_iterations;

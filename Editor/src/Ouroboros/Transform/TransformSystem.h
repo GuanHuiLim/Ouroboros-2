@@ -34,20 +34,19 @@ namespace oo
         void UpdateSubTree(GameObject go, bool includeItself = true);
         void UpdateEntireTree();
 
-        /*void StartOfFrame();
-        void EndOfFrame();*/
+        //void UpdateTransformHierarchy();
 
     private:
-        void UpdateLocalTransform(TransformComponent& tf);
+
+        void GenerateLaunchGroups();
         void UpdateLocalTransforms();
-        void UpdateRootTree();  // optimized version without pre processing.
+        void UpdateLaunchGroups(); 
+        
         void UpdateTree(scenenode::shared_pointer node, bool updateRoot);
+
+        void UpdateLocalTransform(TransformComponent& tf);
         void UpdateTransform(std::shared_ptr<GameObject> const& go);
-
         void OnEnableGameObject(GameObjectComponent::OnEnableEvent* e);
-        //void OnDisableGameObject(GameObjectComponent::OnDisableEvent* e);
-
-        void StartOfFramePreprocessing();
 
     private:
         Scene* m_scene = nullptr;
@@ -59,7 +58,7 @@ namespace oo
         std::array<std::vector<scenegraph::shared_pointer>, MaxDepth> launch_groups;
         
         // extra info stored for preprocessing
-        std::stack<scenenode::shared_pointer> s;
+        std::stack<scenenode::shared_pointer> stk;
 
     };
 }

@@ -58,6 +58,8 @@ namespace oo::Anim
 
 		static Animation ExtractAnimation(float start_time, float end_time, Animation& anim, bool& result);
 		static Animation ExtractAnimation(size_t start_frame, size_t end_frame, Animation& anim, bool& result);
+
+		static std::mutex animation_containers_mutex;
 	};
 
 

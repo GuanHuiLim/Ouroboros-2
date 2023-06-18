@@ -39,7 +39,7 @@ namespace oo
         void RemoveController(int index);
 
         // % Percentage [0.0f to 1.0f]
-        static float DeadZonePercent = 0.5f;
+        static float DeadZonePercent = 0.1f;
 
         /*-----------------------------------------------------------------------------*/
         /* Interface Functions                                                         */
@@ -307,7 +307,29 @@ namespace oo
                     all supported controller axis and its values.
         *//*****************************************************************************/
         std::vector<std::tuple<ControllerAxisCode, float>> GetControllerAxis();
-		/*********************************************************************************//*
+
+        /****************************************************************************//*!
+			@brief     Makes the current controller vibrate for a given time and 
+                       intensity(ranges from 0 - 1)
+					   Setting the intensity to 0 will stop the vibration
+
+            @return    True if successful, false otherwise
+        *//*****************************************************************************/
+		bool SetControllerVibration(float time, float intensity);
+        /****************************************************************************//*!
+            @brief     Makes the current controller vibrate for a given time and
+                       intensity(ranges from 0 - 1) for the high and low frequency motors
+                       Setting the intensity to 0 will stop the vibration
+
+            @return    True if successful, false otherwise
+        *//*****************************************************************************/
+		bool SetControllerVibration(float time, float low_frequency_intensity, float high_frequency_intensity);
+        /****************************************************************************//*!
+            @brief     Stops the current controller vibrations via setting the intensity to 0
+
+        *//*****************************************************************************/
+        void StopControllerVibration();
+        /*********************************************************************************//*
 		\brief
 			merge the collection of simulated keypresses
 		*//**********************************************************************************/

@@ -76,8 +76,13 @@ namespace oo
     /*-----------------------------------------------------------------------------*/
     class RigidbodyComponent final
     {
-    private:
-        bool IsStaticObject = true;
+    public:
+        bool IsDirty = true;    // dirty for the first time.
+
+        myPhysx::PhysicsObject underlying_object{};
+        myPhysx::PhysicsObject desired_object{};
+
+        std::vector<myPhysx::PhysicsCommand> external_commands{};
 
     public:
         // Who am I? usually only 1
@@ -86,29 +91,18 @@ namespace oo
         LayerField OutputLayer{ "11111111" };
 
         uint32_t GetInputLayer() const { return InputLayer.to_ulong(); }
-        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; };
+        void SetInputLayer(uint32_t inLayer) { InputLayer = inLayer; desired_object.filterIn = GetInputLayer(); IsDirty = true; };
 
-        uint32_t GetOutputLayer() const { return OutputLayer.to_ulong(); }
-        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; };
+        uint32_t GetOutputLayer() const { return OutputLayer.to_ulong();  }
+        void SetOutputLayer(uint32_t outLayer) { OutputLayer = outLayer; desired_object.filterOut = GetOutputLayer(); IsDirty = true; };
     
-    public:
-        bool IsTriggerObject = false;
-        
-        bool LockXAxisPosition = false;
-        bool LockYAxisPosition = false;
-        bool LockZAxisPosition = false;
-        bool LockXAxisRotation = false;
-        bool LockYAxisRotation = false;
-        bool LockZAxisRotation = false;
-
-        myPhysx::PhysicsObject object{};
         vec3 Offset = { 0.0, 0.0, 0.0 };
 
         PhysicsMaterial GetMaterial() const;
         vec3 GetPositionInPhysicsWorld() const;
         quat GetOrientationInPhysicsWorld() const;
 
-        std::vector<physx::PxVec3> StoreMesh(std::vector<vec3> result);
+        //std::vector<physx::PxVec3> StoreMesh(std::vector<vec3> result);
         void SetStatic(bool result);
 
         float GetMass() const;
@@ -127,6 +121,8 @@ namespace oo
         bool IsTrigger() const;
         bool IsCollider() const;
         
+        bool VerticesChanged() const;
+
         void EnableCollider();
         void DisableCollider();
 
@@ -136,8 +132,6 @@ namespace oo
         void SetPosOrientation(vec3 pos, quat quat);
 
         void SetGravity(bool enable);
-        /*void EnableGravity();
-        void DisableGravity();*/
         
         void SetKinematic(bool kine);
         void SetMass(float mass);
@@ -149,6 +143,11 @@ namespace oo
         void AddForce(vec3 force, ForceMode type = ForceMode::FORCE);
         void AddTorque(vec3 force, ForceMode type = ForceMode::FORCE);
 
+        void UploadVertices(std::vector<PxVec3> newVertices);
+        void SetMeshScale(PxVec3 newScale);
+        
+        void ForceDirty();
+
         oo::UUID GetUnderlyingUUID() const;
     
         //for RTTR
@@ -156,6 +155,20 @@ namespace oo
         glm::vec3 GetAngularVel() const;
         void SetOffset(glm::vec3 offset);
         glm::vec3 GetOffset() const;
+
+        void LockXAxisPos(bool lock);
+        void LockYAxisPos(bool lock);
+        void LockZAxisPos(bool lock);
+        void LockXAxisRot(bool lock);
+        void LockYAxisRot(bool lock);
+        void LockZAxisRot(bool lock);
+
+        bool IsXAxisPosLocked();
+        bool IsYAxisPosLocked();
+        bool IsZAxisPosLocked();
+        bool IsXAxisRotLocked();
+        bool IsYAxisRotLocked();
+        bool IsZAxisRotLocked();
 
         RTTR_ENABLE();
     };

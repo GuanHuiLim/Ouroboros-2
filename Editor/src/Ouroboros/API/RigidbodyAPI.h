@@ -52,12 +52,12 @@ namespace oo
         component.Offset = glm::vec3({ x, y, z });
     }
 
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockXAxisPosition, bool, LockXAxisPosition)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockYAxisPosition, bool, LockYAxisPosition)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockZAxisPosition, bool, LockZAxisPosition)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockXAxisRotation, bool, LockXAxisRotation)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockYAxisRotation, bool, LockYAxisRotation)
-    SCRIPT_API_GET_SET(RigidbodyComponent, LockZAxisRotation, bool, LockZAxisRotation)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockXAxisPosition, bool, IsXAxisPosLocked, LockXAxisPos)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockYAxisPosition, bool, IsYAxisPosLocked, LockYAxisPos)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockZAxisPosition, bool, IsZAxisPosLocked, LockZAxisPos)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockXAxisRotation, bool, IsXAxisRotLocked, LockXAxisRot)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockYAxisRotation, bool, IsYAxisRotLocked, LockYAxisRot)
+    SCRIPT_API_GET_SET_FUNC(RigidbodyComponent, LockZAxisRotation, bool, IsZAxisRotLocked, LockZAxisRot)
 
     SCRIPT_API void Rigidbody_GetVelocity(Scene::ID_type sceneID, UUID uuid, float* x, float* y, float* z)
     {
@@ -81,5 +81,26 @@ namespace oo
         std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
         RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
         component.AddForce(glm::vec3{ x, y, z });
+    }
+
+    SCRIPT_API void Rigidbody_AddForceWithMode(Scene::ID_type sceneID, UUID uuid, float x, float y, float z, int forceMode)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        component.AddForce(glm::vec3{ x, y, z }, static_cast<ForceMode>(forceMode));
+    }
+
+    SCRIPT_API void Rigidbody_AddTorque(Scene::ID_type sceneID, UUID uuid, float x, float y, float z)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        component.AddTorque(glm::vec3{ x, y, z });
+    }
+
+    SCRIPT_API void Rigidbody_AddTorqueWithMode(Scene::ID_type sceneID, UUID uuid, float x, float y, float z, int forceMode)
+    {
+        std::shared_ptr<GameObject> obj = ScriptManager::GetObjectFromScene(sceneID, uuid);
+        RigidbodyComponent& component = obj->GetComponent<RigidbodyComponent>();
+        component.AddTorque(glm::vec3{ x, y, z }, static_cast<ForceMode>(forceMode));
     }
 }

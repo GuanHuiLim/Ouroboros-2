@@ -12,6 +12,7 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #include "GBufferRenderPass.h"
+#include "ShadowPass.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_vulkan.h"
@@ -33,6 +34,7 @@ DECLARE_RENDERPASS(GBufferRenderPass);
 
 void GBufferRenderPass::Init()
 {
+	SetupResources();
 	CreatePSOLayout();
 	SetupRenderpass();
 	SetupFramebuffer();
@@ -68,19 +70,18 @@ void GBufferRenderPass::Draw()
 	auto& device = vr.m_device;
 	auto& swapchain = vr.m_swapchain;
 	auto& commandBuffers = vr.commandBuffers;
-	auto& swapchainIdx = vr.swapchainIdx;
+	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 
-    const VkCommandBuffer cmdlist = commandBuffers[swapchainIdx];
+    const VkCommandBuffer cmdlist = commandBuffers[currFrame];
     PROFILE_GPU_CONTEXT(cmdlist);
 
-
+	glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
+	auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
+	auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
 	
 	{
-		glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
-		auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
-		auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
-
+		
 		VkDebugMarkerMarkerInfoEXT marker = {};
 		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 		memcpy(marker.color, &col[0], sizeof(float) * 4);
@@ -93,10 +94,10 @@ void GBufferRenderPass::Draw()
 		vkCmdBindPipeline(cmdlist, VK_PIPELINE_BIND_POINT_COMPUTE, pso_ComputeCull);
 		
 		VkDescriptorSet cullDset;
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
-			.BindBuffer(1, vr.indirectCommandsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
-			.BindBuffer(2, vr.instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
-			.BindBuffer(3, vr.gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
+			.BindBuffer(1, vr.indirectCommandsBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindBuffer(2, vr.instanceBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindBuffer(3, vr.gpuTransformBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
 			.Build(cullDset, SetLayoutDB::compute_singleSSBO);
 		
 		oGFX::Frustum frust = vr.currWorld->cameras[vr.renderIteration].GetFrustum();
@@ -107,12 +108,12 @@ void GBufferRenderPass::Draw()
 		pc. left = frust.left.normal;
 		pc. pFar = frust.planeFar.normal;
 		pc. pNear = frust.planeNear.normal;
-		pc.numItems = vr.indirectCommandsBuffer.size();
+		pc.numItems = vr.indirectCommandsBuffer[currFrame].size();
 
 		vkCmdPushConstants(cmdlist, PSOLayoutDB::singleSSBOlayout, VK_SHADER_STAGE_ALL, 0, sizeof(CullingPC), &pc);
 		vkCmdBindDescriptorSets(cmdlist , VK_PIPELINE_BIND_POINT_COMPUTE, PSOLayoutDB::singleSSBOlayout, 0, 1, &cullDset, 0, 0);
 		
-		vkCmdDispatch(cmdlist, (vr.indirectCommandsBuffer.size()-1) / 128 + 128, 1, 1);
+		vkCmdDispatch(cmdlist, (vr.indirectCommandsBuffer[currFrame].size()-1) / 128 + 128, 1, 1);
 
 		if (regionEnd)
 		{
@@ -167,21 +168,20 @@ void GBufferRenderPass::Draw()
 	
 	
 	cmd.SetDefaultViewportAndScissor();
-
-	
-
+	cmd.BindPSO(pso_GBufferDefault);
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
+	
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 		std::array<VkDescriptorSet, 3>{
 		vr.descriptorSet_gpuscene,
-			vr.descriptorSets_uniform[swapchainIdx],
+			vr.descriptorSets_uniform[currFrame],
 			vr.descriptorSet_bindless,
 	},
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1, & dynamicOffset
 	);
 
-	cmd.BindPSO(pso_GBufferDefault);
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	std::vector<VkBuffer> vtxBuffers{
 		vr.g_GlobalMeshBuffers.VtxBuffer.getBuffer(),
@@ -194,11 +194,134 @@ void GBufferRenderPass::Draw()
 	};
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer.getBufferPtr());
+	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer.getBuffer(), 0, vr.objectCount);
+	cmd.DrawIndexedIndirect(vr.indirectCommandsBuffer[currFrame].getBuffer(), 0, vr.objectCount);
 
 	vkCmdEndRenderPass(cmdlist);
+
+	if(0){
+
+		VkDebugMarkerMarkerInfoEXT marker = {};
+		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+		memcpy(marker.color, &col[0], sizeof(float) * 4);
+		marker.pMarkerName = "ShadowMaskCOMP";
+		if (regionBegin)
+		{
+			regionBegin(cmdlist, &marker);
+		}
+
+		VkDescriptorImageInfo depthInput = oGFX::vkutils::inits::descriptorImageInfo(
+			GfxSamplerManager::GetSampler_Deferred(),
+			attachments[GBufferAttachmentIndex::DEPTH	].view,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		
+		auto oldDepth = attachments[GBufferAttachmentIndex::DEPTH].currentLayout;
+		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH	],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		auto& shadowPass = *RenderPassDatabase::GetRenderPass<ShadowPass>();
+		VkDescriptorImageInfo shadowinput = oGFX::vkutils::inits::descriptorImageInfo(
+			GfxSamplerManager::GetSampler_BlackBorder(),
+			shadowPass.shadow_depth.view,
+			VK_IMAGE_LAYOUT_GENERAL);
+		auto oldShadow = shadowPass.shadow_depth.currentLayout;
+		vkutils::TransitionImage(cmdlist,shadowPass.shadow_depth,VK_IMAGE_LAYOUT_GENERAL);
+
+		VkDescriptorImageInfo normalInput = oGFX::vkutils::inits::descriptorImageInfo(
+			GfxSamplerManager::GetSampler_BlackBorder(),
+			attachments[GBufferAttachmentIndex::NORMAL	].view,
+			VK_IMAGE_LAYOUT_GENERAL);
+		auto oldNormal = attachments[GBufferAttachmentIndex::NORMAL].currentLayout;
+		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::NORMAL	],VK_IMAGE_LAYOUT_GENERAL);
+
+		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
+			GfxSamplerManager::GetSampler_Deferred(),
+			shadowMask.view,
+			VK_IMAGE_LAYOUT_GENERAL);
+		vkutils::TransitionImage(cmdlist,shadowMask,VK_IMAGE_LAYOUT_GENERAL);
+
+		// settled at the end
+		VkDescriptorSet shadowprepassDS;	
+
+		const auto& dbi = vr.globalLightBuffer[currFrame].GetBufferInfoPtr();
+		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
+			.BindImage(0, &depthInput, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindImage(1, &shadowinput, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.BindImage(2, &normalInput, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+
+			.BindBuffer(3, vr.gpuTransformBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.BindBuffer(4, vr.gpuBoneMatrixBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.BindBuffer(5, vr.objectInformationBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+
+			.BindImage(6, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+			.BindBuffer(8, vr.globalLightBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.Build(shadowprepassDS, SetLayoutDB::compute_shadowPrepass);
+
+		cmd.BindPSO(pso_ComputeShadowPrepass, VK_PIPELINE_BIND_POINT_COMPUTE);
+		cmd.BindDescriptorSet(PSOLayoutDB::shadowPrepassLayout, 0, 
+			std::array<VkDescriptorSet, 3>{
+				shadowprepassDS,
+				vr.descriptorSets_uniform[currFrame],
+				vr.descriptorSet_bindless,
+		},
+			VK_PIPELINE_BIND_POINT_COMPUTE,
+			1, & dynamicOffset
+				);
+		//vkCmdBindDescriptorSets(
+		//	m_VkCommandBuffer,
+		//	VK_PIPELINE_BIND_POINT_GRAPHICS,
+		//	layout,
+		//	firstSet,
+		//	descriptorSetCount,
+		//	pDescriptorSets,
+		//	dynamicOffsetCount,
+		//	pDynamicOffsets ? pDynamicOffsets : &dynamicOffset);
+		//
+		LightPC pc{};
+		pc.useSSAO = vr.useSSAO ? 1 : 0;
+		pc.specularModifier = vr.currWorld->lightSettings.specularModifier;
+
+		size_t lightCnt = 0;
+		auto& lights = vr.currWorld->GetAllOmniLightInstances();
+		for(auto& l :lights) 
+		{
+			if (GetLightEnabled(l)== true)
+			{
+				++lightCnt;
+			}
+		}
+
+		pc.numLights = static_cast<uint32_t>(lightCnt);
+
+		// calculate shadowmap grid dims
+		float gridSize = ceilf(sqrtf(static_cast<float>(vr.m_numShadowcastLights)));
+		gridSize = std::max<float>(0, gridSize);
+		pc.shadowMapGridDim = glm::vec2{gridSize,gridSize};
+
+		pc.ambient = vr.currWorld->lightSettings.ambient;
+		pc.maxBias = vr.currWorld->lightSettings.maxBias;
+		pc.mulBias = vr.currWorld->lightSettings.biasMultiplier;
+
+		VkPushConstantRange range;
+		range.offset = 0;
+		range.size = sizeof(LightPC);
+		//cmd.SetPushConstant(PSOLayoutDB::shadowPrepassLayout,range,&pc);
+		vkCmdPushConstants(cmdlist, PSOLayoutDB::shadowPrepassLayout, VK_SHADER_STAGE_ALL,range.offset,range.size,&pc);
+		vkCmdDispatch(cmdlist, (shadowMask.width - 1) / 16 + 1, (shadowMask.height - 1) / 16 + 1, 1);
+
+		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH	],VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		vkutils::TransitionImage(cmdlist, shadowPass.shadow_depth, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::NORMAL	],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		vkutils::TransitionImage(cmdlist,shadowMask,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		if (regionEnd)
+		{
+			regionEnd(cmdlist);
+		}
+
+	}
+
+
 }
 
 void GBufferRenderPass::Shutdown()
@@ -212,11 +335,16 @@ void GBufferRenderPass::Shutdown()
 		att.destroy();
 	}
 
+	shadowMask.destroy();
+
 	vkDestroyPipelineLayout(device, PSOLayoutDB::singleSSBOlayout, nullptr);
 	vkDestroyPipeline(device, pso_ComputeCull, nullptr);
 
 	renderpass_GBuffer.destroy();
 	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
+
+	vkDestroyPipeline(device, pso_ComputeShadowPrepass, nullptr);
+	vkDestroyPipelineLayout(device, PSOLayoutDB::shadowPrepassLayout, nullptr);
 }
 
 void GBufferRenderPass::SetupRenderpass()
@@ -228,22 +356,7 @@ void GBufferRenderPass::SetupRenderpass()
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
-	//attachments[GBufferAttachmentIndex::POSITION].name = "GB_Position";
-	//attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
-	attachments[GBufferAttachmentIndex::NORMAL	].name = "GB_Normal";
-	attachments[GBufferAttachmentIndex::NORMAL	].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
-	// linear texture
-	attachments[GBufferAttachmentIndex::ALBEDO	].name = "GB_Albedo";
-	attachments[GBufferAttachmentIndex::ALBEDO	].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
-	attachments[GBufferAttachmentIndex::MATERIAL].name = "GB_Material";
-	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
-	attachments[GBufferAttachmentIndex::ENTITY_ID].name = "GB_Entity";
-	attachments[GBufferAttachmentIndex::ENTITY_ID].forFrameBuffer(&m_device, VK_FORMAT_R32_SINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
-	attachments[GBufferAttachmentIndex::DEPTH	].name = "GB_DEPTH";
-	attachments[GBufferAttachmentIndex::DEPTH	].forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height);
-	attachments[GBufferAttachmentIndex::EMISSIVE	].name = "GB_Emissive";
-	attachments[GBufferAttachmentIndex::EMISSIVE	].forFrameBuffer(&m_device, vr.G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
-
+	
 	// Set up separate renderpass with references to the color and depth attachments
 	std::array<VkAttachmentDescription, GBufferAttachmentIndex::MAX_ATTACHMENTS> attachmentDescs = {};
 
@@ -439,6 +552,16 @@ void GBufferRenderPass::CreatePipeline()
 	vkDestroyShaderModule(m_device.logicalDevice, computeCI.stage.module, nullptr); // destroy compute
 
 
+	{// shadow prepass moveout one day
+
+		const char* shaderCS = "Shaders/bin/shadowPrepass.comp.spv";
+
+		VkComputePipelineCreateInfo computeCI = oGFX::vkutils::inits::computeCreateInfo(PSOLayoutDB::shadowPrepassLayout);
+		computeCI.stage = vr.LoadShader(m_device, shaderCS, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_CHK(vkCreateComputePipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &computeCI, nullptr, &pso_ComputeShadowPrepass));
+		vkDestroyShaderModule(m_device.logicalDevice, computeCI.stage.module, nullptr); // destroy compute
+	}
+
 }
 
 void GBufferRenderPass::CreatePSOLayout()
@@ -447,10 +570,10 @@ void GBufferRenderPass::CreatePSOLayout()
 	auto& m_device = vr.m_device;
 
 	VkDescriptorSet dummy;
-	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.swapchainIdx])
-		.BindBuffer(1, vr.indirectCommandsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
-		.BindBuffer(2, vr.instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
-		.BindBuffer(3, vr.gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.getFrame()])
+		.BindBuffer(1, vr.indirectCommandsBuffer[0].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.BindBuffer(2, vr.instanceBuffer[0].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
+		.BindBuffer(3, vr.gpuTransformBuffer[0].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT) 
 		.Build(dummy, SetLayoutDB::compute_singleSSBO);
 
 	{
@@ -469,4 +592,101 @@ void GBufferRenderPass::CreatePSOLayout()
 		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::singleSSBOlayout));
 		VK_NAME(m_device.logicalDevice, "SingleSSBO_PSOLayout", PSOLayoutDB::singleSSBOlayout);
 	}	
+
+
+	{
+			auto cmd = vr.beginSingleTimeCommands();
+			VkDescriptorImageInfo depthInput = oGFX::vkutils::inits::descriptorImageInfo(
+				GfxSamplerManager::GetSampler_BlackBorder(),
+				attachments[GBufferAttachmentIndex::DEPTH	].view,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			vkutils::TransitionImage(cmd,attachments[GBufferAttachmentIndex::DEPTH	],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+			auto& shadowPass = *RenderPassDatabase::GetRenderPass<ShadowPass>();
+			VkDescriptorImageInfo shadowinput = oGFX::vkutils::inits::descriptorImageInfo(
+				GfxSamplerManager::GetSampler_BlackBorder(),
+				shadowPass.shadow_depth.view,
+				VK_IMAGE_LAYOUT_GENERAL);
+			vkutils::TransitionImage(cmd,shadowPass.shadow_depth,VK_IMAGE_LAYOUT_GENERAL);
+
+			VkDescriptorImageInfo normalInput = oGFX::vkutils::inits::descriptorImageInfo(
+				GfxSamplerManager::GetSampler_BlackBorder(),
+				attachments[GBufferAttachmentIndex::NORMAL	].view,
+				VK_IMAGE_LAYOUT_GENERAL);
+			vkutils::TransitionImage(cmd,attachments[GBufferAttachmentIndex::NORMAL	],VK_IMAGE_LAYOUT_GENERAL);
+
+			VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
+				GfxSamplerManager::GetSampler_Deferred(),
+				shadowMask.view,
+				VK_IMAGE_LAYOUT_GENERAL);
+			vkutils::TransitionImage(cmd,shadowMask,VK_IMAGE_LAYOUT_GENERAL);
+			vr.endSingleTimeCommands(cmd);
+			
+			VkDescriptorSet dummy;	
+			const auto& dbi = vr.globalLightBuffer[0].GetDescriptorBufferInfo();
+		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.getFrame()])
+			.BindImage(0, &depthInput, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT) 
+			.BindImage(1, &shadowinput, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.BindImage(2, &normalInput, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+
+			.BindBuffer(3, vr.gpuTransformBuffer[0].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.BindBuffer(4, vr.gpuBoneMatrixBuffer[0].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.BindBuffer(5, vr.objectInformationBuffer[0].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+
+			.BindImage(6, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+
+			.BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.Build(dummy, SetLayoutDB::compute_shadowPrepass);
+
+		std::array<VkDescriptorSetLayout,4> descriptorSetLayouts = 
+		{
+			SetLayoutDB::compute_shadowPrepass, // (set = 0)
+			SetLayoutDB::FrameUniform,  // (set = 1)
+			SetLayoutDB::bindless,  // (set = 2)
+			SetLayoutDB::lights, // (set = 3)
+		};
+
+		VkPipelineLayoutCreateInfo plci = oGFX::vkutils::inits::pipelineLayoutCreateInfo(
+			descriptorSetLayouts.data(), static_cast<uint32_t>(descriptorSetLayouts.size()));
+
+		VkPushConstantRange pushConstantRange{ VK_SHADER_STAGE_ALL, 0, 128 };
+		plci.pushConstantRangeCount = 1;
+		plci.pPushConstantRanges = &pushConstantRange;
+
+		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::shadowPrepassLayout));
+		VK_NAME(m_device.logicalDevice, "ShadowPrepass_PSOLayout", PSOLayoutDB::shadowPrepassLayout);
+
+	}
+
+	
+}
+
+void GBufferRenderPass::SetupResources() {
+
+	auto& vr = *VulkanRenderer::get();
+	auto& m_device = vr.m_device;
+	auto& m_swapchain = vr.m_swapchain;
+
+	const uint32_t width = m_swapchain.swapChainExtent.width;
+	const uint32_t height = m_swapchain.swapChainExtent.height;
+	//attachments[GBufferAttachmentIndex::POSITION].name = "GB_Position";
+	//attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::NORMAL	].name = "GB_Normal";
+	attachments[GBufferAttachmentIndex::NORMAL	].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	// linear texture
+	attachments[GBufferAttachmentIndex::ALBEDO	].name = "GB_Albedo";
+	attachments[GBufferAttachmentIndex::ALBEDO	].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::MATERIAL].name = "GB_Material";
+	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::ENTITY_ID].name = "GB_Entity";
+	attachments[GBufferAttachmentIndex::ENTITY_ID].forFrameBuffer(&m_device, VK_FORMAT_R32_SINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::DEPTH	].name = "GB_DEPTH";
+	attachments[GBufferAttachmentIndex::DEPTH	].forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::EMISSIVE	].name = "GB_Emissive";
+	attachments[GBufferAttachmentIndex::EMISSIVE	].forFrameBuffer(&m_device, vr.G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+
+
+	shadowMask.name = "GB_ShadowMask";
+	shadowMask.forFrameBuffer(&m_device, VK_FORMAT_R32_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+
 }

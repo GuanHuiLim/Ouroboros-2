@@ -64,15 +64,15 @@ namespace oo
         
         RaycastResult Raycast(Ray ray, float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
         std::vector<RaycastResult> RaycastAll(Ray ray , float distance = std::numeric_limits<float>::max(), LayerType collisionFilter = std::numeric_limits<LayerType>::max());
-    
+        RaycastResult Sweepcast(phy_uuid::UUID uuid, vec3 direction, float distance = PX_MAX_SWEEP_DISTANCE);
+
     private:
-        //inline static std::uint64_t MaxIterations = 2;
+
         inline static Timestep FixedDeltaTimeBase = 1.0/60.0;               // physics updates at 60 fps
         inline static Timestep FixedDeltaTimescale = 1.0;                  // additional level of control for scripts
         inline static Timestep FixedDeltaTime = FixedDeltaTimeBase * FixedDeltaTimescale;  // physics updates at 60 fps
-        inline static Timestep MaxFrameRateMultiplier = 3;
+        inline static Timestep MaxFrameRateMultiplier = 2;
         inline static Timestep MaxFrameTime = FixedDeltaTime * MaxFrameRateMultiplier;
-        //inline static Timestep AccumulatorLimit = FixedDeltaTime * MaxIterations;   // To prevent spiral of death
 
         void UpdateDynamics(Timestep deltaTime);
         void UpdatePhysicsResolution(Timestep deltaTime);
@@ -82,6 +82,9 @@ namespace oo
         void UpdatedExisting();
 
         void UpdateGlobalBounds();
+        void SubmitUpdatesToPhysicsWorld();
+        void SubmitScriptCommands();
+        void RetrieveUpdatedObjects();
         void UpdateCallbacks();
         void PostUpdate();
 
@@ -92,6 +95,9 @@ namespace oo
 
         //underlying physics world
         myPhysx::PhysxWorld m_physicsWorld{ { Gravity.x, Gravity.y, Gravity.z} };
+
+        // stores all the physics objects that needs to be updated.
+        std::vector<myPhysx::PhysicsObject> needsUpdating;
 
         //time accumulator
         double m_accumulator = 0.0;

@@ -75,6 +75,7 @@ struct LightPC
     float maxBias;
     float mulBias;
     float specularModifier;
+    vec2 resolution;
 };
 
 struct SSAOPC

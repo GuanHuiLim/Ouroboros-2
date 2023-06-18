@@ -89,21 +89,21 @@ namespace oo
 
         TRACY_PROFILE_SCOPE(runtime_scene_update);
 
-        jobsystem::job phase_one{};
+        //jobsystem::job phase_one{};
         
-        jobsystem::submit(phase_one, [&]() {
+        //jobsystem::submit(phase_one, [&]() {
           TRACY_PROFILE_SCOPE(transform_first_update);
           GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
           TRACY_PROFILE_SCOPE_END();
-            });
+        //});
         
-        jobsystem::submit(phase_one, [&]() {
+        //jobsystem::submit(phase_one, [&]() {
           TRACY_PROFILE_SCOPE(input_update);
           GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
           TRACY_PROFILE_SCOPE_END();
-            });
+        //});
         
-        jobsystem::launch_and_wait(phase_one);
+        //jobsystem::launch_and_wait(phase_one);
 
         // phase 2 : things that rely on transform to complete update 
         //jobsystem::job phase_two{};
@@ -165,6 +165,11 @@ namespace oo
         {
             TRACY_PROFILE_SCOPE(scripts_late_update);
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
+
+            TRACY_PROFILE_SCOPE(scripts_delete_delayed);
+            GetWorld().Get_System<ScriptSystem>()->ProcessDeletion();
+            TRACY_PROFILE_SCOPE_END();
+
             TRACY_PROFILE_SCOPE_END();
         }
         {

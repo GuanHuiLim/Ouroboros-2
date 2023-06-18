@@ -55,6 +55,8 @@ namespace oo
         // Controller information
         SDL_GameController* m_pGameController;
         int m_controllerIndex;
+        SDL_Haptic* m_controller_haptic;
+        SDL_Joystick* m_controller_joystick;
 
         // Information about the state of the controller
         Uint8 m_uButtonStates[(size_t)ControllerButtonCode::MAX];
@@ -148,6 +150,12 @@ namespace oo
             m_prevKeyboardState = nullptr;
             m_simulatedKeys = nullptr;
             m_keyboardState = nullptr;
+
+            if (m_pGameController != NULL)
+            {
+                SDL_GameControllerClose(m_pGameController);
+            }
+
         }
 
         void AddController(int index)
@@ -162,6 +170,15 @@ namespace oo
                 memset(m_uButtonStates, 0, sizeof(Uint8) * (size_t)ControllerButtonCode::MAX);
                 memset(m_uButtonStatesPrev, 0, sizeof(Uint8) * (size_t)ControllerButtonCode::MAX);
                 memset(m_fAxisValues, 0, sizeof(float) * (size_t)ControllerAxisCode::MAX);
+
+                //prepare the haptic support
+                if (SDL_GameControllerHasRumble(m_pGameController) == SDL_FALSE)
+                {
+                    std::string str = SDL_GetError();
+                    assert(false && "Controller does not support haptic");
+					std::cout << "Controller does not support haptic: " << str << std::endl;
+                    return;
+                }
             }
         }
 
@@ -442,6 +459,7 @@ namespace oo
 
         bool IsControllerButtonReleased(ControllerButtonCode iButton)
         {
+
             return (m_uButtonStates[(size_t)iButton] == 0
                 && m_uButtonStatesPrev[(size_t)iButton] == 1);
         }
@@ -556,6 +574,28 @@ namespace oo
             }
 
             return controllerAxis;
+        }
+
+        bool SetControllerVibration(float time, float intensity)
+        {
+            return SetControllerVibration(time, intensity, intensity);
+        }
+
+        bool SetControllerVibration(float time, float low_frequency_intensity, float high_frequency_intensity)
+        {
+            auto rumbleIntensityHigh = static_cast<Uint16>(0xFFFF * high_frequency_intensity);
+            auto rumbleIntensityLow = static_cast<Uint16>(0xFFFF * low_frequency_intensity);
+            auto rumbleTime = static_cast<Uint32>(time * 1000.f);
+            auto result = SDL_GameControllerRumble(m_pGameController, rumbleIntensityLow, rumbleIntensityHigh, rumbleTime);
+            if (result != 0)
+                std::cout << "SDL_JoystickRumble failed: " << SDL_GetError() << std::endl;
+
+            return result;
+        }
+
+        void StopControllerVibration()
+        {
+            SetControllerVibration(0, 0);
         }
 
         void SimulatedInputUpdate()

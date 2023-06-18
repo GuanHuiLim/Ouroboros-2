@@ -131,17 +131,20 @@ namespace oo
 		uninitializedEntities.clear();
 
 		//calculate transform
-		world->for_each_entity_and_component(skin_mesh_query,
-			[&](Ecs::EntityID entity, SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
+		//world->for_each_entity_and_component(skin_mesh_query,
+		static Ecs::Query skinMeshQuery = Ecs::make_raw_query<oo::GameObjectComponent, oo::SkinMeshRendererComponent, oo::TransformComponent>();
+		m_world->parallel_for_each(skinMeshQuery,
+			[&](oo::GameObjectComponent& goc, SkinMeshRendererComponent& m_comp, TransformComponent& transformComp)
 			{
 				{	//calculate inverse matrix for all root bones
-					oo::GameObject go{ entity,*scene };
+					//oo::GameObject go{ entity,*scene };
+					auto go = scene->FindWithInstanceID(goc.Id);
 
 					//auto graphicsID = go.GetComponent<SkinMeshRendererComponent>().graphicsWorld_ID;
 
-					auto parent = go.GetParent();
+					auto parent = go->GetParent();
 					auto children = parent.GetDirectChilds();
-					auto uid = go.GetInstanceID();
+					auto uid = go->GetInstanceID();
 					oo::GameObject rootbone{};
 					for (auto& child : children)
 					{
@@ -156,8 +159,10 @@ namespace oo
 					}
 					auto tmp = rootbone.Transform().GetGlobalMatrix();
 					auto name = rootbone.Name();
-					root_bone_inverse_map[uid] = glm::affineInverse(
-						rootbone.Transform().GetGlobalMatrix());
+					root_bone_inverse_map.insert_or_update(uid, glm::affineInverse(
+						rootbone.Transform().GetGlobalMatrix()));
+					/*root_bone_inverse_map[uid] = glm::affineInverse(
+						rootbone.Transform().GetGlobalMatrix());*/
 					//auto rootbone_global_inverse = glm::affineInverse(rootbone.GetComponent<TransformComponent>().GetGlobalMatrix());
 					//RecurseChildren_AssignparentTransform_to_BoneComponents(rootbone, glm::identity<glm::mat4>(), uid);
 				}
@@ -211,12 +216,14 @@ namespace oo
 			});*/
 
 		//send data to graphics side
-		world->for_each(skin_bone_mesh_query,
+		//world->for_each(skin_bone_mesh_query,
+		m_world->parallel_for_each(skin_bone_mesh_query,
 			[&](SkinMeshBoneComponent& boneComp, TransformComponent& transformComp)
 			{
 				//update the bone's transform
 				boneComp.bone_transform = 
-					root_bone_inverse_map[boneComp.root_bone_object] * transformComp.GetGlobalMatrix();
+					root_bone_inverse_map.at(boneComp.root_bone_object) * transformComp.GetGlobalMatrix();
+					//root_bone_inverse_map[boneComp.root_bone_object] * transformComp.GetGlobalMatrix();
 				//do nothing if transform did not change
 				if (transformComp.HasChangedThisFrame == false) return;
 				

@@ -134,5 +134,19 @@ namespace Ouroboros
 
         [DllImport("__Internal")]
         public static extern ControllerAxisCode GetControllerAxis();
+
+        [DllImport("__Internal")]
+        public static extern bool SetControllerVibration(float time, float intensity);
+
+        [DllImport("__Internal")]
+        private static extern bool SetControllerVibration_HighLow(float time, float low_frequency_intensity, float high_frequency_intensity);
+
+        public static bool SetControllerVibration(float time, float low_frequency_intensity, float high_frequency_intensity)
+        {
+            return SetControllerVibration_HighLow(time, low_frequency_intensity, high_frequency_intensity);
+        }
+
+        [DllImport("__Internal")]
+        public static extern void StopControllerVibration();
     }
 }

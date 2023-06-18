@@ -31,6 +31,10 @@ namespace oo
         EventManager::Subscribe<AudioSystem, UnloadSceneEvent>(this, &AudioSystem::onUnloadScene);
         EventManager::Subscribe<AudioSystem, GameObjectComponent::OnEnableEvent>(this, &AudioSystem::onObjectEnabled);
         EventManager::Subscribe<AudioSystem, GameObjectComponent::OnDisableEvent>(this, &AudioSystem::onObjectDisabled);
+        EventManager::Subscribe<AudioSystem, WindowMinimizeEvent>(this, &AudioSystem::onWindowMinimize);
+        EventManager::Subscribe<AudioSystem, WindowRestoredEvent>(this, &AudioSystem::onWindowRestored);
+        EventManager::Subscribe<AudioSystem, WindowFocusEvent>(this, &AudioSystem::onWindowFocus);
+        EventManager::Subscribe<AudioSystem, WindowLoseFocusEvent>(this, &AudioSystem::onWindowLoseFocus);
     }
 
     AudioSystem::~AudioSystem()
@@ -39,6 +43,10 @@ namespace oo
         EventManager::Unsubscribe<AudioSystem, UnloadSceneEvent>(this, &AudioSystem::onUnloadScene);
         EventManager::Unsubscribe<AudioSystem, GameObjectComponent::OnEnableEvent>(this, &AudioSystem::onObjectEnabled);
         EventManager::Unsubscribe<AudioSystem, GameObjectComponent::OnDisableEvent>(this, &AudioSystem::onObjectDisabled);
+        EventManager::Unsubscribe<AudioSystem, WindowMinimizeEvent>(this, &AudioSystem::onWindowMinimize);
+        EventManager::Unsubscribe<AudioSystem, WindowRestoredEvent>(this, &AudioSystem::onWindowRestored);
+        EventManager::Unsubscribe<AudioSystem, WindowFocusEvent>(this, &AudioSystem::onWindowFocus);
+        EventManager::Unsubscribe<AudioSystem, WindowLoseFocusEvent>(this, &AudioSystem::onWindowLoseFocus);
     }
 
     void AudioSystem::Init()
@@ -215,5 +223,25 @@ namespace oo
     void AudioSystem::onAudioSourceRemove(Ecs::ComponentEvent<AudioSourceComponent>* e)
     {
         e->component.Stop();
+    }
+
+    void AudioSystem::onWindowMinimize(WindowMinimizeEvent* e)
+    {
+        audio::SetMasterPauseState(true);
+    }
+
+    void AudioSystem::onWindowRestored(WindowRestoredEvent* e)
+    {
+        audio::SetMasterPauseState(false);
+    }
+
+    void AudioSystem::onWindowFocus(WindowFocusEvent* e)
+    {
+        audio::SetMasterPauseState(false);
+    }
+
+    void AudioSystem::onWindowLoseFocus(WindowLoseFocusEvent* e)
+    {
+        audio::SetMasterPauseState(true);
     }
 }

@@ -58,8 +58,9 @@ float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, f
 	
 	// Bounds check for the actual shadow map
 	float closestDepth = 1.0;
-	if(projCoords.x >1.0 || projCoords.x < 0.0
-		|| projCoords.y >1.0 || projCoords.y < 0.0 
+	float boundsLimit = 0.99995;
+	if(projCoords.x >boundsLimit || projCoords.x < 0.0
+		|| projCoords.y >boundsLimit || projCoords.y < 0.0 
 		|| projCoords.z>1)
 	{
 		return 1.0;
@@ -106,7 +107,7 @@ float denom = dist*dist +1;
 return num/denom;
 }
 
-vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular, out float shadow)
+vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, in vec3 albedo, float specular)
 {
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);	
 	vec3 N = normalize(normal);
@@ -168,7 +169,7 @@ vec3 EvalLight(int lightIndex, in vec3 fragPos, in vec3 normal,float roughness, 
 	}
 
 	// calculate shadow if this is a shadow light
-	shadow = 1.0;
+	float shadow = 1.0;
 	if(Lights_SSBO[lightIndex].info.x > 0)
 	{		
 		if(Lights_SSBO[lightIndex].info.x == 1)
@@ -197,54 +198,15 @@ uint DecodeFlags(in float value)
 
 void main()
 {
-	// Get G-Buffer values
-	vec4 depth = texture(samplerDepth, inUV);
-	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
-	//fragPos.z = depth.r;
-	vec3 normal = texture(samplerNormal, inUV).rgb;
-	if(dot(normal,normal) == 0.0)
-	{
-		outFragcolor = vec4(0);
-		return;
-	}
+	// just perform ambient
 	vec4 albedo = texture(samplerAlbedo, inUV);
-	vec4 material = texture(samplerMaterial, inUV);
-	float SSAO = texture(samplerSSAO, inUV).r;
-	float specular = material.g;
-	float roughness = 1.0 - material.r;
-
-	// Render-target composition
 	float ambient = PC.ambient;
-	//if (DecodeFlags(material.z) == 0x1)
-	//{
-	//	ambient = 1.0;
-	//}
 	
 	const float gamma = 2.2;
 	albedo.rgb =  pow(albedo.rgb, vec3(1.0/gamma));
-
 	// Ambient part
-	vec3 result = albedo.rgb  * ambient;
-
-	// remove SSAO if not wanted
-	if(PC.useSSAO == 0){
-		SSAO = 1.0;
-	}
-	
-	// Point Lights
-	vec3 lightContribution = vec3(0.0);
-	for(int i = 0; i < PC.numLights; ++i)
-	{
-		float outshadow = 1.0;
-		vec3 res = EvalLight(i, fragPos, normal, roughness ,albedo.rgb, specular, outshadow);	
-
-		lightContribution += res;
-	}
-	
-	vec3 ambientContribution = albedo.rgb  * ambient;
 	vec3 emissive = texture(samplerEmissive,inUV).rgb;
-	result =  (ambientContribution * SSAO + lightContribution) + emissive;
-
+	vec3 result = albedo.rgb  * ambient + emissive;
 	outFragcolor = vec4(result, albedo.a);	
 
 }

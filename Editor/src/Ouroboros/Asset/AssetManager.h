@@ -115,11 +115,23 @@ namespace oo
             AssetInfoFileTree tree;
         };
 
+        struct LoadProgress
+        {
+            LoadProgress(size_t total) : loadedCount{ 0 }, totalCount{ total }{};
+            //~LoadProgress() { progressThread.join(); }
+            std::atomic<size_t> loadedCount;
+            std::atomic<size_t> totalCount;
+            std::thread progressThread;
+            double percent() const { return static_cast<double>(loadedCount) * 100 / totalCount; }
+        };
+
+        using LoadProgressPtr = std::shared_ptr<LoadProgress>;
+
         /* --------------------------------------------------------------------------- */
         /* Constants                                                                   */
         /* --------------------------------------------------------------------------- */
 
-        static constexpr size_t WATCH_INTERVAL = 1000;
+        static constexpr std::chrono::duration LOAD_INTERVAL = std::chrono::seconds(1);
 
         /* --------------------------------------------------------------------------- */
         /* Constructors and Destructors                                                */
@@ -159,17 +171,24 @@ namespace oo
         /// Retrieves an asset using its ID.
         /// Does not load the asset's associated file data.
         /// </summary>
-        /// <param name="snowflake">The ID of the asset.</param>
+        /// <param name="id">The ID of the asset.</param>
         /// <returns>The asset.</returns>
-        Asset Get(const AssetID& id);
+        Asset Get(const AssetID& id) const;
 
         /// <summary>
         /// Asynchronously retrieves an asset using its ID.
         /// Does not load the asset's associated file data.
         /// </summary>
-        /// <param name="snowflake">The ID of the asset.</param>
+        /// <param name="id">The ID of the asset.</param>
         /// <returns>The future asset.</returns>
-        std::future<Asset> GetAsync(const AssetID& id);
+        std::future<Asset> GetAsync(const AssetID& id) const;
+
+        /// <summary>
+        /// Asynchronously loads a vector of assets using its ID.
+        /// </summary>
+        /// <param name="ids">The vector of IDs of the assets.</param>
+        /// <returns>The pointer to the load progress object.</returns>
+        LoadProgressPtr LoadMultipleAsync(const std::vector<AssetID>& ids);
 
         /// <summary>
         /// Retrieves all assets of a given type.

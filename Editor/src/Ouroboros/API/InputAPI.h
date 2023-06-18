@@ -373,4 +373,20 @@ namespace oo
             ScriptEngine::ThrowNullException();
         return static_cast<int>(keys[0]._Myfirst._Val);
     }
+
+    SCRIPT_API bool SetControllerVibration(float time, float intensity)
+    {
+        return input::SetControllerVibration(time, intensity);
+    }
+
+    SCRIPT_API bool SetControllerVibration_HighLow(float time, float low_frequency_intensity, float high_frequency_intensity)
+    {
+        return input::SetControllerVibration(time, low_frequency_intensity, high_frequency_intensity);
+    }
+
+    SCRIPT_API void StopControllerVibration()
+    {
+        input::StopControllerVibration();
+    }
 }
+

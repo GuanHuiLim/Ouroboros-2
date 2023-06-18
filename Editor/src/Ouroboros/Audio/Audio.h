@@ -131,6 +131,12 @@ namespace oo
         /* --------------------------------------------------------------------------- */
         /* Utility                                                                     */
         /* --------------------------------------------------------------------------- */
+        
+        /// <summary>
+        /// Sets the pause state of the master channel group.
+        /// </summary>
+        /// <param name="state">The pause state.</param>
+        void SetMasterPauseState(bool state);
 
         /// <summary>
         /// Handles FMOD function call results.

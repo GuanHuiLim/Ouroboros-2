@@ -105,10 +105,56 @@ namespace Ouroboros
         }
 
         [DllImport("__Internal")] private static extern void Rigidbody_AddForce(uint sceneID, ulong uuid, float x, float y, float z);
+        [DllImport("__Internal")] private static extern void Rigidbody_AddForceWithMode(uint sceneID, ulong uuid, float x, float y, float z, int forceMode);
 
         public void AddForce(Vector3 force)
         {
             Rigidbody_AddForce(gameObject.scene, gameObject.GetInstanceID(), force.x, force.y, force.z);
+        }
+
+        public void AddForce(Vector3 force, ForceMode mode)
+        {
+            Rigidbody_AddForceWithMode(gameObject.scene, gameObject.GetInstanceID(), force.x, force.y, force.z, (int)mode);
+        }
+
+        [DllImport("__Internal")] private static extern void Rigidbody_AddTorque(uint sceneID, ulong uuid, float x, float y, float z);
+        [DllImport("__Internal")] private static extern void Rigidbody_AddTorqueWithMode(uint sceneID, ulong uuid, float x, float y, float z, int forceMode);
+
+        public void AddTorque(Vector3 torque)
+        {
+            Rigidbody_AddTorque(gameObject.scene, gameObject.GetInstanceID(), torque.x, torque.y, torque.z);
+        }
+
+        public void AddTorque(Vector3 torque, ForceMode mode)
+        {
+            Rigidbody_AddTorqueWithMode(gameObject.scene, gameObject.GetInstanceID(), torque.x, torque.y, torque.z, (int)mode);
+        }
+
+        [DllImport("__Internal")] private static extern System.IntPtr Rigidbody_SweepTest_Basic(uint sceneID, ulong uuid, Vector3 dir);
+        [DllImport("__Internal")] private static extern System.IntPtr Rigidbody_SweepTest(uint sceneID, ulong uuid, Vector3 dir, float maxDistance);
+
+        public bool SweepTest(Vector3 direction, out RaycastHit hitInfo)
+        {
+            hitInfo = new RaycastHit();
+            System.IntPtr ptr = Rigidbody_SweepTest_Basic(gameObject.scene, gameObject.GetInstanceID(), direction);
+            if (ptr == System.IntPtr.Zero)
+                return false;
+            GCHandle result = GCHandle.FromIntPtr(ptr);
+            hitInfo = (RaycastHit)result.Target;
+            result.Free();
+            return true;
+        }
+
+        public bool SweepTest(Vector3 direction, out RaycastHit hitInfo, float maxDistance)
+        {
+            hitInfo = new RaycastHit();
+            System.IntPtr ptr = Rigidbody_SweepTest(gameObject.scene, gameObject.GetInstanceID(), direction, maxDistance);
+            if (ptr == System.IntPtr.Zero)
+                return false;
+            GCHandle result = GCHandle.FromIntPtr(ptr);
+            hitInfo = (RaycastHit)result.Target;
+            result.Free();
+            return true;
         }
 
         [DllImport("__Internal")] private static extern bool RigidbodyComponent_GetLockXAxisPosition(uint sceneID, ulong instanceID);
@@ -180,5 +226,13 @@ namespace Ouroboros
         FreezeRotationZ = 64,   // 0100 0000
         FreezeRotation = 112,   // 0111 0000
         FreezeAll = 126         // 0111 1110
+    }
+
+    public enum ForceMode
+    {
+        Force,
+        Acceleration,
+        Impulse,
+        VelocityChange,
     }
 }

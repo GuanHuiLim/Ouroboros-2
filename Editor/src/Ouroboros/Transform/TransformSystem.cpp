@@ -43,7 +43,7 @@ namespace oo
 
     void TransformSystem::PostLoadSceneInit()
     {
-        StartOfFramePreprocessing();
+        //StartOfFramePreprocessing();
         UpdateEntireTree();
     }
 
@@ -82,18 +82,7 @@ namespace oo
             });
         }
 
-
-        // TODO
-        // update local transformations : can be parallelized.
-        UpdateLocalTransforms();
-
-        // Transform System updates via the scenegraph because the order matters
-        /*auto const& graph = m_scene->GetGraph();
-        scenegraph::shared_pointer root_node = graph.get_root();
-        UpdateTree(root_node, false);*/
-
-        StartOfFramePreprocessing();
-        UpdateRootTree();
+        UpdateEntireTree();
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -105,6 +94,8 @@ namespace oo
         UpdateLocalTransform(go.GetComponent<TransformComponent>());
         UpdateTree(go.GetSceneNode().lock(), includeItself);
         
+        //UpdateEntireTree();
+
         TRACY_PROFILE_SCOPE_END();
     }
 
@@ -112,48 +103,14 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(transform_update_entire_tree, tracy::Color::Gold3);
 
+        GenerateLaunchGroups();
+
         UpdateLocalTransforms();
 
-        /*auto const& graph = m_scene->GetGraph();
-        scenegraph::shared_pointer root_node = graph.get_root();
-        UpdateTree(root_node, false);*/
-
-        UpdateRootTree();
+        UpdateLaunchGroups();
 
         TRACY_PROFILE_SCOPE_END();
     }
-
-    //void TransformSystem::StartOfFrame()
-    //{
-    //    static Ecs::Query query = Ecs::make_query<TransformComponent>();
-    //    m_world->for_each(query, [&](TransformComponent& tf)
-    //        {
-    //            // set current frame data to be previous frame data
-    //            tf.PrevLocalPosition    = tf.LocalTransform.Position;
-    //            tf.PrevLocalOrientation = tf.LocalTransform.Orientation;
-    //            tf.PrevGlobalPosition   = tf.GlobalTransform.Position;
-    //            tf.PrevGlobalOrientation = tf.GlobalTransform.Orientation;
-    //            /*
-    //            tf.LocalTranslationDelta =  glm::vec3{};
-    //            tf.LocalOrientationDelta =  glm::quat{};
-    //            tf.GlobalTranslationDelta = glm::vec3{};
-    //            tf.GlobalOrientationDelta = glm::quat{};*/
-    //        });
-    //}
-
-    //void TransformSystem::EndOfFrame()
-    //{
-    //    static Ecs::Query query = Ecs::make_query<TransformComponent>();
-    //    m_world->for_each(query, [&](TransformComponent& tf)
-    //        {
-    //            // calculate deltas
-    //            tf.LocalTranslationDelta  = tf.LocalTransform.Position - tf.PrevLocalPosition;
-    //            tf.LocalOrientationDelta  = tf.LocalTransform.Orientation.value - tf.PrevLocalOrientation;
-    //            tf.GlobalTranslationDelta = tf.GlobalTransform.Position - tf.PrevGlobalPosition;
-    //            tf.GlobalOrientationDelta = tf.GlobalTransform.Orientation.value - tf.PrevGlobalOrientation;
-    //        });
-    //}
-
 
     void TransformSystem::UpdateLocalTransform(TransformComponent& tf)
     {
@@ -174,7 +131,7 @@ namespace oo
         
         // Update their local transform
         static Ecs::Query query = Ecs::make_raw_query</*GameObjectComponent, */TransformComponent>();
-        m_world->for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
+        m_world->parallel_for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
             {
                 // TODO: this part of the code doesn't need to be serial.
                 // Update local and global transform immediately
@@ -188,11 +145,11 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
     }
 
-    void TransformSystem::UpdateRootTree()
+    void TransformSystem::UpdateLaunchGroups()
     {
         // Transform System updates via the scenegraph because the order matters
 
-        TRACY_PROFILE_SCOPE_NC(transform_update_root_tree_optimized, tracy::Color::Gold3);
+        TRACY_PROFILE_SCOPE_NC(transform_update_launch_groups, tracy::Color::Gold3);
 
         // Step 2. processing.
         for (auto& group : launch_groups)
@@ -223,6 +180,8 @@ namespace oo
 
         TRACY_PROFILE_SCOPE_NC(transform_update_tree, tracy::Color::Gold3);
 
+        //UpdateEntireTree();
+
         scenegraph::shared_pointer root_node = node;
         std::stack<scenenode::shared_pointer> s;
         scenenode::shared_pointer curr = root_node; 
@@ -235,31 +194,6 @@ namespace oo
             auto const go = m_scene->FindWithInstanceID(node->get_handle());
             UpdateTransform(go);
         }
-
-        /* Single Threaded Method of updating */
-        //s.emplace(curr);
-        //while (!s.empty())
-        //{
-        //    curr = s.top();
-        //    s.pop();
-        //    // iterate through current's childs from back to front
-        //    for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
-        //    {
-        //        scenenode::shared_pointer child = *iter;
-        //        s.emplace(child);
-        //        
-        //        // Find current gameobject
-        //        auto const go = m_scene->FindWithInstanceID(child->get_handle());
-        //        
-        //        //// Skip gameobjects that has the deferred component
-        //        //if (go->HasComponent<DeferredComponent>())
-        //        //    continue;
-        //        
-        //        UpdateTransform(go);
-        //        
-        //        //launch_groups[child->get_depth()].emplace_back(child);
-        //    }
-        //}
 
         /* Multithread Method of updating */
         
@@ -275,12 +209,6 @@ namespace oo
 
                 {
                     TRACY_PROFILE_SCOPE_NC(pre_process_inner_for_loop, tracy::Color::Gold4);
-                    /*std::for_each(std::execution::par, curr->rbegin(), curr->rend(), [&](auto const& elem)
-                        {
-                            scenenode::shared_pointer child = elem;
-                            if (child->has_child())
-                                s.emplace(child);
-                        });*/
                     for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
                     {
                         scenenode::shared_pointer child = *iter;
@@ -293,9 +221,6 @@ namespace oo
 
                 auto childs = curr->get_direct_child();
                 auto child_depth = curr->get_depth() + 1;
-                //auto current_size = launch_groups[child_depth].size();
-                //launch_groups[child_depth].resize(current_size + childs.size());
-                //std::move(std::execution::par_unseq, std::begin(childs), std::end(childs), std::begin(launch_groups[child_depth]) + current_size);
                 launch_groups[child_depth].insert(launch_groups[child_depth].end(), childs.begin(), childs.end());
                 assert(child_depth != 0);
             }
@@ -312,29 +237,12 @@ namespace oo
             TRACY_PROFILE_SCOPE_NC(per_batch_processing, tracy::Color::Goldenrod);
 
             std::for_each(std::execution::par_unseq, std::begin(group), std::end(group), [&](auto const& elem)
-            //std::for_each(std::begin(group), std::end(group), [&](auto const& elem)
                 {
                     // Find current gameobject
                     auto const go = m_scene->FindWithInstanceID(elem->get_handle());
                     UpdateTransform(go);
                 });
             
-            //jobsystem::job per_group_update{};
-
-            //for (auto& elem : group)
-            //{
-            //    // submitting work.
-            //    jobsystem::submit(per_group_update, [&]()
-            //    {
-            //        // Find current gameobject
-            //        auto const go = m_scene->FindWithInstanceID(elem->get_handle());
-            //        //auto& const name = go->Name();
-
-            //        UpdateTransform(go);
-            //    });
-            //}
-
-            //jobsystem::launch_and_wait(per_group_update);
 
             TRACY_PROFILE_SCOPE_END();
         }
@@ -394,66 +302,128 @@ namespace oo
         //tf.SetPosition(tf.GetPosition());
     }
 
-    void TransformSystem::StartOfFramePreprocessing()
+    void TransformSystem::GenerateLaunchGroups()
     {
-        TRACY_PROFILE_SCOPE_NC(start_of_frame_preprocessing, tracy::Color::Gold4);
+        TRACY_PROFILE_SCOPE_NC(transform_determine_dirty, tracy::Color::Gold3);
+        // gather a set of unique ids that are currently dirty rn.
+        std::set<scenenode::handle_type> dirtyIDs{};
+        static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, TransformComponent>();
+        m_world->for_each(query, [&](GameObjectComponent& goc, TransformComponent& tf)
+        {
+            auto node = goc.Node.lock();
+            if (tf.LocalMatrixDirty || tf.GlobalMatrixDirty)
+            {
+                dirtyIDs.emplace(node->get_handle());
+            }
+        });
+        TRACY_PROFILE_SCOPE_END();
 
+        TRACY_PROFILE_SCOPE_NC(transform_assemble_launch_groups, tracy::Color::Gold3);
+        
+        // reset groups
+        for (auto& group : launch_groups)
+            group.clear();
+
+        // go through scene graph and determine what needs to be launched and updated
         auto const& graph = m_scene->GetGraph();
         scenegraph::shared_pointer root_node = graph.get_root();
-        std::stack<scenenode::shared_pointer> s;
         scenenode::shared_pointer curr = root_node;
 
-        // Step 1. Extra Pre-Processing Overhead
+        std::stack<std::pair<scenegraph::shared_pointer, int>> stk{};
+        auto firstLevelChilds = curr->get_direct_child();
+        std::for_each(firstLevelChilds.begin(), firstLevelChilds.end(), [&](auto&& child)
         {
-            TRACY_PROFILE_SCOPE_NC(pre_process_overhead, tracy::Color::Gold3);
+            stk.push({ child, 0 });
+        });
 
-            for (auto& group : launch_groups)
-                group.clear();
-
-            s.emplace(curr);
-            while (!s.empty())
+        while (!stk.empty())
+        {
+            auto& [node, hierarchyLevel] = stk.top();
+            stk.pop();
+            
+            bool isDirty = dirtyIDs.contains(node->get_handle());
+            if (hierarchyLevel == 0 && isDirty)
             {
-                curr = s.top();
-                s.pop();
-
-                {
-                    TRACY_PROFILE_SCOPE_NC(pre_process_inner_for_loop, tracy::Color::Gold4);
-                    /*std::for_each(std::execution::par, curr->rbegin(), curr->rend(), [&](auto const& elem)
-                        {
-                            scenenode::shared_pointer child = elem;
-                            if (child->has_child())
-                                s.emplace(child);
-                        });*/
-                    for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
-                    {
-                        scenenode::shared_pointer child = *iter;
-                        if (child->has_child())
-                            s.emplace(child);
-                    }
-
-                    TRACY_PROFILE_SCOPE_END();
-                }
-
-                auto childs = curr->get_direct_child();
-                auto child_depth = curr->get_depth() + 1;
-                //auto current_size = launch_groups[child_depth].size();
-                //launch_groups[child_depth].resize(current_size + childs.size());
-                //std::move(std::execution::par_unseq, std::begin(childs), std::end(childs), std::begin(launch_groups[child_depth]) + current_size);
-                launch_groups[child_depth].insert(launch_groups[child_depth].end(), childs.begin(), childs.end());
-                assert(child_depth != 0);
+                launch_groups[hierarchyLevel].emplace_back(node);
             }
 
-            TRACY_PROFILE_SCOPE_END();
-        }
+            auto childs = node->get_direct_child();
+            auto childLevel = hierarchyLevel;
 
+            if (hierarchyLevel > 0 || isDirty)
+            {
+                childLevel += 1;
+                launch_groups[childLevel].insert(launch_groups[childLevel].end(), childs.begin(), childs.end());
+            }
+            
+            std::for_each(childs.begin(), childs.end(), [&](auto&& child)
+            {
+                stk.push({ child, childLevel });
+            });
+
+        }
         TRACY_PROFILE_SCOPE_END();
     }
+
+    //void TransformSystem::StartOfFramePreprocessing()
+    //{
+    //    TRACY_PROFILE_SCOPE_NC(start_of_frame_preprocessing, tracy::Color::Gold4);
+
+    //    auto const& graph = m_scene->GetGraph();
+    //    scenegraph::shared_pointer root_node = graph.get_root();
+    //    std::stack<scenenode::shared_pointer> s;
+    //    scenenode::shared_pointer curr = root_node;
+
+    //    // Step 1. Extra Pre-Processing Overhead
+    //    {
+    //        TRACY_PROFILE_SCOPE_NC(pre_process_overhead, tracy::Color::Gold3);
+
+    //        for (auto& group : launch_groups)
+    //            group.clear();
+
+    //        s.emplace(curr);
+    //        while (!s.empty())
+    //        {
+    //            curr = s.top();
+    //            s.pop();
+
+    //            {
+    //                TRACY_PROFILE_SCOPE_NC(pre_process_inner_for_loop, tracy::Color::Gold4);
+    //                /*std::for_each(std::execution::par, curr->rbegin(), curr->rend(), [&](auto const& elem)
+    //                    {
+    //                        scenenode::shared_pointer child = elem;
+    //                        if (child->has_child())
+    //                            s.emplace(child);
+    //                    });*/
+    //                for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
+    //                {
+    //                    scenenode::shared_pointer child = *iter;
+    //                    if (child->has_child())
+    //                        s.emplace(child);
+    //                }
+
+    //                TRACY_PROFILE_SCOPE_END();
+    //            }
+
+    //            auto childs = curr->get_direct_child();
+    //            auto child_depth = curr->get_depth() + 1;
+    //            //auto current_size = launch_groups[child_depth].size();
+    //            //launch_groups[child_depth].resize(current_size + childs.size());
+    //            //std::move(std::execution::par_unseq, std::begin(childs), std::end(childs), std::begin(launch_groups[child_depth]) + current_size);
+    //            launch_groups[child_depth].insert(launch_groups[child_depth].end(), childs.begin(), childs.end());
+    //            assert(child_depth != 0);
+    //        }
+
+    //        TRACY_PROFILE_SCOPE_END();
+    //    }
+
+    //    TRACY_PROFILE_SCOPE_END();
+    //}
 
     /*void TransformSystem::OnDisableGameObject(GameObjectComponent::OnDisableEvent* e)
     {
 
     }*/
-
 
 }
 

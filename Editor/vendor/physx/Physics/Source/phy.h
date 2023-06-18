@@ -32,6 +32,7 @@ Technology is prohibited.
 #include <deque>
 #include <memory>
 #include <cassert>
+#include <unordered_map>
 //#include <glm/glm.hpp>
 
 #include "uuid.h"
@@ -156,6 +157,17 @@ namespace myPhysx {
         PxReal z;
     };
 
+    struct PhysicsCommand
+    {
+        phy_uuid::UUID Id;
+
+        PxVec3 Force = PxVec3{};
+        force Type = force::force;
+
+        bool AddForce = false;
+        bool AddTorque = false;
+    };
+
     // backend holds the overall info of the entire physics engine
     namespace physx_system {
 
@@ -192,14 +204,13 @@ namespace myPhysx {
 
     private:
 
+        // do i still need this?
         friend struct PhysxObject;
         friend struct PhysicsObject;
 
         PxScene* scene = nullptr;
         std::map<phy_uuid::UUID, PxMaterial*> mat;
         PxVec3 gravity;
-
-        PxControllerManager* control_manager; // character controller
 
         std::map<phy_uuid::UUID, std::size_t> all_objects; // store all the index of the objects (lookups for keys / check if empty)
 
@@ -211,12 +222,17 @@ namespace myPhysx {
         
         std::vector<PxVec3> m_meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) }; // vector to store the mesh vertices
 
+
+        // map of existing physics objects that are created
+        std::unordered_map<phy_uuid::UUID, PhysicsObject> m_latestPhysicsObjects{};
+
     public:
 
         // SCENE
-        PhysxWorld(PxVec3 gravity);
+        PhysxWorld(PxVec3 gravity = PxVec3(0.0f, -9.81f, 0.0f));
         ~PhysxWorld();
         void updateScene(float dt);
+        void updateInternal();
 
         // GRAVITY
         PxVec3 getWorldGravity() const;
@@ -228,12 +244,15 @@ namespace myPhysx {
 
         // DUPLICATE OBJECT
         PhysicsObject duplicateObject(phy_uuid::UUID id);
-        void setAllOldData(PhysicsObject& physicsObj, PhysxObject& iniObj, size_t index);
+        //void setAllOldData(PhysicsObject& physicsObj, PhysxObject& iniObj, size_t index);
 
         // MAP OF OBJECTS
         std::map<phy_uuid::UUID, std::size_t>* getAllObject();
-        bool hasObject(phy_uuid::UUID id);
+        bool hasObject(phy_uuid::UUID id) const;
 
+        // SWEEP
+        RaycastHit sweep(phy_uuid::UUID id, PxVec3 direction, PxReal distance = PX_MAX_SWEEP_DISTANCE);
+        
         // RAYCAST
         RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance);
         RaycastHit raycast(PxVec3 origin, PxVec3 direction, PxReal distance, std::uint32_t filter /*= FilterGroup::All*/);
@@ -250,8 +269,30 @@ namespace myPhysx {
         std::queue<ContactManifold>* getCollisionData(); // function to retrieve the collision queue data
         void clearCollisionData(); // function to reset the collision queue data
 
+        // NEW KEY FUNCTIONS!
+        std::unordered_map<phy_uuid::UUID, PhysicsObject> retrieveCurrentObjects() const;
+        void submitUpdatedObjects(std::vector<PhysicsObject> updatedObjects);
+
+        void submitPhysicsCommand(std::vector<PhysicsCommand> physicsCommand);
+
+        // helper functions
+        void retrieveOldData(PhysicsObject& physics_Obj, const PhysxObject& init_Obj) const;
+
+        template<typename Type>
+        void retrievePosOri(PhysicsObject& physics_Obj, Type data) const;
+
+        void setAllData(PhysicsObject const& updatedPhysicsObj, PhysxObject& underlying_Obj, bool duplicate);
+
+        void setShape(PhysicsObject const& updated_Obj, PhysxObject& underlying_Obj, PxRigidActor* underlying_rigidbody, bool duplicate);
+
+        void setForce(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
+
+        void setTorque(PhysxObject& underlying_Obj, PhysicsCommand& command_Obj);
+    
+        PxConvexMesh* createConvexMesh(std::vector<PxVec3> vert);
     };
 
+    // This should be the interface object that others using the physics system will use.
     // associated to each object in the physics world (me store)
     struct PhysxObject {
 
@@ -262,7 +303,9 @@ namespace myPhysx {
         PhysxObject& operator=(PhysxObject&& object) = default;
 
         std::unique_ptr<phy_uuid::UUID> id = nullptr;
-        phy_uuid::UUID matID = 0;
+
+        PxMaterial* m_material = nullptr; 
+        //phy_uuid::UUID matID = 0;
 
         // shape
         PxShape* m_shape = nullptr;
@@ -270,108 +313,72 @@ namespace myPhysx {
 
         // ensure at least static or dynamic is init
         RigidBody rb{};
-        rigid rigid_type = rigid::none;
+        rigid rigid_type = rigid::rstatic;
 
         // lock and unlock pos/rot axis
         LockingAxis lockPositionAxis{};
         LockingAxis lockRotationAxis{};
 
         bool is_trigger = false;
-        bool gravity_enabled = true; // static should be false
+        bool gravity_enabled = false; // static should be false
         bool is_kinematic = false;
         bool is_collider = true;
 
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;
-        std::uint32_t filterOut = FilterGroup::Zero;
+        std::uint32_t filterOut = FilterGroup::All;
 
-        std::vector<PxVec3> meshVertices{ PxVec3(0,0,0),PxVec3(0,0,0),PxVec3(0,0,0) };
-        //std::vector<PxVec3> meshVertices{ PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1) };
+        bool changeVertices = false;
+        PxVec3 meshScale = PxVec3(1, 1, 1);
+        std::vector<PxVec3> uploadVertices{};
+        std::vector<PxVec3> meshVertices{};
     };
 
     struct PhysicsObject { // you store
 
         phy_uuid::UUID id;
-        PhysxWorld* world;
 
-        // ALL HERE NO NEED CHECK WHETHER THIS OBJECT CONTAINS INSIDE THE WORLD
+        // NEW ADDED
+        Material material = Material{.4f,.2f,.0f};
 
-        // GETTERS
-        LockingAxis getLockPositionAxis() const;
-        LockingAxis getLockRotationAxis() const;
-        Material getMaterial() const;
-        PxVec3 getposition() const;
-        PxQuat getOrientation() const;
+        PxVec3 position = {0,0,0};
+        PxQuat orientation = {0,0,0,1};
 
-        PxReal getMass() const;
-        PxReal getInvMass() const;
-        PxReal getAngularDamping() const;
-        PxVec3 getAngularVelocity() const;
-        PxReal getLinearDamping() const;
-        PxVec3 getLinearVelocity() const;
+        PxReal mass = 0, invmass = 0;
+        PxReal linearDamping = 0.00, angularDamping = 0.00;
 
-        bool isTrigger() const;
-        bool isGravityEnabled() const;
-        bool isKinematic() const;
-        bool isColliderEnabled() const;
+        PxVec3 linearVel = { 0,0,0 }, angularVel = { 0,0,0 };
 
-        std::uint32_t getFilterIn() const;
-        std::uint32_t getFilterOut() const;
+        shape shape_type = shape::none;
 
-        // SETTERS
-        void setRigidType(rigid type);
-        void setMaterial(Material material);
-        void setPosOrientation(PxVec3 pos, PxQuat quat);
+        PxBoxGeometry box = { 0.5, 0.5, 0.5 };
+        PxSphereGeometry sphere = { 0.5 };
+        PxPlaneGeometry plane{};
+        PxCapsuleGeometry capsule = { 0.5, 1.0 };
+        PxConvexMeshGeometry convex{};
 
-        void setMass(PxReal mass);
-        void setMassSpaceInertia(PxVec3 mass);
-        void setAngularDamping(PxReal angularDamping);
-        void setAngularVelocity(PxVec3 angularVelocity);
-        void setLinearDamping(PxReal linearDamping);
-        void setLinearVelocity(PxVec3 linearVelocity);
+        rigid rigid_type = rigid::rstatic;
 
-        void enableGravity(bool enable);
-        void enableKinematic(bool enable);
-        void enableCollider(bool enable);
+        // lock and unlock pos/rot axis
+        LockingAxis lockPositionAxis{};
+        LockingAxis lockRotationAxis{};
 
-        // AXIS LOCKING
-        void lockPositionX(bool lock);
-        void lockPositionY(bool lock);
-        void lockPositionZ(bool lock);
+        bool is_trigger = false;
+        bool gravity_enabled = false; // static should be false
+        bool is_kinematic = false;
+        bool is_collider = true;
 
-        void lockRotationX(bool lock);
-        void lockRotationY(bool lock);
-        void lockRotationZ(bool lock);
+        // Filtering
+        std::uint32_t filterIn = FilterGroup::Zero;
+        std::uint32_t filterOut = FilterGroup::All;
 
-        // TRIGGERS
-        void setTriggerShape(bool trigger);
-        
-        // FORCE
-        void addForce(PxVec3 f_amount, force f);
-        void addTorque(PxVec3 f_amount, force f);
-
-        // set default value for each type of shape & can change shape too
-        template<typename Type>
-        void reAttachShape(rigid rigidType, Type data);
-
-        void setShape(shape shape);
-        void removeShape();
-
-        // change each individual property based on its shape
-        void setBoxProperty(float halfextent_width, float halfextent_height, float halfextent_depth);
-        void setSphereProperty(float radius);
-        void setCapsuleProperty(float radius, float halfHeight);
-        void setConvexProperty(std::vector<PxVec3> vert, PxVec3 scale);
-        //void setPlaneProperty(float radius);
-
-        void storeMeshVertices(std::vector<PxVec3> vert);
-        PxConvexMesh* createConvexMesh(std::vector<PxVec3> vert); // testing
-        std::vector<PxVec3> getAllMeshVertices();
-
-        // Set filter in and out
-        void setFiltering(std::uint32_t filterIn, std::uint32_t filterOut);
+        bool changeVertices = false;
+        PxVec3 meshScale = PxVec3(1, 1, 1);
+        std::vector<PxVec3> uploadVertices{};
+        std::vector<PxVec3> meshVertices{};
     };
 
+    static constexpr std::size_t sizeofPhysicsObject = sizeof(PhysicsObject);
 
     // Physx visual degguer
     class PVD {
