@@ -52,14 +52,15 @@ void Project::LoadProject(std::filesystem::path& config)
 	//load assets here
 	std::filesystem::path hard_assetfolderpath = GetAssetFolder();
 	s_AssetManager = std::make_shared<oo::AssetManager>(hard_assetfolderpath);
-	for (auto& it : s_AssetManager->GetAssetsByType(oo::AssetInfo::Type::Animation))
+	s_AssetManager->GetOrLoadDirectory(".", true);
+	/*for (auto& it : s_AssetManager->GetAssetsByType(oo::AssetInfo::Type::Animation))
 	{
 		it.Reload();
 	}
 	for (auto& it : s_AssetManager->GetAssetsByType(oo::AssetInfo::Type::AnimationTree))
 	{
 		it.Reload();
-	}
+	}*/
 
     // create/load scripting stuff
 #ifdef OO_EDITOR
