@@ -125,10 +125,13 @@ namespace oo
 
         void shutdown()
         {
+#ifndef OO_END_PRODUCT
             s_coreLogger->dump_backtrace();
+#endif
             s_coreLogger.reset();
-            
+#ifndef OO_END_PRODUCT            
             s_clientLogger->dump_backtrace();
+#endif
             s_clientLogger.reset();
             
             ShutdownDebugLogger();
@@ -138,8 +141,10 @@ namespace oo
 
         void ShutdownDebugLogger()
         {
+#ifndef OO_END_PRODUCT            
             s_debuggerLogger->dump_backtrace();
             s_debuggerLogger.reset();
+#endif
         }
 
     }
