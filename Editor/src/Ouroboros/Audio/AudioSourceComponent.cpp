@@ -122,7 +122,7 @@ namespace oo
     void oo::AudioSourceComponent::SetLoopBegin(unsigned int t)
     {
         loopBegin = t;
-        if (!channel)
+        if (!channel || loopEnd <= t)
             return;
         FMOD_ERR_HAND(channel->setLoopPoints(t, FMOD_TIMEUNIT_MS, loopEnd, FMOD_TIMEUNIT_MS));
     }
@@ -130,7 +130,7 @@ namespace oo
     void oo::AudioSourceComponent::SetLoopEnd(unsigned int t)
     {
         loopEnd = t;
-        if (!channel)
+        if (!channel || t <= loopBegin)
             return;
         FMOD_ERR_HAND(channel->setLoopPoints(loopBegin, FMOD_TIMEUNIT_MS, t, FMOD_TIMEUNIT_MS));
     }

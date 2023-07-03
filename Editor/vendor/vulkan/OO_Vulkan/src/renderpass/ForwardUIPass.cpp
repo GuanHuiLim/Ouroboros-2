@@ -105,7 +105,7 @@ void ForwardUIPass::Draw()
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 
-	//assert(vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout == VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+	//assert(vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	oGFX::vkutils::tools::insertImageMemoryBarrier(
 		cmdlist,
 		vr.renderTargets[vr.renderTargetInUseID].texture.image,

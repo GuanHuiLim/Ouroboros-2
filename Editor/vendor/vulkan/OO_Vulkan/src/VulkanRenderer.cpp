@@ -445,7 +445,8 @@ void VulkanRenderer::CreateDefaultRenderpass()
 	//to give optimal use for certain operations
 	colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //image data layout before render pass starts
 	//colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
-	colourAttachment.finalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL; //image data layout aftet render pass ( to change to)
+	colourAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; //image data layout aftet render pass ( to change to)
+
 	
 	// todo editor??
 	//colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //image data layout aftet render pass ( to change to)
@@ -1600,9 +1601,14 @@ void VulkanRenderer::InitImGUI()
 	attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	//attachment.initialLayout = m_swapchain.swapChainImages[swapchainIdx].currentLayout;
 	attachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	// TODO: make sure we set the previous renderpass to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
 	// since this will be the final pass (before presentation) instead
+#if OO_END_PRODUCT
+	attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; //image data layout aftet render pass ( to change to)
+#else
+#endif // OO_END_PRODUCT
 	attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // final layout for presentation.
 
 	VkAttachmentReference color_attachment = {};
@@ -1767,7 +1773,7 @@ void VulkanRenderer::DrawGUI()
 	VkRenderPassBeginInfo GUIpassInfo = {};
 	GUIpassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	GUIpassInfo.renderPass  = m_imguiConfig.renderPass;
-	GUIpassInfo.framebuffer = m_imguiConfig.buffers[getFrame()];
+	GUIpassInfo.framebuffer = m_imguiConfig.buffers[swapchainIdx];
 	GUIpassInfo.renderArea = { {0, 0}, {m_swapchain.swapChainExtent}};
 
     const VkCommandBuffer cmdlist = commandBuffers[getFrame()];
@@ -1775,6 +1781,10 @@ void VulkanRenderer::DrawGUI()
 	vkCmdBeginRenderPass(cmdlist, &GUIpassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdlist);
 	vkCmdEndRenderPass(cmdlist);
+
+	m_swapchain.swapChainImages[swapchainIdx].currentLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	//std::cout << currentFrame << " DrawGui " << std::to_string(swapchainIdx) <<" " 
+	//	<< oGFX::vkutils::tools::VkImageLayoutString(m_swapchain.swapChainImages[swapchainIdx].currentLayout) << std::endl;
 }
 
 void VulkanRenderer::ImguiSoftDestroy()
@@ -1843,7 +1853,7 @@ void VulkanRenderer::RestartImgui()
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.DescriptorPool = m_imguiConfig.descriptorPools;
 	init_info.Allocator = nullptr;
-	init_info.MinImageCount = m_swapchain.minImageCount;
+	init_info.MinImageCount = m_swapchain.minImageCount+1;
 	init_info.ImageCount = static_cast<uint32_t>(m_swapchain.swapChainImages.size());
 	init_info.CheckVkResultFn = VK_NULL_HANDLE; // can be used to handle the error checking
 	init_info.CheckVkResultFn = checkresult; // can be used to handle the error checking
@@ -2214,10 +2224,12 @@ void VulkanRenderer::BeginDraw()
 {
 	PROFILE_SCOPED();
 
+	//vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, UINT64_MAX);
+
 	//wait for given fence to signal from last draw before continuing
-	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max()));
+	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, std::numeric_limits<uint64_t>::max()));
 	//mainually reset fences
-	VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[currentFrame]));
+	VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[getFrame()]));
 
 	{
 		{
@@ -2227,13 +2239,17 @@ void VulkanRenderer::BeginDraw()
 			// -- GET NEXT IMAGE
 			//get  index of next image to be drawn to , and signal semaphore when ready to be drawn to
 			VkResult res = vkAcquireNextImageKHR(m_device.logicalDevice, m_swapchain.swapchain, std::numeric_limits<uint64_t>::max(),
-			    presentSemaphore[currentFrame], VK_NULL_HANDLE, &swapchainIdx);
+			    presentSemaphore[getFrame()], VK_NULL_HANDLE, &swapchainIdx);
 			if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR /*|| WINDOW_RESIZED*/)
 			{
 				resizeSwapchain = true;
 				m_prepared = false;
 			}
 		}
+
+
+		m_swapchain.swapChainImages[swapchainIdx].currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		//std::cout << currentFrame << " Setting " << std::to_string(swapchainIdx) <<" " << oGFX::vkutils::tools::VkImageLayoutString(m_swapchain.swapChainImages[swapchainIdx].currentLayout) << std::endl;
 
 		DelayedDeleter::get()->Update();
 		descAllocs[getFrame()].ResetPools();
@@ -2318,13 +2334,13 @@ void VulkanRenderer::RenderFrame()
 		{
 			if (getFrame())
 			{
-				std::string str("CommandListEven " + std::to_string(currentFrame));
+				std::string str("CommandListEven " + std::to_string(getFrame()));
 				PROFILE_GPU_EVENT( "CommandListEven");
 				RenderFunc(shouldRunDebugDraw);
 			}
 			else
 			{
-				std::string str("CommandListOdd " + std::to_string(currentFrame));
+				std::string str("CommandListOdd " + std::to_string(getFrame()));
 				PROFILE_GPU_EVENT( "CommandListOdd");
 				RenderFunc(shouldRunDebugDraw);
 				//std::this_thread::sleep_for(std::chrono::milliseconds(16));
@@ -2385,7 +2401,8 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 
 		++renderIteration;
 	}
-	auto& dst = m_swapchain.swapChainImages[getFrame()];
+	auto& dst = m_swapchain.swapChainImages[swapchainIdx];
+	//std::cout << currentFrame << " Func " << std::to_string(swapchainIdx) <<" " << oGFX::vkutils::tools::VkImageLayoutString(dst.currentLayout) << std::endl;
 	if (currWorld->numCameras > 1)
 	{
 		// TODO: Very bad pls fix
@@ -2396,14 +2413,14 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 
 		auto nextID = currWorld->targetIDs[0];
 		auto& nextTexture = renderTargets[nextID].texture;
-		FullscreenBlit(commandBuffers[getFrame()], nextTexture, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+		FullscreenBlit(commandBuffers[getFrame()], nextTexture, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	}
 	else
 	{
 		auto thisID = currWorld->targetIDs[0];
 		auto& texture = renderTargets[thisID].texture;
-		FullscreenBlit(commandBuffers[getFrame()], texture, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+		FullscreenBlit(commandBuffers[getFrame()], texture, VK_IMAGE_LAYOUT_GENERAL, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	}
 	// only blit main framebuffer
 }
@@ -2413,6 +2430,18 @@ void VulkanRenderer::Present()
 
 	PROFILE_SCOPED();
 
+	//	std::cout << currentFrame << " Present " << std::to_string(swapchainIdx) 
+	//		<<" " << oGFX::vkutils::tools::VkImageLayoutString(m_swapchain.swapChainImages[swapchainIdx].currentLayout) << std::endl;
+	if (m_swapchain.swapChainImages[swapchainIdx].currentLayout != VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+	{
+		std::cout << currentFrame << " Transition to present.." << std::endl;
+		vkutils::TransitionImage(commandBuffers[getFrame()], m_swapchain.swapChainImages[swapchainIdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	}
+#if OO_END_PRODUCT
+#else
+
+#endif // OO_END_PRODUCT
+	
 	//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[swapchainImageIndex]);
 	//stop recording to command buffer
 	VkResult result = vkEndCommandBuffer(commandBuffers[getFrame()]);
@@ -2421,6 +2450,9 @@ void VulkanRenderer::Present()
 		throw std::runtime_error("Failed to stop recording a Command Buffer!");
 	}
 
+	
+
+
 	//2. Submit command buffer to queue for execution, make sure it waits for image to be signalled as available before drawing
 	//		and signals when it has finished rendering
 	// --SUBMIT COMMAND BUFFER TO RENDER
@@ -2428,12 +2460,12 @@ void VulkanRenderer::Present()
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1; //number of semaphores to wait on
-	submitInfo.pWaitSemaphores = &presentSemaphore[currentFrame]; //list of semaphores to wait on
+	submitInfo.pWaitSemaphores = &presentSemaphore[getFrame()]; //list of semaphores to wait on
 	VkPipelineStageFlags waitStages[] = {
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
 	};
 
-	std::vector <VkSemaphore> frameSemaphores = { renderSemaphore[currentFrame],
+	std::vector <VkSemaphore> frameSemaphores = { renderSemaphore[getFrame()],
 	};
 
 	submitInfo.pWaitDstStageMask = waitStages; //stages to check semapheres at
@@ -2445,20 +2477,20 @@ void VulkanRenderer::Present()
 																				//submit command buffer to queue
 	{
 		PROFILE_SCOPED("SubmitQueue")
-		result = vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, drawFences[currentFrame]);
+		result = vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, drawFences[getFrame()]);
 		if (result != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to submit command buffer to queue!");
 		}
 	}
 
-	auto present = std::min(1u, currentFrame - 1u);
+	auto present = std::min(1u, getFrame() - 1u);
 	//3. present image t oscreen when it has signalled finished rendering
 	// -- PRESENT RENDERED IMAGE TO SCREEN --
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &renderSemaphore[currentFrame];	//semaphores to wait on
+	presentInfo.pWaitSemaphores = &renderSemaphore[getFrame()];	//semaphores to wait on
 	presentInfo.swapchainCount = 1;					//number of swapchains to present to
 	presentInfo.pSwapchains = &m_swapchain.swapchain;			//swapchains to present images to
 	presentInfo.pImageIndices = &swapchainIdx;		//index of images in swapchains to present
@@ -2485,9 +2517,8 @@ void VulkanRenderer::Present()
 		std::cout << e.what();
 	}
 	//get next frame (use % MAX_FRAME_DRAWS to keep value below max frames)
-	currentFrame = (currentFrame + 1) % MAX_FRAME_DRAWS;
-
-	vkWaitForFences(m_device.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, UINT64_MAX);
+	//currentFrame = (currentFrame + 1) % MAX_FRAME_DRAWS;
+	++currentFrame;
 }
 
 bool VulkanRenderer::ResizeSwapchain()
@@ -2737,8 +2768,8 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 #endif
 
 
-	ModelFileResource* modelFile = new ModelFileResource;
-	modelFile->fileName = file;
+	ModelFileResource* modelFile = new ModelFileResource(file);
+	//modelFile->fileName = file;
 
 	//auto& mdl = [&]()-> gfxModel& {
 	//	std::scoped_lock(g_mut_globalModels);
@@ -3164,6 +3195,7 @@ ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
 
 	if (model == nullptr)
 	{
+		std::scoped_lock s{ g_mut_globalModels };
 		// this is a file-less object, generate a model for it
 		index = static_cast<uint32_t>(g_globalModels.size());
 		g_globalModels.emplace_back(gfxModel());
@@ -3843,8 +3875,8 @@ void VulkanRenderer::InitDefaultPrimatives()
 
 ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)
 {
-	std::string s("Curr " + std::to_string(g_imguiIDs.size()) + " Access " + std::to_string(textureID) +"\n");
-	std::cout << s;
+	//std::string s("Curr " + std::to_string(g_imguiIDs.size()) + " Access " + std::to_string(textureID) +"\n");
+	//std::cout << s;
 	return g_imguiIDs[textureID];
 }
 

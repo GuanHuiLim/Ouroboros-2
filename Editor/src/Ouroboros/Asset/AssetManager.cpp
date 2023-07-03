@@ -226,7 +226,9 @@ namespace oo
         : root{ root }
     {
         EventManager::Subscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
+#if not OO_END_PRODUCT
         EventManager::Subscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
+#endif
         for (int i = 0; i < static_cast<int>(AssetInfo::Type::_COUNT); ++i)
             store.byType.emplace(static_cast<AssetInfo::Type>(i), AssetInfoMap());
         GetDirectory(root, true);
@@ -234,7 +236,9 @@ namespace oo
 
     AssetManager::~AssetManager()
     {
+#if not OO_END_PRODUCT
         EventManager::Unsubscribe<AssetManager, WindowFocusEvent>(this, &AssetManager::windowFocusHandler);
+#endif
         EventManager::Unsubscribe<AssetManager, FileWatchEvent>(this, &AssetManager::watchFiles);
         store.clear();
     }

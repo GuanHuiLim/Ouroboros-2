@@ -76,10 +76,13 @@ void DeferredCompositionRenderpass::Draw()
 	renderPassBeginInfo.pClearValues = clearValues.data();                               //list of clear values
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
+	auto tex = &vr.renderTargets[vr.renderTargetInUseID].texture;
+	auto depth = &vr.renderTargets[vr.renderTargetInUseID].depth;
+
 	VkFramebuffer currentFB;
 	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].texture)
-		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].depth)
+		.BindImage(tex)
+		.BindImage(depth)
 		.Build(currentFB,vr.renderPass_HDR);
 	renderPassBeginInfo.framebuffer = currentFB;
 

@@ -89,6 +89,8 @@ struct CPUSkeletonInstance
 #define MAX_SUBMESH 64 
 struct ModelFileResource
 {
+    ModelFileResource();
+    ModelFileResource(std::string n);
     ~ModelFileResource();
 
     std::string fileName;

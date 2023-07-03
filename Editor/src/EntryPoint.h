@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 
     #ifdef OO_PRODUCTION
     // destroy and hide console 
-    FreeConsole();
+    //FreeConsole();
     #endif
 
 
