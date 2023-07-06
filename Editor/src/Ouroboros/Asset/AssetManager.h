@@ -98,7 +98,7 @@ namespace oo
         {
             bool empty() const;
             void clear();
-            AssetInfoPtr emplace(const AssetID& id, const AssetInfo& info);
+            //AssetInfoPtr emplace(const AssetID& id, const AssetInfo& info);
             AssetInfoPtr emplace(const AssetID& id, AssetInfoPtr ptr);
             void erase(const AssetID& id);
             AssetInfoPtr& at(const AssetID& id);
@@ -117,12 +117,12 @@ namespace oo
 
         struct LoadProgress
         {
-            LoadProgress(size_t total) : loadedCount{ 0 }, totalCount{ total }{};
+            LoadProgress() : loadedCount{ 0 }, totalCount{ 0 }{}
             //~LoadProgress() { progressThread.join(); }
             std::atomic<size_t> loadedCount;
             std::atomic<size_t> totalCount;
             std::thread progressThread;
-            double percent() const { return static_cast<double>(loadedCount) * 100 / totalCount; }
+            double percent() const { return totalCount != 0 ? (static_cast<double>(loadedCount) * 100 / totalCount) : 100; }
         };
 
         using LoadProgressPtr = std::shared_ptr<LoadProgress>;

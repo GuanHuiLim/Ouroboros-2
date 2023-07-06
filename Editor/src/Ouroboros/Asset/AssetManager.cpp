@@ -31,15 +31,25 @@ namespace
         return path.extension().string() == oo::Asset::EXT_META;
     }
 
-    void loadAsync(const oo::AssetManager& am, const oo::AssetID& id)
+    void loadProgress(const oo::AssetManager& am, std::weak_ptr<oo::AssetManager::LoadProgress> lpptr, std::vector<oo::AssetID> ids)
     {
-        oo::Asset asset = am.Get(id);
-        if (!asset.IsDataLoaded())
-            asset.Reload();
-    }
+        std::mutex loadMutex;
+        auto loadAsync = [&am, &loadMutex](const oo::AssetID& id)
+        {
+            std::scoped_lock lock{ loadMutex };
+            oo::Asset asset = am.Get(id);
+            if (!asset.IsDataLoaded())
+                asset.Reload();
+        };
 
-    void loadProgress(const std::vector<std::future<void>>& futures, std::weak_ptr<oo::AssetManager::LoadProgress> lpptr)
-    {
+        // Start async functions
+        std::vector<std::future<void>> futures;
+        for (const oo::AssetID& id : ids)
+        {
+            futures.emplace_back(std::async(std::launch::async, loadAsync, id));
+        }
+
+        // Progress loop
         if (auto sp = lpptr.lock())
         {
             while (sp->loadedCount < sp->totalCount)
@@ -147,10 +157,10 @@ namespace oo
         byType.clear();
     }
 
-    AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const AssetInfo& info)
+    /*AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, const AssetInfo& info)
     {
         return emplace(id, std::make_shared<AssetInfo>(info));
-    }
+    }*/
 
     AssetManager::AssetInfoPtr AssetManager::AssetStore::emplace(const AssetID& id, AssetInfoPtr ptr)
     {
@@ -258,21 +268,10 @@ namespace oo
 
     AssetManager::LoadProgressPtr AssetManager::LoadMultipleAsync(const std::vector<AssetID>& ids)
     {
-        // Start async functions
-        std::vector<std::future<void>> futures;
-        for (const AssetID& id : ids)
-        {
-            futures.emplace_back(std::async(std::launch::async, &loadAsync, std::cref(*this), id));
-        }
-
         // Create progress tracker
-        LoadProgressPtr lpptr = std::make_shared<LoadProgress>(futures.size());
-        lpptr->progressThread = std::thread(loadProgress, std::cref(futures), lpptr);
-        for (auto& future : futures)
-        {
-            future.wait();
-        }
-        lpptr->progressThread.join();
+        LoadProgressPtr lpptr = std::make_shared<LoadProgress>();
+        lpptr->progressThread = std::thread(loadProgress, std::cref(*this), lpptr, ids);
+        lpptr->progressThread.detach();
         return lpptr;
     }
 
@@ -500,7 +499,8 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
                     store.tree.erase(FP_OLD);
                     store.at(meta.id)->contentPath = FP;
                     store.at(meta.id)->metaPath = fpMeta;
-                    store.at(meta.id)->Reload();
+                    if (store.at(meta.id)->isDataLoaded)
+                        store.at(meta.id)->Reload();
                     store.tree.insert(FP);
                     //LOG_INFO("Move {0}", FP.filename());
                 }
@@ -510,7 +510,8 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
                     store.at(meta.id)->contentPath = FP;
                     store.at(meta.id)->metaPath = fpMeta;
                     store.at(meta.id)->timeLoaded = t;
-                    store.at(meta.id)->Reload();
+                    if (store.at(meta.id)->isDataLoaded)
+                        store.at(meta.id)->Reload();
                     //LOG_INFO("Modified asset {0}", FP.filename());
                 }
             }
@@ -593,7 +594,7 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
         //LOG_INFO("Indexed asset {0}", fp.filename());
         std::lock_guard<std::mutex> guard(storeMutex);
 
-        AssetInfoPtr info = std::make_shared<AssetInfo>();
+        auto info = std::make_shared<AssetInfo>();
         info->id = id;
         info->contentPath = std::filesystem::canonical(fp);
         info->metaPath = std::filesystem::canonical(fp); info->metaPath += Asset::EXT_META;

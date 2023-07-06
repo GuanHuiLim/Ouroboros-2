@@ -81,8 +81,8 @@ namespace oo
 
     void AssetInfo::Reload()
     {
-        std::string s("Reloading " + std::to_string(this->id) + '\n');
-        std::cout << s;
+        /*std::string s("Reloading " + std::to_string(this->id) + '\n');
+        std::cout << s;*/
         Reload(GetType());
     }
 
@@ -98,9 +98,11 @@ namespace oo
                 // Load texture
                 onAssetCreate = [](AssetInfo& self)
                 {
+                    std::scoped_lock lock{ self.accessMutex };
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
                     auto tid = vr->CreateTexture(self.contentPath.string());
+                    self.data.reserve(2);
                     self.data.emplace_back(tid);
                     self.data.emplace_back(vr->GetImguiID(tid));
                 };
@@ -116,6 +118,7 @@ namespace oo
                 // Load texture
                 onAssetCreate = [](AssetInfo& self)
                 {
+                    std::scoped_lock lock{ self.accessMutex };
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
                     auto fp = std::shared_ptr<oGFX::Font>(vr->LoadFont(self.contentPath.string()));
@@ -129,10 +132,12 @@ namespace oo
                 // Load audio
                 onAssetCreate = [](AssetInfo& self)
                 {
+                    std::scoped_lock lock{ self.accessMutex };
                     self.data.emplace_back(audio::CreateSound(self.contentPath.string()));
                 };
                 onAssetDestroy = [](AssetInfo& self)
                 {
+                    std::scoped_lock lock{ self.accessMutex };
                     audio::FreeSound(self.GetData<oo::SoundID>());
                 };
                 break;
@@ -142,6 +147,7 @@ namespace oo
                 // Load model
                 onAssetCreate = [](AssetInfo& self)
                 {
+                    std::scoped_lock lock{ self.accessMutex };
                     auto vc = Application::Get().GetWindow().GetVulkanContext();
                     auto vr = vc->getRenderer();
                     auto sp = std::shared_ptr<ModelFileResource>(vr->LoadModelFromFile(self.contentPath.string()));
@@ -163,6 +169,7 @@ namespace oo
                 // Load animation
                 onAssetCreate = [](AssetInfo& self)
                 {
+                    std::scoped_lock lock{ self.accessMutex };
                     using namespace Anim;
                     Animation* anim = AnimationSystem::LoadAnimation(self.contentPath.string());
                     self.data.emplace_back(anim->name);

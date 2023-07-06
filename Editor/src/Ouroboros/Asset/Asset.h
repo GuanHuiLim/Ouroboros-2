@@ -18,6 +18,7 @@ Technology is prohibited.
 #include <filesystem>
 #include <future>
 #include <memory>
+#include <mutex>
 #include <typeinfo>
 #include <typeindex>
 #include <unordered_map>
@@ -89,6 +90,11 @@ namespace oo
         /* Constructors and Destructors                                                */
         /* --------------------------------------------------------------------------- */
 
+        AssetInfo() = default;
+        AssetInfo(const AssetInfo&) = delete;
+        AssetInfo(AssetInfo&&) = delete;
+        AssetInfo& operator=(const AssetInfo&) = delete;
+        AssetInfo& operator=(AssetInfo&&) = delete;
         ~AssetInfo();
 
         /* --------------------------------------------------------------------------- */
@@ -149,6 +155,7 @@ namespace oo
         std::vector<rttr::variant> data;
         Type type = Type::Text;
         bool isDataLoaded = false;
+        std::mutex accessMutex;
     };
 
     /// <summary>
