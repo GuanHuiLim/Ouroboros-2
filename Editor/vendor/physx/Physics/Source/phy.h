@@ -322,7 +322,7 @@ namespace myPhysx {
         bool is_trigger = false;
         bool gravity_enabled = false; // static should be false
         bool is_kinematic = false;
-        bool is_collider = true;
+        bool is_enabled = true;
 
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;
@@ -366,7 +366,7 @@ namespace myPhysx {
         bool is_trigger = false;
         bool gravity_enabled = false; // static should be false
         bool is_kinematic = false;
-        bool is_collider = true;
+        bool is_enabled = true;
 
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;

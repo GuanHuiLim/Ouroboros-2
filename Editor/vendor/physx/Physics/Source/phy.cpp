@@ -388,7 +388,7 @@ namespace myPhysx
                                                          is_trigger(other.is_trigger),
                                                          gravity_enabled(other.gravity_enabled),
                                                          is_kinematic(other.is_kinematic),
-                                                         is_collider(other.is_collider),
+                                                         is_enabled(other.is_enabled),
                                                          m_shape{nullptr},
                                                          rb {},
                                                          filterIn(other.filterIn),
@@ -823,7 +823,7 @@ namespace myPhysx
         physics_Obj.is_trigger = init_Obj.is_trigger;
         physics_Obj.gravity_enabled = init_Obj.gravity_enabled;
         physics_Obj.is_kinematic = init_Obj.is_kinematic;
-        physics_Obj.is_collider = init_Obj.is_collider;
+        physics_Obj.is_enabled = init_Obj.is_enabled;
 
         // FILTER
         physics_Obj.filterIn = init_Obj.filterIn;
@@ -973,17 +973,25 @@ namespace myPhysx
         }
 
         // COLLIDER | TRIGGER PROPERTIES
-        underlying_Obj.is_collider = updatedPhysicsObj.is_collider;
+        underlying_Obj.is_enabled = updatedPhysicsObj.is_enabled;
         underlying_Obj.is_trigger = updatedPhysicsObj.is_trigger;
 
         if (underlying_Obj.shape_type != shape::none)
         {
-            if (underlying_Obj.is_trigger)
-                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE);
-
-            if (!underlying_Obj.is_trigger && underlying_Obj.is_collider)
-                underlying_Obj.m_shape->setFlags(PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE);
+            PxShapeFlags finalFlags{ 0 };
+#if not defined OO_END_PRODUCT
+            finalFlags |= PxShapeFlag::eVISUALIZATION;
+#endif
+            if (underlying_Obj.is_enabled)
+            {
+                if (underlying_Obj.is_trigger)
+                    finalFlags |= PxShapeFlag::eTRIGGER_SHAPE;
+                else
+                    finalFlags |= PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE;
+            }
             
+            underlying_Obj.m_shape->setFlags(finalFlags);
+
             // FILTER (not sure need or not)
             if (underlying_Obj.filterIn != updatedPhysicsObj.filterIn || underlying_Obj.filterOut != updatedPhysicsObj.filterOut)
             {

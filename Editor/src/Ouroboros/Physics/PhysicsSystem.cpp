@@ -571,7 +571,7 @@ namespace oo
 
             needsUpdating.clear();
             needsUpdating.reserve(1024);
-            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+            static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
             m_world->for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
                 {
                     if (rb.IsDirty)
@@ -614,7 +614,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_NC(physics_update_physics_properties, tracy::Color::Brown)
-            static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
+            static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
         m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
