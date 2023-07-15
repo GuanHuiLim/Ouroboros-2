@@ -75,6 +75,7 @@ include "Editor/vendor/vulkan"
 include "Editor/vendor/scripting"
 include "Editor/vendor/scriptcore"
 include "Editor/vendor/discord"
+include "Editor/vendor/steam"
 group ""
 
 include "Editor"
