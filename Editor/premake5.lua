@@ -194,7 +194,7 @@ project "Editor"
             {"{COPY} \"%{AppDir}/imgui.ini\" \"" .. binApp .. "\""},
 			
 			-- steam sdk
-			{"{COPY} \"%{LibraryDir.discord}/steam_api64.dll\" \"" .. binApp .. "\"" },
+			{"{COPY} \"%{LibraryDir.steam}/steam_api64.dll\" \"" .. binApp .. "\"" },
 
         }
     
