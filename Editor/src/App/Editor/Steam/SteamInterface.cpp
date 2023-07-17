@@ -75,7 +75,7 @@ void SteamInterface::SetStats_INT(const char* API_NAME, int value)
 	updated_stats = true;
 	SteamUserStats()->SetStat(API_NAME, value);
 }
-void SteamInterface::SetStats_FLOAT(const char* API_NAME, int value)
+void SteamInterface::SetStats_FLOAT(const char* API_NAME, float value)
 {
 	updated_stats = true;
 	SteamUserStats()->SetStat(API_NAME, value);
