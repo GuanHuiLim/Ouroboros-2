@@ -20,6 +20,8 @@ Technology is prohibited.
 #include <SceneManagement/include/SceneManager.h>
 #include "Ouroboros/Scene/Scene.h"
 
+#include "Ouroboros/Asset/AssetManager.h"
+
 namespace oo
 {
     // Global stuff that transfers between scenes, go to ScriptSystem for scene specific stuff
@@ -35,6 +37,8 @@ namespace oo
         static std::vector<ScriptClassInfo> s_ScriptList;
         static std::vector<ScriptClassInfo> s_BeforeDefaultOrder;
         static std::vector<ScriptClassInfo> s_AfterDefaultOrder;
+
+        static std::vector<std::pair<ScriptDatabase::IntPtr, AssetManager::LoadProgressPtr>> s_sceneLoadingTrackers;
 
     public:
         /*********************************************************************************//*!
@@ -90,6 +94,26 @@ namespace oo
             if (scene_weak.expired())
             {
                 LOG_ERROR("scene with id ({0}) does not exist", sceneID);
+                ScriptEngine::ThrowNullException();
+            }
+            return std::dynamic_pointer_cast<Scene>(scene_weak.lock());
+        }
+
+        /*********************************************************************************//*!
+        \brief      Helper function used to get a scene by its name. This is mainly done
+                    in C++ functions meant for C# scripts to call, and has the added feature
+                    of throwing a C# null exception if a scene with the provided ID cannot be found
+
+        \param      name
+                the name of the requested scene
+        \return     a shared_ptr to the requested scene, if it is found
+        *//**********************************************************************************/
+        static inline std::shared_ptr<Scene> GetScene(std::string_view name)
+        {
+            std::weak_ptr scene_weak = s_SceneManager->GetScene(name);
+            if (scene_weak.expired())
+            {
+                LOG_ERROR("scene with name ({0}) does not exist", name);
                 ScriptEngine::ThrowNullException();
             }
             return std::dynamic_pointer_cast<Scene>(scene_weak.lock());
@@ -193,5 +217,8 @@ namespace oo
             ComponentDatabase::RegisterComponent(name_space, name, add, remove, has);
         }
 
+        static ScriptDatabase::IntPtr TrackLoadingProgress(AssetManager::LoadProgressPtr ptr);
+        static void UpdateLoadingProgress();
+        static void DeleteAllLoadingProgress();
     };
 }
