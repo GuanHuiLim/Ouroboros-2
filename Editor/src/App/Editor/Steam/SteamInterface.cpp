@@ -49,6 +49,16 @@ void SteamInterface::RequestStats()
 }
 void SteamInterface::SetAchivement(const char* API_NAME)
 {
+	// Is Steam loaded? If not we can't get stats.
+	if (NULL == SteamUserStats() || NULL == SteamUser())
+	{
+		return;
+	}
+	// Is the user logged on?  If not we can't get stats.
+	if (!SteamUser()->BLoggedOn())
+	{
+		return;
+	}
 	if (achivements_ready)
 	{
 		SteamUserStats()->SetAchievement(API_NAME);
@@ -60,23 +70,63 @@ void SteamInterface::SetAchivement(const char* API_NAME)
 }
 int SteamInterface::GetStat_INT(const char* API_NAME)
 {
+	// Is Steam loaded? If not we can't get stats.
+	if (NULL == SteamUserStats() || NULL == SteamUser())
+	{
+		return;
+	}
+	// Is the user logged on?  If not we can't get stats.
+	if (!SteamUser()->BLoggedOn())
+	{
+		return;
+	}
 	int value = 0;
 	SteamUserStats()->GetStat(API_NAME, &value);
 	return value;
 }
 float SteamInterface::GetStat_FLOAT(const char* API_NAME)
 {
+	// Is Steam loaded? If not we can't get stats.
+	if (NULL == SteamUserStats() || NULL == SteamUser())
+	{
+		return;
+	}
+	// Is the user logged on?  If not we can't get stats.
+	if (!SteamUser()->BLoggedOn())
+	{
+		return;
+	}
 	float value = 0;
 	SteamUserStats()->GetStat(API_NAME, &value);
 	return value;
 }
 void SteamInterface::SetStats_INT(const char* API_NAME, int value)
 {
+	// Is Steam loaded? If not we can't get stats.
+	if (NULL == SteamUserStats() || NULL == SteamUser())
+	{
+		return;
+	}
+	// Is the user logged on?  If not we can't get stats.
+	if (!SteamUser()->BLoggedOn())
+	{
+		return;
+	}
 	updated_stats = true;
 	SteamUserStats()->SetStat(API_NAME, value);
 }
 void SteamInterface::SetStats_FLOAT(const char* API_NAME, float value)
 {
+	// Is Steam loaded? If not we can't get stats.
+	if (NULL == SteamUserStats() || NULL == SteamUser())
+	{
+		return;
+	}
+	// Is the user logged on?  If not we can't get stats.
+	if (!SteamUser()->BLoggedOn())
+	{
+		return;
+	}
 	updated_stats = true;
 	SteamUserStats()->SetStat(API_NAME, value);
 }
