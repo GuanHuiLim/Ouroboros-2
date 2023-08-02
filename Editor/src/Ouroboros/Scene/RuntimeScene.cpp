@@ -110,7 +110,8 @@ namespace oo
         //
         //jobsystem::submit(phase_two, [&]() {
           TRACY_PROFILE_SCOPE(scripts_update);
-          GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+          //GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
+          GetWorld().Get_System<ScriptSystem>()->Update();
           TRACY_PROFILE_SCOPE_END();
         //    });
         //

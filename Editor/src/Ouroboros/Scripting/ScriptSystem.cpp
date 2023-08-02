@@ -121,6 +121,12 @@ namespace oo
         ASSERT(gameObject == nullptr);
         UpdateScriptFieldsWithInfo(uuid, gameObject->GetComponent<ScriptComponent>());
     }
+    
+    void ScriptSystem::Update()
+    {
+        ScriptManager::UpdateLoadingProgress();
+        InvokeForAllEnabled("Update");
+    }
 
     bool ScriptSystem::StopPlay()
     {
