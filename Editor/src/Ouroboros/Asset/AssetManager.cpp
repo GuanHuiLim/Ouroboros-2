@@ -52,6 +52,7 @@ namespace
         // Progress loop
         if (auto sp = lpptr.lock())
         {
+            sp->totalCount = futures.size();
             while (sp->loadedCount < sp->totalCount)
             {
                 std::this_thread::sleep_for(oo::AssetManager::LOAD_INTERVAL);

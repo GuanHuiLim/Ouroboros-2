@@ -71,6 +71,8 @@ public:
 	*//**********************************************************************************/
 	static void LoadScene(oo::Scene& scene);
 
+	static oo::AssetManager::LoadProgressPtr PreloadScene(const oo::Scene& scene);
+
 	static std::filesystem::path SavePrefab(std::shared_ptr<oo::GameObject> go, oo::Scene& scene);
 	static oo::UUID LoadPrefab(std::filesystem::path path,std::shared_ptr<oo::GameObject> go,oo::Scene & scene);
 
@@ -93,7 +95,7 @@ public:
 private:
 	//assets list
 	static void SaveAssetsList(const oo::Scene& scene);
-	static void LoadAssetsList(const oo::Scene& scene);
+	static oo::AssetManager::LoadProgressPtr LoadAssetsList(const oo::Scene& scene);
 
 	//saving
 	static void Saving(std::stack<scenenode::raw_pointer>& s , std::stack<scenenode::handle_type>& parents,oo::Scene& scene, rapidjson::Document& doc);

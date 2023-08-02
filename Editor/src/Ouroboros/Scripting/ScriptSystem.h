@@ -26,6 +26,8 @@ Technology is prohibited.
 #include "Ouroboros/Core/Events/ApplicationEvent.h"
 #include "Ouroboros/UI/UIRaycastComponent.h"
 
+#include "Ouroboros/Asset/AssetManager.h"
+
 namespace oo
 {
     // Scene specific script stuff, go to ScriptManager for global stuff that transfers between scenes
@@ -38,6 +40,7 @@ namespace oo
         bool StartPlay();
         void SetUpObject(oo::UUID uuid);
         void UpdateObjectFieldsWithInfo(oo::UUID uuid);
+        void Update();
         bool StopPlay();
         bool IsPlaying();
 

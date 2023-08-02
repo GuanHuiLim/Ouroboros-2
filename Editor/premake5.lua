@@ -69,6 +69,9 @@ project "Editor"
         "%{IncludeDir.tracy}",
 		--for optick
         "%{IncludeDir.optick}",
+		
+		--for steam
+		"%{IncludeDir.steam}",
     }
 
     -- library diretories
@@ -82,6 +85,7 @@ project "Editor"
         "%{LibraryDir.assimp}/Release",
         "%{LibraryDir.freetype}",
         "%{LibraryDir.fmod}",
+		"%{LibraryDir.steam}",
     }
 
     -- linking External libraries 
@@ -111,6 +115,8 @@ project "Editor"
         "assimp-vc142-mt",
         "freetype",
         "ImGui",
+		-- steam
+		"steam_api64",
     }
     
     -- Editor Project Level Disable Warning 
@@ -186,6 +192,10 @@ project "Editor"
             
             -- Copy Imgui.ini (for the time being because we need it for exe..)
             {"{COPY} \"%{AppDir}/imgui.ini\" \"" .. binApp .. "\""},
+			
+			-- steam sdk
+			{"{COPY} \"%{LibraryDir.steam}/steam_api64.dll\" \"" .. binApp .. "\"" },
+
         }
     
         -- if editor needs to link with any static/dynamic library regardless of debug/release/production
@@ -247,7 +257,7 @@ project "Editor"
 
             -- discord sdk
             {"{COPY} \"%{LibraryDir.discord}/discord_game_sdk.dll\" \"" .. binApp .. "\"" },
-            
+			            
         }
         
     -- Executable Specific
@@ -275,6 +285,8 @@ project "Editor"
             -- copy Debug DLLs
             {"{COPY} \"%{AppDir}/dlls/Debug/\" \"" .. binApp .. "\"" },
 			{"{COPY} \"%{AppDir}/engine_portable_debug.iss\" \"" .. binApp .. "\"" },
+			
+			
         }
 
         links

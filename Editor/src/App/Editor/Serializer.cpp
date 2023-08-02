@@ -158,7 +158,7 @@ void Serializer::SaveScene(oo::Scene& scene)
 void Serializer::LoadScene(oo::Scene& scene)
 {
 	//preload all assets
-	LoadAssetsList(scene);
+	//LoadAssetsList(scene);
 
 	std::ifstream ifs(scene.GetFilePath());
 	if (ifs.peek() == std::ifstream::traits_type::eof())
@@ -171,6 +171,11 @@ void Serializer::LoadScene(oo::Scene& scene)
 	doc.ParseStream(isw);
 	Loading(scene.GetRoot(),scene,doc);
 	ifs.close();
+}
+
+oo::AssetManager::LoadProgressPtr Serializer::PreloadScene(const oo::Scene& scene)
+{
+	return LoadAssetsList(scene);
 }
 
 std::filesystem::path Serializer::SavePrefab(std::shared_ptr<oo::GameObject> go , oo::Scene & scene)
@@ -392,7 +397,7 @@ void Serializer::SaveAssetsList(const oo::Scene& scene)
 	Serializer::m_SaveProperties.Reset();
 }
 
-void Serializer::LoadAssetsList(const oo::Scene& scene)
+oo::AssetManager::LoadProgressPtr Serializer::LoadAssetsList(const oo::Scene& scene)
 {
 	std::filesystem::path assetList = scene.GetFilePath();
 	assetList.replace_extension(Serializer::asset_fileExt);
@@ -402,7 +407,7 @@ void Serializer::LoadAssetsList(const oo::Scene& scene)
 	if (!ifs || ifs.peek() == std::ifstream::traits_type::eof())
 	{
 		WarningMessage::DisplayWarning(WarningMessage::DisplayType::DISPLAY_WARNING, "SLOW LOAD INITIATED");
-		return;
+		return nullptr;
 	}
 	rapidjson::IStreamWrapper isw(ifs);
 	rapidjson::Document doc;
@@ -418,9 +423,11 @@ void Serializer::LoadAssetsList(const oo::Scene& scene)
 		asset_ID.emplace_back(i->GetUint64());
 	}
 
-	Project::GetAssetManager()->LoadMultipleAsync(asset_ID);
+	oo::AssetManager::LoadProgressPtr loadPtr = Project::GetAssetManager()->LoadMultipleAsync(asset_ID);
 
 	ifs.close();
+
+	return loadPtr;
 }
 
 void Serializer::Saving(std::stack<scenenode::raw_pointer>& s, std::stack<scenenode::handle_type>& parents, oo::Scene& scene, rapidjson::Document& doc)

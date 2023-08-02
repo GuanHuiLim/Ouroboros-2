@@ -37,3 +37,5 @@ Technology is prohibited.
 
 #include "RectTransformAPI.h"
 #include "UIAPI.h"
+
+#include "SteamAPI.h"

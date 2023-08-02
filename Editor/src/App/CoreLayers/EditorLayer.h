@@ -33,6 +33,8 @@ Technology is prohibited.
 #if OO_EDITOR //not supporting discord on exe since we might have to integrate steam api
 #include "App/Editor/DiscordHelper.h"
 #endif
+// steam
+
 
 class EditorLayer final : public oo::Layer
 {
@@ -65,6 +67,7 @@ public:
         LOG_CRITICAL("Test Critical");*/
         ImGuiManager::s_scenemanager = &m_sceneManager;
         ImGuiManager::s_prefab_controller = &m_prefab_controller;
+		
     }
 
     virtual void OnAttach() override final;
@@ -73,4 +76,5 @@ public:
     // PROPERLY FOR IMGUI RENDERING TO TAKE PLACE
     virtual void OnUpdate() override final;
 
+	virtual void OnDetach() override final;
 };
