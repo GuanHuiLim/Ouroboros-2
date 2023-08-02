@@ -22,6 +22,8 @@ Technology is prohibited.
 
 #include "Ouroboros/Debug/MiniDumpHelper.h"
 
+#include "Accessibility.h"
+
 #include <Windows.h>
 // Hints enable Nvidia optimus on laptop systems
 extern "C" 
@@ -36,7 +38,6 @@ extern oo::Application* oo::CreateApplication(oo::CommandLineArgs args);
 int main(int argc, char** argv)
 {
     MiniDumpHelper::Init();
-
     __try
     {
 
@@ -73,6 +74,8 @@ int main(int argc, char** argv)
     }
     __except (MiniDumpHelper::DumpMiniDump(GetExceptionInformation()), EXCEPTION_EXECUTE_HANDLER)
     {
+        // Restore back when going to windowed or shutting down
+        oo::accessibility::allow_accessibility_shortcut_keys(true);
     }
 
 }

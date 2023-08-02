@@ -22,13 +22,18 @@ Technology is prohibited.
 #include <Physics/Source/phy.h>
 #include "Ouroboros/Audio/Audio.h"
 //#include <JobSystem/src/final/jobs.h>
+#include "Accessibility.h"
 
 namespace oo
 {
     namespace static_runtime
     {
+
         void init()
         {
+            // Save accessibility settings on initialization
+            accessibility::save_accessibility_settings();
+
             //jobsystem::initialize();
             log::init();
             LOG_CORE_INFO("Begin loading static lifetime objects");
@@ -45,6 +50,11 @@ namespace oo
             myPhysx::physx_system::shutdown();
             audio::ShutDown();
             //jobsystem::shutdown();
+
+            // Always Restore back when going to windowed or shutting down
+            accessibility::allow_accessibility_shortcut_keys(true);
         }
+
+        
     };
 }
