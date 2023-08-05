@@ -42,6 +42,9 @@ Technology is prohibited.
 #include "Events/MouseEvent.h"
 #include "Ouroboros/EventSystem/EventManager.h"
 
+// for accessibility access
+#include "Accessibility.h"
+
 namespace oo
 {
     static bool s_SDLInitialized = false;
@@ -521,6 +524,7 @@ namespace oo
     void WindowsWindow::SetFullScreen(bool fullscreen)
     {
         m_data.Fullscreen = fullscreen;
+        accessibility::allow_accessibility_shortcut_keys(!fullscreen);
         SDL_SetWindowFullscreen(m_window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);  // 0 means non full-screen
     }
 
