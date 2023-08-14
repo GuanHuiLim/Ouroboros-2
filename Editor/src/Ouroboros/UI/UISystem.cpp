@@ -309,14 +309,18 @@ namespace oo
         // Remember order of update matters! (both order between calls and order internally!)
 
         // Update canvas here. order does matter here. Assumes all rect transform has been updated already.
-        static Ecs::Query canvas_query = Ecs::make_query<GameObjectComponent, TransformComponent, UICanvasComponent, RectTransformComponent>();
-        m_world->parallel_for_each(canvas_query, [&](GameObjectComponent& goc, TransformComponent& tf, UICanvasComponent& canvas, RectTransformComponent& rectTransform)
+        static Ecs::Query canvas_query = Ecs::make_query<GameObjectComponent, TransformComponent, UIComponent, UICanvasComponent, RectTransformComponent>();
+        m_world->parallel_for_each(canvas_query, [&](GameObjectComponent& goc, TransformComponent& tf, UIComponent& uiComp, UICanvasComponent& canvas, RectTransformComponent& rectTransform)
             {
+
                 if (canvas.ScaleWithScreenSize)
                 {
                     auto windowSize = Application::Get().GetWindow().GetSize();
                     rectTransform.Size = { windowSize.first, windowSize.second };
                 }
+
+                auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                ui.SetScreenSpace(canvas.RenderingMode == UICanvasComponent::RenderMode::CanvasSpace);
 
                 // retrieve canvas gameobject
                 auto go = m_scene->FindWithInstanceID(goc.Id);
@@ -537,6 +541,7 @@ namespace oo
                         //mouseOutside = !Intersection2D::PointAABB(mouseScreenPoint, child.GetComponent<RectTransformComponent>().BoundingVolume);
                         break;
                     case UICanvasComponent::RenderMode::WorldSpace:
+                    case UICanvasComponent::RenderMode::CanvasSpace:
                         //Shoot a ray
                         auto obb = child.GetComponent<RectTransformComponent>().BoundingVolume;
                         mouseOutside = !intersection::RayOBB(mouseWorldRay, obb);

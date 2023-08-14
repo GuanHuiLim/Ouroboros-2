@@ -27,7 +27,8 @@ namespace oo
         registration::enumeration<UICanvasComponent::RenderMode>("Render Mode")
         (
             value("Overlay", UICanvasComponent::RenderMode::Overlay),
-            value("World Space", UICanvasComponent::RenderMode::WorldSpace)
+            value("World Space", UICanvasComponent::RenderMode::WorldSpace),
+            value("Canvas Space", UICanvasComponent::RenderMode::CanvasSpace)
         );
 
         registration::class_<UICanvasComponent>("UI Canvas")

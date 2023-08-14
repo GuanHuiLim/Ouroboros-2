@@ -25,6 +25,7 @@ namespace oo
         {
             Overlay,
             WorldSpace,
+            CanvasSpace,
         };
 
         //bool m_dirty;               // UI elements have changed, need to recalculate
