@@ -186,7 +186,8 @@ void ForwardUIPass::Draw()
 	
 	// bind depth ignore pass
 	cmd.BindPSO(pso_Forward_UI_NO_DEPTH);
-	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt));
+	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
+		, ScreenSpaceIndices, ScreenSpaceOffset);
 
 	vkCmdEndRenderPass(cmdlist);
 }
