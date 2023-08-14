@@ -25,12 +25,13 @@ namespace oo
         {
             Overlay,
             WorldSpace,
-            CanvasSpace,
+            //CanvasSpace,
         };
 
         //bool m_dirty;               // UI elements have changed, need to recalculate
         //bool m_hasChanged;          // UI elements have been recalculated, need to redraw
 
+        bool RenderOnTop = false;
         RenderMode RenderingMode = RenderMode::WorldSpace; // world space by default, overlay not supported yet
         //std::uint32_t Layer = 0;
         bool ScaleWithScreenSize = false;    // false by default.
