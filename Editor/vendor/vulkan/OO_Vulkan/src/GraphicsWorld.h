@@ -123,6 +123,8 @@ struct UIInstance
 
     void SetText(bool s);
     bool isText();
+    void SetScreenSpace(bool s);
+    bool isScreenSpace();
 
     void SetRenderEnabled(bool s);
     bool isRenderable();
