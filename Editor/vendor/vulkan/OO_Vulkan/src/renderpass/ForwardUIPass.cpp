@@ -171,15 +171,17 @@ void ForwardUIPass::Draw()
 	//cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.g_particleDatas[currFrame].getBufferPtr());
 	
 	auto &uivert = vr.batches.GetUIVertices();
-	const auto ScreenSpaceOffset = vr.batches.GetScreenSpaceUIOffset();
+	const auto ScreenSpaceVtxOffset = vr.batches.GetScreenSpaceUIOffset();
 
 	const auto instanceCnt = uivert.size() / 4;
-	//const auto indices =  instanceCnt* 6;
+	const auto indicesCnt =  instanceCnt* 6;
 
-	const auto ScreenSpaceCnt = instanceCnt - (ScreenSpaceOffset / 4);
+	const auto ScreenSpaceCnt = instanceCnt - (ScreenSpaceVtxOffset / 4);
 	const auto ScreenSpaceIndices = ScreenSpaceCnt * 6;
 	const auto WorldSpaceCnt = instanceCnt - ScreenSpaceCnt;
 	const auto WorldSpaceIndices = WorldSpaceCnt * 6;
+	const auto ScreenSpaceIdxOffset = WorldSpaceIndices;
+	const auto instanceOffset = instanceCnt - WorldSpaceCnt;
 	// do draw command here
 	cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), static_cast<uint32_t>(WorldSpaceCnt));
 	//cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer.getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer.size()));
@@ -187,7 +189,7 @@ void ForwardUIPass::Draw()
 	// bind depth ignore pass
 	cmd.BindPSO(pso_Forward_UI_NO_DEPTH);
 	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
-		, ScreenSpaceIndices, ScreenSpaceOffset);
+		, ScreenSpaceIdxOffset, 0, 0);
 
 	vkCmdEndRenderPass(cmdlist);
 }
