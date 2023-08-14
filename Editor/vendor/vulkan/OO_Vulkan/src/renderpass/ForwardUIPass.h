@@ -37,6 +37,7 @@ struct ForwardUIPass : public GfxRenderpass
 
 	//VkPushConstantRange pushConstantRange;
 	VkPipeline pso_Forward_UI{};
+	VkPipeline pso_Forward_UI_NO_DEPTH{};
 	
 private:
 	void SetupRenderpass();

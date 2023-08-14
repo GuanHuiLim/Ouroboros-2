@@ -171,11 +171,22 @@ void ForwardUIPass::Draw()
 	//cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.g_particleDatas[currFrame].getBufferPtr());
 	
 	auto &uivert = vr.batches.GetUIVertices();
+	const auto ScreenSpaceOffset = vr.batches.GetScreenSpaceUIOffset();
+
 	const auto instanceCnt = uivert.size() / 4;
-	const auto indices =  instanceCnt* 6;
+	//const auto indices =  instanceCnt* 6;
+
+	const auto ScreenSpaceCnt = instanceCnt - (ScreenSpaceOffset / 4);
+	const auto ScreenSpaceIndices = ScreenSpaceCnt * 6;
+	const auto WorldSpaceCnt = instanceCnt - ScreenSpaceCnt;
+	const auto WorldSpaceIndices = WorldSpaceCnt * 6;
 	// do draw command here
-	cmd.DrawIndexed(static_cast<uint32_t>(indices), static_cast<uint32_t>(instanceCnt));
+	cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), static_cast<uint32_t>(WorldSpaceCnt));
 	//cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer.getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer.size()));
+	
+	// bind depth ignore pass
+	cmd.BindPSO(pso_Forward_UI_NO_DEPTH);
+	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt));
 
 	vkCmdEndRenderPass(cmdlist);
 }
@@ -186,6 +197,7 @@ void ForwardUIPass::Shutdown()
 
 	renderpass_ForwardUI.destroy();
 	vkDestroyPipeline(device, pso_Forward_UI, nullptr);
+	vkDestroyPipeline(device, pso_Forward_UI_NO_DEPTH, nullptr);
 }
 
 void ForwardUIPass::SetupRenderpass()
@@ -377,6 +389,10 @@ void ForwardUIPass::CreatePipeline()
 
 	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_Forward_UI));
 	VK_NAME(m_device.logicalDevice, "forwardUIPSO", pso_Forward_UI);
+
+	depthStencilState.depthTestEnable = VK_FALSE;
+	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_Forward_UI_NO_DEPTH));
+	VK_NAME(m_device.logicalDevice, "forwardUIPSO_NO_DEPTH", pso_Forward_UI_NO_DEPTH);
 
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);
