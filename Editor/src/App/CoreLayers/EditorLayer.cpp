@@ -28,18 +28,18 @@ Technology is prohibited.
 #include "Ouroboros/Audio/Audio.h"
 
 #include <Ouroboros/TracyProfiling/OO_TracyProfiler.h>
-#include <App/Editor/Steam/SteamInterface.h>
+
 
 void EditorLayer::OnAttach()
 {
     ImGuiManager_Launcher::Create("project tracker", true, ImGuiWindowFlags_None, [this]() { this->m_tracker.Show(); });
-	SteamInterface::Init();
+	
 }
 
 void EditorLayer::OnUpdate()
 {
 	//steam
-	SteamInterface::Update();
+	
 	TRACY_PROFILE_SCOPE_NC(editor_ui_update, tracy::Color::Blue);
 
     if(m_editormode == false)
@@ -90,5 +90,5 @@ void EditorLayer::OnUpdate()
 
 void EditorLayer::OnDetach()
 {
-	SteamInterface::ShutDown();
+	
 }

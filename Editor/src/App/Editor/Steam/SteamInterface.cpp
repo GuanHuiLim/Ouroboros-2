@@ -18,7 +18,8 @@ void SteamInterface::Init()
 
 void SteamInterface::Update()
 {
-	SteamAPI_RunCallbacks();
+	if(steam_ready)
+		SteamAPI_RunCallbacks();
 	if (updated_stats)
 	{
 		SteamUserStats()->StoreStats();
@@ -73,12 +74,12 @@ int SteamInterface::GetStat_INT(const char* API_NAME)
 	// Is Steam loaded? If not we can't get stats.
 	if (NULL == SteamUserStats() || NULL == SteamUser())
 	{
-		return;
+		return -1;
 	}
 	// Is the user logged on?  If not we can't get stats.
 	if (!SteamUser()->BLoggedOn())
 	{
-		return;
+		return -1;
 	}
 	int value = 0;
 	SteamUserStats()->GetStat(API_NAME, &value);
@@ -89,12 +90,12 @@ float SteamInterface::GetStat_FLOAT(const char* API_NAME)
 	// Is Steam loaded? If not we can't get stats.
 	if (NULL == SteamUserStats() || NULL == SteamUser())
 	{
-		return;
+		return -1;
 	}
 	// Is the user logged on?  If not we can't get stats.
 	if (!SteamUser()->BLoggedOn())
 	{
-		return;
+		return -1;
 	}
 	float value = 0;
 	SteamUserStats()->GetStat(API_NAME, &value);

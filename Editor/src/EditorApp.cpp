@@ -37,7 +37,7 @@ Technology is prohibited.
 #include "App/Corelayers/EditorLayer.h"
 #include "App/CoreLayers/ScriptingLayer.h"
 #include "App/CoreLayers/CoreLinkingLayer.h"
-
+#include "App/CoreLayers/SteamLayer.h"
 // External includes
 #include <imgui/imgui.h>
 
@@ -102,7 +102,8 @@ public:
         // have this for both executable version as well for easy debugging purposes.
         m_editorLayer = std::make_shared<EditorLayer>(m_sceneManager);
         m_layerset.PushLayer(m_editorLayer);
-
+		//steam
+		m_layerset.PushLayer(std::make_shared<SteamLayer>());
         // binding to events
         oo::EventManager::Subscribe<EditorApp, ImGuiRestartEvent>(this, &EditorApp::RestartImGui);
         oo::EventManager::Subscribe<EditorApp, oo::WindowCloseEvent>(this, &EditorApp::CloseApp);
@@ -184,7 +185,8 @@ public:
         m_layerset.PushLayer(std::make_shared<oo::SceneLayer>(m_sceneManager));
         // Link core important setup regardless of editor or final build
         m_layerset.PushLayer(std::make_shared<oo::CoreLinkingLayer>());
-
+		//steam
+		m_layerset.PushLayer(std::make_shared<SteamLayer>());
         // only for the end product we do this instead
         std::filesystem::path p("./Minute/Config.json");
         Project::LoadProject(p);
