@@ -32,6 +32,8 @@ namespace oo
     std::vector<ScriptClassInfo> ScriptManager::s_BeforeDefaultOrder;
     std::vector<ScriptClassInfo> ScriptManager::s_AfterDefaultOrder;
 
+    std::vector<std::pair<ScriptDatabase::IntPtr, AssetManager::LoadProgressPtr>> ScriptManager::s_sceneLoadingTrackers;
+
     void ScriptManager::LoadProject(std::string const& buildPath, std::string const& projectPath)
     {
         s_BuildPath = buildPath;
@@ -45,6 +47,8 @@ namespace oo
     }
     bool ScriptManager::Compile()
     {
+        DeleteAllLoadingProgress();
+
         if (s_SceneManager->HasActiveScene())
         {
             std::shared_ptr<Scene> scene = s_SceneManager->GetActiveScene<Scene>();
@@ -83,6 +87,8 @@ namespace oo
     }
     void ScriptManager::Load()
     {
+        DeleteAllLoadingProgress();
+
         // load all system info for later use
         std::string dllPath = s_BuildPath + "Scripting.dll";
         if (!std::filesystem::exists(dllPath))
@@ -280,5 +286,44 @@ namespace oo
         }
         executionOrder.insert(executionOrder.end(), afterExecutionOrder.begin(), afterExecutionOrder.end());
         return executionOrder;
+    }
+
+    ScriptDatabase::IntPtr ScriptManager::TrackLoadingProgress(AssetManager::LoadProgressPtr ptr)
+    {
+        MonoClass* klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "LoadProgress");
+        MonoObject* obj = ScriptEngine::CreateObject(klass);
+        ScriptDatabase::IntPtr handle = mono_gchandle_new(obj, false);
+        s_sceneLoadingTrackers.emplace_back(std::pair<ScriptDatabase::IntPtr, AssetManager::LoadProgressPtr>{ handle, ptr });
+        return handle;
+    }
+
+    void ScriptManager::UpdateLoadingProgress()
+    {
+        MonoClass* klass = ScriptEngine::GetClass("ScriptCore", "Ouroboros", "LoadProgress");
+        MonoClassField* field = mono_class_get_field_from_name(klass, "m_percent");
+
+
+        for (size_t i = 0; i < s_sceneLoadingTrackers.size(); ++i)
+        {
+            MonoObject* tracker = mono_gchandle_get_target(s_sceneLoadingTrackers[i].first);
+            float percent = s_sceneLoadingTrackers[i].second->percent();
+            mono_field_set_value(tracker, field, &percent);
+
+            if (percent >= 100.0f)
+            {
+                mono_gchandle_free(s_sceneLoadingTrackers[i].first);
+                s_sceneLoadingTrackers.erase(s_sceneLoadingTrackers.begin() + i);
+                --i;
+            }
+        }
+    }
+
+    void ScriptManager::DeleteAllLoadingProgress()
+    {
+        for (size_t i = 0; i < s_sceneLoadingTrackers.size(); ++i)
+        {
+            mono_gchandle_free(s_sceneLoadingTrackers[i].first);
+        }
+        s_sceneLoadingTrackers.clear();
     }
 }

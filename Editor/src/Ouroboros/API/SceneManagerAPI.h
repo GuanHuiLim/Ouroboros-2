@@ -14,6 +14,8 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
+#include "pch.h"
+
 #include "Ouroboros/Scripting/ExportAPI.h"
 
 #include "Ouroboros/Scripting/ScriptManager.h"
@@ -49,6 +51,20 @@ namespace oo
     SCRIPT_API bool SceneManager_LoadSceneByName(const char* sceneName)
     {
         return ScriptManager::s_SceneManager->ChangeScene(sceneName);
+    }
+
+    SCRIPT_API ScriptDatabase::IntPtr SceneManager_PreloadSceneByIndex(Scene::ID_type sceneID)
+    {
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneID);
+        AssetManager::LoadProgressPtr ptr = Serializer::PreloadScene(*scene);
+        return ScriptManager::TrackLoadingProgress(ptr);
+    }
+
+    SCRIPT_API ScriptDatabase::IntPtr SceneManager_PreloadSceneByName(const char* sceneName)
+    {
+        std::shared_ptr<Scene> scene = ScriptManager::GetScene(sceneName);
+        AssetManager::LoadProgressPtr ptr = Serializer::PreloadScene(*scene);
+        return ScriptManager::TrackLoadingProgress(ptr);
     }
 
     /*-----------------------------------------------------------------------------*/

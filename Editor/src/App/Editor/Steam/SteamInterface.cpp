@@ -74,12 +74,12 @@ int SteamInterface::GetStat_INT(const char* API_NAME)
 	// Is Steam loaded? If not we can't get stats.
 	if (NULL == SteamUserStats() || NULL == SteamUser())
 	{
-		return -1;
+		return 0;
 	}
 	// Is the user logged on?  If not we can't get stats.
 	if (!SteamUser()->BLoggedOn())
 	{
-		return -1;
+		return 0;
 	}
 	int value = 0;
 	SteamUserStats()->GetStat(API_NAME, &value);
@@ -90,12 +90,12 @@ float SteamInterface::GetStat_FLOAT(const char* API_NAME)
 	// Is Steam loaded? If not we can't get stats.
 	if (NULL == SteamUserStats() || NULL == SteamUser())
 	{
-		return -1;
+		return 0.0f;
 	}
 	// Is the user logged on?  If not we can't get stats.
 	if (!SteamUser()->BLoggedOn())
 	{
-		return -1;
+		return 0.0f;
 	}
 	float value = 0;
 	SteamUserStats()->GetStat(API_NAME, &value);
@@ -116,7 +116,7 @@ void SteamInterface::SetStats_INT(const char* API_NAME, int value)
 	updated_stats = true;
 	SteamUserStats()->SetStat(API_NAME, value);
 }
-void SteamInterface::SetStats_FLOAT(const char* API_NAME, int value)
+void SteamInterface::SetStats_FLOAT(const char* API_NAME, float value)
 {
 	// Is Steam loaded? If not we can't get stats.
 	if (NULL == SteamUserStats() || NULL == SteamUser())

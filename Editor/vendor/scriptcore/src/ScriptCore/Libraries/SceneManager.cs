@@ -27,5 +27,27 @@ namespace Ouroboros
         {
             return SceneManager_LoadSceneByName(sceneName);
         }
-    }
+
+        [DllImport("__Internal")] private static extern IntPtr SceneManager_PreloadSceneByIndex(UInt32 sceneID);
+        [DllImport("__Internal")] private static extern IntPtr SceneManager_PreloadSceneByName(string sceneName);
+
+        public static LoadProgress PreloadScene(UInt32 sceneID)
+        {
+            IntPtr returnPtr = SceneManager_PreloadSceneByIndex(sceneID);
+            if (returnPtr == IntPtr.Zero)
+                return null;
+            GCHandle handle = GCHandle.FromIntPtr(returnPtr);
+            LoadProgress progress = handle.Target as LoadProgress;
+            return progress;
+        }
+        public static LoadProgress PreloadScene(string sceneName)
+        {
+            IntPtr returnPtr = SceneManager_PreloadSceneByName(sceneName);
+            if (returnPtr == IntPtr.Zero)
+                return null;
+            GCHandle handle = GCHandle.FromIntPtr(returnPtr);
+            LoadProgress progress = handle.Target as LoadProgress;
+            return progress;
+        }
+}
 }

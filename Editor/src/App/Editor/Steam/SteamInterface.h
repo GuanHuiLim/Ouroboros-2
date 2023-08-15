@@ -30,7 +30,7 @@ public:
 	static float GetStat_FLOAT(const char* API_NAME);
 
 	static void SetStats_INT(const char* API_NAME, int value);
-	static void SetStats_FLOAT(const char* API_NAME, int value);
+	static void SetStats_FLOAT(const char* API_NAME, float value);
 private:
 private:
 	inline static Steam_Callbacks* callback_ptr;//need to maintain it as the callback works on RAII
