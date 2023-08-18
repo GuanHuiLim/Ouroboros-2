@@ -69,6 +69,7 @@ Source:"PhysXFoundation_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysXGpu_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"PhysX_64.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source:"SLikeNet_DLL_Debug_x64.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source:"steam_api64.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ;settings files                       
 Source: "EditorMode.settings"; DestDir: "{app}"; Flags: ignoreversion
