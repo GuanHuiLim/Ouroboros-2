@@ -52,7 +52,7 @@ enum class UIInstanceFlags : uint32_t
     WORLD_SPACE_UI   = 0x2,  // Object is worldspace
     TEXT_INSTANCE    = 0x4,  // Object is inactive, skip for all render pass
     SPRITE_INSTANCE  = 0x8,  // Object casts shadows (put it into shadow render pass)  
-    
+    SCREEN_SPACE     = 0x10, // Object rendered without depth    
 };
 ENUM_OPERATORS_GEN(UIInstanceFlags, uint32_t)
 
@@ -123,6 +123,8 @@ struct UIInstance
 
     void SetText(bool s);
     bool isText();
+    void SetScreenSpace(bool s);
+    bool isScreenSpace();
 
     void SetRenderEnabled(bool s);
     bool isRenderable();

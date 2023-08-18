@@ -49,6 +49,7 @@ public:
 	const std::vector<oGFX::IndirectCommand>& GetParticlesBatch();
 	const std::vector<ParticleData>& GetParticlesData();
 	const std::vector<oGFX::UIVertex>& GetUIVertices();
+	size_t GetScreenSpaceUIOffset() const;
 	// TODO :: need to return indices out if i am doing fill
 	
 	void GenerateTextGeometry(const UIInstance& ui);
@@ -64,6 +65,8 @@ private:
 	std::vector<oGFX::UIVertex>m_uiVertices;
 
 	static inline std::vector<oGFX::IndirectCommand> s_scratchBuffer;
+
+	size_t m_SSVertOffset{};
 
 };
 

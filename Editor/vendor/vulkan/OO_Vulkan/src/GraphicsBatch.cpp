@@ -198,6 +198,36 @@ void GraphicsBatch::ProcessUI()
 			continue;
 		}
 
+		if (static_cast<bool>(ui.flags & Flags::SCREEN_SPACE) == true)
+		{
+			// skip non depth
+			continue;
+		}
+
+		if (static_cast<bool>(ui.flags & Flags::TEXT_INSTANCE))
+		{
+			GenerateTextGeometry(ui);
+		}
+		else
+		{
+			GenerateSpriteGeometry(ui);
+		}
+	}
+
+	// dirty way of doing screenspace
+	m_SSVertOffset = m_uiVertices.size();
+	for (auto& ui: allUI)
+	{
+		if (static_cast<bool>(ui.flags & Flags::RENDER_ENABLED) == false)
+		{
+			continue;
+		}
+
+		if (static_cast<bool>(ui.flags & Flags::SCREEN_SPACE) == false)
+		{
+			// skip depth
+			continue;
+		}
 
 		if (static_cast<bool>(ui.flags & Flags::TEXT_INSTANCE))
 		{
@@ -299,6 +329,11 @@ const std::vector<ParticleData>& GraphicsBatch::GetParticlesData()
 const std::vector<oGFX::UIVertex>& GraphicsBatch::GetUIVertices()
 {
 	return m_uiVertices;
+}
+
+size_t GraphicsBatch::GetScreenSpaceUIOffset() const
+{
+	return m_SSVertOffset;
 }
 
 void GraphicsBatch::GenerateSpriteGeometry(const UIInstance& ui) 

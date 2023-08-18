@@ -288,6 +288,23 @@ bool UIInstance::isText()
 	return static_cast<bool>(flags & UIInstanceFlags::TEXT_INSTANCE);
 }
 
+void UIInstance::SetScreenSpace(bool s)
+{
+	if (s)
+	{
+		flags = flags | UIInstanceFlags::SCREEN_SPACE;
+	}
+	else
+	{
+		flags = flags & (~UIInstanceFlags::SCREEN_SPACE);
+	}
+}
+
+bool UIInstance::isScreenSpace()
+{
+	return static_cast<bool>(flags & UIInstanceFlags::SCREEN_SPACE);
+}
+
 void UIInstance::SetRenderEnabled(bool s)
 {
 	if (s)

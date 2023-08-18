@@ -312,15 +312,18 @@ namespace oo
         static Ecs::Query canvas_query = Ecs::make_query<GameObjectComponent, TransformComponent, UICanvasComponent, RectTransformComponent>();
         m_world->parallel_for_each(canvas_query, [&](GameObjectComponent& goc, TransformComponent& tf, UICanvasComponent& canvas, RectTransformComponent& rectTransform)
             {
+
                 if (canvas.ScaleWithScreenSize)
                 {
                     auto windowSize = Application::Get().GetWindow().GetSize();
                     rectTransform.Size = { windowSize.first, windowSize.second };
                 }
 
+                
                 // retrieve canvas gameobject
                 auto go = m_scene->FindWithInstanceID(goc.Id);
                 bool CanvasIsWorldSpace = canvas.RenderingMode == UICanvasComponent::RenderMode::WorldSpace;
+                //bool CanvasIsCanvasSpace = canvas.RenderingMode == UICanvasComponent::RenderMode::CanvasSpace;
                 for (auto& child : go->GetChildren(true))
                 {
                     // skip all children that does not have rect transform
@@ -330,6 +333,13 @@ namespace oo
                     RectTransformComponent& childRect = child.GetComponent<RectTransformComponent>();
                     childRect.IsWorldSpace = CanvasIsWorldSpace;
                     
+                    if (child.HasComponent<UIComponent>())
+                    {
+                        auto& uiComp = child.GetComponent<UIComponent>();
+                        auto& ui = m_graphicsWorld->GetUIInstance(uiComp.UI_ID);
+                        ui.SetScreenSpace(canvas.RenderOnTop);
+                    }
+
                     auto parent = child.GetParent();
                     if (parent.HasComponent<RectTransformComponent>())
                     {
@@ -537,6 +547,7 @@ namespace oo
                         //mouseOutside = !Intersection2D::PointAABB(mouseScreenPoint, child.GetComponent<RectTransformComponent>().BoundingVolume);
                         break;
                     case UICanvasComponent::RenderMode::WorldSpace:
+                    //case UICanvasComponent::RenderMode::CanvasSpace:
                         //Shoot a ray
                         auto obb = child.GetComponent<RectTransformComponent>().BoundingVolume;
                         mouseOutside = !intersection::RayOBB(mouseWorldRay, obb);

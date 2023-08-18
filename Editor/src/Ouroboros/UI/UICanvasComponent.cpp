@@ -28,12 +28,15 @@ namespace oo
         (
             value("Overlay", UICanvasComponent::RenderMode::Overlay),
             value("World Space", UICanvasComponent::RenderMode::WorldSpace)
+            //value("Canvas Space", UICanvasComponent::RenderMode::CanvasSpace)
         );
 
         registration::class_<UICanvasComponent>("UI Canvas")
             .property("Render Mode", &UICanvasComponent::RenderingMode)
             //.property("Layer", &UICanvasComponent::Layer)(metadata(UI_metadata::DRAG_SPEED, 0.01f))
-            .property("Scale With Screen", &UICanvasComponent::ScaleWithScreenSize);
+            .property("Scale With Screen", &UICanvasComponent::ScaleWithScreenSize)
+            .property("Render On Top", &UICanvasComponent::RenderOnTop)
+            ;
     }
 
 }
