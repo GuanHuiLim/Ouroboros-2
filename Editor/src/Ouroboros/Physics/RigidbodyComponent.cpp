@@ -35,6 +35,7 @@ namespace oo
             .property("Static Object", &RigidbodyComponent::IsStatic, &RigidbodyComponent::SetStatic)
             .property("IsTrigger", &RigidbodyComponent::IsTrigger, &RigidbodyComponent::SetTrigger)
             .property("Enable Gravity", &RigidbodyComponent::IsGravityEnabled, &RigidbodyComponent::SetGravity)
+            .property("Continuous Collision", &RigidbodyComponent::IsContinuousCollider, &RigidbodyComponent::EnableContinuousCollision)
             .property("Physics Material", &RigidbodyComponent::GetMaterial, &RigidbodyComponent::SetMaterial)
             .property("Mass", &RigidbodyComponent::GetMass, &RigidbodyComponent::SetMass)
             .property_readonly("Velocity", &RigidbodyComponent::GetLinearVel)
@@ -131,6 +132,17 @@ namespace oo
     quat oo::RigidbodyComponent::GetOrientationInPhysicsWorld() const
     {
         return underlying_object.orientation;
+    }
+
+    bool oo::RigidbodyComponent::IsContinuousCollider() const
+    {
+        return desired_object.enable_ccd;
+    }
+
+    void oo::RigidbodyComponent::EnableContinuousCollision(bool enable)
+    {
+        desired_object.enable_ccd = enable;
+        IsDirty = true;
     }
 
     //std::vector<physx::PxVec3> oo::RigidbodyComponent::StoreMesh(std::vector<oo::vec3> result) {
