@@ -24,6 +24,7 @@ public:
 	static const int64 GetAppID() { return m_iAppID; };
 
 	//set achivements
+	static bool GetAchivement(const char* API_NAME);
 	static void SetAchivement(const char* API_NAME);
 	//get stats by name 
 	static int GetStat_INT(const char* API_NAME);
