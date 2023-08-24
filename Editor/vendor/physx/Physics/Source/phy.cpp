@@ -143,7 +143,8 @@ namespace myPhysx
 
                 // generate contacts for all that were not filtered above
                 pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST | 
-                             PxPairFlag::eNOTIFY_CONTACT_POINTS | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eSOLVE_CONTACT;
+                             PxPairFlag::eNOTIFY_CONTACT_POINTS | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eSOLVE_CONTACT
+                    | PxPairFlag::eDETECT_CCD_CONTACT;
             }
             else {
                 return PxFilterFlag::eSUPPRESS;
@@ -220,6 +221,9 @@ namespace myPhysx
 
         sceneDesc.simulationEventCallback = &mEventCallback;
         sceneDesc.filterShader = physx_system::contactReportFilterShader;
+
+        // continuous collision detection
+        sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
 
         scene = mPhysics->createScene(sceneDesc);
 
@@ -388,6 +392,7 @@ namespace myPhysx
                                                          is_trigger(other.is_trigger),
                                                          gravity_enabled(other.gravity_enabled),
                                                          is_kinematic(other.is_kinematic),
+                                                         enable_ccd(other.enable_ccd),
                                                          is_enabled(other.is_enabled),
                                                          m_shape{nullptr},
                                                          rb {},
@@ -823,6 +828,7 @@ namespace myPhysx
         physics_Obj.is_trigger = init_Obj.is_trigger;
         physics_Obj.gravity_enabled = init_Obj.gravity_enabled;
         physics_Obj.is_kinematic = init_Obj.is_kinematic;
+        physics_Obj.enable_ccd = init_Obj.enable_ccd;
         physics_Obj.is_enabled = init_Obj.is_enabled;
 
         // FILTER
@@ -967,9 +973,11 @@ namespace myPhysx
             // KINE | GRAVITY PROPERTIES
             underlying_Obj.is_kinematic = updatedPhysicsObj.is_kinematic;
             underlying_Obj.gravity_enabled = updatedPhysicsObj.gravity_enabled;
+            underlying_Obj.enable_ccd = updatedPhysicsObj.enable_ccd;
 
             underlying_Obj.rb.rigidDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !underlying_Obj.gravity_enabled);
             underlying_Obj.rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, underlying_Obj.is_kinematic);
+            underlying_Obj.rb.rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, underlying_Obj.enable_ccd);
         }
 
         // COLLIDER | TRIGGER PROPERTIES
