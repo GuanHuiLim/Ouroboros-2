@@ -48,6 +48,22 @@ void SteamInterface::RequestStats()
 	}
 	SteamUserStats()->RequestCurrentStats();
 }
+bool SteamInterface::GetAchivement(const char* API_NAME)
+{
+	// Is Steam loaded? If not we can't get stats.
+	if (NULL == SteamUserStats() || NULL == SteamUser())
+	{
+		return false;
+	}
+	// Is the user logged on?  If not we can't get stats.
+	if (!SteamUser()->BLoggedOn())
+	{
+		return false;
+	}
+	bool unlocked = false;
+	SteamUserStats()->GetAchievement(API_NAME, &unlocked);
+	return unlocked;
+}
 void SteamInterface::SetAchivement(const char* API_NAME)
 {
 	// Is Steam loaded? If not we can't get stats.
