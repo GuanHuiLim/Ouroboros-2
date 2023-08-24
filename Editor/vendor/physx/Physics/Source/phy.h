@@ -323,6 +323,7 @@ namespace myPhysx {
         bool gravity_enabled = false; // static should be false
         bool is_kinematic = false;
         bool is_enabled = true;
+        bool enable_ccd = false;    // continuous collision should be false by default
 
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;
@@ -367,6 +368,7 @@ namespace myPhysx {
         bool gravity_enabled = false; // static should be false
         bool is_kinematic = false;
         bool is_enabled = true;
+        bool enable_ccd = false;    // continuous collision should be false by default
 
         // Filtering
         std::uint32_t filterIn = FilterGroup::Zero;

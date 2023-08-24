@@ -102,6 +102,9 @@ namespace oo
         vec3 GetPositionInPhysicsWorld() const;
         quat GetOrientationInPhysicsWorld() const;
 
+        bool IsContinuousCollider() const;
+        void EnableContinuousCollision(bool enable);
+
         //std::vector<physx::PxVec3> StoreMesh(std::vector<vec3> result);
         void SetStatic(bool result);
 
