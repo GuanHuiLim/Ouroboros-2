@@ -4,6 +4,13 @@ namespace Ouroboros
 {
     public static class Steam
     {
+        [DllImport("__Internal")] private static extern bool CheckAchievement(string name);
+
+        public static bool CheckAchievementUnlocked(string name)
+        {
+            return CheckAchievement(name);
+        }
+
         [DllImport("__Internal")] private static extern void UnlockAchievement(string name);
 
         public static void TryUnlockAchievement(string name)

@@ -4,6 +4,11 @@
 
 namespace oo
 {
+    SCRIPT_API bool CheckAchievement(const char* name)
+    {
+        return SteamInterface::GetAchivement(name);
+    }
+
     SCRIPT_API void UnlockAchievement(const char* name)
     {
         SteamInterface::SetAchivement(name);
