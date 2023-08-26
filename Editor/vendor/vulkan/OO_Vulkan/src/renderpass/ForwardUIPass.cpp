@@ -191,7 +191,7 @@ void ForwardUIPass::Draw()
 	//cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer.getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer.size()));
 	
 	// bind depth ignore pass
-	cmd.BindPSO(pso_Forward_UI_NO_DEPTH);
+	//cmd.BindPSO(pso_Forward_UI_NO_DEPTH);
 	VkClearValue depthClear{};
 	depthClear.depthStencil = { 1.0f,0 };
 	cmd.ClearImage(attachments[GBufferAttachmentIndex::DEPTH], depthClear); 
