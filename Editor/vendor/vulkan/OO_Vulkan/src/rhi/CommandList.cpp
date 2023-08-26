@@ -131,4 +131,28 @@ void CommandList::SetScissor(const VkRect2D& scissor)
 	this->SetScissor(0, 1, &s);
 }
 
+void CommandList::ClearImage(vkutils::Texture2D& texture,  VkClearValue clearval)
+{
+	auto oldformat = texture.currentLayout;
+	vkutils::TransitionImage(m_VkCommandBuffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	VkImageSubresourceRange range{};
+	if (texture.format == VK_FORMAT_D32_SFLOAT_S8_UINT)
+	{
+		VkClearDepthStencilValue depth{};
+		depth = clearval.depthStencil;
+		range = VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
+		vkCmdClearDepthStencilImage(m_VkCommandBuffer, texture.image, texture.currentLayout, &depth, 1, &range);
+	}
+	else
+	{
+		VkClearColorValue col{};
+		col = clearval.color;
+		range = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		vkCmdClearColorImage(m_VkCommandBuffer, texture.image, texture.currentLayout, &col, 1, &range);
+	}
+	
+vkutils::TransitionImage(m_VkCommandBuffer, texture, oldformat);
+}
+
 }

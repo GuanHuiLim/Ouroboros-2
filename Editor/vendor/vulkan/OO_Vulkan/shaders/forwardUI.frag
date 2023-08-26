@@ -71,13 +71,13 @@ void main()
         float screenPxDistance = screenPxRange()*(sd - 0.5);
         float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
         outfragCol = mix(vec4(0),inColor,opacity);
-        Remap_float(outfragCol.a,vec2(0.0,1.0),vec2(0,0.20),outfragCol.a);
+        //Remap_float(outfragCol.a,vec2(0.0,1.0),vec2(0,0.20),outfragCol.a);
         
         
     }else
     {
         vec4 tempcol = inColor.rgba;
-        Remap_float(tempcol.a,vec2(0.0,1.0),vec2(0.0,0.20),tempcol.a);
+        //Remap_float(tempcol.a,vec2(0.0,1.0),vec2(0.0,0.20),tempcol.a);
         //tempcol.a = min(50.0/255.0 * tempcol.a, 1.0);
         outfragCol.rgb = outfragCol.rgb * inColor.rgb;
         outfragCol.a = outfragCol.a * tempcol.a;

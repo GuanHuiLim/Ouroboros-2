@@ -183,13 +183,25 @@ void ForwardUIPass::Draw()
 	const auto ScreenSpaceIdxOffset = WorldSpaceIndices;
 	const auto instanceOffset = instanceCnt - WorldSpaceCnt;
 	// do draw command here
-	cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), static_cast<uint32_t>(WorldSpaceCnt));
+	for (size_t i = 0; i < WorldSpaceCnt; i++)
+	{
+		cmd.DrawIndexed(6, 1, i * 6);
+	}
+	//cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), static_cast<uint32_t>(WorldSpaceCnt));
 	//cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer.getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer.size()));
 	
 	// bind depth ignore pass
 	cmd.BindPSO(pso_Forward_UI_NO_DEPTH);
-	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
-		, ScreenSpaceIdxOffset, 0, 0);
+	VkClearValue depthClear{};
+	depthClear.depthStencil = { 1.0f,0 };
+	cmd.ClearImage(attachments[GBufferAttachmentIndex::DEPTH], depthClear); 
+	
+	for (size_t i = 0; i < ScreenSpaceCnt; i++)
+	{
+		cmd.DrawIndexed(6, 1, ScreenSpaceIdxOffset + i * 6);
+	}
+	//cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
+	//	, ScreenSpaceIdxOffset, 0, 0);
 
 	vkCmdEndRenderPass(cmdlist);
 }
