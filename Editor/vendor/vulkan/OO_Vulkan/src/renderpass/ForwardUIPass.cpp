@@ -196,10 +196,16 @@ void ForwardUIPass::Draw()
 	depthClear.depthStencil = { 1.0f,0 };
 	cmd.ClearImage(attachments[GBufferAttachmentIndex::DEPTH], depthClear); 
 	
+	//for (size_t i = 0; i < ScreenSpaceCnt; i++)
+	//{
+	//	cmd.DrawIndexed(6, 1, ScreenSpaceIdxOffset + i * 6);
+	//}
+
 	for (size_t i = 0; i < ScreenSpaceCnt; i++)
 	{
-		cmd.DrawIndexed(6, 1, ScreenSpaceIdxOffset + i * 6);
+		cmd.DrawIndexed(6, 1, ScreenSpaceIdxOffset + (ScreenSpaceCnt - i - 1) * 6);
 	}
+
 	//cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
 	//	, ScreenSpaceIdxOffset, 0, 0);
 
