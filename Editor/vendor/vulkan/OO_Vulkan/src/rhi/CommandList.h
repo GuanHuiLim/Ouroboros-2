@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "MathCommon.h"
 #include <array>
 #include <vulkan/vulkan.h>
+#include "VulkanTexture.h"
 
 namespace rhi
 {
@@ -132,6 +133,8 @@ public:
 	void SetScissor(const VkRect2D& scissor);
 
 	// TODO: Function not here? Add it on demand...
+
+	void ClearImage(vkutils::Texture2D& texture, VkClearValue val);
 
 private:
 	VkCommandBuffer m_VkCommandBuffer{};
