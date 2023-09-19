@@ -145,7 +145,7 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 	if (vr.m_numShadowcastLights > 0)
 	{
 		
-		for (const auto& light: vr.batches.GetLocalLights())
+		for (auto& light: vr.currWorld->GetAllOmniLightInstances())
 		{
 			if (GetLightEnabled(light) == false) continue;
 

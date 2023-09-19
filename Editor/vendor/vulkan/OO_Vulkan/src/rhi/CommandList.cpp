@@ -238,14 +238,14 @@ void CommandList::ClearImage(vkutils::Texture2D& texture,  VkClearValue clearval
 		VkClearDepthStencilValue depth{};
 		depth = clearval.depthStencil;
 		range = VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
-		vkCmdClearDepthStencilImage(m_VkCommandBuffer, texture.image, texture.currentLayout, &depth, 1, &range);
+		vkCmdClearDepthStencilImage(m_VkCommandBuffer, texture.image.image, texture.currentLayout, &depth, 1, &range);
 	}
 	else
 	{
 		VkClearColorValue col{};
 		col = clearval.color;
 		range = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		vkCmdClearColorImage(m_VkCommandBuffer, texture.image, texture.currentLayout, &col, 1, &range);
+		vkCmdClearColorImage(m_VkCommandBuffer, texture.image.image, texture.currentLayout, &col, 1, &range);
 	}
 	
 vkutils::TransitionImage(m_VkCommandBuffer, texture, oldformat);

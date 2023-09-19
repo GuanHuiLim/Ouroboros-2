@@ -265,7 +265,7 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 		pc.specularModifier = vr.currWorld->lightSettings.specularModifier;
 
 		size_t lightCnt = 0;
-		auto& lights = vr.batches.GetLocalLights();
+		auto& lights = vr.currWorld->GetAllOmniLightInstances();
 		for(auto& l :lights) 
 		{
 			if (GetLightEnabled(l)== true)
