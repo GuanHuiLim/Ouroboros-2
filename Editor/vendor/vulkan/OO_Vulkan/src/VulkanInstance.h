@@ -25,7 +25,7 @@ struct VulkanInstance
 	VulkanInstance() = default;
 	~VulkanInstance();
 	bool Init(const oGFX::SetupInfo& si);
-	void CreateSurface(Window& window, VkSurfaceKHR& surface);
+	bool CreateSurface(Window& window, VkSurfaceKHR& surface);
 	
 	VkInstance GetInstancePtr();
 

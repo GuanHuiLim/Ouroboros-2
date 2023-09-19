@@ -127,6 +127,8 @@ public:
 
 	void UpdateProjectionMatrix();
 
+	glm::mat4 GetNonInvProjectionMatrix();
+
 	// 
 	bool m_ViewMatrixOutdated{ true };
 	bool m_ProjectionMatrixOutdated{ true };

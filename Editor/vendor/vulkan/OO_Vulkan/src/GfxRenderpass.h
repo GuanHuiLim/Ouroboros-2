@@ -43,7 +43,7 @@ class GfxRenderpass
 public:
     virtual ~GfxRenderpass() = default;
     virtual void Init() = 0;
-    virtual void Draw() = 0;
+    virtual void Draw(const VkCommandBuffer cmdlist) = 0;
     virtual void Shutdown() = 0;
     // Called once upon init    
     virtual void CreatePSO() {};
@@ -59,6 +59,7 @@ public:
     static void Shutdown();
     void RegisterRenderPass(std::unique_ptr<GfxRenderpass>&& renderPass);
     void RegisterRenderPass(GfxRenderpass* renderPass);
+    static void ReloadAllShaders();
 
     // Call this once to call "Init()" on all registered render passes.
     // Take note the order of initialization is undefined.
@@ -102,6 +103,8 @@ inline static pass* m_pass{nullptr};
 
 // function declares and creates a renderpass automatically at runtime
 #define DECLARE_RENDERPASS(pass)\
+pass g_gfx##pass;\
+GfxRenderpass* g_##pass{ &g_gfx##pass };
 //namespace DeclareRenderPass_ns\
 //{\
 //struct DeclareRenderPass_##pass\
@@ -114,5 +117,9 @@ inline static pass* m_pass{nullptr};
 //            }\
 //    }g_DeclareRenderPass_##pass;\
 //}
+
+#define RENDERPASS_USAGE(pass)\
+extern GfxRenderpass* g_##pass
+
 
 #define BIGCANCER(pass) DeclareRenderPass_ns::g_DeclareRenderPass_##pass

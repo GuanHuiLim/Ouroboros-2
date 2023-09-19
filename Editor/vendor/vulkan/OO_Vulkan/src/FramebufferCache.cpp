@@ -94,12 +94,22 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 	{
 		for (auto texture:target.textures)
 		{
-			tex.insert(texture);
+			tex.insert(texture);			
 		}
 	}
 	for (auto texture: tex)
 	{
 		texture->Resize(width, height);
+		auto oldLayout = texture->currentLayout;
+
+		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED) 
+			continue;
+
+		texture->currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		auto cmd = VulkanRenderer::get()->beginSingleTimeCommands();
+		vkutils::TransitionImage(cmd, *texture, oldLayout);
+			VulkanRenderer::get()->endSingleTimeCommands(cmd);
+		vkQueueWaitIdle(VulkanRenderer::get()->m_device.graphicsQueue);
 	}
 	
 	for (auto& target : targets)
@@ -111,21 +121,24 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 		framebufferInfo.createInfo.height = target.textures.front()->height;
 		bufferCache.insert(std::move(kvp));
 
-		std::vector<VkImageView> attachment;
-		attachment.reserve(framebufferInfo.textures.size());
-		for (uint32_t i = 0; i < framebufferInfo.createInfo.attachmentCount; i++) {
-			attachment.push_back(framebufferInfo.textures[i]->view);
-		}
-		framebufferInfo.createInfo.pAttachments = attachment.data();
-
-		auto& framebuffer = bufferCache[framebufferInfo];
-		std::cout << "[FBCache] Resizing framebuffer.." << std::endl;
 		if (framebufferInfo.resourceTrackOnly == false)
 		{
+			std::vector<VkImageView> attachment;
+			attachment.reserve(framebufferInfo.textures.size());
+			for (uint32_t i = 0; i < framebufferInfo.createInfo.attachmentCount; i++) {
+				attachment.push_back(framebufferInfo.textures[i]->view);
+			}
+
+			framebufferInfo.createInfo.pAttachments = attachment.data();
+			auto& framebuffer = bufferCache[framebufferInfo];
+
+			std::cout << "[FBCache] Resizing framebuffer.." << std::endl;
+			
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
 			VK_CHK(vkCreateFramebuffer(device, &framebufferInfo.createInfo, nullptr, &framebuffer));
 			VK_NAME(device, "famebufferCache::framebuffer", framebuffer);
 		}
+
 		//add to cache
 
 		//store the pointers
@@ -159,6 +172,21 @@ void FramebufferCache::DeleteRelated(vkutils::Texture2D tex)
 			++iter;
 		}
 	}
+}
+
+void FramebufferCache::RegisterFramebuffer(vkutils::Texture2D& tex)
+{
+	static uint32_t counter = std::numeric_limits<uint32_t>::max();
+	--counter;
+	FramebufferInfo fbi; //open up
+	fbi.resourceTrackOnly = true;
+	fbi.targetSwapchain = true;
+	fbi.createInfo.attachmentCount = counter;// some information to hash
+	fbi.createInfo.layers = counter/2;// some information to hash
+	fbi.createInfo.height = counter /4;// some information to hash
+
+	fbi.textures.emplace_back(&tex);
+	bufferCache[fbi] = VK_NULL_HANDLE;
 }
 
 bool FramebufferCache::FramebufferInfo::operator==(const FramebufferInfo& other) const

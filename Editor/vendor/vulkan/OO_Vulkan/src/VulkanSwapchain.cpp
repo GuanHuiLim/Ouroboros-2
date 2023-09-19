@@ -122,7 +122,8 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 	VkResult result = vkCreateSwapchainKHR(device.logicalDevice, &swapChainCreateInfo, nullptr, &swapchain);
 	if (result != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create a Swapchain!");
+		std::cerr << "Failed to create a Swapchain!" << std::endl;
+		__debugbreak();
 	}
 	VK_NAME(device.logicalDevice, "Swapchain", swapchain);
 
@@ -142,13 +143,14 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 	{
 		//store image handles
 		swapChainImages[i].name = "SwapchainImage_" + std::to_string(i);
-		swapChainImages[i].image = images[i];
+		swapChainImages[i].image.image = images[i];
 		swapChainImages[i].view = CreateImageView(device,images[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		swapChainImages[i].width = swapChainExtent.width;
 		swapChainImages[i].height = swapChainExtent.height;
 		swapChainImages[i].format = swapChainImageFormat;
+		swapChainImages[i].mipLevels = 1;
 		
-		VK_NAME(device.logicalDevice, swapChainImages[i].name.c_str(), swapChainImages[i].image);
+		VK_NAME(device.logicalDevice, swapChainImages[i].name.c_str(), swapChainImages[i].image.image);
 	}
 
 	CreateDepthBuffer();
@@ -164,7 +166,7 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 
 void VulkanSwapchain::CreateDepthBuffer()
 {
-	if (depthAttachment.image)
+	if (depthAttachment.image.image)
 	{
 		depthAttachment.destroy();
 	}

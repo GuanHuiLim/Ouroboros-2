@@ -24,10 +24,11 @@ public:
 	static DescriptorBuilder Begin(DescriptorLayoutCache* layoutCache, DescriptorAllocator* allocator );
 
 	DescriptorBuilder& BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlags);
-	DescriptorBuilder& BindImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, VkDescriptorType type, VkShaderStageFlags stageFlags);
+	DescriptorBuilder& BindImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t count = 1);
 
 	bool Build(VkDescriptorSet& set, VkDescriptorSetLayout& layout);
 	bool Build(VkDescriptorSet& set);
+	bool BuildLayout(VkDescriptorSetLayout& layout);
 private:
 
 	std::vector<VkWriteDescriptorSet> writes;

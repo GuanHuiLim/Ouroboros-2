@@ -8,9 +8,10 @@ layout(set = 1, binding = 0) uniform UboFrameContext
 };
 
 #include "shared_structs.h"
-layout (set = 0, binding = 1) uniform sampler2D samplerSource; 
+layout (set = 0, binding = 0) uniform sampler basicSampler; 
+layout (set = 0, binding = 1) uniform texture2D samplerSource; 
 
 void main()
 {	
-    outFragcolor = texture(samplerSource,inUV);
+    outFragcolor = texture(sampler2D(samplerSource,basicSampler),inUV);
 }

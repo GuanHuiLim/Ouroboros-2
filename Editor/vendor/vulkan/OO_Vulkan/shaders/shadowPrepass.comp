@@ -3,10 +3,11 @@
 #include "shared_structs.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
-layout (binding = 0/*,rgba16f*/) uniform sampler2D samplerDepth;
-layout (binding = 1/*,rgba16f*/) uniform sampler2D samplerShadows;
-layout (binding = 2/*,rgba16f*/) uniform sampler2D samplerNormal;
-layout (binding = 6,rgba16f) uniform image2D resultImage;
+layout (set = 0, binding = 0) uniform sampler basicSampler;
+layout (set = 0, binding = 1/*,rgba16f*/) uniform texture2D samplerDepth;
+layout (set = 0, binding = 2/*,rgba16f*/) uniform texture2D samplerShadows;
+layout (set = 0, binding = 3/*,rgba16f*/) uniform texture2D samplerNormal;
+layout (set = 0, binding = 6,rgba16f) uniform image2D resultImage;
 
 #include "shader_utility.shader"
 
@@ -64,7 +65,7 @@ float ShadowCalculation(int lightIndex,int gridID , in vec4 fragPosLightSpace, f
 	}
 	else
 	{
-		closestDepth = texture(samplerShadows,uvs).r;
+		closestDepth = texture(sampler2D(samplerShadows,basicSampler),uvs).r;
 	}
 	float currDepth = projCoords.z;
 
@@ -89,14 +90,14 @@ void main()
 	
 	vec2 inUV = vec2(gl_GlobalInvocationID.xy)/imageSize(resultImage);
 
-	vec4 depth = texture(samplerDepth, inUV);
+	vec4 depth = texture(sampler2D(samplerDepth,basicSampler), inUV);
 	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
 	if( any( isnan(fragPos)) ){
 		imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
 		return;
 	}
 
-	vec3 normal = texture(samplerNormal, inUV).rgb;
+	vec3 normal = texture(sampler2D(samplerNormal,basicSampler), inUV).rgb;
 	vec3 N = normalize(normal);
 	//
 	////for..
@@ -125,7 +126,7 @@ void main()
 		}
 	}
 
-	vec4 res = texture(samplerShadows,inUV).rrrr;
+	vec4 res = texture(sampler2D(samplerShadows,basicSampler),inUV).rrrr;
 	//res = vec4(0.0);
 
 	 //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.

@@ -12,10 +12,10 @@ void main()
 
 	float sampleScale = 1.0;
 	
-	vec2 uv = vec2(gl_GlobalInvocationID.xy)/imageSize(resultImage);
+	vec2 uv = (vec2(gl_GlobalInvocationID.xy)+0.5)/imageSize(resultImage);
 	vec2 texelSize = vec2(1.0); 
 
-	vec2 srcUV = uv * imageSize(inputImage);
+	vec2 srcUV = vec2(gl_GlobalInvocationID.xy)/2;
 	
 	vec4 d = texelSize.xyxy * vec4(1.0, 1.0, -1.0, 0.0) * sampleScale;
 
@@ -35,6 +35,7 @@ void main()
 	// additive
     res.rgba += s.rgba * (1.0 / 16.0);	
 	res.a = clamp(res.a,0.0,1.0);
+
 
 	 //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
 	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);

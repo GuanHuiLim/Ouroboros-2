@@ -177,13 +177,10 @@ ModelFileResource::ModelFileResource()
 ModelFileResource::ModelFileResource(std::string n)
 {
 	fileName = std::move(n);
-	std::cout << "New::ModelFileResource | " << fileName << std::endl;
 }
 
 ModelFileResource::~ModelFileResource()
 {
-	std::string s("Deleted modelfile " + fileName);
-	std::cout << s << std::endl;
 	delete sceneInfo;
 }	
 

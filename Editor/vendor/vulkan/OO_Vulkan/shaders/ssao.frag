@@ -8,9 +8,10 @@ layout(set = 1, binding = 0) uniform UboFrameContext
 };
 
 #include "shared_structs.h"
-layout (set = 0, binding = 1) uniform sampler2D samplerDepth; // also constructs position
-layout (set = 0, binding = 2) uniform sampler2D samplerNormal;
-layout (set = 0, binding = 3) uniform sampler2D samplerNoise;
+layout (set = 0, binding = 0) uniform sampler basicSampler; 
+layout (set = 0, binding = 1) uniform texture2D samplerDepth; // also constructs position
+layout (set = 0, binding = 2) uniform texture2D samplerNormal;
+layout (set = 0, binding = 3) uniform texture2D samplerNoise;
 
 layout(std430, set = 0, binding = 4) readonly buffer RandomVectors
 {
@@ -27,13 +28,13 @@ layout( push_constant ) uniform pc
 void main()
 {
 	// Get G-Buffer values
-	vec4 depth = texture(samplerDepth, inUV);
+	vec4 depth = texture(sampler2D(samplerDepth,basicSampler), inUV);
 	vec3 fragPos = ViewPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection).xyz;
 
-	vec3 normal = texture(samplerNormal, inUV).rgb;
+	vec3 normal = texture(sampler2D(samplerNormal,basicSampler), inUV).rgb;
 
 	vec2 noiseScale = vec2(float(PC.screenDim.x)/PC.sampleDim.x, float(PC.screenDim.y)/PC.sampleDim.y);
-	vec3 randomVec = texture(samplerNoise, inUV * noiseScale).xyz;
+	vec3 randomVec = texture(sampler2D(samplerNoise,basicSampler), inUV * noiseScale).xyz;
 
 	vec3 tangent   = normalize(randomVec - normal * dot(randomVec, normal));
 	vec3 bitangent = cross(normal, tangent);
@@ -56,7 +57,7 @@ void main()
 		offset.xy  = offset.xy * 0.5 + 0.5; // transform to range 0.0 - 1.0
 		offset.y = 1.0 - offset.y;
 		// once again we ignore z because vulkan
-		float sampleDepth = texture(samplerDepth, offset.xy).r;
+		float sampleDepth = texture(sampler2D(samplerDepth,basicSampler), offset.xy).r;
 		vec3 world = ViewPosFromDepth(sampleDepth,offset.xy,uboFrameContext.inverseProjection).xyz;
 		
 		sampleDepth = world.z;

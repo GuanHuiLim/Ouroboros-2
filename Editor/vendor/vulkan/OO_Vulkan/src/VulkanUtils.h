@@ -13,7 +13,9 @@ Technology is prohibited.
 *//*************************************************************************************/
 #pragma once
 #include <vulkan/vulkan.h>
+#include "buildDefs.h"
 #include "MathCommon.h"
+#include "VmaUsage.h"
 
 #include <string>
 #include <vector>
@@ -49,12 +51,13 @@ namespace oGFX::vkutils::tools
 #ifndef VK_CHK
 #define VK_CHK(x) \
 	do{\
-	VkResult result = x;\
-	if(result != VK_SUCCESS)\
+	VkResult mangledNameResult = x;\
+	if(mangledNameResult != VK_SUCCESS)\
 	{\
-		std::cout << oGFX::vkutils::tools::VkResultString(result) << std::endl;\
-		assert(result == VK_SUCCESS);\
-		throw std::runtime_error("Failed Vulkan Check");\
+		std::cerr << oGFX::vkutils::tools::VkResultString(mangledNameResult) << std::endl;\
+		assert(mangledNameResult == VK_SUCCESS);\
+		std::cerr << "Failed Vulkan Check" << std::endl;\
+		__debugbreak();\
 	}\
 }while(0)
 #endif // !VK_CHK
@@ -84,9 +87,7 @@ namespace oGFX
 
 #ifndef VK_NAME
 
-#ifdef _DEBUG
-
-
+#if GPU_MARKER
 
 #define VK_NAME(DEVICE, NAME, OBJ) do{\
 VkDebugMarkerObjectNameInfoEXT nameInfo = {};\
@@ -100,7 +101,7 @@ oGFX::SetVulkanObjectName(DEVICE,nameInfo);\
 }while(0)
 #else
 #define VK_NAME(DEVICE, NAME, OBJ)   
-#endif // DEBUG
+#endif // GPU_MARKER
 
 #endif
 
@@ -110,6 +111,8 @@ struct VulkanInstance;
 struct VulkanDevice;
 namespace oGFX
 {
+	constexpr bool ERROR_VAL = 1;
+	constexpr bool SUCCESS_VAL = 0;
 
 	glm::mat4 customOrtho(float aspect_ratio, float size, float nr, float fr);
 
@@ -180,6 +183,24 @@ namespace oGFX
 		*/
 	};
 
+	struct AllocatedBuffer
+	{
+		VkBuffer buffer;
+		VmaAllocation alloc;
+		VmaAllocationInfo allocInfo;
+	};
+
+	struct AllocatedImage {
+		VkImage image;
+		VmaAllocation allocation;
+		VmaAllocationInfo allocationInfo;
+	};
+
+	enum ResourceUsage {
+		SRV,
+		UAV,
+	};
+
 	const std::vector<VkVertexInputBindingDescription>& GetGFXVertexInputBindings();	
 	const std::vector<VkVertexInputAttributeDescription>& GetGFXVertexInputAttributes();
 
@@ -202,9 +223,8 @@ namespace oGFX
 
 	std::vector<char> readFile(const std::string& filename);
 
-	void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize,
-		VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags bufferProperties,
-		VkBuffer* buffer, VkDeviceMemory* bufferMemory);
+	void CreateBuffer(VmaAllocator allocator, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage,
+		VmaAllocationCreateFlags allocationInfo, oGFX::AllocatedBuffer& vmabuffer);
 
 	void CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool,
 		VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize, VkDeviceSize dstOffset = 0, VkDeviceSize srcOffset = 0);
@@ -212,9 +232,6 @@ namespace oGFX
 	VkCommandBuffer beginCommandBuffer(VkDevice device, VkCommandPool commandPool);
 
 	void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer);
-
-	void TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool commandPool,
-		VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	void CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool,
 		VkBuffer srcBuffer, VkImage image, uint32_t width, uint32_t height);

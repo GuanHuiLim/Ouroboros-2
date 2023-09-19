@@ -246,7 +246,7 @@ void SetCastsShadows(LocalLightInstance& l, bool s)
 	l.info.x = s ? 1 : -1;
 }
 
-bool GetCastsShadows(LocalLightInstance& l)
+bool GetCastsShadows(const LocalLightInstance& l)
 {
 	return l.info.x >= 1;
 }
@@ -256,9 +256,9 @@ void SetCastsShadows(OmniLightInstance& l, bool s)
 	SetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l),s);
 }
 
-bool GetCastsShadows(OmniLightInstance& l)
+bool GetCastsShadows(const OmniLightInstance& l)
 {
-	return GetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l));
+	return GetCastsShadows(*reinterpret_cast<const LocalLightInstance*>(&l));
 }
 
 void SetCastsShadows(SpotLightInstance& l, bool s)
@@ -266,9 +266,9 @@ void SetCastsShadows(SpotLightInstance& l, bool s)
 	SetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l),s);
 }
 
-bool GetCastsShadows(SpotLightInstance& l)
+bool GetCastsShadows(const SpotLightInstance& l)
 {
-	return GetCastsShadows(*reinterpret_cast<LocalLightInstance*>(&l));
+	return GetCastsShadows(*reinterpret_cast<const LocalLightInstance*>(&l));
 }
 
 void UIInstance::SetText(bool s)

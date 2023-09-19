@@ -17,8 +17,10 @@ Technology is prohibited.
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <array>
 
 #include "vulkan/vulkan.h"
+#include "VmaUsage.h"
 
 //#include "VulkanBuffer.h"
 #include "VulkanDevice.h"
@@ -31,20 +33,18 @@ namespace vkutils
 	public:
 		std::string name{}; // maybe remove when not debug?
 		VulkanDevice* device{ nullptr };
-		VkImage image{};
+		oGFX::AllocatedImage image;
 		VkFormat format{};
 		VkImageLayout imageLayout{};
-		VkImageLayout currentLayout{};
-		VkDeviceMemory deviceMemory{};
+		VkImageLayout currentLayout{VK_IMAGE_LAYOUT_UNDEFINED};
 		VkImageView view{};
 		uint32_t width{}, height{};
 		uint32_t mipLevels{};
 		uint32_t layerCount{};
 		VkDescriptorImageInfo descriptor{};
-		VkSampler sampler{};
 		VkImageUsageFlags usage{};
 		VkImageAspectFlags aspectMask{};
-		VkMemoryPropertyFlags MemProps{};
+		VkFilter filter{};
 		bool targetSwapchain = true;
 		bool isValid = false;
 		float renderScale = 1.0f;
@@ -63,9 +63,10 @@ namespace vkutils
 			VkFormat format,
 			VulkanDevice* device,
 			VkQueue copyQueue,
-			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			bool forceLinear = false);
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			bool forceLinear = false
+		);
 
 		void fromBuffer(
 			void* buffer,
@@ -76,9 +77,12 @@ namespace vkutils
 			std::vector<VkBufferImageCopy> mips,
 			VulkanDevice* device,
 			VkQueue copyQueue,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VkFilter filter = VK_FILTER_LINEAR,
-			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
+		);
+
+		void AllocateImageMemory(VulkanDevice* device, const VkImageUsageFlags& imageUsageFlags, uint32_t mips = 1);
 
 		void forFrameBuffer(VulkanDevice* device,
 			VkFormat format,
@@ -87,7 +91,8 @@ namespace vkutils
 			bool forFullscr = true,
 			float renderscale = 1.0f,
 			uint32_t mipLevels = 1,
-			VkMemoryPropertyFlags properties= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			VkMemoryPropertyFlags properties= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VkFilter filter = VK_FILTER_LINEAR
 		);
 
@@ -103,10 +108,12 @@ namespace vkutils
 			VkQueue copyQueue,
 			VkFilter filter = VK_FILTER_LINEAR,
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT);
+
+		void CreateImageView();
 	};
 
 
-	void TransitionImage(VkCommandBuffer cmd,Texture2D& texture, VkImageLayout targetLayout);
-	void ComputeImageBarrier(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout);
+	void TransitionImage(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout, uint32_t mipBegin = 0, uint32_t mipEnd = 0);
+	void ComputeImageBarrier(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout, uint32_t mipBegin = 0, uint32_t mipEnd = 0);
 
 }

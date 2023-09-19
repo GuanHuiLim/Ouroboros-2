@@ -292,7 +292,8 @@ void Window::Init()
 
     if (rawHandle == NULL)
     {
-        throw std::runtime_error("Failed to create a window!");
+        std::cerr << "Failed to create a window!" << std::endl;
+        __debugbreak();
     }
 
     //window now exists we need to show the window..

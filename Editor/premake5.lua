@@ -45,6 +45,7 @@ project "Editor"
         "%{IncludeDir.VulkanSDK}",
         "%{IncludeDir.vulkan}",
         "%{IncludeDir.assimp}",
+        "%{IncludeDir.vma}",
         "%{IncludeDir.assimpBin}",
         "%{IncludeDir.SDL}",
         

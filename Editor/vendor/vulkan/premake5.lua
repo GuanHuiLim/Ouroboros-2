@@ -39,6 +39,7 @@ project "Vulkan"
         "%{IncludeDir.assimpBin}",
         "%{IncludeDir.msdfatlas}",
         "%{IncludeDir.msdfgen}",
+        "%{IncludeDir.vma}",
         "%{IncludeDir.freetype}",
 
         -- for the case of imgui if you want it to be direct just 

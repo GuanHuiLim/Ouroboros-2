@@ -1,0 +1,13 @@
+#pragma once
+
+#ifndef GPU_MARKER
+	#define GPU_MARKER 1
+#endif // !GPU_MARKER
+
+#ifndef VULKAN_MESSENGER
+	#define VULKAN_MESSENGER 1
+#endif // !VULKAN_MESSENGER
+
+#ifndef VULKAN_VALIDATION
+	#define VULKAN_VALIDATION 1
+#endif // !VULKAN_VALIDATION

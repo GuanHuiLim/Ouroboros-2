@@ -327,7 +327,8 @@ namespace oGFX
 		VK_NAME(device.logicalDevice, "createImageView::imageView", imageView);
 		if (result != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create an image view!");
+			std::cerr << "Failed to create an image view!" << std::endl;
+			__debugbreak();
 		}
 
 		return imageView;
@@ -353,7 +354,8 @@ namespace oGFX
 			}
 		}
 
-		throw std::runtime_error("Failed to find a matching format!");
+		std::cerr << "Failed to find a matching format!" << std::endl;
+		__debugbreak();
 	}
 
 	VkImage CreateImage(VulkanDevice& device,uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory *imageMemory)
@@ -379,7 +381,8 @@ namespace oGFX
 		VK_NAME(device.logicalDevice, "CreateImage::image", image);
 		if (result != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create an image!");
+			std::cerr << "Failed to create an image!" << std::endl;
+			__debugbreak();
 		}
 		// Create memory for iamge
 		//get memeory requirements for a type of image
@@ -395,7 +398,8 @@ namespace oGFX
 		result = vkAllocateMemory(device.logicalDevice, &memoryAllocInfo, nullptr, imageMemory);
 		if (result != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed allocate memory for an image!");
+			std::cerr << "Failed allocate memory for an image!" << std::endl;
+			__debugbreak();
 		}
 
 		// connect memory to image
@@ -439,7 +443,8 @@ namespace oGFX
 		VK_NAME(device.logicalDevice, code.data(), shaderModule);
 		if (result != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create a shader module!");
+			std::cerr << "Failed to create a shader module!" << std::endl;
+			__debugbreak();
 		}
 		return shaderModule;
 	}
@@ -455,7 +460,7 @@ namespace oGFX
 		if (!file.is_open())
 		{
 			std::cerr << "Failed to open a file! : " << filename << std::endl;
-			throw std::runtime_error("Failed to open a file! : " + filename);
+			__debugbreak();
 		}
 
 		// get current read position and use to resize buffer
@@ -474,50 +479,29 @@ namespace oGFX
 		return fileBuffer;
 	}
 
-	void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags bufferProperties, VkBuffer* buffer, VkDeviceMemory* bufferMemory)
+	void CreateBuffer(VmaAllocator allocator, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage,
+		VmaAllocationCreateFlags allocationFlags, oGFX::AllocatedBuffer& vmabuffer)
 	{
+		PROFILE_SCOPED();
 		//CREATE VERTEX BUFFER
 		//information to create a buffer ( doesnt include assigning memory)
+		VmaAllocationCreateInfo vmaCI{};
+		vmaCI.usage = VMA_MEMORY_USAGE_AUTO;
+		vmaCI.flags = allocationFlags;
 		VkBufferCreateInfo bufferInfo = oGFX::vkutils::inits::bufferCreateInfo(bufferUsage,bufferSize);
-		VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer);
+		VkResult result = vmaCreateBuffer(allocator, &bufferInfo, &vmaCI, &vmabuffer.buffer, &vmabuffer.alloc, &vmabuffer.allocInfo);
 		if (result != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create a Vertex Buffer!");
+			std::cerr << "Failed to create a Buffer!" << std::endl;
+			__debugbreak();
 		}
-
-		//get buffer memory requirements
-		VkMemoryRequirements memoryRequirements;
-		vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
-
-		// Allocate memory to buffer
-		VkMemoryAllocateInfo memoryAllocInfo = oGFX::vkutils::inits::memoryAllocateInfo();
-		memoryAllocInfo.allocationSize = memoryRequirements.size;
-		memoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(physicalDevice,memoryRequirements.memoryTypeBits,bufferProperties); //index of memory type on physical device that has required bit flags
-			
-		// If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
-		VkMemoryAllocateFlagsInfoKHR allocFlagsInfo{};
-		if (bufferUsage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
-			allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
-			allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-			memoryAllocInfo.pNext = &allocFlagsInfo;
-		}
-																							
-		//Allocate memory to VkDeviceMemory
-		result = vkAllocateMemory(device, &memoryAllocInfo, nullptr, bufferMemory);
-		if (result != VK_SUCCESS)
-		{
-			std::cout << oGFX::vkutils::tools::VkResultString(result) << std::endl;
-			throw std::runtime_error("Failed to allocate Vertex Buffer Memory!");
-		}
-
-		//Allocate memory to given vertex buffer
-		vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
 	}
 
 	// TODO: Allow this to make multiple segmented copies
 	void CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool,
 		VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize,VkDeviceSize dstOffset,VkDeviceSize srcOffset)
 	{
+		PROFILE_SCOPED();
 		//Create buffer
 		VkCommandBuffer transferCommandBuffer = beginCommandBuffer(device,transferCommandPool);
 
@@ -582,59 +566,6 @@ namespace oGFX
 		// Free temporary command buffer to pool
 		vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 		//std::cout << " Free comand buffer 2 " << commandBuffer << "\n";
-	}
-
-	void TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool commandPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
-	{
-			//Create buffer
-			VkCommandBuffer commandBuffer = beginCommandBuffer(device, commandPool);
-
-			VkImageMemoryBarrier imageMemoryBarrier{};
-			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;	
-			imageMemoryBarrier.oldLayout = oldLayout;							// Layout to transition from
-			imageMemoryBarrier.newLayout = newLayout;							// Layout to transition to
-			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;	// Queue family to transition from
-			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;	// Queue family to transition to
-			imageMemoryBarrier.image = image;									// image being accessed and modified as part of barrier
-			imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // Aspect of image being altered
-			imageMemoryBarrier.subresourceRange.baseMipLevel = 0;				// First mip level to start alterations on													   // 
-			imageMemoryBarrier.subresourceRange.levelCount = 1;					// number of mip levels to alter starting from base value
-			imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;				// First layer to start alterations on
-			imageMemoryBarrier.subresourceRange.layerCount = 1;					// Number of layers to alter starting from base array layer
-
-			VkPipelineStageFlags srcStage{};
-			VkPipelineStageFlags dstStage{};
-
-
-			// If transitioning from new image to image ready to recieve data..
-			if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-			{
-				imageMemoryBarrier.srcAccessMask = 0;								// Memory access stage transition must happen after..
-				imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;	// Memory access stage transition must happen before...
-
-				srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-				dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			}
-			// If transitioning from trasnferred destination to shader readable format..
-			else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-			{
-				imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-				srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-				dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; //ready to be read before we reach the fragment shader
-
-			}
-
-			vkCmdPipelineBarrier(commandBuffer,
-				srcStage,dstStage,					// pipline stages (match to src and dst access masks)
-				0,						// depencendy flags
-				0, nullptr,			// Memory barrier count and data
-				0, nullptr,			// Buffer memory barrier and data
-				1,&imageMemoryBarrier	// Image memeory barrier count + data
-			);
-
-			endAndSubmitCommandBuffer(device, commandPool, queue, commandBuffer);
 	}
 
 	void CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, VkBuffer srcBuffer, VkImage image, uint32_t width, uint32_t height)

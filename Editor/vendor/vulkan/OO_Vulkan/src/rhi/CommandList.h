@@ -29,9 +29,14 @@ public:
 	CommandList(const VkCommandBuffer& cmd, const char* name = nullptr, const glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f });
 	~CommandList();
 
+	void BeginNameRegion(const char* name, const glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f });
+	void EndNamedRegion();
+
 	//----------------------------------------------------------------------------------------------------
 	// Binding Commands
 	//----------------------------------------------------------------------------------------------------
+	void BindAttachment(uint32_t bindPoint, vkutils::Texture2D* tex, bool clearOnDraw = false);
+	void BindDepthAttachment(vkutils::Texture2D* tex, bool clearOnDraw = false);
 
 	void BindVertexBuffer(
 		uint32_t firstBinding,
@@ -44,6 +49,9 @@ public:
 		VkDeviceSize offset,
 		VkIndexType indexType
 	);
+
+	void BeginRendering(VkRect2D renderArea);
+	void EndRendering();
 
 	void BindPSO(const VkPipeline& pso, const VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
@@ -114,6 +122,8 @@ public:
 	// Helper function to draw a Full Screen Quad, without binding vertex and index buffers.
 	void DrawFullScreenQuad();
 
+	void Dispatch(uint32_t x, uint32_t y = 1 , uint32_t z = 1);
+
 	//----------------------------------------------------------------------------------------------------
 	// Pipeline State Commands
 	//----------------------------------------------------------------------------------------------------
@@ -144,7 +154,12 @@ private:
 
 	std::array<VkRect2D, 8> m_scissor;
 	std::array<VkViewport, 8> m_viewport;
+	std::array<VkRenderingAttachmentInfo, 8> m_attachments{};
+	int32_t m_highestAttachmentBound{-1};
+	bool m_depthBound = false;
+	VkRenderingAttachmentInfo m_depth;
 	float m_push_constant[128 / sizeof(float)]{0.0f};
+	bool m_regionNamed = false;
 	// TODO: Handle VK_PIPELINE_BIND_POINT_GRAPHICS etc nicely next time.
 	// TODO: Maybe we can cache the stuff that is bound, for easier debugging, else taking GPU captures is really unproductive.
 };

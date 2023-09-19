@@ -32,7 +32,6 @@ layout(set = 1, binding = 0) uniform UboFrameContext
 	FrameContext uboFrameContext;
 };
 
-//layout (set = 2, binding = 0) uniform sampler2D textureDesArr[];
 
 layout(std430, set = 0, binding = 3) readonly buffer GPUScene
 {

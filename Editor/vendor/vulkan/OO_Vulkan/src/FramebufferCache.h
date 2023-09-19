@@ -47,6 +47,7 @@ public:
 	};
 	void DeleteRelated(vkutils::Texture2D tex);
 
+	void RegisterFramebuffer(vkutils::Texture2D& tex);
 
 private:
 

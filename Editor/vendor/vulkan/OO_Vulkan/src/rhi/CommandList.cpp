@@ -35,22 +35,91 @@ void CommandList::SetPushConstant(VkPipelineLayout layout, const VkPushConstantR
 CommandList::CommandList(const VkCommandBuffer& cmd, const char* name, const glm::vec4 col)
 	: m_VkCommandBuffer{ cmd } 
 {
+	BeginNameRegion(name, col);
+
+	for (auto& a : m_attachments)
+	{
+		a = VkRenderingAttachmentInfo{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
+	}
+}
+CommandList::~CommandList()
+{
+	EndNamedRegion();
+}
+
+void CommandList::EndNamedRegion()
+{
+	auto region = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
+	
+	if (region && m_regionNamed)
+	{
+		region(m_VkCommandBuffer);
+	}
+	m_regionNamed = false;	
+}
+
+void CommandList::BeginNameRegion(const char* name, const glm::vec4 col)
+{
 	auto region = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
 	if (name && region)
 	{
+		EndNamedRegion();
+
 		VkDebugMarkerMarkerInfoEXT marker = {};
 		marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 		memcpy(marker.color, &col[0], sizeof(float) * 4);
 		marker.pMarkerName = name;
 		region(m_VkCommandBuffer, &marker);
+		m_regionNamed = true;
 	}
 }
-CommandList::~CommandList()
+
+void CommandList::BindAttachment(uint32_t bindPoint, vkutils::Texture2D* tex, bool clearOnDraw)
 {
-	auto region = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
-	if (region)
+	//start tracking
+	if (tex) {
+		VkRenderingAttachmentInfo albedoInfo{};
+		albedoInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+		albedoInfo.pNext = NULL;
+		albedoInfo.resolveMode = {};
+		albedoInfo.resolveImageView = {};
+		albedoInfo.resolveImageLayout = {};
+		albedoInfo.imageView = tex->view;
+		albedoInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		albedoInfo.loadOp = clearOnDraw ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+		albedoInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		albedoInfo.clearValue = VkClearValue{ {} };
+
+		m_attachments[bindPoint] = albedoInfo;
+		m_highestAttachmentBound = std::max<int32_t>(bindPoint, m_highestAttachmentBound);
+	}
+	else 
 	{
-		region(m_VkCommandBuffer);
+		m_attachments[bindPoint] = VkRenderingAttachmentInfo{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR };
+	}
+}
+
+void CommandList::BindDepthAttachment(vkutils::Texture2D* tex, bool clearOnDraw)
+{
+	if (tex) 
+	{	
+		VkRenderingAttachmentInfo depthInfo{};
+		depthInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+		depthInfo.pNext = NULL;
+		depthInfo.resolveMode = {};
+		depthInfo.resolveImageView = {};
+		depthInfo.resolveImageLayout = {};
+		depthInfo.imageView = tex->view;
+		depthInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthInfo.loadOp = clearOnDraw ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+		depthInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthInfo.clearValue = VkClearValue{ {} };
+		m_depth = depthInfo;
+		m_depthBound = true;
+	}
+	else 
+	{
+		m_depthBound = false;
 	}
 }
 void CommandList::BindVertexBuffer(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets /*= nullptr*/)
@@ -64,8 +133,30 @@ void CommandList::BindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexT
 	vkCmdBindIndexBuffer(m_VkCommandBuffer, buffer, offset, indexType);
 }
 
+void CommandList::BeginRendering(VkRect2D renderArea)
+{
+	VkRenderingInfo renderingInfo{};
+	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	renderingInfo.renderArea = renderArea;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = m_highestAttachmentBound + 1; // should be [0-8];
+	renderingInfo.pColorAttachments = m_attachments.data();
+
+	renderingInfo.pDepthAttachment = m_depthBound ? &m_depth : NULL;
+	renderingInfo.pStencilAttachment = m_depthBound ? &m_depth : NULL;
+
+	vkCmdBeginRendering(m_VkCommandBuffer, &renderingInfo);
+}
+
+void CommandList::EndRendering()
+{
+	vkCmdEndRendering(m_VkCommandBuffer);
+}
+
+
 void CommandList::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
+	//transition resource
 	::DrawIndexedIndirect(m_VkCommandBuffer, buffer, offset, drawCount, stride);
 }
 
@@ -92,6 +183,11 @@ void CommandList::BindDescriptorSet(VkPipelineLayout layout,
 void CommandList::DrawFullScreenQuad()
 {
 	vkCmdDraw(m_VkCommandBuffer, 3, 1, 0, 0);
+}
+
+void CommandList::Dispatch(uint32_t x, uint32_t y, uint32_t z)
+{
+	vkCmdDispatch(m_VkCommandBuffer, x, y, z);
 }
 
 void CommandList::SetDefaultViewportAndScissor()

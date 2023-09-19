@@ -11,7 +11,7 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
-#include "ForwardParticlePass.h"
+#include "GfxRenderpass.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_vulkan.h"
@@ -26,12 +26,34 @@ Technology is prohibited.
 #include "MathCommon.h"
 
 #include "GraphicsWorld.h"
-#include "DeferredCompositionRenderpass.h"
-#include "GBufferRenderPass.h"
 
 #include <array>
 
+struct ForwardParticlePass : public GfxRenderpass
+{
+	//DECLARE_RENDERPASS_SINGLETON(ForwardParticlePass)
+
+	void Init() override;
+	void Draw(const VkCommandBuffer cmdlist) override;
+	void Shutdown() override;
+
+	bool SetupDependencies() override;
+
+	void CreatePSO() override;
+
+private:
+	void SetupRenderpass();
+	void SetupFramebuffer();
+	void CreatePipeline();
+
+};
+
 DECLARE_RENDERPASS(ForwardParticlePass);
+
+VulkanRenderpass renderpass_ForwardParticles{};
+
+//VkPushConstantRange pushConstantRange;
+VkPipeline pso_GBufferParticles{};
 
 void ForwardParticlePass::Init()
 {
@@ -60,7 +82,7 @@ bool ForwardParticlePass::SetupDependencies()
 	return true;
 }
 
-void ForwardParticlePass::Draw()
+void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
 	if (!vr.deferredRendering)
@@ -68,11 +90,10 @@ void ForwardParticlePass::Draw()
 
 	auto& device = vr.m_device;
 	auto& swapchain = vr.m_swapchain;
-	auto& commandBuffers = vr.commandBuffers;
 	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
+	auto& renderTarget = vr.renderTargets[vr.renderTargetInUseID];
 
-    const VkCommandBuffer cmdlist = commandBuffers[currFrame];
     PROFILE_GPU_CONTEXT(cmdlist);
     PROFILE_GPU_EVENT("ForwardParticles");
 
@@ -80,69 +101,31 @@ void ForwardParticlePass::Draw()
 	VkClearColorValue rMinusOne = VkClearColorValue{ 0.0f, 0.0f, 0.0f, 0.0f };
 	rMinusOne.int32[0] = -1;
 
-	auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
+	auto& attachments = vr.attachments.gbuffer;
 
-	assert(attachments[GBufferAttachmentIndex::DEPTH].currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	oGFX::vkutils::tools::insertImageMemoryBarrier(
-		cmdlist,
-		attachments[GBufferAttachmentIndex::DEPTH].image,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 });
-	attachments[GBufferAttachmentIndex::DEPTH].currentLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	// Clear values for all attachments written in the fragment shader
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
-	//clearValues[GBufferAttachmentIndex::POSITION].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::NORMAL]  .color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ALBEDO]  .color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::MATERIAL].color = zeroFloat4;
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 
-	assert(vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	oGFX::vkutils::tools::insertImageMemoryBarrier(
-		cmdlist,
-		vr.renderTargets[vr.renderTargetInUseID].texture.image,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT,
-		vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-	vr.renderTargets[vr.renderTargetInUseID].texture.currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	vkutils::TransitionImage(cmdlist, renderTarget.texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	VkFramebuffer currentFB;
-	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&vr.renderTargets[vr.renderTargetInUseID].texture)
-		.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
-		.BindImage(&attachments[GBufferAttachmentIndex::DEPTH])
-		.Build(currentFB,renderpass_ForwardParticles);
-
-	// Manually set layout for blit reason
-
-	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass =  renderpass_ForwardParticles.pass;
-	renderPassBeginInfo.framebuffer = currentFB;
-	renderPassBeginInfo.renderArea.extent.width = swapchain.swapChainExtent.width;
-	renderPassBeginInfo.renderArea.extent.height = swapchain.swapChainExtent.height;
-	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassBeginInfo.pClearValues = clearValues.data();
-
-	// vr.ResizeSwapchain() destroys the depth attachment. This causes the renderpass to fail on resize
-	// TODO: handle all framebuffer resizes gracefully
-	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	
 	rhi::CommandList cmd{ cmdlist, "Forward Particles Pass"};
-	cmd.SetDefaultViewportAndScissor();
+	cmd.BindAttachment(0, &renderTarget.texture);
+	cmd.BindAttachment(1, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
+	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
+
+	cmd.BeginRendering({ 0,0,{renderTarget.texture.width, renderTarget.texture.height } });
+	
 
 	cmd.BindPSO(pso_GBufferParticles);
+	cmd.SetDefaultViewportAndScissor();
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
@@ -171,7 +154,11 @@ void ForwardParticlePass::Draw()
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.g_particleDatas[currFrame].getBufferPtr());
 	cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer[currFrame].getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer[currFrame].size()));
 
-	vkCmdEndRenderPass(cmdlist);
+	cmd.EndRendering();
+
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], attachments[GBufferAttachmentIndex::ENTITY_ID].imageLayout);
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].imageLayout);
+	vkutils::TransitionImage(cmdlist, renderTarget.texture, renderTarget.texture.imageLayout);
 }
 
 void ForwardParticlePass::Shutdown()
@@ -219,7 +206,7 @@ void ForwardParticlePass::SetupRenderpass()
 		attachmentDescs[2].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		attachmentDescs[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
+		auto& attachments = vr.attachments.gbuffer;
 	// Formats
 	//attachmentDescs[GBufferAttachmentIndex::POSITION].format = attachments[GBufferAttachmentIndex::POSITION].format;
 	attachmentDescs[0]  .format = vr.G_HDR_FORMAT;
@@ -283,26 +270,7 @@ void ForwardParticlePass::SetupFramebuffer()
 	const uint32_t width = m_swapchain.swapChainExtent.width;
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
-	auto& attachments = RenderPassDatabase::GetRenderPass<GBufferRenderPass>()->attachments;
-
-	//FramebufferBuilder::Begin(&vr.fbCache)
-	//	//.BindImage(&attachments[GBufferAttachmentIndex::POSITION])
-	//	.BindImage(&m_swapchain.swapChainImages[0])
-	//	.BindImage(&attachments[GBufferAttachmentIndex::ENTITY_ID])
-	//	.BindImage(&m_swapchain.depthAttachment)
-	//	.Build(framebuffer_GBufferSecondPass,renderpass_ForwardParticles);
-
-	//VkFramebufferCreateInfo fbufCreateInfo = {};
-	//fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	//fbufCreateInfo.pNext = NULL;
-	//fbufCreateInfo.renderPass = renderpass_GBuffer;
-	//fbufCreateInfo.pAttachments = attachments.data();
-	//fbufCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-	//fbufCreateInfo.width = vr.m_swapchain.swapChainExtent.width;
-	//fbufCreateInfo.height = vr.m_swapchain.swapChainExtent.height;
-	//fbufCreateInfo.layers = 1;
-	//VK_CHK(vkCreateFramebuffer(vr.m_device.logicalDevice, &fbufCreateInfo, nullptr, &framebuffer_GBuffer));
-	//VK_NAME(vr.m_device.logicalDevice, "particlesFB", framebuffer_GBufferSecondPass);
+	auto& attachments = vr.attachments.gbuffer;
 }
 
 
@@ -323,7 +291,7 @@ void ForwardParticlePass::CreatePipeline()
 	VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_TRUE); // we want blending 
 	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
-	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
+	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_FALSE, vr.G_DEPTH_COMPARISON);
 	VkPipelineViewportStateCreateInfo viewportState = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1, 1, 0);
 	VkPipelineMultisampleStateCreateInfo multisampleState = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
@@ -363,7 +331,8 @@ void ForwardParticlePass::CreatePipeline()
 	pipelineCI.pVertexInputState = &vertexInputCreateInfo;
 
 	// Separate render pass
-	pipelineCI.renderPass = renderpass_ForwardParticles.pass;
+	//pipelineCI.renderPass = renderpass_ForwardParticles.pass;
+	pipelineCI.renderPass = VK_NULL_HANDLE;
 
 	// Blend attachment states required for all color attachments
 	// This is important, as color write mask will otherwise be 0x0 and you
@@ -372,10 +341,6 @@ void ForwardParticlePass::CreatePipeline()
 	{
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE), // albedo blend
-		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-		//oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
 	};
 	blendAttachmentStates[0].blendEnable = VK_TRUE; 
 	blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -388,6 +353,23 @@ void ForwardParticlePass::CreatePipeline()
 	colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 	colorBlendState.pAttachments = blendAttachmentStates.data();
 
+	std::array<VkFormat, 2> formats{
+		vr.G_HDR_FORMAT,
+		VK_FORMAT_R32_SINT
+	};
+	VkPipelineRenderingCreateInfo renderingInfo{};
+	renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	renderingInfo.viewMask = {};
+	renderingInfo.colorAttachmentCount = (uint32_t)formats.size();
+	renderingInfo.pColorAttachmentFormats = formats.data();
+	renderingInfo.depthAttachmentFormat = vr.G_DEPTH_FORMAT;
+	renderingInfo.stencilAttachmentFormat = vr.G_DEPTH_FORMAT;
+
+	pipelineCI.pNext = &renderingInfo;
+	if (pso_GBufferParticles != VK_NULL_HANDLE)
+	{
+		vkDestroyPipeline(m_device.logicalDevice, pso_GBufferParticles, nullptr);
+	}
 	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_GBufferParticles));
 	VK_NAME(m_device.logicalDevice, "forwardParticlesPSO", pso_GBufferParticles);
 

@@ -2,6 +2,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
+#include "shader_utility.shader"
 #include "shared_structs.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
@@ -17,7 +18,7 @@ layout(push_constant)uniform PushBloomConstant
 float Max3 (vec3 v) {
   return max (max (v.x, v.y), v.z);
 }
-#define EPSILON 0.00001
+
 //
 // Quadratic color thresholding
 // curve = (threshold - knee, knee * 2, 0.25 / knee)

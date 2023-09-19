@@ -18,14 +18,14 @@ layout(set = 1, binding = 0) uniform UboFrameContext
     FrameContext uboFrameContext;
 };
 
-layout (set = 2, binding = 0) uniform sampler2D textureDescriptorArray[];
-//layout(set = 1, binding= 0) uniform sampler2D textureSampler;
+layout (set = 0, binding = 0) uniform sampler basicSampler;
+layout (set = 2, binding = 0) uniform texture2D textureDescriptorArray[];
 
 
 const float pxRange = 2.0; // set to distance field's pixel range
 
 float screenPxRange() {
-    vec2 unitRange = vec2(pxRange)/vec2(textureSize(textureDescriptorArray[inInstanceData.x], 0));
+    vec2 unitRange = vec2(pxRange)/vec2(textureSize(sampler2D(textureDescriptorArray[inInstanceData.x],basicSampler), 0));
     vec2 screenTexSize = vec2(1.0)/fwidth(inUV.xy);
     return max(0.5*dot(unitRange, screenTexSize), 1.0);
 }
@@ -63,7 +63,7 @@ void main()
     const uint textureIndex_Metallic  = inInstanceData.w & 0xFFFF;
     uint perInstanceData              = inInstanceData.y & 0xFF;
    
-    outfragCol.rgba = texture(textureDescriptorArray[inInstanceData.x], inUV.xy).rgba;
+    outfragCol.rgba = texture(sampler2D(textureDescriptorArray[inInstanceData.x],basicSampler), inUV.xy).rgba;
     
     if(isSDFFont == 1)
     {

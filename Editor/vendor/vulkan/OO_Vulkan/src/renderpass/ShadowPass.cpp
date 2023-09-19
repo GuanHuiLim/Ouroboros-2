@@ -11,7 +11,7 @@ Reproduction or disclosure of this file or its contents
 without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
-#include "ShadowPass.h"
+#include "GfxRenderpass.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_vulkan.h"
@@ -28,11 +28,35 @@ Technology is prohibited.
 #include "../shaders/shared_structs.h"
 #include "MathCommon.h"
 
-#include "renderpass/DeferredCompositionRenderpass.h"
-
 #include <array>
 
+
+struct ShadowPass : public GfxRenderpass
+{
+	//DECLARE_RENDERPASS_SINGLETON(ShadowPass)
+
+	void Init() override;
+	void Draw(const VkCommandBuffer cmdlist) override;
+	void Shutdown() override;
+
+	bool SetupDependencies() override;
+	void CreatePSO() override;
+
+
+private:
+	void SetupRenderpass();
+	void SetupFramebuffer();
+	void CreatePipeline();
+};
+
+
 DECLARE_RENDERPASS(ShadowPass);
+
+VkExtent2D shadowmapSize = { 4096, 4096 };
+
+VulkanRenderpass renderpass_Shadow{};
+
+VkPipeline pso_ShadowDefault{};
 
 void ShadowPass::Init()
 {
@@ -57,7 +81,7 @@ bool ShadowPass::SetupDependencies()
 	return true;
 }
 
-void ShadowPass::Draw()
+void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
 
@@ -66,11 +90,10 @@ void ShadowPass::Draw()
 
 	auto& device = vr.m_device;
 	auto& swapchain = vr.m_swapchain;
-	auto& commandBuffers = vr.commandBuffers;
+	//auto& commandBuffers = vr.commandBuffers;
 	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 
-    const VkCommandBuffer cmdlist = commandBuffers[currFrame];
     PROFILE_GPU_CONTEXT(cmdlist);
     PROFILE_GPU_EVENT("Shadow");
 
@@ -78,27 +101,18 @@ void ShadowPass::Draw()
 
 	// Clear values for all attachments written in the fragment shader
 	VkClearValue clearValues;
-	clearValues.depthStencil = { 1.0f, 0 };
-	
-	VkFramebuffer fb_shadow;
-	FramebufferBuilder::Begin(&vr.fbCache)
-		.BindImage(&shadow_depth)
-		.Build(fb_shadow,renderpass_Shadow);
-
-	VkRenderPassBeginInfo renderPassBeginInfo = oGFX::vkutils::inits::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass =  renderpass_Shadow.pass;
-	renderPassBeginInfo.framebuffer = fb_shadow;
-	renderPassBeginInfo.renderArea.extent.width = shadowmapSize.width;
-	renderPassBeginInfo.renderArea.extent.height = shadowmapSize.height;
-	renderPassBeginInfo.clearValueCount = 1;
-	renderPassBeginInfo.pClearValues = &clearValues;
-
-	vkCmdBeginRenderPass(cmdlist, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	clearValues.depthStencil = { 0.0f, 0 };
 	
 	const float vpHeight = (float)shadowmapSize.height;
 	const float vpWidth = (float)shadowmapSize.width;
 	rhi::CommandList cmd{ cmdlist, "Shadow Pass"};
+
+	bool clearOnDraw = true;
+	cmd.BindDepthAttachment(&vr.attachments.shadow_depth, clearOnDraw);
+	cmd.BeginRendering({ 0, 0, (uint32_t)vr.attachments.shadow_depth.width, (uint32_t)vr.attachments.shadow_depth.height });
+
 	cmd.BindPSO(pso_ShadowDefault);
+	cmd.SetDefaultViewportAndScissor();
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
@@ -131,7 +145,7 @@ void ShadowPass::Draw()
 	if (vr.m_numShadowcastLights > 0)
 	{
 		
-		for (auto& light: vr.currWorld->GetAllOmniLightInstances())
+		for (const auto& light: vr.batches.GetLocalLights())
 		{
 			if (GetLightEnabled(light) == false) continue;
 
@@ -185,14 +199,16 @@ void ShadowPass::Draw()
 						sizeof(glm::mat4),			// size of data being pushed
 						glm::value_ptr(mm));		// actualy data being pushed (could be an array));
 
-					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer[currFrame].m_buffer, 0, static_cast<uint32_t>(vr.shadowCasterCommandsBuffer[currFrame].size()));
+					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer[currFrame].getBuffer(), 0, static_cast<uint32_t>(vr.shadowCasterCommandsBuffer[currFrame].size()));
 				}
 				
 			}			
 		}		
 	}
 
-	vkCmdEndRenderPass(cmdlist);
+	cmd.EndRendering();
+
+	vkutils::TransitionImage(cmdlist, vr.attachments.shadow_depth, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void ShadowPass::Shutdown()
@@ -200,7 +216,7 @@ void ShadowPass::Shutdown()
 	auto& vr = *VulkanRenderer::get();
 	auto& device = vr.m_device.logicalDevice;
 
-	shadow_depth.destroy();
+	vr.attachments.shadow_depth.destroy();
 	renderpass_Shadow.destroy();
 	vkDestroyPipeline(device, pso_ShadowDefault, nullptr);
 }
@@ -214,11 +230,10 @@ void ShadowPass::SetupRenderpass()
 	const uint32_t width = shadowmapSize.width;
 	const uint32_t height = shadowmapSize.height;
 
-	shadow_depth.name = "SHADOW_ATLAS";
-	shadow_depth.forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height, false);
-	
-	vkutils::Texture2D tex;
-	tex.image = shadow_depth.image;
+	vr.attachments.shadow_depth.name = "SHADOW_ATLAS";
+	vr.attachments.shadow_depth.forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height, false);
+	vr.fbCache.RegisterFramebuffer(vr.attachments.shadow_depth);
+
 
 	// Set up separate renderpass with references to the color and depth attachments
 	VkAttachmentDescription attachmentDescs = {};
@@ -232,7 +247,7 @@ void ShadowPass::SetupRenderpass()
 	attachmentDescs.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	//attachmentDescs.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	attachmentDescs.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	attachmentDescs.format = shadow_depth.format;
+	attachmentDescs.format = vr.attachments.shadow_depth.format;
 
 
 	VkAttachmentReference depthReference = {};
@@ -282,17 +297,7 @@ void ShadowPass::SetupFramebuffer()
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
 
-	VkImageView depthView = shadow_depth.view;
-
-	VkFramebuffer fb;
-	UNREFERENCED_PARAMETER(fb);
-	//FramebufferBuilder::Begin(&vr.fbCache)
-	//	.BindImage(&shadow_depth)
-	//	.Build(fb,renderpass_Shadow);
-
-	// TODO: Fix imgui depth rendering
-	//deferredImg[GBufferAttachmentIndex::DEPTH]    = ImGui_ImplVulkan_AddTexture(GfxSamplerManager::GetSampler_Deferred(), att_depth.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	shadowImg = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), shadow_depth.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	Attachments_imguiBinding::shadowImg = vr.CreateImguiBinding(GfxSamplerManager::GetSampler_Deferred(), vr.attachments.shadow_depth.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void ShadowPass::CreatePipeline()
@@ -305,7 +310,7 @@ void ShadowPass::CreatePipeline()
 	//VkPipelineRasterizationStateCreateInfo rasterizationState = oGFX::vkutils::inits::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	VkPipelineColorBlendAttachmentState blendAttachmentState = oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
 	VkPipelineColorBlendStateCreateInfo colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
-	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+	VkPipelineDepthStencilStateCreateInfo depthStencilState = oGFX::vkutils::inits::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, vr.G_DEPTH_COMPARISON);
 	VkPipelineViewportStateCreateInfo viewportState = oGFX::vkutils::inits::pipelineViewportStateCreateInfo(1, 1, 0);
 	VkPipelineMultisampleStateCreateInfo multisampleState = oGFX::vkutils::inits::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 	std::vector<VkDynamicState> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
@@ -347,23 +352,26 @@ void ShadowPass::CreatePipeline()
 	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/shadow.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Separate render pass
-	pipelineCI.renderPass = renderpass_Shadow.pass;
+	pipelineCI.renderPass = VK_NULL_HANDLE;
+
+	VkPipelineRenderingCreateInfo renderingInfo{};
+	renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	renderingInfo.viewMask = {};
+	renderingInfo.colorAttachmentCount = 0;
+	renderingInfo.pColorAttachmentFormats = NULL;
+	renderingInfo.depthAttachmentFormat = vr.G_DEPTH_FORMAT;
+	renderingInfo.stencilAttachmentFormat =  vr.G_DEPTH_FORMAT;
+
+	pipelineCI.pNext = &renderingInfo;
 
 	// Blend attachment states required for all color attachments
 	// This is important, as color write mask will otherwise be 0x0 and you
 	// won't see anything rendered to the attachment
 	
-	//std::array<VkPipelineColorBlendAttachmentState, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> blendAttachmentStates =
-	//{
-	//	oGFX::vk::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-	//	oGFX::vk::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-	//	oGFX::vk::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-	//	oGFX::vk::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
-	//};
-	//
-	//colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
-	//colorBlendState.pAttachments = blendAttachmentStates.data();
-
+	if (pso_ShadowDefault != VK_NULL_HANDLE)
+	{
+		vkDestroyPipeline(m_device.logicalDevice, pso_ShadowDefault, nullptr);
+	}
 	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_ShadowDefault));
 	VK_NAME(m_device.logicalDevice, "ShadowPipline", pso_ShadowDefault);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);

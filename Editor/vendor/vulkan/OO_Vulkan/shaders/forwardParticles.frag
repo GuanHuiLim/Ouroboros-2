@@ -18,8 +18,9 @@ layout(set = 1, binding = 0) uniform UboFrameContext
     FrameContext uboFrameContext;
 };
 
-layout (set = 2, binding = 0) uniform sampler2D textureDescriptorArray[];
-//layout(set = 1, binding= 0) uniform sampler2D textureSampler;
+
+layout (set = 0, binding = 0) uniform sampler basicSampler;
+layout (set = 2, binding = 0) uniform texture2D textureDescriptorArray[];
 
 vec4 PackPBRMaterialOutputs(in float roughness, in float metallic) // TODO: Add other params as needed
 {
@@ -63,7 +64,7 @@ void main()
     const uint textureIndex_Metallic  = inInstanceData.w & 0xFFFF;
     uint perInstanceData              = inInstanceData.y & 0xFF;
    
-    outfragCol.rgba = texture(textureDescriptorArray[textureIndex_Albedo], inUV.xy).rgba;
+    outfragCol.rgba = texture(sampler2D(textureDescriptorArray[textureIndex_Albedo],basicSampler), inUV.xy).rgba;
      if(outfragCol.a < 0.0001) discard;
     outfragCol *= inColor;
 	

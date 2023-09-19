@@ -15,6 +15,7 @@ Technology is prohibited.
 
 #include <vulkan/vulkan.h>
 #include "MathCommon.h"
+#include "VmaUsage.h"
 
 #pragma warning( push )
 #pragma warning( disable : 26451 ) // vendor overflow
@@ -41,7 +42,7 @@ namespace oGFX
 class Mesh
 {
 public:
-	Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice,
+	Mesh(VkDevice device,VmaAllocator newAlloc,
 		VkQueue transferQueue,VkCommandPool transferCommandPool,
 		std::vector<oGFX::Vertex> *vertices, std::vector<uint32_t> *indices, int newTexId);
 
@@ -67,15 +68,13 @@ private:
 	int texId;
 
 	int vertexCount;
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
+	oGFX::AllocatedBuffer vertexBuffer;
 
 	int indexCount;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
+	oGFX::AllocatedBuffer indexBuffer;
 
-	VkPhysicalDevice physicalDevice;
 	VkDevice device;
+	VmaAllocator vmaAllocator;
 
 	void CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<oGFX::Vertex> *vertices);
 	void CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t> *indices);

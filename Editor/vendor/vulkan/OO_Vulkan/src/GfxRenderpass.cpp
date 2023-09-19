@@ -45,6 +45,17 @@ void RenderPassDatabase::RegisterRenderPass(GfxRenderpass* renderPass)
 	m_AllRawRenderPasses.push_back(renderPass);
 }
 
+void RenderPassDatabase::ReloadAllShaders()
+{
+	// I know... I will be removing this database eventually
+	auto renderpasses = Get();
+	for (auto& renderPass : renderpasses->m_AllRawRenderPasses)
+	{
+		renderPass->CreatePSO();
+	}
+
+}
+
 void RenderPassDatabase::InitAllRegisteredPasses()
 {
 	auto renderpasses = Get();
@@ -54,10 +65,7 @@ void RenderPassDatabase::InitAllRegisteredPasses()
 		renderPass->Init();
 	}
 
-    for (auto& renderPass : renderpasses->m_AllRawRenderPasses)
-    {
-        renderPass->CreatePSO();
-    }
+	ReloadAllShaders();
 }
 
 void RenderPassDatabase::ShutdownAllRegisteredPasses()
@@ -67,7 +75,6 @@ void RenderPassDatabase::ShutdownAllRegisteredPasses()
     for (auto& renderPass : renderpasses->m_AllRawRenderPasses)
     {
         renderPass->Shutdown();
-		delete renderPass;
     }
 	renderpasses->m_AllRawRenderPasses.clear();
 }

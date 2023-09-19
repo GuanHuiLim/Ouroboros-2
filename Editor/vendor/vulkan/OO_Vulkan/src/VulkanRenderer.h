@@ -41,6 +41,7 @@ Technology is prohibited.
 #include "imgui/imgui.h"
 
 #include "GfxSampler.h"
+#include "GfxRenderpass.h"
 
 #include "GraphicsWorld.h"
 #include "GraphicsBatch.h"
@@ -85,8 +86,16 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout compute_doubleImageStore;
 	inline static VkDescriptorSetLayout compute_shadowPrepass;
 	inline static VkDescriptorSetLayout compute_singleSSBO;
+	inline static VkDescriptorSetLayout compute_AMDSPD;
 
 };
+
+struct Attachments_imguiBinding {
+	inline static std::array<ImTextureID, GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS> deferredImg{};
+
+	inline static ImTextureID shadowImg{};
+};
+
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
 struct PSOLayoutDB
@@ -101,6 +110,7 @@ struct PSOLayoutDB
 	inline static VkPipelineLayout doubleImageStoreLayout; 
 	inline static VkPipelineLayout singleSSBOlayout; 
 	inline static VkPipelineLayout shadowPrepassLayout; 
+	inline static VkPipelineLayout AMDSPDLayout; 
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -133,6 +143,19 @@ namespace CB
 		glm::vec4 vector4_values9{};
 	};
 
+	struct AMDSPD_UBO
+	{
+		uint32_t	mips;
+		uint32_t	numWorkGroups;
+		uint32_t	workGroupOffset[2];
+		glm::vec2	invInputSize; 
+		glm::vec2	padding;
+	};
+
+	struct AMDSPD_ATOMIC {
+		uint32_t counter[6];
+	};
+
 }
 
 class VulkanRenderer
@@ -141,11 +164,28 @@ public:
 
 	static VulkanRenderer* s_vulkanRenderer;
 
+	struct Attachments {
+		std::array<vkutils::Texture2D, GBufferAttachmentIndex::MAX_ATTACHMENTS> gbuffer{};
+		vkutils::Texture2D shadowMask{};
+
+		vkutils::Texture2D SSAO_renderTarget{};
+		vkutils::Texture2D SSAO_finalTarget{};
+		vkutils::Texture2D randomNoise_texture{};
+
+		vkutils::Texture2D shadow_depth{};
+
+		static constexpr size_t MAX_BLOOM_SAMPLES = 5;
+		vkutils::Texture2D Bloom_brightTarget;
+		std::array<vkutils::Texture2D, MAX_BLOOM_SAMPLES> Bloom_downsampleTargets;
+
+	}attachments;
+
 	inline static uint64_t totalTextureSizeLoaded = 0;
 	static constexpr int MAX_FRAME_DRAWS = 2;
 	static constexpr int MAX_OBJECTS = 2048;
 	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT_S8_UINT;
-	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+	static constexpr VkCompareOp G_DEPTH_COMPARISON = VK_COMPARE_OP_GREATER_OR_EQUAL;
+	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
 
 	static int ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface);
 
@@ -159,7 +199,9 @@ public:
 
 	static VulkanRenderer* get();
 
-	void Init(const oGFX::SetupInfo& setupSpecs, Window& window);
+	bool Init(const oGFX::SetupInfo& setupSpecs, Window& window);
+	
+	void ReloadShaders();
 
 	void CreateInstance(const oGFX::SetupInfo& setupSpecs);
 	void CreateDebugCallback();
@@ -167,6 +209,7 @@ public:
 	void CreateSurface(const oGFX::SetupInfo& setupSpecs, Window& window);
 	void AcquirePhysicalDevice(const oGFX::SetupInfo& setupSpecs);
 	void CreateLogicalDevice(const oGFX::SetupInfo& setupSpecs);
+	void InitVMA(const oGFX::SetupInfo& setupSpecs);
 	void SetupSwapchain();
 	void CreateDefaultRenderpass();
 	void CreateDefaultDescriptorSetLayout();
@@ -179,6 +222,8 @@ public:
 	//void CreateDepthBufferImage();
 	void CreateFramebuffers(); 
 	void CreateCommandBuffers();
+
+	VkCommandBuffer GetCommandBuffer();
 
 	ImTextureID myImg;
 
@@ -216,8 +261,6 @@ public:
 	VkDescriptorSet descriptorSet_fullscreenBlit;
 	// For UBO with the corresponding swap chain image
 	std::vector<VkDescriptorSet> descriptorSets_uniform;
-
-	void ResizeDeferredFB();
 
 	void SetWorld(GraphicsWorld* world);
 	void InitWorld(GraphicsWorld* world);
@@ -281,10 +324,11 @@ public:
 	// Immediate command sending helper
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-	uint32_t CreateTexture(uint32_t width, uint32_t height, unsigned char* imgData);
+	uint32_t CreateTexture(uint32_t width, uint32_t height, unsigned char* imgData, bool generateMips = true);
 	uint32_t CreateTexture(const std::string& fileName);
 	bool ReloadTexture(uint32_t textureID, const std::string& file);
 	void UnloadTexture(uint32_t textureID);
+	void GenerateMipmaps(vkutils::Texture2D& texture);
 
 	oGFX::Font* LoadFont(const std::string& filename);
 	oGFX::TexturePacker CreateFontAtlas(const std::string& filename, oGFX::Font& font);
@@ -360,9 +404,11 @@ public:
 	std::vector<VkSemaphore> presentSemaphore;
 	std::vector<VkSemaphore> renderSemaphore;
 	std::vector<VkFence> drawFences;
+	VkSemaphore frameSemaphore;
 
 	// - Pipeline
 	VkPipeline pso_utilFullscreenBlit;
+	VkPipeline pso_utilAMDSPD;
 
 	VulkanRenderpass renderPass_default{};
 	VulkanRenderpass renderPass_default_noDepth{};
@@ -398,8 +444,9 @@ public:
 	GpuVector<GPUObjectInformation> objectInformationBuffer[MAX_FRAME_DRAWS];
 	
 	// SSBO
-	std::vector<VkBuffer> vpUniformBuffer{};
-	std::vector<VkDeviceMemory> vpUniformBufferMemory{};
+	std::vector<oGFX::AllocatedBuffer> vpUniformBuffer{};
+	oGFX::AllocatedBuffer SPDatomicBuffer;
+	oGFX::AllocatedBuffer SPDconstantBuffer;
 
 	std::vector<DescriptorAllocator> descAllocs;
 	DescriptorLayoutCache DescLayoutCache;
@@ -407,8 +454,6 @@ public:
 	FramebufferCache fbCache;
 
 	GfxSamplerManager samplerManager;
-
-	std::vector<VkCommandBuffer> commandBuffers;
 
 	// Store the indirect draw commands containing index offsets and instance count per object
 
@@ -438,6 +483,7 @@ public:
 
 	bool resizeSwapchain = false;
 	bool m_prepared = false;
+	bool m_reloadShaders = false;
 
 
 	// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.

@@ -49,20 +49,25 @@ public:
 	const std::vector<oGFX::IndirectCommand>& GetParticlesBatch();
 	const std::vector<ParticleData>& GetParticlesData();
 	const std::vector<oGFX::UIVertex>& GetUIVertices();
+	const std::vector<LocalLightInstance>& GetLocalLights();
 	size_t GetScreenSpaceUIOffset() const;
 	// TODO :: need to return indices out if i am doing fill
 	
 	void GenerateTextGeometry(const UIInstance& ui);
 	void GenerateSpriteGeometry(const UIInstance& ui);
+	
+	size_t m_numShadowcastLights{};
 
 private:
 	GraphicsWorld* m_world{ nullptr };
 	VulkanRenderer* m_renderer{nullptr};
 
-	std::array<std::vector<oGFX::IndirectCommand> , DrawBatch::MAX_NUM> m_batches;
-	std::vector<ParticleData>m_particleList;
-	std::vector<oGFX::IndirectCommand>m_particleCommands;
-	std::vector<oGFX::UIVertex>m_uiVertices;
+	std::array<std::vector<oGFX::IndirectCommand>, DrawBatch::MAX_NUM> m_batches;
+	std::vector<ParticleData> m_particleList;
+	std::vector<oGFX::IndirectCommand> m_particleCommands;
+	std::vector<oGFX::UIVertex> m_uiVertices;
+
+	std::vector<LocalLightInstance>m_culledLights;
 
 	static inline std::vector<oGFX::IndirectCommand> s_scratchBuffer;
 

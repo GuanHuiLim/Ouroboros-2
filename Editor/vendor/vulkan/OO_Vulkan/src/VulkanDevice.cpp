@@ -35,22 +35,26 @@ VulkanDevice::~VulkanDevice()
 {
     for (size_t i = 0; i < 2; i++)
     {
-        if (commandPools[i])
-        {
-            vkDestroyCommandPool(logicalDevice, commandPools[i], nullptr);
-        }
-        if (transferPools[i])
-        {
-            vkDestroyCommandPool(logicalDevice, transferPools[i], nullptr);
-        }
+        commandPoolManagers[i].DestroyPool();
+        //if (transferPools[i])
+        //{
+        //    //vkDestroyCommandPool(logicalDevice, transferPools[i], nullptr);
+        //}
     }
-    
+
+    if (m_allocator)
+    {
+        vmaDestroyAllocator(m_allocator);
+        m_allocator = NULL;
+    }
+
     // no need destory phys device
 	if (logicalDevice)
 	{
 		vkDestroyDevice(logicalDevice,NULL);
 		logicalDevice = NULL;
 	}
+
 }
 
 void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance& instance)
@@ -64,7 +68,7 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
 	if (deviceCount == 0)
 	{
 		std::cerr << "Can't find GPUs that support vulkan instance!" << std::endl;
-		throw std::runtime_error("Can't find GPUs that support vulkan instance!");
+        __debugbreak();
 	}
 
 	// Get ist of physical devices
@@ -78,9 +82,9 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
 		auto& device = deviceList[i];
 		VkPhysicalDeviceProperties props;
 		vkGetPhysicalDeviceProperties(device, &props);
-		if (props.limits.maxComputeWorkGroupInvocations > memory)
+		if (props.limits.sparseAddressSpaceSize > memory)
 		{
-			memory = props.limits.maxComputeWorkGroupInvocations;
+			memory = props.limits.sparseAddressSpaceSize;
 			std::swap(deviceList[i], deviceList[best]);
             best = static_cast<uint32_t>(i);
 		}
@@ -89,8 +93,12 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
 	// find a suitable device
 	for (const auto& device : deviceList)
 	{
-		if (CheckDeviceSuitable(si, device))
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(device, &props);
+        if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && CheckDeviceSuitable(si, device))
 		{
+            
+            printf("Selected device %s\n", props.deviceName);
 			//found a nice device
 			physicalDevice = device;
 			break;
@@ -99,7 +107,7 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
 	if (physicalDevice == VK_NULL_HANDLE)
 	{
 		std::cerr << "No suitable physical device found!" << std::endl;
-		throw std::runtime_error("No suitable physical device found!");
+        __debugbreak();
 	}
 
 }
@@ -116,7 +124,8 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     //vector for queue creation information and set for family indices
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<int> queueFamilyIndices = { indices.graphicsFamily,indices.presentationFamily, indices.transferFamily };
-
+    
+    float priority = 1.0f;
     //queues the logical device needs to create in the info to do so.
     for (int queueFamilyIndex : queueFamilyIndices)
     {
@@ -127,7 +136,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
         //number of queues to create
         queueCreateInfo.queueCount = 1;
         //vulkan needs to know how to handle multiple queues and thus we need a priority, 1.0 is the highest priority
-        float priority = 1.0f;
+        
         queueCreateInfo.pQueuePriorities = &priority;
 
         queueCreateInfos.push_back(queueCreateInfo);
@@ -136,13 +145,14 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     std::vector<const char*>deviceExtensions{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
+        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
     };
 
     if (si.debug && si.renderDoc)
     {
-#ifdef _DEBUG
+#if VULKAN_VALIDATION
         deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME); 
-#endif // DEBUG
+#endif // VULKAN_VALIDATION
     }
 
     //information to create logical device (somtimes called only "device")
@@ -167,24 +177,43 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
 
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
+    VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
+    dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+    dynamicRendering.dynamicRendering = VK_TRUE;
+
+    VkPhysicalDeviceVulkan12Features vk12Features{};
+    vk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    vk12Features.descriptorIndexing = VK_TRUE;
+    vk12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    vk12Features.runtimeDescriptorArray = VK_TRUE; 
+    vk12Features.descriptorBindingVariableDescriptorCount = VK_TRUE; 
+    vk12Features.descriptorBindingPartiallyBound = VK_TRUE; 
+    vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE; 
+    vk12Features.timelineSemaphore = VK_TRUE;
 
     // required for instance base vertex
     VkPhysicalDeviceShaderDrawParametersFeatures shaderDrawFeatures{};
     shaderDrawFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
     shaderDrawFeatures.shaderDrawParameters = VK_TRUE;
 
-    // Bindless design requirement Descriptor indexing for descriptors
-    VkPhysicalDeviceDescriptorIndexingFeatures descriptor_indexing_features{};
-    descriptor_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    // Enable non-uniform indexing
-    descriptor_indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-    descriptor_indexing_features.runtimeDescriptorArray = VK_TRUE;
-    descriptor_indexing_features.descriptorBindingVariableDescriptorCount = VK_TRUE;
-    descriptor_indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
-    descriptor_indexing_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE; // needed for image descriptors
+    VkPhysicalDeviceMaintenance4FeaturesKHR maintainence4{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES }; // AMD_SPD req: LocalSizeId 
+    maintainence4.maintenance4 = VK_TRUE;
+    // Bindless design requirement Descriptor indexing for descriptors // contained in vulkan12 features
+    // VkPhysicalDeviceDescriptorIndexingFeatures descriptor_indexing_features{};
+    // descriptor_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+    // // Enable non-uniform indexing
+    // descriptor_indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    // descriptor_indexing_features.runtimeDescriptorArray = VK_TRUE;
+    // descriptor_indexing_features.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    // descriptor_indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
+    // descriptor_indexing_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE; // needed for image descriptors
 
-    deviceCreateInfo.pNext = &descriptor_indexing_features;
-    descriptor_indexing_features.pNext = &shaderDrawFeatures;
+
+    deviceCreateInfo.pNext = &vk12Features;
+    vk12Features.pNext = &shaderDrawFeatures;
+    shaderDrawFeatures.pNext = &dynamicRendering;
+    dynamicRendering.pNext = &maintainence4;
+    maintainence4.pNext = NULL;
 
     this->enabledFeatures = deviceFeatures;
 
@@ -194,7 +223,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     if (result != VK_SUCCESS)
     {
 		std::cerr << "VK Renderer Failed to create a logical device!\n" << oGFX::vkutils::tools::VkResultString(result) << std::endl;
-        throw std::runtime_error("VK Renderer Failed to create a logical device!\n" + oGFX::vkutils::tools::VkResultString(result));
+        __debugbreak();
     }
     VK_NAME(logicalDevice, "logicalDevice", logicalDevice);
 
@@ -202,34 +231,54 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     // So we want to handle the queues
     // From given logical device of given queue family of given index, place reference in VKqueue
     vkGetDeviceQueue(logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
-    vkGetDeviceQueue(logicalDevice, indices.presentationFamily, 0, &presentationQueue);
-    vkGetDeviceQueue(logicalDevice, indices.transferFamily, 0, &transferQueue);
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = indices.graphicsFamily; //Queue family type that buffers from this command pool will use
 
-    commandPools.resize(2);
-    transferPools.resize(2);
+
+    commandPoolManagers.resize(2);
+    // commandPools.resize(2);
+    //transferPools.resize(2);
     for (size_t i = 0; i < 2; i++)
     {
+        result = commandPoolManagers[i].InitPool(logicalDevice, indices.graphicsFamily);
         //create a graphics queue family command pool
-        poolInfo.queueFamilyIndex = indices.graphicsFamily; //Queue family type that buffers from this command pool will use
-        result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPools[i]);
-        VK_NAME(logicalDevice, "commandPool", commandPools[i]);
-
-        poolInfo.queueFamilyIndex = indices.transferFamily;
-        result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &transferPools[i]);
-        VK_NAME(logicalDevice, "transferPool", transferPools[i]);
+        // poolInfo.queueFamilyIndex = indices.graphicsFamily; //Queue family type that buffers from this command pool will use
+        // result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPools[i]);
+        // VK_NAME(logicalDevice, "commandPool", commandPools[i]);
+        // 
+        // //poolInfo.queueFamilyIndex = indices.transferFamily;
+        // //result = vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &transferPools[i]);
+        // //VK_NAME(logicalDevice, "transferPool", transferPools[i]);
+        // transferPools[i] = commandPools[i];
         if (result != VK_SUCCESS)
         {
             std::cerr << "Failed to create a command pool!" << std::endl;
-            throw std::runtime_error("Failed to create a command pool!");
+            __debugbreak();
         }
     }
   
 
+}
+
+void VulkanDevice::InitAllocator(const oGFX::SetupInfo& si, VulkanInstance& instance)
+{
+
+    VmaVulkanFunctions vulkanFuns{};
+    vulkanFuns.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    vulkanFuns.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice= physicalDevice;
+    allocatorInfo.device = logicalDevice;
+    allocatorInfo.flags = {};
+    allocatorInfo.instance = instance.instance;
+    allocatorInfo.pVulkanFunctions = &vulkanFuns;
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+
+    VK_CHK(vmaCreateAllocator(&allocatorInfo, &m_allocator));
 }
 
 bool VulkanDevice::CheckDeviceSuitable(const oGFX::SetupInfo& si,VkPhysicalDevice device)
@@ -278,9 +327,9 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
 
     if (si.debug && si.renderDoc)
     {
-#ifdef _DEBUG
+#if VULKAN_VALIDATION
         deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-#endif // DEBUG
+#endif // VULKAN_VALIDATION
     }
 
     //check extensions
@@ -297,8 +346,8 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
         }
         if (!hasExtension)
         {
-            //TODO: throw what extension not supported
-            std::cout << std::string("Does not support extension ") + deviceExtension << std::endl;
+            //TODO: what extension not supported
+            std::cerr << std::string("Does not support extension ") + deviceExtension << std::endl;
             return false;
         }
     }
@@ -306,53 +355,6 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
     return true;
 }
 
-VkResult VulkanDevice::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, vkutils::Buffer* buffer, VkDeviceSize size,const void* data)
-{
-    buffer->device = logicalDevice;
-
-    // Create the buffer handle
-    VkBufferCreateInfo bufferCreateInfo = oGFX::vkutils::inits::bufferCreateInfo(usageFlags, size);
-    vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &buffer->buffer);
-    VK_NAME(logicalDevice, "CreateBuffer::buffer", buffer->buffer);
-
-    // Create the memory backing up the buffer handle
-    VkMemoryRequirements memReqs;
-    VkMemoryAllocateInfo memAlloc = oGFX::vkutils::inits::memoryAllocateInfo();
-    vkGetBufferMemoryRequirements(logicalDevice, buffer->buffer, &memReqs);
-    memAlloc.allocationSize = memReqs.size;
-    // Find a memory type index that fits the properties of the buffer
-    memAlloc.memoryTypeIndex = oGFX::FindMemoryTypeIndex(physicalDevice,memReqs.memoryTypeBits, memoryPropertyFlags);
-    // If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
-    VkMemoryAllocateFlagsInfoKHR allocFlagsInfo{};
-    if (usageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
-        allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
-        allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-        memAlloc.pNext = &allocFlagsInfo;
-    }
-    vkAllocateMemory(logicalDevice, &memAlloc, nullptr, &buffer->memory);
-
-    buffer->alignment = memReqs.alignment;
-    buffer->size = size;
-    buffer->usageFlags = usageFlags;
-    buffer->memoryPropertyFlags = memoryPropertyFlags;
-
-    // If a pointer to the buffer data has been passed, map the buffer and copy over the data
-    if (data != nullptr)
-    {
-        (buffer->map());
-        memcpy(buffer->mapped, data, size);
-        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
-            buffer->flush();
-
-        buffer->unmap();
-    }
-
-    // Initialize a default descriptor that covers the whole buffer size
-    buffer->setupDescriptor();
-
-    // Attach the memory to the buffer object
-    return buffer->bind();
-}
 
 VkCommandBuffer VulkanDevice::CreateCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin)
 {
@@ -405,25 +407,5 @@ void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue que
 //{
 //    return FlushCommandBuffer(commandBuffer, queue, commandPool, free);
 //}
-
-void VulkanDevice::CopyBuffer(vkutils::Buffer* src, vkutils::Buffer* dst, VkQueue queue, VkBufferCopy* copyRegion)
-{
-    assert(dst->size >= src->size);
-    assert(src->buffer);
-    VkCommandBuffer copyCmd = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandPools[0], true);
-    VkBufferCopy bufferCopy{};
-    if (copyRegion == nullptr)
-    {
-        bufferCopy.size = src->size;
-    }
-    else
-    {
-        bufferCopy = *copyRegion;
-    }
-
-    vkCmdCopyBuffer(copyCmd, src->buffer, dst->buffer, 1, &bufferCopy);
-
-    FlushCommandBuffer(copyCmd, queue,commandPools[0]);
-}
 
 

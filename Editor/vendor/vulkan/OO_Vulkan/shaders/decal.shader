@@ -101,6 +101,7 @@ layout(location = 0) out vec4 outColor;
 //layout(set = 0, binding = 3) uniform sampler2D s_GBufferDepth;
 
 // TODO: Piggyback the deferred lighting descriptor set for now...
+layout (set = 0, binding = 0) uniform sampler basicSampler; 
 layout(set = 0, binding = 1) uniform sampler2D samplerposition;
 layout(set = 0, binding = 2) uniform sampler2D samplerNormal;
 layout(set = 0, binding = 3) uniform sampler2D samplerAlbedo;

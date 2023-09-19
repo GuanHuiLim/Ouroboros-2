@@ -5,8 +5,9 @@
 #include "shared_structs.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
-layout (binding = 1/*,rgba16f*/)  uniform sampler2D inputImage;
-layout (binding = 2,r11f_g11f_b10f) uniform  image2D resultImage;
+layout (set = 0,binding = 0/*,rgba16f*/)  uniform sampler basicSampler;
+layout (set = 0,binding = 1/*,rgba16f*/)  uniform texture2D inputImage;
+layout (set = 0,binding = 2,r11f_g11f_b10f) uniform  image2D resultImage;
 
 layout(push_constant)uniform PushVignette
 {
@@ -21,8 +22,8 @@ void main()
 	// vec4 inImg = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
 	
      // Normalized pixel coordinates (from 0 to 1)
-    vec2 uv = vec2(gl_GlobalInvocationID.xy)/imageSize(resultImage);
-    vec4 res = texture(inputImage, uv);
+    vec2 uv = (vec2(gl_GlobalInvocationID.xy)+0.5)/imageSize(resultImage);
+    vec4 res = texture(sampler2D(inputImage,basicSampler), uv);
 
 	
 	float InnerVig = pc.vignetteValues.x; // Position for the inner Vignette Ring

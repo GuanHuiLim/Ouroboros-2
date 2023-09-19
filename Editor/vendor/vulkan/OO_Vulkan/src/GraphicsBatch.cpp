@@ -95,9 +95,102 @@ void GraphicsBatch::ProcessLights()
 		light.view[3] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + right, glm::vec3{ 0.0f,1.0f, 0.0f });
 		light.view[4] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + -forward, glm::vec3{ 0.0f,-1.0f, 0.0f });
 		light.view[5] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + forward, glm::vec3{ 0.0f,-1.0f, 0.0f });
+		
+		auto inversed_perspectiveRH_ZO = [](float fovRad, float aspect, float n, float f)->glm::mat4 {
+			glm::mat4 result(0.0f);
+			assert(abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
+			float const tanHalfFovy = tan(fovRad / 2.0f);
 
-		light.projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, light.radius.x);
+			float h = 1.0f / std::tan(fovRad * 0.5f);
+			float w = h / aspect;
+			float a = -n / (f - n);
+			float b = (n * f) / (f - n);
+			result[0][0] = w;
+			result[1][1] = h;
+			result[2][2] = a;
+			result[2][3] = -1.0f;
+			result[3][2] = b;
+
+			return result;
+		};
+		light.projection = inversed_perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, light.radius.x);
 	}
+
+		
+	m_numShadowcastLights = 0;
+	int32_t gridIdx = 0;
+
+	m_culledLights.clear();
+	auto& lights = m_world->GetAllOmniLightInstances();
+	m_culledLights.reserve(lights.size());
+	//oGFX::DebugDraw::AddArrow(currWorld->cameras[0].m_position, currWorld->cameras[0].m_position + currWorld->cameras[0].GetUp(),oGFX::Colors::GREEN);
+	//oGFX::DebugDraw::AddArrow(currWorld->cameras[0].m_position, currWorld->cameras[0].m_position + currWorld->cameras[0].GetRight(),oGFX::Colors::RED);
+	//oGFX::DebugDraw::AddArrow(currWorld->cameras[0].m_position, currWorld->cameras[0].m_position + currWorld->cameras[0].GetFront(),oGFX::Colors::BLUE);
+	oGFX::Frustum frust = m_world->cameras[0].GetFrustum();
+	//{
+	//	oGFX::DebugDraw::DrawCameraFrustrumDebugArrows(frust);
+	//}
+
+	int viewIter{};
+	int sss{};
+	for (auto& e : lights)
+	{
+		oGFX::Sphere s;
+		s.center = e.position;
+		s.radius = e.radius.x;
+		//oGFX::DebugDraw::AddSphere(s,e.color);
+
+		auto existing = GetLightEnabled(e);
+		auto renderLight = GetLightEnabled(e);
+		if (oGFX::coll::SphereInFrustum(frust, s))		
+		{ 			
+			//SetLightEnabled(e, existing && true);
+			renderLight = renderLight && true;
+		}
+		else
+		{
+			sss++;
+			//SetLightEnabled(e, false);
+			renderLight = false;
+		}
+
+		if (renderLight == false)
+		{
+			continue;
+		}
+		LocalLightInstance si;
+		if (GetCastsShadows(e))
+		{
+
+			e.info.y = gridIdx;			
+			if (e.info.x == 1) // type one is omnilight
+			{
+				// loop through all faces
+				for (size_t i = 0; i < 6; i++)
+				{
+					++m_numShadowcastLights;
+					si.view[i] = e.view[i];
+					++gridIdx;
+				}
+			}
+			else // else spotlight?
+			{
+				++m_numShadowcastLights;
+				si.view[0] = e.view[++viewIter%6];		
+				++gridIdx;
+			}
+		}
+
+		SetLightEnabled(si, true);
+		si.info = e.info;
+		si.position = e.position;
+		si.color = e.color;
+		si.radius = e.radius;
+		si.projection = e.projection;
+
+		m_culledLights.emplace_back(si);
+	}
+
 }
 
 void GraphicsBatch::ProcessGeometry()
@@ -329,6 +422,11 @@ const std::vector<ParticleData>& GraphicsBatch::GetParticlesData()
 const std::vector<oGFX::UIVertex>& GraphicsBatch::GetUIVertices()
 {
 	return m_uiVertices;
+}
+
+const std::vector<LocalLightInstance>& GraphicsBatch::GetLocalLights()
+{
+	return m_culledLights;
 }
 
 size_t GraphicsBatch::GetScreenSpaceUIOffset() const

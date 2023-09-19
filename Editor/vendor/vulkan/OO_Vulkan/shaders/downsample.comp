@@ -1,8 +1,9 @@
 #version 460
 
 layout (local_size_x = 16, local_size_y = 16) in;
-layout (binding = 1/*,rgba16f*/) uniform sampler2D inputImage;
-layout (binding = 2,rgba16f) uniform writeonly image2D resultImage;
+layout (set=0, binding = 0) uniform sampler basicSampler;
+layout (set=0, binding = 1/*,rgba16f*/) uniform texture2D inputImage;
+layout (set=0, binding = 2,rgba16f) uniform writeonly image2D resultImage;
 
 void main()
 {	
@@ -10,27 +11,27 @@ void main()
 	vec4 res;
 	//vec4 res = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
 
-    vec2 srcSize = textureSize(inputImage,0);
+    vec2 srcSize = textureSize(sampler2D(inputImage,basicSampler),0);
     vec2 dstSize = imageSize(resultImage);
 
-    vec2 uv = vec2(gl_GlobalInvocationID.xy)/dstSize;///imageSize(resultImage);
+    vec2 uv = vec2(gl_GlobalInvocationID.xy);///imageSize(resultImage);
 	vec2 texelSize = vec2(1.0);///imageSize(inputImage); 
 	
-    vec2 srcUV = uv*srcSize;
+    vec2 srcUV = uv+0.5;
 	
-	vec4 A = texture(inputImage, vec2(srcUV + texelSize * vec2(-1.0, -1.0)));
-    vec4 B = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.0, -1.0)));
-    vec4 C = texture(inputImage, vec2(srcUV + texelSize * vec2( 1.0, -1.0)));
-    vec4 D = texture(inputImage, vec2(srcUV + texelSize * vec2(-0.5, -0.5)));
-    vec4 E = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.5, -0.5)));
-    vec4 F = texture(inputImage, vec2(srcUV + texelSize * vec2(-1.0,  0.0)));
-    vec4 G = texture(inputImage, vec2(srcUV                               ));
-    vec4 H = texture(inputImage, vec2(srcUV + texelSize * vec2( 1.0,  0.0)));
-    vec4 I = texture(inputImage, vec2(srcUV + texelSize * vec2(-0.5,  0.5)));
-    vec4 J = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.5,  0.5)));
-    vec4 K = texture(inputImage, vec2(srcUV + texelSize * vec2(-1.0,  1.0)));
-    vec4 L = texture(inputImage, vec2(srcUV + texelSize * vec2( 0.0,  1.0)));
-    vec4 M = texture(inputImage, vec2(srcUV + texelSize * vec2( 1.0,  1.0)));
+	vec4 A = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0, -1.0)) / dstSize);
+    vec4 B = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.0, -1.0)) / dstSize);
+    vec4 C = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0, -1.0)) / dstSize);
+    vec4 D = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-0.5, -0.5)) / dstSize);
+    vec4 E = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.5, -0.5)) / dstSize);
+    vec4 F = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0,  0.0)) / dstSize);
+    vec4 G = texture(sampler2D(inputImage,basicSampler), vec2(srcUV                               ) / dstSize);
+    vec4 H = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0,  0.0)) / dstSize);
+    vec4 I = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-0.5,  0.5)) / dstSize);
+    vec4 J = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.5,  0.5)) / dstSize);
+    vec4 K = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0,  1.0)) / dstSize);
+    vec4 L = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.0,  1.0)) / dstSize);
+    vec4 M = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0,  1.0)) / dstSize);
 	
 	vec2 div = (1.0 / 4.0) * vec2(0.5, 0.125);
 

@@ -62,6 +62,10 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, const VulkanRenderpas
 			std::cout << "\t expected "<< oGFX::vkutils::tools::VkImageLayoutString(attachmentDes.initialLayout) 
 				<<" current "<<oGFX::vkutils::tools::VkImageLayoutString(tex->currentLayout) << std::endl;
 		}
+		//printf("\t FBTransition::%s | %s -> %s\n", tex->name, 
+		//	oGFX::vkutils::tools::VkImageLayoutString(tex->currentLayout).c_str(),
+		//	oGFX::vkutils::tools::VkImageLayoutString(renderPass.rpci.pAttachments[i].finalLayout).c_str());
+
 		tex->currentLayout = renderPass.rpci.pAttachments[i].finalLayout;
 	}
 
