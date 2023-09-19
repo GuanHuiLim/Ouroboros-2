@@ -808,14 +808,30 @@ void oGFX::vkutils::tools::insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, V
 	imageMemoryBarrier.image = image;
 	imageMemoryBarrier.subresourceRange = subresourceRange;
 
-	vkCmdPipelineBarrier(
-		cmdbuffer,
-		srcStageMask,
-		dstStageMask,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &imageMemoryBarrier);
+	VkImageMemoryBarrier2 mb2{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
+	mb2.dstAccessMask = dstAccessMask;
+	mb2.srcAccessMask = srcAccessMask;
+	mb2.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	mb2.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	mb2.oldLayout = oldImageLayout;
+	mb2.newLayout = newImageLayout;
+	mb2.image = image;
+	mb2.subresourceRange = subresourceRange;
+	VkDependencyInfo di{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
+	di.pImageMemoryBarriers = &mb2;
+	di.imageMemoryBarrierCount = 1;
+
+
+	vkCmdPipelineBarrier2(cmdbuffer, &di);
+	
+	// vkCmdPipelineBarrier(
+	// 	cmdbuffer,
+	// 	srcStageMask,
+	// 	dstStageMask,
+	// 	0,
+	// 	0, nullptr,
+	// 	0, nullptr,
+	// 	1, &imageMemoryBarrier);
 
 }
 

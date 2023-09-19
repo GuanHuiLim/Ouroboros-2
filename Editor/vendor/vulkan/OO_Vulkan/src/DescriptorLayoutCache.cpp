@@ -60,6 +60,7 @@ VkDescriptorSetLayout DescriptorLayoutCache::CreateDescriptorLayout(VkDescriptor
 	}
 
 	//try to grab from cache
+	std::scoped_lock lock{ m_mut };
 	auto it = layoutCache.find(layoutinfo);
 	if (it != layoutCache.end()){
 		return (*it).second;

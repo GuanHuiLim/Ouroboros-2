@@ -15,7 +15,6 @@ Technology is prohibited.
 #include  <algorithm>
 #include <unordered_set>
 #include "VulkanUtils.h"
-#include "VulkanTexture.h"
 #include "DelayedDeleter.h"
 #include "VulkanRenderer.h"
 
@@ -145,7 +144,7 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 	}
 }
 
-void FramebufferCache::DeleteRelated(vkutils::Texture2D tex)
+void FramebufferCache::DeleteRelated(vkutils::Texture tex)
 {
 	for (auto iter = bufferCache.begin(); iter != bufferCache.end();)
 	{

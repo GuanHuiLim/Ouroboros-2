@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "vulkan/vulkan.h"
 #include <vector>
 #include <unordered_map>
+#include <mutex>
 
 class DescriptorLayoutCache {
 public:
@@ -46,4 +47,5 @@ private:
 
 	std::unordered_map<DescriptorLayoutInfo, VkDescriptorSetLayout, DescriptorLayoutHash> layoutCache;
 	VkDevice device{};
+	std::mutex m_mut;
 };

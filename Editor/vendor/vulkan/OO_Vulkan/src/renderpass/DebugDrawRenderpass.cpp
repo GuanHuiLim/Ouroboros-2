@@ -109,14 +109,13 @@ void DebugDrawRenderpass::Draw(const VkCommandBuffer cmdlist)
 
 	const float vpHeight = (float)vr.m_swapchain.swapChainExtent.height;
 	const float vpWidth = (float)vr.m_swapchain.swapChainExtent.width;
-	cmd.BeginRendering({ 0, 0, (uint32_t)vpWidth, (uint32_t)vpHeight });
 	if (dodebugRendering)
 	{
 		cmd.SetDefaultViewportAndScissor();
 		VkPipeline pso = m_DebugDrawPSOSelector.GetPSO(vr.m_DebugDrawDepthTest, false, false);
 		uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 			vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
-		cmd.BindPSO(pso);
+		cmd.BindPSO(pso, PSOLayoutDB::defaultPSOLayout);
 		cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
 			std::array<VkDescriptorSet, 3>
 			{
@@ -133,10 +132,9 @@ void DebugDrawRenderpass::Draw(const VkCommandBuffer cmdlist)
 		
 		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU[currFrame].size()), 1);
 	}
-	cmd.EndRendering();
 
-	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, vr.renderTargets[vr.renderTargetInUseID].texture.imageLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].imageLayout);
+	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, vr.renderTargets[vr.renderTargetInUseID].texture.referenceLayout);
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
 }
 
 void DebugDrawRenderpass::Shutdown()

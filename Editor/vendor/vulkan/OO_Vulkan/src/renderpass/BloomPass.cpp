@@ -94,6 +94,16 @@ void BloomPass::Init()
 	const bool resourceTrackonly = true;
 	vr.fbCache.CreateFramebuffer(&blankInfo, std::move(textures), textures.front()->targetSwapchain, resourceTrackonly);
 
+	auto cmd = vr.GetCommandBuffer();
+
+	vkutils::SetImageInitialState(cmd, vr.attachments.Bloom_brightTarget);
+	for (size_t i = 0; i < vr.attachments.MAX_BLOOM_SAMPLES; i++)
+	{
+		vkutils::SetImageInitialState(cmd, vr.attachments.Bloom_downsampleTargets[i]);
+	}
+
+	vr.SubmitSingleCommandAndWait(cmd);
+	
 	SetupRenderpass();
 
 }
@@ -128,7 +138,7 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	PROFILE_GPU_CONTEXT(cmdlist);
 	PROFILE_GPU_EVENT("Bloom");
 	rhi::CommandList cmd{ cmdlist, "Bloom"};
-	cmd.BindPSO(pso_bloom_bright,VK_PIPELINE_BIND_POINT_COMPUTE);
+	cmd.BindPSO(pso_bloom_bright, PSOLayoutDB::doubleImageStoreLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 	
 	auto& mainImage = vr.renderTargets[vr.renderTargetInUseID];
 
@@ -147,29 +157,10 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 			regionBegin(cmdlist, &marker);
 		}
 
-		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			mainImage.texture.view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::TransitionImage(cmdlist,mainImage.texture,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),  
-			vr.attachments.Bloom_brightTarget  .view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::TransitionImage(cmdlist, vr.attachments.Bloom_brightTarget,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			0,
-			VK_IMAGE_LAYOUT_UNDEFINED);
-		vkutils::TransitionImage(cmdlist, vr.attachments.Bloom_brightTarget, VK_IMAGE_LAYOUT_GENERAL);
-
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);
+		cmd.DescriptorSetBegin(0)
+			.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+			.BindImage(1, &mainImage.texture, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			.BindImage(2, &vr.attachments.Bloom_brightTarget, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		BloomPC pc;
 		auto knee = vr.currWorld->bloomSettings.threshold * vr.currWorld->bloomSettings.softThreshold;
@@ -185,7 +176,6 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		pcr.stageFlags = VK_SHADER_STAGE_ALL;
 		cmd.SetPushConstant(PSOLayoutDB::doubleImageStoreLayout, pcr, &pc);
 		std::array<VkDescriptorSet, 1> descs{vr.descriptorSet_fullscreenBlit};
-		cmd.BindDescriptorSet(PSOLayoutDB::doubleImageStoreLayout, 0, descs, VK_PIPELINE_BIND_POINT_COMPUTE,0,0);
 
 		cmd.Dispatch((vr.attachments.Bloom_brightTarget.width - 1) / 16 + 1, (vr.attachments.Bloom_brightTarget.height - 1) / 16 + 1);
 		if (regionEnd)
@@ -200,10 +190,10 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		{		
 			regionBegin(cmdlist, &marker);
 		}
-		vkutils::Texture2D* prevImage = &vr.attachments.Bloom_brightTarget;
-		vkutils::Texture2D* currImage;
+		vkutils::Texture* prevImage = &vr.attachments.Bloom_brightTarget;
+		vkutils::Texture* currImage;
 		//downsample
-		cmd.BindPSO(pso_bloom_down, VK_PIPELINE_BIND_POINT_COMPUTE);
+		cmd.BindPSO(pso_bloom_down, PSOLayoutDB::BloomLayout ,VK_PIPELINE_BIND_POINT_COMPUTE);
 		for (size_t i = 0; i < vr.attachments.MAX_BLOOM_SAMPLES; i++)
 		{
 			currImage = &vr.attachments.Bloom_downsampleTargets[i];
@@ -214,30 +204,13 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 				//std::cout << "HOW?\n"; 
 			}
 
-			VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-				GfxSamplerManager::GetSampler_BlackBorder(),
-				prevImage->view,
-				VK_IMAGE_LAYOUT_GENERAL);
-			vkutils::ComputeImageBarrier(cmdlist,*prevImage,VK_IMAGE_LAYOUT_GENERAL);
 
-			VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-				GfxSamplerManager::GetSampler_Deferred(),  
-				currImage  ->view,
-				VK_IMAGE_LAYOUT_GENERAL);
-			vkutils::ComputeImageBarrier(cmdlist,*currImage,VK_IMAGE_LAYOUT_GENERAL);
+			cmd.DescriptorSetBegin(0)
+				.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+				.BindImage(1, prevImage, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+				.BindImage(2, currImage, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-			VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-				GfxSamplerManager::GetSampler_BlackBorder(),
-				0,
-				VK_IMAGE_LAYOUT_UNDEFINED);
-
-			DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-				.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-				.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-				.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-				.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);
 			std::array<VkDescriptorSet, 1> decs{vr.descriptorSet_fullscreenBlit};
-			cmd.BindDescriptorSet(PSOLayoutDB::BloomLayout, 0, decs, VK_PIPELINE_BIND_POINT_COMPUTE, 0, 0);
 			cmd.Dispatch((currImage->width - 1) / 16 + 1, (currImage->height - 1) / 16 + 1);
 			prevImage = currImage;
 		} 
@@ -254,38 +227,17 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	{		
 		regionBegin(cmdlist, &marker);
 	}
-	cmd.BindPSO(pso_bloom_up, VK_PIPELINE_BIND_POINT_COMPUTE);
+	cmd.BindPSO(pso_bloom_up, PSOLayoutDB::doubleImageStoreLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 	for (int i = static_cast<int>(vr.attachments.MAX_BLOOM_SAMPLES - 1ull); i > 0; --i)
 	{
 		auto* outputBuffer = (&vr.attachments.Bloom_downsampleTargets[i-1ull]);
 		auto* inputBuffer = &vr.attachments.Bloom_downsampleTargets[i];
 
-		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			inputBuffer->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*inputBuffer,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),  
-			outputBuffer  ->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*outputBuffer,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			0,
-			VK_IMAGE_LAYOUT_UNDEFINED);
-
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);	
+		cmd.DescriptorSetBegin(0)
+			.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+			.BindImage(1, inputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			.BindImage(2, outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 		
-
-		std::array<VkDescriptorSet, 1> decs{ vr.descriptorSet_fullscreenBlit };
-		cmd.BindDescriptorSet(PSOLayoutDB::doubleImageStoreLayout, 0, decs, VK_PIPELINE_BIND_POINT_COMPUTE, 0, 0);
 		cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 	} 
 	
@@ -295,31 +247,12 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		auto* outputBuffer = (&vr.attachments.Bloom_brightTarget);
 		auto* inputBuffer = &vr.attachments.Bloom_downsampleTargets[0];
 
-		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			inputBuffer->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*inputBuffer,VK_IMAGE_LAYOUT_GENERAL);
 
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),  
-			outputBuffer  ->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*outputBuffer,VK_IMAGE_LAYOUT_GENERAL);
+		cmd.DescriptorSetBegin(0)
+			.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+			.BindImage(1, inputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			.BindImage(2, outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			0,
-			VK_IMAGE_LAYOUT_UNDEFINED);
-
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);	
-
-		std::array<VkDescriptorSet, 1> decs{ vr.descriptorSet_fullscreenBlit };
-		cmd.BindDescriptorSet(PSOLayoutDB::doubleImageStoreLayout, 0, decs, VK_PIPELINE_BIND_POINT_COMPUTE, 0, 0);
 		cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 	}
 	if (regionEnd)
@@ -334,35 +267,15 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		regionBegin(cmdlist, &marker);
 	}	
 	{// composite online main buffer
-		cmd.BindPSO(pso_additive_composite, VK_PIPELINE_BIND_POINT_COMPUTE);
+		cmd.BindPSO(pso_additive_composite, PSOLayoutDB::BloomLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 		auto* outputBuffer = (&mainImage.texture);
 		auto* inputBuffer = &vr.attachments.Bloom_brightTarget;
-	
-		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			inputBuffer->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*inputBuffer,VK_IMAGE_LAYOUT_GENERAL);
-	
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),  
-			outputBuffer  ->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*outputBuffer,VK_IMAGE_LAYOUT_GENERAL);
-	
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			0,
-			VK_IMAGE_LAYOUT_UNDEFINED);
 
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);	
+		cmd.DescriptorSetBegin(0)
+			.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+			.BindImage(1, inputBuffer, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			.BindImage(2, outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		std::array<VkDescriptorSet, 1> decs{ vr.descriptorSet_fullscreenBlit };
-		cmd.BindDescriptorSet(PSOLayoutDB::BloomLayout, 0, decs, VK_PIPELINE_BIND_POINT_COMPUTE, 0, 0);
 		cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 	}
 	if (regionEnd)
@@ -378,32 +291,14 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	}	
 	// tone mapping 
 	{// composite online main buffer
-		cmd.BindPSO(pso_tone_mapping, VK_PIPELINE_BIND_POINT_COMPUTE);
+		cmd.BindPSO(pso_tone_mapping, PSOLayoutDB::BloomLayout,VK_PIPELINE_BIND_POINT_COMPUTE);
 		auto* outputBuffer = (&mainImage.texture);
 		auto* inputBuffer = &vr.attachments.Bloom_brightTarget;
 
-		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			inputBuffer->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*inputBuffer,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),  
-			outputBuffer  ->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*outputBuffer,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			0,
-			VK_IMAGE_LAYOUT_UNDEFINED);
-
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);	
+		cmd.DescriptorSetBegin(0)
+			.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+			.BindImage(1, inputBuffer, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			.BindImage(2, outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		auto& colSettings = vr.currWorld->colourSettings;
 		ColourCorrectPC pc;
@@ -421,8 +316,6 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		pcr.size = sizeof(ColourCorrectPC);
 		cmd.SetPushConstant(PSOLayoutDB::BloomLayout, pcr, &pc);
 
-		std::array<VkDescriptorSet, 1> decs{ vr.descriptorSet_fullscreenBlit };
-		cmd.BindDescriptorSet(PSOLayoutDB::BloomLayout, 0, decs, VK_PIPELINE_BIND_POINT_COMPUTE, 0, 0);
 		cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 	}
 	if (regionEnd)
@@ -436,36 +329,17 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	{		
 		regionBegin(cmdlist, &marker);
 	}	
-	cmd.BindPSO(pso_fxaa, VK_PIPELINE_BIND_POINT_COMPUTE);
+	cmd.BindPSO(pso_fxaa, PSOLayoutDB::BloomLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 	{// composite online main buffer
 		auto* outputBuffer = &vr.attachments.Bloom_brightTarget;
 		auto* inputBuffer = (&mainImage.texture);
 
-		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			inputBuffer->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*inputBuffer,VK_IMAGE_LAYOUT_GENERAL);
+		cmd.DescriptorSetBegin(0)
+			.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+			.BindImage(1, inputBuffer, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			.BindImage(2, outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),  
-			outputBuffer  ->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist,*outputBuffer,VK_IMAGE_LAYOUT_GENERAL);
 
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			0,
-			VK_IMAGE_LAYOUT_UNDEFINED);
-
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);	
-
-		std::array<VkDescriptorSet, 1> decs{ vr.descriptorSet_fullscreenBlit };
-		cmd.BindDescriptorSet(PSOLayoutDB::BloomLayout, 0, decs, VK_PIPELINE_BIND_POINT_COMPUTE, 0, 0);
 		cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 	}
 	if (regionEnd)
@@ -479,32 +353,15 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	{		
 		regionBegin(cmdlist, &marker);
 	}	
-	cmd.BindPSO(pso_vignette, VK_PIPELINE_BIND_POINT_COMPUTE);
+	cmd.BindPSO(pso_vignette, PSOLayoutDB::BloomLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 	{// composite online main buffer
 		auto* outputBuffer = (&mainImage.texture);
 		auto* inputBuffer = &vr.attachments.Bloom_brightTarget;
 
-		VkDescriptorImageInfo texSrc = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			inputBuffer->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist, *inputBuffer, VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),
-			outputBuffer->view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::ComputeImageBarrier(cmdlist, *outputBuffer, VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			0,
-			VK_IMAGE_LAYOUT_UNDEFINED);
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
-			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-			.Build(vr.descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);
+		cmd.DescriptorSetBegin(0)
+			.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())
+			.BindImage(1, inputBuffer, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			.BindImage(2, outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		auto& vignette = vr.currWorld->vignetteSettings;
 		VignettePC pc;
@@ -516,8 +373,6 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		pcr.size = sizeof(VignettePC);
 		cmd.SetPushConstant(PSOLayoutDB::BloomLayout, pcr, &pc);
 
-		std::array<VkDescriptorSet, 1> decs{ vr.descriptorSet_fullscreenBlit };
-		cmd.BindDescriptorSet(PSOLayoutDB::BloomLayout, 0, decs, VK_PIPELINE_BIND_POINT_COMPUTE, 0, 0);
 		cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 	}
 	if (regionEnd)
@@ -525,15 +380,7 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		regionEnd(cmdlist);
 	}
 
-	for (size_t i = 0; i < vr.attachments.MAX_BLOOM_SAMPLES; i++)
-	{
-		vkutils::TransitionImage(cmdlist, vr.attachments.Bloom_downsampleTargets[i], vr.attachments.Bloom_downsampleTargets[i].imageLayout);
-	}
-	vkutils::TransitionImage(cmdlist, vr.attachments.Bloom_brightTarget, vr.attachments.Bloom_brightTarget.imageLayout);
-	vkutils::TransitionImage(cmdlist, mainImage.texture, mainImage.texture.imageLayout);
-
-	//rhi::CommandList cmd{ cmdlist };
-	//cmd.BindPSO(pso_SSAO);
+	
 }
 
 void BloomPass::Shutdown()
@@ -580,7 +427,7 @@ void BloomPass::CreateDescriptors()
 		GfxSamplerManager::GetSampler_BlackBorder(),
 		0,
 		VK_IMAGE_LAYOUT_UNDEFINED);
-	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
+	DescriptorBuilder::Begin()
 		.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
 		.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -592,7 +439,7 @@ void BloomPass::CreateDescriptors()
 			GfxSamplerManager::GetDefaultSampler(),
 			0,
 			VK_IMAGE_LAYOUT_UNDEFINED);
-		DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
+		DescriptorBuilder::Begin()
 			.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
 			.BindImage(1, &texSrc, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT) // we construct world position using depth
 			.BindImage(2, &texOut, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)

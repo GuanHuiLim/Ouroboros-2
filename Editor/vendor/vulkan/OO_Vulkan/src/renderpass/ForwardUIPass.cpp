@@ -102,17 +102,13 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	rhi::CommandList cmd{ cmdlist, "Forward UI Pass"};
 	
 	auto& attachments = vr.attachments.gbuffer;
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	cmd.BindAttachment(0, &vr.renderTargets[vr.renderTargetInUseID].texture);
 	cmd.BindAttachment(1, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
 	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 
-	cmd.BeginRendering({ 0,0,{swapchain.swapChainExtent.width,swapchain.swapChainExtent.height} });
 
-	cmd.BindPSO(pso_Forward_UI);
+	cmd.BindPSO(pso_Forward_UI, PSOLayoutDB::defaultPSOLayout);
 	cmd.SetDefaultViewportAndScissor();
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
@@ -157,16 +153,16 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), static_cast<uint32_t>(WorldSpaceCnt));// draw worldspace
 	
 	// bind depth ignore pass
-	cmd.BindPSO(pso_Forward_UI_NO_DEPTH);
+	cmd.BindPSO(pso_Forward_UI_NO_DEPTH, PSOLayoutDB::defaultPSOLayout);
 	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
 					,ScreenSpaceIdxOffset, 0, 0);  // draw screenspace
 
 	// vkCmdEndRenderPass(cmdlist);
-	cmd.EndRendering();
+	
 
-	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, vr.renderTargets[vr.renderTargetInUseID].texture.imageLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].imageLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], attachments[GBufferAttachmentIndex::ENTITY_ID].imageLayout);
+	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, vr.renderTargets[vr.renderTargetInUseID].texture.referenceLayout);
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], attachments[GBufferAttachmentIndex::ENTITY_ID].referenceLayout);
 }
 
 void ForwardUIPass::Shutdown()

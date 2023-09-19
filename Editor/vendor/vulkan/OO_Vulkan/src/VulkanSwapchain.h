@@ -26,7 +26,7 @@ struct VulkanSwapchain
 	VkSwapchainKHR swapchain;
 	
 	// These textures are just used as containers
-	std::vector<vkutils::Texture2D> swapChainImages;
+	std::vector<vkutils::Texture> swapChainImages;
 	uint32_t minImageCount;
 
 	vkutils::Texture2D depthAttachment;

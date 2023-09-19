@@ -25,6 +25,7 @@ Technology is prohibited.
 
 #include "../shaders/shared_structs.h"
 
+#define OO_ASSERT(BoolCondition) do { if (!(BoolCondition)) { __debugbreak(); } } while (0)
 
 namespace oGFX::vkutils::tools
 {

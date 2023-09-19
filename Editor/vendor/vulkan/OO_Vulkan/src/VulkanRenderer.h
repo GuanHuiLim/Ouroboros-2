@@ -214,8 +214,8 @@ public:
 	void CreateDefaultRenderpass();
 	void CreateDefaultDescriptorSetLayout();
 
-	void FullscreenBlit(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal);
-	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal);
+	void FullscreenBlit(VkCommandBuffer cmd, vkutils::Texture& src,VkImageLayout srcFinal, vkutils::Texture& dst,VkImageLayout dstFinal);
+	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture& src,VkImageLayout srcFinal, vkutils::Texture& dst,VkImageLayout dstFinal);
 
 	void CreateDefaultPSOLayouts();
 	void CreateDefaultPSO();
@@ -224,6 +224,8 @@ public:
 	void CreateCommandBuffers();
 
 	VkCommandBuffer GetCommandBuffer();
+	void SubmitSingleCommandAndWait(VkCommandBuffer cmd);
+	void SubmitSingleCommand(VkCommandBuffer cmd);
 
 	ImTextureID myImg;
 
@@ -404,7 +406,7 @@ public:
 	std::vector<VkSemaphore> presentSemaphore;
 	std::vector<VkSemaphore> renderSemaphore;
 	std::vector<VkFence> drawFences;
-	VkSemaphore frameSemaphore;
+	VkSemaphore frameCountSemaphore;
 
 	// - Pipeline
 	VkPipeline pso_utilFullscreenBlit;

@@ -16,6 +16,7 @@ Technology is prohibited.
 
 void DescriptorAllocator::ResetPools()
 {
+	std::scoped_lock lock{ *m_mut };
 	for (auto p : usedPools){
 		vkResetDescriptorPool(device, p, 0);
 		freePools.push_back(p);
@@ -30,6 +31,7 @@ void DescriptorAllocator::ResetPools()
 
 bool DescriptorAllocator::Allocate(VkDescriptorSet* set, VkDescriptorSetLayout layout)
 {
+	std::scoped_lock lock{ *m_mut };
 	//initialize the currentPool handle if it's null
 	if (currentPool == VK_NULL_HANDLE){
 
@@ -79,10 +81,12 @@ bool DescriptorAllocator::Allocate(VkDescriptorSet* set, VkDescriptorSetLayout l
 void DescriptorAllocator::Init(VkDevice newDevice)
 {
 	device = newDevice;
+	m_mut = std::make_unique<std::mutex>();
 }
 
 void DescriptorAllocator::Cleanup()
 {
+	std::scoped_lock lock{ *m_mut };
 	//delete every pool held
 	for (auto p : freePools)
 	{

@@ -86,11 +86,6 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
     PROFILE_GPU_EVENT("DeferredComposition");
 
 	auto& attachments = vr.attachments.gbuffer;
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::NORMAL], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::EMISSIVE], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ALBEDO], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::MATERIAL], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	std::array<VkClearValue, 2> clearValues{};
 	//clearValues[0].color = { 0.6f,0.65f,0.4f,1.0f };
@@ -101,17 +96,28 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	auto depth = &vr.renderTargets[vr.renderTargetInUseID].depth; // layout undefined
 
 	rhi::CommandList cmd{ cmdlist, "Lighting Pass"};
+	cmd.BindPSO(pso_DeferredLightingComposition, PSOLayoutDB::deferredLightingCompositionPSOLayout);
+	
 	cmd.BindAttachment(0, tex);
 	cmd.BindDepthAttachment(depth);
-	cmd.BeginRendering({ 0, 0, (uint32_t)tex->width, (uint32_t)tex->height });
+
+	cmd.DescriptorSetBegin(0)
+		.BindSampler(0, GfxSamplerManager::GetDefaultSampler())
+		.BindImage(1, &attachments[GBufferAttachmentIndex::DEPTH], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) 
+		.BindImage(2, &attachments[GBufferAttachmentIndex::NORMAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindImage(3, &attachments[GBufferAttachmentIndex::ALBEDO], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindImage(4, &attachments[GBufferAttachmentIndex::MATERIAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindImage(5, &attachments[GBufferAttachmentIndex::EMISSIVE], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindImage(6, &vr.attachments.shadow_depth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindImage(7, &vr.attachments.SSAO_finalTarget, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindBuffer(8, &vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 	
-	cmd.BindPSO(pso_DeferredLightingComposition);
 	cmd.SetDefaultViewportAndScissor();
 
 	const auto& info = vr.globalLightBuffer[currFrame].GetDescriptorBufferInfo();
-	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[currFrame])
-		.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.Build(vr.descriptorSet_lights,SetLayoutDB::lights);
+
+	cmd.DescriptorSetBegin(2)
+		.BindBuffer(4, &vr.globalLightBuffer[currFrame].GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 	CreateDescriptors();
 
@@ -122,7 +128,7 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	pc.resolution.y = (float)vr.renderTargets[vr.renderTargetInUseID].texture.height;
 
 	size_t lightCnt = 0;
-	auto& lights = vr.currWorld->GetAllOmniLightInstances();
+	auto& lights = vr.batches.GetLocalLights();
 	for(auto& l :lights) 
 	{
 		if (GetLightEnabled(l)== true)
@@ -150,12 +156,10 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	
-	cmd.BindDescriptorSet(PSOLayoutDB::deferredLightingCompositionPSOLayout, 0,
-		std::array<VkDescriptorSet, 3>
+	cmd.BindDescriptorSet(PSOLayoutDB::deferredLightingCompositionPSOLayout, 1,
+		std::array<VkDescriptorSet, 1>
 		{
-			vr.descriptorSet_DeferredComposition,
 			vr.descriptorSets_uniform[currFrame],
-			vr.descriptorSet_lights,
 		},
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		1,&dynamicOffset
@@ -164,20 +168,13 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	cmd.DrawFullScreenQuad();
 
 	const auto& cube = vr.g_globalModels[vr.GetDefaultCubeID()];
-	cmd.BindPSO(pso_deferredBox);
+	cmd.BindPSO(pso_deferredBox, PSOLayoutDB::deferredLightingCompositionPSOLayout);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
 
 	cmd.DrawIndexed(cube.indicesCount, (uint32_t)lightCnt, cube.baseIndices, cube.baseVertex, 0);
-
-	cmd.EndRendering();
-
-	for (size_t i = 0; i < GBufferAttachmentIndex::MAX_ATTACHMENTS; i++)
-	{
-		vkutils::TransitionImage(cmdlist, attachments[i], attachments[i].imageLayout);
-	}
 
 }
 
@@ -249,17 +246,17 @@ void LightingPass::CreateDescriptors()
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
 	const auto& dbi = vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo();
-    DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.getFrame()])
-        .BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
-        .BindImage(1, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
-        .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(5, &texDescriptorEmissive, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(6, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindImage(7, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT| VK_SHADER_STAGE_FRAGMENT_BIT)
-        .Build(vr.descriptorSet_DeferredComposition,SetLayoutDB::DeferredLightingComposition);
+    DescriptorBuilder::Begin()
+        .BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BindImage(1, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS) // we construct world position using depth
+        .BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BindImage(3, &texDescriptorAlbedo, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BindImage(4, &texDescriptorMaterial, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BindImage(5, &texDescriptorEmissive, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BindImage(6, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BindImage(7, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .BuildLayout(SetLayoutDB::DeferredLightingComposition);
 }
 
 void LightingPass::CreatePipelineLayout()
@@ -273,16 +270,16 @@ void LightingPass::CreatePipelineLayout()
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	
 	const auto& dbi = vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo();
-	DescriptorBuilder::Begin(&vr.DescLayoutCache, &vr.descAllocs[vr.getFrame()])
-		.BindImage(0, &dummy, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(1, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
-		.BindImage(2, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(3, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(4, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(5, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(6, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(7, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+	DescriptorBuilder::Begin()
+		.BindImage(0, &dummy, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(1, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS) // we construct world position using depth
+		.BindImage(2, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(3, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(4, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(5, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(6, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(7, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.BuildLayout(SetLayoutDB::DeferredLightingComposition);
 
 

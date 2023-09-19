@@ -14,6 +14,7 @@ Technology is prohibited.
 #pragma once
 #include "vulkan/vulkan.h"
 #include <vector>
+#include <mutex>
 
 
 class DescriptorAllocator {
@@ -52,4 +53,6 @@ private:
 	PoolSizes descriptorSizes;
 	std::vector<VkDescriptorPool> usedPools;
 	std::vector<VkDescriptorPool> freePools;
+
+	std::unique_ptr<std::mutex> m_mut{};
 };

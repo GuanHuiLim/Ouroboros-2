@@ -170,7 +170,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     //physical device features that logical device will use
     deviceFeatures.samplerAnisotropy = VK_TRUE; // Enabling anisotropy
     deviceFeatures.multiDrawIndirect = VK_TRUE;
-
+    
     deviceFeatures.fillModeNonSolid = VK_TRUE;  //wireframe drawing
     deviceFeatures.drawIndirectFirstInstance = VK_TRUE;
     deviceFeatures.independentBlend = VK_TRUE;
@@ -190,6 +190,7 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     vk12Features.descriptorBindingPartiallyBound = VK_TRUE; 
     vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE; 
     vk12Features.timelineSemaphore = VK_TRUE;
+    
 
     // required for instance base vertex
     VkPhysicalDeviceShaderDrawParametersFeatures shaderDrawFeatures{};
@@ -207,13 +208,15 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     // descriptor_indexing_features.descriptorBindingVariableDescriptorCount = VK_TRUE;
     // descriptor_indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
     // descriptor_indexing_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE; // needed for image descriptors
-
+    VkPhysicalDeviceSynchronization2Features sync2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES };
+    sync2.synchronization2 = VK_TRUE;
 
     deviceCreateInfo.pNext = &vk12Features;
     vk12Features.pNext = &shaderDrawFeatures;
     shaderDrawFeatures.pNext = &dynamicRendering;
     dynamicRendering.pNext = &maintainence4;
-    maintainence4.pNext = NULL;
+    maintainence4.pNext = &sync2;
+    sync2.pNext = NULL;
 
     this->enabledFeatures = deviceFeatures;
 

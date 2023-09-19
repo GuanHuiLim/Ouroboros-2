@@ -19,6 +19,7 @@ Technology is prohibited.
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
 #include "VulkanUtils.h"
+#include "VulkanTexture.h"
 
 VulkanSwapchain::~VulkanSwapchain()
 {
@@ -149,11 +150,24 @@ void VulkanSwapchain::Init(VulkanInstance& instance, VulkanDevice& device)
 		swapChainImages[i].height = swapChainExtent.height;
 		swapChainImages[i].format = swapChainImageFormat;
 		swapChainImages[i].mipLevels = 1;
+		swapChainImages[i].referenceLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		
 		VK_NAME(device.logicalDevice, swapChainImages[i].name.c_str(), swapChainImages[i].image.image);
+
 	}
 
 	CreateDepthBuffer();
+
+	auto& vr = *VulkanRenderer::get();
+	auto cmd = vr.GetCommandBuffer();
+	for (size_t i = 0; i < swapChainImages.size(); i++)
+	{
+		::vkutils::SetImageInitialState(cmd, swapChainImages[i]);
+	}
+	::vkutils::SetImageInitialState(cmd, depthAttachment);
+	vr.SubmitSingleCommandAndWait(cmd);
+
+	
 	
 	if (oldSwapchain)
 	{
@@ -171,4 +185,6 @@ void VulkanSwapchain::CreateDepthBuffer()
 		depthAttachment.destroy();
 	}
 	depthAttachment.forFrameBuffer(m_devicePtr, VulkanRenderer::get()->G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, swapChainExtent.width, swapChainExtent.height);
+
+
 }

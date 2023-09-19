@@ -26,7 +26,7 @@ namespace vkutils
 	void Texture::updateDescriptor()
 	{
 		descriptor.imageView = view;
-		descriptor.imageLayout = imageLayout;
+		descriptor.imageLayout = referenceLayout;
 	}
 
 	void Texture::destroy(bool delayed)
@@ -179,7 +179,7 @@ namespace vkutils
 			//);
 
 			// Change texture image.image layout to shader read after all mip levels have been copied
-			this->imageLayout = imageLayout;
+			this->referenceLayout = imageLayout;
 			oGFX::vkutils::tools::setImageLayout(
 				copyCmd,
 				image.image,
@@ -249,7 +249,7 @@ namespace vkutils
 
 			// Linear tiled images don't need to be staged
 			// and can be directly used as textures
-			this->imageLayout = imageLayout;
+			this->referenceLayout = imageLayout;
 
 			// Setup image.image memory barrier
 			oGFX::vkutils::tools::setImageLayout(copyCmd, image.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
@@ -310,7 +310,7 @@ namespace vkutils
 		usage = imageUsageFlags;
 		mipLevels =static_cast<uint32_t>(mipInfo.size());
 		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		this->imageLayout = _imageLayout;
+		this->referenceLayout = _imageLayout;
 
 		VkCommandBuffer copyCmd = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, device->commandPoolManagers[0].m_commandpool, true);
 
@@ -361,9 +361,9 @@ namespace vkutils
 			copyCmd,
 			image.image,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			imageLayout,
+			referenceLayout,
 			subresourceRange);
-		this->currentLayout = imageLayout;
+		this->currentLayout = referenceLayout;
 
 		device->FlushCommandBuffer(copyCmd, copyQueue, device->commandPoolManagers[0].m_commandpool);
 
@@ -461,20 +461,20 @@ namespace vkutils
 		height = static_cast<uint32_t>(texHeight* renderScale);
 		format = _format;
 		filter = _filter;
-		imageLayout = _imageLayout;
+		referenceLayout = _imageLayout;
 
 		aspectMask = 0;
-		if (imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) // no user defined layout, set automatically
+		if (referenceLayout == VK_IMAGE_LAYOUT_UNDEFINED) // no user defined layout, set automatically
 		{
 			if (imageUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 			{
 				aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				referenceLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			}
 			else if (imageUsageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 			{
 				aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;// | VK_IMAGE_ASPECT_STENCIL_BIT;
-				imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				referenceLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			}
 		}		
 
@@ -619,23 +619,30 @@ namespace vkutils
 		VK_NAME(device->logicalDevice, name.empty() ? "CreateImage::view" : name.c_str(), view);
 	}
 
-	void TransitionImage(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout, uint32_t mipBegin, uint32_t mipEnd)
+	void TransitionImage(VkCommandBuffer cmd, Texture& texture, VkImageLayout targetLayout, uint32_t mipBegin, uint32_t mipEnd)
 	{
-		//printf("\t Transition::%s -> %s\n", texture.name, oGFX::vkutils::tools::VkImageLayoutString(targetLayout).c_str());
+		TransitionImage(cmd, texture, texture.currentLayout, targetLayout, mipBegin, mipEnd);
+		texture.currentLayout = targetLayout;
+	}
 
-		if (texture.currentLayout == targetLayout) return; // might bug with write
+	void TransitionImage(VkCommandBuffer cmd, Texture& texture, VkImageLayout currentLayout, VkImageLayout targetLayout, uint32_t mipBegin, uint32_t mipEnd)
+	{
+		// printf("\t Transition::%s | %s -> %s\n", texture.name.c_str(), oGFX::vkutils::tools::VkImageLayoutString(currentLayout).c_str()
+		// , oGFX::vkutils::tools::VkImageLayoutString(targetLayout).c_str());
+
+		if (currentLayout == targetLayout) return; // might bug with write
 
 		auto subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 		if (texture.format == VK_FORMAT_D32_SFLOAT_S8_UINT)
 		{
-			subresrange =  VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
+			subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
 		}
-		
+
 		// default behavior transitiona all mips
 		subresrange.baseMipLevel = mipBegin;
 		subresrange.levelCount = mipEnd - mipBegin;
-		
-		if (mipEnd == 0) 
+
+		if (mipEnd == 0)
 		{// transition some mips
 			subresrange.levelCount = texture.mipLevels - mipBegin;
 		}
@@ -645,7 +652,7 @@ namespace vkutils
 			texture.image.image,
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_MEMORY_READ_BIT,
-			texture.currentLayout,
+			currentLayout,
 			targetLayout,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -653,7 +660,14 @@ namespace vkutils
 		texture.currentLayout = targetLayout;
 	}
 
-	void ComputeImageBarrier(VkCommandBuffer cmd, Texture2D& texture, VkImageLayout targetLayout, uint32_t mipBegin, uint32_t mipEnd)
+	void SetImageInitialState(VkCommandBuffer cmd, Texture& texture)
+	{
+		// printf("INI(%s)", texture.name.c_str());
+		TransitionImage(cmd, texture, texture.referenceLayout);
+		texture.currentLayout = texture.referenceLayout;
+	}
+
+	void ComputeImageBarrier(VkCommandBuffer cmd, Texture& texture, VkImageLayout targetLayout, uint32_t mipBegin, uint32_t mipEnd)
 	{
 		auto subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 		if (texture.format == VK_FORMAT_D32_SFLOAT_S8_UINT)

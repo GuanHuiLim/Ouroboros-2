@@ -96,7 +96,6 @@ extern GfxRenderpass* g_SSAORenderPass;
 
 #pragma warning( pop )
 
-#pragma optimize("",off)
 VulkanRenderer* VulkanRenderer::s_vulkanRenderer{ nullptr };
 
 // vulkan debug callback
@@ -120,7 +119,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 	return VK_FALSE;
 }
-#pragma optimize("",on)
 
 int VulkanRenderer::ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface)
 {
@@ -237,7 +235,7 @@ VulkanRenderer::~VulkanRenderer()
 		vkDestroySemaphore(m_device.logicalDevice, renderSemaphore[i], nullptr);
 		vkDestroySemaphore(m_device.logicalDevice, presentSemaphore[i], nullptr);
 	}
-	vkDestroySemaphore(m_device.logicalDevice, frameSemaphore, nullptr);
+	vkDestroySemaphore(m_device.logicalDevice, frameCountSemaphore, nullptr);
 
 	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::defaultPSOLayout, nullptr);
 	vkDestroyPipelineLayout(m_device.logicalDevice, PSOLayoutDB::PSO_fullscreenBlitLayout, nullptr);
@@ -595,7 +593,7 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 		vpBufferInfo.offset = 0;					// position of start of data
 		vpBufferInfo.range = sizeof(CB::FrameContextUBO);// size of data
 
-		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
+		DescriptorBuilder::Begin()
 			.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT| VK_SHADER_STAGE_COMPUTE_BIT)
 			.Build(descriptorSets_uniform[i], SetLayoutDB::FrameUniform);
 	}
@@ -646,7 +644,7 @@ void VulkanRenderer::CreateDefaultDescriptorSetLayout()
 	}
 }
 
-void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& src, VkImageLayout srcFinal, vkutils::Texture2D& dst, VkImageLayout dstFinal) 
+void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture& src, VkImageLayout srcFinal, vkutils::Texture& dst, VkImageLayout dstFinal) 
 {
 	
 	const VkCommandBuffer cmdlist = inCmd;
@@ -658,8 +656,8 @@ void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& s
 
 	glm::uvec2 renderSize = glm::vec2{ dst.width,dst.height };
 
-	vkutils::TransitionImage(cmdlist, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, src, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	//vkutils::TransitionImage(cmdlist, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	//vkutils::TransitionImage(cmdlist, src, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	VkDescriptorImageInfo texdesc = oGFX::vkutils::inits::descriptorImageInfo(
 		GfxSamplerManager::GetSampler_SSAOEdgeClamp(),
 		src.view,
@@ -668,7 +666,6 @@ void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& s
 	rhi::CommandList cmd{ cmdlist ,"Fullscreen Blit"};
 
 	cmd.BindAttachment(0, &dst);
-	cmd.BeginRendering({ 0,0,{ dst.width,dst.height} });
 
 
 	cmd.SetDefaultViewportAndScissor();
@@ -682,13 +679,13 @@ void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& s
 		VK_NULL_HANDLE,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	// create descriptor for this pass
-	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
-		.BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(1, &texdesc, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.Build(descriptorSet_fullscreenBlit, SetLayoutDB::util_fullscreenBlit);
+	cmd.BindPSO(pso_utilFullscreenBlit, PSOLayoutDB::PSO_fullscreenBlitLayout);
 
-	cmd.BindPSO(pso_utilFullscreenBlit);
+	// create descriptor for this pass
+	cmd.DescriptorSetBegin(0)
+		.BindSampler(0, GfxSamplerManager::GetDefaultSampler())
+		.BindImage(1, &src, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+
 
 	SSAOPC pc{};
 	VkPushConstantRange range;
@@ -699,25 +696,25 @@ void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture2D& s
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO),
 		m_device.properties.limits.minUniformBufferOffsetAlignment));
-	cmd.BindDescriptorSet(PSOLayoutDB::PSO_fullscreenBlitLayout, 0,
-		std::array<VkDescriptorSet, 1>
-		{
-			descriptorSet_fullscreenBlit,
-		},
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		0
-	);
+	//cmd.BindDescriptorSet(PSOLayoutDB::PSO_fullscreenBlitLayout, 0,
+	//	std::array<VkDescriptorSet, 1>
+	//	{
+	//		descriptorSet_fullscreenBlit,
+	//	},
+	//	VK_PIPELINE_BIND_POINT_GRAPHICS,
+	//	0
+	//);
 
 	cmd.DrawFullScreenQuad();
 	//vkCmdEndRenderPass(cmdlist);
-	cmd.EndRendering();
+	
 
-	vkutils::TransitionImage(cmdlist, src, srcFinal);
-	vkutils::TransitionImage(cmdlist, dst, dstFinal);
+	//vkutils::TransitionImage(cmdlist, src, srcFinal);
+	//vkutils::TransitionImage(cmdlist, dst, dstFinal);
 	
 }
 
-void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture2D& src,VkImageLayout srcFinal, vkutils::Texture2D& dst,VkImageLayout dstFinal)
+void VulkanRenderer::BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture& src,VkImageLayout srcFinal, vkutils::Texture& dst,VkImageLayout dstFinal)
 {
 	bool supportsBlit = true;
 
@@ -864,9 +861,9 @@ void VulkanRenderer::CreateDefaultPSOLayouts()
 		GfxSamplerManager::GetDefaultSampler(),
 		0,
 		VK_IMAGE_LAYOUT_UNDEFINED);
-	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
-		.BindImage(0, nullptr, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(1, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
+	DescriptorBuilder::Begin()
+		.BindImage(0, nullptr, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(1, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.BuildLayout(SetLayoutDB::util_fullscreenBlit);
 
 	pipelineLayoutCreateInfo.setLayoutCount = 1;
@@ -875,7 +872,7 @@ void VulkanRenderer::CreateDefaultPSOLayouts()
 	VK_NAME(m_device.logicalDevice, "fullscreenPSOLayout", PSOLayoutDB::PSO_fullscreenBlitLayout);
 	
 	
-	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
+	DescriptorBuilder::Begin()
 		.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.BindBuffer(3000, gpuTransformBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.BindImage(2002, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT,13)
@@ -1060,6 +1057,16 @@ VkCommandBuffer VulkanRenderer::GetCommandBuffer()
 	return m_device.commandPoolManagers[getFrame()].GetNextCommandBuffer(beginBuffer);
 }
 
+void VulkanRenderer::SubmitSingleCommandAndWait(VkCommandBuffer cmd)
+{
+	m_device.commandPoolManagers[getFrame()].SubmitCommandBufferAndWait(m_device.graphicsQueue, cmd);	
+}
+
+void VulkanRenderer::SubmitSingleCommand(VkCommandBuffer cmd)
+{
+	m_device.commandPoolManagers[getFrame()].SubmitCommandBuffer(m_device.graphicsQueue, cmd);
+}
+
 void VulkanRenderer::SetWorld(GraphicsWorld* world)
 {
 	// force a sync here
@@ -1105,6 +1112,9 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 				image.forFrameBuffer(&m_device, G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
 					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
 				fbCache.RegisterFramebuffer(image);
+				auto cmd = GetCommandBuffer();
+				vkutils::SetImageInitialState(cmd, image);
+				SubmitSingleCommandAndWait(cmd);
 			}
 			if (image.image.image && renderTargets[wrdID].imguiTex == 0)
 			{
@@ -1116,7 +1126,12 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 				depth.name = "GW_"+std::to_string(wrdID)+":DEPTH";
 				depth.forFrameBuffer(&m_device, G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
-				fbCache.RegisterFramebuffer(depth);
+				fbCache.RegisterFramebuffer(depth);		
+
+				auto cmd = GetCommandBuffer();
+				vkutils::SetImageInitialState(cmd, depth);
+				SubmitSingleCommandAndWait(cmd);
+
 				//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
 			}
 
@@ -1186,7 +1201,7 @@ int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
 	allocCI.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
 	vmaCreateImage(m_device.m_allocator, &imageCreateCI, &allocCI, &dstImage.image, &dstImage.allocation, &dstImage.allocationInfo);
-	vkutils::Texture2D temptex;
+	vkutils::Texture temptex;
 	temptex.width = target.width;
 	temptex.height = target.height;
 	temptex.format = target.format;
@@ -1315,7 +1330,7 @@ void VulkanRenderer::CreateSynchronisation()
 	sci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 	sci.pNext = &timelineCreateInfo;
 	sci.flags = 0;
-	VK_CHK(vkCreateSemaphore(m_device.logicalDevice, &sci, nullptr, &frameSemaphore));
+	VK_CHK(vkCreateSemaphore(m_device.logicalDevice, &sci, nullptr, &frameCountSemaphore));
 
 	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 	{
@@ -1430,7 +1445,7 @@ void VulkanRenderer::CreateDescriptorSets_GPUScene()
 		0,
 		VK_IMAGE_LAYOUT_UNDEFINED);
 
-	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
+	DescriptorBuilder::Begin()
 		.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.BindBuffer(3, gpuTransformBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.BindBuffer(4, gpuBoneMatrixBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
@@ -1447,8 +1462,8 @@ void VulkanRenderer::CreateDescriptorSets_Lights()
 
 	for (size_t i = 0; i < m_swapchain.swapChainImages.size(); i++)
 	{
-		DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[i])
-			.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		DescriptorBuilder::Begin()
+			.BindBuffer(4, &info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 			.Build(descriptorSet_lights,SetLayoutDB::lights);
 	}
 	
@@ -1642,10 +1657,20 @@ void VulkanRenderer::DrawGUI()
 	GUIpassInfo.renderArea = { {0, 0}, {m_swapchain.swapChainExtent}};
 
     const VkCommandBuffer cmdlist = GetCommandBuffer();
+	VK_NAME(m_device.logicalDevice, "IM_GUI_CMD", cmdlist);
+	
 
+	// temp hardcode until its in its own renderer
+	vkutils::TransitionImage(cmdlist, m_swapchain.swapChainImages[swapchainIdx], m_swapchain.swapChainImages[swapchainIdx].referenceLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	if (renderTargets[0].inUse == true)
+	{
+		vkutils::TransitionImage(cmdlist, renderTargets[0].texture, renderTargets[0].texture.referenceLayout, VK_IMAGE_LAYOUT_GENERAL);
+	}
 	vkCmdBeginRenderPass(cmdlist, &GUIpassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdlist);
 	vkCmdEndRenderPass(cmdlist);
+
+	vkutils::TransitionImage(cmdlist, renderTargets[0].texture, VK_IMAGE_LAYOUT_GENERAL, renderTargets[0].texture.referenceLayout);
 
 	m_swapchain.swapChainImages[swapchainIdx].currentLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	//std::cout << currentFrame << " DrawGui " << std::to_string(swapchainIdx) <<" " 
@@ -2107,7 +2132,8 @@ void VulkanRenderer::BeginDraw()
 
 	//vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, UINT64_MAX);
 	uint64_t res{};
-	VK_CHK(vkGetSemaphoreCounterValue(m_device.logicalDevice, frameSemaphore, &res));
+	VK_CHK(vkGetSemaphoreCounterValue(m_device.logicalDevice, frameCountSemaphore, &res));
+	//printf("[FRAME COUNTER %5llu]\n", res);
 
 	//wait for given fence to signal from last draw before continuing
 	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, std::numeric_limits<uint64_t>::max()));
@@ -2121,7 +2147,6 @@ void VulkanRenderer::BeginDraw()
 		//Information about how to begin each command buffer
 		VkCommandBufferBeginInfo bufferBeginInfo = oGFX::vkutils::inits::commandBufferBeginInfo();
 		//start recording commanders to command buffer!
-		auto cmd = GetCommandBuffer();
 		//VkResult result = vkBeginCommandBuffer(cmd, &bufferBeginInfo);
 		//if (result != VK_SUCCESS)
 		//{
@@ -2147,7 +2172,6 @@ void VulkanRenderer::BeginDraw()
 		}
 
 
-		m_swapchain.swapChainImages[swapchainIdx].currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		//std::cout << currentFrame << " Setting " << std::to_string(swapchainIdx) <<" " << oGFX::vkutils::tools::VkImageLayoutString(m_swapchain.swapChainImages[swapchainIdx].currentLayout) << std::endl;
 
 		DelayedDeleter::get()->Update();
@@ -2190,7 +2214,7 @@ void VulkanRenderer::BeginDraw()
 				0,
 				VK_IMAGE_LAYOUT_UNDEFINED);
 
-			DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
+			DescriptorBuilder::Begin()
 				.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 				.BindBuffer(3, gpuTransformBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 				.BindBuffer(4, gpuBoneMatrixBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
@@ -2204,7 +2228,7 @@ void VulkanRenderer::BeginDraw()
 			vpBufferInfo.buffer = vpUniformBuffer[getFrame()].buffer;	// buffer to get data from
 			vpBufferInfo.offset = 0;				// position of start of data
 			vpBufferInfo.range = sizeof(CB::FrameContextUBO);		// size of data
-			DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
+			DescriptorBuilder::Begin()
 				.BindBuffer(0, &vpBufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT)
 				.Build(descriptorSets_uniform[getFrame()], SetLayoutDB::FrameUniform);
 	
@@ -2288,6 +2312,7 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 		}		
 		{
 			const VkCommandBuffer cmd = GetCommandBuffer();
+			VK_NAME(m_device.logicalDevice, "SSAO_CMD", cmd);
 			g_SSAORenderPass->Draw(cmd);
 		}
 		{
@@ -2452,7 +2477,7 @@ void VulkanRenderer::Present()
 	qsi.commandBufferCount = 0;
 	qsi.pCommandBuffers = nullptr;	// command buffer to submit
 	qsi.signalSemaphoreCount = 1;						// number of semaphores to signal
-	qsi.pSignalSemaphores = &frameSemaphore;
+	qsi.pSignalSemaphores = &frameCountSemaphore;
 	vkQueueSubmit(m_device.graphicsQueue, 1, &qsi, nullptr);
 	//get next frame (use % MAX_FRAME_DRAWS to keep value below max frames)
 	//currentFrame = (currentFrame + 1) % MAX_FRAME_DRAWS;
@@ -2562,7 +2587,7 @@ void VulkanRenderer::GenerateMipmaps(vkutils::Texture2D& texture)
 	
 
 	std::array<VkDescriptorSet, 1> dstsets;
-	DescriptorBuilder::Begin(&DescLayoutCache, &descAllocs[getFrame()])
+	DescriptorBuilder::Begin()
 		.BindImage(0, &dii, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.BindBuffer(3000, &cb, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.BindImage(2002, samplers.data(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT, 13)
@@ -2607,7 +2632,7 @@ void VulkanRenderer::GenerateMipmaps(vkutils::Texture2D& texture)
 			0, nullptr,
 			1, &bmb,
 			0, nullptr);
-		cmdlist.BindPSO(pso_utilAMDSPD, VK_PIPELINE_BIND_POINT_COMPUTE);
+		cmdlist.BindPSO(pso_utilAMDSPD, PSOLayoutDB::AMDSPDLayout,VK_PIPELINE_BIND_POINT_COMPUTE);
 		cmdlist.BindDescriptorSet(PSOLayoutDB::AMDSPDLayout, 0, dstsets, VK_PIPELINE_BIND_POINT_COMPUTE, 0);
 
 
@@ -2634,8 +2659,8 @@ void VulkanRenderer::GenerateMipmaps(vkutils::Texture2D& texture)
 		memcpy(data, &spdConstants, sizeof(CB::AMDSPD_UBO));
 		vmaUnmapMemory(m_device.m_allocator, SPDconstantBuffer.alloc);
 
-
-		vkCmdDispatch(cmd, dispatchX, dispatchY, dispatchZ);
+		cmdlist.Dispatch(dispatchX, dispatchY, dispatchZ);
+		//vkCmdDispatch(cmd, dispatchX, dispatchY, dispatchZ);
 
 		//vkutils::ComputeImageBarrier(cmd, texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, texture.mipLevels);
 		// shader read(2-A) -> general(2-A)
@@ -2699,7 +2724,7 @@ bool VulkanRenderer::ResizeSwapchain()
 			write_desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			write_desc[0].dstSet = (VkDescriptorSet)currWorld->imguiID[x];
 			write_desc[0].descriptorCount = 1;
-			if (image.imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+			if (image.referenceLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 			{
 				write_desc[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 			}

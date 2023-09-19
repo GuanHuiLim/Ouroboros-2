@@ -21,7 +21,7 @@ class DescriptorAllocator;
 class DescriptorBuilder
 {
 public:
-	static DescriptorBuilder Begin(DescriptorLayoutCache* layoutCache, DescriptorAllocator* allocator );
+	static DescriptorBuilder Begin();
 
 	DescriptorBuilder& BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlags);
 	DescriptorBuilder& BindImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t count = 1);
@@ -33,6 +33,8 @@ private:
 
 	std::vector<VkWriteDescriptorSet> writes;
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
+	std::vector<VkDescriptorImageInfo> imageinfos;
+	std::vector<VkDescriptorBufferInfo> bufferinfos;
 
 	DescriptorLayoutCache* cache{ nullptr };
 	DescriptorAllocator* alloc{nullptr};

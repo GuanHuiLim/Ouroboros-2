@@ -74,6 +74,12 @@ void SSAORenderPass::Init()
 		swapchainext.width, swapchainext.height, true, 1.0f); // full scale image
 	vr.fbCache.RegisterFramebuffer(vr.attachments.SSAO_finalTarget);
 
+	auto cmd = vr.GetCommandBuffer();
+	vkutils::SetImageInitialState(cmd, vr.attachments.SSAO_renderTarget);
+	vkutils::SetImageInitialState(cmd, vr.attachments.SSAO_finalTarget);
+
+	vr.SubmitSingleCommandAndWait(cmd);
+
 	InitRandomFactors();
 
 	SetupRenderpass();
@@ -107,27 +113,24 @@ void SSAORenderPass::Draw(const VkCommandBuffer cmdlist)
 	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 
+
 	PROFILE_GPU_CONTEXT(cmdlist);
 	PROFILE_GPU_EVENT("SSAO");
 
 	std::array<VkClearValue, 1> clearValues{};
 	clearValues[0].color = { 0.0f,0.0f,0.0f,0.0f };
 
-	vkutils::TransitionImage(cmdlist, vr.attachments.SSAO_renderTarget, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	// transition depth buffer
 	auto& attachments = vr.attachments.gbuffer;
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::NORMAL], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	
 	rhi::CommandList cmd{ cmdlist, "SSAO Pass"};
-	cmd.BindAttachment(0, &vr.attachments.SSAO_renderTarget);
-	cmd.BeginRendering({ 0, 0, (uint32_t)vr.attachments.SSAO_renderTarget.width, (uint32_t)vr.attachments.SSAO_renderTarget.height });
 	std::array<VkViewport, 1>viewports{ VkViewport{0,vr.attachments.SSAO_renderTarget.height * 1.0f,vr.attachments.SSAO_renderTarget.width * 1.0f,vr.attachments.SSAO_renderTarget.height * -1.0f} };
 
 	CreateDescriptors();
-	cmd.BindPSO(pso_SSAO);
+	cmd.BindPSO(pso_SSAO, PSOLayoutDB::SSAOPSOLayout);
+	cmd.BindAttachment(0, &vr.attachments.SSAO_renderTarget);
 	cmd.SetDefaultViewportAndScissor();
 	cmd.SetViewport(0, static_cast<uint32_t>(viewports.size()), viewports.data());
 
@@ -140,51 +143,41 @@ void SSAORenderPass::Draw(const VkCommandBuffer cmdlist)
 	pc.bias = vr.currWorld->ssaoSettings.bias;
 	pc.intensity = vr.currWorld->ssaoSettings.intensity;
 	pc.numSamples = std::clamp<uint32_t>(vr.currWorld->ssaoSettings.samples, 1, 64);
-	VkPushConstantRange range;
+	VkPushConstantRange range{};
 	range.offset = 0;
 	range.size = sizeof(SSAOPC);
 
 	cmd.SetPushConstant(PSOLayoutDB::SSAOPSOLayout, range, &pc);
 
+	const auto& ranvecBufer = randomVectorsSSBO.GetDescriptorBufferInfo();
+	cmd.DescriptorSetBegin(0)
+		.BindSampler(0, GfxSamplerManager::GetSampler_SSAOEdgeClamp()) // we construct world position using depth
+		.BindImage(1, &attachments[GBufferAttachmentIndex::DEPTH], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) 
+		.BindImage(2, &attachments[GBufferAttachmentIndex::NORMAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindImage(3, &vr.attachments.randomNoise_texture, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		.BindBuffer(4, &ranvecBufer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO),
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
-	cmd.BindDescriptorSet(PSOLayoutDB::SSAOPSOLayout, 0,
-		std::array<VkDescriptorSet, 2>
-		{
-			vr.descriptorSet_SSAO,
-				vr.descriptorSets_uniform[currFrame],
-		},
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		1, & dynamicOffset
-			);
+	
+	cmd.BindDescriptorSet(PSOLayoutDB::SSAOPSOLayout, 1, 1, &vr.descriptorSets_uniform[currFrame],VK_PIPELINE_BIND_POINT_GRAPHICS, 1, &dynamicOffset);
 
 	cmd.DrawFullScreenQuad();
 
-	vkCmdEndRendering(cmdlist);
-
-	// wait for SSAO buffer before next pass
-	vkutils::TransitionImage(cmdlist, vr.attachments.SSAO_renderTarget, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, vr.attachments.SSAO_finalTarget, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
+	cmd.BindPSO(pso_SSAO_blur, PSOLayoutDB::SSAOBlurLayout);
 	cmd.BindAttachment(0, &vr.attachments.SSAO_finalTarget);
-	cmd.BeginRendering({ 0,0,vr.attachments.SSAO_finalTarget.width,vr.attachments.SSAO_finalTarget.height });
-
-	cmd.BindPSO(pso_SSAO_blur);
 	cmd.SetDefaultViewportAndScissor();
-	cmd.BindDescriptorSet(PSOLayoutDB::SSAOBlurLayout, 0,
-		std::array<VkDescriptorSet, 2>
-	{
-		vr.descriptorSet_SSAOBlur,
-			vr.descriptorSets_uniform[currFrame],
-	},
-	VK_PIPELINE_BIND_POINT_GRAPHICS,
-	1, & dynamicOffset);
+	cmd.BindDescriptorSet(PSOLayoutDB::SSAOBlurLayout, 1, 1, &vr.descriptorSets_uniform[currFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,1,&dynamicOffset);
+	cmd.DescriptorSetBegin(0)
+		.BindSampler(0, GfxSamplerManager::GetSampler_SSAOEdgeClamp())
+		.BindImage(1, &vr.attachments.SSAO_renderTarget, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
 
 	cmd.DrawFullScreenQuad();
-	cmd.EndRendering();
+	
 
 	// wait for blurred image before next
-	vkutils::TransitionImage(cmdlist, vr.attachments.SSAO_finalTarget, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	// vkutils::TransitionImage(cmdlist, vr.attachments.SSAO_finalTarget, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 }
 
 void SSAORenderPass::Shutdown()
@@ -298,23 +291,23 @@ void SSAORenderPass::CreateDescriptors()
 
 	const auto& ranvecBufer = randomVectorsSSBO.GetDescriptorBufferInfo();
 
-	DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.getFrame()])
-		.BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
-		.BindImage(1, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
-		.BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindImage(3, &texDescriptorNoise, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindBuffer(4, &ranvecBufer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.Build(vr.descriptorSet_SSAO, SetLayoutDB::SSAO);
+	DescriptorBuilder::Begin()
+		.BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS) 
+		.BindImage(1, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(2, &texDescriptorNormal, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(3, &texDescriptorNoise, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindBuffer(4, &ranvecBufer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BuildLayout(SetLayoutDB::SSAO);
 
 	VkDescriptorImageInfo texDescriptorSSAO = oGFX::vkutils::inits::descriptorImageInfo(
 		GfxSamplerManager::GetSampler_SSAOEdgeClamp(),
 		vr.attachments.SSAO_renderTarget.view,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	DescriptorBuilder::Begin(&vr.DescLayoutCache,&vr.descAllocs[vr.getFrame()])
-		.BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
-		.BindImage(1, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT) // we construct world position using depth
-		.Build(vr.descriptorSet_SSAOBlur, SetLayoutDB::SSAOBlur);
+	DescriptorBuilder::Begin()
+		.BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindImage(1, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BuildLayout(SetLayoutDB::SSAOBlur);
 
 }
 

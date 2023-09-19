@@ -121,10 +121,9 @@ void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 	cmd.BindAttachment(1, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
 	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 
-	cmd.BeginRendering({ 0,0,{renderTarget.texture.width, renderTarget.texture.height } });
 	
 
-	cmd.BindPSO(pso_GBufferParticles);
+	cmd.BindPSO(pso_GBufferParticles, PSOLayoutDB::defaultPSOLayout);
 	cmd.SetDefaultViewportAndScissor();
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
@@ -154,11 +153,11 @@ void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.g_particleDatas[currFrame].getBufferPtr());
 	cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer[currFrame].getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer[currFrame].size()));
 
-	cmd.EndRendering();
+	
 
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], attachments[GBufferAttachmentIndex::ENTITY_ID].imageLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].imageLayout);
-	vkutils::TransitionImage(cmdlist, renderTarget.texture, renderTarget.texture.imageLayout);
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], attachments[GBufferAttachmentIndex::ENTITY_ID].referenceLayout);
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
+	vkutils::TransitionImage(cmdlist, renderTarget.texture, renderTarget.texture.referenceLayout);
 }
 
 void ForwardParticlePass::Shutdown()

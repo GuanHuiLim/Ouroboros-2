@@ -17,6 +17,7 @@ Technology is prohibited.
 #include "VulkanUtils.h"
 #include "CommandBufferManager.h"
 
+
 VkResult oGFX::CommandBufferManager::InitPool(VkDevice device, uint32_t queueIndex)
 {
     assert(device);
@@ -57,8 +58,8 @@ void oGFX::CommandBufferManager::ResetPool()
 
     VkCommandPoolResetFlags flags{ VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT };
 
-    std::fill(submitted.begin(), submitted.end(), eRECSTATUS::INVALID);
     VK_CHK(vkResetCommandPool(m_device, m_commandpool, flags));
+    std::fill(submitted.begin(), submitted.end(), eRECSTATUS::INVALID);
 
     counter = 0;
 }
@@ -93,6 +94,12 @@ void oGFX::CommandBufferManager::SubmitCommandBuffer(VkQueue queue, VkCommandBuf
     //assuming we have only a few meshes to load we will pause here until we load the previous object
     //submit transfer commands to transfer queue and wait until it finishes
     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+}
+
+void oGFX::CommandBufferManager::SubmitCommandBufferAndWait(VkQueue queue, VkCommandBuffer cmd)
+{
+    SubmitCommandBuffer(queue, cmd);
+    vkQueueWaitIdle(queue);
 }
 
 void oGFX::CommandBufferManager::SubmitAll(VkQueue queue, VkSubmitInfo inInfo, VkFence signalFence)

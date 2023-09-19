@@ -16,13 +16,16 @@ Technology is prohibited.
 #include "DescriptorAllocator.h"
 #include "DescriptorLayoutCache.h"
 #include "VulkanUtils.h"
+#include "VulkanRenderer.h"
 
-DescriptorBuilder DescriptorBuilder::Begin(DescriptorLayoutCache* layoutCache, DescriptorAllocator* allocator)
+DescriptorBuilder DescriptorBuilder::Begin()
 {
+	auto& vr = *VulkanRenderer::get();
 	DescriptorBuilder builder;
 
-	builder.cache = layoutCache;
-	builder.alloc = allocator;
+	builder.cache = &vr.DescLayoutCache;
+	builder.alloc = &vr.descAllocs[vr.getFrame()];
+
 	return builder;
 }
 
@@ -32,8 +35,11 @@ DescriptorBuilder& DescriptorBuilder::BindBuffer(uint32_t binding, const VkDescr
 	VkDescriptorSetLayoutBinding newBinding = oGFX::vkutils::inits::descriptorSetLayoutBinding(type,stageFlags,binding,1);
 	bindings.push_back(newBinding);
 
+	size_t bufIdx = bufferinfos.size();
+	bufferinfos.push_back(*bufferInfo);
+
 	//create the descriptor write
-	VkWriteDescriptorSet newWrite = oGFX::vkutils::inits::writeDescriptorSet(VK_NULL_HANDLE,type,binding,bufferInfo,1);
+	VkWriteDescriptorSet newWrite = oGFX::vkutils::inits::writeDescriptorSet(VK_NULL_HANDLE, type, binding, (VkDescriptorBufferInfo*)bufIdx, 1);
 	
 	writes.push_back(newWrite);
 	return *this;
@@ -45,10 +51,18 @@ DescriptorBuilder& DescriptorBuilder::BindImage(uint32_t binding, VkDescriptorIm
 	VkDescriptorSetLayoutBinding newBinding = oGFX::vkutils::inits::descriptorSetLayoutBinding(type, stageFlags, binding, count);
 	bindings.push_back(newBinding);
 
-	//create the descriptor write
-	VkWriteDescriptorSet newWrite = oGFX::vkutils::inits::writeDescriptorSet(VK_NULL_HANDLE,type,binding,imageInfo,count);
-
-	writes.push_back(newWrite);
+	if (imageInfo) 
+	{	
+		size_t imgIdx = imageinfos.size();
+		for (size_t i = 0; i < count; i++)
+		{
+			imageinfos.push_back(*(imageInfo+i));
+		}
+			
+		//create the descriptor write
+		VkWriteDescriptorSet newWrite = oGFX::vkutils::inits::writeDescriptorSet(VK_NULL_HANDLE,type,binding, (VkDescriptorImageInfo*)imgIdx,count);
+		writes.push_back(newWrite);
+	}
 	return *this;
 }
 
@@ -67,6 +81,17 @@ bool DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layou
 	//write descriptor
 	for (VkWriteDescriptorSet& w : writes)
 	{
+		if (w.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER 
+			|| w.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+			|| w.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC
+			|| w.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+		{
+			w.pBufferInfo = &bufferinfos[(uint32_t)w.pBufferInfo];
+		}
+		else {
+			w.pImageInfo = &imageinfos[(uint32_t)w.pImageInfo];
+		}
+
 		w.dstSet = set;
 	}
 

@@ -16,10 +16,11 @@ Technology is prohibited.
 #include "vulkan/vulkan.h"
 #include <vector>
 #include <unordered_map>
+#include "VulkanTexture.h"
 
 namespace vkutils
 {
-class Texture2D;
+class Texture;
 }
 
 class FramebufferCache {
@@ -45,7 +46,7 @@ public:
 
 		size_t hash() const;
 	};
-	void DeleteRelated(vkutils::Texture2D tex);
+	void DeleteRelated(vkutils::Texture tex);
 
 	void RegisterFramebuffer(vkutils::Texture2D& tex);
 

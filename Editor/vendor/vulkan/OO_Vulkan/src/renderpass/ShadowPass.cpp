@@ -109,9 +109,8 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 
 	bool clearOnDraw = true;
 	cmd.BindDepthAttachment(&vr.attachments.shadow_depth, clearOnDraw);
-	cmd.BeginRendering({ 0, 0, (uint32_t)vr.attachments.shadow_depth.width, (uint32_t)vr.attachments.shadow_depth.height });
 
-	cmd.BindPSO(pso_ShadowDefault);
+	cmd.BindPSO(pso_ShadowDefault, PSOLayoutDB::defaultPSOLayout);
 	cmd.SetDefaultViewportAndScissor();
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
@@ -145,7 +144,7 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 	if (vr.m_numShadowcastLights > 0)
 	{
 		
-		for (auto& light: vr.currWorld->GetAllOmniLightInstances())
+		for (const auto& light: vr.batches.GetLocalLights())
 		{
 			if (GetLightEnabled(light) == false) continue;
 
@@ -206,9 +205,9 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 		}		
 	}
 
-	cmd.EndRendering();
+	
 
-	vkutils::TransitionImage(cmdlist, vr.attachments.shadow_depth, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	//vkutils::TransitionImage(cmdlist, vr.attachments.shadow_depth, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void ShadowPass::Shutdown()
@@ -234,6 +233,9 @@ void ShadowPass::SetupRenderpass()
 	vr.attachments.shadow_depth.forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height, false);
 	vr.fbCache.RegisterFramebuffer(vr.attachments.shadow_depth);
 
+	auto cmd = vr.GetCommandBuffer();
+	vkutils::SetImageInitialState(cmd, vr.attachments.shadow_depth);
+	vr.SubmitSingleCommandAndWait(cmd);
 
 	// Set up separate renderpass with references to the color and depth attachments
 	VkAttachmentDescription attachmentDescs = {};
