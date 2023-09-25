@@ -68,7 +68,7 @@ void LoggingView::InitAsset()
 void LoggingView::Show()
 {
 	TRACY_PROFILE_SCOPE_N(logging_view_update);
-
+	OPTICK_EVENT();
 	static float imageSize = 50.0f;
 	static LoggingView::MessageData msgitem;
 	static std::string logmsgtype;

@@ -61,7 +61,7 @@ namespace oo
     void AudioSystem::Run(Ecs::ECSWorld* world)
     {
         TRACY_PROFILE_SCOPE_NC(AUDIO_UPDATE, tracy::Color::Aquamarine1);
-
+        OPTICK_EVENT();
         bool isEditor = false;
         {
             oo::GetCurrentSceneEvent ev;

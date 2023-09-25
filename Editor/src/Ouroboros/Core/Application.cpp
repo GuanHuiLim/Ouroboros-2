@@ -62,6 +62,7 @@ namespace oo
         constexpr const char* const update_loop_name = "core app update loop";
         while (m_running)
         {
+            OPTICK_FRAME("Application::Run");
             if (m_window->IsMinimized())
             {
                 m_window->ProcessWindowEvents();
@@ -73,17 +74,16 @@ namespace oo
             OO_TracyProfiler::CheckIfServerToBeOpened();
             OO_TracyProfiler::CheckIfServerToBeClosed();
 
-
             /*Calculate dt*/
             timer::Timestep dt = {};
 
             /* Start profiling */
             TRACY_PROFILE_FRAME_START(update_loop_name);
-
+            OPTICK_CATEGORY(update_loop_name, Optick::Category::Application);
             {
                 /*Process Inputs here*/
                 TRACY_PROFILE_SCOPE_N(input_update);
-                OPTICK_FRAME("input_update");
+                OPTICK_CATEGORY(input_update, Optick::Category::Input);
                 input::Update();
                 TRACY_PROFILE_SCOPE_END();
             }
@@ -91,7 +91,7 @@ namespace oo
             {
                 // Update audio
                 TRACY_PROFILE_SCOPE_N(audio_update);
-                OPTICK_FRAME("audio_update");
+                OPTICK_CATEGORY(audio_update, Optick::Category::Audio);
                 audio::Update();
                 TRACY_PROFILE_SCOPE_END();
             }
@@ -99,7 +99,7 @@ namespace oo
             {
                 /* Process window input events */
                 TRACY_PROFILE_SCOPE_N(windows_process_events);
-                OPTICK_FRAME("windows_process_events");
+                OPTICK_CATEGORY(windows_process_events, Optick::Category::IO);
                 m_window->ProcessEvents();
                 TRACY_PROFILE_SCOPE_END();
             }
@@ -107,7 +107,7 @@ namespace oo
             {
                 //whatever the renderer needs to call at the beggining if each frame e.g. clear color
                 TRACY_PROFILE_SCOPE_N(renderer_update_begin);
-                OPTICK_FRAME("renderer_update_begin");
+                OPTICK_CATEGORY(renderer_update_begin, Optick::Category::Rendering);
                 m_renderer->OnUpdateBegin();
                 TRACY_PROFILE_SCOPE_END();
             }
@@ -115,7 +115,7 @@ namespace oo
             {
                 // run derived class update here
                 TRACY_PROFILE_SCOPE_N(derived_on_update);
-                OPTICK_FRAME("derived_on_update");
+                OPTICK_CATEGORY(derived_on_update, Optick::Category::Scene);
                 OnUpdate();
                 TRACY_PROFILE_SCOPE_END();
             }
@@ -123,7 +123,7 @@ namespace oo
             {
                 // swap buffers at the end of frame
                 TRACY_PROFILE_SCOPE_N(windows_swap_buffer);
-                OPTICK_FRAME("windows_swap_buffer");
+                OPTICK_CATEGORY(windows_swap_buffer, Optick::Category::Rendering);
                 m_window->SwapBuffers();
                 TRACY_PROFILE_SCOPE_END();
             }

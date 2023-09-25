@@ -41,7 +41,7 @@ void EditorLayer::OnUpdate()
 	//steam
 	
 	TRACY_PROFILE_SCOPE_NC(editor_ui_update, tracy::Color::Blue);
-
+	OPTICK_EVENT();
     if(m_editormode == false)
         ImGuiManager_Launcher::UpdateAllUI();
 #ifdef OO_EDITOR

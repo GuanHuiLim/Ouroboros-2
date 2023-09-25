@@ -400,7 +400,7 @@ else for (auto& file : std::filesystem::directory_iterator(PATH)) { _CALLBACK; }
     void AssetManager::watchFiles(FileWatchEvent* ev)
     {
         TRACY_PROFILE_SCOPE_NC(ASSET_MANAGER_WATCH_FILES, tracy::Color::Aquamarine1);
-
+        OPTICK_EVENT();
         std::chrono::file_clock::time_point tLast = ev->time;
         if (std::filesystem::exists(root))
         {
