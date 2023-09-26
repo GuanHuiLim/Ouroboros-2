@@ -839,18 +839,20 @@ namespace Ecs::internal
 		}*/
 
 		TRACY_PROFILE_SCOPE_NC(ecs_parallel_for, tracy::Color::AliceBlue);
-
+		OPTICK_PUSH("ecs_parallel_for");
 		//parallelize here
 		//iterate all matched archetypes
 		std::for_each(std::execution::par_unseq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
 			//for (auto idx : archetypesToIterateIndex)
 			{
 				TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+				OPTICK_START_THREAD("singular_piece_of_parallel_work");
 				function(world->archetypes[idx]);
+				OPTICK_STOP_THREAD();
 				TRACY_PROFILE_SCOPE_END();
 			}
 		);
-
+		OPTICK_POP();
 		TRACY_PROFILE_SCOPE_END();
 	}
 
@@ -1366,7 +1368,7 @@ namespace Ecs
 	inline void IECSWorld::for_each(IQuery& query, Func&& function)
 	{
 		TRACY_PROFILE_SCOPE_NC(ecs_for_each, tracy::Color::OrangeRed1);
-
+		OPTICK_EVENT();
 		using params = decltype(internal::args(&Func::operator()));
 
 		internal::iterate_matching_archetypes(this, query, [&](Archetype* arch) {
@@ -1384,19 +1386,23 @@ namespace Ecs
 	void IECSWorld::parallel_for_each(IQuery& query, Func&& function)
 	{
 		TRACY_PROFILE_SCOPE_NC(ecs_for_each, tracy::Color::OrangeRed1);
-
+		OPTICK_EVENT();
 		using params = decltype(internal::args(&Func::operator()));
 
 		internal::parallel_iterate_matching_archetypes(this, query, [&](Archetype* arch) 
 		{
 			//for (auto chnk : arch->chunks) {
 			TRACY_PROFILE_SCOPE_NC(ecs_parallel_for_per_chunk, tracy::Color::AliceBlue);
+			OPTICK_PUSH("ecs_parallel_for_per_chunk");
 			std::for_each(std::execution::par_unseq, std::begin(arch->chunks), std::end(arch->chunks), [&](auto&& chnk)
 				{
 					TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+					OPTICK_START_THREAD("singular_piece_of_parallel_work");
 					internal::parallel_unpack_chunk(params{}, chnk, function);
+					OPTICK_STOP_THREAD()
 					TRACY_PROFILE_SCOPE_END();
 				});
+			OPTICK_POP();
 			TRACY_PROFILE_SCOPE_END();
 		});
 

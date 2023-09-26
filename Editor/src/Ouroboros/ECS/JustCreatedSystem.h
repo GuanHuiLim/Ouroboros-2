@@ -37,7 +37,7 @@ namespace oo
         virtual void Run(Ecs::ECSWorld* world) override
         {
             TRACY_PROFILE_SCOPE_NC(just_created_component_removal, tracy::Color::Gold2);
-
+            OPTICK_EVENT();
             std::vector<oo::UUID> uuids;
 
             // we collect all uuids first

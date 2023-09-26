@@ -93,13 +93,14 @@ namespace oo
     void PhysicsSystem::PostLoadSceneInit()
     {
         TRACY_PROFILE_SCOPE_NC(post_load_scene_init, tracy::Color::PeachPuff2);
-
+        OPTICK_CATEGORY("post_load_scene_init", Optick::Category::Physics);
         // Update physics World's objects position and Orientation
         static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
         m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
+                    OPTICK_CATEGORY("rigidbody_set_pos_orientation", Optick::Category::Physics);
                     oo::vec3 pos = tf.GetGlobalPosition();
                     oo::quat quat = tf.GetGlobalRotationQuat();
                     rb.SetPosOrientation(pos + rb.Offset, quat);
@@ -108,6 +109,7 @@ namespace oo
 
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_is_trigger_check, tracy::Color::PeachPuff4);
+                    OPTICK_CATEGORY("rigidbody_is_trigger_check", Optick::Category::Physics);
                     //// test and set trigger boolean based on serialize value
                     //if (rb.IsTrigger() != rb.IsTrigger())
                     //    rb.object.setTriggerShape(rb.IsTrigger());
@@ -171,9 +173,12 @@ namespace oo
             });
 
         // we run update dynamics once
-        TRACY_PROFILE_SCOPE_NC(start_of_frame_retrieve_physics_properties, tracy::Color::VioletRed1);
-        UpdateDynamics(FixedDeltaTime);
-        TRACY_PROFILE_SCOPE_END();
+        {
+            TRACY_PROFILE_SCOPE_NC(start_of_frame_retrieve_physics_properties, tracy::Color::VioletRed1);
+            OPTICK_CATEGORY("start_of_frame_retrieve_physics_properties", Optick::Category::Physics);
+            UpdateDynamics(FixedDeltaTime);
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         TRACY_PROFILE_SCOPE_END();
     }
@@ -181,7 +186,7 @@ namespace oo
     void PhysicsSystem::RuntimeUpdate(Timestep deltaTime)
     {
         TRACY_PROFILE_SCOPE_NC(physics_update, tracy::Color::PeachPuff);
-
+        OPTICK_CATEGORY("physics_update", Optick::Category::Physics);
         //avoids spiral of death.
         Timestep frametime = deltaTime > MaxFrameTime ? MaxFrameTime : deltaTime;
         m_accumulator += frametime;
@@ -189,9 +194,10 @@ namespace oo
         while (m_accumulator >= FixedDeltaTime)
         {
             TRACY_PROFILE_SCOPE_NC(physics_fixed_update, tracy::Color::PeachPuff1);
-
+            OPTICK_CATEGORY(physics_fixed_update, Optick::Category::Physics);
             {
                 TRACY_PROFILE_SCOPE_NC(physics_fixed_dt_broadcast, tracy::Color::PeachPuff2);
+                OPTICK_CATEGORY("physics_fixed_dt_broadcast", Optick::Category::Physics);
                 PhysicsTickEvent e;
                 e.DeltaTime = FixedDeltaTime;
                 EventManager::Broadcast(&e);
@@ -200,12 +206,14 @@ namespace oo
 
             {
                 TRACY_PROFILE_SCOPE_NC(physics_resolution, tracy::Color::PeachPuff3);
+                OPTICK_CATEGORY("physics_resolution", Optick::Category::Physics);
                 UpdatePhysicsResolution(FixedDeltaTime);
                 TRACY_PROFILE_SCOPE_END();
             }
 
             {
                 TRACY_PROFILE_SCOPE_NC(physics_dynamics, tracy::Color::PeachPuff4);
+                OPTICK_CATEGORY("physics_dynamics", Optick::Category::Physics);
                 UpdateDynamics(FixedDeltaTime);
                 TRACY_PROFILE_SCOPE_END();
             }
@@ -216,6 +224,7 @@ namespace oo
 
         {
             TRACY_PROFILE_SCOPE_NC(physics_post_update, tracy::Color::PeachPuff);
+            OPTICK_CATEGORY("physics_post_update", Optick::Category::Physics);
             PostUpdate();
             TRACY_PROFILE_SCOPE_END();
         }
@@ -226,6 +235,7 @@ namespace oo
     void PhysicsSystem::EditorUpdate(Timestep deltaTime)
     {
         TRACY_PROFILE_SCOPE_NC(physics_update_editor, tracy::Color::PeachPuff);
+        OPTICK_CATEGORY("physics_update_editor", Optick::Category::Physics);
 
         // Update Duplicated Objects
         UpdateDuplicatedObjects();
@@ -236,9 +246,12 @@ namespace oo
         // Submit update to physics world to reflect changes.[properties only!]
         SubmitUpdatesToPhysicsWorld();
 
-        TRACY_PROFILE_SCOPE_NC(physics_update_internal, tracy::Color::VioletRed1);
-        m_physicsWorld.updateInternal();
-        TRACY_PROFILE_SCOPE_END();
+        {
+            TRACY_PROFILE_SCOPE_NC(physics_update_internal, tracy::Color::VioletRed1);
+            OPTICK_CATEGORY("physics_update_internal", Optick::Category::Physics);
+            m_physicsWorld.updateInternal();
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         // Finally we retrieve the newly updated information from physics world 
         // and update our affected data.
@@ -262,10 +275,13 @@ namespace oo
         SubmitScriptCommands();
 
         // than we tell physics engine to update!
-        TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown)
+        {
+            TRACY_PROFILE_SCOPE_NC(physX_backend_simulate, tracy::Color::Brown);
+            OPTICK_CATEGORY("physX_backend_simulate", Optick::Category::Physics);
             // update the physics world using fixed dt.
             m_physicsWorld.updateScene(static_cast<float>(FixedDeltaTime));
-        TRACY_PROFILE_SCOPE_END();
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         // Finally we retrieve the newly updated information from physics world 
         // and update our affected data.
@@ -309,7 +325,8 @@ namespace oo
             tf.SetGlobalOrientation({ tf.GetGlobalRotationQuat().value + delta_orientation });
         });
         
-        TRACY_PROFILE_SCOPE_NC(physics_update_transform_tree, tracy::Color::Brown)
+        TRACY_PROFILE_SCOPE_NC(physics_update_transform_tree, tracy::Color::Brown);
+        OPTICK_CATEGORY("physics_update_transform_tree", Optick::Category::Physics);
         // lastly update transform system for transforms changes to be reflected
         m_world->Get_System<TransformSystem>()->UpdateEntireTree();
         TRACY_PROFILE_SCOPE_END();
@@ -327,6 +344,7 @@ namespace oo
     void PhysicsSystem::UpdateDuplicatedObjects()
     {
         TRACY_PROFILE_SCOPE_NC(physics_update_duplicated_objects, tracy::Color::PeachPuff);
+        OPTICK_CATEGORY("physics_update_duplicated_objects", Optick::Category::Physics);
 
         static Ecs::Query duplicated_rb_query = Ecs::make_raw_query<RigidbodyComponent, GameObjectComponent, DuplicatedComponent>();
         m_world->for_each(duplicated_rb_query, [&](RigidbodyComponent& rbComp, GameObjectComponent& goc, DuplicatedComponent& dupComp)
@@ -370,6 +388,7 @@ namespace oo
     void PhysicsSystem::UpdateGlobalBounds()
     {
         TRACY_PROFILE_SCOPE_NC(physics_update_global_bounds, tracy::Color::PeachPuff);
+        OPTICK_CATEGORY("physics_update_global_bounds", Optick::Category::Physics);
 
         //std::mutex m;
         // Update physics World's objects position and Orientation
@@ -377,9 +396,11 @@ namespace oo
         m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 TRACY_PROFILE_SCOPE_NC(submit_update_rigidbodies, tracy::Color::PeachPuff2);
+                OPTICK_CATEGORY("submit_update_rigidbodies", Optick::Category::Physics);
                 if(tf.HasChangedThisFrame || rb.IsTrigger())
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_set_pos_orientation, tracy::Color::PeachPuff4);
+                    OPTICK_CATEGORY("rigidbody_set_pos_orientation", Optick::Category::Physics);
                     oo::vec3 pos = tf.GetGlobalPosition();
                     oo::quat quat = tf.GetGlobalRotationQuat();
                     //std::lock_guard lock(m);
@@ -389,6 +410,7 @@ namespace oo
 
                 {
                     TRACY_PROFILE_SCOPE_NC(rigidbody_is_trigger_check, tracy::Color::PeachPuff4);
+                    OPTICK_CATEGORY(rigidbody_is_trigger_check, Optick::Category::Physics);
                     // test and set trigger boolean based on serialize value
                     /*if (rb.isTrigger() != rb.IsTrigger())
                         rb.SetTriggerShape(rb.IsTrigger());
@@ -416,6 +438,7 @@ namespace oo
                 // update filtering
                 {
                     TRACY_PROFILE_SCOPE_NC(box_update_filters, tracy::Color::PeachPuff4);
+                    OPTICK_CATEGORY("box_update_filters", Optick::Category::Physics);
                     rb.desired_object.filterIn = static_cast<std::uint32_t>(rb.InputLayer.to_ulong());
                     rb.desired_object.filterOut = static_cast<std::uint32_t>(rb.OutputLayer.to_ulong());
                     TRACY_PROFILE_SCOPE_END();
@@ -440,6 +463,7 @@ namespace oo
                 // update filtering
                 {
                     TRACY_PROFILE_SCOPE_NC(box_update_filters, tracy::Color::PeachPuff4);
+                    OPTICK_CATEGORY("box_update_filters", Optick::Category::Physics);
                     rb.desired_object.filterIn = static_cast<std::uint32_t>(rb.InputLayer.to_ulong());
                     rb.desired_object.filterOut = static_cast<std::uint32_t>(rb.OutputLayer.to_ulong());
                     TRACY_PROFILE_SCOPE_END();
@@ -464,6 +488,7 @@ namespace oo
                 // update filtering
                 {
                     TRACY_PROFILE_SCOPE_NC(box_update_filters, tracy::Color::PeachPuff4);
+                    OPTICK_CATEGORY("box_update_filters", Optick::Category::Physics);
                     rb.desired_object.filterIn = static_cast<std::uint32_t>(rb.InputLayer.to_ulong());
                     rb.desired_object.filterOut = static_cast<std::uint32_t>(rb.OutputLayer.to_ulong());
                     TRACY_PROFILE_SCOPE_END();
@@ -472,6 +497,7 @@ namespace oo
 
         {
             TRACY_PROFILE_SCOPE_NC(physics_update_mesh_collider_bounds, tracy::Color::PeachPuff);
+            OPTICK_CATEGORY("physics_update_mesh_collider_bounds", Optick::Category::Physics);
             //Updating mesh collider's bounds 
             static Ecs::Query meshColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, ConvexColliderComponent, MeshRendererComponent>();
             m_world->for_each(meshColliderQuery, [&](TransformComponent& tf, RigidbodyComponent& rb, ConvexColliderComponent& mc, MeshRendererComponent& mr)
@@ -549,6 +575,7 @@ namespace oo
                     // update filtering
                     {
                         TRACY_PROFILE_SCOPE_NC(box_update_filters, tracy::Color::PeachPuff4);
+                        OPTICK_CATEGORY("box_update_filters", Optick::Category::Physics);
                         rb.desired_object.filterIn = static_cast<std::uint32_t>(rb.InputLayer.to_ulong());
                         rb.desired_object.filterOut = static_cast<std::uint32_t>(rb.OutputLayer.to_ulong());
                         TRACY_PROFILE_SCOPE_END();
@@ -565,9 +592,11 @@ namespace oo
     void PhysicsSystem::SubmitUpdatesToPhysicsWorld()
     {
         TRACY_PROFILE_SCOPE_NC(physics_submit_updates_to_physX_world, tracy::Color::VioletRed1);
+        OPTICK_CATEGORY("physics_submit_updates_to_physX_world", Optick::Category::Physics);
 
         {
             TRACY_PROFILE_SCOPE_NC(compiling_objects_that_requires_update, tracy::Color::VioletRed2);
+            OPTICK_CATEGORY("compiling_objects_that_requires_update", Optick::Category::Physics);
 
             needsUpdating.clear();
             needsUpdating.reserve(1024);
@@ -584,6 +613,7 @@ namespace oo
 
         {
             TRACY_PROFILE_SCOPE_NC(physX_internal_updating, tracy::Color::VioletRed2);
+            OPTICK_CATEGORY("physX_internal_updating", Optick::Category::Physics);
             // submit to update
             m_physicsWorld.submitUpdatedObjects(std::move(needsUpdating));
             TRACY_PROFILE_SCOPE_END();
@@ -594,7 +624,8 @@ namespace oo
 
     void oo::PhysicsSystem::SubmitScriptCommands()
     {
-        TRACY_PROFILE_SCOPE_NC(submit_script_commands, tracy::Color::Brown)
+        TRACY_PROFILE_SCOPE_NC(submit_script_commands, tracy::Color::Brown);
+        OPTICK_CATEGORY("submit_script_commands", Optick::Category::Physics);
         {
             std::vector<myPhysx::PhysicsCommand> all_commands;
             static Ecs::Query rb_query = Ecs::make_query<TransformComponent, RigidbodyComponent>();
@@ -609,22 +640,27 @@ namespace oo
 
     void PhysicsSystem::RetrieveUpdatedObjects()
     {
-        TRACY_PROFILE_SCOPE_NC(physics_retrieve_updated_objects, tracy::Color::Brown)
+        TRACY_PROFILE_SCOPE_NC(physics_retrieve_updated_objects, tracy::Color::Brown);
+        OPTICK_PUSH("physics_retrieve_updated_objects");
             auto const& updatedPhysicsObjects = m_physicsWorld.retrieveCurrentObjects();
+        OPTICK_POP();
         TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_NC(physics_update_physics_properties, tracy::Color::Brown)
+        OPTICK_PUSH("physics_update_physics_properties");
             static Ecs::Query rb_query = Ecs::make_raw_query<TransformComponent, RigidbodyComponent>();
         m_world->parallel_for_each(rb_query, [&](TransformComponent& tf, RigidbodyComponent& rb)
             {
                 rb.desired_object = rb.underlying_object = updatedPhysicsObjects.at(rb.underlying_object.id);
             });
+        OPTICK_POP();
         TRACY_PROFILE_SCOPE_END();
     }
 
     void PhysicsSystem::UpdateCallbacks()
     {
         TRACY_PROFILE_SCOPE_NC(physics_trigger_resoltion, tracy::Color::PeachPuff);
+        OPTICK_PUSH("physics_trigger_resoltion");
         auto trigger_queue = m_physicsWorld.getTriggerData();
         PhysicsTriggersEvent ptse;
         ptse.TriggerEvents.reserve(trigger_queue->size());
@@ -686,11 +722,11 @@ namespace oo
         }
         m_physicsWorld.clearTriggerData();
 
-
+        OPTICK_POP();
         TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_NC(physics_collision_resoltion, tracy::Color::PeachPuff);
-        
+        OPTICK_EVENT("physics_collision_resoltion");
         //jobsystem::job collision_resolution;
 
         auto collision_queue = m_physicsWorld.getCollisionData();
@@ -761,11 +797,13 @@ namespace oo
         // resolve all events at the end
         {
             TRACY_PROFILE_SCOPE_NC(broadcast_physics_triggers_bulk_event, tracy::Color::PeachPuff);
+            OPTICK_CATEGORY(broadcast_physics_triggers_bulk_event, Optick::Category::Physics);
             EventManager::Broadcast(&ptse);
             TRACY_PROFILE_SCOPE_END();
         }
         {
             TRACY_PROFILE_SCOPE_NC(broadcast_physics_collisions_bulk_event, tracy::Color::PeachPuff);
+            OPTICK_CATEGORY(broadcast_physics_collisions_bulk_event, Optick::Category::Physics);
             EventManager::Broadcast(&pcse);
             TRACY_PROFILE_SCOPE_END();
         }
@@ -787,7 +825,7 @@ namespace oo
             return;
 
         TRACY_PROFILE_SCOPE_NC(physics_debug_draw, tracy::Color::PeachPuff);
-       
+        OPTICK_EVENT();
         //Updating box collider's bounds and debug drawing
         // Assumes every data is updated and no need for any calculations.
         static Ecs::Query boxColliderQuery = Ecs::make_query<TransformComponent, RigidbodyComponent, BoxColliderComponent>();
@@ -964,7 +1002,7 @@ namespace oo
     RaycastResult PhysicsSystem::Raycast(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast, tracy::Color::PeachPuff4);
-
+        OPTICK_EVENT();
         auto result = m_physicsWorld.raycast({ ray.Position.x, ray.Position.y, ray.Position.z }, { ray.Direction.x, ray.Direction.y, ray.Direction.z }, distance
             , static_cast<std::uint32_t>(collisionFilter));
         
@@ -979,7 +1017,7 @@ namespace oo
     std::vector<RaycastResult> PhysicsSystem::RaycastAll(Ray ray, float distance, LayerType collisionFilter)
     {
         TRACY_PROFILE_SCOPE_NC(physics_raycast_all, tracy::Color::PeachPuff4);
-
+        OPTICK_EVENT();
         std::vector<RaycastResult> result;
         
         // normalize our ray just to make sure
@@ -1014,7 +1052,7 @@ namespace oo
     RaycastResult PhysicsSystem::Sweepcast(phy_uuid::UUID uuid, vec3 direction, float distance)
     {
         TRACY_PROFILE_SCOPE_NC(physics_sweepcast, tracy::Color::PeachPuff4);
-        
+        OPTICK_EVENT();
         auto result = m_physicsWorld.sweep(uuid, { direction.x, direction.y, direction.z }, distance);
 
         TRACY_PROFILE_SCOPE_END();

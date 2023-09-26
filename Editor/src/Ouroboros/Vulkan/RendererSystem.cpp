@@ -317,6 +317,7 @@ namespace oo
     void oo::RendererSystem::Run(Ecs::ECSWorld* world)
     {
         TRACY_PROFILE_SCOPE_NC(renderer_system_run, tracy::Color::Seashell3);
+        OPTICK_EVENT();
 
         UpdateUnderlyingRendererSettings();
 

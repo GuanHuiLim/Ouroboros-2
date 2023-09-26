@@ -57,6 +57,7 @@ namespace oo
         //Register All Systems
         {
             TRACY_PROFILE_SCOPE_N(editor_registration);
+            OPTICK_EVENT();
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
             GetWorld().Add_System<oo::PhysicsSystem>()->Init(this);
             GetWorld().Add_System<oo::UISystem>(GetGraphicsWorld(), this)->Init();
@@ -78,6 +79,7 @@ namespace oo
         if (std::filesystem::exists(GetFilePath()))
         {
             TRACY_PROFILE_SCOPE_N(loading_world);
+            OPTICK_EVENT();
 
             LoadFromFile();
 
@@ -87,6 +89,7 @@ namespace oo
         // Functions to run after the file and scene has been loaded.
         {
             TRACY_PROFILE_SCOPE_N(post_load_scene_init);
+            OPTICK_EVENT();
 
             GetWorld().Get_System<TransformSystem>()->PostLoadSceneInit();
             GetWorld().Get_System<PhysicsSystem>()->PostLoadSceneInit();
@@ -130,6 +133,7 @@ namespace oo
     void EditorScene::LateUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_late_update, tracy::Color::Azure2);
+        OPTICK_EVENT();
         Scene::LateUpdate();
         TRACY_PROFILE_SCOPE_END();
     }
@@ -137,7 +141,7 @@ namespace oo
     void EditorScene::Render()
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_rendering, tracy::Color::Cyan);
-
+        OPTICK_EVENT();
         constexpr float gridSize = 100.0f;
         constexpr float gridIncrement = 1.0f / 5.0f;
 
@@ -155,6 +159,7 @@ namespace oo
     void EditorScene::Exit()
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_exit, tracy::Color::Cyan2);
+        OPTICK_EVENT();
         Scene::Exit();
         TRACY_PROFILE_SCOPE_END();
 
@@ -171,6 +176,7 @@ namespace oo
     void EditorScene::Save()
     {
         TRACY_PROFILE_SCOPE_NC(editor_save_to_file, tracy::Color::Cyan3);
+        OPTICK_EVENT();
         SaveToFile();
         TRACY_PROFILE_SCOPE_END();
     }

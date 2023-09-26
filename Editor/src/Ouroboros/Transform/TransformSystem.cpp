@@ -50,6 +50,7 @@ namespace oo
     void TransformSystem::Run(Ecs::ECSWorld* world)
     {
         TRACY_PROFILE_SCOPE_NC(transform_main_update, tracy::Color::Gold2);
+        OPTICK_EVENT();
 
         // Typical System updates using query//
         /*
@@ -90,6 +91,7 @@ namespace oo
     void TransformSystem::UpdateSubTree(GameObject go, bool includeItself)
     {
         TRACY_PROFILE_SCOPE_NC(transform_subtree_update, tracy::Color::Gold3);
+        OPTICK_EVENT();
 
         UpdateLocalTransform(go.GetComponent<TransformComponent>());
         UpdateTree(go.GetSceneNode().lock(), includeItself);
@@ -102,6 +104,7 @@ namespace oo
     void TransformSystem::UpdateEntireTree()
     {
         TRACY_PROFILE_SCOPE_NC(transform_update_entire_tree, tracy::Color::Gold3);
+        OPTICK_EVENT();
 
         GenerateLaunchGroups();
 
@@ -115,6 +118,7 @@ namespace oo
     void TransformSystem::UpdateLocalTransform(TransformComponent& tf)
     {
         TRACY_PROFILE_SCOPE_NC(transform_single_local_update, tracy::Color::Gold4);
+        OPTICK_EVENT();
 
         if (tf.LocalMatrixDirty)
         {
@@ -128,7 +132,8 @@ namespace oo
     void TransformSystem::UpdateLocalTransforms()
     {
         TRACY_PROFILE_SCOPE_NC(transform_local_transforms_update, tracy::Color::Gold4);
-        
+        OPTICK_EVENT();
+
         // Update their local transform
         static Ecs::Query query = Ecs::make_raw_query</*GameObjectComponent, */TransformComponent>();
         m_world->parallel_for_each(query, [&](/*GameObjectComponent& goc,*/ TransformComponent& tf)
@@ -150,6 +155,7 @@ namespace oo
         // Transform System updates via the scenegraph because the order matters
 
         TRACY_PROFILE_SCOPE_NC(transform_update_launch_groups, tracy::Color::Gold3);
+        OPTICK_EVENT();
 
         // Step 2. processing.
         for (auto& group : launch_groups)
@@ -158,6 +164,7 @@ namespace oo
                 continue;
 
             TRACY_PROFILE_SCOPE_NC(per_batch_processing, tracy::Color::Goldenrod);
+            OPTICK_EVENT("per_batch_processing");
 
             std::for_each(std::execution::par_unseq, std::begin(group), std::end(group), [&](auto const& elem)
                 {
@@ -179,6 +186,7 @@ namespace oo
         // Transform System updates via the scenegraph because the order matters
 
         TRACY_PROFILE_SCOPE_NC(transform_update_tree, tracy::Color::Gold3);
+        OPTICK_EVENT();
 
         //UpdateEntireTree();
 
@@ -200,7 +208,7 @@ namespace oo
         // Step 1. Extra Pre-Processing Overhead
         {
             TRACY_PROFILE_SCOPE_NC(pre_process_overhead, tracy::Color::Gold3);
-
+            OPTICK_EVENT("pre_process_overhead");
             s.emplace(curr);
             while (!s.empty())
             {
@@ -209,6 +217,7 @@ namespace oo
 
                 {
                     TRACY_PROFILE_SCOPE_NC(pre_process_inner_for_loop, tracy::Color::Gold4);
+                    OPTICK_EVENT("pre_process_inner_for_loop");
                     for (auto iter = curr->rbegin(); iter != curr->rend(); ++iter)
                     {
                         scenenode::shared_pointer child = *iter;
@@ -235,6 +244,7 @@ namespace oo
                 continue;
 
             TRACY_PROFILE_SCOPE_NC(per_batch_processing, tracy::Color::Goldenrod);
+            OPTICK_EVENT("per_batch_processing");
 
             std::for_each(std::execution::par_unseq, std::begin(group), std::end(group), [&](auto const& elem)
                 {
@@ -253,10 +263,12 @@ namespace oo
     void TransformSystem::UpdateTransform(std::shared_ptr<GameObject> const& go)
     {
         TRACY_PROFILE_SCOPE_NC(per_transform_update, tracy::Color::Gold4);
+        OPTICK_EVENT();
 
         // Check for valid parent
         {
             TRACY_PROFILE_SCOPE_NC(transform_assert_check_duration, tracy::Color::Gold4);
+            OPTICK_EVENT("transform_assert_check_duration");
             ASSERT_MSG(m_scene->IsValid(go->GetParentUUID()) == false, "Assumes we always have proper parent");
             TRACY_PROFILE_SCOPE_END();
         }
@@ -268,6 +280,7 @@ namespace oo
         if (tf.GlobalMatrixDirty)
         {
             TRACY_PROFILE_SCOPE_NC(update_global_matrix, tracy::Color::Gold4);
+            OPTICK_EVENT("update_global_matrix");
             
             tf.CalculateGlobalTransform();
             glm::mat4 parentGlobal = parentTf.GlobalTransform;
@@ -281,6 +294,7 @@ namespace oo
         else if (tf.HasChangedThisFrame || parentTf.HasChangedThisFrame)
         {
             TRACY_PROFILE_SCOPE_NC(update_transform_global_values, tracy::Color::Gold4);
+            OPTICK_EVENT("update_transform_global_values");
                 
             tf.HasChangedThisFrame = true;
             tf.GlobalTransform.Matrix = parentTf.GlobalTransform.Matrix * tf.LocalTransform.Matrix;
@@ -305,6 +319,7 @@ namespace oo
     void TransformSystem::GenerateLaunchGroups()
     {
         TRACY_PROFILE_SCOPE_NC(transform_determine_dirty, tracy::Color::Gold3);
+        OPTICK_PUSH("transform_determine_dirty");
         // gather a set of unique ids that are currently dirty rn.
         std::set<scenenode::handle_type> dirtyIDs{};
         static Ecs::Query query = Ecs::make_raw_query<GameObjectComponent, TransformComponent>();
@@ -316,10 +331,11 @@ namespace oo
                 dirtyIDs.emplace(node->get_handle());
             }
         });
+        OPTICK_POP();
         TRACY_PROFILE_SCOPE_END();
 
         TRACY_PROFILE_SCOPE_NC(transform_assemble_launch_groups, tracy::Color::Gold3);
-        
+        OPTICK_PUSH("transform_assemble_launch_groups");
         // reset groups
         for (auto& group : launch_groups)
             group.clear();
@@ -362,6 +378,7 @@ namespace oo
             });
 
         }
+        OPTICK_POP();
         TRACY_PROFILE_SCOPE_END();
     }
 
