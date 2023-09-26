@@ -28,7 +28,7 @@ Technology is prohibited.
 #include "Ouroboros/UI/UISystem.h"
 
 //optick
-#include "optick.h"
+//#include "optick.h"
 
 namespace oo
 {
@@ -104,7 +104,6 @@ namespace oo
     {
         TRACY_PROFILE_SCOPE_NC(editor_scene_update, tracy::Color::Azure);
         OPTICK_EVENT();
-
         // jobs in the same phase should not depend on one another's run order.
         //jobsystem::job phase_one{};
         //jobsystem::submit(phase_one, [&]() {

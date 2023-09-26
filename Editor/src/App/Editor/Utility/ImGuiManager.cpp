@@ -50,7 +50,7 @@ void ImGuiManager::UpdateAllUI()
 			continue;
 
 		TRACY_PROFILE_SCOPE_NC(editor_ui_object, tracy::Color::BlueViolet);
-
+		OPTICK_EVENT();
 
 		if (ImGui::Begin(field.first.c_str(),
 			(field.second.m_closable_window ? &field.second.m_enabled : nullptr)

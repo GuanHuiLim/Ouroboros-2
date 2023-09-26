@@ -112,12 +112,15 @@ public:
     void OnUpdate() override
     {
         TRACY_PROFILE_SCOPE_N(editor_app_update);
-        OPTICK_FRAME("editor_app_update");
+        OPTICK_CATEGORY("editor_app_update", Optick::Category::Application);
         m_imGuiAbstract->Begin();
 
-        TRACY_PROFILE_SCOPE_N(layers_update);
-        m_layerset.Update();
-        TRACY_PROFILE_SCOPE_END();
+        {
+            TRACY_PROFILE_SCOPE_N(layers_update);
+            OPTICK_CATEGORY(layers_update, Optick::Category::Application);
+            m_layerset.Update();
+            TRACY_PROFILE_SCOPE_END();
+        }
 
         m_imGuiAbstract->End();
         

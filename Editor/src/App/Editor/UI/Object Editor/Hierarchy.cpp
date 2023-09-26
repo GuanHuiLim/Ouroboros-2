@@ -104,7 +104,7 @@ void Hierarchy::Show()
 {
 	
 	TRACY_PROFILE_SCOPE_NC(hierarchy_ui_update, tracy::Color::BlueViolet);
-	
+	OPTICK_EVENT();
 	ImGui::BeginChild("search bar", { 0,40 }, false);
 	SearchFilter();
 	ImGui::EndChild();

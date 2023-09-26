@@ -99,7 +99,7 @@ namespace oo::Anim
 		static Ecs::Query animationQuery = Ecs::make_raw_query<oo::GameObjectComponent, oo::AnimationComponent>();
 
 		TRACY_PROFILE_SCOPE_NC(Animation_Update, 0x00E0E3);
-		
+		OPTICK_EVENT();
 		//m_world->for_each(query, [&](oo::GameObjectComponent& goc, oo::AnimationComponent& animationComp)
 		m_world->parallel_for_each(animationQuery, [&](oo::GameObjectComponent& goc, oo::AnimationComponent& animationComp)
 			{
