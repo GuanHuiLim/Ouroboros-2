@@ -4,7 +4,6 @@
 
 #define BIND_POINT_VERTEX_BUFFER_ID  0
 #define BIND_POINT_INSTANCE_BUFFER_ID  2
-#define BIND_POINT_WEIGHTS_BUFFER_ID  1
 #define BIND_POINT_GPU_SCENE_BUFFER_ID  3
 
 
@@ -75,6 +74,8 @@ struct LightPC
     float maxBias;
     float mulBias;
     float specularModifier;
+    vec4 directionalLight;
+    vec4 lightColorInten;
     vec2 resolution;
 };
 
@@ -99,7 +100,7 @@ struct ColourCorrectPC
     vec4 midCol;
     vec4 highCol;
     vec2 threshold;
-
+    float exposure;
 };
 
 struct VignettePC
@@ -125,7 +126,17 @@ struct GPUTransform
 	vec4 row0;
 	vec4 row1;
 	vec4 row2;
+    vec4 invRow0;
+    vec4 invRow1;
+    vec4 invRow2;
 	vec4 colour; // temp
+};
+
+const uint MAX_BONE_NUM = 4;
+struct BoneWeight
+{
+    uint boneIdx[MAX_BONE_NUM];
+    float boneWeights[MAX_BONE_NUM];
 };
 
 // struct represents perobject information in gpu
@@ -134,8 +145,25 @@ struct GPUObjectInformation
     uint boneStartIdx;
     int entityID;
     uint materialIdx;
-    uint unused;
+    uint boneWeightsOffset;
     vec4 emissiveColour;
+};
+
+struct HistoStruct{
+    uint histoBin[256];
+    float cdf[256];
+};
+
+struct LuminenceData {
+    float LumOut;
+    float AverageLogLum;
+};
+
+struct LuminencePC {
+    float minLogLum;
+    float deltaLogLum;
+    float timeCoeff;
+    float pixelsSampled;
 };
 
 #endif //! COMMON_HOST_DEVICE

@@ -1,0 +1,71 @@
+#version 460
+
+#include "shared_structs.h"
+#include "shader_utility.shader"
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0, rgba16f) uniform readonly image2D inputImage;
+layout(std430,/*set = 0,*/ binding = 1) buffer GPUhisto{
+	HistoStruct histo;
+};
+
+layout( push_constant ) uniform lumSettings
+{
+	LuminencePC PC;
+};
+
+shared uint sData[256];
+
+uint colorToBin(vec3 hdrColor, float minLogLum, float inverseLogLumRange)
+{
+	// convert to lum
+	float luminanceValue = RGBtoLuminance(hdrColor.rgb);
+
+	 // Avoid taking the log of zero
+    if (luminanceValue < EPSILON)
+    {
+        return 0;
+    }
+	
+	// Calculate the log_2 luminance and express it as a value in [0.0, 1.0]
+	// where 0.0 represents the minimum luminance, and 1.0 represents the max.
+    float logLum = clamp((log2(luminanceValue) - minLogLum) * inverseLogLumRange, 0.0, 1.0);
+
+	 // Map [0, 1] to [1, 255]. The zeroth bin is handled by the epsilon check above.
+    return uint(logLum * 254.0 + 1.0);
+}
+
+void main()
+{
+	ivec2 local = ivec2(gl_LocalInvocationID.x,gl_LocalInvocationID.y);
+ 	ivec2 texPos = ivec2(gl_GlobalInvocationID.x,gl_GlobalInvocationID.y);
+
+    ivec2 imgDim = imageSize(inputImage);
+	
+    int width = imgDim.x;//    int(gl_WorkGroupSize.x * gl_NumWorkGroups.x);
+    int height = imgDim.y; //   int(gl_WorkGroupSize.y * gl_NumWorkGroups.y);
+
+	int flatidx = local.x + local.y * int(gl_WorkGroupSize.x);
+	
+	//reset all bins
+	sData[flatidx] = 0;
+	barrier();
+
+    if (texPos.x < width && texPos.y < height)
+	{
+        vec4 col = imageLoad(inputImage, texPos);
+		
+        uint binIdx = colorToBin(col.rgb, PC.minLogLum, PC.deltaLogLum);
+       
+		// histogramming log2(lum) to shared memory
+        atomicAdd(sData[binIdx], 1);		
+		barrier();
+    }	
+		
+    atomicAdd(histo.histoBin[flatidx], sData[flatidx]);
+	// save local histogram to global memory
+}
+ 	
+ 
+ 
+ 

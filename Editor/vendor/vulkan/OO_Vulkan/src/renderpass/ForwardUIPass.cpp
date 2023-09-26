@@ -125,7 +125,6 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	std::vector<VkBuffer> vtxBuffers{
 		vr.g_UIVertexBufferGPU[currFrame].getBuffer(),
-		vr.skinningVertexBuffer.getBuffer(),
 	};
 
 	VkDeviceSize offsets[2]{
@@ -157,12 +156,6 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
 					,ScreenSpaceIdxOffset, 0, 0);  // draw screenspace
 
-	// vkCmdEndRenderPass(cmdlist);
-	
-
-	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, vr.renderTargets[vr.renderTargetInUseID].texture.referenceLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], attachments[GBufferAttachmentIndex::ENTITY_ID].referenceLayout);
 }
 
 void ForwardUIPass::Shutdown()
@@ -214,7 +207,7 @@ void ForwardUIPass::SetupRenderpass()
 		auto& attachments = vr.attachments.gbuffer;
 	// Formats
 	//attachmentDescs[GBufferAttachmentIndex::POSITION].format = attachments[GBufferAttachmentIndex::POSITION].format;
-	attachmentDescs[0]  .format = vr.G_HDR_FORMAT;
+	attachmentDescs[0]  .format = vr.G_NON_HDR_FORMAT;
 	attachmentDescs[1]  .format = attachments[GBufferAttachmentIndex::ENTITY_ID].format;
 	attachmentDescs[2]  .format = vr.G_DEPTH_FORMAT;
 	
@@ -363,7 +356,7 @@ void ForwardUIPass::CreatePipeline()
 	colorBlendState.pAttachments = blendAttachmentStates.data();
 
 	std::array<VkFormat, 2> formats{
-		vr.G_HDR_FORMAT,
+		vr.G_NON_HDR_FORMAT,
 		VK_FORMAT_R32_SINT
 	};
 	VkPipelineRenderingCreateInfo renderingInfo{};

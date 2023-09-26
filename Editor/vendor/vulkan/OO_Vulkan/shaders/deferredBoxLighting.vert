@@ -1,7 +1,6 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
-layout (location = 0) out vec2 outUV;
 layout (location = 1) out flat int outLightInstance;
 
 layout(location = 0) in vec3 inPosition;

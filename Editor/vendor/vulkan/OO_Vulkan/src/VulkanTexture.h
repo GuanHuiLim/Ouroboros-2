@@ -28,10 +28,17 @@ Technology is prohibited.
 
 namespace vkutils
 {
+	enum TextureType {
+		TEXTURE_2D,
+		TEXTURE_2D_ARRAY,
+		CUBE_MAP,		
+	};
+
 	class Texture
 	{
 	public:
 		std::string name{}; // maybe remove when not debug?
+		TextureType type{ TextureType::TEXTURE_2D };
 		VulkanDevice* device{ nullptr };
 		oGFX::AllocatedImage image;
 		VkFormat format{};
@@ -39,18 +46,22 @@ namespace vkutils
 		VkImageLayout currentLayout{VK_IMAGE_LAYOUT_UNDEFINED};
 		VkImageView view{};
 		uint32_t width{}, height{};
-		uint32_t mipLevels{};
-		uint32_t layerCount{};
+		uint32_t mipLevels{1};
+		uint32_t layerCount{1};
 		VkDescriptorImageInfo descriptor{};
 		VkImageUsageFlags usage{};
 		VkImageAspectFlags aspectMask{};
 		VkFilter filter{};
+		float highestColValue{1.0f};
 		bool targetSwapchain = true;
 		bool isValid = false;
 		float renderScale = 1.0f;
 		
 		void updateDescriptor();
 		void destroy(bool delayed = false);
+		void CreateImageView();
+		VkImageView GenerateMipView(uint32_t desiredMip);
+		void AllocateImageMemory(VulkanDevice* device, const VkImageUsageFlags& imageUsageFlags, uint32_t mips = 1);
 	};
 
 	class Texture2D : public Texture
@@ -82,7 +93,12 @@ namespace vkutils
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
 		);
 
-		void AllocateImageMemory(VulkanDevice* device, const VkImageUsageFlags& imageUsageFlags, uint32_t mips = 1);
+		void PrepareEmpty(VkFormat format,
+			uint32_t texWidth,
+			uint32_t texHeight,
+			VulkanDevice* device,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VkFilter filter = VK_FILTER_LINEAR,
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
 
 		void forFrameBuffer(VulkanDevice* device,
 			VkFormat format,
@@ -109,13 +125,31 @@ namespace vkutils
 			VkFilter filter = VK_FILTER_LINEAR,
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT);
 
-		void CreateImageView();
 	};
 
+
+	class CubeTexture : public Texture
+	{
+	public:
+		void fromBuffer(
+			void* buffer,
+			VkDeviceSize bufferSize,
+			VkFormat format,
+			uint32_t texWidth,
+			uint32_t texHeight,
+			std::vector<VkBufferImageCopy> mips,
+			VulkanDevice* device,
+			VkQueue copyQueue,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VkFilter filter = VK_FILTER_LINEAR,
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
+		);
+	};
 
 	void TransitionImage(VkCommandBuffer cmd, Texture& texture, VkImageLayout targetLayout, uint32_t mipBegin = 0, uint32_t mipEnd = 0);
 	void TransitionImage(VkCommandBuffer cmd, Texture& texture,VkImageLayout currentLayout, VkImageLayout targetLayout, uint32_t mipBegin = 0, uint32_t mipEnd = 0);
 	void SetImageInitialState(VkCommandBuffer cmd, Texture& texture);
 	void ComputeImageBarrier(VkCommandBuffer cmd, Texture& texture, VkImageLayout targetLayout, uint32_t mipBegin = 0, uint32_t mipEnd = 0);
+	void ComputeImageBarrier(VkCommandBuffer cmd, Texture& texture, VkImageLayout currentLayout, VkImageLayout targetLayout, uint32_t mipBegin = 0, uint32_t mipEnd = 0);
 
 }

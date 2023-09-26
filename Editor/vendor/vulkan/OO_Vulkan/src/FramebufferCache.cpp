@@ -96,20 +96,20 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 			tex.insert(texture);			
 		}
 	}
+	auto cmd = VulkanRenderer::get()->beginSingleTimeCommands();
 	for (auto texture: tex)
 	{
 		texture->Resize(width, height);
-		auto oldLayout = texture->currentLayout;
+		auto oldLayout = texture->referenceLayout;
 
 		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED) 
 			continue;
-
-		texture->currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		auto cmd = VulkanRenderer::get()->beginSingleTimeCommands();
-		vkutils::TransitionImage(cmd, *texture, oldLayout);
-			VulkanRenderer::get()->endSingleTimeCommands(cmd);
-		vkQueueWaitIdle(VulkanRenderer::get()->m_device.graphicsQueue);
+		
+		vkutils::SetImageInitialState(cmd, *texture);
+		
 	}
+	VulkanRenderer::get()->endSingleTimeCommands(cmd);
+	vkQueueWaitIdle(VulkanRenderer::get()->m_device.graphicsQueue);
 	
 	for (auto& target : targets)
 	{

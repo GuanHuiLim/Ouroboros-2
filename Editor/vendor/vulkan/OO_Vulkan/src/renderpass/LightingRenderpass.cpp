@@ -34,6 +34,7 @@ struct LightingPass : public GfxRenderpass
 
 	void CreatePipeline();
 private:
+	void CreateResources();
 	void CreateDescriptors();
 	void CreatePipelineLayout();
 };
@@ -54,6 +55,8 @@ void LightingPass::Init()
 {
 	
 	CreatePipelineLayout();
+
+	CreateResources();
 }
 
 void LightingPass::CreatePSO()
@@ -92,25 +95,44 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	clearValues[0].color = { 0.1f,0.1f,0.1f,0.0f };
 	clearValues[1].depthStencil.depth = { 1.0f };;
 
-	auto tex = &vr.renderTargets[vr.renderTargetInUseID].texture; // layout undefined
+	auto tex = &vr.attachments.lighting_target; // layout undefined
 	auto depth = &vr.renderTargets[vr.renderTargetInUseID].depth; // layout undefined
 
+	vkutils::ComputeImageBarrier(cmdlist, *depth, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vkutils::ComputeImageBarrier(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	VkImageCopy region{};
+	region.srcSubresource = VkImageSubresourceLayers{ VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT ,0,0,1 };
+	region.srcOffset = {};
+	region.dstSubresource = VkImageSubresourceLayers{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT ,0,0,1 };
+	region.dstOffset = {};
+	region.extent = { depth->width,depth->height,1 };
+	vkCmdCopyImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH].image.image, attachments[GBufferAttachmentIndex::DEPTH].currentLayout
+		, depth->image.image, depth->currentLayout,
+		1, &region);
+	vkutils::ComputeImageBarrier(cmdlist, *depth, depth->referenceLayout);
+	vkutils::ComputeImageBarrier(cmdlist, attachments[GBufferAttachmentIndex::DEPTH],  attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
+
 	rhi::CommandList cmd{ cmdlist, "Lighting Pass"};
-	cmd.BindPSO(pso_DeferredLightingComposition, PSOLayoutDB::deferredLightingCompositionPSOLayout);
+	cmd.BindPSO(pso_DeferredLightingComposition, PSOLayoutDB::lightingPSOLayout);
 	
 	cmd.BindAttachment(0, tex);
 	cmd.BindDepthAttachment(depth);
 
 	cmd.DescriptorSetBegin(0)
 		.BindSampler(0, GfxSamplerManager::GetDefaultSampler())
-		.BindImage(1, &attachments[GBufferAttachmentIndex::DEPTH], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) 
+		.BindImage(1, &attachments[GBufferAttachmentIndex::DEPTH], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(2, &attachments[GBufferAttachmentIndex::NORMAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(3, &attachments[GBufferAttachmentIndex::ALBEDO], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(4, &attachments[GBufferAttachmentIndex::MATERIAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(5, &attachments[GBufferAttachmentIndex::EMISSIVE], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(6, &vr.attachments.shadow_depth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(7, &vr.attachments.SSAO_finalTarget, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
-		.BindBuffer(8, &vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		.BindBuffer(8, &vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.BindSampler(9, GfxSamplerManager::GetSampler_Cube()) // cube sampler
+		.BindImage(10, &vr.g_radianceMap, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) // cube map
+		.BindImage(11, &vr.g_prefilterMap, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) // prefilter map
+		.BindImage(12, &vr.g_brdfLUT, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) // brdflut
+		.BindSampler(13, GfxSamplerManager::GetSampler_ShowMapClamp()); // shadwosampler
 	
 	cmd.SetDefaultViewportAndScissor();
 
@@ -119,13 +141,16 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	cmd.DescriptorSetBegin(2)
 		.BindBuffer(4, &vr.globalLightBuffer[currFrame].GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-	CreateDescriptors();
+	//CreateDescriptors();
 
 	LightPC pc{};
 	pc.useSSAO = vr.useSSAO ? 1 : 0;
 	pc.specularModifier = vr.currWorld->lightSettings.specularModifier;
-	pc.resolution.x = (float)vr.renderTargets[vr.renderTargetInUseID].texture.width;
-	pc.resolution.y = (float)vr.renderTargets[vr.renderTargetInUseID].texture.height;
+	glm::vec3 normalizedDir = glm::normalize(vr.currWorld->lightSettings.directionalLight);
+	pc.directionalLight = vec4{ normalizedDir, 0.0f };
+	pc.lightColorInten = vr.currWorld->lightSettings.directionalLightColor;
+	pc.resolution.x = (float)tex->width;
+	pc.resolution.y = (float)tex->height;
 
 	size_t lightCnt = 0;
 	auto& lights = vr.batches.GetLocalLights();
@@ -151,12 +176,12 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	VkPushConstantRange range;
 	range.offset = 0;
 	range.size = sizeof(LightPC);
-	cmd.SetPushConstant(PSOLayoutDB::deferredLightingCompositionPSOLayout,range,&pc);
+	cmd.SetPushConstant(PSOLayoutDB::lightingPSOLayout,range,&pc);
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	
-	cmd.BindDescriptorSet(PSOLayoutDB::deferredLightingCompositionPSOLayout, 1,
+	cmd.BindDescriptorSet(PSOLayoutDB::lightingPSOLayout, 1,
 		std::array<VkDescriptorSet, 1>
 		{
 			vr.descriptorSets_uniform[currFrame],
@@ -168,10 +193,9 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	cmd.DrawFullScreenQuad();
 
 	const auto& cube = vr.g_globalModels[vr.GetDefaultCubeID()];
-	cmd.BindPSO(pso_deferredBox, PSOLayoutDB::deferredLightingCompositionPSOLayout);
+	cmd.BindPSO(pso_deferredBox, PSOLayoutDB::lightingPSOLayout);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
 
 	cmd.DrawIndexed(cube.indicesCount, (uint32_t)lightCnt, cube.baseIndices, cube.baseVertex, 0);
@@ -181,11 +205,30 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 void LightingPass::Shutdown()
 {
 	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
+	auto& vr = *VulkanRenderer::get();
 
-	vkDestroyPipelineLayout(device, PSOLayoutDB::deferredLightingCompositionPSOLayout, nullptr);
+	vr.attachments.lighting_target.destroy();
+
+	vkDestroyPipelineLayout(device, PSOLayoutDB::lightingPSOLayout, nullptr);
 	vkDestroyPipeline(device, pso_DeferredLightingComposition, nullptr);
 	
 	vkDestroyPipeline(device, pso_deferredBox, nullptr);
+
+}
+
+void LightingPass::CreateResources()
+{
+
+	auto& vr = *VulkanRenderer::get();
+	auto swapchainext = vr.m_swapchain.swapChainExtent;
+	vr.attachments.lighting_target.name = "lighting_buffer";
+	vr.attachments.lighting_target.forFrameBuffer(&vr.m_device, vr.G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+		swapchainext.width, swapchainext.height, true, 1.0f);
+	vr.fbCache.RegisterFramebuffer(vr.attachments.lighting_target);
+
+	auto cmd = vr.GetCommandBuffer();
+	vkutils::SetImageInitialState(cmd, vr.attachments.lighting_target);
+	vr.SubmitSingleCommandAndWait(cmd);
 
 }
 
@@ -256,7 +299,7 @@ void LightingPass::CreateDescriptors()
         .BindImage(6, &texDescriptorShadow, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
         .BindImage(7, &texDescriptorSSAO, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
         .BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .BuildLayout(SetLayoutDB::DeferredLightingComposition);
+        .BuildLayout(SetLayoutDB::Lighting);
 }
 
 void LightingPass::CreatePipelineLayout()
@@ -280,12 +323,17 @@ void LightingPass::CreatePipelineLayout()
 		.BindImage(6, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.BindImage(7, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.BindBuffer(8, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.BuildLayout(SetLayoutDB::DeferredLightingComposition);
+		.BindImage(9, &dummy, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS) // cube sampler
+		.BindImage(10, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS) // cube map
+		.BindImage(11, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,VK_SHADER_STAGE_ALL_GRAPHICS) // prefilter map
+		.BindImage(12, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,VK_SHADER_STAGE_ALL_GRAPHICS) // brdflut
+		.BindImage(13, &dummy, VK_DESCRIPTOR_TYPE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS) // shadow sampler
+		.BuildLayout(SetLayoutDB::Lighting);
 
 
 	std::vector<VkDescriptorSetLayout> setLayouts
 	{
-		SetLayoutDB::DeferredLightingComposition, // (set = 0)
+		SetLayoutDB::Lighting, // (set = 0)
 		SetLayoutDB::FrameUniform, // (set = 1)
 		SetLayoutDB::lights // (set = 4)
 	};
@@ -295,8 +343,8 @@ void LightingPass::CreatePipelineLayout()
 	plci.pushConstantRangeCount = 1;
 	plci.pPushConstantRanges = &pushConstantRange;
 
-	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::deferredLightingCompositionPSOLayout));
-	VK_NAME(m_device.logicalDevice, "deferredLightingCompositionPSOLayout", PSOLayoutDB::deferredLightingCompositionPSOLayout);
+	VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::lightingPSOLayout));
+	VK_NAME(m_device.logicalDevice, "deferredLightingCompositionPSOLayout", PSOLayoutDB::lightingPSOLayout);
 }
 
 void LightingPass::CreatePipeline()
@@ -332,6 +380,8 @@ void LightingPass::CreatePipeline()
 	pipelineCI.pDynamicState = &dynamicState;
 	pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
 	pipelineCI.pStages = shaderStages.data();
+    
+    depthStencilState.depthTestEnable = VK_FALSE;
 
 	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 
@@ -342,7 +392,7 @@ void LightingPass::CreatePipeline()
 	pipelineCI.pVertexInputState = &emptyInputState;
 	// pipelineCI.renderPass = vr.renderPass_HDR.pass;
 	pipelineCI.renderPass = VK_NULL_HANDLE;
-	pipelineCI.layout = PSOLayoutDB::deferredLightingCompositionPSOLayout;
+	pipelineCI.layout = PSOLayoutDB::lightingPSOLayout;
 	colorBlendState = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
 	blendAttachmentState= oGFX::vkutils::inits::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
 
@@ -354,6 +404,16 @@ void LightingPass::CreatePipeline()
 	renderingInfo.pColorAttachmentFormats = &colorFormat;
 	renderingInfo.depthAttachmentFormat = vr.G_DEPTH_FORMAT;
 	renderingInfo.stencilAttachmentFormat = vr.G_DEPTH_FORMAT;
+
+	depthStencilState.depthTestEnable = VK_FALSE;
+	depthStencilState.stencilTestEnable = VK_TRUE;
+	depthStencilState.front.compareOp = VK_COMPARE_OP_EQUAL;
+	depthStencilState.front.passOp = VK_STENCIL_OP_REPLACE;
+	depthStencilState.front.failOp = VK_STENCIL_OP_KEEP;
+	depthStencilState.front.reference = 1;
+	depthStencilState.front.compareMask = 0xff;
+	depthStencilState.front.writeMask = 0x00;
+	depthStencilState.back = depthStencilState.front;
 
 	pipelineCI.pNext = &renderingInfo;
 	if (pso_DeferredLightingComposition != VK_NULL_HANDLE)
@@ -384,6 +444,17 @@ void LightingPass::CreatePipeline()
 	colourState.alphaBlendOp = VK_BLEND_OP_ADD;
 	VkPipelineColorBlendStateCreateInfo colourBlendingCreateInfo = oGFX::vkutils::inits::pipelineColorBlendStateCreateInfo(1,&colourState);
 	pipelineCI.pColorBlendState = &colourBlendingCreateInfo;
+
+	depthStencilState.depthTestEnable = VK_FALSE;
+	depthStencilState.stencilTestEnable = VK_TRUE;
+	depthStencilState.front.compareOp = VK_COMPARE_OP_EQUAL;
+	depthStencilState.front.passOp = VK_STENCIL_OP_REPLACE;
+	depthStencilState.front.failOp = VK_STENCIL_OP_KEEP;
+	depthStencilState.front.reference = 1;
+	depthStencilState.front.compareMask = 0xff;
+	depthStencilState.front.writeMask = 0x00;
+	depthStencilState.back = depthStencilState.front;
+
 
 	if (pso_deferredBox != VK_NULL_HANDLE)
 	{

@@ -34,13 +34,6 @@ layout(std430, set = 0, binding = 3) readonly buffer GPUScene
 	GPUTransform GPUScene_SSBO[];
 };
 
-#include "skinning.shader"
-
-layout(std430, set = 0, binding = 5) readonly buffer GPUobject
-{
-	GPUObjectInformation GPUobjectInfo[];
-};
-
 void main()
 {
 	outUV = inUV.xy;

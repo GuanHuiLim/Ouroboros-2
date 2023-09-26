@@ -3,10 +3,17 @@
 #extension GL_EXT_nonuniform_qualifier : require
 
 #include "shared_structs.h"
+#include "shader_utility.shader"
 
 layout (local_size_x = 16, local_size_y = 16) in;
-layout (binding = 1/*,rgba16f*/)  uniform sampler2D inputImage;
+layout (binding = 0/*,rgba16f*/)  uniform sampler basicSampler;
+layout (binding = 1/*,rgba16f*/)  uniform texture2D inputImage;
 layout (binding = 2,r11f_g11f_b10f) uniform  image2D resultImage;
+
+layout (binding = 3) readonly buffer Luminance
+{
+    float LuminanceValue;
+};
 
 layout(push_constant)uniform PushColourCorrect
 {
@@ -33,34 +40,29 @@ vec3 aces_tonemap(vec3 color){
 
 void main()
 {	
-
-
     // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
 	// vec4 inImg = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
-	vec4 res = imageLoad(resultImage, ivec2(gl_GlobalInvocationID.xy) );
-
 	
+    vec2 uvs = (vec2(gl_GlobalInvocationID.xy) + 0.5) / textureSize(sampler2D(inputImage, basicSampler),0);
+    vec4 res = texture( sampler2D( inputImage, basicSampler), uvs);
+    
+    //const float middleGray = 1.03 - 2 / (2 + log10(fAveLogLum+1));
+    float middleGray = pc.exposure;
+    // Compute scale factor such that average luminance maps to middle gray
+    float fLumScale = middleGray / LuminanceValue;
+    
+    vec3 f3Color = max(res.rgb, vec3(0.0));
+    float fInitialPixelLum = max(RGBtoLuminance(f3Color), 1e-10);
+    float fScaledPixelLum = fInitialPixelLum * fLumScale;
+    vec3 f3ScaledColor = f3Color * fLumScale;
 
-	float shadowThreshold = pc.threshold.x;
-	float highlightThreshold = pc.threshold.y;
-
-	float luminance = dot(res.rgb, vec3(0.2126, 0.7152, 0.0722));
-    float shadow = smoothstep(0.0, shadowThreshold, luminance);
-    float highlight = smoothstep(highlightThreshold, 1.0, luminance);
-    float midtones = 1.0 - shadow - highlight;
-
-    vec3 correctedColor = res.rgb;
-    correctedColor = mix(correctedColor, pc.shadowCol.rgb, (1.0-shadow) * pc.shadowCol.a);
-    correctedColor = mix(correctedColor, pc.midCol.rgb, midtones * pc.midCol.a);
-    correctedColor = mix(correctedColor, pc.highCol.rgb, highlight * pc.highCol.a);
-
-	vec3 result = aces_tonemap(correctedColor.rgb);
-
-	// also gamma correct before returning    
-	const float gamma = 2.2;
-    result = pow(result, vec3(gamma));	
-
+    vec3 result = aces_tonemap(f3ScaledColor);
+	
+	// also gamma correct before returning   
+    result = LinearToGamma(result.rgb);
+    
+    //result.rgb = vec3(LuminanceValue);
     //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
-	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result,1.0));
+    imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result.rgb, 1.0));
 }
 

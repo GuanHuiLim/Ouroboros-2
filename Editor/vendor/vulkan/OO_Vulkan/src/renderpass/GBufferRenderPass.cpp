@@ -107,7 +107,7 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 		cmd.BindPSO(pso_ComputeCull, PSOLayoutDB::singleSSBOlayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 
 		cmd.DescriptorSetBegin(0)
-			.BindBuffer(1, vr.indirectCommandsBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+			.BindBuffer(1, vr.indirectCommandsBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, rhi::UAV)
 			.BindBuffer(2, vr.instanceBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 			.BindBuffer(3, vr.gpuTransformBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		
@@ -155,12 +155,12 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 	const float vpHeight = (float)vr.m_swapchain.swapChainExtent.height;
 	const float vpWidth = (float)vr.m_swapchain.swapChainExtent.width;
 
-	constexpr bool clearOnDraw = true;
 	for (size_t i = 0; i < GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS; i++)
 	{
-		cmd.BindAttachment(i, &attachments[i], clearOnDraw);
+		cmd.BindAttachment(i, &attachments[i]);
 	}
-	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH], clearOnDraw);
+	constexpr bool clearOnDraw = true;
+	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 	
 	cmd.BindPSO(pso_GBufferDefault, PSOLayoutDB::defaultPSOLayout);
 	cmd.SetDefaultViewportAndScissor();
@@ -180,7 +180,6 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	std::vector<VkBuffer> vtxBuffers{
 		vr.g_GlobalMeshBuffers.VtxBuffer.getBuffer(),
-		vr.skinningVertexBuffer.getBuffer(),
 	};
 
 	VkDeviceSize offsets[2]{
@@ -188,7 +187,6 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 		0
 	};
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -235,7 +233,7 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 		vkutils::TransitionImage(cmdlist, vr.attachments.shadowMask, VK_IMAGE_LAYOUT_GENERAL);
 		const auto& dbi = vr.globalLightBuffer[currFrame].GetBufferInfoPtr();
 
-		cmd.BindPSO(pso_ComputeShadowPrepass, PSOLayoutDB::shadowPrepassLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
+		cmd.BindPSO(pso_ComputeShadowPrepass, PSOLayoutDB::shadowPrepassPSOLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 		
 		cmd.DescriptorSetBegin(0)
 			.BindSampler(0, GfxSamplerManager::GetSampler_Deferred())
@@ -244,11 +242,11 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 			.BindImage(3, &attachments[GBufferAttachmentIndex::NORMAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 
 			.BindImage(6, &vr.attachments.shadowMask, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-			.BindBuffer(8, vr.globalLightBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+			.BindBuffer(8, vr.globalLightBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 			//.Build(shadowprepassDS, SetLayoutDB::compute_shadowPrepass);
 
 		uint32_t offset = 1;
-		cmd.BindDescriptorSet(PSOLayoutDB::shadowPrepassLayout, offset,
+		cmd.BindDescriptorSet(PSOLayoutDB::shadowPrepassPSOLayout, offset,
 			std::array<VkDescriptorSet, 2>{
 				//shadowprepassDS,
 				vr.descriptorSets_uniform[currFrame],
@@ -287,7 +285,7 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 		range.offset = 0;
 		range.size = sizeof(LightPC);
 		//cmd.SetPushConstant(PSOLayoutDB::shadowPrepassLayout,range,&pc);
-		vkCmdPushConstants(cmdlist, PSOLayoutDB::shadowPrepassLayout, VK_SHADER_STAGE_ALL,range.offset,range.size,&pc);
+		vkCmdPushConstants(cmdlist, PSOLayoutDB::shadowPrepassPSOLayout, VK_SHADER_STAGE_ALL,range.offset,range.size,&pc);
 		vkCmdDispatch(cmdlist, (vr.attachments.shadowMask.width - 1) / 16 + 1, (vr.attachments.shadowMask.height - 1) / 16 + 1, 1);
 
 		
@@ -317,7 +315,7 @@ void GBufferRenderPass::Shutdown()
 	vkDestroyPipeline(device, pso_GBufferDefault, nullptr);
 
 	vkDestroyPipeline(device, pso_ComputeShadowPrepass, nullptr);
-	vkDestroyPipelineLayout(device, PSOLayoutDB::shadowPrepassLayout, nullptr);
+	vkDestroyPipelineLayout(device, PSOLayoutDB::shadowPrepassPSOLayout, nullptr);
 }
 
 void GBufferRenderPass::SetupRenderpass()
@@ -466,6 +464,20 @@ void GBufferRenderPass::CreatePipeline()
 	pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
 	pipelineCI.pStages = shaderStages.data();
 
+	depthStencilState.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
+	depthStencilState.depthWriteEnable = VK_FALSE;
+
+	// write to stencil buffer
+	depthStencilState.stencilTestEnable = VK_TRUE;
+	depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
+	depthStencilState.back.failOp = VK_STENCIL_OP_REPLACE;
+	depthStencilState.back.depthFailOp = VK_STENCIL_OP_REPLACE;
+	depthStencilState.back.passOp = VK_STENCIL_OP_REPLACE;
+	depthStencilState.back.compareMask = 0xff;
+	depthStencilState.back.writeMask = 0xff;
+	depthStencilState.back.reference = 1;
+	depthStencilState.front = depthStencilState.back;
+
 	const auto& bindingDescription = oGFX::GetGFXVertexInputBindings();
 	const auto& attributeDescriptions = oGFX::GetGFXVertexInputAttributes();
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = oGFX::vkutils::inits::pipelineVertexInputStateCreateInfo(bindingDescription, attributeDescriptions);
@@ -506,7 +518,7 @@ void GBufferRenderPass::CreatePipeline()
 	renderingInfo.pColorAttachmentFormats = colourFormats.data();
 	renderingInfo.depthAttachmentFormat = vr.G_DEPTH_FORMAT;
 	renderingInfo.stencilAttachmentFormat =  vr.G_DEPTH_FORMAT;
-
+	
 	pipelineCI.pNext = &renderingInfo;
 
 	if (pso_GBufferDefault != VK_NULL_HANDLE)
@@ -537,7 +549,7 @@ void GBufferRenderPass::CreatePipeline()
 		{
 			vkDestroyPipeline(m_device.logicalDevice, pso_ComputeShadowPrepass, nullptr);
 		}
-		VkComputePipelineCreateInfo computeCI = oGFX::vkutils::inits::computeCreateInfo(PSOLayoutDB::shadowPrepassLayout);
+		VkComputePipelineCreateInfo computeCI = oGFX::vkutils::inits::computeCreateInfo(PSOLayoutDB::shadowPrepassPSOLayout);
 		computeCI.stage = vr.LoadShader(m_device, shaderCS, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_CHK(vkCreateComputePipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &computeCI, nullptr, &pso_ComputeShadowPrepass));
 		VK_NAME(m_device.logicalDevice, "pso_ComputeShadowPrepass", pso_ComputeShadowPrepass);
@@ -631,8 +643,8 @@ void GBufferRenderPass::CreatePSOLayout()
 		plci.pushConstantRangeCount = 1;
 		plci.pPushConstantRanges = &pushConstantRange;
 
-		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::shadowPrepassLayout));
-		VK_NAME(m_device.logicalDevice, "ShadowPrepass_PSOLayout", PSOLayoutDB::shadowPrepassLayout);
+		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::shadowPrepassPSOLayout));
+		VK_NAME(m_device.logicalDevice, "ShadowPrepass_PSOLayout", PSOLayoutDB::shadowPrepassPSOLayout);
 
 	}
 
@@ -649,17 +661,15 @@ void GBufferRenderPass::SetupResources() {
 	const uint32_t height = m_swapchain.swapChainExtent.height;
 
 	auto& attachments = vr.attachments.gbuffer;
-	//attachments[GBufferAttachmentIndex::POSITION].name = "GB_Position";
-	//attachments[GBufferAttachmentIndex::POSITION].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	attachments[GBufferAttachmentIndex::NORMAL	].name = "GB_Normal";
-	attachments[GBufferAttachmentIndex::NORMAL	].forFrameBuffer(&m_device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::NORMAL	].forFrameBuffer(&m_device, vr.G_NORMALS_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	vr.fbCache.RegisterFramebuffer(attachments[GBufferAttachmentIndex::NORMAL]);
 	// linear texture
 	attachments[GBufferAttachmentIndex::ALBEDO	].name = "GB_Albedo";
-	attachments[GBufferAttachmentIndex::ALBEDO	].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::ALBEDO	].forFrameBuffer(&m_device, vr.G_NON_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	vr.fbCache.RegisterFramebuffer(attachments[GBufferAttachmentIndex::ALBEDO]);
 	attachments[GBufferAttachmentIndex::MATERIAL].name = "GB_Material";
-	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(&m_device, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::MATERIAL].forFrameBuffer(&m_device, vr.G_NON_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	vr.fbCache.RegisterFramebuffer(attachments[GBufferAttachmentIndex::MATERIAL]);
 	attachments[GBufferAttachmentIndex::ENTITY_ID].name = "GB_Entity";
 	attachments[GBufferAttachmentIndex::ENTITY_ID].forFrameBuffer(&m_device, VK_FORMAT_R32_SINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
@@ -668,7 +678,7 @@ void GBufferRenderPass::SetupResources() {
 	attachments[GBufferAttachmentIndex::DEPTH	].forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height);
 	vr.fbCache.RegisterFramebuffer(attachments[GBufferAttachmentIndex::DEPTH]);
 	attachments[GBufferAttachmentIndex::EMISSIVE	].name = "GB_Emissive";
-	attachments[GBufferAttachmentIndex::EMISSIVE	].forFrameBuffer(&m_device, vr.G_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
+	attachments[GBufferAttachmentIndex::EMISSIVE	].forFrameBuffer(&m_device, vr.G_HDR_FORMAT_ALPHA, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height);
 	vr.fbCache.RegisterFramebuffer(attachments[GBufferAttachmentIndex::EMISSIVE]);
 	
 	vr.attachments.shadowMask.name = "GB_ShadowMask";
@@ -685,6 +695,3 @@ void GBufferRenderPass::SetupResources() {
 	vr.SubmitSingleCommandAndWait(cmd);
 
 }
-
-static GBufferRenderPass gs_GBufferRenderPass;
-GfxRenderpass* gfxPtr = &gs_GBufferRenderPass;

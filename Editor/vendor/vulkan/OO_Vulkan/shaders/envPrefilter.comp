@@ -1,0 +1,85 @@
+#version 460
+#extension GL_GOOGLE_include_directive : enable
+
+#include "shader_utility.shader"
+#include "lightingEquations.shader"
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (set=0, binding = 0) uniform sampler basicSampler;
+layout (set=0, binding = 1) uniform textureCube inputImage;
+layout (set=0, binding = 2, rgba16f) uniform writeonly imageCube resultImage;
+
+layout(push_constant)uniform PushBloomConstant
+{
+float c_roughness;
+};
+
+
+
+void main()
+{	
+	
+    ivec2 cubemapSize = textureSize(samplerCube(inputImage, basicSampler), 0);
+    ivec2 outputSize = imageSize(resultImage);
+	
+    ivec3 cubeCoord = ivec3(gl_GlobalInvocationID);
+    vec3 worldPos = cubeCoordToWorld(cubeCoord, vec2(outputSize));
+    // tagent space from origin point
+    vec3 N = normalize(worldPos);
+    // assume view direction always equal to outgoing direction
+    vec3 R = N;
+    vec3 V = N;
+    
+    float totalWeight = 0.0;
+    vec3 prefilteredColor = vec3(0.0);
+    
+    const float u_roughness = c_roughness;
+    
+    const uint totalSamples = 1024u;
+    for (uint i = 0u; i < totalSamples; ++i)
+    {
+      // generate sample vector towards the alignment of the specular lobe
+        vec2 Xi = Hammersley(i, totalSamples);
+        vec3 H = ImportanceSampleGGX(Xi, u_roughness,N);
+        float dotHV = dot(H, V);
+        vec3 L = normalize(2.0 * dotHV * H - V);
+
+        float dotNL = max(dot(N, L), 0.0);
+        if (dotNL > 0.0)
+        {
+            float dotNH = max(dot(N, H), 0.0);
+            dotHV = max(dotHV, 0.0);
+            // sample from the environment's mip level based on roughness/pdf
+            float D = Specular_D_GGX(u_roughness, dotNH);
+            float pdf = D * dotNH / (4.0 * dotHV) + 0.0001;
+
+            // samplerCube and sample via textureLod if we want to use the PDF based filtering to get rid of the aliasing artifacts as described by Chetan Jaggi
+            // https://chetanjags.wordpress.com/2015/08/26/image-based-lighting/
+            float saTexel = 4.0 * PI / (6.0 * cubemapSize.x * cubemapSize.y);
+            float saSample = 1.0 / (totalSamples * pdf + 0.0001);
+            float mipLevel = u_roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
+
+            vec3 sampledColor = textureLod(samplerCube(inputImage, basicSampler), L, mipLevel).rgb * dotNL;
+            
+            const float clampValue = 100.0;
+            prefilteredColor += clamp(sampledColor, 0.0, clampValue);
+            totalWeight += dotNL;
+        }
+    }
+    prefilteredColor = prefilteredColor / totalWeight;
+    
+    imageStore(resultImage, cubeCoord, vec4(prefilteredColor, 1.0));
+	
+	//vec3 N = normalize( vec3(1,0,0) );
+	//ivec2 sz = textureSize(samplerCube(inputImage,basicSampler),0);
+	//vec2 uv = vec2(gl_GlobalInvocationID.xy)/sz;
+	//vec2 coords = (uv - 0.5) * 2;
+	//
+	//vec3 sampleDir = normalize(vec3(N.x,coords.x,coords.y));
+	//
+	//vec4 inputVal = texture(samplerCube(inputImage,basicSampler), sampleDir);
+  
+
+	 //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
+    // imageStore(resultImage, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z), inputVal);
+}

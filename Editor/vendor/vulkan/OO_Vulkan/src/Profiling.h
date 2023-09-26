@@ -15,7 +15,7 @@ Technology is prohibited.
 
 // Note: This header file only wraps the C++ Macros needed for external profiling tools.
 
-//#define USE_PROFILING_OPTICK
+#define USE_PROFILING_OPTICK
 
 #pragma warning( push )
 #pragma warning( disable : 26819 ) // fallthrough
@@ -25,7 +25,7 @@ Technology is prohibited.
 #pragma warning( disable : 6385 ) // invalid data
 
 #if defined(USE_PROFILING_OPTICK)
-    #include "optick/optick.h"
+    #include "optick.h"
     #define PROFILE_SCOPED(...)              OPTICK_EVENT(__VA_ARGS__);
     #define PROFILE_FRAME(...)               OPTICK_FRAME(__VA_ARGS__);
     #define PROFILE_THREAD(...)              OPTICK_THREAD(__VA_ARGS__);

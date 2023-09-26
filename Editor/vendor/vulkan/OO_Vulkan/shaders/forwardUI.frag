@@ -83,10 +83,7 @@ void main()
         outfragCol.a = outfragCol.a * tempcol.a;
 
         // done after tonemapping so correct here
-        const float gamma = 2.2;
-	    //outfragCol.rgb =  pow(outfragCol.rgb, vec3(1.0/gamma));
-        // handled in post processing
-        outfragCol.rgb = pow(outfragCol.rgb,vec3(gamma));
+        outfragCol.rgb = GammaToLinear(outfragCol.rgb);
     }
 
 	if(outfragCol.a < 0.0001) discard; // this is bad and broken

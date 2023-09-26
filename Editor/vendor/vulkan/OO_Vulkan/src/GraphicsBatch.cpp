@@ -89,12 +89,13 @@ void GraphicsBatch::ProcessLights()
 		constexpr glm::vec3 right{ 1.0f,0.0f,0.0f };
 		constexpr glm::vec3 forward{ 0.0f,0.0f,-1.0f };
 
-		light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + -up, glm::vec3{ 0.0f, 0.0f,-1.0f });
-		light.view[1] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + up, glm::vec3{ 0.0f, 0.0f, 1.0f });
-		light.view[2] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + -right, glm::vec3{ 0.0f,1.0f, 0.0f });
-		light.view[3] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + right, glm::vec3{ 0.0f,1.0f, 0.0f });
+		// standardize to cubemap faces px, nx, py, ny, pz, nz
+		light.view[0] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) +	  right, glm::vec3{ 0.0f, 1.0f, 0.0f });
+		light.view[1] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) +	 -right, glm::vec3{ 0.0f, 1.0f, 0.0f });
+		light.view[2] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) +		 up, glm::vec3{ 0.0f, 0.0f, 1.0f });
+		light.view[3] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) +		-up, glm::vec3{ 0.0f, 0.0f,-1.0f });
 		light.view[4] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + -forward, glm::vec3{ 0.0f,-1.0f, 0.0f });
-		light.view[5] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + forward, glm::vec3{ 0.0f,-1.0f, 0.0f });
+		light.view[5] = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) +  forward, glm::vec3{ 0.0f,-1.0f, 0.0f });
 		
 		auto inversed_perspectiveRH_ZO = [](float fovRad, float aspect, float n, float f)->glm::mat4 {
 			glm::mat4 result(0.0f);
@@ -185,6 +186,7 @@ void GraphicsBatch::ProcessLights()
 		si.info = e.info;
 		si.position = e.position;
 		si.color = e.color;
+		si.color.w /= 100.0f;
 		si.radius = e.radius;
 		si.projection = e.projection;
 

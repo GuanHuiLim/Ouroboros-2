@@ -31,7 +31,7 @@ void main()
 	vec4 depth = texture(sampler2D(samplerDepth,basicSampler), inUV);
 	vec3 fragPos = ViewPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection).xyz;
 
-	vec3 normal = texture(sampler2D(samplerNormal,basicSampler), inUV).rgb;
+	vec3 normal = DecodeNormalHelper( texture(sampler2D(samplerNormal,basicSampler), inUV).rgb);
 
 	vec2 noiseScale = vec2(float(PC.screenDim.x)/PC.sampleDim.x, float(PC.screenDim.y)/PC.sampleDim.y);
 	vec3 randomVec = texture(sampler2D(samplerNoise,basicSampler), inUV * noiseScale).xyz;

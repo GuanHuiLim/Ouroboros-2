@@ -164,10 +164,10 @@ void SSAORenderPass::Draw(const VkCommandBuffer cmdlist)
 
 	cmd.DrawFullScreenQuad();
 
-	cmd.BindPSO(pso_SSAO_blur, PSOLayoutDB::SSAOBlurLayout);
+	cmd.BindPSO(pso_SSAO_blur, PSOLayoutDB::SSAOBlurPSOLayout);
 	cmd.BindAttachment(0, &vr.attachments.SSAO_finalTarget);
 	cmd.SetDefaultViewportAndScissor();
-	cmd.BindDescriptorSet(PSOLayoutDB::SSAOBlurLayout, 1, 1, &vr.descriptorSets_uniform[currFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,1,&dynamicOffset);
+	cmd.BindDescriptorSet(PSOLayoutDB::SSAOBlurPSOLayout, 1, 1, &vr.descriptorSets_uniform[currFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,1,&dynamicOffset);
 	cmd.DescriptorSetBegin(0)
 		.BindSampler(0, GfxSamplerManager::GetSampler_SSAOEdgeClamp())
 		.BindImage(1, &vr.attachments.SSAO_renderTarget, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
@@ -187,7 +187,7 @@ void SSAORenderPass::Shutdown()
 	auto& device = vr.m_device.logicalDevice;
 
 	vkDestroyPipelineLayout(device, PSOLayoutDB::SSAOPSOLayout, nullptr);
-	vkDestroyPipelineLayout(device, PSOLayoutDB::SSAOBlurLayout, nullptr);
+	vkDestroyPipelineLayout(device, PSOLayoutDB::SSAOBlurPSOLayout, nullptr);
 	renderpass_SSAO.destroy();
 	vr.attachments.SSAO_renderTarget.destroy();
 	vr.attachments.SSAO_finalTarget.destroy();
@@ -268,7 +268,7 @@ void SSAORenderPass::CreateDescriptors()
 	auto& vr = *VulkanRenderer::get();
 	// At this point, all dependent resources (gbuffer etc) must be ready.
 	auto& attachments = vr.attachments.gbuffer;
-
+	
 	VkDescriptorImageInfo texDescriptorDepth = oGFX::vkutils::inits::descriptorImageInfo(
 		GfxSamplerManager::GetSampler_SSAOEdgeClamp(),
 		attachments[GBufferAttachmentIndex::DEPTH]   .view,
@@ -345,8 +345,8 @@ void SSAORenderPass::CreatePipelineLayout()
 		plci.pushConstantRangeCount = 1;
 		plci.pPushConstantRanges = &pushConstantRange;
 
-		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::SSAOBlurLayout));
-		VK_NAME(m_device.logicalDevice, "SSAO_BlurLayout", PSOLayoutDB::SSAOBlurLayout);
+		VK_CHK(vkCreatePipelineLayout(m_device.logicalDevice, &plci, nullptr, &PSOLayoutDB::SSAOBlurPSOLayout));
+		VK_NAME(m_device.logicalDevice, "SSAO_BlurLayout", PSOLayoutDB::SSAOBlurPSOLayout);
 	}
 }
 
@@ -475,7 +475,7 @@ void SSAORenderPass::CreatePipeline()
 	format = vr.attachments.SSAO_finalTarget.format;
 
 	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/ssaoBlur.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	pipelineCI.layout = PSOLayoutDB::SSAOBlurLayout;
+	pipelineCI.layout = PSOLayoutDB::SSAOBlurPSOLayout;
 	if (pso_SSAO_blur != VK_NULL_HANDLE)
 	{
 		vkDestroyPipeline(m_device.logicalDevice, pso_SSAO_blur, nullptr);

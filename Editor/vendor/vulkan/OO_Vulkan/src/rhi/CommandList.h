@@ -23,10 +23,23 @@ namespace rhi
 {
 	class CommandList;
 
-	struct ResourceStateTracking {
+	struct ImageStateTracking {
 		VkImageLayout referenceLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
 		VkImageLayout currentLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
 		VkImageLayout expectedLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
+	};
+
+	enum ResourceUsage {
+		UNKNOWN,
+		SRV,
+		UAV
+	};
+
+	struct BufferStateTracking {
+		ResourceUsage referenceAccess{ SRV };
+		ResourceUsage currentAccess{ SRV };
+		ResourceUsage expectedAccess{ UNKNOWN };
+		VkPipelineBindPoint previousStage{ VK_PIPELINE_BIND_POINT_GRAPHICS };
 	};
 
 	class DescriptorSetInfo {
@@ -45,9 +58,10 @@ namespace rhi
 		
 		CommandList* m_cmdList;
 
-		DescriptorSetInfo& BindImage(uint32_t binding, vkutils::Texture* texture, VkDescriptorType type, VkShaderStageFlags stageFlagsInclude = 0);
+		DescriptorSetInfo& BindImage(uint32_t binding, vkutils::Texture* texture, VkDescriptorType type);
+		DescriptorSetInfo& BindImage(uint32_t binding, vkutils::Texture* texture, VkDescriptorType type, VkImageView viewOverride);
 		DescriptorSetInfo& BindSampler(uint32_t binding, VkSampler sampler, VkShaderStageFlags stageFlagsInclude = 0);
-		DescriptorSetInfo& BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlagsInclude = 0);
+		DescriptorSetInfo& BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type,ResourceUsage access = ResourceUsage::SRV, VkShaderStageFlags stageFlagsInclude = 0);
 	};
 
 // Another better alternative is to use Vulkan HPP.
@@ -63,10 +77,22 @@ public:
 	void EndNamedRegion();
 
 	void BeginTrackingImage(vkutils::Texture* tex);
-	ResourceStateTracking* getTrackedImage(vkutils::Texture* tex);
+	ImageStateTracking* getTrackedImage(vkutils::Texture* tex);
+	ImageStateTracking* ensureTrackedImage(vkutils::Texture* tex);
+
+	void BeginTrackingBuffer(VkBuffer buffer);
+	BufferStateTracking* getTrackedBuffer(VkBuffer buffer);
+	BufferStateTracking* ensureTrackedBuffer(VkBuffer buffer);
+
+	void VerifyResourceStates();
+	void RestoreResourceStates();
 
 	void VerifyImageResourceStates();
 	void RestoreImageResourceStates();
+	void VerifyBufferResourceStates();
+	void RestoreBufferResourceStates();
+
+	void CopyImage(vkutils::Texture* src, vkutils::Texture* dst);
 
 	//----------------------------------------------------------------------------------------------------
 	// Binding Commands
@@ -179,6 +205,7 @@ public:
 
 	// TODO: Function not here? Add it on demand...
 
+	VkCommandBuffer getCommandBuffer();
 private:
 	void CommitDescriptors();
 
@@ -201,7 +228,8 @@ private:
 
 	VkRect2D m_renderArea{};
 
-	std::unordered_map<vkutils::Texture*, ResourceStateTracking> m_trackedTextures;
+	std::unordered_map<vkutils::Texture*, ImageStateTracking> m_trackedTextures;
+	std::unordered_map<VkBuffer, BufferStateTracking> m_trackedBuffers;
 
 	std::array<DescriptorSetInfo, 4> descriptorSets; // only support 4 sets
 	 

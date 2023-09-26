@@ -1,0 +1,109 @@
+#version 460
+#extension GL_EXT_control_flow_attributes : require
+
+
+// do single pass one thread for each bin
+layout (local_size_x = 256, local_size_y = 1) in;
+#include "shared_structs.h"
+layout(std430,/*set = 0,*/ binding = 0)
+buffer LuminanceOutput
+{
+    //float LumOut[];
+    float LumOut;
+    float LumLogAverage;
+};
+
+layout(std430,/*set = 0,*/ binding = 1)
+buffer GPUhisto
+{
+	HistoStruct histo;
+};
+
+
+layout( push_constant ) uniform lumSettings
+{
+    LuminencePC PC;
+};
+
+
+// our brave firefighters
+shared float sCDF[256];
+
+void main()
+{
+
+    ivec2 texPos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    ivec2 local = ivec2(gl_LocalInvocationID.x, gl_LocalInvocationID.y);
+    int width = int(gl_WorkGroupSize.x);
+    int flatidx = local.x;
+	 
+    
+    float countForThisBin = float(histo.histoBin[flatidx]);
+	// get weighted value
+    // this sets bin[0] to zero so dark pixels contribute nothing to the adaptation
+    sCDF[flatidx] = countForThisBin * gl_LocalInvocationID.x;
+    barrier();
+	 
+  // lol cdf scan
+  int stride = 1;
+  while (stride <= width/2)
+  {
+      int index = (local.x + 1) * stride * 2 - 1;
+      if (index < width)
+      {
+          sCDF[index] += sCDF[index - stride];
+      }
+      stride = stride * 2;
+	 
+      barrier();
+  }
+	// 
+   //int backStride = width / 2/2;
+   //while (backStride > 0)
+   //{
+   //    int index = (local.x + 1) * backStride * 2 - 1;
+   //    if ((index + backStride) < width)
+   //    {
+   //        sCDF[index + backStride] += sCDF[index];
+   //    }
+   //    backStride = backStride / 2;
+   //    barrier();
+   //}
+	 
+    barrier();
+     
+   // [[unroll]]
+   // for (uint binIndex = (256 >> 1); binIndex > 0; binIndex >>= 1)
+   // {
+   //     if (uint(gl_LocalInvocationIndex) < binIndex)
+   //     {
+   //         sCDF[gl_LocalInvocationIndex] += sCDF[gl_LocalInvocationIndex + binIndex];
+   //     }
+   //     barrier();
+   //}
+    
+	
+	
+    // one thread will calculate the lum output
+    if (gl_LocalInvocationID.x == 0)
+    {
+        float weightedLogAverage = (sCDF[width-1] / max(PC.pixelsSampled - countForThisBin, 1.0)) - 1.0;
+        float weightedAverageLuminance = exp2(((weightedLogAverage / 254.0) * PC.deltaLogLum) + PC.minLogLum);
+        float luminanceLastFrame = LumOut;
+        if (isnan(luminanceLastFrame))
+        {
+            luminanceLastFrame = 0.0;
+        }
+        float adaptedLum = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * PC.timeCoeff;
+        LumLogAverage = weightedLogAverage;
+        LumOut = adaptedLum;
+    }
+    
+	 //store to global
+    histo.cdf[flatidx] = sCDF[flatidx];
+
+}
+ 	
+ 
+ 
+ 

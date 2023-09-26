@@ -11,8 +11,11 @@ layout(location = 4) in flat vec4 inEmissiveColour;
 layout(location = 15) in flat uvec4 inInstanceData;
 layout(location = 7) in struct
 {
-    mat3 btn;
+    vec3 b;
+	vec3 t;
+	vec3 n;
 }inLightData;
+
 
 //layout(location = 0) out vec4 outPosition; // Optimization for space reconstructed from depth.
 layout(location = 0) out vec4 outNormal;
@@ -100,18 +103,18 @@ void main()
     uint perInstanceData              = inInstanceData.y & 0xFF;
     const uint textureIndex_Emissive  = inInstanceData.y >> 16;
    
-
+    vec3 normalInfo = vec3(0.0);
     {
         outAlbedo.rgb = texture(sampler2D(textureDescriptorArray[textureIndex_Albedo],basicSampler), inUV.xy).rgb;
     }
 	
     {
-        outNormal = vec4(inLightData.btn[2], 0.0);
+        normalInfo = inLightData.n;
     }
 
 	if(textureIndex_Normal != 1)
 	{        
-        vec3 N = normalize(inLightData.btn[2]);   
+        vec3 N = normalize(inLightData.n);   
          
         vec3 V = normalize(inPosition.xyz - uboFrameContext.cameraPosition.xyz);    
   
@@ -121,11 +124,15 @@ void main()
         mat3 TBN = cotangent_frame( N, V,  inUV.xy );
         vec3 genNorms = normalize( TBN * map );
  
+        mat3 inTBN = mat3(inLightData.t,inLightData.b,inLightData.n);
+            
         // old method
-		outNormal.rgb = normalize(inLightData.btn * map);
+        normalInfo.rgb = normalize(inTBN * map);
        
-        outNormal.rgb = genNorms;        
-	}
+        normalInfo.rgb = genNorms;
+    }
+    
+    outNormal.rgb = EncodeNormalHelper(normalInfo);
 
     {
         // Commented out because unused.

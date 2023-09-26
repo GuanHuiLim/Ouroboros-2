@@ -128,7 +128,6 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_WEIGHTS_BUFFER_ID, 1, vr.skinningVertexBuffer.getBufferPtr());
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -231,7 +230,6 @@ void ShadowPass::SetupRenderpass()
 
 	vr.attachments.shadow_depth.name = "SHADOW_ATLAS";
 	vr.attachments.shadow_depth.forFrameBuffer(&m_device, vr.G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height, false);
-	vr.fbCache.RegisterFramebuffer(vr.attachments.shadow_depth);
 
 	auto cmd = vr.GetCommandBuffer();
 	vkutils::SetImageInitialState(cmd, vr.attachments.shadow_depth);

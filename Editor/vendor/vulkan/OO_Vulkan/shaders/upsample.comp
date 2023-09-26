@@ -10,6 +10,7 @@ void main()
 	vec4 res = imageLoad(resultImage, ivec2(gl_GlobalInvocationID.xy) );
 	barrier();
 
+    res = vec4(0);
 	float sampleScale = 1.0;
 	
 	vec2 uv = (vec2(gl_GlobalInvocationID.xy)+0.5)/imageSize(resultImage);

@@ -1,48 +1,122 @@
 #version 460
 
+#include "shader_utility.shader"
+
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (set=0, binding = 0) uniform sampler basicSampler;
 layout (set=0, binding = 1/*,rgba16f*/) uniform texture2D inputImage;
 layout (set=0, binding = 2,rgba16f) uniform writeonly image2D resultImage;
 
+
+layout( push_constant ) uniform mipSettings
+{
+float pc_mipLevel;
+};
+
+float KarisAverage(vec3 col)
+{
+	// Formula is 1 / (1 + luma)
+    float luma = RGBtoLuminance(col) * 0.25f;
+    return 1.0f / (1.0f + luma);
+}
+
 void main()
 {	
 	// Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
-	vec4 res;
 	//vec4 res = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
 
-    vec2 srcSize = textureSize(sampler2D(inputImage,basicSampler),0);
-    vec2 dstSize = imageSize(resultImage);
+		vec2 srcSize = textureSize(sampler2D(inputImage,basicSampler),0);
+		vec2 dstSize = imageSize(resultImage);
+	//
+	//	vec2 uv = vec2(gl_GlobalInvocationID.xy);///imageSize(resultImage);
+	//	vec2 texelSize = vec2(1.0);///imageSize(inputImage); 
+	//
+	//	vec2 srcUV = uv+0.5;
+	//
+	//	vec4 A = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0, -1.0)) / dstSize);
+	//	vec4 B = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.0, -1.0)) / dstSize);
+	//	vec4 C = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0, -1.0)) / dstSize);
+	//	vec4 D = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-0.5, -0.5)) / dstSize);
+	//	vec4 E = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.5, -0.5)) / dstSize);
+	//	vec4 F = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0,  0.0)) / dstSize);
+	//	vec4 G = texture(sampler2D(inputImage,basicSampler), vec2(srcUV                               ) / dstSize);
+	//	vec4 H = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0,  0.0)) / dstSize);
+	//	vec4 I = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-0.5,  0.5)) / dstSize);
+	//	vec4 J = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.5,  0.5)) / dstSize);
+	//	vec4 K = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0,  1.0)) / dstSize);
+	//	vec4 L = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.0,  1.0)) / dstSize);
+	//	vec4 M = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0,  1.0)) / dstSize);
+	//
+	//	vec2 div = (1.0 / 4.0) * vec2(0.5, 0.125);
+	//
+	//	vec4 o = (D + E + I + J) * div.x;
+	//	o += (A + B + G + F) * div.y;
+	//	o += (B + C + H + G) * div.y;
+	//	o += (F + G + L + K) * div.y;
+	//	o += (G + H + M + L) * div.y;
+	//
+	//	vec4 res = vec4(o.rgba);
+	
+    vec2 srcTexelSize = 1.0 / srcSize;
+    float x = srcTexelSize.x;
+    float y = srcTexelSize.y;
+	
+    vec2 texCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) / dstSize;
 
-    vec2 uv = vec2(gl_GlobalInvocationID.xy);///imageSize(resultImage);
-	vec2 texelSize = vec2(1.0);///imageSize(inputImage); 
-	
-    vec2 srcUV = uv+0.5;
-	
-	vec4 A = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0, -1.0)) / dstSize);
-    vec4 B = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.0, -1.0)) / dstSize);
-    vec4 C = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0, -1.0)) / dstSize);
-    vec4 D = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-0.5, -0.5)) / dstSize);
-    vec4 E = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.5, -0.5)) / dstSize);
-    vec4 F = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0,  0.0)) / dstSize);
-    vec4 G = texture(sampler2D(inputImage,basicSampler), vec2(srcUV                               ) / dstSize);
-    vec4 H = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0,  0.0)) / dstSize);
-    vec4 I = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-0.5,  0.5)) / dstSize);
-    vec4 J = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.5,  0.5)) / dstSize);
-    vec4 K = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2(-1.0,  1.0)) / dstSize);
-    vec4 L = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 0.0,  1.0)) / dstSize);
-    vec4 M = texture(sampler2D(inputImage,basicSampler), vec2(srcUV + texelSize * vec2( 1.0,  1.0)) / dstSize);
-	
-	vec2 div = (1.0 / 4.0) * vec2(0.5, 0.125);
+	// Take 13 samples around current texel:
+	// a - b - c
+	// - j - k -
+	// d - e - f
+	// - l - m -
+	// g - h - i
+	// === ('e' is the current texel) ===
+    vec3 a = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x - 2 * x, texCoord.y + 2 * y)).rgb;
+    vec3 b = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x, texCoord.y + 2 * y)).rgb;
+    vec3 c = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x + 2 * x, texCoord.y + 2 * y)).rgb;
 
-    vec4 o = (D + E + I + J) * div.x;
-    o += (A + B + G + F) * div.y;
-    o += (B + C + H + G) * div.y;
-    o += (F + G + L + K) * div.y;
-    o += (G + H + M + L) * div.y;
+    vec3 d = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x - 2 * x, texCoord.y)).rgb;
+    vec3 e = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x, texCoord.y)).rgb;
+    vec3 f = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x + 2 * x, texCoord.y)).rgb;
+
+    vec3 g = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x - 2 * x, texCoord.y - 2 * y)).rgb;
+    vec3 h = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x, texCoord.y - 2 * y)).rgb;
+    vec3 i = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x + 2 * x, texCoord.y - 2 * y)).rgb;
+
+    vec3 j = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x - x, texCoord.y + y)).rgb;
+    vec3 k = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x + x, texCoord.y + y)).rgb;
+    vec3 l = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x - x, texCoord.y - y)).rgb;
+    vec3 m = texture(sampler2D(inputImage,basicSampler), vec2(texCoord.x + x, texCoord.y - y)).rgb;
 	
-    res = vec4(o.rgba);
+    vec3 result = vec3(0);
+    vec3 groups[5];
+	
+    switch (int(pc_mipLevel))
+    {
+        case 0:
+	  // We are writing to mip 0, so we need to apply Karis average to each block
+	  // of 4 samples to prevent fireflies (very bright subpixels, leads to pulsating
+	  // artifacts).
+            groups[0] = (a + b + d + e) * (0.125f / 4.0f);
+            groups[1] = (b + c + e + f) * (0.125f / 4.0f);
+            groups[2] = (d + e + g + h) * (0.125f / 4.0f);
+            groups[3] = (e + f + h + i) * (0.125f / 4.0f);
+            groups[4] = (j + k + l + m) * (0.5f / 4.0f);
+            groups[0] *= KarisAverage(groups[0]);
+            groups[1] *= KarisAverage(groups[1]);
+            groups[2] *= KarisAverage(groups[2]);
+            groups[3] *= KarisAverage(groups[3]);
+            groups[4] *= KarisAverage(groups[4]);
+            result = groups[0] + groups[1] + groups[2] + groups[3] + groups[4];
+            result = max(result, 0.0001f);
+            break;
+        default:
+            result = e * 0.125; // ok
+            result += (a + c + g + i) * 0.03125; // ok
+            result += (b + d + f + h) * 0.0625; // ok
+            result += (j + k + l + m) * 0.125; // ok
+            break;
+    }
 
 	 //Note: Store operations to any texel that is outside the boundaries of the bound image will do nothing.
-	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);
+    imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result, 0));
 }

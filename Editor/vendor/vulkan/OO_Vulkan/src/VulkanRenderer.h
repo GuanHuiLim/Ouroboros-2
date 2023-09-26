@@ -71,7 +71,8 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
     // For unbounded array of texture descriptors, used in bindless approach
     inline static VkDescriptorSetLayout bindless;
 	// For lighting
-	inline static VkDescriptorSetLayout DeferredLightingComposition;
+	inline static VkDescriptorSetLayout Lighting;
+	inline static VkDescriptorSetLayout skypass;
 
 	inline static VkDescriptorSetLayout lights;
 	// 
@@ -87,6 +88,13 @@ struct SetLayoutDB // Think of a better name? Very short and sweet for easy typi
 	inline static VkDescriptorSetLayout compute_shadowPrepass;
 	inline static VkDescriptorSetLayout compute_singleSSBO;
 	inline static VkDescriptorSetLayout compute_AMDSPD;
+	inline static VkDescriptorSetLayout compute_Radiance;
+	inline static VkDescriptorSetLayout compute_prefilter;
+	inline static VkDescriptorSetLayout compute_brdfLUT;
+	inline static VkDescriptorSetLayout compute_histogram;
+	inline static VkDescriptorSetLayout compute_luminance;
+	inline static VkDescriptorSetLayout compute_brightPixels;
+	inline static VkDescriptorSetLayout compute_tonemap;
 
 };
 
@@ -101,16 +109,24 @@ struct Attachments_imguiBinding {
 struct PSOLayoutDB
 {
 	inline static VkPipelineLayout defaultPSOLayout;
-	inline static VkPipelineLayout PSO_fullscreenBlitLayout;
-	inline static VkPipelineLayout deferredLightingCompositionPSOLayout;
+	inline static VkPipelineLayout fullscreenBlitPSOLayout;
+	inline static VkPipelineLayout lightingPSOLayout;
 	inline static VkPipelineLayout forwardDecalPSOLayout;
 	inline static VkPipelineLayout SSAOPSOLayout;
-	inline static VkPipelineLayout SSAOBlurLayout;
-	inline static VkPipelineLayout BloomLayout; 
+	inline static VkPipelineLayout SSAOBlurPSOLayout;
+	inline static VkPipelineLayout BloomPSOLayout; 
+	inline static VkPipelineLayout tonemapPSOLayout; 
 	inline static VkPipelineLayout doubleImageStoreLayout; 
+	inline static VkPipelineLayout brightPixelsLayout; 
 	inline static VkPipelineLayout singleSSBOlayout; 
-	inline static VkPipelineLayout shadowPrepassLayout; 
-	inline static VkPipelineLayout AMDSPDLayout; 
+	inline static VkPipelineLayout shadowPrepassPSOLayout; 
+	inline static VkPipelineLayout AMDSPDPSOLayout; 
+	inline static VkPipelineLayout RadiancePSOLayout; 
+	inline static VkPipelineLayout prefilterPSOLayout; 
+	inline static VkPipelineLayout BRDFLUTPSOLayout; 
+	inline static VkPipelineLayout skypassPSOLayout; 
+	inline static VkPipelineLayout histogramPSOLayout; 
+	inline static VkPipelineLayout luminancePSOLayout; 
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -174,8 +190,11 @@ public:
 
 		vkutils::Texture2D shadow_depth{};
 
+		vkutils::Texture2D lighting_target{};
+
 		static constexpr size_t MAX_BLOOM_SAMPLES = 5;
 		vkutils::Texture2D Bloom_brightTarget;
+		vkutils::Texture2D SD_target[2];
 		std::array<vkutils::Texture2D, MAX_BLOOM_SAMPLES> Bloom_downsampleTargets;
 
 	}attachments;
@@ -184,8 +203,11 @@ public:
 	static constexpr int MAX_FRAME_DRAWS = 2;
 	static constexpr int MAX_OBJECTS = 2048;
 	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT_S8_UINT;
+	static constexpr VkFormat G_NORMALS_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
 	static constexpr VkCompareOp G_DEPTH_COMPARISON = VK_COMPARE_OP_GREATER_OR_EQUAL;
-	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
+	static constexpr VkFormat G_HDR_FORMAT_ALPHA = VK_FORMAT_R16G16B16A16_SFLOAT;
+	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+	static constexpr VkFormat G_NON_HDR_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
 
 	static int ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface);
 
@@ -272,6 +294,7 @@ public:
 	int32_t m_numShadowcastLights{0};
 	uint32_t renderTargetInUseID{ 0 };
 	float renderClock{ 0.0f };
+	float deltaTime{ 0.0016f };
 
 	int32_t GetPixelValue(uint32_t fbID, glm::vec2 uv);
 
@@ -328,9 +351,14 @@ public:
 
 	uint32_t CreateTexture(uint32_t width, uint32_t height, unsigned char* imgData, bool generateMips = true);
 	uint32_t CreateTexture(const std::string& fileName);
+	uint32_t CreateCubeMapTexture(const std::string& folder);
+
 	bool ReloadTexture(uint32_t textureID, const std::string& file);
 	void UnloadTexture(uint32_t textureID);
-	void GenerateMipmaps(vkutils::Texture2D& texture);
+	void GenerateMipmaps(vkutils::Texture& texture);
+	void GenerateRadianceMap(VkCommandBuffer cmdlist , vkutils::CubeTexture& texture);
+	void GeneratePrefilterMap(VkCommandBuffer cmdlist , vkutils::CubeTexture& texture);
+	void GenerateBRDFLUT(VkCommandBuffer cmdlist , vkutils::Texture2D& texture);
 
 	oGFX::Font* LoadFont(const std::string& filename);
 	oGFX::TexturePacker CreateFontAtlas(const std::string& filename, oGFX::Font& font);
@@ -379,7 +407,7 @@ public:
 	ModelFileResource* LoadModelFromFile(const std::string& file);
 	ModelFileResource* LoadMeshFromBuffers(std::vector<oGFX::Vertex>& vertex, std::vector<uint32_t>& indices, gfxModel* model);
 	void LoadSubmesh(gfxModel& mdl, SubMesh& submesh, aiMesh* aimesh, ModelFileResource* modelFile);
-	void LoadBoneInformation(ModelFileResource& fileData, oGFX::Skeleton& skeleton, aiMesh& aimesh, std::vector<oGFX::BoneWeight>& boneWeights, uint32_t& vCnt);
+	void LoadBoneInformation(ModelFileResource& fileData, oGFX::Skeleton& skeleton, aiMesh& aimesh, std::vector<BoneWeight>& boneWeights, uint32_t& vCnt);
 	void BuildSkeletonRecursive(ModelFileResource& fileData, aiNode* ainode, oGFX::BoneNode* node, glm::mat4 parentXform = glm::mat4(1.0f), std::string prefix = std::string("\t"));
 	const oGFX::Skeleton* GetSkeleton(uint32_t modelID);
 	oGFX::CPUSkeletonInstance* CreateSkeletonInstance(uint32_t modelID);
@@ -391,6 +419,12 @@ public:
 	//textures
 	std::mutex g_mut_Textures;
 	std::vector<vkutils::Texture2D> g_Textures;
+
+	vkutils::CubeTexture g_cubeMap;
+	vkutils::CubeTexture g_radianceMap;
+	vkutils::CubeTexture g_prefilterMap;
+	vkutils::Texture2D g_brdfLUT;
+
 	std::vector<ImTextureID> g_imguiIDs;
 
 	uint32_t whiteTextureID = static_cast<uint32_t>(-1);
@@ -411,6 +445,9 @@ public:
 	// - Pipeline
 	VkPipeline pso_utilFullscreenBlit;
 	VkPipeline pso_utilAMDSPD;
+	VkPipeline pso_radiance;
+	VkPipeline pso_prefilter;
+	VkPipeline pso_brdfLUT;
 
 	VulkanRenderpass renderPass_default{};
 	VulkanRenderpass renderPass_default_noDepth{};
@@ -422,7 +459,6 @@ public:
 	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer[MAX_FRAME_DRAWS];
 	uint32_t indirectDrawCount{};
 
-	GpuVector<oGFX::BoneWeight> skinningVertexBuffer;
 	GpuVector<LocalLightInstance> globalLightBuffer[MAX_FRAME_DRAWS];
 
 	// - Descriptors
@@ -437,6 +473,9 @@ public:
 	std::vector<glm::mat4> boneMatrices{};
 	GpuVector<glm::mat4> gpuBoneMatrixBuffer[MAX_FRAME_DRAWS];
 
+	std::vector<BoneWeight> g_skinningBoneWeights;
+	GpuVector<BoneWeight> gpuSkinningBoneWeightsBuffer;
+
 	// SSBO
 	std::vector<GPUTransform> gpuTransform{};
 	GpuVector<GPUTransform> gpuTransformBuffer[MAX_FRAME_DRAWS];
@@ -449,6 +488,11 @@ public:
 	std::vector<oGFX::AllocatedBuffer> vpUniformBuffer{};
 	oGFX::AllocatedBuffer SPDatomicBuffer;
 	oGFX::AllocatedBuffer SPDconstantBuffer;
+
+	oGFX::AllocatedBuffer lightingHistogram;
+	oGFX::AllocatedBuffer LuminanceBuffer;
+	oGFX::AllocatedBuffer LuminanceMonitor;
+	void* monitorData;
 
 	std::vector<DescriptorAllocator> descAllocs;
 	DescriptorLayoutCache DescLayoutCache;
@@ -558,6 +602,7 @@ public:
 		uint32_t CreateTextureImage(const oGFX::FileImageData& imageInfo);		
 		uint32_t CreateTextureImageImmediate(const oGFX::FileImageData& imageInfo);		
 		uint32_t CreateTextureImage(const std::string& fileName);
+		
 		uint32_t UpdateBindlessGlobalTexture(uint32_t textureID);		
 
 		bool shadowsRendered{ false };

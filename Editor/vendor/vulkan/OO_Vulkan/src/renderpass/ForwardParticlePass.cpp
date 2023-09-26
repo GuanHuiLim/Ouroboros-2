@@ -92,7 +92,7 @@ void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 	auto& swapchain = vr.m_swapchain;
 	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
-	auto& renderTarget = vr.renderTargets[vr.renderTargetInUseID];
+	auto& renderTarget = vr.renderTargets[vr.renderTargetInUseID].texture;
 
     PROFILE_GPU_CONTEXT(cmdlist);
     PROFILE_GPU_EVENT("ForwardParticles");
@@ -103,8 +103,6 @@ void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 
 	auto& attachments = vr.attachments.gbuffer;
 
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
 	// Clear values for all attachments written in the fragment shader
 	std::array<VkClearValue, GBufferAttachmentIndex::MAX_ATTACHMENTS> clearValues;
 	clearValues[GBufferAttachmentIndex::NORMAL]  .color = zeroFloat4;
@@ -113,11 +111,8 @@ void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 	clearValues[GBufferAttachmentIndex::ENTITY_ID].color = rMinusOne;
 	clearValues[GBufferAttachmentIndex::DEPTH]   .depthStencil = { 1.0f, 0 };
 
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, renderTarget.texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
 	rhi::CommandList cmd{ cmdlist, "Forward Particles Pass"};
-	cmd.BindAttachment(0, &renderTarget.texture);
+	cmd.BindAttachment(0, &renderTarget);
 	cmd.BindAttachment(1, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
 	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 
@@ -141,7 +136,6 @@ void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	std::vector<VkBuffer> vtxBuffers{
 		vr.g_GlobalMeshBuffers.VtxBuffer.getBuffer(),
-		vr.skinningVertexBuffer.getBuffer(),
 	};
 
 	VkDeviceSize offsets[2]{
@@ -153,11 +147,6 @@ void ForwardParticlePass::Draw(const VkCommandBuffer cmdlist)
 	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.g_particleDatas[currFrame].getBufferPtr());
 	cmd.DrawIndexedIndirect(vr.g_particleCommandsBuffer[currFrame].getBuffer(), 0, static_cast<uint32_t>(vr.g_particleCommandsBuffer[currFrame].size()));
 
-	
-
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::ENTITY_ID], attachments[GBufferAttachmentIndex::ENTITY_ID].referenceLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
-	vkutils::TransitionImage(cmdlist, renderTarget.texture, renderTarget.texture.referenceLayout);
 }
 
 void ForwardParticlePass::Shutdown()
@@ -208,7 +197,7 @@ void ForwardParticlePass::SetupRenderpass()
 		auto& attachments = vr.attachments.gbuffer;
 	// Formats
 	//attachmentDescs[GBufferAttachmentIndex::POSITION].format = attachments[GBufferAttachmentIndex::POSITION].format;
-	attachmentDescs[0]  .format = vr.G_HDR_FORMAT;
+	attachmentDescs[0]  .format = vr.G_HDR_FORMAT_ALPHA;
 	attachmentDescs[1]  .format = attachments[GBufferAttachmentIndex::ENTITY_ID].format;
 	attachmentDescs[2]  .format = vr.G_DEPTH_FORMAT;
 	
@@ -353,7 +342,7 @@ void ForwardParticlePass::CreatePipeline()
 	colorBlendState.pAttachments = blendAttachmentStates.data();
 
 	std::array<VkFormat, 2> formats{
-		vr.G_HDR_FORMAT,
+		vr.G_NON_HDR_FORMAT,
 		VK_FORMAT_R32_SINT
 	};
 	VkPipelineRenderingCreateInfo renderingInfo{};

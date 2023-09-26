@@ -61,19 +61,12 @@ struct BoneInverseBindPoseInfo
     glm::mat4 transform{ 1.0f };
 };
 
-constexpr uint32_t MAX_BONE_NUM = 4;
-struct BoneWeight
-{
-    uint32_t boneIdx[MAX_BONE_NUM];
-    float boneWeights[MAX_BONE_NUM];
-};
-
 struct Skeleton
 {
     ~Skeleton();
     oGFX::BoneNode* m_boneNodes{ nullptr };
     std::vector<oGFX::BoneInverseBindPoseInfo>inverseBindPose;
-    std::vector<oGFX::BoneWeight>boneWeights;
+    std::vector<BoneWeight>boneWeights;
 };
 
 struct CPUSkeletonInstance
@@ -132,6 +125,8 @@ struct gfxModel
     uint32_t vertexCount{};
     uint32_t baseIndices{};
     uint32_t indicesCount{};
+
+    uint32_t skinningWeightsOffset{};
 
     std::vector<SubMesh> m_subMeshes;
 

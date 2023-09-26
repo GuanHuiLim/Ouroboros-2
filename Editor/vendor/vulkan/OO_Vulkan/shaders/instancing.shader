@@ -9,4 +9,21 @@ mat4x4 GPUTransformToMatrix4x4(const in GPUTransform m)
                   m.row0.w, m.row1.w, m.row2.w, 1.0);
 }
 
+mat4x4 GPUTransformToInverseMatrix4x4(const in GPUTransform m)
+{
+    return mat4x4(m.invRow0.x, m.invRow1.x, m.invRow2.x, 0.0,
+                  m.invRow0.y, m.invRow1.y, m.invRow2.y, 0.0,
+                  m.invRow0.z, m.invRow1.z, m.invRow2.z, 0.0,
+                  m.invRow0.w, m.invRow1.w, m.invRow2.w, 1.0);
+}
+
+mat4x4 GPUTransformToInverseTransposeMatrix4x4(const in GPUTransform m)
+{
+    return mat4x4(m.invRow0.x, m.invRow0.y, m.invRow0.z, m.invRow0.w,
+                  m.invRow1.x, m.invRow1.y, m.invRow1.z, m.invRow1.w,
+                  m.invRow2.x, m.invRow2.y, m.invRow2.z, m.invRow2.w,
+                  0.0, 0.0, 0.0, 1.0);
+}
+
+
 #endif//INCLUDE_GUARD

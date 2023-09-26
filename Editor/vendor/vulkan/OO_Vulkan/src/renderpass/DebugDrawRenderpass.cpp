@@ -101,9 +101,7 @@ void DebugDrawRenderpass::Draw(const VkCommandBuffer cmdlist)
 	rhi::CommandList cmd{ cmdlist, "Debug Pass"};
 
 	auto& attachments = vr.attachments.gbuffer;
-	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
+	
 	cmd.BindAttachment(0, &vr.renderTargets[vr.renderTargetInUseID].texture);
 	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 
@@ -132,9 +130,6 @@ void DebugDrawRenderpass::Draw(const VkCommandBuffer cmdlist)
 		
 		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU[currFrame].size()), 1);
 	}
-
-	vkutils::TransitionImage(cmdlist, vr.renderTargets[vr.renderTargetInUseID].texture, vr.renderTargets[vr.renderTargetInUseID].texture.referenceLayout);
-	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
 }
 
 void DebugDrawRenderpass::Shutdown()
@@ -163,7 +158,7 @@ void DebugDrawRenderpass::CreateDebugRenderpass()
 {
 	auto& vr = *VulkanRenderer::get();
 	VkAttachmentDescription colourAttachment = {};
-	colourAttachment.format = vr.G_HDR_FORMAT;  //format to use for attachment
+	colourAttachment.format = vr.G_NON_HDR_FORMAT;  //format to use for attachment
 	colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;//number of samples to use for multisampling
 	colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;//descripts what to do with attachment before rendering
 	colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;//describes what to do with attachment after rendering
@@ -310,7 +305,7 @@ void DebugDrawRenderpass::CreatePipeline()
 	renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 	renderingInfo.viewMask = {};
 	renderingInfo.colorAttachmentCount = 1;
-	renderingInfo.pColorAttachmentFormats = &vr.G_HDR_FORMAT;
+	renderingInfo.pColorAttachmentFormats = &vr.G_NON_HDR_FORMAT;
 	renderingInfo.depthAttachmentFormat = vr.G_DEPTH_FORMAT;
 	renderingInfo.stencilAttachmentFormat = vr.G_DEPTH_FORMAT;
 
