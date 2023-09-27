@@ -1621,7 +1621,7 @@ void VulkanRenderer::InitImGUI()
 	VK_NAME(m_device.logicalDevice, "imguiConfig_descriptorPools", m_imguiConfig.descriptorPools);
 
 	m_imguiInitialized = true;
-	RestartImgui();
+	PerformImguiRestart();
 
 
 	// Create frame buffers for every swap chain image
@@ -1806,6 +1806,11 @@ void checkresult(VkResult checkresult)
 
 void VulkanRenderer::RestartImgui()
 {
+	m_restartIMGUI = true;
+}
+
+void VulkanRenderer::PerformImguiRestart()
+{
 	if (windowPtr->m_type == Window::WindowType::WINDOWS32)
 	{
 		ImGui_ImplWin32_Init(windowPtr->GetRawHandle());
@@ -1844,7 +1849,7 @@ void VulkanRenderer::RestartImgui()
 	VkCommandBuffer command_buffer = beginSingleTimeCommands();
 	ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 	endSingleTimeCommands(command_buffer); 
-
+	m_imguiInitialized = true;
 }
 
 
@@ -2207,6 +2212,11 @@ bool VulkanRenderer::PrepareFrame()
 		if (m_prepared == false)
 			return false;
 		resizeSwapchain = false;
+	}
+
+	if (m_restartIMGUI == true)
+	{
+		PerformImguiRestart();
 	}
 
 	if (m_reloadShaders == true) {

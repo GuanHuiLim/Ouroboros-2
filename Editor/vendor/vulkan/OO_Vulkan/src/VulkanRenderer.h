@@ -325,6 +325,7 @@ public:
 	void DrawGUI();
 	void DestroyImGUI();
 	void RestartImgui();
+	void PerformImguiRestart();
 	void ImguiSoftDestroy();
 
 	void InitializeRenderBuffers();
@@ -530,6 +531,7 @@ public:
 	bool resizeSwapchain = false;
 	bool m_prepared = false;
 	bool m_reloadShaders = false;
+	bool m_restartIMGUI = false;
 
 
 	// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.

@@ -97,9 +97,6 @@ namespace oo
             std::cout << "VK_init: " << e.what() << std::endl;
         }
 
-        OnImGuiEnd();
-        SwapBuffers();
-
         // start render thread here
         const auto renderWorker = [
             vr=vr,
@@ -108,7 +105,7 @@ namespace oo
             &keepRendering = m_renderThreadRunning,
             &minimized = m_minimized
         ]() {
-
+            OPTICK_THREAD("Render Thread");
             while (keepRendering) 
             {
                 // Needs 3 parameters : Barrier, mutex, boolean & graphics engine
@@ -123,15 +120,11 @@ namespace oo
                     {
                         //TODO: global imgui mutex here
                         TRACY_PROFILE_SCOPE_N(Vulkan_DrawGUI);
-                        //mut.lock();
-                        //LOG_CORE_INFO("render thread locked mutex\n");
-                        //std::cout << "render thread locked mutex\n";
-                        //// Renderer lock mutex
-                        //vr->DrawGUI();
-                        //// Renderer release mutex
-                        //mut.unlock();
-                        //LOG_CORE_INFO("render thread unlocked mutex\n");
-                        //std::cout << "render thread unlocked mutex\n";
+                        // Renderer lock mutex
+                        mut.lock();
+                        vr->DrawGUI();
+                        // Renderer release mutex
+                        mut.unlock();
                         TRACY_PROFILE_SCOPE_END();
 
                         vr->Present();
@@ -174,8 +167,6 @@ namespace oo
     {
         // TODO: Start Mutex here
         g_ImGuiMutex->lock(); 
-        LOG_CORE_INFO("cpu thread locked mutex\n");
-        std::cout << "cpu thread locked mutex\n";
         ImGui_ImplVulkan_NewFrame();
     }
 
@@ -188,8 +179,6 @@ namespace oo
 
         // Mutex could be released here
         g_ImGuiMutex->unlock(); 
-        LOG_CORE_INFO("cpu thread unlocked mutex\n");
-        std::cout << "cpu thread unlocked mutex\n";
 
         TRACY_PROFILE_SCOPE_END();
     }
