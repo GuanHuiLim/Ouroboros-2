@@ -34,6 +34,11 @@ namespace oo
 {
     Application* Application::s_instance = nullptr;
 
+    std::mutex ImGuiMutex{};
+    std::barrier frameBarrier{ 2 };
+    std::barrier<std::_No_completion_function>* g_frameBarrier = &frameBarrier;
+    std::mutex* g_ImGuiMutex = &ImGuiMutex;
+
     Application::Application(const std::string& name, CommandLineArgs args)
         : m_commandLineArgs{ args }
         , m_running{ true }
@@ -120,13 +125,15 @@ namespace oo
                 TRACY_PROFILE_SCOPE_END();
             }
 
-            {
-                // swap buffers at the end of frame
-                TRACY_PROFILE_SCOPE_N(windows_swap_buffer);
-                OPTICK_CATEGORY(windows_swap_buffer, Optick::Category::Rendering);
-                m_window->SwapBuffers();
-                TRACY_PROFILE_SCOPE_END();
-            }
+            // Should wait for dedicated renderer here
+            frameBarrier.arrive_and_wait();
+            //{
+            //    // swap buffers at the end of frame
+            //    TRACY_PROFILE_SCOPE_N(windows_swap_buffer);
+            //    OPTICK_CATEGORY(windows_swap_buffer, Optick::Category::Rendering);
+            //    m_window->SwapBuffers();
+            //    TRACY_PROFILE_SCOPE_END();
+            //}
             
             TRACY_PROFILE_END_OF_FRAME();
         }
@@ -136,6 +143,7 @@ namespace oo
     void Application::Close()
     {
         m_running = false;
+        // tell renderer to close
     }
 
 }

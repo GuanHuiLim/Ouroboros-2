@@ -46,8 +46,6 @@ namespace oo
 
     void ImGuiAbstraction::Init()
     {
-        
-
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -113,6 +111,7 @@ namespace oo
     {
         DetermineRestart();
 
+
         m_renderer->OnImGuiBegin();
 
 #ifdef OO_PLATFORM_WINDOWS
@@ -131,7 +130,10 @@ namespace oo
 
         // Rendering
         ImGui::Render();
-        
+
+        // TODO: changed to barrier to wait 
+        m_renderer->OnImGuiEnd();
+
         //renderer imgui end used to be here.
 
         ImGui::EndFrame();
@@ -142,7 +144,6 @@ namespace oo
             ImGui::RenderPlatformWindowsDefault();
         }
 
-        m_renderer->OnImGuiEnd();
     }
 
     void ImGuiAbstraction::DetermineRestart()

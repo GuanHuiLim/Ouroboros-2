@@ -1746,7 +1746,9 @@ void VulkanRenderer::DrawGUI()
 		}
 	}
 	vkCmdBeginRenderPass(cmdlist, &GUIpassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdlist);
+	auto* ptr = ImGui::GetDrawData();
+	if(ptr!= nullptr)
+		ImGui_ImplVulkan_RenderDrawData(ptr, cmdlist);
 	vkCmdEndRenderPass(cmdlist);
 
 	for (size_t i = 0; i < renderTargets.size(); i++)

@@ -16,6 +16,9 @@ Technology is prohibited.
 
 #include "Ouroboros/Core/WindowsWindow.h"
 
+#include <barrier>
+#include <mutex>
+
 //forward declare main
 int main(int argc, char** argv);
 
@@ -44,6 +47,7 @@ namespace oo
             return Args[index];
         }
     };
+
 
     /********************************************************************************//*!
      @brief     Application entails the core loop and the where and how each system is 
@@ -102,6 +106,7 @@ namespace oo
 
         // Windows short-hand
         //static bool WindowIsFocused() { return Get().GetWindow().IsFocused(); }
+
 
     private:
         /****************************************************************************//*!

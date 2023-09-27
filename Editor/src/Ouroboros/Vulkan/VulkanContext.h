@@ -56,12 +56,10 @@ namespace oo
         static GraphicsWorld gw;
         static Window m_window;
 
-        //TEMP ptrs
-        std::unique_ptr<ModelFileResource> cubeMesh;
-        std::unique_ptr<ModelFileResource> planeMesh;
-
         bool m_minimized = false;
 
+        bool m_renderThreadRunning = true;
+        std::thread m_renderThread;
     private:
         void OnWindowResize(WindowResizeEvent* e);
         void OnWindowMinimize(WindowMinimizeEvent* e);
