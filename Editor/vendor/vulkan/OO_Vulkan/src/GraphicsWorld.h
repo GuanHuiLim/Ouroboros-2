@@ -61,11 +61,6 @@ ENUM_OPERATORS_GEN(UIInstanceFlags, uint32_t)
 struct ObjectInstance
 {
     std::string name;
-    // Begin These are temp until its fully integrated
-    glm::vec3 position{};
-    glm::vec3 scale{1.0f};
-    float rot{};
-    glm::vec3 rotVec{0.0f,1.0f,0.0f};
 
     uint32_t bindlessGlobalTextureIndex_Albedo{ 0xFFFFFFFF };
     uint32_t bindlessGlobalTextureIndex_Normal{ 0xFFFFFFFF };
@@ -255,7 +250,7 @@ public:
         float biasMultiplier = 0.002f;
         float specularModifier = 16.0f;
         glm::vec3 directionalLight{0, -1, 0};
-        glm::vec4 directionalLightColor{ 1, 1, 1, 0.1 };
+        glm::vec4 directionalLightColor{ 1, 1, 1, 1 };
     }lightSettings{};
 
     struct BloomSettings
@@ -273,7 +268,7 @@ public:
         glm::vec4 shadowColour{};
         glm::vec4 midtonesColour{};
         glm::vec4 highlightColour{};
-        float exposure = 0.10f;
+        float exposure = 0.20f;
     }colourSettings{};
 
     struct VignetteSettings
@@ -285,6 +280,7 @@ public:
     }vignetteSettings{};
 
     friend class VulkanRenderer;
+    friend class GraphicsBatch;
 private:
     int32_t m_entityCount{};
     BitContainer<ObjectInstance> m_ObjectInstances;
@@ -297,7 +293,10 @@ private:
     bool initialized = false;
 
     //etc
-
+    std::vector<ObjectInstance> m_objectsCopy;
+    std::vector<UIInstance> m_UIcopy;
+    std::vector<OmniLightInstance> m_OmniLightCopy;
+    std::vector<EmitterInstance> m_EmitterCopy;
     // + Spatial Acceleration Structures
     // + Culling object BV against frustum
 };

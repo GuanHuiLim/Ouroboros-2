@@ -39,7 +39,7 @@ public:
 		MAX_NUM
 	};
 
-	static GraphicsBatch Init(GraphicsWorld* gw,VulkanRenderer* renderer ,size_t maxObjects);
+	void Init(GraphicsWorld* gw,VulkanRenderer* renderer ,size_t maxObjects);
 	void GenerateBatches();
 	void ProcessLights();
 	void ProcessGeometry();

@@ -1144,91 +1144,96 @@ void VulkanRenderer::SubmitSingleCommand(VkCommandBuffer cmd)
 
 void VulkanRenderer::SetWorld(GraphicsWorld* world)
 {
-	// force a sync here
-	vkDeviceWaitIdle(m_device.logicalDevice);
-	currWorld = world;
-
-	if (currWorld)
-	{
-		
-	}
-
+	auto lam = [this,w = world]() {
+		currWorld = w;
+	};
+	std::scoped_lock l{g_mut_workQueue};
+	g_workQueue.emplace_back(lam);
 }
 
 void VulkanRenderer::InitWorld(GraphicsWorld* world)
 {
 	assert(world && "dont pass nullptr");
-
-	for (uint32_t x = 0; x < world->numCameras; ++x)
-	{
-		auto& wrdID = world->targetIDs[x];
-		if (wrdID == -1)
+	auto lam = [this,w = world]() {
+		for (uint32_t x = 0; x < w->numCameras; ++x)
 		{
-			// allocate render target
-			bool found = false;
-			for (size_t i = 0; i < renderTargets.size(); i++)
+			auto& wrdID = w->targetIDs[x];
+			if (wrdID == -1)
 			{
-				
-				if (renderTargets[i].inUse == false)
+				// allocate render target
+				bool found = false;
+				for (size_t i = 0; i < renderTargets.size(); i++)
 				{
-					numAllocatedCameras++;
-					renderTargets[i].inUse = true;
-					wrdID = static_cast<int32_t>(i);
-					found = true;
-					break;
+
+					if (renderTargets[i].inUse == false)
+					{
+						numAllocatedCameras++;
+						renderTargets[i].inUse = true;
+						wrdID = static_cast<int32_t>(i);
+						found = true;
+						break;
+					}
 				}
-			}
-			assert(found && "Could not find enough rendertargets");
-			// initialization
-			auto& image = renderTargets[wrdID].texture;
-			if (image.image.image == VK_NULL_HANDLE)
-			{
-				image.name = "GW_"+std::to_string(wrdID)+":COL";
-				image.forFrameBuffer(&m_device, G_NON_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
-				fbCache.RegisterFramebuffer(image);
-				auto cmd = GetCommandBuffer();
-				vkutils::SetImageInitialState(cmd, image);
-				SubmitSingleCommandAndWait(cmd);
-			}
-			if (image.image.image && renderTargets[wrdID].imguiTex == 0)
-			{
-				renderTargets[wrdID].imguiTex = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, VK_IMAGE_LAYOUT_GENERAL);				
-			}
-			auto& depth =  renderTargets[wrdID].depth;
-			if (depth.image.image == VK_NULL_HANDLE)
-			{
-				depth.name = "GW_"+std::to_string(wrdID)+":DEPTH";
-				depth.forFrameBuffer(&m_device, G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-					m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
-				fbCache.RegisterFramebuffer(depth);		
+				assert(found && "Could not find enough rendertargets");
+				// initialization
+				auto& image = renderTargets[wrdID].texture;
+				if (image.image.image == VK_NULL_HANDLE)
+				{
+					image.name = "GW_"+std::to_string(wrdID)+":COL";
+					image.forFrameBuffer(&m_device, G_NON_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+						m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
+					fbCache.RegisterFramebuffer(image);
+					auto cmd = GetCommandBuffer();
+					vkutils::SetImageInitialState(cmd, image);
+					SubmitSingleCommandAndWait(cmd);
+				}
+				if (image.image.image && renderTargets[wrdID].imguiTex == 0)
+				{
+					renderTargets[wrdID].imguiTex = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, VK_IMAGE_LAYOUT_GENERAL);				
+				}
+				auto& depth =  renderTargets[wrdID].depth;
+				if (depth.image.image == VK_NULL_HANDLE)
+				{
+					depth.name = "GW_"+std::to_string(wrdID)+":DEPTH";
+					depth.forFrameBuffer(&m_device, G_DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+						m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
+					fbCache.RegisterFramebuffer(depth);		
 
-				auto cmd = GetCommandBuffer();
-				vkutils::SetImageInitialState(cmd, depth);
-				SubmitSingleCommandAndWait(cmd);
+					auto cmd = GetCommandBuffer();
+					vkutils::SetImageInitialState(cmd, depth);
+					SubmitSingleCommandAndWait(cmd);
 
-				//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
-			}
+					//world->imguiID[0] = CreateImguiBinding(samplerManager.GetDefaultSampler(), depth.view, depth.imageLayout);
+				}
 
-			//assignment 
-			world->imguiID [x] = renderTargets[wrdID].imguiTex;
-		}		
-	}	
+				//assignment 
+				w->imguiID [x] = renderTargets[wrdID].imguiTex;
+			}		
+		}	
+	};
 	world->initialized = true;
+	std::scoped_lock l{g_mut_workQueue};
+	g_workQueue.emplace_back(lam);
 }
 
 void VulkanRenderer::DestroyWorld(GraphicsWorld* world)
 {
 	assert(world && "dont pass nullptr");
 	assert(world->initialized && "World should exist dont destroy non-init world");
-	for (uint32_t x = 0; x < world->numCameras; ++x)
-	{
-		auto& wrdID = world->targetIDs[x];
-		renderTargets[wrdID].inUse = false;
-		wrdID = -1;
-		numAllocatedCameras--;
-	}	
-	world->initialized = false;
+	
+
+	auto lam = [this,w = world]() {
+		for (uint32_t x = 0; x < w->numCameras; ++x)
+		{
+			auto& wrdID = w->targetIDs[x];
+			renderTargets[wrdID].inUse = false;
+			wrdID = -1;
+			numAllocatedCameras--;
+		}	
+		w->initialized = false;
+	};
+	std::scoped_lock l{g_mut_workQueue};
+	g_workQueue.emplace_back(lam);
 }
 
 int32_t VulkanRenderer::GetPixelValue(uint32_t fbID, glm::vec2 uv)
@@ -2274,7 +2279,13 @@ void VulkanRenderer::BeginDraw()
 			}
 		}
 
-
+		std::scoped_lock s{ g_mut_workQueue };
+		while (g_workQueue.size())
+		{
+			auto& work = g_workQueue.front();
+			work();
+			g_workQueue.pop_front();
+		}
 		//std::cout << currentFrame << " Setting " << std::to_string(swapchainIdx) <<" " << oGFX::vkutils::tools::VkImageLayoutString(m_swapchain.swapChainImages[swapchainIdx].currentLayout) << std::endl;
 
 		DelayedDeleter::get()->Update();
@@ -2285,20 +2296,15 @@ void VulkanRenderer::BeginDraw()
 
 		if (currWorld)
 		{
-			batches = GraphicsBatch::Init(currWorld, this, MAX_OBJECTS);
+			batches.Init(currWorld, this, MAX_OBJECTS);
+			currWorld->BeginFrame();
 			batches.GenerateBatches();
 		}
 
 		{
 			PROFILE_SCOPED("Transfer data");
 			{
-				std::scoped_lock s{ g_mut_workQueue };
-				while (g_workQueue.size())
-				{
-					auto& work = g_workQueue.front();
-					work();
-					g_workQueue.pop_front();
-				}
+				
 			}
 			auto cmd = GetCommandBuffer();
 			if (g_GlobalMeshBuffers.IdxBuffer.m_mustUpdate) g_GlobalMeshBuffers.IdxBuffer.flushToGPU(cmd, m_device.graphicsQueue, m_device.commandPoolManagers[getFrame()].m_commandpool);

@@ -222,6 +222,7 @@ namespace oo
 
         // TODO: Solution To tie graphics world to rendering context for now!
         static VulkanContext* vkContext = Application::Get().GetWindow().GetVulkanContext();
+        vkContext->getRenderer()->InitWorld(m_graphicsWorld.get());
         vkContext->getRenderer()->SetWorld(m_graphicsWorld.get());
 
         TRACY_PROFILE_SCOPE_END();
@@ -245,6 +246,7 @@ namespace oo
         m_uuidToPickingId.clear();
 
         // kill the graphics world
+        Application::Get().GetWindow().GetVulkanContext()->getRenderer()->SetWorld(nullptr);
         Application::Get().GetWindow().GetVulkanContext()->getRenderer()->DestroyWorld(m_graphicsWorld.get());
 
         m_lookupTable.clear();
@@ -252,7 +254,7 @@ namespace oo
         m_rootGo.reset();
         m_scenegraph.reset();
         m_ecsWorld.reset();
-        m_graphicsWorld.reset();
+        m_graphicsWorld.release();
         
 
         m_scriptDatabase.reset();
