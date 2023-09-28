@@ -1751,10 +1751,11 @@ void VulkanRenderer::DrawGUI()
 		}
 	}
 	vkCmdBeginRenderPass(cmdlist, &GUIpassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	auto* ptr = ImGui::GetDrawData();
-	if(ptr!= nullptr)
-		ImGui_ImplVulkan_RenderDrawData(ptr, cmdlist);
+	ImGui_ImplVulkan_RenderDrawData(&m_imguiDrawData, cmdlist);
 	vkCmdEndRenderPass(cmdlist);
+
+	// Draw call done, invalidate old list
+	InvalidateDrawLists();
 
 	for (size_t i = 0; i < renderTargets.size(); i++)
 	{
@@ -1780,6 +1781,62 @@ void VulkanRenderer::ImguiSoftDestroy()
 	{
 		ImGui_ImplWin32_Shutdown();
 	}
+}
+
+
+void VulkanRenderer::SubmitImguiDrawList(ImDrawData* drawData)
+{
+	OO_ASSERT(drawData);
+
+	// watch performance if bad change everything to vectors
+	ImDrawData newimguiDrawData;
+	std::vector<ImDrawList*> newimguiDrawList;
+
+	newimguiDrawData.TotalVtxCount = drawData->TotalVtxCount;
+	newimguiDrawData.TotalIdxCount = drawData->TotalIdxCount;
+	newimguiDrawData.DisplayPos = drawData->DisplayPos;
+	newimguiDrawData.DisplaySize = drawData->DisplaySize;
+	newimguiDrawData.CmdListsCount = drawData->CmdListsCount;
+	newimguiDrawData.FramebufferScale = ImVec2(1.0f, 1.0f);
+	newimguiDrawData.OwnerViewport = drawData->OwnerViewport;
+
+	newimguiDrawList.reserve(drawData->CmdListsCount);
+	for (size_t i = 0; i < drawData->CmdListsCount; i++)
+	{
+		ImDrawList* myDrawList = drawData->CmdLists[i]->CloneOutput();
+		newimguiDrawList.emplace_back(myDrawList);
+	}
+
+	auto lam = [this
+		,inDraw = std::move(newimguiDrawData)
+		,inLists = std::move(newimguiDrawList)]() mutable // move vector all the way in
+		{		
+		// should have been handled by renderer
+		InvalidateDrawLists();
+		m_imguiDrawList = std::move(inLists);
+		m_imguiDrawData.Valid = true;
+		m_imguiDrawData.CmdLists = m_imguiDrawList.data();
+
+		m_imguiDrawData.TotalVtxCount = inDraw.TotalVtxCount;
+		m_imguiDrawData.TotalIdxCount = inDraw.TotalIdxCount;
+		m_imguiDrawData.DisplayPos = inDraw.DisplayPos;
+		m_imguiDrawData.DisplaySize = inDraw.DisplaySize;
+		m_imguiDrawData.CmdListsCount = inDraw.CmdListsCount;
+		m_imguiDrawData.FramebufferScale = ImVec2(1.0f, 1.0f);
+		m_imguiDrawData.OwnerViewport = inDraw.OwnerViewport;
+	};
+	std::scoped_lock l{ g_mut_workQueue };
+	g_workQueue.push_back(lam);
+	
+}
+
+void VulkanRenderer::InvalidateDrawLists()
+{
+	for (size_t i = 0; i < m_imguiDrawList.size(); i++)
+	{
+		IM_DELETE(m_imguiDrawList[i]);
+	}
+	m_imguiDrawList.clear();
 }
 
 void VulkanRenderer::DestroyImGUI()
@@ -2211,6 +2268,15 @@ void VulkanRenderer::UploadUIData()
 
 bool VulkanRenderer::PrepareFrame()
 {
+	{
+		std::scoped_lock s{ g_mut_workQueue };
+		for (size_t i = 0; i < g_workQueue.size(); i++)
+		{
+			g_workQueue[i]();
+		}
+		g_workQueue.clear();
+	}
+
 	if (resizeSwapchain || windowPtr->m_width == 0 ||windowPtr->m_height == 0)
 	{
 		m_prepared = ResizeSwapchain();
@@ -2241,12 +2307,15 @@ void VulkanRenderer::BeginDraw()
 	//vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, UINT64_MAX);
 	uint64_t res{};
 	VK_CHK(vkGetSemaphoreCounterValue(m_device.logicalDevice, frameCountSemaphore, &res));
-	//printf("[FRAME COUNTER %5llu]\n", res);
+	//printf("[FRAME COUNTER %5llu]\n", res);	
 
 	//wait for given fence to signal from last draw before continuing
-	VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, std::numeric_limits<uint64_t>::max()));
-	//mainually reset fences
-	VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[getFrame()]));
+	{
+		PROFILE_SCOPED("Wait Swapchain Fence");
+		VK_CHK(vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, std::numeric_limits<uint64_t>::max()));
+		//mainually reset fences
+		VK_CHK(vkResetFences(m_device.logicalDevice, 1, &drawFences[getFrame()]));
+	}
 
 	{
 		PROFILE_SCOPED("Begin Command Buffer");
@@ -2278,14 +2347,7 @@ void VulkanRenderer::BeginDraw()
 				m_prepared = false;
 			}
 		}
-
-		std::scoped_lock s{ g_mut_workQueue };
-		while (g_workQueue.size())
-		{
-			auto& work = g_workQueue.front();
-			work();
-			g_workQueue.pop_front();
-		}
+		
 		//std::cout << currentFrame << " Setting " << std::to_string(swapchainIdx) <<" " << oGFX::vkutils::tools::VkImageLayoutString(m_swapchain.swapChainImages[swapchainIdx].currentLayout) << std::endl;
 
 		DelayedDeleter::get()->Update();
@@ -2943,11 +3005,11 @@ bool VulkanRenderer::ResizeSwapchain()
 {
 	while (windowPtr->m_height == 0 || windowPtr->m_width == 0)
 	{
-		if (windowPtr->m_type == Window::WINDOWS32)
-		{
-			Window::PollEvents();
-		}
-		else
+		//if (windowPtr->m_type == Window::WINDOWS32)
+		//{
+		//	Window::PollEvents();
+		//}
+		//else
 		{
 			return false;
 		}

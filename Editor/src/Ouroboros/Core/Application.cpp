@@ -37,7 +37,6 @@ namespace oo
     std::mutex ImGuiMutex{};
     std::barrier frameBarrier{ 2 };
     std::barrier<std::_No_completion_function>* g_frameBarrier = &frameBarrier;
-    std::mutex* g_ImGuiMutex = &ImGuiMutex;
 
     Application::Application(const std::string& name, CommandLineArgs args)
         : m_commandLineArgs{ args }
@@ -126,7 +125,10 @@ namespace oo
             }
 
             // Should wait for dedicated renderer here
-            frameBarrier.arrive_and_wait();
+            {
+                OPTICK_EVENT("Wait Renderer");
+                frameBarrier.arrive_and_wait();
+            }
             //{
             //    // swap buffers at the end of frame
             //    TRACY_PROFILE_SCOPE_N(windows_swap_buffer);

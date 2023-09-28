@@ -34,7 +34,6 @@ Technology is prohibited.
 namespace oo
 {
     extern std::barrier<std::_No_completion_function>* g_frameBarrier;
-    extern std::mutex* g_ImGuiMutex;
 
     VulkanRenderer* VulkanContext::vr{nullptr};
     Window VulkanContext::m_window;
@@ -79,7 +78,7 @@ namespace oo
 #ifdef OO_END_PRODUCT
         si.debug = false;
 #else
-        si.debug = true;
+        si.debug = false;
 #endif
         si.renderDoc = false;
         si.SurfaceFunctionPointer = std::function<bool()>([&]() {
@@ -102,7 +101,6 @@ namespace oo
         // start render thread here
         const auto renderWorker = [
             vr=vr,
-            &mut = *g_ImGuiMutex,
             &barrier = *g_frameBarrier,
             &keepRendering = m_renderThreadRunning,
             &minimized = m_minimized
@@ -125,11 +123,9 @@ namespace oo
                         // Renderer lock mutex
                         {
                             OPTICK_EVENT("waiting imgui");
-                            mut.lock();
                         }
                         vr->DrawGUI();
                         // Renderer release mutex
-                        mut.unlock();
                         TRACY_PROFILE_SCOPE_END();
 
                         vr->Present();
@@ -138,6 +134,7 @@ namespace oo
                 } // if prepare frame is true
 
                 // TODO: put barrier here
+                OPTICK_EVENT("Wait CPU");
                 barrier.arrive_and_wait();
             }
         };
@@ -170,8 +167,6 @@ namespace oo
 
     void VulkanContext::OnImGuiBegin()
     {
-        // TODO: Start Mutex here
-        g_ImGuiMutex->lock(); 
         ImGui_ImplVulkan_NewFrame();
     }
 
@@ -181,9 +176,7 @@ namespace oo
         TRACY_PROFILE_SCOPE_N(Vulkan_Render);
         // temporarily shift here for better structuring
         //m_runtimeCC.Update(oo::timer::dt());
-
-        // Mutex could be released here
-        g_ImGuiMutex->unlock(); 
+        vr->SubmitImguiDrawList(ImGui::GetDrawData());
 
         TRACY_PROFILE_SCOPE_END();
     }

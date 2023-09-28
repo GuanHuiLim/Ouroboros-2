@@ -327,6 +327,10 @@ public:
 	void RestartImgui();
 	void PerformImguiRestart();
 	void ImguiSoftDestroy();
+	ImDrawData m_imguiDrawData;
+	std::vector<ImDrawList*> m_imguiDrawList;
+	void SubmitImguiDrawList(ImDrawData* drawData);
+	void InvalidateDrawLists();
 
 	void InitializeRenderBuffers();
 	void DestroyRenderBuffers();
@@ -509,7 +513,7 @@ public:
 	std::vector<gfxModel> g_globalModels;
 
 	std::mutex g_mut_workQueue;
-	std::deque<std::function<void()>> g_workQueue;
+	std::vector<std::function<void()>> g_workQueue;
 
 	uint32_t frameCounter = 0;
 	uint32_t currentFrame = 0;
