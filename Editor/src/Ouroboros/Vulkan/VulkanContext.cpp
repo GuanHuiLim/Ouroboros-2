@@ -52,6 +52,8 @@ namespace oo
         //vkEngine.cleanup();
         // set boolean to false and join thread
         m_renderThreadRunning = false;
+        // arrive at the barrier and indicate CPU no longer needs the barrier
+        g_frameBarrier->arrive_and_drop();
         m_renderThread.join();
         delete vr;
     }
@@ -121,7 +123,10 @@ namespace oo
                         //TODO: global imgui mutex here
                         TRACY_PROFILE_SCOPE_N(Vulkan_DrawGUI);
                         // Renderer lock mutex
-                        mut.lock();
+                        {
+                            OPTICK_EVENT("waiting imgui");
+                            mut.lock();
+                        }
                         vr->DrawGUI();
                         // Renderer release mutex
                         mut.unlock();

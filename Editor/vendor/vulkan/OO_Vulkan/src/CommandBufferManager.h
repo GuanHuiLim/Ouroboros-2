@@ -21,7 +21,8 @@ namespace oGFX
 	enum eRECSTATUS : int8_t {
 		INVALID = -1,
 		RECORDING = 0,
-		SUBMITTED = 1,
+		ENDED = 1,
+		SUBMITTED = 2,
 };
 
 class CommandBufferManager
@@ -29,6 +30,7 @@ class CommandBufferManager
 public:
 	VkResult InitPool(VkDevice device, uint32_t queueIndex);
 	VkCommandBuffer GetNextCommandBuffer(bool begin = false);
+	void EndCommandBuffer(VkCommandBuffer cmd);
 	void ResetPool();
 	void DestroyPool();
 	void SubmitCommandBuffer(VkQueue queue, VkCommandBuffer cmd);
@@ -37,6 +39,7 @@ public:
 
 	VkCommandPool m_commandpool{};
 private:
+	size_t FindCmdIdx(VkCommandBuffer cmd);
 	void AllocateCommandBuffer();
 	size_t counter{ };
 

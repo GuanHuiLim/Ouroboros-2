@@ -250,7 +250,7 @@ public:
         float biasMultiplier = 0.002f;
         float specularModifier = 16.0f;
         glm::vec3 directionalLight{0, -1, 0};
-        glm::vec4 directionalLightColor{ 1, 1, 1, 1 };
+        glm::vec4 directionalLightColor{ 1, 1, 1, 0 };
     }lightSettings{};
 
     struct BloomSettings

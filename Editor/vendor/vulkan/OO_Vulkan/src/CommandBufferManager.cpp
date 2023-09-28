@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "VulkanDevice.h"
 #include "VulkanUtils.h"
 #include "CommandBufferManager.h"
+#include "Profiling.h"
 
 
 VkResult oGFX::CommandBufferManager::InitPool(VkDevice device, uint32_t queueIndex)
@@ -52,6 +53,15 @@ VkCommandBuffer oGFX::CommandBufferManager::GetNextCommandBuffer(bool begin)
     return result;
 }
 
+void oGFX::CommandBufferManager::EndCommandBuffer(VkCommandBuffer cmd)
+{
+    size_t idx = FindCmdIdx(cmd);
+    OO_ASSERT(submitted[idx] == eRECSTATUS::RECORDING);
+    // end command
+    vkEndCommandBuffer(cmd);
+    submitted[idx] = eRECSTATUS::ENDED;
+}
+
 void oGFX::CommandBufferManager::ResetPool()
 {
     nextIdx = 0;
@@ -73,24 +83,22 @@ void oGFX::CommandBufferManager::DestroyPool()
 
 void oGFX::CommandBufferManager::SubmitCommandBuffer(VkQueue queue, VkCommandBuffer cmd)
 {
-    auto iter = std::find(commandBuffers.begin(), commandBuffers.end(), cmd);
-    if (iter == commandBuffers.end()) {
-        std::cerr << "invalid usage" << std::endl;
-        __debugbreak();
+    size_t idx = FindCmdIdx(cmd);
+
+    if (submitted[idx] == eRECSTATUS::RECORDING) 
+    {
+        // End commands
+        vkEndCommandBuffer(cmd);
     }
-    auto idx = iter - commandBuffers.begin();
     submitted[idx] = eRECSTATUS::SUBMITTED;
-
-    // End commands
-    // TODO: Perhaps dont end here?
-    vkEndCommandBuffer(cmd);
-
+    
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmd;
 
+    PROFILE_SCOPED("SUBMIT SINGLE");
     //assuming we have only a few meshes to load we will pause here until we load the previous object
     //submit transfer commands to transfer queue and wait until it finishes
     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
@@ -110,13 +118,15 @@ void oGFX::CommandBufferManager::SubmitAll(VkQueue queue, VkSubmitInfo inInfo, V
     {
         if (submitted[i] == eRECSTATUS::RECORDING)
         {
+            PROFILE_SCOPED("END CMDBUFFER");
+            vkEndCommandBuffer(commandBuffers[i]);
+            submitted[i] = eRECSTATUS::ENDED;
+        }
+
+        if (submitted[i] == eRECSTATUS::ENDED)
+        {
             buffers.emplace_back(commandBuffers[i]);           
         }
-    }
-
-    for (size_t i = 0; i < buffers.size(); i++)
-    {
-        vkEndCommandBuffer(buffers[i]);
     }
     //for (auto cmd : buffers)
     //{
@@ -124,7 +134,7 @@ void oGFX::CommandBufferManager::SubmitAll(VkQueue queue, VkSubmitInfo inInfo, V
     //}
     for (auto& sub : submitted)
     {
-        if (sub == eRECSTATUS::RECORDING)
+        if (sub == eRECSTATUS::ENDED)
             sub = eRECSTATUS::SUBMITTED;
     }
 
@@ -144,8 +154,20 @@ void oGFX::CommandBufferManager::SubmitAll(VkQueue queue, VkSubmitInfo inInfo, V
 
     //assuming we have only a few meshes to load we will pause here until we load the previous object
     //submit transfer commands to transfer queue and wait until it finishes
-    vkQueueSubmit(queue, 1, &submitInfo, signalFence);
+    {
+        PROFILE_SCOPED("SUBMIT QUEUE");
+        vkQueueSubmit(queue, 1, &submitInfo, signalFence);
+    }
 
+}
+
+size_t oGFX::CommandBufferManager::FindCmdIdx(VkCommandBuffer cmd)
+{
+    auto iter = std::find(commandBuffers.begin(), commandBuffers.end(), cmd);
+    OO_ASSERT(iter != commandBuffers.end() && "invalid usage");
+    auto idx = iter - commandBuffers.begin();
+
+    return idx;
 }
 
 void oGFX::CommandBufferManager::AllocateCommandBuffer()
