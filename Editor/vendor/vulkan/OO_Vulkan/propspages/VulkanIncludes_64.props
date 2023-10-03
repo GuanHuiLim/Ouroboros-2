@@ -5,7 +5,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>%VULKAN_SDK%\include;$(SolutionDir)\vendor\vma\include\;$(SolutionDir)\vendor\glm;$(SolutionDir)\vendor\assimp\include;$(SolutionDir)\vendor\assimp\BINARIES\Win32\include;$(SolutionDir)\vendor\imgui;$(SolutionDir)\vendor\msdf-atlas-gen;$(SolutionDir)\vendor\msdfgen;$(SolutionDir)\vendor\freetype\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%VULKAN_SDK%\include;$(SolutionDir)\vendor\vma\include\;$(SolutionDir)\vendor\glm;$(SolutionDir)\vendor\assimp\include;$(SolutionDir)\vendor\assimp\BINARIES\Win32\include;$(SolutionDir)\vendor\imgui;$(SolutionDir)\vendor\msdf-atlas-gen;$(SolutionDir)\vendor\msdfgen;$(ProjectDir)\src\optick\;$(SolutionDir)\vendor\freetype\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>

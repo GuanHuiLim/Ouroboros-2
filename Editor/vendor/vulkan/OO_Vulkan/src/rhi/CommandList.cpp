@@ -55,9 +55,18 @@ namespace rhi
 		return descriptorSets[set];
 	}
 
-	void CommandList::BindDescriptorSet(uint32_t set, VkDescriptorSet descriptor)
+	void CommandList::BindDescriptorSet(uint32_t set,uint32_t binding, VkDescriptorSet descriptor)
 	{
+		assert(set < 4);
+		assert(descriptor != VK_NULL_HANDLE);
+		assert(m_pipelineBindPoint != VK_PIPELINE_BIND_POINT_MAX_ENUM);
+		descriptorSets[set].descriptor = descriptor;
 
+		descriptorSets[set].shaderStage = m_targetStage;
+	
+		descriptorSets[set].expected = true;
+		descriptorSets[set].bound = false;
+		descriptorSets[set].built = true;
 	}
 
 	CommandList::CommandList(const VkCommandBuffer& cmd, const char* name, const glm::vec4 col)
@@ -580,6 +589,7 @@ void CommandList::CommitDescriptors()
 
 DescriptorSetInfo& DescriptorSetInfo::BindImage(uint32_t binding, vkutils::Texture* texture, VkDescriptorType type)
 {	
+	OO_ASSERT(texture);
 	BindImage(binding, texture, type, texture->view);
 	return *this;
 }

@@ -1,32 +1,36 @@
 #include "shader_utility.shader"
 #include "shared_structs.h"
 
-vec2 GetShadowMapRegion(int gridID, in vec2 uv, in vec2 gridSize)
-{
-	
-    vec2 gridIncrement = vec2(1.0) / gridSize; // size for each cell
+const uint SHADOW_MAP_SIZE = 4096u;
 
-    vec2 actualUV = gridIncrement * uv; // uv local to this cell
+vec2 GetShadowMapRegion(int gridID, in vec2 uv, in vec2 numCells)
+{
+    const float oneTexelUV = 1.0 / (SHADOW_MAP_SIZE);
+    vec2 gridScalar = vec2(1.0) / numCells - 2 * oneTexelUV; // size for each cell
+
+    vec2 actualUV = (gridScalar) * uv; // uv local to this cell
 
 	// avoid the modolus operator not sure how much that matters
-    int y = gridID / int(gridSize.x);
-    int x = gridID - int(gridSize.x * y);
+    int y = gridID / int(numCells.x);
+    int x = gridID - int(numCells.x * y);
 
-    vec2 offset = gridIncrement * vec2(x, y); // offset to our cell
+    vec2 borderPixels = vec2(x, y) * 2.0 * oneTexelUV; // number of padding pixels    
+    vec2 offset = gridScalar * vec2(x, y) + borderPixels; // offset to our cell
 
-    return offset + actualUV; //sampled position
+    // add an extra texel
+    return (offset+oneTexelUV) + actualUV; //sampled position
 }
 
 float ShadowCalculation(int lightIndex, int gridID, in vec4 fragPosLightSpace, float NdotL)
 {
-    const float oneTexelUV = 1.0 / (4096.0);
+    const float oneTexelUV = 1.0 / (SHADOW_MAP_SIZE);
 	// perspective divide
     vec4 projCoords = fragPosLightSpace / fragPosLightSpace.w;
 	//normalization [0,1] tex coords only.. FOR VULKAN DONT DO Z
     projCoords.xy = projCoords.xy * 0.5 + 0.5;
 
     vec2 uvs = vec2(projCoords.x, projCoords.y);
-    uvs = clamp(uvs, oneTexelUV, 1.0 - oneTexelUV); // clamp between the grids
+    // uvs = clamp(uvs, oneTexelUV, 1.0 - oneTexelUV); // clamp between the grids
     uvs = GetShadowMapRegion(gridID, uvs, PC.shadowMapGridDim);
     
    
@@ -46,26 +50,27 @@ float ShadowCalculation(int lightIndex, int gridID, in vec4 fragPosLightSpace, f
     int count = 0;
     int range = 1;
     
-    float lowerBoundsLimit = 0.0 + EPSILON;
-    float boundsLimit = 1.0 - EPSILON;    
+    float lowerBoundsLimit = 0.0 ;
+    float boundsLimit = 1.0 ;
     
-    for (int x = -range; x <= range; x++)
+    if (projCoords.x > boundsLimit || projCoords.x < lowerBoundsLimit
+	|| projCoords.y > boundsLimit || projCoords.y < lowerBoundsLimit
+       //|| currDepth <0.99999
+	)
     {
-        for (int y = -range; y <= range; y++)
+        shadowFactor += 1.0;
+        count++;
+    }
+    else
+    {        
+        for (int x = -range; x <= range; x++)
         {
-            if (projCoords.x > boundsLimit || projCoords.x < lowerBoundsLimit
-		    || projCoords.y > boundsLimit || projCoords.y < lowerBoundsLimit
-               || currDepth > boundsLimit
-		    )
+            for (int y = -range; y <= range; y++)
             {
-                shadowFactor += 1.0;
-            }
-            else
-            {        
                 shadowFactor += texture(sampler2DShadow(textureShadows, shadowSampler)
-                                            , vec3(uvs + vec2(x,y)*oneTexelUV, currDepth + bias)).r;
+                                            , vec3(uvs + vec2(x, y) * oneTexelUV, currDepth + bias)).r;
+                count++;
             }
-           count++;
         }
 	
     }

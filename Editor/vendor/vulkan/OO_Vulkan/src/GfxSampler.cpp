@@ -86,10 +86,10 @@ void GfxSamplerManager::Init()
         samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
         samplerCreateInfo.mipLodBias = 0.0f;
         samplerCreateInfo.maxAnisotropy = maxAni;
-        samplerCreateInfo.anisotropyEnable = aniEnabled;
+        samplerCreateInfo.anisotropyEnable = VK_FALSE; // disable ani
         samplerCreateInfo.minLod = 0.0f;
         samplerCreateInfo.maxLod = 1.0f;
-        samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
         samplerCreateInfo.compareEnable = VK_TRUE;
         samplerCreateInfo.compareOp = VK_COMPARE_OP_GREATER;
         VK_CHK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &shadowSampler));

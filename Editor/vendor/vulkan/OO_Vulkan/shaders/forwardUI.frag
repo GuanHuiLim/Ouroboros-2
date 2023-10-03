@@ -44,10 +44,7 @@ void main()
     outEntityID = int(inInstanceData.y);
     outfragCol = vec4(inColor.rgba);
     
-    uint isSDFFont = inInstanceData.z;
-
-    if(inColor.a < 0.0001) discard;
-    
+    uint isSDFFont = inInstanceData.z;    
 
     // TODO: We need to use a mask to check whether to use textures or values.
     const bool useAlbedoTexture = true;
@@ -70,11 +67,10 @@ void main()
         float sd = median(outfragCol.r, outfragCol.g, outfragCol.b);
         float screenPxDistance = screenPxRange()*(sd - 0.5);
         float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
-        outfragCol = mix(vec4(0),inColor,opacity);
-        //Remap_float(outfragCol.a,vec2(0.0,1.0),vec2(0,0.20),outfragCol.a);
+        outfragCol = mix(vec4(0),inColor,opacity);        
         
-        
-    }else
+    }
+    else
     {
         vec4 tempcol = inColor.rgba;
         //Remap_float(tempcol.a,vec2(0.0,1.0),vec2(0.0,0.20),tempcol.a);

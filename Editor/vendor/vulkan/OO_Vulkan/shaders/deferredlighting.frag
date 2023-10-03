@@ -66,8 +66,10 @@ void main()
     float roughness = clamp(material.r,0.01,1.0);
     float metalness = clamp(material.g,0.01,1.0);
 
-	// just perform ambient
-	
+    if (PC.useSSAO == 0)
+    {
+        SSAO = 1;
+    }
 	
 	// Ambient part
 	vec3 emissive = texture(sampler2D(textureEmissive,basicSampler),inUV).rgb;
@@ -96,7 +98,7 @@ void main()
 	
     const float MAX_REFLECTION_LOD = 6.0;
     vec3 prefilteredColor = textureLod(samplerCube(prefilterCube, basicSampler), R, roughness * MAX_REFLECTION_LOD).rgb;
-    prefilteredColor *= PC.ambient;
+    prefilteredColor *= PC.ambient * SSAO.rrr;
 	
     vec2 lutVal = texture(sampler2D( brdfLUT, basicSampler),vec2(max(dot(surface.N, surface.V), 0.0), roughness)).rg;
 	
@@ -105,7 +107,6 @@ void main()
 													irradiance,
 													prefilteredColor,
 													lutVal);
-	
-    outFragcolor = vec4(result.rgb, albedo.a);
 
+    outFragcolor = vec4(result.rgb, albedo.a);
 }

@@ -155,11 +155,20 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 	const float vpHeight = (float)vr.m_swapchain.swapChainExtent.height;
 	const float vpWidth = (float)vr.m_swapchain.swapChainExtent.width;
 
+	constexpr bool clearOnDraw = true;
 	for (size_t i = 0; i < GBufferAttachmentIndex::TOTAL_COLOR_ATTACHMENTS; i++)
 	{
-		cmd.BindAttachment(i, &attachments[i]);
+		if (i == GBufferAttachmentIndex::NORMAL) 
+		{
+			cmd.BindAttachment(i, &attachments[i],clearOnDraw);
+		}
+		else 
+		{
+			cmd.BindAttachment(i, &attachments[i]);
+		}
+		
 	}
-	constexpr bool clearOnDraw = true;
+	
 	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 	
 	cmd.BindPSO(pso_GBufferDefault, PSOLayoutDB::defaultPSOLayout);

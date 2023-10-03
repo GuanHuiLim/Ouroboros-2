@@ -25,6 +25,7 @@ public:
 
 	DescriptorBuilder& BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlags);
 	DescriptorBuilder& BindImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t count = 1);
+	DescriptorBuilder& DeclareDescriptor(uint32_t binding, VkDescriptorType type, VkShaderStageFlags stageFlags, VkSampler* immutableSampler = nullptr);
 
 	bool Build(VkDescriptorSet& set, VkDescriptorSetLayout& layout);
 	bool Build(VkDescriptorSet& set);

@@ -25,10 +25,12 @@ Technology is prohibited.
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
 
+#include <barrier>
 #include "Ouroboros/EventSystem/EventManager.h"
 
 namespace oo
 {
+    extern std::barrier<std::_No_completion_function>* g_frameBarrier;
     ImGuiAbstraction::ImGuiAbstraction()
         : m_restart { false }
 #ifdef OO_PLATFORM_WINDOWS
@@ -141,7 +143,11 @@ namespace oo
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
+            //ImGui::RenderPlatformWindowsDefault();
+        }
+        {
+            OPTICK_EVENT("Wait Renderer");
+            g_frameBarrier->arrive_and_wait();
         }
 
     }

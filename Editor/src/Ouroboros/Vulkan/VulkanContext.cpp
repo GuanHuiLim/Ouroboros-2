@@ -92,6 +92,7 @@ namespace oo
         try
         {
             vr->Init(si, m_window);
+            vr->CreateCubeMapTexture("Textures/viking");
         } 
         catch (std::runtime_error e)
         {
@@ -134,8 +135,25 @@ namespace oo
                 } // if prepare frame is true
 
                 // TODO: put barrier here
-                OPTICK_EVENT("Wait CPU");
-                barrier.arrive_and_wait();
+                {
+                    OPTICK_EVENT("Wait CPU");
+                    barrier.arrive_and_wait();
+                }
+                if (keepRendering == false)
+                {
+                    // we could have been waiting for cpu but 
+                    // CPU has dropped wants to exit
+                    break;
+                }
+                ImGuiIO& io = ImGui::GetIO();
+                if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+                {
+                    ImGui::RenderPlatformWindowsDefault();
+                }
+                {
+                    OPTICK_EVENT("Wait CPU");
+                    barrier.arrive_and_wait();
+                }
             }
         };
         m_renderThread = std::thread{renderWorker};

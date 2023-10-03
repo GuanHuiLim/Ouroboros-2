@@ -124,7 +124,7 @@ public:
 
 	DescriptorSetInfo& DescriptorSetBegin(uint32_t set);
 
-	void BindDescriptorSet(uint32_t set, VkDescriptorSet descriptor);
+	void BindDescriptorSet(uint32_t set,uint32_t binding, VkDescriptorSet descriptor);
 
 	void BindDescriptorSet(
 		VkPipelineLayout layout,

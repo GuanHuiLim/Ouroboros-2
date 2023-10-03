@@ -32,9 +32,10 @@ Technology is prohibited.
 #include "Window.h"
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/backends/imgui_impl_win32.h>
-
+static ImDrawListSharedData s_imguiSharedData;
 
 #include "../shaders/shared_structs.h"
 
@@ -43,6 +44,7 @@ Technology is prohibited.
 
 extern GfxRenderpass* g_BloomPass;
 extern GfxRenderpass* g_DebugDrawRenderpass;
+extern GfxRenderpass* g_ImguiRenderpass;
 extern GfxRenderpass* g_ForwardParticlePass;
 extern GfxRenderpass* g_ForwardUIPass;
 extern GfxRenderpass* g_GBufferRenderPass;
@@ -102,7 +104,7 @@ extern GfxRenderpass* g_ZPrePass;
 VulkanRenderer* VulkanRenderer::s_vulkanRenderer{ nullptr };
 
 // vulkan debug callback
-
+#pragma optimize("", off)
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -124,6 +126,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 
 }
+#pragma optimize("", on)
 
 int VulkanRenderer::ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface)
 {
@@ -354,6 +357,7 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 	rpd->RegisterRenderPass(g_ZPrePass);
 	rpd->RegisterRenderPass(g_SkyRenderPass);
 	rpd->RegisterRenderPass(g_DebugDrawRenderpass);
+	rpd->RegisterRenderPass(g_ImguiRenderpass);
 	rpd->RegisterRenderPass(g_LightingPass);
 	rpd->RegisterRenderPass(g_LightingHistogram);
 	rpd->RegisterRenderPass(g_SSAORenderPass);
@@ -385,7 +389,6 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 	normalTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&normalTexture));
 	pinkTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&pinkTexture));
 		
-	CreateCubeMapTexture("Textures/viking");
 
 	RenderPassDatabase::InitAllRegisteredPasses();
 
@@ -1129,7 +1132,9 @@ void VulkanRenderer::CreateCommandBuffers()
 VkCommandBuffer VulkanRenderer::GetCommandBuffer()
 {
 	constexpr bool beginBuffer = true;
-	return m_device.commandPoolManagers[getFrame()].GetNextCommandBuffer(beginBuffer);
+	VkCommandBuffer result = m_device.commandPoolManagers[getFrame()].GetNextCommandBuffer(beginBuffer);
+	VK_NAME(m_device.logicalDevice, "DEFAULTCMD", result);
+	return result;
 }
 
 void VulkanRenderer::SubmitSingleCommandAndWait(VkCommandBuffer cmd)
@@ -1189,7 +1194,7 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 				}
 				if (image.image.image && renderTargets[wrdID].imguiTex == 0)
 				{
-					renderTargets[wrdID].imguiTex = CreateImguiBinding(samplerManager.GetDefaultSampler(), image.view, VK_IMAGE_LAYOUT_GENERAL);				
+					renderTargets[wrdID].imguiTex = CreateImguiBinding(samplerManager.GetDefaultSampler(), &image);				
 				}
 				auto& depth =  renderTargets[wrdID].depth;
 				if (depth.image.image == VK_NULL_HANDLE)
@@ -1625,8 +1630,53 @@ void VulkanRenderer::InitImGUI()
 	vkCreateDescriptorPool(m_device.logicalDevice, &dpci, nullptr, &m_imguiConfig.descriptorPools);
 	VK_NAME(m_device.logicalDevice, "imguiConfig_descriptorPools", m_imguiConfig.descriptorPools);
 
+	unsigned char* pixels = nullptr;
+	int width, height;
+	ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+	std::vector<VkBufferImageCopy> mips;
+	VkDeviceSize buffSz = width * height * 4;
+	VkBufferImageCopy imageRegion{};
+	imageRegion.bufferOffset = 0;											// Offset into data
+	imageRegion.bufferRowLength = 0;										// Row length of data to calculate data spacing
+	imageRegion.bufferImageHeight = 0;										// Image height to calculate data spacing
+	imageRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;	// Which aspect of image to copy
+	imageRegion.imageSubresource.mipLevel = 0;								// Mipmap Level to copy
+	imageRegion.imageSubresource.baseArrayLayer = 0;						// Starting array layer (if array)
+	imageRegion.imageSubresource.layerCount = 1;							// Number of layers to copy starting at baseArray layer
+	imageRegion.imageOffset = { 0,0,0 };									//	Offset into image (as opposed to raw data in buffer offset)
+	imageRegion.imageExtent = { (uint32_t)width,(uint32_t)height, 1 };		//  Size of region to copy as XYZ values
+	mips.push_back(imageRegion);
+	
+	g_imguiFont.fromBuffer(pixels, buffSz, VK_FORMAT_R8G8B8A8_UNORM, width, height, mips, &m_device, m_device.graphicsQueue);
+
 	m_imguiInitialized = true;
 	PerformImguiRestart();
+
+	memcpy(&s_imguiSharedData, ImGui::GetDrawListSharedData(), sizeof(ImDrawListSharedData));
+
+
+
+	struct BackendData {
+		ImGui_ImplVulkan_InitInfo   VulkanInitInfo;
+		VkRenderPass                RenderPass;
+		VkDeviceSize                BufferMemoryAlignment;
+		VkPipelineCreateFlags       PipelineCreateFlags;
+		VkDescriptorSetLayout       DescriptorSetLayout;
+		VkPipelineLayout            PipelineLayout;
+		VkPipeline                  Pipeline;
+		uint32_t                    Subpass;
+		VkShaderModule              ShaderModuleVert;
+		VkShaderModule              ShaderModuleFrag;
+
+		// Font data
+		VkSampler                   FontSampler;
+		VkDeviceMemory              FontMemory;
+		VkImage                     FontImage;
+		VkImageView                 FontView;
+		VkDescriptorSet				FontDescriptorSet;
+	};
+	BackendData* bd = (BackendData*)(ImGui::GetIO().BackendRendererUserData);
+	g_imguiToTexture[bd->FontDescriptorSet] = &g_imguiFont;
 
 
 	// Create frame buffers for every swap chain image
@@ -1728,7 +1778,11 @@ void VulkanRenderer::DebugGUIcalls()
 
 void VulkanRenderer::DrawGUI()
 {
+
+	return;
+
 	PROFILE_SCOPED();
+	std::scoped_lock l{m_imguiShutdownGuard};
 	if (m_imguiInitialized == false) return;
 
 	VkRenderPassBeginInfo GUIpassInfo = {};
@@ -1745,21 +1799,23 @@ void VulkanRenderer::DrawGUI()
 	vkutils::TransitionImage(cmdlist, m_swapchain.swapChainImages[swapchainIdx], m_swapchain.swapChainImages[swapchainIdx].referenceLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	for (size_t i = 0; i < renderTargets.size(); i++)
 	{
-		if (renderTargets[i].inUse == true)
+		if (renderTargets[i].texture.image.image != VK_NULL_HANDLE)
 		{
 			vkutils::TransitionImage(cmdlist, renderTargets[i].texture, renderTargets[i].texture.referenceLayout, VK_IMAGE_LAYOUT_GENERAL);
 		}
 	}
 	vkCmdBeginRenderPass(cmdlist, &GUIpassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	ImGui_ImplVulkan_RenderDrawData(&m_imguiDrawData, cmdlist);
+	if (m_imguiDrawData.Valid) 
+	{
+		ImGui_ImplVulkan_RenderDrawData(&m_imguiDrawData, cmdlist);
+	}
 	vkCmdEndRenderPass(cmdlist);
 
 	// Draw call done, invalidate old list
-	InvalidateDrawLists();
 
 	for (size_t i = 0; i < renderTargets.size(); i++)
 	{
-		if (renderTargets[i].inUse == true)
+		if (renderTargets[i].texture.image.image != VK_NULL_HANDLE)
 		{
 			vkutils::TransitionImage(cmdlist, renderTargets[i].texture, VK_IMAGE_LAYOUT_GENERAL, renderTargets[i].texture.referenceLayout);
 		}
@@ -1804,6 +1860,7 @@ void VulkanRenderer::SubmitImguiDrawList(ImDrawData* drawData)
 	for (size_t i = 0; i < drawData->CmdListsCount; i++)
 	{
 		ImDrawList* myDrawList = drawData->CmdLists[i]->CloneOutput();
+		myDrawList->_Data = &s_imguiSharedData;
 		newimguiDrawList.emplace_back(myDrawList);
 	}
 
@@ -1842,8 +1899,12 @@ void VulkanRenderer::InvalidateDrawLists()
 void VulkanRenderer::DestroyImGUI()
 {
 	if (m_imguiInitialized == false) return;
+	std::scoped_lock l{ m_imguiShutdownGuard };
 
 	vkDeviceWaitIdle(m_device.logicalDevice);
+
+	s_imguiSharedData.Font = nullptr;
+	g_imguiFont.destroy();
 
 	for (size_t i = 0; i < m_imguiConfig.buffers.size(); i++)
 	{
@@ -1910,6 +1971,7 @@ void VulkanRenderer::PerformImguiRestart()
 	// This uploads the ImGUI font package to the GPU
 	VkCommandBuffer command_buffer = beginSingleTimeCommands();
 	ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+
 	endSingleTimeCommands(command_buffer); 
 	m_imguiInitialized = true;
 }
@@ -1981,6 +2043,22 @@ void VulkanRenderer::InitializeRenderBuffers()
 
 	oGFX::CreateBuffer(m_device.m_allocator, sizeof(CB::AMDSPD_ATOMIC), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT| VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, SPDatomicBuffer);
 	oGFX::CreateBuffer(m_device.m_allocator, sizeof(CB::AMDSPD_UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, SPDconstantBuffer);
+	
+	const size_t STARTING_VERTEX_CNT = 5000;
+	size_t vertex_size = STARTING_VERTEX_CNT * sizeof(ImDrawVert);
+	size_t index_size = STARTING_VERTEX_CNT * sizeof(ImDrawIdx);
+	size_t imguiCBsize = sizeof(glm::mat4);
+
+	imguiVertexBuffer.resize(MAX_FRAME_DRAWS);
+	imguiIndexBuffer.resize(MAX_FRAME_DRAWS);
+	imguiConstantBuffer.resize(MAX_FRAME_DRAWS);
+
+	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
+	{
+		oGFX::CreateBuffer(m_device.m_allocator, vertex_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, imguiVertexBuffer[i]);
+		oGFX::CreateBuffer(m_device.m_allocator, index_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, imguiIndexBuffer[i]);
+		oGFX::CreateBuffer(m_device.m_allocator, imguiCBsize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, imguiConstantBuffer[i]);
+	}
 
 
 	// TODO: Move other global GPU buffer initialization here...
@@ -2000,6 +2078,18 @@ void VulkanRenderer::DestroyRenderBuffers()
 		g_UIIndexBufferGPU[i].destroy();
 		g_particleCommandsBuffer[i].destroy();
 	}
+
+	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
+	{
+		// dont unmap for create mapped bit
+		// vmaUnmapMemory(m_device.m_allocator, imguiVertexBuffer[i].alloc);
+		// vmaUnmapMemory(m_device.m_allocator, imguiIndexBuffer[i].alloc);
+
+		vmaDestroyBuffer(m_device.m_allocator, imguiVertexBuffer[i].buffer, imguiVertexBuffer[i].alloc);
+		vmaDestroyBuffer(m_device.m_allocator, imguiIndexBuffer[i].buffer, imguiIndexBuffer[i].alloc);
+		vmaDestroyBuffer(m_device.m_allocator, imguiConstantBuffer[i].buffer, imguiConstantBuffer[i].alloc);
+	}
+
 	
 	gpuSkinningBoneWeightsBuffer.destroy();
 
@@ -2441,6 +2531,11 @@ void VulkanRenderer::RenderFrame()
 			}		
 			
 		}
+		{
+			// RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->dodebugRendering = shouldRunDebugDraw;
+			const VkCommandBuffer cmd = GetCommandBuffer();
+			g_ImguiRenderpass->Draw(cmd);
+		}
     }
 }
 
@@ -2537,7 +2632,7 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 			// RenderPassDatabase::GetRenderPass<DebugDrawRenderpass>()->dodebugRendering = shouldRunDebugDraw;
 			const VkCommandBuffer cmd = GetCommandBuffer();
 			g_DebugDrawRenderpass->Draw(cmd);
-		}
+		}		
 
 		++renderIteration; // next viewport
 	}
@@ -2562,6 +2657,9 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 		FullscreenBlit(GetCommandBuffer(), texture, texture.referenceLayout, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	}
 	// only blit main framebuffer
+
+	//if (shouldRunDebugDraw) // for now need to run regardless because of transition.. TODO: FIX IT ONE DAY
+	
 }
 
 void VulkanRenderer::Present()
@@ -4344,9 +4442,9 @@ uint32_t VulkanRenderer::CreateTextureImage(const oGFX::FileImageData& imageInfo
 		texture.fromBuffer((void*)imageInfo.imgData.data(), imageInfo.dataSize, imageInfo.format, imageInfo.w, imageInfo.h,imageInfo.mipInformation, &m_device, m_device.graphicsQueue);
 
 		GenerateMipmaps(texture);
-
 		//setup imgui binding
-		g_imguiIDs[indx] = CreateImguiBinding(samplerManager.GetDefaultSampler(), texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		g_imguiIDs[indx] = CreateImguiBinding(samplerManager.GetDefaultSampler(), &texture);
+		
 	};
 	{
 		std::scoped_lock s{ g_mut_workQueue };
@@ -4385,7 +4483,7 @@ uint32_t VulkanRenderer::CreateTextureImageImmediate(const oGFX::FileImageData& 
 	texture.name = imageInfo.name;
 
 	//setup imgui binding
-	g_imguiIDs[indx] = CreateImguiBinding(samplerManager.GetDefaultSampler(), texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	g_imguiIDs[indx] = CreateImguiBinding(samplerManager.GetDefaultSampler(), &texture);
 	
 
 	// Return index of new texture image
@@ -4461,15 +4559,19 @@ ImTextureID VulkanRenderer::GetImguiID(uint32_t textureID)
 	return g_imguiIDs[textureID];
 }
 
-ImTextureID VulkanRenderer::CreateImguiBinding(VkSampler s, VkImageView v, VkImageLayout l)
+ImTextureID VulkanRenderer::CreateImguiBinding(VkSampler s, vkutils::Texture* tex)
 {
-	
-	if (VulkanRenderer::get()->m_imguiInitialized == false)
+	auto& vr = *VulkanRenderer::get();
+	if (vr.m_imguiInitialized == false)
 	{
 		return 0;
 	}	
-	
-	return ImGui_ImplVulkan_AddTexture(s,v,l);
+	VkDescriptorSet dsc = ImGui_ImplVulkan_AddTexture(s, tex->view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	// add to mapping
+	std::scoped_lock l{ vr.g_mute_imguiTextureMap };
+	ImTextureID id = (ImTextureID)dsc;
+	vr.g_imguiToTexture[id] = tex;
+	return dsc;
 }
 
 int Win32SurfaceCreator(ImGuiViewport* vp, ImU64 device, const void* allocator, ImU64* outSurface)

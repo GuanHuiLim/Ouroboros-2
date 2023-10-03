@@ -66,6 +66,17 @@ DescriptorBuilder& DescriptorBuilder::BindImage(uint32_t binding, VkDescriptorIm
 	return *this;
 }
 
+DescriptorBuilder& DescriptorBuilder::DeclareDescriptor(uint32_t binding, VkDescriptorType type, VkShaderStageFlags stageFlags, VkSampler* immutableSampler)
+{
+	//create the descriptor binding for the layout
+	VkDescriptorSetLayoutBinding newBinding = oGFX::vkutils::inits::descriptorSetLayoutBinding(type, stageFlags, binding, 1);
+	if (immutableSampler != nullptr) {
+		newBinding.pImmutableSamplers = immutableSampler;
+	}
+	bindings.push_back(newBinding);
+	return *this;
+}
+
 
 bool DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layout)
 {

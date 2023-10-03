@@ -17,7 +17,6 @@ Technology is prohibited.
 #include "Window.h"
 #include "VulkanUtils.h"
 
-
 #include <array>
 #include <random>
 
@@ -471,8 +470,6 @@ void SSAORenderPass::CreatePipeline()
 	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_SSAO));
 	VK_NAME(m_device.logicalDevice, "SSAO_PSO", pso_SSAO);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr); // destroy fragment
-
-	format = vr.attachments.SSAO_finalTarget.format;
 
 	shaderStages[1] = vr.LoadShader(m_device, "Shaders/bin/ssaoBlur.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	pipelineCI.layout = PSOLayoutDB::SSAOBlurPSOLayout;

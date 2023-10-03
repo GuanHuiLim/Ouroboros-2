@@ -104,7 +104,7 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	auto& attachments = vr.attachments.gbuffer;
 
 	cmd.BindAttachment(0, &vr.renderTargets[vr.renderTargetInUseID].texture);
-	cmd.BindAttachment(1, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
+	//cmd.BindAttachment(1, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
 	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 
 
@@ -149,11 +149,12 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	const auto ScreenSpaceIdxOffset = WorldSpaceIndices;
 	const auto instanceOffset = instanceCnt - WorldSpaceCnt;
 	// do draw command here
-	cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), static_cast<uint32_t>(WorldSpaceCnt));// draw worldspace
+	// batch draw from the big buffer
+	cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), 1);// draw worldspace
 	
 	// bind depth ignore pass
 	cmd.BindPSO(pso_Forward_UI_NO_DEPTH, PSOLayoutDB::defaultPSOLayout);
-	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), static_cast<uint32_t>(ScreenSpaceCnt)
+	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), 1
 					,ScreenSpaceIdxOffset, 0, 0);  // draw screenspace
 
 }
@@ -352,7 +353,7 @@ void ForwardUIPass::CreatePipeline()
 	blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // save background albedo as well
 	blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
 
-	colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+	colorBlendState.attachmentCount =1;
 	colorBlendState.pAttachments = blendAttachmentStates.data();
 
 	std::array<VkFormat, 2> formats{
@@ -362,7 +363,7 @@ void ForwardUIPass::CreatePipeline()
 	VkPipelineRenderingCreateInfo renderingInfo{};
 	renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 	renderingInfo.viewMask = {};
-	renderingInfo.colorAttachmentCount = formats.size();
+	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachmentFormats = formats.data();
 	renderingInfo.depthAttachmentFormat = vr.G_DEPTH_FORMAT;
 	renderingInfo.stencilAttachmentFormat = vr.G_DEPTH_FORMAT;
