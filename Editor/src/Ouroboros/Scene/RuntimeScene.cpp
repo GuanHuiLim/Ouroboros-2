@@ -43,12 +43,12 @@ namespace oo
     void RuntimeScene::Init()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_init);
-
+        OPTICK_EVENT();
         Scene::Init();
 
         {
             TRACY_PROFILE_SCOPE(runtime_registration);
-
+            OPTICK_EVENT();
             GetWorld().Add_System<InputSystem>()->Initialize();
             GetWorld().Add_System<Anim::AnimationSystem>()->Init(&GetWorld(), this);
 
@@ -73,6 +73,7 @@ namespace oo
 
         {
             TRACY_PROFILE_SCOPE(runtime_load_from_file);
+            OPTICK_EVENT();
             LoadFromFile();
             TRACY_PROFILE_SCOPE_END();
         }
@@ -88,18 +89,22 @@ namespace oo
         --m_framesLeft;
 
         TRACY_PROFILE_SCOPE(runtime_scene_update);
-
+        OPTICK_EVENT();
         //jobsystem::job phase_one{};
         
         //jobsystem::submit(phase_one, [&]() {
           TRACY_PROFILE_SCOPE(transform_first_update);
+          OPTICK_PUSH("transform_first_update");
           GetWorld().Get_System<oo::TransformSystem>()->Run(&GetWorld());
+          OPTICK_POP();
           TRACY_PROFILE_SCOPE_END();
         //});
         
         //jobsystem::submit(phase_one, [&]() {
           TRACY_PROFILE_SCOPE(input_update);
+          OPTICK_PUSH("input_update");
           GetWorld().Get_System<InputSystem>()->Run(&GetWorld());
+          OPTICK_POP();
           TRACY_PROFILE_SCOPE_END();
         //});
         
@@ -110,14 +115,18 @@ namespace oo
         //
         //jobsystem::submit(phase_two, [&]() {
           TRACY_PROFILE_SCOPE(scripts_update);
+          OPTICK_PUSH("scripts_update");
           //GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("Update");
           GetWorld().Get_System<ScriptSystem>()->Update();
+          OPTICK_POP();
           TRACY_PROFILE_SCOPE_END();
         //    });
         //
         //jobsystem::submit(phase_two, [&]() {
             TRACY_PROFILE_SCOPE(scripts_tick_couroutines);
+            OPTICK_PUSH("scripts_tick_couroutines");
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("TickCoroutines");
+            OPTICK_POP();
             TRACY_PROFILE_SCOPE_END();
         //    });
         //
@@ -125,7 +134,9 @@ namespace oo
 
         //jobsystem::submit(phase_three, [&]() {
             TRACY_PROFILE_SCOPE(animation_update);
+            OPTICK_PUSH("animation_update");
             GetWorld().Run_System<oo::Anim::AnimationSystem>();
+            OPTICK_POP();
             TRACY_PROFILE_SCOPE_END();
         //    });
 
@@ -133,13 +144,17 @@ namespace oo
         //
         //jobsystem::submit(phase_three, [&]() {
           TRACY_PROFILE_SCOPE(physics_runtime_update);
+          OPTICK_PUSH("physics_runtime_update");
           GetWorld().Get_System<PhysicsSystem>()->RuntimeUpdate(timer::dt());
+          OPTICK_POP();
           TRACY_PROFILE_SCOPE_END();
         //    });
         
         //jobsystem::submit(phase_three, [&]() {
           TRACY_PROFILE_SCOPE(audio_update);
+          OPTICK_PUSH("audio_update");
           GetWorld().Get_System<oo::AudioSystem>()->Run(&GetWorld());
+          OPTICK_POP();
           TRACY_PROFILE_SCOPE_END();
         //});
         
@@ -152,7 +167,9 @@ namespace oo
         //jobsystem::launch_and_wait(phase_three);
 
         TRACY_PROFILE_SCOPE(UI_runtime_update);
+        OPTICK_PUSH("UI_runtime_update");
         GetWorld().Get_System<oo::UISystem>()->RuntimeUpdate();
+        OPTICK_POP();
         TRACY_PROFILE_SCOPE_END();
             
         TRACY_PROFILE_SCOPE_END();
@@ -162,19 +179,25 @@ namespace oo
     void RuntimeScene::LateUpdate()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_late_update);
+        OPTICK_EVENT();
         Scene::LateUpdate();
         {
             TRACY_PROFILE_SCOPE(scripts_late_update);
+            OPTICK_PUSH(scripts_late_update)
             GetWorld().Get_System<ScriptSystem>()->InvokeForAllEnabled("LateUpdate");
 
             TRACY_PROFILE_SCOPE(scripts_delete_delayed);
+            OPTICK_PUSH(scripts_delete_delayed)
             GetWorld().Get_System<ScriptSystem>()->ProcessDeletion();
+            OPTICK_POP()
             TRACY_PROFILE_SCOPE_END();
 
+            OPTICK_POP()
             TRACY_PROFILE_SCOPE_END();
         }
         {
             TRACY_PROFILE_SCOPE(inputsystem_late_update);
+            OPTICK_EVENT("inputsystem_late_update");
             GetWorld().Get_System<InputSystem>()->LateUpdate();
             TRACY_PROFILE_SCOPE_END();
         }
@@ -184,6 +207,7 @@ namespace oo
     void RuntimeScene::Render()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_rendering);
+        OPTICK_EVENT();
         Scene::Render();
         GetWorld().Get_System<oo::PhysicsSystem>()->RenderDebugColliders();
         TRACY_PROFILE_SCOPE_END();
@@ -192,6 +216,7 @@ namespace oo
     void RuntimeScene::Exit()
     {
         TRACY_PROFILE_SCOPE(runtime_scene_exit);
+        OPTICK_EVENT();
         Scene::Exit();
 
         StopSimulation();
@@ -219,6 +244,7 @@ namespace oo
     void RuntimeScene::StartSimulation()
     {
         TRACY_PROFILE_SCOPE(start_simulation);
+        OPTICK_EVENT();
 
         //Functions to run upon program starting : Order matters
         
@@ -241,6 +267,7 @@ namespace oo
     void RuntimeScene::StopSimulation()
     {
         TRACY_PROFILE_SCOPE(stop_simulation);
+        OPTICK_EVENT();
 
         GetWorld().Get_System<oo::ScriptSystem>()->StopPlay();
 

@@ -230,6 +230,7 @@ namespace oo
     void UISystem::EditorUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(UISystem_EditorUpdate, tracy::Color::Cyan);
+        OPTICK_EVENT();
         
             TRACY_PROFILE_SCOPE_NC(UISystem_UpdateJustCreated, tracy::Color::Cyan);
             UpdateJustCreated();
@@ -257,6 +258,7 @@ namespace oo
     void UISystem::RuntimeUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(UISystem_RuntimeUpdate, tracy::Color::DarkCyan);
+        OPTICK_EVENT();
 
         TRACY_PROFILE_SCOPE_NC(UISystem_UpdateJustCreated, tracy::Color::DarkCyan);
         UpdateJustCreated();

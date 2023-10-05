@@ -53,6 +53,13 @@ namespace oo
 
         // Only start running file watchers ones dependencies are intiialised
         /*AssetManager::GlobalStartRunning();*/
+
+        OPTICK_SET_MEMORY_ALLOCATOR(
+            [](size_t size) -> void* { return operator new(size); },
+            [](void* p) { operator delete(p); },
+            []() { /* Do some TLS initialization here if needed */ }
+        );
+
     }
 
     Application::~Application()
@@ -145,7 +152,7 @@ namespace oo
     void Application::Close()
     {
         m_running = false;
-        // tell renderer to close
+        OPTICK_SHUTDOWN();
     }
 
 }

@@ -629,6 +629,7 @@ namespace oo
         if (!isPlaying)
             return;
         TRACY_PROFILE_SCOPE(scripts_fixed_update);
+        OPTICK_EVENT();
         InvokeForAllEnabled("FixedUpdate");
         TRACY_PROFILE_SCOPE_END();
     }

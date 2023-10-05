@@ -191,6 +191,8 @@ namespace oo
     void VulkanContext::OnImGuiEnd()
     {
         TRACY_PROFILE_SCOPE_N(Vulkan_Render);
+        OPTICK_EVENT("Vulkan_Render");
+
         // temporarily shift here for better structuring
         //m_runtimeCC.Update(oo::timer::dt());
         vr->SubmitImguiDrawList(ImGui::GetDrawData());

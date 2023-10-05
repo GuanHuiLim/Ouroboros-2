@@ -433,6 +433,7 @@ namespace oo
     void oo::ParticleRendererSystem::Run(Ecs::ECSWorld* world)
     {
         TRACY_PROFILE_SCOPE_NC(Particle_Renderer_System_Update, tracy::Color::Cyan);
+        OPTICK_EVENT();
 
         // Update Newly Duplicated Emitter
         static Ecs::Query duplicated_emitter_query = Ecs::make_raw_query<ParticleEmitterComponent, TransformComponent, DuplicatedComponent>();

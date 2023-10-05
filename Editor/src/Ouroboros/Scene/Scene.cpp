@@ -78,7 +78,7 @@ namespace oo
     void Scene::Init()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_init, tracy::Color::Seashell1);
-
+        OPTICK_EVENT();
         Scene::OnInitEvent e;
         EventManager::Broadcast(&e);
 
@@ -114,6 +114,7 @@ namespace oo
     void Scene::Update()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_update, tracy::Color::Seashell2);
+        OPTICK_EVENT();
 
         PRINT(m_name);
 
@@ -123,6 +124,7 @@ namespace oo
     void Scene::LateUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_late_update, tracy::Color::Seashell3);
+        OPTICK_EVENT();
 
         m_ecsWorld->Get_System<oo::RendererSystem>()->UpdateCameras(m_mainCamera);
         PRINT(m_name);
@@ -133,6 +135,7 @@ namespace oo
     void Scene::Render()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_rendering, tracy::Color::Seashell3);
+        OPTICK_EVENT();
 
         GetWorld().Get_System<oo::RendererSystem>()->Run(m_ecsWorld.get());
         GetWorld().Get_System<oo::SkinMeshRendererSystem>()->Run(m_ecsWorld.get());
@@ -145,6 +148,7 @@ namespace oo
     void Scene::EndOfFrameUpdate()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_end_of_frame_update, tracy::Color::Seashell4);
+        OPTICK_EVENT();
 
         PRINT(m_name);
 
@@ -181,6 +185,7 @@ namespace oo
     void Scene::Exit()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_exit, tracy::Color::Seashell3);
+        OPTICK_EVENT();
 
         // Broadcast event to unload scene
         UnloadSceneEvent use{ this };
@@ -194,6 +199,7 @@ namespace oo
     void Scene::LoadScene()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_load_scene, tracy::Color::Seashell3);
+        OPTICK_EVENT();
 
         PRINT(m_name);
             
@@ -231,6 +237,7 @@ namespace oo
     void Scene::UnloadScene()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_unload_scene, tracy::Color::Seashell4);
+        OPTICK_EVENT();
 
         PRINT(m_name);
 
@@ -265,6 +272,7 @@ namespace oo
     
     void Scene::ReloadScene()
     {
+        OPTICK_EVENT();
         PRINT(m_name);
         UnloadScene();
         LoadScene();
@@ -413,7 +421,7 @@ namespace oo
         }
 
         TRACY_PROFILE_SCOPE_NC(duplicate_gameobject, tracy::Color::Seashell4);
-
+        OPTICK_EVENT();
 
         // Create Parent node
         Scene::go_ptr dupObjectHead = std::make_shared<GameObject>(*this, target);
@@ -458,6 +466,7 @@ namespace oo
     void Scene::LoadFromFile()
     {
         TRACY_PROFILE_SCOPE_NC(base_scene_load_from_file, tracy::Color::Seashell4);
+        OPTICK_EVENT();
 
         // Broadcast event to load scene
         LoadSceneEvent lse{ this };
@@ -490,6 +499,7 @@ namespace oo
     Scene::go_ptr Scene::CreateGameObjectImmediate(Scene::go_ptr new_go)
     {
         TRACY_PROFILE_SCOPE_NC(create_gameobject_immediate, tracy::Color::Seashell4);
+        OPTICK_EVENT();
 
         Scene::go_ptr newObjectPtr = new_go;
         InsertGameObject(newObjectPtr);
@@ -518,6 +528,7 @@ namespace oo
         ASSERT(go_ptr == nullptr);
         
         TRACY_PROFILE_SCOPE_NC(remove_gameobject, tracy::Color::Seashell4);
+        OPTICK_EVENT();
 
         // one final broadcast to cleanup anything you need to
         GameObject::OnDestroy e;

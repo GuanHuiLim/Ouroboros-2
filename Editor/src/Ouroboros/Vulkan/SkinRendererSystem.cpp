@@ -70,6 +70,7 @@ namespace oo
 			Ecs::make_query<SkinMeshBoneComponent, TransformComponent>();
 		
 		TRACY_PROFILE_SCOPE_NC(Skin_Mesh_Renderer_Update, 0x00E0E3);
+		OPTICK_EVENT();
 		
 		//settle duplicated objects
 		world->for_each_entity_and_component(duplicated_query,

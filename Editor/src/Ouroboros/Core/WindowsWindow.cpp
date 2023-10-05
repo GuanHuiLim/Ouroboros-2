@@ -84,7 +84,7 @@ namespace oo
         if (!s_SDLInitialized)
         {
             TRACY_PROFILE_SCOPE(SDL_INIT);
-            OPTICK_CATEGORY(SDL_INIT, Optick::Category::IO);
+            OPTICK_CATEGORY("SDL_INIT", Optick::Category::IO);
             int success = SDL_Init(SDL_INIT_VIDEO);
             UNREFERENCED_PARAMETER(success);
             //ASSERT_CUSTOM_MSG((success != 0), "Failed to initialize SDL {0}", SDL_GetError());
@@ -96,7 +96,7 @@ namespace oo
         // controller initialization
         {
             TRACY_PROFILE_SCOPE(CONTROLLER_INIT);
-            OPTICK_CATEGORY(CONTROLLER_INIT, Optick::Category::IO);
+            OPTICK_CATEGORY("CONTROLLER_INIT", Optick::Category::IO);
 
             int success = SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER);
             UNREFERENCED_PARAMETER(success);
@@ -123,7 +123,7 @@ namespace oo
         // Create windows
         {
             TRACY_PROFILE_SCOPE(SDL_CreateWindows);
-            OPTICK_CATEGORY(SDL_CreateWindows, Optick::Category::IO);
+            OPTICK_CATEGORY("SDL_CreateWindows", Optick::Category::IO);
 
             m_window = SDL_CreateWindow(m_data.Title.c_str()
                 , SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED
@@ -144,7 +144,7 @@ namespace oo
 
         {
             TRACY_PROFILE_SCOPE(Create_Vulkan_Context);
-            OPTICK_CATEGORY(Create_Vulkan_Context, Optick::Category::Rendering);
+            OPTICK_CATEGORY("Create_Vulkan_Context", Optick::Category::Rendering);
 
             // create graphics context
             m_context = std::make_unique<VulkanContext>(m_window);
