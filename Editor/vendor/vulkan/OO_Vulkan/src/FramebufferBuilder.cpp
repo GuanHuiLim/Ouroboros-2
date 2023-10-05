@@ -56,17 +56,17 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, const VulkanRenderpas
 				<<" target "<<oGFX::vkutils::tools::VkFormatString(tex->format) << std::endl;
 		}
 		//verify resource
-		if (tex->currentLayout != attachmentDes.initialLayout && attachmentDes.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED)
-		{
-			std::cout << "Hey unexpected layout for renderpass "<<renderPass.name << "attachment=" <<i <<std::endl;
-			std::cout << "\t expected "<< oGFX::vkutils::tools::VkImageLayoutString(attachmentDes.initialLayout) 
-				<<" current "<<oGFX::vkutils::tools::VkImageLayoutString(tex->currentLayout) << std::endl;
-		}
-		//printf("\t FBTransition::%s | %s -> %s\n", tex->name, 
-		//	oGFX::vkutils::tools::VkImageLayoutString(tex->currentLayout).c_str(),
-		//	oGFX::vkutils::tools::VkImageLayoutString(renderPass.rpci.pAttachments[i].finalLayout).c_str());
-
-		tex->currentLayout = renderPass.rpci.pAttachments[i].finalLayout;
+		//if (tex->currentLayout != attachmentDes.initialLayout && attachmentDes.initialLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+		//{
+		//	std::cout << "Hey unexpected layout for renderpass "<<renderPass.name << "attachment=" <<i <<std::endl;
+		//	std::cout << "\t expected "<< oGFX::vkutils::tools::VkImageLayoutString(attachmentDes.initialLayout) 
+		//		<<" current "<<oGFX::vkutils::tools::VkImageLayoutString(tex->currentLayout) << std::endl;
+		//}
+		////printf("\t FBTransition::%s | %s -> %s\n", tex->name, 
+		////	oGFX::vkutils::tools::VkImageLayoutString(tex->currentLayout).c_str(),
+		////	oGFX::vkutils::tools::VkImageLayoutString(renderPass.rpci.pAttachments[i].finalLayout).c_str());
+		//
+		//tex->currentLayout = renderPass.rpci.pAttachments[i].finalLayout;
 	}
 
 	VkFramebufferCreateInfo fbInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };

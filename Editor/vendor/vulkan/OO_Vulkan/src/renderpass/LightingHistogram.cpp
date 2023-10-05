@@ -89,7 +89,7 @@ void LightingHistogram::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
 
-	
+	lastCmd = cmdlist;
 	auto& device = vr.m_device;
 	auto& swapchain = vr.m_swapchain;
 	//auto& commandBuffers = vr.commandBuffers;

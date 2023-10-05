@@ -16,6 +16,7 @@ Technology is prohibited.
 #include "gpuCommon.h"
 #include <vector>
 #include <array>
+#include <mutex>
 #include "GraphicsWorld.h"
 #include "Font.h"
 
@@ -66,6 +67,7 @@ private:
 	std::vector<ParticleData> m_particleList;
 	std::vector<oGFX::IndirectCommand> m_particleCommands;
 	std::vector<oGFX::UIVertex> m_uiVertices;
+	std::mutex m_uiVertMutex;
 
 	std::vector<LocalLightInstance>m_culledLights;
 

@@ -85,7 +85,7 @@ bool DebugDrawRenderpass::SetupDependencies()
 void DebugDrawRenderpass::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
-
+	lastCmd = cmdlist;
 	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 

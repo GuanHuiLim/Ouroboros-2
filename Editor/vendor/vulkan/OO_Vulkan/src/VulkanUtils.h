@@ -236,6 +236,10 @@ namespace oGFX
 	void CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool,
 		VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize, VkDeviceSize dstOffset = 0, VkDeviceSize srcOffset = 0);
 
+	void CopyBuffer(VkCommandBuffer cmd
+		,VkBuffer srcBuffer, VkBuffer dstBuffer
+		, VkDeviceSize bufferSize, VkDeviceSize dstOffset = 0, VkDeviceSize srcOffset = 0);
+
 	VkCommandBuffer beginCommandBuffer(VkDevice device, VkCommandPool commandPool);
 
 	void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer);

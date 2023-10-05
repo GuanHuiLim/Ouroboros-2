@@ -81,9 +81,9 @@ bool SkyRenderPass::SetupDependencies()
 void SkyRenderPass::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
+	lastCmd = cmdlist;
 	if (!vr.deferredRendering)
 		return;
-
 	auto& device = vr.m_device;
 	auto currFrame = vr.getFrame();
 

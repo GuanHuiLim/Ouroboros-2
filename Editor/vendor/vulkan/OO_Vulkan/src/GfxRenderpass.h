@@ -50,6 +50,7 @@ public:
     // Called once per context, for render graph. "false" means this render pass is unused/skipped.
     virtual bool SetupDependencies() = 0;
     uint8_t m_Index{ 0xFF };
+    VkCommandBuffer lastCmd{VK_NULL_HANDLE};
 };
 
 class RenderPassDatabase

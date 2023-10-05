@@ -84,7 +84,7 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	auto& vr = *VulkanRenderer::get();
 	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
-
+	lastCmd = cmdlist;
     PROFILE_GPU_CONTEXT(cmdlist);
     PROFILE_GPU_EVENT("DeferredComposition");
 
@@ -97,22 +97,25 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 
 	auto tex = &vr.attachments.lighting_target; // layout undefined
 	auto depth = &vr.renderTargets[vr.renderTargetInUseID].depth; // layout undefined
-
-	vkutils::ComputeImageBarrier(cmdlist, *depth, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vkutils::ComputeImageBarrier(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	rhi::CommandList cmd{ cmdlist, "Lighting Pass"};
+	vkutils::ComputeImageBarrier(cmdlist, *depth, depth->referenceLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vkutils::ComputeImageBarrier(cmdlist, attachments[GBufferAttachmentIndex::DEPTH],attachments[GBufferAttachmentIndex::DEPTH].referenceLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	VkImageCopy region{};
 	region.srcSubresource = VkImageSubresourceLayers{ VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT ,0,0,1 };
 	region.srcOffset = {};
 	region.dstSubresource = VkImageSubresourceLayers{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT ,0,0,1 };
 	region.dstOffset = {};
 	region.extent = { depth->width,depth->height,1 };
-	vkCmdCopyImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH].image.image, attachments[GBufferAttachmentIndex::DEPTH].currentLayout
-		, depth->image.image, depth->currentLayout,
+	vkCmdCopyImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH].image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+		, depth->image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		1, &region);
-	vkutils::ComputeImageBarrier(cmdlist, *depth, depth->referenceLayout);
-	vkutils::ComputeImageBarrier(cmdlist, attachments[GBufferAttachmentIndex::DEPTH],  attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
+	vkutils::ComputeImageBarrier(cmdlist, *depth, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, depth->referenceLayout);
+	vkutils::ComputeImageBarrier(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
 
-	rhi::CommandList cmd{ cmdlist, "Lighting Pass"};
+	vkutils::TransitionImage(cmdlist, *depth, depth->referenceLayout, depth->referenceLayout);
+	vkutils::TransitionImage(cmdlist, attachments[GBufferAttachmentIndex::DEPTH], attachments[GBufferAttachmentIndex::DEPTH].referenceLayout, attachments[GBufferAttachmentIndex::DEPTH].referenceLayout);
+
+	
 	cmd.BindPSO(pso_DeferredLightingComposition, PSOLayoutDB::lightingPSOLayout);
 	
 	cmd.BindAttachment(0, tex);

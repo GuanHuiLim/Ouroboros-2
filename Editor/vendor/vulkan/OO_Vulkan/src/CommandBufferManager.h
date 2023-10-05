@@ -29,24 +29,29 @@ class CommandBufferManager
 {
 public:
 	VkResult InitPool(VkDevice device, uint32_t queueIndex);
-	VkCommandBuffer GetNextCommandBuffer(bool begin = false);
-	void EndCommandBuffer(VkCommandBuffer cmd);
-	void ResetPool();
-	void DestroyPool();
+	VkCommandBuffer GetNextCommandBuffer(uint32_t threadID = 0,bool begin = false);
+	void EndCommandBuffer(uint32_t thread_id, VkCommandBuffer cmd);
+	void ResetPools();
+	void DestroyPools();
+	void QueueCommandBuffer(VkCommandBuffer cmds);
+	void QueueCommandBuffers(std::vector<VkCommandBuffer>& cmds);
 	void SubmitCommandBuffer(VkQueue queue, VkCommandBuffer cmd);
 	void SubmitCommandBufferAndWait(VkQueue queue, VkCommandBuffer cmd);
 	void SubmitAll(VkQueue queue, VkSubmitInfo submitInfo = {}, VkFence signalFence = VK_NULL_HANDLE);
 
-	VkCommandPool m_commandpool{};
+	std::vector <VkCommandPool> m_commandpools{};
 private:
-	size_t FindCmdIdx(VkCommandBuffer cmd);
-	void AllocateCommandBuffer();
-	size_t counter{ };
+	size_t FindCmdIdx(uint32_t thread_id, VkCommandBuffer cmd);
+	void FindCmdBufferPool(VkCommandBuffer cmd, uint32_t& outThread, size_t& outIndex);
+	void AllocateCommandBuffer(uint32_t thread_id);
 
 	VkDevice m_device{};
-	uint32_t nextIdx{};
-	std::vector<VkCommandBuffer> commandBuffers;
-	std::vector<eRECSTATUS>submitted{};
+	std::vector<uint32_t> nextIndices{};
+	std::vector<std::vector<VkCommandBuffer>> threadCBs;
+	std::vector<std::vector<eRECSTATUS>> threadSubmitteds{};
+
+	// This vector is to prepare for submission
+	std::vector<VkCommandBuffer> orderedCommands;
 };
 
 

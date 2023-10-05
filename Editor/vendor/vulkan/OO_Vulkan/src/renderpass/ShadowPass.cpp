@@ -85,9 +85,9 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
 
+	lastCmd = cmdlist;
 	if (!vr.deferredRendering)
 		return;
-
 	auto& device = vr.m_device;
 	auto& swapchain = vr.m_swapchain;
 	//auto& commandBuffers = vr.commandBuffers;

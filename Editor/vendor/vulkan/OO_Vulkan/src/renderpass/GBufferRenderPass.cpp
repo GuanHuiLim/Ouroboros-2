@@ -92,9 +92,9 @@ bool GBufferRenderPass::SetupDependencies()
 void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
+	lastCmd = cmdlist;
 	if (!vr.deferredRendering)
 		return;
-
 	auto& device = vr.m_device;
 	auto& swapchain = vr.m_swapchain;
 	auto currFrame = vr.getFrame();
@@ -204,98 +204,98 @@ void GBufferRenderPass::Draw(const VkCommandBuffer cmdlist)
 	
 
 	if(0){
-		cmd.BeginNameRegion("ShadowMaskCOMP");
-
-		VkDescriptorImageInfo depthInput = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),
-			attachments[GBufferAttachmentIndex::DEPTH	].view,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		
-		auto oldDepth = attachments[GBufferAttachmentIndex::DEPTH].currentLayout;
-		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH	],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		VkDescriptorImageInfo shadowinput = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			vr.attachments.shadow_depth.view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		auto oldShadow = vr.attachments.shadow_depth.currentLayout;
-		vkutils::TransitionImage(cmdlist, vr.attachments.shadow_depth,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo normalInput = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_BlackBorder(),
-			attachments[GBufferAttachmentIndex::NORMAL	].view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		auto oldNormal = attachments[GBufferAttachmentIndex::NORMAL].currentLayout;
-		vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::NORMAL	],VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),
-			vr.attachments.shadowMask.view,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkutils::TransitionImage(cmdlist,vr.attachments.shadowMask,VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
-			GfxSamplerManager::GetSampler_Deferred(),
-			VK_NULL_HANDLE,
-			VK_IMAGE_LAYOUT_GENERAL);
-
-		vkutils::TransitionImage(cmdlist, vr.attachments.shadowMask, VK_IMAGE_LAYOUT_GENERAL);
-		const auto& dbi = vr.globalLightBuffer[currFrame].GetBufferInfoPtr();
-
-		cmd.BindPSO(pso_ComputeShadowPrepass, PSOLayoutDB::shadowPrepassPSOLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
-		
-		cmd.DescriptorSetBegin(0)
-			.BindSampler(0, GfxSamplerManager::GetSampler_Deferred())
-			.BindImage(1, &attachments[GBufferAttachmentIndex::DEPTH], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
-			.BindImage(2, &vr.attachments.shadow_depth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
-			.BindImage(3, &attachments[GBufferAttachmentIndex::NORMAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
-
-			.BindImage(6, &vr.attachments.shadowMask, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-			.BindBuffer(8, vr.globalLightBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-			//.Build(shadowprepassDS, SetLayoutDB::compute_shadowPrepass);
-
-		uint32_t offset = 1;
-		cmd.BindDescriptorSet(PSOLayoutDB::shadowPrepassPSOLayout, offset,
-			std::array<VkDescriptorSet, 2>{
-				//shadowprepassDS,
-				vr.descriptorSets_uniform[currFrame],
-				vr.descriptorSet_bindless,
-		},
-			VK_PIPELINE_BIND_POINT_COMPUTE,
-			1, & dynamicOffset
-				);
-
-		LightPC pc{};
-		pc.useSSAO = vr.useSSAO ? 1 : 0;
-		pc.specularModifier = vr.currWorld->lightSettings.specularModifier;
-
-		size_t lightCnt = 0;
-		auto& lights = vr.batches.GetLocalLights();
-		for(auto& l :lights) 
-		{
-			if (GetLightEnabled(l)== true)
-			{
-				++lightCnt;
-			}
-		}
-
-		pc.numLights = static_cast<uint32_t>(lightCnt);
-
-		// calculate shadowmap grid dims
-		float gridSize = ceilf(sqrtf(static_cast<float>(vr.m_numShadowcastLights)));
-		gridSize = std::max<float>(0, gridSize);
-		pc.shadowMapGridDim = glm::vec2{gridSize,gridSize};
-
-		pc.ambient = vr.currWorld->lightSettings.ambient;
-		pc.maxBias = vr.currWorld->lightSettings.maxBias;
-		pc.mulBias = vr.currWorld->lightSettings.biasMultiplier;
-
-		VkPushConstantRange range;
-		range.offset = 0;
-		range.size = sizeof(LightPC);
-		//cmd.SetPushConstant(PSOLayoutDB::shadowPrepassLayout,range,&pc);
-		vkCmdPushConstants(cmdlist, PSOLayoutDB::shadowPrepassPSOLayout, VK_SHADER_STAGE_ALL,range.offset,range.size,&pc);
-		vkCmdDispatch(cmdlist, (vr.attachments.shadowMask.width - 1) / 16 + 1, (vr.attachments.shadowMask.height - 1) / 16 + 1, 1);
+		// cmd.BeginNameRegion("ShadowMaskCOMP");
+		// 
+		// VkDescriptorImageInfo depthInput = oGFX::vkutils::inits::descriptorImageInfo(
+		// 	GfxSamplerManager::GetSampler_Deferred(),
+		// 	attachments[GBufferAttachmentIndex::DEPTH	].view,
+		// 	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		// 
+		// auto oldDepth = attachments[GBufferAttachmentIndex::DEPTH].currentLayout;
+		// vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::DEPTH	],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		// 
+		// VkDescriptorImageInfo shadowinput = oGFX::vkutils::inits::descriptorImageInfo(
+		// 	GfxSamplerManager::GetSampler_BlackBorder(),
+		// 	vr.attachments.shadow_depth.view,
+		// 	VK_IMAGE_LAYOUT_GENERAL);
+		// auto oldShadow = vr.attachments.shadow_depth.currentLayout;
+		// vkutils::TransitionImage(cmdlist, vr.attachments.shadow_depth,VK_IMAGE_LAYOUT_GENERAL);
+		// 
+		// VkDescriptorImageInfo normalInput = oGFX::vkutils::inits::descriptorImageInfo(
+		// 	GfxSamplerManager::GetSampler_BlackBorder(),
+		// 	attachments[GBufferAttachmentIndex::NORMAL	].view,
+		// 	VK_IMAGE_LAYOUT_GENERAL);
+		// auto oldNormal = attachments[GBufferAttachmentIndex::NORMAL].currentLayout;
+		// vkutils::TransitionImage(cmdlist,attachments[GBufferAttachmentIndex::NORMAL	],VK_IMAGE_LAYOUT_GENERAL);
+		// 
+		// VkDescriptorImageInfo texOut = oGFX::vkutils::inits::descriptorImageInfo(
+		// 	GfxSamplerManager::GetSampler_Deferred(),
+		// 	vr.attachments.shadowMask.view,
+		// 	VK_IMAGE_LAYOUT_GENERAL);
+		// vkutils::TransitionImage(cmdlist,vr.attachments.shadowMask,VK_IMAGE_LAYOUT_GENERAL);
+		// 
+		// VkDescriptorImageInfo basicSampler = oGFX::vkutils::inits::descriptorImageInfo(
+		// 	GfxSamplerManager::GetSampler_Deferred(),
+		// 	VK_NULL_HANDLE,
+		// 	VK_IMAGE_LAYOUT_GENERAL);
+		// 
+		// vkutils::TransitionImage(cmdlist, vr.attachments.shadowMask, VK_IMAGE_LAYOUT_GENERAL);
+		// const auto& dbi = vr.globalLightBuffer[currFrame].GetBufferInfoPtr();
+		// 
+		// cmd.BindPSO(pso_ComputeShadowPrepass, PSOLayoutDB::shadowPrepassPSOLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
+		// 
+		// cmd.DescriptorSetBegin(0)
+		// 	.BindSampler(0, GfxSamplerManager::GetSampler_Deferred())
+		// 	.BindImage(1, &attachments[GBufferAttachmentIndex::DEPTH], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		// 	.BindImage(2, &vr.attachments.shadow_depth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		// 	.BindImage(3, &attachments[GBufferAttachmentIndex::NORMAL], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		// 
+		// 	.BindImage(6, &vr.attachments.shadowMask, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+		// 	.BindBuffer(8, vr.globalLightBuffer[currFrame].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		// 	//.Build(shadowprepassDS, SetLayoutDB::compute_shadowPrepass);
+		// 
+		// uint32_t offset = 1;
+		// cmd.BindDescriptorSet(PSOLayoutDB::shadowPrepassPSOLayout, offset,
+		// 	std::array<VkDescriptorSet, 2>{
+		// 		//shadowprepassDS,
+		// 		vr.descriptorSets_uniform[currFrame],
+		// 		vr.descriptorSet_bindless,
+		// },
+		// 	VK_PIPELINE_BIND_POINT_COMPUTE,
+		// 	1, & dynamicOffset
+		// 		);
+		// 
+		// LightPC pc{};
+		// pc.useSSAO = vr.useSSAO ? 1 : 0;
+		// pc.specularModifier = vr.currWorld->lightSettings.specularModifier;
+		// 
+		// size_t lightCnt = 0;
+		// auto& lights = vr.batches.GetLocalLights();
+		// for(auto& l :lights) 
+		// {
+		// 	if (GetLightEnabled(l)== true)
+		// 	{
+		// 		++lightCnt;
+		// 	}
+		// }
+		// 
+		// pc.numLights = static_cast<uint32_t>(lightCnt);
+		// 
+		// // calculate shadowmap grid dims
+		// float gridSize = ceilf(sqrtf(static_cast<float>(vr.m_numShadowcastLights)));
+		// gridSize = std::max<float>(0, gridSize);
+		// pc.shadowMapGridDim = glm::vec2{gridSize,gridSize};
+		// 
+		// pc.ambient = vr.currWorld->lightSettings.ambient;
+		// pc.maxBias = vr.currWorld->lightSettings.maxBias;
+		// pc.mulBias = vr.currWorld->lightSettings.biasMultiplier;
+		// 
+		// VkPushConstantRange range;
+		// range.offset = 0;
+		// range.size = sizeof(LightPC);
+		// //cmd.SetPushConstant(PSOLayoutDB::shadowPrepassLayout,range,&pc);
+		// vkCmdPushConstants(cmdlist, PSOLayoutDB::shadowPrepassPSOLayout, VK_SHADER_STAGE_ALL,range.offset,range.size,&pc);
+		// vkCmdDispatch(cmdlist, (vr.attachments.shadowMask.width - 1) / 16 + 1, (vr.attachments.shadowMask.height - 1) / 16 + 1, 1);
 
 		
 

@@ -18,6 +18,7 @@ Technology is prohibited.
 
 void GraphicsWorld::BeginFrame()
 {
+	PROFILE_SCOPED();
 	auto& vr = *VulkanRenderer::get();
 	// TODO: What do you do at the beginning of the frame?
 	m_objectsCopy.clear();

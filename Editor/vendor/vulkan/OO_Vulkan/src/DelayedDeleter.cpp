@@ -12,6 +12,8 @@ without the prior written consent of DigiPen Institute of
 Technology is prohibited.
 *//*************************************************************************************/
 #include "DelayedDeleter.h"
+#include "Profiling.h"
+
 #include <cassert>
 #include <algorithm>
 
@@ -53,6 +55,7 @@ void DelayedDeleter::DeleteAfterFrames(std::function<void()> fn)
 
 void DelayedDeleter::Update(float deltaTime)
 {
+    PROFILE_SCOPED();
     m_countQueue.emplace_back(m_itemsThisFrame);
     m_itemsThisFrame = 0;
 

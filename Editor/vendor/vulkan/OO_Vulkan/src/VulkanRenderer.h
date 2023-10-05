@@ -36,6 +36,8 @@ Technology is prohibited.
 #include "Geometry.h"
 #include "Collision.h"
 
+#include "TaskManager.h"
+
 #include "Camera.h"
 
 #include "imgui/imgui.h"
@@ -48,6 +50,8 @@ Technology is prohibited.
 
 #include "TexturePacker.h"
 #include "Font.h"
+
+#include "TaskManager.h"
 
 #include <vector>
 #include <array>
@@ -221,6 +225,7 @@ public:
 	 PFN_vkCmdDebugMarkerBeginEXT pfnDebugMarkerRegionBegin{ nullptr };
 	 PFN_vkCmdDebugMarkerEndEXT pfnDebugMarkerRegionEnd{ nullptr };
 
+	 VulkanRenderer();
 	~VulkanRenderer();
 
 	static VulkanRenderer* get();
@@ -242,6 +247,7 @@ public:
 
 	void FullscreenBlit(VkCommandBuffer cmd, vkutils::Texture& src,VkImageLayout srcFinal, vkutils::Texture& dst,VkImageLayout dstFinal);
 	void BlitFramebuffer(VkCommandBuffer cmd, vkutils::Texture& src,VkImageLayout srcFinal, vkutils::Texture& dst,VkImageLayout dstFinal);
+	VkCommandBuffer m_finalBlitCmd{ VK_NULL_HANDLE };
 
 	void CreateDefaultPSOLayouts();
 	void CreateDefaultPSO();
@@ -252,7 +258,13 @@ public:
 	VkCommandBuffer GetCommandBuffer();
 	void SubmitSingleCommandAndWait(VkCommandBuffer cmd);
 	void SubmitSingleCommand(VkCommandBuffer cmd);
-
+	void QueueCommandBuffer(VkCommandBuffer cmd);
+	std::vector<VkCommandBuffer>sequencedBuffers;
+	std::queue<Task>m_taskList;
+	std::vector<Task>m_sequentialTasks;
+	TaskCompletionCallback drawCallRecrodingCompleted{ Task([](void*) {}) };
+	void AddRenderer(GfxRenderpass* pass);
+	
 	ImTextureID myImg;
 
 	bool useSSAO = true;
@@ -326,7 +338,6 @@ public:
 	void InitImGUI();
 	void ResizeGUIBuffers();
 	void DebugGUIcalls();
-	void DrawGUI();
 	void DestroyImGUI();
 	void RestartImgui();
 	void PerformImguiRestart();
@@ -550,6 +561,11 @@ public:
 	bool m_reloadShaders = false;
 	bool m_restartIMGUI = false;
 
+	TaskManager g_taskManager;
+	std::mutex g_mut_taskMap;
+	std::unordered_map<std::thread::id,size_t> g_taskManagerMapping;
+	uint32_t mappedThreadCnt{};
+	uint32_t RegisterThreadMapping();
 
 	// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
 	// Bind this to every single shader possible.

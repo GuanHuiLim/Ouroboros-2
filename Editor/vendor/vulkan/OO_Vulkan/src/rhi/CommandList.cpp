@@ -108,7 +108,8 @@ namespace rhi
 		{
 			//printf("  Tracking %s ..\n", tex->name.c_str());
 			ImageStateTracking state;
-			OO_ASSERT(tex->referenceLayout == tex->currentLayout);
+			// this assert no longer works because we are now threaded
+			//OO_ASSERT(tex->referenceLayout == tex->currentLayout);
 			state.referenceLayout = tex->referenceLayout;
 			state.currentLayout = tex->referenceLayout;
 			m_trackedTextures[tex] = state;

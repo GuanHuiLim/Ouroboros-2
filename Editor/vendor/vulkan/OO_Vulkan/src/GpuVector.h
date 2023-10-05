@@ -31,13 +31,13 @@ public:
 	void Init(VulkanDevice* device, VkBufferUsageFlags usage);
 
 	void blockingWriteTo(size_t size, const void* data, VkQueue queue, VkCommandPool pool, size_t offset = 0);
-	void writeToCmd(size_t writeSize, const void* data, VkCommandBuffer command, VkQueue queue, VkCommandPool pool, size_t offset = 0);
+	void writeToCmd(size_t writeSize, const void* data, VkCommandBuffer command, size_t offset = 0);
 
 	void addWriteCommand(size_t size, const void* data, size_t offset = 0);
-	void flushToGPU(VkCommandBuffer command, VkQueue queue, VkCommandPool pool);
+	void flushToGPU(VkCommandBuffer command);
 
-	void resize(size_t size, VkQueue queue, VkCommandPool pool);
-	void reserve(size_t size, VkQueue queue, VkCommandPool pool);
+	void resize(VkCommandBuffer cmd, size_t size);
+	void reserve(VkCommandBuffer cmd, size_t size);
 	size_t size() const;
 
 	VkBuffer getBuffer()const;
@@ -164,7 +164,7 @@ void GpuVector<T>::blockingWriteTo(size_t writeSize,const void* data, VkQueue qu
 }
 
 template <typename T>
-void GpuVector<T>::writeToCmd(size_t writeSize, const void* data,VkCommandBuffer command, VkQueue queue,VkCommandPool pool, size_t offset)
+void GpuVector<T>::writeToCmd(size_t writeSize, const void* data,VkCommandBuffer command, size_t offset)
 {
 	if (writeSize == 0)
 		return;
@@ -173,8 +173,8 @@ void GpuVector<T>::writeToCmd(size_t writeSize, const void* data,VkCommandBuffer
 	{
 		// TODO:  maybe resize some amount instead of perfect amount?
 		assert(true);
-		resize(m_capacity ? m_capacity * 2 : 64, queue, pool);
-		writeToCmd(writeSize, data, command, queue, pool, offset);
+		resize(command, m_capacity ? m_capacity * 2 : 64);
+		writeToCmd(writeSize, data, command, offset);
 		return;
 	}
 
@@ -253,7 +253,7 @@ inline void GpuVector<T>::addWriteCommand(size_t writeSize, const void* data, si
 }
 
 template<typename T>
-inline void GpuVector<T>::flushToGPU(VkCommandBuffer command, VkQueue queue, VkCommandPool pool)
+inline void GpuVector<T>::flushToGPU(VkCommandBuffer command)
 {
 	VkDeviceSize totalDataSize{};
 	size_t largestWrite{};
@@ -273,7 +273,7 @@ inline void GpuVector<T>::flushToGPU(VkCommandBuffer command, VkQueue queue, VkC
 	if ((maxElement) > m_capacity)
 	{
 		assert(true);
-		resize(maxElement, queue, pool);
+		resize(command, maxElement);
 	}
 
 	//temporary buffer to stage vertex data before transferring to GPU
@@ -313,15 +313,15 @@ inline void GpuVector<T>::flushToGPU(VkCommandBuffer command, VkQueue queue, VkC
 }
 
 template <typename T>
-void GpuVector<T>::resize(size_t size, VkQueue queue, VkCommandPool pool)
+void GpuVector<T>::resize(VkCommandBuffer cmd, size_t size)
 {
 	std::cout << "[GpuVector<T>::resize] " << "Resizing from " << m_size << " to " << size << "\n";
-	reserve(size, queue, pool);
+	reserve(cmd, size);
 	m_size = size;	
 }
 
 template <typename T>
-void GpuVector<T>::reserve(size_t size, VkQueue queue, VkCommandPool pool)
+void GpuVector<T>::reserve(VkCommandBuffer cmd, size_t size)
 {
 	if (size <= m_capacity) return;
 	PROFILE_SCOPED();
@@ -340,7 +340,7 @@ void GpuVector<T>::reserve(size_t size, VkQueue queue, VkCommandPool pool)
 
 	if (m_size != 0)
 	{
-		CopyBuffer(m_device->logicalDevice, queue, pool, m_buffer.buffer, tempBuffer.buffer, m_size* sizeof(T));
+		CopyBuffer(cmd, m_buffer.buffer, tempBuffer.buffer, m_size * sizeof(T));
 	}
 
 	auto fun = [oldBuffer = m_buffer, alloc = m_device->m_allocator]() {

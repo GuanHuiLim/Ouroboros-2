@@ -35,7 +35,7 @@ VulkanDevice::~VulkanDevice()
 {
     for (size_t i = 0; i < 2; i++)
     {
-        commandPoolManagers[i].DestroyPool();
+        commandPoolManagers[i].DestroyPools();
         //if (transferPools[i])
         //{
         //    //vkDestroyCommandPool(logicalDevice, transferPools[i], nullptr);

@@ -112,7 +112,7 @@ void SSAORenderPass::Draw(const VkCommandBuffer cmdlist)
 	auto currFrame = vr.getFrame();
 	auto* windowPtr = vr.windowPtr;
 
-
+	lastCmd = cmdlist;
 	PROFILE_GPU_CONTEXT(cmdlist);
 	PROFILE_GPU_EVENT("SSAO");
 
@@ -223,9 +223,11 @@ void SSAORenderPass::InitRandomFactors()
 		ssaoKernel.push_back(sample);  
 	}
 	randomVectorsSSBO.Init(&vr.m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	randomVectorsSSBO.reserve(ssaoKernel.size(),vr.m_device.graphicsQueue,vr.m_device.commandPoolManagers[vr.getFrame()].m_commandpool);
+	VkCommandBuffer cmd = vr.GetCommandBuffer();
+	randomVectorsSSBO.reserve(cmd, ssaoKernel.size());
 	// todo elegant way to do this
-	randomVectorsSSBO.blockingWriteTo(ssaoKernel.size(), ssaoKernel.data(),vr.m_device.graphicsQueue,vr.m_device.commandPoolManagers[vr.getFrame()].m_commandpool);
+	randomVectorsSSBO.writeToCmd(ssaoKernel.size(), ssaoKernel.data(), cmd);
+	vr.SubmitSingleCommandAndWait(cmd);
 
 	uint32_t width = 4;
 	uint32_t height = 4;

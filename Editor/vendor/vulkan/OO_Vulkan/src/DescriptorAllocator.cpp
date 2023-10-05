@@ -13,9 +13,11 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "DescriptorAllocator.h"
 #include "VulkanUtils.h"
+#include "Profiling.h"
 
 void DescriptorAllocator::ResetPools()
 {
+	PROFILE_SCOPED();
 	std::scoped_lock lock{ *m_mut };
 	for (auto p : usedPools){
 		vkResetDescriptorPool(device, p, 0);

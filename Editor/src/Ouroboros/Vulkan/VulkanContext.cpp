@@ -78,9 +78,9 @@ namespace oo
 #ifdef OO_END_PRODUCT
         si.debug = false;
 #else
-        si.debug = false;
+        si.debug = true;
 #endif
-        si.renderDoc = false;
+        si.renderDoc = true;
         si.SurfaceFunctionPointer = std::function<bool()>([&]() {
             return SDL_Vulkan_CreateSurface(m_windowHandle, vr->m_instance.instance, &vr->m_instance.surface);
             });
@@ -125,7 +125,6 @@ namespace oo
                         {
                             OPTICK_EVENT("waiting imgui");
                         }
-                        vr->DrawGUI();
                         // Renderer release mutex
                         TRACY_PROFILE_SCOPE_END();
 

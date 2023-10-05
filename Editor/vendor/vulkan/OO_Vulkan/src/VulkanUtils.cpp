@@ -538,6 +538,18 @@ namespace oGFX
 		endAndSubmitCommandBuffer(device, transferCommandPool, transferQueue, transferCommandBuffer);
 	}
 
+	void CopyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize, VkDeviceSize dstOffset, VkDeviceSize srcOffset)
+	{
+		// region of data to copy from and to
+		VkBufferCopy bufferCopyRegion{};
+		bufferCopyRegion.srcOffset = srcOffset;
+		bufferCopyRegion.dstOffset = dstOffset;
+		bufferCopyRegion.size = bufferSize;
+
+		// command to copy src buffer to dst buffer
+		vkCmdCopyBuffer(cmd, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
+	}
+
 	VkCommandBuffer beginCommandBuffer(VkDevice device, VkCommandPool commandPool)
 	{
 
