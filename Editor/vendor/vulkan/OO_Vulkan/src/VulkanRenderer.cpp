@@ -1402,7 +1402,7 @@ void VulkanRenderer::UploadLights()
 	//memcpy(lightsBuffer.mapped, &lightUBO, sizeof(CB::LightUBO));
 
 	const auto& spotLights = batches.GetLocalLights();
-	m_numShadowcastLights = batches.m_numShadowcastLights;
+	m_numShadowcastLights = batches.m_numShadowCastGrids;
 	auto cmd = GetCommandBuffer();
 	globalLightBuffer[getFrame()].writeToCmd(spotLights.size(), spotLights.data(), cmd);
 

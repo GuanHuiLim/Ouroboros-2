@@ -57,7 +57,7 @@ public:
 	void GenerateTextGeometry(const UIInstance& ui);
 	void GenerateSpriteGeometry(const UIInstance& ui);
 	
-	size_t m_numShadowcastLights{};
+	size_t m_numShadowCastGrids{};
 
 private:
 	GraphicsWorld* m_world{ nullptr };
@@ -70,6 +70,7 @@ private:
 	std::mutex m_uiVertMutex;
 
 	std::vector<LocalLightInstance>m_culledLights;
+	std::vector<LocalLightInstance>m_shadowCasters;
 
 	static inline std::vector<oGFX::IndirectCommand> s_scratchBuffer;
 
