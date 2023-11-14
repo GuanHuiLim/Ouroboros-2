@@ -40,6 +40,7 @@ project "Vulkan"
         "%{IncludeDir.msdfatlas}",
         "%{IncludeDir.msdfgen}",
         "%{IncludeDir.vma}",
+        "%{IncludeDir.NvDLSS}",
         "%{IncludeDir.optick}",
         "%{IncludeDir.freetype}",
 
@@ -48,6 +49,7 @@ project "Vulkan"
         "%{IncludeDir.imgui}",
 
         "%{IncludeDir.VulkanSDK}",
+        "%{IncludeDir.NvDLSS}",
 
         -- assimp will need to be here too [will probably need to put assimp properly in the editor files itself first]
     }

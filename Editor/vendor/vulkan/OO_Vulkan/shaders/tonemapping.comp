@@ -43,7 +43,7 @@ void main()
     // Note: Load operations from any texel that is outside of the boundaries of the bound image will return all zeros.
 	// vec4 inImg = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy) );
 	
-    vec2 uvs = (vec2(gl_GlobalInvocationID.xy) + 0.5) / textureSize(sampler2D(inputImage, basicSampler),0);
+    vec2 uvs = (vec2(gl_GlobalInvocationID.xy) + 0.5) / imageSize(resultImage);
     vec4 res = texture( sampler2D( inputImage, basicSampler), uvs);
     
     //const float middleGray = 1.03 - 2 / (2 + log10(fAveLogLum+1));

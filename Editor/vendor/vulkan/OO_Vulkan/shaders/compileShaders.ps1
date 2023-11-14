@@ -83,6 +83,14 @@ $files | ForEach-Object -Parallel{
 # Define the list of files
 $fidelityFiles = @(
     "spd\ffx_spd_downsample_pass.glsl"	
+    "fsr2\ffx_fsr2_accumulate_pass.glsl"	
+    "fsr2\ffx_fsr2_autogen_reactive_pass.glsl"	
+    "fsr2\ffx_fsr2_compute_luminance_pyramid_pass.glsl"	
+    "fsr2\ffx_fsr2_depth_clip_pass.glsl"	
+    "fsr2\ffx_fsr2_lock_pass.glsl"	
+    "fsr2\ffx_fsr2_rcas_pass.glsl"	
+    "fsr2\ffx_fsr2_reconstruct_previous_depth_pass.glsl"	
+    "fsr2\ffx_fsr2_tcr_autogen_pass.glsl"	
     # Add more file paths as needed
 )
 

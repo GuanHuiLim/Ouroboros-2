@@ -142,11 +142,8 @@ void SSAORenderPass::Draw(const VkCommandBuffer cmdlist)
 	pc.bias = vr.currWorld->ssaoSettings.bias;
 	pc.intensity = vr.currWorld->ssaoSettings.intensity;
 	pc.numSamples = std::clamp<uint32_t>(vr.currWorld->ssaoSettings.samples, 1, 64);
-	VkPushConstantRange range{};
-	range.offset = 0;
-	range.size = sizeof(SSAOPC);
 
-	cmd.SetPushConstant(PSOLayoutDB::SSAOPSOLayout, range, &pc);
+	cmd.SetPushConstant(PSOLayoutDB::SSAOPSOLayout, sizeof(SSAOPC), &pc);
 
 	const auto& ranvecBufer = randomVectorsSSBO.GetDescriptorBufferInfo();
 	cmd.DescriptorSetBegin(0)

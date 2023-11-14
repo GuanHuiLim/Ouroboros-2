@@ -40,12 +40,11 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, const VulkanRenderpas
 	uint32_t w, h;
 	w = textures.front()->width;
 	h = textures.front()->height;
-	bool swapchainTarget = textures.front()->targetSwapchain;
+	bool swapchainTarget = textures.front()->useRenderscale;
 	for (size_t i = 0; i < renderPass.rpci.attachmentCount; i++)
 	{
 		auto& tex = textures[i];
 		const auto& attachmentDes = renderPass.rpci.pAttachments[i];
-		assert(swapchainTarget == tex->targetSwapchain && "Swapchain Target Unexpected!");
 		assert(w == tex->width && h == tex->height && "Incompatible attachment sizes!");
 		assert(attachmentDes.format != VK_FORMAT_UNDEFINED && "Why is this undefined");
 
@@ -76,7 +75,7 @@ bool FramebufferBuilder::Build(VkFramebuffer& framebuffer, const VulkanRenderpas
 	fbInfo.height = h;
 	fbInfo.layers = 1;
 
-	framebuffer = cache->CreateFramebuffer(&fbInfo, std::move(textures), textures.front()->targetSwapchain);
+	framebuffer = cache->CreateFramebuffer(&fbInfo, std::move(textures), textures.front()->useRenderscale);
 
 	return true;
 }

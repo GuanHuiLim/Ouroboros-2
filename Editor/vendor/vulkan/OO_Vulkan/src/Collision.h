@@ -18,6 +18,12 @@ namespace oGFX::coll
 {
 	constexpr static float BARY_EPSILON = { 0.01f };
 
+	enum Collision {
+		OUTSIDE,
+		INTERSECTS,
+		CONTAINS
+	};
+
 bool PointSphere(const Point3D& p, const Sphere& s);
 bool PointSphere(const Sphere& s, const Point3D& p);
 
@@ -30,6 +36,7 @@ bool PointPlane(const Point3D& q, const Plane& p, float epsilon);
 
 float SqDistPointAabb(const Point3D& p, const AABB& a);
 float DistPointPlane(const Point3D& q, const Plane& p);
+float DistanceToPoint(const Plane& p, const Point3D& point);
 
 float ScalarTriple(const Point3D& u, const Point3D& v, const Point3D& w);
 
@@ -41,6 +48,7 @@ bool BaryCentricTriangle(const Point3D& p, const Triangle& tri,float& u, float& 
 bool SphereSphere(const Sphere& a, const Sphere& b);
 
 bool AabbAabb(const AABB& a, const AABB& b);
+bool AabbContains(const AABB& source, const AABB& contain);
 
 bool SphereAabb(const Sphere& s, const AABB& a);
 bool SphereAabb(const AABB& a, const Sphere& s);
@@ -68,10 +76,13 @@ bool PointInTriangle(const Triangle& t, const Point3D& p);
 bool PlaneSphere(const Plane& p, const Sphere& s);
 bool PlaneSphere(const Plane& p, const Sphere& s, float& t);
 bool SphereOnOrForwardPlane(const Plane& p, const Sphere& s);
+bool PointOnOrForwardPlane(const Plane& p, const Point3D& q);
+bool PointOnOrForwardPlane(const Plane& p, const Point3D& q, float* t);
 
 bool PlaneAabb(const Plane& p, const AABB& a);
 bool PlaneAabb(const Plane& p, const AABB& a, float& t);
 
 bool SphereInFrustum(const Frustum& f, const Sphere& s);
+Collision AABBInFrustum(const Frustum& f, const AABB& a, bool draw = false);
 
 }// end namespace oGFX::coll

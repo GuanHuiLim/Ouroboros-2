@@ -39,6 +39,6 @@ void main()
 
 	outLightInstance = int(gl_InstanceIndex);
 
-	gl_Position = uboFrameContext.viewProjection* xform * vec4(inPosition,1.0);
+	gl_Position = uboFrameContext.viewProjJittered* xform * vec4(inPosition,1.0);
 
 }

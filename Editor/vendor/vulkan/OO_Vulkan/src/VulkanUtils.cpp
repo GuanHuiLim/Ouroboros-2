@@ -27,10 +27,7 @@ Technology is prohibited.
 #include <vector>
 
 
-#pragma warning( push )
-#pragma warning( disable : 26451 ) // arithmetic overflow
-#pragma warning( disable : 26495 ) // uninitialized
-#pragma warning( disable : 26819 ) // fallthrough
+#pragma warning( push ,0 )
 #include "loader/stb_image.h"
 #include "loader/DDSLoader.h"
 #pragma warning( pop )
@@ -166,7 +163,7 @@ namespace oGFX
 	
 		static std::vector<VkVertexInputBindingDescription> bindingDescription {	
 			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_VERTEX_BUFFER_ID,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX),
-			oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_INSTANCE_BUFFER_ID,sizeof(oGFX::InstanceData),VK_VERTEX_INPUT_RATE_INSTANCE),
+			//oGFX::vkutils::inits::vertexInputBindingDescription(BIND_POINT_INSTANCE_BUFFER_ID,sizeof(oGFX::InstanceData),VK_VERTEX_INPUT_RATE_INSTANCE),
 		};
 		return bindingDescription;
 	
@@ -182,7 +179,7 @@ namespace oGFX
 		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_VERTEX_BUFFER_ID,4,VK_FORMAT_R32G32_SFLOAT	  ,offsetof(Vertex, tex)),    //Texture attribute
 	
 		// instance data attributes
-		oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_INSTANCE_BUFFER_ID,15,VK_FORMAT_R32G32B32A32_UINT,offsetof(InstanceData, InstanceData::instanceAttributes)),
+		//oGFX::vkutils::inits::vertexInputAttributeDescription(BIND_POINT_INSTANCE_BUFFER_ID,15,VK_FORMAT_R32G32B32A32_UINT,offsetof(InstanceData, InstanceData::instanceAttributes)),
 		};
 		return attributeDescriptions;
 	}
@@ -784,7 +781,7 @@ namespace oGFX
 				VkBufferImageCopy bufferCopyRegion = {};
 				bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				bufferCopyRegion.imageSubresource.mipLevel = 0;
-				bufferCopyRegion.imageSubresource.baseArrayLayer = i;
+				bufferCopyRegion.imageSubresource.baseArrayLayer = (uint32_t)i;
 				bufferCopyRegion.imageSubresource.layerCount = 1;
 				bufferCopyRegion.imageExtent.width = this->w;
 				bufferCopyRegion.imageExtent.height = this->h;
@@ -1483,3 +1480,53 @@ VkDebugReportObjectTypeEXT GetDebugNameExtTypeByID(std::type_index id)
 
 	return ret;	
 }
+
+GPUTransform ConstructGPUTransform(const glm::mat4& m, const glm::mat4& inv, const glm::mat4& p)
+{
+	GPUTransform g;
+
+	g.row0 = vec4(m[0][0], m[1][0], m[2][0], m[3][0]);
+	g.row1 = vec4(m[0][1], m[1][1], m[2][1], m[3][1]);
+	g.row2 = vec4(m[0][2], m[1][2], m[2][2], m[3][2]);
+
+	g.invRow0 = vec4(inv[0][0], inv[1][0], inv[2][0], inv[3][0]);
+	g.invRow1 = vec4(inv[0][1], inv[1][1], inv[2][1], inv[3][1]);
+	g.invRow2 = vec4(inv[0][2], inv[1][2], inv[2][2], inv[3][2]);
+
+	g.prevRow0 = vec4(p[0][0], p[1][0], p[2][0], p[3][0]);
+	g.prevRow1 = vec4(p[0][1], p[1][1], p[2][1], p[3][1]);
+	g.prevRow2 = vec4(p[0][2], p[1][2], p[2][2], p[3][2]);
+
+	return g;
+}
+
+void ffxSpdSetup(uint32_t* dispatchThreadGroupCountXY, uint32_t* workGroupOffset, uint32_t* numWorkGroupsAndMips, uint32_t* rectInfo, int32_t mips)
+{
+	// determines the offset of the first tile to downsample based on
+	// left (rectInfo[0]) and top (rectInfo[1]) of the subregion.
+	workGroupOffset[0] = rectInfo[0] / 64;
+	workGroupOffset[1] = rectInfo[1] / 64;
+
+	uint32_t endIndexX = (rectInfo[0] + rectInfo[2] - 1) / 64;  // rectInfo[0] = left, rectInfo[2] = width
+	uint32_t endIndexY = (rectInfo[1] + rectInfo[3] - 1) / 64;  // rectInfo[1] = top, rectInfo[3] = height
+
+	// we only need to dispatch as many thread groups as tiles we need to downsample
+	// number of tiles per slice depends on the subregion to downsample
+	dispatchThreadGroupCountXY[0] = endIndexX + 1 - workGroupOffset[0];
+	dispatchThreadGroupCountXY[1] = endIndexY + 1 - workGroupOffset[1];
+
+	// number of thread groups per slice
+	numWorkGroupsAndMips[0] = (dispatchThreadGroupCountXY[0]) * (dispatchThreadGroupCountXY[1]);
+
+	if (mips >= 0)
+	{
+		numWorkGroupsAndMips[1] = uint32_t(mips);
+	}
+	else
+	{
+		// calculate based on rect width and height
+		uint32_t resolution = std::max(rectInfo[2], rectInfo[3]);
+		numWorkGroupsAndMips[1] = uint32_t((std::min(std::floor(std::log2(float(resolution))), float(12))));
+	}
+}
+

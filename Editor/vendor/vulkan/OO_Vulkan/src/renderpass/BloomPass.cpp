@@ -36,7 +36,7 @@ struct BloomPass : public GfxRenderpass
 
 private:
 
-	vkutils::Texture2D* PerformBloom(rhi::CommandList& cmd);
+	vkutils::Texture2D* PerformBloom(rhi::CommandList& cmd, vkutils::Texture2D* target);
 	void SetupRenderpass();
 	void CreatePipeline();
 
@@ -63,7 +63,7 @@ void BloomPass::Init()
 	auto swapchainext = vr.m_swapchain.swapChainExtent;
 	vr.attachments.Bloom_brightTarget.name = "bloom_bright";
 	vr.attachments.Bloom_brightTarget.forFrameBuffer(&vr.m_device, vr.G_HDR_FORMAT_ALPHA, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-		swapchainext.width, swapchainext.height, true, 1.0f);
+		swapchainext.width, swapchainext.height, false, 1.0f);
 	vr.fbCache.RegisterFramebuffer(vr.attachments.Bloom_brightTarget);
 	float renderScale = 0.5f;
 	for (size_t i = 0; i < vr.attachments.MAX_BLOOM_SAMPLES; i++)
@@ -71,7 +71,7 @@ void BloomPass::Init()
 		// generate textures with half sizes
 		vr.attachments.Bloom_downsampleTargets[i].name = "bloom_down_" + std::to_string(i);
 		vr.attachments.Bloom_downsampleTargets[i].forFrameBuffer(&vr.m_device, vr.G_HDR_FORMAT_ALPHA, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-			swapchainext.width, swapchainext.height, true, renderScale);
+			swapchainext.width, swapchainext.height, false, renderScale);
 		vr.fbCache.RegisterFramebuffer(vr.attachments.Bloom_downsampleTargets[i]);
 
 		renderScale /= 2.0f;
@@ -103,7 +103,7 @@ void BloomPass::Init()
 	blankInfo.pAttachments = dummyViews.data();
 	// we add this to resize resource tracking
 	const bool resourceTrackonly = true;
-	vr.fbCache.CreateFramebuffer(&blankInfo, std::move(textures), textures.front()->targetSwapchain, resourceTrackonly);
+	vr.fbCache.CreateFramebuffer(&blankInfo, std::move(textures), textures.front()->useRenderscale, resourceTrackonly);
 
 	auto cmd = vr.GetCommandBuffer();
 
@@ -153,7 +153,13 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	rhi::CommandList cmd{ cmdlist, "Bloom"};
 	cmd.BindPSO(pso_bloom_bright, PSOLayoutDB::doubleImageStoreLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
 	
-	auto& mainImage = vr.attachments.lighting_target;
+	vkutils::Texture2D* mainImage;
+	if (vr.m_upscaleType == UPSCALING_TYPE::NONE) {
+		mainImage = &vr.attachments.lighting_target;
+	}
+	else {
+		mainImage = &vr.attachments.fullres_HDR;
+	}
 
 	glm::vec4 col = glm::vec4{ 1.0f,1.0f,1.0f,0.0f };
 	auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
@@ -163,10 +169,10 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 	memcpy(marker.color, &col[0], sizeof(float) * 4);	
 
-	vkutils::Texture2D* previousBuffer{ &mainImage };
+	vkutils::Texture2D* previousBuffer{ mainImage };
 
 	if (vr.currWorld->bloomSettings.enabled == true)
-		previousBuffer = PerformBloom(cmd);	
+		previousBuffer = PerformBloom(cmd, mainImage);
 	
 	marker.pMarkerName = "TonemappingCOMP";
 	if (regionBegin)
@@ -176,7 +182,7 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	// tone mapping 
 	{// composite online main buffer
 		cmd.BindPSO(pso_tone_mapping, PSOLayoutDB::tonemapPSOLayout,VK_PIPELINE_BIND_POINT_COMPUTE);
-		vkutils::Texture2D * outputBuffer = (&vr.attachments.SD_target[0]);
+		vkutils::Texture2D * outputBuffer = (&vr.renderTargets[0].texture);
 		vkutils::Texture2D * inputBuffer = previousBuffer;
 
 		VkDescriptorBufferInfo dbi{};
@@ -201,10 +207,7 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 		pc.midCol.a /= 1000.0f;
 		pc.highCol.a /= 1000.0f;
 
-		VkPushConstantRange pcr{};
-		pcr.offset = 0;
-		pcr.size = sizeof(ColourCorrectPC);
-		cmd.SetPushConstant(PSOLayoutDB::BloomPSOLayout, pcr, &pc);
+		cmd.SetPushConstant(PSOLayoutDB::BloomPSOLayout, sizeof(ColourCorrectPC), &pc);
 
 		cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 
@@ -216,6 +219,7 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 	}
 
 	// FXAA 
+	if(0)
 	{
 		marker.pMarkerName = "FXAACOMP";
 		if (regionBegin)
@@ -267,10 +271,7 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 			pc.colour = vignette.colour;
 			pc.vignetteValues = glm::vec4{vignette.innerRadius, vignette.outerRadius,0.0,0.0};
 
-			VkPushConstantRange pcr{};
-			pcr.offset = 0;
-			pcr.size = sizeof(VignettePC);
-			cmd.SetPushConstant(PSOLayoutDB::BloomPSOLayout, pcr, &pc);
+			cmd.SetPushConstant(PSOLayoutDB::BloomPSOLayout, sizeof(VignettePC), &pc);
 
 			cmd.Dispatch((outputBuffer->width - 1) / 16 + 1, (outputBuffer->height - 1) / 16 + 1);
 
@@ -281,7 +282,10 @@ void BloomPass::Draw(const VkCommandBuffer cmdlist)
 			regionEnd(cmdlist);
 		}
 	}
-	
+	if (previousBuffer != &vr.renderTargets[vr.renderTargetInUseID].texture) 
+	{
+		cmd.CopyImage(previousBuffer, &vr.renderTargets[vr.renderTargetInUseID].texture);
+	}
 }
 
 void BloomPass::Shutdown()
@@ -406,7 +410,7 @@ void BloomPass::CreatePipelineLayout()
 	}
 }
 
-vkutils::Texture2D* BloomPass::PerformBloom(rhi::CommandList& cmd)
+vkutils::Texture2D* BloomPass::PerformBloom(rhi::CommandList& cmd, vkutils::Texture2D* target)
 {
 	auto& vr = *VulkanRenderer::get();
 
@@ -414,7 +418,7 @@ vkutils::Texture2D* BloomPass::PerformBloom(rhi::CommandList& cmd)
 	auto regionBegin = VulkanRenderer::get()->pfnDebugMarkerRegionBegin;
 	auto regionEnd = VulkanRenderer::get()->pfnDebugMarkerRegionEnd;
 
-	auto& mainImage = vr.attachments.lighting_target;
+	vkutils::Texture2D& mainImage = *target;
 
 	VkDebugMarkerMarkerInfoEXT marker = {};
 	marker.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
@@ -438,7 +442,7 @@ vkutils::Texture2D* BloomPass::PerformBloom(rhi::CommandList& cmd)
 			.BindImage(2, &vr.attachments.Bloom_brightTarget, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 			.BindBuffer(3, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-		BloomPC pc;
+		BloomPC pc{};
 		auto knee = vr.currWorld->bloomSettings.threshold * vr.currWorld->bloomSettings.softThreshold;
 		pc.threshold.x = vr.currWorld->bloomSettings.threshold;
 		pc.threshold.y = pc.threshold.x - knee;
@@ -446,11 +450,7 @@ vkutils::Texture2D* BloomPass::PerformBloom(rhi::CommandList& cmd)
 		pc.threshold.w = 0.25f / (knee + 0.00001f);
 		//pc.threshold = vr.m_ShaderDebugValues.vector4_values0;
 
-		VkPushConstantRange pcr{};
-		pcr.offset = 0;
-		pcr.size = sizeof(BloomPC);
-		pcr.stageFlags = VK_SHADER_STAGE_ALL;
-		cmd.SetPushConstant(PSOLayoutDB::brightPixelsLayout, pcr, &pc);
+		cmd.SetPushConstant(PSOLayoutDB::brightPixelsLayout, sizeof(BloomPC), &pc);
 
 		cmd.Dispatch((vr.attachments.Bloom_brightTarget.width - 1) / 16 + 1, (vr.attachments.Bloom_brightTarget.height - 1) / 16 + 1);
 		if (regionEnd)
@@ -479,12 +479,8 @@ vkutils::Texture2D* BloomPass::PerformBloom(rhi::CommandList& cmd)
 				//std::cout << "HOW?\n"; 
 			}
 			float mipLevel = float(i);
-			VkPushConstantRange pcr{};
-			pcr.offset = 0;
-			pcr.size = sizeof(float);
-			pcr.stageFlags = VK_SHADER_STAGE_ALL;
 
-			cmd.SetPushConstant(PSOLayoutDB::BloomPSOLayout, pcr, &mipLevel);
+			cmd.SetPushConstant(PSOLayoutDB::BloomPSOLayout, sizeof(float), &mipLevel);
 
 			cmd.DescriptorSetBegin(0)
 				.BindSampler(0, GfxSamplerManager::GetSampler_BlackBorder())

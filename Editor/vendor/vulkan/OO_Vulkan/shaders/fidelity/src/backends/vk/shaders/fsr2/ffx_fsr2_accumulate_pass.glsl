@@ -27,6 +27,9 @@
 // Needed for rw_upscaled_output declaration
 #extension GL_EXT_shader_image_load_formatted : require
 
+#define FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS 1
+
+
 #define FSR2_BIND_SRV_INPUT_EXPOSURE                         0
 #define FSR2_BIND_SRV_DILATED_REACTIVE_MASKS                 1
 #if FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS

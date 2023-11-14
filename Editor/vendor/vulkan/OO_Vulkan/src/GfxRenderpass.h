@@ -31,6 +31,7 @@ enum GBufferAttachmentIndex
     ALBEDO ,
     MATERIAL ,
     EMISSIVE ,
+    VELOCITY ,
     ENTITY_ID,
     DEPTH ,
 

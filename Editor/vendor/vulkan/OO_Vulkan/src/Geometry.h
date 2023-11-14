@@ -48,20 +48,22 @@ struct Plane
 
 struct Frustum
 {
-	Plane top;
-	Plane bottom;
-	Plane right;
-	Plane left;
-	Plane planeFar;
-	Plane planeNear;
+	Plane top{};
+	Plane bottom{};
+	Plane right{};
+	Plane left{};
+	Plane planeFar{};
+	Plane planeNear{};
 
 
-	Point3D pt_top;
-	Point3D pt_bottom;
-	Point3D pt_right;
-	Point3D pt_left;
-	Point3D pt_planeFar;
-	Point3D pt_planeNear;
+	Point3D pt_top{};
+	Point3D pt_bottom{};
+	Point3D pt_right{};
+	Point3D pt_left{};
+	Point3D pt_planeFar{};
+	Point3D pt_planeNear{};
+
+	static Frustum CreateFromViewProj(glm::mat4 mat);
 };
 
 struct Triangle

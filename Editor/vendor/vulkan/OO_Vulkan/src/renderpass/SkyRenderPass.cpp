@@ -111,11 +111,8 @@ void SkyRenderPass::Draw(const VkCommandBuffer cmdlist)
 
 	LightPC pc{};
 	pc.ambient = vr.currWorld->lightSettings.ambient;
-	VkPushConstantRange pcr{};
-	pcr.size = sizeof(LightPC);
-	pcr.stageFlags = VK_SHADER_STAGE_ALL;
 
-	cmd.SetPushConstant(PSOLayoutDB::skypassPSOLayout, pcr, &pc);
+	cmd.SetPushConstant(PSOLayoutDB::skypassPSOLayout, sizeof(LightPC), &pc);
 
 	cmd.BindDescriptorSet(PSOLayoutDB::skypassPSOLayout, 1, 1, &vr.descriptorSets_uniform[currFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, 1, &dynamicOffset);
 

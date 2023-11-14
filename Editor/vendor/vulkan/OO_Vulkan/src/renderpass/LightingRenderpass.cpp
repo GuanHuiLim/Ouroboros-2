@@ -130,7 +130,7 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 		.BindImage(5, &attachments[GBufferAttachmentIndex::EMISSIVE], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(6, &vr.attachments.shadow_depth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		.BindImage(7, &vr.attachments.SSAO_finalTarget, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
-		.BindBuffer(8, &vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.BindBuffer(8, &vr.globalLightBuffer.GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.BindSampler(9, GfxSamplerManager::GetSampler_Cube()) // cube sampler
 		.BindImage(10, &vr.g_radianceMap, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) // cube map
 		.BindImage(11, &vr.g_prefilterMap, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) // prefilter map
@@ -139,10 +139,10 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	
 	cmd.SetDefaultViewportAndScissor();
 
-	const auto& info = vr.globalLightBuffer[currFrame].GetDescriptorBufferInfo();
+	const auto& info = vr.globalLightBuffer.GetDescriptorBufferInfo();
 
 	cmd.DescriptorSetBegin(2)
-		.BindBuffer(4, &vr.globalLightBuffer[currFrame].GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		.BindBuffer(4, &vr.globalLightBuffer.GetDescriptorBufferInfo(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 	//CreateDescriptors();
 
@@ -176,10 +176,7 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	pc.maxBias = vr.currWorld->lightSettings.maxBias;
 	pc.mulBias = vr.currWorld->lightSettings.biasMultiplier;
 	
-	VkPushConstantRange range;
-	range.offset = 0;
-	range.size = sizeof(LightPC);
-	cmd.SetPushConstant(PSOLayoutDB::lightingPSOLayout,range,&pc);
+	cmd.SetPushConstant(PSOLayoutDB::lightingPSOLayout, sizeof(LightPC), &pc);
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
@@ -199,7 +196,7 @@ void LightingPass::Draw(const VkCommandBuffer cmdlist)
 	cmd.BindPSO(pso_deferredBox, PSOLayoutDB::lightingPSOLayout);
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
+	//cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer.getBufferPtr());
 
 	cmd.DrawIndexed(cube.indicesCount, (uint32_t)lightCnt, cube.baseIndices, cube.baseVertex, 0);
 
@@ -291,7 +288,7 @@ void LightingPass::CreateDescriptors()
 
 	// TODO: Proper light buffer
 	// TODO: How to handle shadow map sampling?
-	const auto& dbi = vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo();
+	const auto& dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
     DescriptorBuilder::Begin()
         .BindImage(0, &sampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .BindImage(1, &texDescriptorDepth, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS) // we construct world position using depth
@@ -315,7 +312,7 @@ void LightingPass::CreatePipelineLayout()
 		VK_NULL_HANDLE,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	
-	const auto& dbi = vr.globalLightBuffer[vr.getFrame()].GetDescriptorBufferInfo();
+	const auto& dbi = vr.globalLightBuffer.GetDescriptorBufferInfo();
 	DescriptorBuilder::Begin()
 		.BindImage(0, &dummy, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.BindImage(1, &dummy, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_ALL_GRAPHICS) // we construct world position using depth

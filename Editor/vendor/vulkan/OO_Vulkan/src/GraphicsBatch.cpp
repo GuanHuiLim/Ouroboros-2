@@ -13,12 +13,14 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "GraphicsBatch.h"
 
+#include "GraphicsWorld.h"
 #include "VulkanRenderer.h"
 #include "MathCommon.h"
-#include "GraphicsWorld.h"
+#include "OctTree.h"
 #include "gpuCommon.h"
 #include <cassert>
 #include "Profiling.h"
+#include "DebugDraw.h"
 
 //#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 //#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
@@ -27,6 +29,164 @@ Technology is prohibited.
 
 #include <sstream>
 #include <numeric>
+
+DrawData ObjectInsToDrawData(const ObjectInstance& obj)
+{
+	DrawData dd;
+	dd.bindlessGlobalTextureIndex_Albedo = obj.bindlessGlobalTextureIndex_Albedo;
+	dd.bindlessGlobalTextureIndex_Normal = obj.bindlessGlobalTextureIndex_Normal;
+	dd.bindlessGlobalTextureIndex_Roughness = obj.bindlessGlobalTextureIndex_Roughness;
+	dd.bindlessGlobalTextureIndex_Metallic = obj.bindlessGlobalTextureIndex_Metallic;
+	dd.bindlessGlobalTextureIndex_Emissive = obj.bindlessGlobalTextureIndex_Emissive;
+	dd.emissiveColour = obj.emissiveColour;
+	dd.localToWorld = obj.localToWorld;
+	dd.prevLocalToWorld = obj.prevLocalToWorld;
+	dd.entityID = obj.entityID; // Unique ID for this entity instance
+	dd.flags = obj.flags;
+	dd.instanceData = obj.instanceData;
+	dd.ptrToBoneBuffer = &obj.bones;
+	dd.modelID = obj.modelID;
+	return dd;
+}
+
+oGFX::AABB getBoxFun(ObjectInstance& oi)
+{
+	auto& vr = *VulkanRenderer::get();
+	auto& models = vr.g_globalModels;
+	auto& submeshes = vr.g_globalSubmesh;
+
+	oGFX::AABB box;
+	auto& mdl = models[oi.modelID];
+
+	oGFX::Sphere bs = submeshes[mdl.m_subMeshes.front()].boundingSphere;
+
+	float sx = glm::length(glm::vec3(oi.localToWorld[0][0], oi.localToWorld[1][0], oi.localToWorld[2][0]));
+	float sy = glm::length(glm::vec3(oi.localToWorld[0][1], oi.localToWorld[1][1], oi.localToWorld[2][1]));
+	float sz = glm::length(glm::vec3(oi.localToWorld[0][2], oi.localToWorld[1][2], oi.localToWorld[2][2]));
+
+	box.center = vec3(oi.localToWorld * vec4(bs.center, 1.0));
+	float maxSize = std::max(sx, std::max(sy, sz));
+	maxSize *= bs.radius;
+	box.halfExt = vec3{ maxSize };
+	return box;
+};
+
+void CullDrawData(const oGFX::Frustum& f, std::vector<DrawData>& outData, const std::vector<ObjectInstance*>& contained, const std::vector<ObjectInstance*>& intersecting, bool draw = false)
+{
+	PROFILE_SCOPED();
+	auto& vr = *VulkanRenderer::get();
+
+	outData.clear();
+	outData.reserve(contained.size() + intersecting.size());	
+
+	for (size_t i = 0; i < contained.size(); i++)
+	{
+		ObjectInstance& src = *contained[i];
+
+		if (src.isRenderable() == false) continue;
+
+		if(draw)
+			oGFX::DebugDraw::AddAABB(getBoxFun(src), oGFX::Colors::GREEN);
+		DrawData dd = ObjectInsToDrawData(src);
+		gfxModel& mdl = vr.g_globalModels[src.modelID];
+		for (size_t s = 0; s < mdl.m_subMeshes.size(); s++)
+		{
+			// add draw call for each submesh
+			if (src.submesh[s] == true)
+			{
+				dd.submeshID = mdl.m_subMeshes[s];
+				outData.push_back(dd);
+			}
+		}
+
+	}
+	size_t intersectAccepted{};
+	for (size_t i = 0; i < intersecting.size(); i++)
+	{
+		ObjectInstance& src = *intersecting[i];
+
+		if (src.isRenderable() == false) continue;
+		if (draw)
+			oGFX::DebugDraw::AddAABB(getBoxFun(src), oGFX::Colors::RED);
+		if (oGFX::coll::AABBInFrustum(f, getBoxFun(src), draw) != oGFX::coll::OUTSIDE) {
+			DrawData dd = ObjectInsToDrawData(src);
+			gfxModel& mdl = vr.g_globalModels[src.modelID];
+			for (size_t s = 0; s < mdl.m_subMeshes.size(); s++)
+			{
+				// add draw call for each submesh
+				if (src.submesh[s] == true)
+				{
+					dd.submeshID = mdl.m_subMeshes[s];
+					outData.push_back(dd);
+				}
+			}
+			if (draw)
+				oGFX::DebugDraw::AddAABB(getBoxFun(src), oGFX::Colors::YELLOW);
+			intersectAccepted++;
+		}
+	}
+	//printf("Accepted Entities-%3llu/%3llu Intersect-%3llu/%3llu\n", m_DenseObjectsCopy.size(), m_ObjectInstances.size(), intersectAccepted, intersectEnt.size());
+}
+
+void SortDrawDataByMesh(std::vector<DrawData>& drawData)
+{
+	std::sort(drawData.begin(), drawData.end(),
+		[](const DrawData& L, const DrawData& R) {return L.submeshID < R.submeshID; });
+}
+
+void AppendBatch(std::vector<oGFX::IndirectCommand>& dest, oGFX::IndirectCommand cmd, uint32_t cnt)
+{
+	if (cnt > 0)
+	{
+		cmd.instanceCount = cnt;
+		dest.emplace_back(cmd);
+	}
+}
+#pragma optimize("" ,off)
+void GenerateCommands(const std::vector<DrawData>& entities, std::vector<oGFX::IndirectCommand>& commands, ObjectInstanceFlags filter)
+{
+	auto& vr = *VulkanRenderer::get();
+
+	int32_t currModelID{ -1 };
+	int32_t cnt{ 0 };
+	oGFX::IndirectCommand indirectCmd{};
+
+	for (size_t y = 0; y < entities.size(); y++)
+	{
+		auto& ent = entities[y];
+		auto& subMesh = vr.g_globalSubmesh[ent.submeshID];
+
+		if (ent.submeshID != currModelID) // check if we are using the same model
+		{
+			currModelID = ent.submeshID;
+
+			AppendBatch(commands, indirectCmd, indirectCmd.instanceCount);
+
+			// append to the batches
+			// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
+			indirectCmd.firstInstance += indirectCmd.instanceCount;
+
+			// reset indirect command				
+			indirectCmd.instanceCount = 0;
+			indirectCmd.firstIndex = subMesh.baseIndices;
+			indirectCmd.indexCount = subMesh.indicesCount;
+			indirectCmd.vertexOffset = subMesh.baseVertex;
+
+			auto& s = subMesh.boundingSphere;
+			indirectCmd.sphere = glm::vec4(s.center, s.radius);
+
+		}
+
+		// increment based on filter
+		//if ((ent.flags&filter) == filter)
+		{
+			indirectCmd.instanceCount++;
+		}
+	}
+
+	// append last batch if any
+	AppendBatch(commands, indirectCmd, indirectCmd.instanceCount);
+}
 
 void GraphicsBatch::Init(GraphicsWorld* gw, VulkanRenderer* renderer, size_t maxObjects)
 {
@@ -40,13 +200,20 @@ void GraphicsBatch::Init(GraphicsWorld* gw, VulkanRenderer* renderer, size_t max
 	{
 		batch.reserve(maxObjects);
 	}
+
+	m_casterData.resize(MAX_LIGHTS);
+	for (auto& cd :m_casterData)
+	{
+		const size_t cubeFaces = 6;
+		for (size_t face = 0; face < cubeFaces; face++)
+		{
+			cd.m_commands[face].clear();
+			cd.m_culledObjects[face].clear();
+		}
+	}
+
 	s_scratchBuffer.reserve(maxObjects);
 
-}
-
-void AppendBatch(std::vector<oGFX::IndirectCommand>& dest, std::vector<oGFX::IndirectCommand>& src)
-{
-	dest.insert(dest.end(), src.begin(), src.end());
 }
 
 void GraphicsBatch::GenerateBatches()
@@ -60,16 +227,6 @@ void GraphicsBatch::GenerateBatches()
 	}
 
 	ProcessGeometry();
-
-	for (auto& batch : m_batches)
-	{
-		// set up first instance index
-		//std::for_each(batch.begin(), batch.end(),
-		//	[x = uint32_t{ 0 }](oGFX::IndirectCommand& c) mutable { 
-		//	c.firstInstance = c.firstInstance == 0 ? x++ : x - 1;
-		//});
-	}
-
 	
 	ProcessUI();
 
@@ -81,6 +238,9 @@ void GraphicsBatch::GenerateBatches()
 
 void GraphicsBatch::ProcessLights()
 {
+	PROFILE_SCOPED();
+	VulkanRenderer& vr = *VulkanRenderer::get();
+
 	for (auto& light : m_world->m_OmniLightCopy)
 	{
 		constexpr glm::vec3 up{ 0.0f,1.0f,0.0f };
@@ -137,7 +297,6 @@ void GraphicsBatch::ProcessLights()
 		s.center = e.position;
 		s.radius = e.radius.x;
 
-		auto existing = GetLightEnabled(e);
 		auto renderLight = GetLightEnabled(e);
 		if (oGFX::coll::SphereInFrustum(frust, s))		
 		{ 			
@@ -162,25 +321,12 @@ void GraphicsBatch::ProcessLights()
 		si.color = e.color;
 		si.radius = e.radius;
 		si.projection = e.projection;
-		//if (GetCastsShadows(e))
-		//{
-		//	e.info.y = gridIdx;
-		//	if (e.info.x == 1) // type one is omnilight
-		//	{
 		//		// loop through all faces
 		for (size_t i = 0; i < 6; i++)
 		{
 			// setup views
 			si.view[i] = e.view[i];
 		}
-		//	}
-		//	else // else spotlight?
-		//	{
-		//		++m_numShadowcastLights;
-		//		si.view[0] = e.view[++viewIter % 6];
-		//		++gridIdx;
-		//	}
-		//}
 		m_culledLights.emplace_back(si);
 	}
 
@@ -194,7 +340,8 @@ void GraphicsBatch::ProcessLights()
 		if (GetCastsShadows(m_culledLights[i])) {
 			shadowLights.emplace_back(&m_culledLights[i]);
 		}
-		SetCastsShadows(m_culledLights[i], false);
+		// disable the data for lighting pass to ignore as a shadow light
+		SetCastsShadows(m_culledLights[i], false); 
 	}
 	// sort lights by distance
 	std::sort(shadowLights.begin(), shadowLights.end(), [camPos = camera.m_position](const LocalLightInstance* l, const LocalLightInstance* r) {
@@ -206,10 +353,15 @@ void GraphicsBatch::ProcessLights()
 		return distL < distR;
 	});
 
+	m_shadowCasters.clear();
 	int32_t numLights{};
-	for (auto ePtr : shadowLights)
+
+	std::vector<ObjectInstance*> containedEnt;
+	std::vector<ObjectInstance*> intersectEnt;
+	for (LocalLightInstance* ePtr : shadowLights)
 	{
-		auto& e = *ePtr;
+		LocalLightInstance& e = *ePtr;
+		// enable the data for lighting pass to use as a shadow light
 		SetCastsShadows(e,true);
 		{
 			e.info.y = gridIdx;
@@ -228,9 +380,37 @@ void GraphicsBatch::ProcessLights()
 				++gridIdx;
 			}
 
+			
+			CastersData& caster = m_casterData[numLights];			
+			glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, e.radius.x);
+
+			for (size_t face = 0; face < 6; face++)
+			{
+				glm::mat4 vp = lightProj * e.view[face];
+				oGFX::Frustum f = oGFX::Frustum::CreateFromViewProj(vp);					
+				
+				bool draw = false;
+
+				containedEnt.clear();
+				intersectEnt.clear();
+				m_world->m_OctTree->GetEntitiesInFrustum(f, containedEnt, intersectEnt);
+				
+
+				CullDrawData(f, caster.m_culledObjects[face], containedEnt, intersectEnt, draw);
+				SortDrawDataByMesh(caster.m_culledObjects[face]);
+				GenerateCommands(caster.m_culledObjects[face], caster.m_commands[face]
+					, ObjectInstanceFlags::SHADOW_CASTER | ObjectInstanceFlags::RENDER_ENABLED);
+
+				// size_t tree = containedEnt.size() + intersectEnt.size();
+				// size_t culled = caster.m_culledObjects[face].size();
+				// size_t commands = caster.m_commands[face].size();
+				//printf("F[%1llu] total[%3llu] cull[%3llu] cmd[%3llu]\n", face, tree, culled, commands);
+			}
+
 			numLights++;
 		}
-		if (numLights > 2) break;
+		m_shadowCasters.emplace_back(e);
+		if (numLights >= MAX_LIGHTS) break;
 	}
 
 
@@ -240,86 +420,18 @@ void GraphicsBatch::ProcessGeometry()
 {
 	using Batch = GraphicsBatch::DrawBatch;
 	using Flags = ObjectInstanceFlags;
-	auto& entities = m_world->m_objectsCopy;
-	int32_t currModelID{ -1 };
-	int32_t cnt{ 0 };
-	for (auto& ent : entities)
-	{
-		auto& model = m_renderer->g_globalModels[ent.modelID];
+	
+	oGFX::Frustum f;
+	std::vector<ObjectInstance*> containedEnt;
+	std::vector<ObjectInstance*> intersectEnt;
 
-		// skip entities dont want to render
-		//if (ent.isRenderable() == false)
-		//{
-		//	// still increment instance
-		//	++cnt;
-		//	continue;
-		//}
-
-		if (ent.modelID != currModelID) // check if we are using the same model
-		{
-			s_scratchBuffer.clear();
-			for (size_t i = 0; i < model.m_subMeshes.size(); i++)
-			{
-				if (ent.submesh[i] == true)
-				{
-					const auto& subMesh = model.m_subMeshes[i];
-					// clear the buffer to prepare for this model
-					oGFX::IndirectCommand indirectCmd{};
-					indirectCmd.instanceCount = ent.isRenderable();
-
-					// this is the number invoked by the graphics pipeline as the instance id (location = 15) etc..
-					// the number represents the index into the InstanceData array see VulkanRenderer::UploadInstanceData();
-					indirectCmd.firstInstance = cnt++; 
-
-					indirectCmd.firstIndex = model.baseIndices + subMesh.baseIndices;
-					indirectCmd.indexCount = subMesh.indicesCount;
-					indirectCmd.vertexOffset = model.baseVertex + subMesh.baseVertex;
-
-					auto& s = model.m_subMeshes[i].boundingSphere;
-					indirectCmd.sphere = glm::vec4(s.center,s.radius);
-
-					s_scratchBuffer.emplace_back(indirectCmd);
-				}
-			}
-		}
-
-		if (ent.isShadowEnabled())
-		{
-			AppendBatch(m_batches[Batch::SHADOW_CAST], s_scratchBuffer);
-		}
-
-		if (ent.isDynamic())
-		{
-			if (ent.isTransparent())
-			{
-				AppendBatch(m_batches[Batch::FORWARD_DYNAMIC], s_scratchBuffer);
-			}
-			else
-			{
-				AppendBatch(m_batches[Batch::GBUFFER_DYNAMIC], s_scratchBuffer);
-			}
-		}
-
-		//if (ent.flags & Flags::ENABLE_ZPREPASS)
-		//{
-		//	AppendBatch(m_batches[Batch::ZPREPASS], s_scratchBuffer);
-		//}
-		//
-		//if (ent.flags & Flags::EMITTER)
-		//{
-		//	AppendBatch(m_batches[Batch::LIGHT_SPOT], s_scratchBuffer);
-		//}
-
-		if (ent.isShadowEnabled())
-		{
-			// get shadow enabled lights
-			AppendBatch(m_batches[Batch::SHADOW_LIGHT], s_scratchBuffer);
-		}
-
-		// append to the batches
-		AppendBatch(m_batches[Batch::ALL_OBJECTS], s_scratchBuffer);
-
-	}
+	f = m_world->cameras[0].GetFrustum();
+	containedEnt.clear();
+	intersectEnt.clear();
+	m_world->m_OctTree->GetEntitiesInFrustum(f, containedEnt, intersectEnt);
+	CullDrawData(f, m_culledCameraObjects, containedEnt, intersectEnt);
+	SortDrawDataByMesh(m_culledCameraObjects);
+	GenerateCommands(m_culledCameraObjects, m_batches[Batch::ALL_OBJECTS], Flags::RENDER_ENABLED);
 }
 
 void GraphicsBatch::ProcessUI()
@@ -465,10 +577,10 @@ void GraphicsBatch::ProcessParticleEmitters()
 			// create a draw call for each submesh using the same instance data
 			if (emitter.submesh[i] == true)
 			{
-				const auto& subMesh = model.m_subMeshes[i];
-				cmd.firstIndex = model.baseIndices + subMesh.baseIndices;
+				const auto& subMesh = m_renderer->g_globalSubmesh[model.m_subMeshes[i]];
+				cmd.firstIndex = subMesh.baseIndices;
 				cmd.indexCount = subMesh.indicesCount;
-				cmd.vertexOffset = model.baseVertex + subMesh.baseVertex;
+				cmd.vertexOffset = subMesh.baseVertex;
 				m_particleCommands.push_back(cmd);
 			}
 		}
@@ -505,6 +617,11 @@ const std::vector<oGFX::UIVertex>& GraphicsBatch::GetUIVertices()
 const std::vector<LocalLightInstance>& GraphicsBatch::GetLocalLights()
 {
 	return m_culledLights;
+}
+
+const std::vector<LocalLightInstance>& GraphicsBatch::GetShadowCasters()
+{
+	return m_shadowCasters;
 }
 
 size_t GraphicsBatch::GetScreenSpaceUIOffset() const
@@ -552,6 +669,7 @@ void GraphicsBatch::GenerateSpriteGeometry(const UIInstance& ui)
 	}
 
 }
+
 
 void GraphicsBatch::GenerateTextGeometry(const UIInstance& ui)
 {

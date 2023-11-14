@@ -13,77 +13,99 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "OctTree.h"
 #include "BoudingVolume.h"
+#include "Collision.h"
+#include "GraphicsWorld.h"
+#include "Profiling.h"
 #include <algorithm>
 #include <iostream>
 
+glm::vec3 g_max{-1e10};
+glm::vec3 g_min{ 1e10 };
+
 namespace oGFX {
 
-OctTree::OctTree(const std::vector<Point3D>& vertices, const std::vector<uint32_t>& indices, int maxTriangles)
+	OctTree::OctTree(const AABB rootBox, int stopDepth)
 {
-	m_vertices = vertices;
-	m_indices = indices;
-	m_maxNodesTriangles = maxTriangles;
+	m_maxDepth = stopDepth;
+	m_root.reset(nullptr);
+	m_root = std::make_unique<OctNode>();
+	m_root->box = rootBox;
 
 }
 
-
-std::tuple< std::vector<Point3D>, std::vector<uint32_t>,std::vector<uint32_t> > OctTree::GetTriangleList()
+void OctTree::Insert(ObjectInstance* entity, AABB objBox)
 {
-	std::vector<Point3D> vertices;
-	std::vector<uint32_t> indices;
-	std::vector<uint32_t> depth;
+	PROFILE_SCOPED();
+	NodeEntry entry;
+	entry.box = objBox;
+	entry.obj = entity;
+	PerformInsert(m_root.get(), entry);
 
-	GatherTriangles(m_root.get(), vertices, indices,depth);
+	auto bmax = entry.box.max();
+	auto bmin = entry.box.min();
 
-	return std::tuple< std::vector<Point3D>, std::vector<uint32_t>,std::vector<uint32_t> >(vertices,indices,depth);
+	g_max.x = std::max(g_max.x, bmax.x);
+	g_max.y = std::max(g_max.y, bmax.y);
+	g_max.z = std::max(g_max.z, bmax.z);
+
+	g_min.x = std::min(g_min.x, bmin.x);
+	g_min.y = std::min(g_min.y, bmin.y);
+	g_min.z = std::min(g_min.z, bmin.z);
 }
 
-std::tuple<std::vector<AABB>, std::vector<uint32_t>> OctTree::GetActiveBoxList()
+void OctTree::Remove(ObjectInstance* entity)
 {
-	std::vector<AABB> boxes; std::vector<uint32_t> depth;
+	PROFILE_SCOPED();
+	OctNode* node = entity->treeNode;
+	//OO_ASSERT(node && "Entity did not record the node");
+	if (node == nullptr) return; // what could go wrong
 
+	auto it = std::find_if(node->entities.begin(), node->entities.end(), [chk = entity](const NodeEntry& e) { return e.obj == chk; });
+	if (it != node->entities.end()) 
+	{
+		std::swap(*it, node->entities.back());
+		node->entities.pop_back();
+		entity->treeNode = nullptr;
+		--m_nodes;
+		return;
+	}
+
+	OO_ASSERT(false && "Entity does not exist in node it points to");
+}
+
+void OctTree::GetEntitiesInFrustum(const Frustum& frust, std::vector<ObjectInstance*>& contained, std::vector<ObjectInstance*>& intersecting)
+{
+	PROFILE_SCOPED();
+	GatherFrustEntities(m_root.get(), frust, contained, intersecting);	
+}
+
+void OctTree::GetActiveBoxList(std::vector<AABB>& boxes, std::vector<uint32_t>& depth)
+{
 	boxes.push_back(m_root->box);
 	depth.push_back(0);
-	GatherBox(m_root.get(), boxes, depth);
-
-	return std::tuple< std::vector<AABB>, std::vector<uint32_t> >(boxes,depth);
+	GatherBoxWithDepth(m_root.get(), boxes, depth);
 }
 
-void OctTree::Rebuild()
-{
-	for (size_t i = 0; i < s_num_children; i++) m_boxesInsertCnt[i] = 0;
-	
-	m_root.reset(nullptr);
-	m_trianglesSaved = 0;
-	m_trianglesRemaining = uint32_t(m_indices.size() / 3);
-
-	m_root = std::make_unique<OctNode>();
-
-	oGFX::BV::BoundingAABB(m_root->box, m_vertices);
-	AABB& box = m_root->box;
-	float max = std::max({ box.halfExt.x,box.halfExt.y,box.halfExt.z });
-	box.halfExt = Point3D(max, max, max);
-
-	SplitNode(m_root.get(), m_root->box, m_vertices, m_indices);
-
-	//for (size_t i = 0; i < s_num_children; i++)
-	//	std::cout << "Inserted into box [" << i << "] - " << m_boxesInsertCnt[i] << " times\n";
+void OctTree::GetBoxesInFrustum(const Frustum& frust, std::vector<AABB>& contains, std::vector<AABB>& intersects)
+{	
+	GatherFrustBoxes(m_root.get(), frust, contains, intersects);
 }
 
-void OctTree::SetTriangles(int maxTrianges)
+void OctTree::ClearTree()
 {
-	m_maxNodesTriangles = maxTrianges;
-	m_maxNodesTriangles = std::max(static_cast<uint32_t>(m_maxNodesTriangles) , s_stop_triangles);
+	PerformClear(m_root.get());
+	if (m_root->box.max() != g_max || m_root->box.min() != g_min) {
+		ResizeTree(AABB{g_min,g_max});
+		g_max = glm::vec3{ FLT_MIN };
+		g_min = glm::vec3{ FLT_MAX };
+	}
+	m_nodes = 0;
 }
 
-int OctTree::GetTriangles()
+void OctTree::ResizeTree(const AABB& box)
 {
-	return m_maxNodesTriangles;
-}
-
-float OctTree::progress()
-{
-	return static_cast<float>(m_trianglesSaved)/m_trianglesRemaining;
+	PROFILE_SCOPED();
+	ResizeTreeBounds(m_root.get(), box);
 }
 
 uint32_t OctTree::size() const
@@ -91,209 +113,231 @@ uint32_t OctTree::size() const
 	return m_nodes;
 }
 
-void OctTree::SplitNode(OctNode* node, const AABB& box, const std::vector<Point3D>& vertices, const std::vector<uint32_t>& indices)
-{
-	const uint32_t currDepth = node->depth + 1;
-	const uint32_t numTriangles = static_cast<uint32_t>(indices.size()) / 3;
-
-	if (currDepth > m_maxDepth
-		|| (numTriangles <= m_maxNodesTriangles))
-	{
-		node->type = OctNode::LEAF;
-		node->nodeID = ++m_nodes;
-		if (currDepth > s_stop_depth)
-		{
-			//std::cout << "Depth limit reached!" << std::endl;
-		}
-		m_trianglesSaved += numTriangles;
-		node->vertices =(vertices);
-		node->indices = (indices);
-	}
-	else
-	{
-		node->type = OctNode::INTERNAL;
-		const Plane xPlane({ 1.0f,0.0f,0.0f }, box.center.x);
-		const Plane yPlane({ 0.0f,1.0f,0.0f }, box.center.y);
-		const Plane zPlane({ 0.0f,0.0f,1.0f }, box.center.z);
-
-		// xsplit
-		std::vector<Point3D> positiveVerts;
-		std::vector<uint32_t> positiveIndices;
-		std::vector<Point3D> negativeVerts;
-		std::vector<uint32_t> negativeIndices;
-		PartitionTrianglesAlongPlane(vertices, indices, xPlane,positiveVerts,positiveIndices,negativeVerts,negativeIndices);
-
-		// ysplit
-		std::vector<Point3D> lowerPositiveVerts;
-		std::vector<uint32_t> lowerPositiveIndices;
-		std::vector<Point3D> upperPositiveVerts;
-		std::vector<uint32_t> upperPositiveIndices;
-		PartitionTrianglesAlongPlane(positiveVerts, positiveIndices, yPlane,upperPositiveVerts,upperPositiveIndices,lowerPositiveVerts,lowerPositiveIndices);
-
-		std::vector<Point3D> lowerNegativeVerts;
-		std::vector<uint32_t> lowerNegativeIndices;
-		std::vector<Point3D> upperNegativeVerts;
-		std::vector<uint32_t> upperNegativeIndices;
-		PartitionTrianglesAlongPlane(negativeVerts, negativeIndices, yPlane,upperNegativeVerts,upperNegativeIndices,lowerNegativeVerts,lowerNegativeIndices);
-
-		// zsplit
-		std::vector<Point3D> octantVerts[s_num_children];
-		std::vector<uint32_t> octantInds[s_num_children];
-		PartitionTrianglesAlongPlane(lowerPositiveVerts, lowerPositiveIndices, zPlane, octantVerts[5], octantInds[5], octantVerts[1], octantInds[1]);
-		PartitionTrianglesAlongPlane(upperPositiveVerts, upperPositiveIndices, zPlane, octantVerts[7], octantInds[7], octantVerts[3], octantInds[3]);
-		PartitionTrianglesAlongPlane(lowerNegativeVerts, lowerNegativeIndices, zPlane, octantVerts[4], octantInds[4], octantVerts[0], octantInds[0]);
-		PartitionTrianglesAlongPlane(upperNegativeVerts, upperNegativeIndices, zPlane, octantVerts[6], octantInds[6], octantVerts[2], octantInds[2]);
-
-		//if (currDepth < 3)
-		//{
-		//	std::cout << currDepth << "- start tris[" << numTriangles << "] " << std::endl;
-		//	size_t thisTotalTri{};
-		//	for (size_t i = 0; i < s_num_children; i++)
-		//	{
-		//		thisTotalTri += static_cast<size_t>(octantInds[i].size()) / 3;
-		//		std::cout << "oct_" << i << " tris[" << octantInds[i].size() / 3<< "] " << std::endl;
-		//	}
-		//	std::cout << "\ttotal:" << thisTotalTri << std::endl;
-		//}
-
-		Point3D position;
-		float step = box.halfExt.x * 0.5f;
-		assert(step != 0.0f);
-		for (size_t i = 0; i < s_num_children; i++)
-		{
-			position.x = ((i & 1) ? step : -step);
-			position.y = ((i & 2) ? step : -step);
-			position.z = ((i & 4) ? step : -step);
-			AABB childBox;
-			childBox.center = box.center + position;
-			childBox.halfExt = Point3D{ step,step,step };
-
-			if(octantVerts->size())
-				++m_boxesInsertCnt[i];
-			node->children[i] = std::make_unique<OctNode>();
-			node->children[i]->depth = currDepth;
-			//node->children[i]->nodeID = ++m_nodes;
-			node->children[i]->box = childBox;
-			SplitNode(node->children[i].get(),childBox, octantVerts[i], octantInds[i]);
-			//if (octantVerts[i].size())
-			//{
-			//	
-			//}
-		}
-	}
-	//std::cout << "Depth:" << currDepth << " Tris:" << numTriangles << std::endl;
-
-}
-
-void OctTree::PartitionTrianglesAlongPlane(const std::vector<Point3D>& vertices, const std::vector<uint32_t>& indices, const Plane& plane,
-	std::vector<Point3D>& positiveVerts, std::vector<uint32_t>& positiveIndices,
-	std::vector<Point3D>& negativeVerts, std::vector<uint32_t>& negativeIndices)
-{
-	const uint32_t numTriangles = static_cast<uint32_t>(indices.size()) / 3;
-
-	for (size_t i = 0; i < numTriangles; i++)
-	{
-		Point3D v[3];
-		v[0] = vertices[indices[i*3 + 0]];
-		v[1] = vertices[indices[i*3 + 1]];
-		v[2] = vertices[indices[i*3 + 2]];
-
-		Triangle t(v[0], v[1], v[2]);
-
-		auto orientation = oGFX::BV::ClassifyTriangleToPlane(t, plane);
-
-		switch (orientation)
-		{
-		case TriangleOrientation::COPLANAR:
-		case TriangleOrientation::POSITIVE:
-		{
-			auto index = static_cast<uint32_t>(positiveVerts.size());
-			for (uint32_t i = 0; i < 3; i++)
-			{
-				positiveVerts.push_back(v[i]);
-				positiveIndices.push_back(index + i);
-			}
-		}
-		break;
-		case TriangleOrientation::NEGATIVE:
-		{
-			auto index = static_cast<uint32_t>(negativeVerts.size());
-			for (uint32_t i = 0; i < 3; i++)
-			{
-				negativeVerts.push_back(v[i]);
-				negativeIndices.push_back(index + i);
-			}
-		}
-		break;
-		case TriangleOrientation::STRADDLE:
-		{
-			//auto index = static_cast<uint32_t>(positiveVerts.size());
-			//for (uint32_t i = 0; i < 3; i++)
-			//{
-			//	positiveVerts.push_back(v[i]);
-			//	positiveIndices.push_back(index + i);
-			//}
-			++m_TrianglesSliced;
-			m_trianglesRemaining += oGFX::BV::SliceTriangleAgainstPlane(t, plane,
-				positiveVerts, positiveIndices,
-				negativeVerts,negativeIndices);
-			m_trianglesRemaining-=1;
-		}
-		break;
-		}
-		
-	}
-}
-
-void OctTree::GatherTriangles(OctNode* node, std::vector<Point3D>& outVertices, std::vector<uint32_t>& outIndices,std::vector<uint32_t>& depth)
+void OctTree::GatherBoxWithDepth(OctNode* node, std::vector<AABB>& boxes, std::vector<uint32_t>& depth)
 {
 	if (node == nullptr) return;
 
-	if (node->type == OctNode::LEAF)
-	{
-		const auto triCnt = node->indices.size() / 3;
-		for (size_t i = 0; i < triCnt; i++)
-		{
-			const auto anchor = static_cast<uint32_t>(outVertices.size());
-			depth.push_back(node->nodeID);
-
-			Point3D v[3];
-			v[0] = node->vertices[node->indices[i*3 + 0]];
-			v[1] = node->vertices[node->indices[i*3 + 1]];
-			v[2] = node->vertices[node->indices[i*3 + 2]];
-
-			for (uint32_t j = 0; j < 3; j++)
-			{
-				outVertices.push_back(v[j]);
-				outIndices.push_back(anchor + j);
-			}
-		}
-	}
-	else
-	{
-		for (size_t i = 0; i < s_num_children; i++)
-		{
-			if (node->children[i])
-			{
-				GatherTriangles(node->children[i].get(),outVertices,outIndices,depth);
-			}
-		}
-	}	
-
-}
-
-void OctTree::GatherBox(OctNode* node, std::vector<AABB>& boxes, std::vector<uint32_t>& depth)
-{
-	if (node == nullptr) return;
-
-	if (node->type == OctNode::LEAF)
+	if (node->entities.size())
 	{
 		boxes.push_back(node->box);
 		depth.push_back(node->depth);
 	}
 	for (size_t i = 0; i < s_num_children; i++)
 	{
-		GatherBox(node->children[i].get(), boxes, depth);
+		GatherBoxWithDepth(node->children[i].get(), boxes, depth);
+	}
+}
+
+void OctTree::GatherBox(OctNode* node, std::vector<AABB>& boxes)
+{
+	if (node == nullptr) return;
+
+	if (node->entities.size())
+		boxes.push_back(node->box);
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		GatherBox(node->children[i].get(), boxes);
+	}
+}
+
+void OctTree::GatherEntities(OctNode* node, std::vector<ObjectInstance*>& entities, std::vector<uint32_t>& depth)
+{
+	if (node == nullptr) return;
+	
+	for (size_t i = 0; i < node->entities.size(); i++)
+	{
+		entities.push_back(node->entities[i].obj);
+		depth.push_back(node->depth);
+	}		
+	
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		GatherEntities(node->children[i].get(), entities, depth);
+	}
+}
+
+void OctTree::GatherFrustBoxes(OctNode* node, const Frustum& frust, std::vector<AABB>& contained, std::vector<AABB>& intersect)
+{	
+	if (node == nullptr) return;
+
+	oGFX::coll::Collision result = oGFX::coll::AABBInFrustum(frust, node->box);
+	switch (result)
+	{
+	case oGFX::coll::INTERSECTS:
+		// add to testing list
+		//if(node->entities.size())
+			intersect.push_back(node->box);		
+		break;
+	case oGFX::coll::CONTAINS:
+		// add to contained list
+		//if (node->entities.size())
+			contained.push_back(node->box);
+		break;
+	case oGFX::coll::OUTSIDE:
+		// no action needed
+		break;
+	}
+	// check each child
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		GatherFrustBoxes(node->children[i].get(), frust, contained, intersect);
+	}
+}
+
+void OctTree::GatherFrustEntities(OctNode* node, const Frustum& frust, std::vector<ObjectInstance*>& contained, std::vector<ObjectInstance*>& intersect)
+{
+	if (node == nullptr) return;
+
+	oGFX::coll::Collision result = oGFX::coll::AABBInFrustum(frust, node->box);
+	switch (result)
+	{
+	case oGFX::coll::INTERSECTS:
+		// add to testing list
+		for (size_t i = 0; i < node->entities.size(); i++)
+		{
+			intersect.push_back(node->entities[i].obj);
+		}		
+		break;
+	case oGFX::coll::CONTAINS:
+		// add to contained list
+		for (size_t i = 0; i < node->entities.size(); i++)
+		{
+			contained.push_back(node->entities[i].obj);
+		}
+		break;
+	case oGFX::coll::OUTSIDE:
+		// no action needed
+		break;
+	}
+	// check each child
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		GatherFrustEntities(node->children[i].get(), frust, contained, intersect);
+	}
+}
+
+void OctTree::SplitNode(OctNode* node)
+{
+	const uint32_t currDepth = node->depth + 1;
+
+	Point3D position{};
+	float step = node->box.halfExt.x * 0.5f;
+	assert(step != 0.0f);
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		position.x = ((i & 1) ? step : -step);
+		position.y = ((i & 2) ? step : -step);
+		position.z = ((i & 4) ? step : -step);
+		AABB childBox;
+		childBox.center = node->box.center + position;
+		childBox.halfExt = Point3D{ step,step,step };
+		node->children[i] = std::make_unique<OctNode>();
+		node->children[i]->depth = currDepth;
+		node->children[i]->box = childBox;
+	}
+
+	// distribute entities
+	std::vector<NodeEntry> entCpy = std::move(node->entities);
+	for (const NodeEntry& e : entCpy)
+	{
+		PerformInsert(node, e);
+	}
+}
+
+void OctTree::PerformInsert(OctNode* node,const NodeEntry& entry)
+{
+	OO_ASSERT(node);
+
+	const uint32_t currDepth = node->depth + 1;
+	// we reached max depth, turn into leaf
+	if (currDepth > m_maxDepth)
+	{
+		node->nodeID = ++m_nodes;
+		node->entities.push_back(entry);
+		entry.obj->treeNode = node;
+		return;
+	}
+
+	if (node->children[0] == nullptr) 
+	{
+		SplitNode(node);
+	}
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		if (oGFX::coll::AabbContains(node->children[i]->box, entry.box))
+		{
+			PerformInsert(node->children[i].get(), entry);			
+			return;
+		}
+	}
+
+	// not contained in any child
+	node->nodeID = ++m_nodes;
+	node->entities.push_back(entry);	
+	entry.obj->treeNode = node;
+}
+
+bool OctTree::PerformRemove(OctNode* node, const NodeEntry& entry)
+{
+	if (node == nullptr) return false;
+
+	auto it = std::find_if(node->entities.begin(), node->entities.end(), [chk = entry.obj](const NodeEntry& e) { return e.obj == chk; });
+
+	// Check if the element was found
+	if (it != node->entities.end()) {
+		// Element found, erase it from the vector
+		node->entities.erase(it);
+		--m_nodes;
+		return true;
+	}
+	else {
+		// Element not found
+		// search children
+		for (size_t i = 0; i < s_num_children; i++)
+		{
+			if (PerformRemove(node->children[i].get(), entry))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void OctTree::PerformClear(OctNode* node)
+{
+	if (node == nullptr) return;
+
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		PerformClear(node->children[i].get());
+	}
+
+	for (size_t i = 0; i < node->entities.size(); i++)
+	{
+		node->entities[i].obj->treeNode = nullptr;
+	}
+	node->entities.clear();
+}
+
+void OctTree::ResizeTreeBounds(OctNode* node, const AABB& box)
+{
+	if (node == nullptr) return;
+
+	node->box = box;
+
+	Point3D position{};
+	float step = node->box.halfExt.x * 0.5f;
+	for (size_t i = 0; i < s_num_children; i++)
+	{
+		position.x = ((i & 1) ? step : -step);
+		position.y = ((i & 2) ? step : -step);
+		position.z = ((i & 4) ? step : -step);
+		AABB childBox;
+		childBox.center = node->box.center + position;
+		childBox.halfExt = Point3D{ step,step,step };
+		ResizeTreeBounds(node->children[i].get(), childBox);
 	}
 
 }

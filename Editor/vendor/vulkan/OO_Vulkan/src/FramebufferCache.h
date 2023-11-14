@@ -39,7 +39,7 @@ public:
 		// TODO : FIX horrific pointer stuff
 		std::vector<vkutils::Texture2D*> textures;
 		VkFramebufferCreateInfo createInfo{};
-		bool targetSwapchain{ true };
+		bool swapchainReliant{ true };
 		bool resourceTrackOnly{ false };
 
 		bool operator==(const FramebufferInfo& other) const;

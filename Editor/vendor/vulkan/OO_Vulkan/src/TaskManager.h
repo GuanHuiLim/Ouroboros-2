@@ -11,9 +11,9 @@ struct TaskCompletionCallback;
 
 struct Task
 {
-    TaskFunc                pTaskFunction;              ///< The task to execute
-    void*                   pTaskParam;                 ///< Parameters (in the form of a void pointer) to pass to the task (NOTE** calling code is responsible for the memory backing parameter pointer).
-    TaskCompletionCallback* pTaskCompletionCallback;    ///< If this task is part of a larger group of tasks that require post-completion synchronization, they will be associated with a task sync primitive
+    TaskFunc                pTaskFunction{};              ///< The task to execute
+    void*                   pTaskParam{};                 ///< Parameters (in the form of a void pointer) to pass to the task (NOTE** calling code is responsible for the memory backing parameter pointer).
+    TaskCompletionCallback* pTaskCompletionCallback{};    ///< If this task is part of a larger group of tasks that require post-completion synchronization, they will be associated with a task sync primitive
 
     Task(TaskFunc pTaskFunction, void* pTaskParam = nullptr, TaskCompletionCallback* pCompletionCallback = nullptr) :
         pTaskFunction(pTaskFunction), pTaskParam(pTaskParam), pTaskCompletionCallback(pCompletionCallback) {}
@@ -26,7 +26,7 @@ private:
 struct TaskCompletionCallback
 {
     Task                    CompletionTask;     ///< The task to execute once the task count reaches 0
-    std::atomic_uint        TaskCount;          ///< Number of tasks this callback is paired with. Count will tick down upon completion of each dependent task.
+    std::atomic_uint        TaskCount{};          ///< Number of tasks this callback is paired with. Count will tick down upon completion of each dependent task.
 
     TaskCompletionCallback(Task completionTask, uint32_t taskCount = 1) :
         CompletionTask(completionTask), TaskCount(taskCount) {}

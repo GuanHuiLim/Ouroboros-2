@@ -46,6 +46,7 @@ project "Editor"
         "%{IncludeDir.vulkan}",
         "%{IncludeDir.assimp}",
         "%{IncludeDir.vma}",
+        "%{IncludeDir.NvDLSS}",
         "%{IncludeDir.assimpBin}",
         "%{IncludeDir.SDL}",
         
@@ -80,6 +81,7 @@ project "Editor"
     libdirs 
     {
         "%{LibraryDir.VulkanSDK}",
+        "%{LibraryDir.NvDLSS}",
         "%{LibraryDir.SDL}",
         "%{LibraryDir.rttr}/Debug",
         "%{LibraryDir.rttr}/Release",
@@ -100,6 +102,7 @@ project "Editor"
     {
         -- vulkan SDK
         "%{Library.Vulkan}",
+        "%{Library.NvNGX}",
         
         -- custom libs
         "Launcher",
@@ -173,6 +176,8 @@ project "Editor"
             -- optick server copy
             {"{COPY} \"%{AppDir}/optick_server\" \"" .. binApp .. "/optick_server\""}, 
 
+			-- copy NvDLSS DLLs
+            {"{COPY} \"%{AppVendor}/vulkan/vendor/nvDLSS/lib/Windows_x86_64/rel/nvngx_dlss.dll\" \"" .. binApp .. "\"" },
 			-- vulkan shaders copy
             { "mkdir \"" .. binApp .. "/shaders/bin\"" },
             {"{COPY} \"%{AppVendor}/vulkan/OO_Vulkan/shaders/bin\" \"" .. binApp .. "/shaders/bin\""}, 			

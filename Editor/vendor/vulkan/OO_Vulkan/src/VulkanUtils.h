@@ -80,6 +80,8 @@ inline TYPE operator~(TYPE a)\
 VkDebugReportObjectTypeEXT GetDebugNameExtTypeByID(std::type_index id);
 
 
+GPUTransform ConstructGPUTransform(const glm::mat4& m, const glm::mat4& inv, const glm::mat4& p);
+
 namespace oGFX
 {
 	void SetVulkanObjectName(VkDevice device, const VkDebugMarkerObjectNameInfoEXT& info);
@@ -106,7 +108,11 @@ oGFX::SetVulkanObjectName(DEVICE,nameInfo);\
 
 #endif
 
-
+void ffxSpdSetup(uint32_t* dispatchThreadGroupCountXY,
+	uint32_t* workGroupOffset,
+	uint32_t* numWorkGroupsAndMips,
+	uint32_t* rectInfo,
+	int32_t mips);
 
 struct VulkanInstance;
 struct VulkanDevice;

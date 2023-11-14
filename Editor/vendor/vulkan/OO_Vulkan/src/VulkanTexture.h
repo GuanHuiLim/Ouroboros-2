@@ -34,6 +34,7 @@ namespace vkutils
 		CUBE_MAP,		
 	};
 
+	
 	class Texture
 	{
 	public:
@@ -53,7 +54,7 @@ namespace vkutils
 		VkImageAspectFlags aspectMask{};
 		VkFilter filter{};
 		float highestColValue{1.0f};
-		bool targetSwapchain = true;
+		bool useRenderscale = false;
 		bool isValid = false;
 		float renderScale = 1.0f;
 		
@@ -62,6 +63,13 @@ namespace vkutils
 		void CreateImageView();
 		VkImageView GenerateMipView(uint32_t desiredMip);
 		void AllocateImageMemory(VulkanDevice* device, const VkImageUsageFlags& imageUsageFlags, uint32_t mips = 1);
+	};
+
+	inline glm::uvec2 GetMipDims(Texture& tex, uint32_t mip) {
+		glm::uvec2 dims{};
+		dims.x = std::max<uint32_t>(tex.width / std::pow(2u, mip), 1u);
+		dims.y = std::max<uint32_t>(tex.height/ std::pow(2u, mip), 1u);
+		return dims;
 	};
 
 	class Texture2D : public Texture

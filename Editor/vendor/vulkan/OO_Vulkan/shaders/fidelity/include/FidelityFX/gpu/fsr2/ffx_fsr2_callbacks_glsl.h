@@ -26,6 +26,13 @@
 #include "ffx_core.h"
 #endif // #if defined(FFX_GPU)
 
+//options
+#define FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS   1     
+#define FFX_FSR2_OPTION_INVERTED_DEPTH   1     
+#define FFX_FSR2_OPTION_HDR_COLOR_INPUT 1
+#define FFX_FSR2_OPTION_APPLY_SHARPENING   0     
+#define FFX_FSR2_OPTION_JITTERED_MOTION_VECTORS   0
+
 #if defined(FFX_GPU)
 #ifndef FFX_PREFER_WAVE64
 #define FFX_PREFER_WAVE64

@@ -50,7 +50,7 @@ void main()
 	
 	// Get G-Buffer values
 	vec4 depth = texture(sampler2D(textureDepth,basicSampler), inUV);
-	vec3 fragWorldPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
+    vec3 fragWorldPos = WorldPosFromDepth(depth.r, inUV, uboFrameContext.inverseProjectionJittered, uboFrameContext.inverseView);
 
 	outFragcolor = vec4(0,0,0,1);
 	vec3 normal = DecodeNormalHelper(texture(sampler2D(textureNormal,basicSampler), inUV).rgb);

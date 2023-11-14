@@ -32,13 +32,8 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_samplerless_texture_functions : require
 #define FFX_GLSL
-#define FFX_SPD_BIND_SRV_INPUT_DOWNSAMPLE_SRC                  0
 
-#define FFX_SPD_BIND_UAV_INTERNAL_GLOBAL_ATOMIC             2000
-#define FFX_SPD_BIND_UAV_INPUT_DOWNSAMPLE_SRC_MID_MIPMAP    2001
-#define FFX_SPD_BIND_UAV_INPUT_DOWNSAMPLE_SRC_MIPS          2002
-
-#define FFX_SPD_BIND_CB_SPD                                 3000
+#include "ffx_spd_glsl_bindings.h"
 
 #include "spd/ffx_spd_callbacks_glsl.h"
 #include "spd/ffx_spd_downsample.h"

@@ -35,13 +35,16 @@ DescriptorBuilder& DescriptorBuilder::BindBuffer(uint32_t binding, const VkDescr
 	VkDescriptorSetLayoutBinding newBinding = oGFX::vkutils::inits::descriptorSetLayoutBinding(type,stageFlags,binding,1);
 	bindings.push_back(newBinding);
 
-	size_t bufIdx = bufferinfos.size();
-	bufferinfos.push_back(*bufferInfo);
+	if (bufferInfo) 
+	{
+		size_t bufIdx = bufferinfos.size();
+		bufferinfos.push_back(*bufferInfo);
 
-	//create the descriptor write
-	VkWriteDescriptorSet newWrite = oGFX::vkutils::inits::writeDescriptorSet(VK_NULL_HANDLE, type, binding, (VkDescriptorBufferInfo*)bufIdx, 1);
-	
-	writes.push_back(newWrite);
+		//create the descriptor write
+		VkWriteDescriptorSet newWrite = oGFX::vkutils::inits::writeDescriptorSet(VK_NULL_HANDLE, type, binding, (VkDescriptorBufferInfo*)bufIdx, 1);
+		
+		writes.push_back(newWrite);
+	}
 	return *this;
 }
 
@@ -97,10 +100,10 @@ bool DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layou
 			|| w.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC
 			|| w.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 		{
-			w.pBufferInfo = &bufferinfos[(uint32_t)w.pBufferInfo];
+			w.pBufferInfo = &bufferinfos[(size_t)w.pBufferInfo];
 		}
 		else {
-			w.pImageInfo = &imageinfos[(uint32_t)w.pImageInfo];
+			w.pImageInfo = &imageinfos[(size_t)w.pImageInfo];
 		}
 
 		w.dstSet = set;

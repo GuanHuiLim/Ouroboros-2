@@ -26,7 +26,9 @@ public:
     static const VkSampler GetSampler_Deferred() { return deferredSampler; }
     static const VkSampler GetSampler_ShowMapClamp() { return shadowSampler; }
     static const VkSampler GetSampler_SSAOEdgeClamp() { return ssaoClampSampler; }
-    static const VkSampler GetSampler_EdgeClamp() { return edgeClampSampler; }
+    static const VkSampler GetSampler_EdgeClamp() { return linearClampSampler; }
+    static const VkSampler GetSampler_LinearClamp() { return linearClampSampler; }
+    static const VkSampler GetSampler_PointClamp() { return pointClampSampler; }
     static const VkSampler GetSampler_BlackBorder() { return blackBorderSampler; }
     static const VkSampler GetSampler_Cube() { return cubeSampler; }
     // TODO: Add more sampler objects as needed...
@@ -50,7 +52,8 @@ private:
     static VkSampler deferredSampler;
     static VkSampler shadowSampler;
     static VkSampler ssaoClampSampler;
-    static VkSampler edgeClampSampler;
+    static VkSampler linearClampSampler;
+    static VkSampler pointClampSampler;
     static VkSampler blackBorderSampler;
     static VkSampler cubeSampler;
     // TODO: Add more sampler objects as needed...

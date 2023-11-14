@@ -103,8 +103,8 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 	VkClearValue clearValues;
 	clearValues.depthStencil = { 0.0f, 0 };
 	
-	const float vpHeight = (float)shadowmapSize.height;
-	const float vpWidth = (float)shadowmapSize.width;
+	const float vpHeight = (float)vr.attachments.shadow_depth.height;
+	const float vpWidth = (float)vr.attachments.shadow_depth.width;
 	rhi::CommandList cmd{ cmdlist, "Shadow Pass"};
 
 	bool clearOnDraw = true;
@@ -115,10 +115,19 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 		vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
-	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
-		std::array<VkDescriptorSet, 3>
+
+	cmd.DescriptorSetBegin(0)
+		.BindSampler(0, GfxSamplerManager::GetDefaultSampler())
+		.BindBuffer(1, vr.shadowCasterInstanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.BindBuffer(3, vr.gpuShadowCasterTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.BindBuffer(4, vr.gpuBoneMatrixBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.BindBuffer(5, vr.casterObjectInformationBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.BindBuffer(6, vr.gpuSkinningWeightsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 1, 
+		std::array<VkDescriptorSet, 2>
 		{
-			vr.descriptorSet_gpuscene,
+			//vr.descriptorSet_gpuscene,
 			vr.descriptorSets_uniform[currFrame],
 			vr.descriptorSet_bindless
 		},
@@ -128,7 +137,7 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 
 	// Bind merged mesh vertex & index buffers, instancing buffers.
 	cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_GlobalMeshBuffers.VtxBuffer.getBufferPtr());
-	cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer[currFrame].getBufferPtr());
+	//cmd.BindVertexBuffer(BIND_POINT_INSTANCE_BUFFER_ID, 1, vr.instanceBuffer.getBufferPtr());
 	cmd.BindIndexBuffer(vr.g_GlobalMeshBuffers.IdxBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	// calculate shadowmap grid dim
@@ -140,73 +149,53 @@ void ShadowPass::Draw(const VkCommandBuffer cmdlist)
 		increment /= smGridDim;
 	}
 
-	if (vr.m_numShadowcastLights > 0)
+	const auto& casterDatas = vr.batches.m_casterData;
+	const auto& lights = vr.batches.GetShadowCasters();
+	for (size_t i = 0; i < lights.size(); ++i)
 	{
-		
-		for (const auto& light: vr.batches.GetLocalLights())
+		auto& light = lights[i];
+		OO_ASSERT(GetLightEnabled(light) == true);
+		OO_ASSERT(GetCastsShadows(light) == true);
+
+		// this is an omnilight
+		if (light.info.x == 1)
 		{
-			if (GetLightEnabled(light) == false) continue;
-
-			// not a shadow casting light skip
-			if (GetCastsShadows(light) == false) continue;
-
-			// this is an omnilight
-			if (light.info.x == 1)
+			// get the data for this light
+			const GraphicsBatch::CastersData& casterData = casterDatas[i];
+			constexpr size_t cubeFaces = 6;
+			for (size_t face = 0; face < cubeFaces; face++)
 			{
-				constexpr size_t cubeFaces = 6;
-				for (size_t face = 0; face < cubeFaces; face++)
+				int lightGrid = light.info.y + static_cast<int>(face);
+				// set custom viewport for each view
+				int ly = static_cast<int>(lightGrid / smGridDim);
+				int lx = static_cast<int>(lightGrid - (ly * smGridDim));
+				vec2 customVP = increment * glm::vec2{ lx,smGridDim - ly };
+
+				//light.info.z = customVP.x; // this is actually wasted
+				//light.info.w = customVP.y; // this is actually wasted
+
+				//cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
+				//cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
+
+				// calculate viewport for each light
+				cmd.SetViewport(VkViewport{ customVP.x+1, customVP.y+1,increment.x-1, -(increment.y-1), 0.0f, 1.0f });
+				// TODO: Set exact region for scissor
+				cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpHeight, (uint32_t)vpWidth } });
+			
+				glm::mat4 mm(1.0f);
+				mm = light.projection * light.view[face];
+				cmd.SetPushConstant(PSOLayoutDB::defaultPSOLayout, sizeof(glm::mat4), glm::value_ptr(mm));					
+
+				const std::vector<oGFX::IndirectCommand>& commands = casterData.m_commands[face];
+				for (const oGFX::IndirectCommand& c : commands)
 				{
-					int lightGrid = light.info.y + static_cast<int>(face);
-					// set custom viewport for each view
-					int ly = static_cast<int>(lightGrid / smGridDim);
-					int lx = static_cast<int>(lightGrid - (ly * smGridDim));
-					vec2 customVP = increment * glm::vec2{ lx,smGridDim - ly };
-
-					//light.info.z = customVP.x; // this is actually wasted
-					//light.info.w = customVP.y; // this is actually wasted
-
-					//cmd.SetViewport(VkViewport{ 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f });
-					//cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpWidth , (uint32_t)vpHeight } });
-
-					// calculate viewport for each light
-					cmd.SetViewport(VkViewport{ customVP.x+1, customVP.y+1,increment.x-1, -(increment.y-1), 0.0f, 1.0f });
-					// TODO: Set exact region for scissor
-					cmd.SetScissor(VkRect2D{ {0, 0}, {(uint32_t)vpHeight, (uint32_t)vpWidth } });
-
-					//constexpr glm::vec3 up{ 0.0f,1.0f,0.0f };
-					//constexpr glm::vec3 right{ 1.0f,0.0f,0.0f };
-					//constexpr glm::vec3 forward{ 0.0f,0.0f,-1.0f };
-					//
-					//std::array<glm::vec3, 6> dirs{
-					//	glm::vec3(light.position) + -up ,
-					//	glm::vec3(light.position) + up,
-					//	glm::vec3(light.position) + -right,
-					//	glm::vec3(light.position) + right,
-					//	glm::vec3(light.position) + -forward,
-					//	glm::vec3(light.position) + forward,
-					//};
-					//DebugDraw::AddArrow(light.position, dirs[face], oGFX::Colors::RED);
-
-
-					glm::mat4 mm(1.0f);
-					mm = light.projection * light.view[face];
-					vkCmdPushConstants(cmdlist,
-						PSOLayoutDB::defaultPSOLayout,
-						VK_SHADER_STAGE_ALL,	    // stage to push constants to
-						0,							// offset of push constants to update
-						sizeof(glm::mat4),			// size of data being pushed
-						glm::value_ptr(mm));		// actualy data being pushed (could be an array));
-
-					cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer[currFrame].getBuffer(), 0, static_cast<uint32_t>(vr.shadowCasterCommandsBuffer[currFrame].size()));
+					cmd.DrawIndexed(c.indexCount, c.instanceCount, c.firstIndex, c.vertexOffset, c.firstInstance);
 				}
-				
-			}			
-		}		
-	}
+				//cmd.DrawIndexedIndirect(vr.shadowCasterCommandsBuffer.getBuffer(), 0, static_cast<uint32_t>(vr.shadowCasterCommandsBuffer.size()));
 
-	
-
-	//vkutils::TransitionImage(cmdlist, vr.attachments.shadow_depth, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}				
+		}			
+	}	
 }
 
 void ShadowPass::Shutdown()

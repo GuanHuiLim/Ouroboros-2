@@ -84,7 +84,7 @@ void VulkanDevice::InitPhysicalDevice(const oGFX::SetupInfo& si, VulkanInstance&
 		vkGetPhysicalDeviceProperties(device, &props);
 		if (props.limits.sparseAddressSpaceSize > memory)
 		{
-			memory = props.limits.sparseAddressSpaceSize;
+			memory = (uint32_t)props.limits.sparseAddressSpaceSize;
 			std::swap(deviceList[i], deviceList[best]);
             best = static_cast<uint32_t>(i);
 		}
@@ -154,6 +154,13 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
         deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME); 
 #endif // VULKAN_VALIDATION
     }
+    
+    if(si.renderDoc == false) // since no renderdoc we can support DLSS
+    {
+        deviceExtensions.push_back(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+    }
 
     //information to create logical device (somtimes called only "device")
     VkDeviceCreateInfo deviceCreateInfo = {};
@@ -166,16 +173,19 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     //all features will be disabled by default
-    VkPhysicalDeviceFeatures deviceFeatures = {};
+    VkPhysicalDeviceFeatures2 deviceFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     //physical device features that logical device will use
-    deviceFeatures.samplerAnisotropy = VK_TRUE; // Enabling anisotropy
-    deviceFeatures.multiDrawIndirect = VK_TRUE;
+    deviceFeatures.features.samplerAnisotropy = VK_TRUE; // Enabling anisotropy
+    deviceFeatures.features.multiDrawIndirect = VK_TRUE;
     
-    deviceFeatures.fillModeNonSolid = VK_TRUE;  //wireframe drawing
-    deviceFeatures.drawIndirectFirstInstance = VK_TRUE;
-    deviceFeatures.independentBlend = VK_TRUE;
+    deviceFeatures.features.fillModeNonSolid = VK_TRUE;  //wireframe drawing
+    deviceFeatures.features.drawIndirectFirstInstance = VK_TRUE;
+    deviceFeatures.features.independentBlend = VK_TRUE;
 
-    deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+    deviceCreateInfo.pEnabledFeatures = nullptr;
+    deviceCreateInfo.pNext = &deviceFeatures;
+
+    
 
     VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
     dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
@@ -210,8 +220,12 @@ void VulkanDevice::InitLogicalDevice(const oGFX::SetupInfo& si,VulkanInstance& i
     // descriptor_indexing_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE; // needed for image descriptors
     VkPhysicalDeviceSynchronization2Features sync2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES };
     sync2.synchronization2 = VK_TRUE;
+    
+    
+    vk12Features.bufferDeviceAddress = VK_TRUE;
 
-    deviceCreateInfo.pNext = &vk12Features;
+    deviceCreateInfo.pNext = &deviceFeatures;
+    deviceFeatures.pNext = &vk12Features;
     vk12Features.pNext = &shaderDrawFeatures;
     shaderDrawFeatures.pNext = &dynamicRendering;
     dynamicRendering.pNext = &maintainence4;
@@ -323,7 +337,7 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
     { 
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,       
         //        ,   VK_NV_GLSL_SHADER_EXTENSION_NAME  // nVidia useful extension to be able to load GLSL shaders
     };
     // TODO BETTER
@@ -333,6 +347,14 @@ bool VulkanDevice::CheckDeviceExtensionSupport(const oGFX::SetupInfo& si,VkPhysi
 #if VULKAN_VALIDATION
         deviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
 #endif // VULKAN_VALIDATION
+    }
+
+    if(si.renderDoc == false) 
+    {
+        deviceExtensions.push_back(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
     }
 
     //check extensions

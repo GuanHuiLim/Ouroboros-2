@@ -21,7 +21,8 @@ VkSampler GfxSamplerManager::deferredSampler = nullptr;
 VkSampler GfxSamplerManager::shadowSampler = nullptr;
 VkSampler GfxSamplerManager::ssaoClampSampler = nullptr;
 VkSampler GfxSamplerManager::blackBorderSampler = nullptr;
-VkSampler GfxSamplerManager::edgeClampSampler = nullptr;
+VkSampler GfxSamplerManager::linearClampSampler = nullptr;
+VkSampler GfxSamplerManager::pointClampSampler = nullptr;
 VkSampler GfxSamplerManager::cubeSampler = nullptr;
 // TODO: Add more sampler objects as needed...
 
@@ -30,7 +31,7 @@ void GfxSamplerManager::Init()
     auto& vr = *VulkanRenderer::get();
     auto& device = vr.m_device.logicalDevice;
     float maxAni = vr.m_device.properties.limits.maxSamplerAnisotropy;
-    VkBool32 aniEnabled = vr.m_device.enabledFeatures.samplerAnisotropy;
+    VkBool32 aniEnabled = vr.m_device.enabledFeatures.features.samplerAnisotropy;
 
     {        
         VkSamplerCreateInfo samplerCreateInfo{};
@@ -126,9 +127,14 @@ void GfxSamplerManager::Init()
         samplerCreateInfo.maxAnisotropy = maxAni;
         samplerCreateInfo.anisotropyEnable = aniEnabled;
         samplerCreateInfo.minLod = 0.0f;
-        samplerCreateInfo.maxLod = 1.0f;
-        VK_CHK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &edgeClampSampler));
-        VK_NAME(device, "edgeClampSampler", edgeClampSampler);
+        samplerCreateInfo.maxLod = FLT_MAX;
+        VK_CHK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &linearClampSampler));
+        VK_NAME(device, "linearClampSampler", linearClampSampler);
+        
+        samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
+        samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
+        VK_CHK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &pointClampSampler));
+        VK_NAME(device, "pointClampSampler", pointClampSampler);
     }
 
     {
@@ -179,7 +185,8 @@ void GfxSamplerManager::Shutdown()
     vkDestroySampler(device, deferredSampler, nullptr);
     vkDestroySampler(device, shadowSampler, nullptr);
     vkDestroySampler(device, ssaoClampSampler, nullptr);
-    vkDestroySampler(device, edgeClampSampler, nullptr);
+    vkDestroySampler(device, linearClampSampler, nullptr);
+    vkDestroySampler(device, pointClampSampler, nullptr);
     vkDestroySampler(device, blackBorderSampler, nullptr);
     vkDestroySampler(device, cubeSampler, nullptr);
 

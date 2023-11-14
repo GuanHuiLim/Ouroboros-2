@@ -26,4 +26,12 @@ mat4x4 GPUTransformToInverseTransposeMatrix4x4(const in GPUTransform m)
 }
 
 
+mat4x4 GPUTransformToPreviousMatrix4x4(const in GPUTransform m)
+{
+    return mat4x4(m.prevRow0.x, m.prevRow1.x, m.prevRow2.x, 0.0,
+                  m.prevRow0.y, m.prevRow1.y, m.prevRow2.y, 0.0,
+                  m.prevRow0.z, m.prevRow1.z, m.prevRow2.z, 0.0,
+                  m.prevRow0.w, m.prevRow1.w, m.prevRow2.w, 1.0);
+}
+
 #endif//INCLUDE_GUARD

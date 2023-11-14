@@ -100,7 +100,7 @@ void CameraController::Update(float dt, bool update_controls)
     }
     
     // Update View & Projection Matrix
-    m_Camera->UpdateProjectionMatrix();
+    //m_Camera->UpdateProjectionMatrix();
 }
 
 void CameraController::ShakeCamera()

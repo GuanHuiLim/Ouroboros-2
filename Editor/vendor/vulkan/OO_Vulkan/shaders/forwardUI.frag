@@ -6,9 +6,11 @@ layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec4 inColor;
 layout(location = 3) in flat uvec4 inInstanceData;
+layout(location = 4) in vec4 inPrevPosition;
 
 layout(location = 0) out vec4 outfragCol;
-layout(location = 1) out int outEntityID;
+layout(location = 1) out vec4 outVelocity;
+layout(location = 2) out int outEntityID;
 
 #include "shader_utility.shader"
 
@@ -44,6 +46,13 @@ void main()
     outEntityID = int(inInstanceData.y);
     outfragCol = vec4(inColor.rgba);
     
+    vec2 cancelJitter = uboFrameContext.prevJitter - uboFrameContext.currJitter;
+    vec4 clipPos = inPosition;
+    vec2 a = (clipPos.xy / clipPos.w);
+    vec2 b = (inPrevPosition.xy / inPrevPosition.w);
+    outVelocity.xy = (a - b) + cancelJitter;
+    outVelocity.xy *= vec2(-0.5, 0.5);
+    
     uint isSDFFont = inInstanceData.z;    
 
     // TODO: We need to use a mask to check whether to use textures or values.
@@ -67,7 +76,7 @@ void main()
         float sd = median(outfragCol.r, outfragCol.g, outfragCol.b);
         float screenPxDistance = screenPxRange()*(sd - 0.5);
         float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
-        outfragCol = mix(vec4(0),inColor,opacity);        
+        outfragCol = mix(vec4(0),inColor,opacity);   
         
     }
     else

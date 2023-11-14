@@ -71,7 +71,7 @@ void TaskManager::AddTaskListAndWait(std::queue<Task>& newTaskList)
         w = false;
         cond.notify_all();
         };
-    TaskCompletionCallback cb(Task(tasksDone), newTaskList.size());
+    TaskCompletionCallback cb(Task(tasksDone), (uint32_t)newTaskList.size());
     std::queue<Task> tasks;
     while (newTaskList.size()) 
     {

@@ -40,6 +40,9 @@ Technology is prohibited.
 static ImDrawListSharedData s_imguiSharedData;
 
 #include "../shaders/shared_structs.h"
+#include "../shaders/fidelity/src/backends/vk/shaders/spd/ffx_spd_glsl_bindings.h"
+
+#include "renderpass/FSR2Helper.h"
 
 #include "GfxRenderpass.h"
 
@@ -56,6 +59,8 @@ extern GfxRenderpass* g_ShadowPass;
 extern GfxRenderpass* g_SSAORenderPass;
 extern GfxRenderpass* g_SkyRenderPass;
 extern GfxRenderpass* g_ZPrePass;
+extern GfxRenderpass* g_FSR2Pass;
+extern GfxRenderpass* g_DLSSPass;
 
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 	#include "renderpass/ForwardDecalRenderpass.h"
@@ -72,6 +77,7 @@ extern GfxRenderpass* g_ZPrePass;
 
 #include "Profiling.h"
 #include "DebugDraw.h"
+#include "OctTree.h"
 
 #include <vector>
 #include <set>
@@ -103,6 +109,8 @@ extern GfxRenderpass* g_ZPrePass;
 
 #pragma warning( pop )
 
+static HHOOK hook;
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam); // forward decl
 VulkanRenderer* VulkanRenderer::s_vulkanRenderer{ nullptr };
 
 // vulkan debug callback
@@ -118,11 +126,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	constexpr int VALIDATION_MSG_Shader_OutputNotConsumed = 0x609a13b;
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT && pCallbackData->messageIdNumber != VALIDATION_MSG_Shader_OutputNotConsumed) //&& !(messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT))
 	{
-		
+		UnhookWindowsHookEx(hook);
 		int x;
 		std::cerr << pCallbackData->pMessage << "\n" << std::endl;
 		//assert(false); temp comment out
-			x=5; // for breakpoint
+		x=5; // for breakpoint
+		hook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, 0, 0);
 	}
 
 	return VK_FALSE;
@@ -142,7 +151,7 @@ int VulkanRenderer::ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU
 		
 	auto result = VulkanRenderer::get()->m_instance.CreateSurface(temp, *(VkSurfaceKHR*)out_vk_surface);
 	
-	//unbind to prevent destrauction
+	//unbind to prevent destruction
 	temp.rawHandle = nullptr;
 
 	if (result == oGFX::ERROR_VAL)
@@ -154,14 +163,14 @@ int VulkanRenderer::ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU
 		
 }
 
-VulkanRenderer::VulkanRenderer()
-{
-}
-
 VulkanRenderer::~VulkanRenderer()
 { 
+
+	UnhookWindowsHookEx(hook);
 	//wait until no actions being run on device before destorying
 	vkDeviceWaitIdle(m_device.logicalDevice);
+
+	m_NGX.Shutdown();
 
 	g_taskManager.Shutdown();
 
@@ -210,11 +219,9 @@ VulkanRenderer::~VulkanRenderer()
 
 	samplerManager.Shutdown();
 
-	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
-	{
+	gpuTransformBuffer.destroy();
 
-		gpuTransformBuffer[i].destroy();
-	}
+	gpuShadowCasterTransformBuffer.destroy();
 
 	g_GlobalMeshBuffers.IdxBuffer.destroy();
 	g_GlobalMeshBuffers.VtxBuffer.destroy();
@@ -245,10 +252,10 @@ VulkanRenderer::~VulkanRenderer()
 	vkDestroyDescriptorPool(m_device.logicalDevice, samplerDescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(m_device.logicalDevice, SetLayoutDB::bindless, nullptr);
 
-	for (auto framebuffer : swapChainFramebuffers)
-	{
-		vkDestroyFramebuffer(m_device.logicalDevice, framebuffer, nullptr);
-	}
+	// for (auto framebuffer : swapChainFramebuffers)
+	// {
+	// 	vkDestroyFramebuffer(m_device.logicalDevice, framebuffer, nullptr);
+	// }
 
 	vkDestroyDescriptorPool(m_device.logicalDevice, descriptorPool, nullptr);
 	for (size_t i = 0; i < vpUniformBuffer.size(); i++)
@@ -284,7 +291,7 @@ VulkanRenderer::~VulkanRenderer()
 	
 	PROFILE_GPU_SHUTDOWN();
 }
-
+#pragma optimize("", off)
 VulkanRenderer* VulkanRenderer::get()
 {
 	if (s_vulkanRenderer == nullptr)
@@ -294,12 +301,72 @@ VulkanRenderer* VulkanRenderer::get()
 	return s_vulkanRenderer;
 }
 
+// This is the callback function that will be triggered when the F7 key is pressed.
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+	static bool capturing = false;
+	
+	
+	if (nCode < 0) {
+		return CallNextHookEx(NULL, nCode, wParam, lParam);
+	}
+
+	if (wParam == WM_KEYDOWN) {
+		KBDLLHOOKSTRUCT* kbdStruct = (KBDLLHOOKSTRUCT*)lParam;
+		if (kbdStruct->vkCode == VK_F7) {
+
+			if (capturing)
+			{
+				OPTICK_STOP_CAPTURE();
+				OPTICK_SAVE_CAPTURE("");
+				capturing = false;
+			}
+			else
+			{
+				OPTICK_START_CAPTURE();
+				capturing = true;
+			}
+		}
+
+		static float scales[]{
+					1.0f,
+					1.0f / 1.5f,
+					1.0f / 1.724f, // conform to nvidia's scaling
+					1.0f / 2.0f,
+					1.0f / 3.0f,
+		};
+		auto setSetting = [scales=scales](int x) {
+			VulkanRenderer& vr = *VulkanRenderer::get();
+			vr.changedRenderResolution = scales[x];
+			vr.SetQuality((UPSCALING_QUALITY)x);
+			vr.UpdateRenderResolution();
+		};
+		if (kbdStruct->vkCode == VK_F2)	setSetting(0); //native		
+  		if (kbdStruct->vkCode == VK_F3)	setSetting(1); //native		
+		if (kbdStruct->vkCode == VK_F4)	setSetting(2); //native		
+		if (kbdStruct->vkCode == VK_F5)	setSetting(3); //native		
+		if (kbdStruct->vkCode == VK_F6)	setSetting(4); //ultra		
+
+		auto setScaler = [](int x) {
+			VulkanRenderer& vr = *VulkanRenderer::get();
+			vr.SetUpscaler((UPSCALING_TYPE)x);
+			vr.UpdateRenderResolution();
+		};
+		if (kbdStruct->vkCode == VK_F8 ) setScaler(0);
+		if (kbdStruct->vkCode == VK_F9 ) setScaler(1);
+		if (kbdStruct->vkCode == VK_F10) setScaler(2);
+		
+
+	}
+
+	return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
 bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 {
 
 	RegisterThreadMapping();
 	g_taskManager.Init(std::thread::hardware_concurrency()-1);
-		
+
 	g_globalModels.reserve(MAX_OBJECTS);
 	std::cout << "create instance\n";
 	CreateInstance(setupSpecs);
@@ -307,6 +374,9 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 #if VULKAN_MESSENGER
 	CreateDebugCallback();
+	if(setupSpecs.debug)
+		hook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, 0, 0);
+
 #endif // VULKAN_MESSENGER
 
 	CreateSurface(setupSpecs,window);
@@ -315,6 +385,11 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 	AcquirePhysicalDevice(setupSpecs);
 	CreateLogicalDevice(setupSpecs);
+
+	if (setupSpecs.renderDoc == false) 
+	{
+		m_NGX.Init();		
+	}
 
 	InitVMA(setupSpecs);
 
@@ -338,13 +413,9 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 	CreateDefaultDescriptorSetLayout();
 
 	fbCache.Init(m_device.logicalDevice);
-	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
-	{
-	gpuTransformBuffer[i].Init(&m_device,VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	gpuTransformBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "gpuTransformBuffer");
 
-	}
-	//gpuTransformBuffer.reserve(MAX_OBJECTS);
-
+	gpuShadowCasterTransformBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,"gpuShadowTransformBuffer");
 
 	CreateDescriptorSets_GPUScene();
 	CreateDescriptorSets_Lights();
@@ -359,10 +430,15 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 	CreateLightingBuffers();
 
+	//DlssRecommendedSettings reccos{};
+	//	m_NGX.QueryOptimalSettings(glm::uvec2(m_swapchain.swapChainExtent.width, m_swapchain.swapChainExtent.height)
+	//		, NVSDK_NGX_PerfQuality_Value_UltraPerformance
+	//		, &reccos);
+	//printf("Nvidia Reccomends {%d,%d}\n", reccos.m_ngxRecommendedOptimalRenderSize.x, reccos.m_ngxRecommendedOptimalRenderSize.y);
 
+	
 	// Calls "Init()" on all registered render passes. Order is not guarunteed.
 	auto rpd = RenderPassDatabase::Get();
-	GfxRenderpass* ptr;
 	rpd->RegisterRenderPass(g_ShadowPass);
 	rpd->RegisterRenderPass(g_GBufferRenderPass);
 	rpd->RegisterRenderPass(g_ZPrePass);
@@ -372,9 +448,11 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 	rpd->RegisterRenderPass(g_LightingPass);
 	rpd->RegisterRenderPass(g_LightingHistogram);
 	rpd->RegisterRenderPass(g_SSAORenderPass);
-	rpd->RegisterRenderPass(g_ForwardParticlePass);
 	rpd->RegisterRenderPass(g_ForwardUIPass);
+	rpd->RegisterRenderPass(g_ForwardParticlePass);
 	rpd->RegisterRenderPass(g_BloomPass);
+	rpd->RegisterRenderPass(g_FSR2Pass);
+	rpd->RegisterRenderPass(g_DLSSPass);
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 	ptr = new ForwardDecalRenderpass;
 	rpd->RegisterRenderPass(ptr);
@@ -388,6 +466,7 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 
 	g_Textures.reserve(2048);
 	g_globalModels.reserve(2048);
+	g_globalSubmesh.reserve(2048);
 	g_imguiIDs.reserve(2048);
 
 	uint32_t whiteTexture = 0xFFFFFFFF; // ABGR
@@ -399,7 +478,8 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 	blackTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&blackTexture));
 	normalTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&normalTexture));
 	pinkTextureID = CreateTexture(1, 1, reinterpret_cast<unsigned char*>(&pinkTexture));
-		
+
+	PrepareDLSS();
 
 	RenderPassDatabase::InitAllRegisteredPasses();
 
@@ -474,6 +554,8 @@ void VulkanRenderer::InitVMA(const oGFX::SetupInfo& setupSpecs)
 void VulkanRenderer::SetupSwapchain()
 {
 	m_swapchain.Init(m_instance,m_device);
+	renderWidth = renderResolution * m_swapchain.swapChainExtent.width;
+	renderHeight= renderResolution * m_swapchain.swapChainExtent.height;
 }
 
 void VulkanRenderer::CreateDefaultRenderpass()
@@ -724,11 +806,8 @@ void VulkanRenderer::FullscreenBlit(VkCommandBuffer inCmd, vkutils::Texture& src
 
 
 	SSAOPC pc{};
-	VkPushConstantRange range;
-	range.offset = 0;
-	range.size = sizeof(SSAOPC);
 
-	cmd.SetPushConstant(PSOLayoutDB::fullscreenBlitPSOLayout, range, &pc);
+	cmd.SetPushConstant(PSOLayoutDB::fullscreenBlitPSOLayout, sizeof(SSAOPC), &pc);
 
 	uint32_t dynamicOffset = static_cast<uint32_t>(renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO),
 		m_device.properties.limits.minUniformBufferOffsetAlignment));
@@ -893,11 +972,11 @@ void VulkanRenderer::CreateDefaultPSOLayouts()
 	
 	
 	DescriptorBuilder::Begin()
-		.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-		.BindBuffer(3000, gpuTransformBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-		.BindImage(2002, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT,13)
-		.BindImage(2001, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.BindBuffer(2000, objectInformationBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindImage(FFX_SPD_BIND_SRV_INPUT_DOWNSAMPLE_SRC, nullptr, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindBuffer(FFX_SPD_BIND_CB_SPD, nullptr, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindImage(FFX_SPD_BIND_UAV_INPUT_DOWNSAMPLE_SRC_MIPS, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT,13)
+		.BindImage(FFX_SPD_BIND_UAV_INPUT_DOWNSAMPLE_SRC_MID_MIPMAP, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindBuffer(FFX_SPD_BIND_UAV_INTERNAL_GLOBAL_ATOMIC, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.BuildLayout(SetLayoutDB::compute_AMDSPD);
 
 	// create compute here
@@ -1070,10 +1149,10 @@ void VulkanRenderer::CreateDebugCallback()
 
 void VulkanRenderer::CreateFramebuffers()
 {
-	for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
-	{
-		vkDestroyFramebuffer(m_device.logicalDevice, swapChainFramebuffers[i], nullptr);
-	}
+	// for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
+	// {
+	// 	vkDestroyFramebuffer(m_device.logicalDevice, swapChainFramebuffers[i], nullptr);
+	// }
 
 	//resize framebuffer count to equal swapchain image count
 	swapChainFramebuffers.resize(m_swapchain.swapChainImages.size());
@@ -1095,13 +1174,13 @@ void VulkanRenderer::CreateFramebuffers()
 		framebufferCreateInfo.height = m_swapchain.swapChainExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		VkResult result = vkCreateFramebuffer(m_device.logicalDevice, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i]);
-		VK_NAME(m_device.logicalDevice, "swapchainFramebuffers", swapChainFramebuffers[i]);
-		if (result != VK_SUCCESS)
-		{
-			std::cerr << "Failed to create a Framebuffer!" << std::endl;
-			__debugbreak();
-		}
+		// VkResult result = vkCreateFramebuffer(m_device.logicalDevice, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i]);
+		// VK_NAME(m_device.logicalDevice, "swapchainFramebuffers", swapChainFramebuffers[i]);
+		// if (result != VK_SUCCESS)
+		// {
+		// 	std::cerr << "Failed to create a Framebuffer!" << std::endl;
+		// 	__debugbreak();
+		// }
 	}
 }
 
@@ -1138,9 +1217,139 @@ void VulkanRenderer::CreateCommandBuffers()
 	
 }
 
+void VulkanRenderer::UpdateRenderResolution()
+{
+	std::scoped_lock l{ g_mut_workQueue };
+	g_workQueue.push_back([this] { 
+		renderResolution = changedRenderResolution;
+		resizeSwapchain = true; 
+	});
+}
+
+void VulkanRenderer::SetUpscaler(UPSCALING_TYPE upscaler)
+{
+	std::scoped_lock l{ g_mut_workQueue };
+	g_workQueue.push_back([this, u = upscaler] {
+		m_upscaleType = u;
+		resizeSwapchain = true;
+	});
+}
+
+void VulkanRenderer::SetQuality(UPSCALING_QUALITY quality)
+{
+	std::scoped_lock l{ g_mut_workQueue };
+	g_workQueue.push_back([this, q = quality] {
+		m_upscaleQuality = q;
+		resizeSwapchain = true;
+	});
+}
+
+void VulkanRenderer::FillReccomendedSettings(glm::ivec2 inDisplaySize)
+{
+	if (m_recommendedSettingsLastSize == inDisplaySize)
+	{
+		return; // no need to refresh recommended Settings as the display resolution hasn't changed
+	}
+
+	for (PERF_QUALITY_ITEM &item : PERF_QUALITY_LIST)
+	{
+		m_NGX.QueryOptimalSettings(inDisplaySize, item.PerfQuality, &m_RecommendedSettingsMap[item.PerfQuality]);
+		if (m_RecommendedSettingsMap[item.PerfQuality].m_ngxRecommendedOptimalRenderSize.x == 0 ||
+			m_RecommendedSettingsMap[item.PerfQuality].m_ngxRecommendedOptimalRenderSize.y == 0)
+		{
+			item.PerfQualityAllowed = false;
+		}
+		else
+		{
+			item.PerfQualityAllowed = true;
+		}
+		if (m_RecommendedSettingsMap[item.PerfQuality].m_ngxDynamicMaximumRenderSize ==
+			m_RecommendedSettingsMap[item.PerfQuality].m_ngxDynamicMinimumRenderSize)
+		{
+			item.PerfQualityDynamicAllowed = false;
+		}
+		else
+		{
+			item.PerfQualityDynamicAllowed = true;
+		}
+	}
+	m_recommendedSettingsLastSize = inDisplaySize;
+}
+
+void VulkanRenderer::PrepareDLSS()
+{
+	auto engineToNVSDK = [](UPSCALING_QUALITY e) {
+		switch (e)
+		{
+		case UPSCALING_QUALITY::QUALITY: return NVSDK_NGX_PerfQuality_Value_MaxQuality;
+		case UPSCALING_QUALITY::BALANCED: return NVSDK_NGX_PerfQuality_Value_Balanced;
+		case UPSCALING_QUALITY::PERFORMANCE: return NVSDK_NGX_PerfQuality_Value_MaxPerf;
+		case UPSCALING_QUALITY::ULTRA_PERFORMANCE: return NVSDK_NGX_PerfQuality_Value_UltraPerformance;
+		case UPSCALING_QUALITY::NATIVE:
+		case UPSCALING_QUALITY::CUSTOM:
+		default: return NVSDK_NGX_PerfQuality_Value_DLAA;
+		}
+	};
+	DlssRecommendedSettings recco = m_RecommendedSettingsMap[engineToNVSDK(m_upscaleQuality)];
+
+	// dont always release
+	glm::ivec2 renderSize = { renderWidth,renderHeight };
+	glm::ivec2 displaySize = { m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height };
+	
+
+	static glm::ivec2 oldRenderSize = { 0,0 };
+	static UPSCALING_QUALITY oldUpscaleQuality = UPSCALING_QUALITY::NONE;
+	if (renderSize == oldRenderSize && m_upscaleQuality == oldUpscaleQuality)
+	{
+		return;// it should be ok.
+		// might need to check for proper resize of display size
+	}
+
+	oldRenderSize = renderSize;
+	oldUpscaleQuality = m_upscaleQuality;
+
+	if (m_NGX.DLSSisActive())
+	{
+		m_NGX.ReleaseDLSSFeatures();
+	}
+
+	vkutils::Texture& target = attachments.lighting_target;
+
+	bool isContentHDR = target.format == G_HDR_FORMAT || target.format == G_HDR_FORMAT_ALPHA;
+	bool depthInverted = true;
+	bool m_SharpeningOn = false;
+	bool m_AutoExposureOn = true;
+	float depthScale = 1.0f;
+
+	uint32_t noRenderPreset = 0;
+
+	FillReccomendedSettings({ m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height });
+	for (PERF_QUALITY_ITEM& item : PERF_QUALITY_LIST)
+	{
+		recco = m_RecommendedSettingsMap[item.PerfQuality];
+
+		printf("[%d] %s\t:A(%s) D(%s) R{%4d,%4d} Mx{%4d,%4d} Mn{%4d,%4d}\n", item.PerfQuality, item.PerfQualityText
+			, (item.PerfQualityAllowed ? "OK" : "NO")
+			, (item.PerfQualityDynamicAllowed ? "OK" : "NO")
+			, recco.m_ngxRecommendedOptimalRenderSize.x, recco.m_ngxRecommendedOptimalRenderSize.y
+			, recco.m_ngxDynamicMaximumRenderSize.x, recco.m_ngxDynamicMaximumRenderSize.y
+			, recco.m_ngxDynamicMinimumRenderSize.x, recco.m_ngxDynamicMinimumRenderSize.y
+		);
+	}
+	
+	m_NGX.InitializeDLSSFeatures(renderSize,
+		displaySize,
+		isContentHDR, depthInverted,
+		depthScale, m_SharpeningOn,
+		m_AutoExposureOn, engineToNVSDK(m_upscaleQuality),
+		noRenderPreset);
+
+	
+}
+
 VkCommandBuffer VulkanRenderer::GetCommandBuffer()
 {
-	uint32_t thread_id = g_taskManagerMapping[std::this_thread::get_id()];
+	uint32_t thread_id = (uint32_t)g_taskManagerMapping[std::this_thread::get_id()];
 	constexpr bool beginBuffer = true;
 	VkCommandBuffer result = m_device.commandPoolManagers[getFrame()].GetNextCommandBuffer(thread_id,beginBuffer);
 	VK_NAME(m_device.logicalDevice, "DEFAULTCMD", result);
@@ -1217,7 +1426,7 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 				{
 					image.name = "GW_"+std::to_string(wrdID)+":COL";
 					image.forFrameBuffer(&m_device, G_NON_HDR_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-						m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height);
+						m_swapchain.swapChainExtent.width,m_swapchain.swapChainExtent.height, false);
 					fbCache.RegisterFramebuffer(image);
 					auto cmd = GetCommandBuffer();
 					vkutils::SetImageInitialState(cmd, image);
@@ -1247,6 +1456,8 @@ void VulkanRenderer::InitWorld(GraphicsWorld* world)
 			}		
 		}	
 	};
+
+	world->m_OctTree = std::make_shared<oGFX::OctTree>(oGFX::OctTree{ oGFX::AABB{vec3{-25.0f},vec3{25.0f}} });
 	world->initialized = true;
 	std::scoped_lock l{g_mut_workQueue};
 	g_workQueue.emplace_back(lam);
@@ -1402,9 +1613,12 @@ void VulkanRenderer::UploadLights()
 	//memcpy(lightsBuffer.mapped, &lightUBO, sizeof(CB::LightUBO));
 
 	const auto& spotLights = batches.GetLocalLights();
-	m_numShadowcastLights = batches.m_numShadowCastGrids;
+	m_numShadowcastLights = (uint32_t)batches.m_numShadowCastGrids;
 	auto cmd = GetCommandBuffer();
-	globalLightBuffer[getFrame()].writeToCmd(spotLights.size(), spotLights.data(), cmd);
+	PROFILE_GPU_CONTEXT(cmd);
+	PROFILE_GPU_EVENT("Upload Light");
+	VK_NAME(m_device.logicalDevice, "Upload Light", cmd);
+	globalLightBuffer.writeToCmd(spotLights.size(), spotLights.data(), cmd);
 
 }
 
@@ -1544,7 +1758,7 @@ void VulkanRenderer::CreateDescriptorPool()
 void VulkanRenderer::CreateDescriptorSets_GPUScene()
 {
 	VkDescriptorBufferInfo info{};
-	info.buffer = gpuTransformBuffer[getFrame()].getBuffer();
+	info.buffer = gpuTransformBuffer.getBuffer();
 	info.offset = 0;
 	info.range = VK_WHOLE_SIZE;
 
@@ -1554,18 +1768,19 @@ void VulkanRenderer::CreateDescriptorSets_GPUScene()
 		VK_IMAGE_LAYOUT_UNDEFINED);
 
 	DescriptorBuilder::Begin()
-		.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.BindBuffer(3, gpuTransformBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.BindBuffer(4, gpuBoneMatrixBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.BindBuffer(5, objectInformationBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.BindBuffer(6, gpuSkinningBoneWeightsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindBuffer(1, instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindBuffer(3, gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindBuffer(4, gpuBoneMatrixBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindBuffer(5, objectInformationBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.BindBuffer(6, gpuSkinningWeightsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.Build(descriptorSet_gpuscene,SetLayoutDB::gpuscene);
 }
 
 void VulkanRenderer::CreateDescriptorSets_Lights()
 {
 	VkDescriptorBufferInfo info{};
-	info.buffer = globalLightBuffer[getFrame()].getBuffer();
+	info.buffer = globalLightBuffer.getBuffer();
 	info.offset = 0;
 	info.range = VK_WHOLE_SIZE;
 
@@ -1954,67 +2169,60 @@ void VulkanRenderer::InitializeRenderBuffers()
 
 	// Note: Moved here from VulkanRenderer::UpdateIndirectCommands
 	VkCommandBuffer cmd = GetCommandBuffer();
-	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
-	{
 
-		indirectCommandsBuffer[i].Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT );
-		VK_NAME(m_device.logicalDevice, "Indirect Command Buffer", indirectCommandsBuffer[i].getBuffer()); 
 
-		shadowCasterCommandsBuffer[i].Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT );
-		shadowCasterCommandsBuffer[i].reserve(cmd,MAX_OBJECTS);
-		VK_NAME(m_device.logicalDevice, "Shadow Command Buffer", shadowCasterCommandsBuffer[i].getBuffer());
+	indirectCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "Indirect Command Buffer");
 
-		// Note: Moved here from VulkanRenderer::UpdateInstanceData
-		instanceBuffer[i].Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT );
-		VK_NAME(m_device.logicalDevice, "Instance Buffer", instanceBuffer[i].getBuffer());
+	shadowCasterCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, "Shadow Command Buffer");
+	shadowCasterCommandsBuffer.reserve(cmd, MAX_OBJECTS);
 
-		objectInformationBuffer[i].Init(&m_device,  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		//objectInformationBuffer.reserve(MAX_OBJECTS);  
-		VK_NAME(m_device.logicalDevice, "Object inforBuffer", objectInformationBuffer[i].getBuffer());
+	// Note: Moved here from VulkanRenderer::UpdateInstanceData
+	instanceBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "Instance Buffer");
 
-		constexpr uint32_t MAX_LIGHTS = 512;
-		// TODO: Currently this is only for OmniLightInstance.
-		// You should also support various light types such as spot lights, etc...
+	shadowCasterInstanceBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "shadowCasterInstanceBuffer");
 
-		globalLightBuffer[i].Init(&m_device,  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		//globalLightBuffer.reserve(MAX_LIGHTS);
-		VK_NAME(m_device.logicalDevice, "Light Buffer", globalLightBuffer[i].getBuffer());
+	objectInformationBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "Object infoBuffer");
+	casterObjectInformationBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "Caster Object infoBuffer");
+	//objectInformationBuffer.reserve(MAX_OBJECTS);  
 
-		constexpr uint32_t MAX_GLOBAL_BONES = 2048;
-		constexpr uint32_t MAX_SKINNING_VERTEX_BUFFER_SIZE = 4 * 1024 * 1024; // 4MB
+	constexpr uint32_t MAX_LIGHTS = 512;
+	// TODO: Currently this is only for OmniLightInstance.
+	// You should also support various light types such as spot lights, etc...
 
-		gpuBoneMatrixBuffer[i].Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		//gpuBoneMatrixBuffer.reserve(MAX_GLOBAL_BONES * sizeof(glm::mat4x4));
-		VK_NAME(m_device.logicalDevice, "Bone Matrix Buffer", gpuBoneMatrixBuffer[i].getBuffer());
+	globalLightBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "Light Buffer");
+	//globalLightBuffer.reserve(MAX_LIGHTS);
+
+	constexpr uint32_t MAX_GLOBAL_BONES = 2048;
+	constexpr uint32_t MAX_SKINNING_VERTEX_BUFFER_SIZE = 4 * 1024 * 1024; // 4MB
+
+	gpuBoneMatrixBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, "Bone Matrix Buffer");
+	//gpuBoneMatrixBuffer.reserve(MAX_GLOBAL_BONES * sizeof(glm::mat4x4));
 
 		
 
-		g_particleCommandsBuffer[i].Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
-		//g_particleCommandsBuffer.reserve(1024); // commands are generally per emitter. shouldnt have so many..
+	g_particleCommandsBuffer.Init(&m_device, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,"particle commands");
+	//g_particleCommandsBuffer.reserve(1024); // commands are generally per emitter. shouldnt have so many..
 
-		g_UIVertexBufferGPU[i].Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		g_UIIndexBufferGPU[i].Init(&m_device, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-	}
+	g_UIVertexBufferGPU.Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,"g_UIVertexBufferGPU");
+	g_UIIndexBufferGPU.Init(&m_device, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,"g_UIIndexBufferGPU");
+	
 
-	g_GlobalMeshBuffers.IdxBuffer.Init(&m_device, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-	g_GlobalMeshBuffers.VtxBuffer.Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	g_GlobalMeshBuffers.IdxBuffer.Init(&m_device, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,"IdxBuffer");
+	g_GlobalMeshBuffers.VtxBuffer.Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,"VtxBuffer");
 	//g_GlobalMeshBuffers.IdxBuffer.reserve(8 * 1000 * 1000);
 	//g_GlobalMeshBuffers.VtxBuffer.reserve(1 * 1000 * 1000);
 
-	gpuSkinningBoneWeightsBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	gpuSkinningWeightsBuffer.Init(&m_device, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,"Skinning Weights Buffer");
 	//skinningVertexBuffer.reserve(MAX_SKINNING_VERTEX_BUFFER_SIZE);  
-	VK_NAME(m_device.logicalDevice, "Skinning Weights Buffer", gpuSkinningBoneWeightsBuffer.getBuffer());
 	
 
-	for (size_t i = 0; i < g_particleDatas.size(); i++)
-	{
-		g_particleDatas[i].Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		//g_particleDatas[i].reserve(100000*10); // 10 max particle systems
-	}
+	g_particleDatas.Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,"g_particleDatas");
 	
 
 	oGFX::CreateBuffer(m_device.m_allocator, sizeof(CB::AMDSPD_ATOMIC), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT| VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, SPDatomicBuffer);
+	VK_NAME(m_device.logicalDevice, "SPDatomicBuffer", SPDatomicBuffer.buffer);
 	oGFX::CreateBuffer(m_device.m_allocator, sizeof(CB::AMDSPD_UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, SPDconstantBuffer);
+	VK_NAME(m_device.logicalDevice, "SPDconstantBuffer", SPDconstantBuffer.buffer);
 	
 	const size_t STARTING_VERTEX_CNT = 5000;
 	size_t vertex_size = STARTING_VERTEX_CNT * sizeof(ImDrawVert);
@@ -2038,18 +2246,18 @@ void VulkanRenderer::InitializeRenderBuffers()
 
 void VulkanRenderer::DestroyRenderBuffers()
 {
-	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
-	{
-		indirectCommandsBuffer[i].destroy();
-		shadowCasterCommandsBuffer[i].destroy();
-		instanceBuffer[i].destroy();
-		objectInformationBuffer[i].destroy();
-		globalLightBuffer[i].destroy();
-		gpuBoneMatrixBuffer[i].destroy();
-		g_UIVertexBufferGPU[i].destroy();
-		g_UIIndexBufferGPU[i].destroy();
-		g_particleCommandsBuffer[i].destroy();
-	}
+	
+	indirectCommandsBuffer.destroy();
+	shadowCasterCommandsBuffer.destroy();
+	instanceBuffer.destroy();
+	shadowCasterInstanceBuffer.destroy();
+	objectInformationBuffer.destroy();
+	casterObjectInformationBuffer.destroy();
+	globalLightBuffer.destroy();
+	gpuBoneMatrixBuffer.destroy();
+	g_UIVertexBufferGPU.destroy();
+	g_UIIndexBufferGPU.destroy();
+	g_particleCommandsBuffer.destroy();
 
 	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 	{
@@ -2063,12 +2271,11 @@ void VulkanRenderer::DestroyRenderBuffers()
 	}
 
 	
-	gpuSkinningBoneWeightsBuffer.destroy();
+	gpuSkinningWeightsBuffer.destroy();
 
-	for (size_t i = 0; i < g_particleDatas.size(); i++)
-	{
-		g_particleDatas[i].destroy();
-	}
+	
+	g_particleDatas.destroy();
+	
 
 	vmaDestroyBuffer(m_device.m_allocator, SPDconstantBuffer.buffer, SPDconstantBuffer.alloc);
 	vmaDestroyBuffer(m_device.m_allocator, SPDatomicBuffer.buffer, SPDatomicBuffer.alloc);
@@ -2088,14 +2295,15 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 	{
 		auto& allObjectsCommands = batches.GetBatch(GraphicsBatch::ALL_OBJECTS);
 
-		objectCount = 0;
+		commandCount = 0;
 		for (auto& indirectCmd : allObjectsCommands)
 		{
-			objectCount += indirectCmd.instanceCount ?  indirectCmd.instanceCount:1;
+			commandCount += indirectCmd.instanceCount ?  indirectCmd.instanceCount:1;
 		}
+		//printf("Objects %d\n", commandCount);
+		commandCount = (uint32_t)allObjectsCommands.size();
 
-
-		if (objectCount == 0)
+		if (commandCount == 0)
 			return;
 
 
@@ -2107,37 +2315,61 @@ void VulkanRenderer::GenerateCPUIndirectDrawCommands()
 		}
 
 		auto cmd = GetCommandBuffer();
-		indirectCommandsBuffer[getFrame()].writeToCmd(allObjectsCommands.size(), allObjectsCommands.data(),cmd);
+		PROFILE_GPU_CONTEXT(cmd);
+		PROFILE_GPU_EVENT("Upload Indirect");
+		VK_NAME(m_device.logicalDevice, "Upload Indirect", cmd);
+		indirectCommandsBuffer.writeToCmd(allObjectsCommands.size(), allObjectsCommands.data(),cmd);
+		VkAccessFlags srcAccess = VK_ACCESS_MEMORY_WRITE_BIT;
+		VkAccessFlags dstAccess = VK_ACCESS_MEMORY_READ_BIT;
 
+		VkPipelineStageFlags prevStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		VkPipelineStageFlags nextStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+		// Make sure next stage can read this values once transfer is done
+		oGFX::vkutils::tools::insertBufferMemoryBarrier(cmd, m_device.queueIndices.graphicsFamily,
+			indirectCommandsBuffer.getBuffer(), srcAccess, dstAccess,
+			prevStage, nextStage);
 	}
 
 	// shadow commands
 	{
-		auto& shadowObjects = batches.GetBatch(GraphicsBatch::SHADOW_CAST);
+		auto& shadowObjects = batches.GetBatch(GraphicsBatch::SHADOW_OCCLUDER);
 		if (shadowObjects.size() > MAX_OBJECTS)
 		{
 			MESSAGE_BOX_ONCE(windowPtr->GetRawHandle(), L"You just busted the max size of indirect command buffer.", L"BAD ERROR");
 		}
-		shadowCasterCommandsBuffer[getFrame()].clear();
+		shadowCasterCommandsBuffer.clear();
 		auto cmd = GetCommandBuffer();
-		shadowCasterCommandsBuffer[getFrame()].writeToCmd(shadowObjects.size(), (void*)shadowObjects.data(),cmd);
+		shadowCasterCommandsBuffer.writeToCmd(shadowObjects.size(), (void*)shadowObjects.data(),cmd);
+
+		VkAccessFlags srcAccess = VK_ACCESS_MEMORY_WRITE_BIT;
+		VkAccessFlags dstAccess = VK_ACCESS_MEMORY_READ_BIT;
+
+		VkPipelineStageFlags prevStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		VkPipelineStageFlags nextStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+		// Make sure next stage can read this values once transfer is done
+		oGFX::vkutils::tools::insertBufferMemoryBarrier(cmd, m_device.queueIndices.graphicsFamily,
+			shadowCasterCommandsBuffer.getBuffer(), srcAccess, dstAccess,
+			prevStage, nextStage);
 	}
 
 	{
 		auto& particleCommands = batches.GetParticlesBatch();
 		auto& particleData = batches.GetParticlesData();
 
-		g_particleCommandsBuffer[getFrame()].clear();
-		g_particleDatas[getFrame()].clear();
+		g_particleCommandsBuffer.clear();
+		g_particleDatas.clear();
 
 		auto cmd = GetCommandBuffer();
-		g_particleCommandsBuffer[getFrame()].writeToCmd(particleCommands.size(), particleCommands.data(),cmd);		
-		g_particleDatas[getFrame()].writeToCmd(particleData.size(), particleData.data(),cmd);
+		g_particleCommandsBuffer.writeToCmd(particleCommands.size(), particleCommands.data(),cmd);		
+		g_particleDatas.writeToCmd(particleData.size(), particleData.data(),cmd);
 		
 	}
 
+	
 }
-
+#pragma optimize("" , off)
 void VulkanRenderer::UploadInstanceData()
 {
 	PROFILE_SCOPED();
@@ -2155,6 +2387,7 @@ void VulkanRenderer::UploadInstanceData()
 	gpuTransform.clear();
 	gpuTransform.reserve(MAX_OBJECTS);
 
+
 	objectInformation.clear();
 	objectInformation.reserve(MAX_OBJECTS);
 
@@ -2165,84 +2398,69 @@ void VulkanRenderer::UploadInstanceData()
 
 	uint32_t indexCounter = 0;
 	std::vector<oGFX::InstanceData> instanceDataBuff;
-	instanceDataBuff.reserve(objectCount);
+
+	std::unordered_map<uint32_t, uint32_t>entitiyToBoneBufferOffset;
+
+	instanceDataBuff.reserve(batches.m_culledCameraObjects.size());
 	if (currWorld)
 	{
 		uint32_t matCnt = 0;
-		for (auto& ent : currWorld->GetAllObjectInstances())
-		{
-			
-			auto& mdl = g_globalModels[ent.modelID];
-			for (size_t i = 0; i < mdl.m_subMeshes.size(); i++)
-			{
-				if (ent.submesh[i] == true)
-				{
-					oGFX::InstanceData instData;
-					//size_t sz = instanceData.size();
-					//for (size_t x = 0; x < g_globalModels[ent.modelID].meshCount; x++)
-					{
-						// This is per entity. Should be per material.
-						constexpr uint32_t invalidIndex = 0xFFFFFFFF;
+		for (DrawData& ent : batches.m_culledCameraObjects)
+		{							
+			oGFX::InstanceData instData;
 
-						uint32_t albedo = ent.bindlessGlobalTextureIndex_Albedo;
-						uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
-						uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
-						uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
-						uint32_t emissive = ent.bindlessGlobalTextureIndex_Emissive;
-						const uint8_t perInstanceData = ent.instanceData;
+			// This is per entity. Should be per material.
+			constexpr uint32_t invalidIndex = 0xFFFFFFFF;
 
-						if (albedo == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Albedo].isValid == false)
-							albedo = whiteTextureID; // TODO: Dont hardcode this bindless texture index
-						if (normal == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Normal].isValid == false)
-							normal = blackTextureID; // TODO: Dont hardcode this bindless texture index
-						if (roughness == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Roughness].isValid == false)
-							roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
-						if (metallic == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Metallic].isValid == false)
-							metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
-						if (emissive == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Emissive].isValid == false)
-							emissive = blackTextureID; // TODO: Dont hardcode this bindless texture index
+			uint32_t albedo = ent.bindlessGlobalTextureIndex_Albedo;
+			uint32_t normal = ent.bindlessGlobalTextureIndex_Normal;
+			uint32_t roughness = ent.bindlessGlobalTextureIndex_Roughness;
+			uint32_t metallic = ent.bindlessGlobalTextureIndex_Metallic;
+			uint32_t emissive = ent.bindlessGlobalTextureIndex_Emissive;
+			const uint8_t perInstanceData = ent.instanceData;
 
-						// Important: Make sure this index packing matches the unpacking in the shader
-						const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
-						const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
-						const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
-						auto res = ent.flags & ObjectInstanceFlags::SKINNED; 
-						auto isSkin = (res== ObjectInstanceFlags::SKINNED);
-						const uint32_t emissive_skinned = emissive << 16 | (uint32_t)perInstanceData | isSkin << 8; //matCnt;
+			if (albedo == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Albedo].isValid == false)
+				albedo = whiteTextureID; // TODO: Dont hardcode this bindless texture index
+			if (normal == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Normal].isValid == false)
+				normal = blackTextureID; // TODO: Dont hardcode this bindless texture index
+			if (roughness == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Roughness].isValid == false)
+				roughness = whiteTextureID; // TODO: Dont hardcode this bindless texture index
+			if (metallic == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Metallic].isValid == false)
+				metallic = blackTextureID; // TODO: Dont hardcode this bindless texture index
+			if (emissive == invalidIndex || g_Textures[ent.bindlessGlobalTextureIndex_Emissive].isValid == false)
+				emissive = blackTextureID; // TODO: Dont hardcode this bindless texture index
 
-																						 // Putting these ranges here for easy reference:
-																						 // 9-bit:  [0 to 511]
-																						 // 10-bit: [0 to 1023]
-																						 // 11-bit: [0 to 2047]
-																						 // 12-bit: [0 to 4095]
-																						 // 13-bit: [0 to 8191]
-																						 // 14-bit: [0 to 16383]
-																						 // 15-bit: [0 to 32767]
-																						 // 16-bit: [0 to 65535]
+			// Important: Make sure this index packing matches the unpacking in the shader
+			const uint32_t albedo_normal = albedo << 16 | (normal & 0xFFFF);
+			const uint32_t roughness_metallic = roughness << 16 | (metallic & 0xFFFF);
+			const uint32_t instanceID = uint32_t(indexCounter); // the instance id should point to the entity
+			auto res = ent.flags & ObjectInstanceFlags::SKINNED;
+			auto isSkin = (res == ObjectInstanceFlags::SKINNED);
+			const uint32_t emissive_skinned = emissive << 16 | (uint32_t)perInstanceData | isSkin << 8; //matCnt;
 
-																						 // TODO: This is the solution for now.
-																						 // In the future, we can just use an index for all the materials (indirection) to fetch from another buffer.
-						instData.instanceAttributes = uvec4(instanceID, emissive_skinned, albedo_normal, roughness_metallic);
-						
-						instanceDataBuff.emplace_back(instData);
-					}
-				}				
+			// Putting these ranges here for easy reference:
+			// 9-bit:  [0 to 511]
+			// 10-bit: [0 to 1023]
+			// 11-bit: [0 to 2047]
+			// 12-bit: [0 to 4095]
+			// 13-bit: [0 to 8191]
+			// 14-bit: [0 to 16383]
+			// 15-bit: [0 to 32767]
+			// 16-bit: [0 to 65535]
 
-			} // end m_subMeshes loop
+			instData.instanceAttributes = uvec4(instanceID, emissive_skinned, albedo_normal, roughness_metallic);
 
-			//for (size_t i = 0; i < mdl.m_subMeshes.size(); i++)
+			instanceDataBuff.emplace_back(instData);
+
 			{
 				// creates a single transform reference for each entity in the scene
 				size_t x = gpuTransform.size();
-				mat4 xform = ent.localToWorld;
-				GPUTransform gpt;
-				gpt.row0 = vec4(xform[0][0], xform[1][0], xform[2][0], xform[3][0]);
-				gpt.row1 = vec4(xform[0][1], xform[1][1], xform[2][1], xform[3][1]);
-				gpt.row2 = vec4(xform[0][2], xform[1][2], xform[2][2], xform[3][2]);
-				mat4 inverseXform = glm::inverse(xform);
-				gpt.invRow0 = vec4(inverseXform[0][0], inverseXform[1][0], inverseXform[2][0], inverseXform[3][0]);
-				gpt.invRow1 = vec4(inverseXform[0][1], inverseXform[1][1], inverseXform[2][1], inverseXform[3][1]);
-				gpt.invRow2 = vec4(inverseXform[0][2], inverseXform[1][2], inverseXform[2][2], inverseXform[3][2]);
+				OO_ASSERT(indexCounter == x);
+				const mat4& xform = ent.localToWorld;
+				const mat4& prev = ent.prevLocalToWorld;
+				const mat4 inverseXform = glm::inverse(xform);
+				GPUTransform gpt = ConstructGPUTransform(xform, inverseXform,prev);
+
 				gpuTransform.emplace_back(gpt);
 			}
 			// skined mesh
@@ -2252,25 +2470,24 @@ void VulkanRenderer::UploadInstanceData()
 			oi.emissiveColour = ent.emissiveColour;
 			if ((ent.flags & ObjectInstanceFlags::SKINNED) == ObjectInstanceFlags::SKINNED)
 			{
-				auto& mdl = g_globalModels[ent.modelID];
-
-				if (ent.bones.empty())
+				auto& mdl = g_globalModels[ent.modelID];				
+				oi.boneWeightsOffset = mdl.skinningWeightsOffset;				
+				
+				auto it = entitiyToBoneBufferOffset.find(ent.entityID);
+				if (it == entitiyToBoneBufferOffset.end()) // doesnt exist, add bones
 				{
-					ent.bones.resize(mdl.skeleton->inverseBindPose.size());
-					for (auto& b:ent.bones )
+					uint32_t bonesOffset = static_cast<uint32_t>(boneMatrices.size());
+					for (size_t i = 0; i < ent.ptrToBoneBuffer->size(); i++)
 					{
-						b = mat4(1.0f);
+						boneMatrices.push_back((*ent.ptrToBoneBuffer)[i]);
 					}
+					// save offsert
+					entitiyToBoneBufferOffset[ent.entityID] = bonesOffset;
 				}
-				oi.boneWeightsOffset = mdl.skinningWeightsOffset;
-				oi.boneStartIdx = static_cast<uint32_t>(boneMatrices.size());
-				//oi.boneCnt = static_cast<uint32_t>(ent.bones.size());
 
-				for (size_t i = 0; i < ent.bones.size(); i++)
-				{
-					boneMatrices.push_back(ent.bones[i]);
-				}
+				oi.boneStartIdx = entitiyToBoneBufferOffset[ent.entityID];				
 			}
+			//boneMatrices.push_back(mat4(1.0f));
 
 			objectInformation.push_back(oi);
 
@@ -2278,17 +2495,110 @@ void VulkanRenderer::UploadInstanceData()
 			++matCnt;
 		}// end of entity instance loop
 	}
-	
+
+
+
+	gpuShadowCasterTransform.clear();
+	gpuShadowCasterTransform.reserve(MAX_OBJECTS);
+	std::vector<oGFX::InstanceData> casterInstanceData;
+	casterInstanceData.reserve(MAX_OBJECTS);
+	std::vector<GPUObjectInformation> casterObjectInformation;
+	casterObjectInformation.reserve(MAX_OBJECTS);
+	auto& shadowCasters = batches.m_casterData;
+	size_t casterCounter{};
+	// for each light
+	for (GraphicsBatch::CastersData& caster : shadowCasters)
+	{		
+		// for each face
+		for (size_t face = 0; face < 6; face++)
+		{
+
+			std::vector<oGFX::IndirectCommand>& commands = caster.m_commands[face];
+			std::vector<DrawData>& entities = caster.m_culledObjects[face];
+
+			// store previous size
+			size_t offset = gpuShadowCasterTransform.size();
+			// for each mesh
+			for (size_t indir = 0; indir < commands.size(); indir++)
+			{
+				oGFX::IndirectCommand icmd = commands[indir];
+
+				for (size_t i = 0 ; i < icmd.instanceCount; i++)
+				{
+					auto& ent = entities[icmd.firstInstance+i];
+					// creates a single transform reference for each entity in the scene
+					const mat4& xform = ent.localToWorld;
+					const mat4& prev = ent.prevLocalToWorld;
+					const mat4 inverseXform = glm::inverse(xform);
+					GPUTransform gpt = ConstructGPUTransform(xform, inverseXform, prev);
+
+					gpuShadowCasterTransform.emplace_back(gpt);
+
+					bool isSkin = (bool)(ent.flags & ObjectInstanceFlags::SKINNED);
+					const uint8_t perInstanceData = ent.instanceData;
+					const uint32_t emissive_skinned = ent.bindlessGlobalTextureIndex_Emissive << 16 | (uint32_t)perInstanceData | isSkin << 8; //matCnt;
+					oGFX::InstanceData instData;
+					instData.instanceAttributes = uvec4(casterCounter, emissive_skinned, 0, 0);
+					casterInstanceData.emplace_back(instData);
+
+					casterCounter++;
+
+					GPUObjectInformation oi;
+					oi.entityID = ent.entityID;
+					oi.materialIdx = 7; // tem,p
+					oi.emissiveColour = ent.emissiveColour;
+					if ((ent.flags & ObjectInstanceFlags::SKINNED) == ObjectInstanceFlags::SKINNED)
+					{
+						auto& mdl = g_globalModels[ent.modelID];
+						oi.boneWeightsOffset = mdl.skinningWeightsOffset;
+
+						auto it = entitiyToBoneBufferOffset.find(ent.entityID);
+						if (it == entitiyToBoneBufferOffset.end()) // doesnt exist, add bones
+						{
+							uint32_t bonesOffset = static_cast<uint32_t>(boneMatrices.size());
+							for (size_t i = 0; i < ent.ptrToBoneBuffer->size(); i++)
+							{
+								boneMatrices.push_back((*ent.ptrToBoneBuffer)[i]);
+							}
+							// save offset
+							entitiyToBoneBufferOffset[ent.entityID] = bonesOffset;
+						}
+
+						oi.boneStartIdx = entitiyToBoneBufferOffset[ent.entityID];
+					}
+					//boneMatrices.push_back(mat4(1.0f));
+
+					casterObjectInformation.push_back(oi);
+				}
+			}
+
+			for (oGFX::IndirectCommand& cmd : commands)
+			{
+				// the offset to the transform will be based off the big buffer
+				cmd.firstInstance += (uint32_t)offset;
+			}
+
+		} // end for face	
+	}
+
 
 	if (instanceDataBuff.empty())
 	{
 		return;
 	}
-	auto cmd = GetCommandBuffer();
-	gpuTransformBuffer[getFrame()].writeToCmd(gpuTransform.size(), gpuTransform.data(),cmd);
-	gpuBoneMatrixBuffer[getFrame()].writeToCmd(boneMatrices.size(), boneMatrices.data(),cmd);
 
-	objectInformationBuffer[getFrame()].writeToCmd(objectInformation.size(), objectInformation.data(),cmd);
+	auto cmd = GetCommandBuffer();
+	PROFILE_GPU_CONTEXT(cmd);
+	PROFILE_GPU_EVENT("Upload OI");
+	VK_NAME(m_device.logicalDevice, "Upload OI", cmd);
+	gpuTransformBuffer.writeToCmd(gpuTransform.size(), gpuTransform.data(),cmd);
+	gpuBoneMatrixBuffer.writeToCmd(boneMatrices.size(), boneMatrices.data(),cmd);
+
+	gpuShadowCasterTransformBuffer.writeToCmd(gpuShadowCasterTransform.size(), gpuShadowCasterTransform.data(), cmd);
+
+	objectInformationBuffer.writeToCmd(objectInformation.size(), objectInformation.data(), cmd);
+
+	casterObjectInformationBuffer.writeToCmd(casterObjectInformation.size(), casterObjectInformation.data(),cmd);
 
     // Better to catch this on the software side early than the Vulkan validation layer
 	// TODO: Fix this gracefully
@@ -2297,7 +2607,35 @@ void VulkanRenderer::UploadInstanceData()
 		MESSAGE_BOX_ONCE(windowPtr->GetRawHandle(), L"You just busted the max size of instance buffer.", L"BAD ERROR");
     }
 
-	instanceBuffer[getFrame()].writeToCmd(instanceDataBuff.size(), instanceDataBuff.data(),cmd);
+	VkAccessFlags srcAccess = VK_ACCESS_MEMORY_WRITE_BIT;
+	VkAccessFlags dstAccess = VK_ACCESS_MEMORY_READ_BIT;
+
+	VkPipelineStageFlags prevStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	VkPipelineStageFlags nextStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+	instanceBuffer.writeToCmd(instanceDataBuff.size(), instanceDataBuff.data(),cmd);
+
+	shadowCasterInstanceBuffer.writeToCmd(casterInstanceData.size(), casterInstanceData.data(),cmd);
+	
+	oGFX::vkutils::tools::insertBufferMemoryBarrier(cmd, m_device.queueIndices.graphicsFamily,
+		shadowCasterInstanceBuffer.getBuffer(), srcAccess, dstAccess,
+		prevStage, nextStage);
+
+	oGFX::vkutils::tools::insertBufferMemoryBarrier(cmd, m_device.queueIndices.graphicsFamily,
+		instanceBuffer.getBuffer(), srcAccess, dstAccess,
+		prevStage, nextStage);
+	
+	
+	oGFX::vkutils::tools::insertBufferMemoryBarrier(cmd, m_device.queueIndices.graphicsFamily,
+		objectInformationBuffer.getBuffer(), srcAccess, dstAccess,
+		prevStage, nextStage);
+	oGFX::vkutils::tools::insertBufferMemoryBarrier(cmd, m_device.queueIndices.graphicsFamily,
+		gpuTransformBuffer.getBuffer(), srcAccess, dstAccess,
+		prevStage, nextStage);
+
+	oGFX::vkutils::tools::insertBufferMemoryBarrier(cmd, m_device.queueIndices.graphicsFamily,
+		gpuShadowCasterTransformBuffer.getBuffer(), srcAccess, dstAccess,
+		prevStage, nextStage);
 
 }
 
@@ -2324,14 +2662,18 @@ void VulkanRenderer::UploadUIData()
 	}
 
 	auto cmd = GetCommandBuffer();
-	g_UIVertexBufferGPU[getFrame()].writeToCmd(verts.size(), verts.data(),cmd);
-	g_UIIndexBufferGPU[getFrame()].writeToCmd(idx.size(), idx.data(),cmd);
+	PROFILE_GPU_CONTEXT(cmd);
+	PROFILE_GPU_EVENT("Upload UI");
+	VK_NAME(m_device.logicalDevice, "Upload UI", cmd);
+	g_UIVertexBufferGPU.writeToCmd(verts.size(), verts.data(),cmd);
+	g_UIIndexBufferGPU.writeToCmd(idx.size(), idx.data(),cmd);
 
 
 }
 
 bool VulkanRenderer::PrepareFrame()
 {
+	
 	{
 		PROFILE_SCOPED("Work queue");
 		std::scoped_lock s{ g_mut_workQueue };
@@ -2340,6 +2682,7 @@ bool VulkanRenderer::PrepareFrame()
 			g_workQueue[i]();
 		}
 		g_workQueue.clear();
+
 	}
 
 	if (resizeSwapchain || windowPtr->m_width == 0 ||windowPtr->m_height == 0)
@@ -2371,7 +2714,7 @@ void VulkanRenderer::BeginDraw()
 
 	//vkWaitForFences(m_device.logicalDevice, 1, &drawFences[getFrame()], VK_TRUE, UINT64_MAX);
 	uint64_t res{};
-	VK_CHK(vkGetSemaphoreCounterValue(m_device.logicalDevice, frameCountSemaphore, &res));
+	VK_CHK(vkGetSemaphoreCounterValue(m_device.logicalDevice, frameCountSemaphore, &frameCounter));
 	//printf("[FRAME COUNTER %5llu]\n", res);	
 
 	//wait for given fence to signal from last draw before continuing
@@ -2426,20 +2769,84 @@ void VulkanRenderer::BeginDraw()
 		if (currWorld)
 		{
 			PROFILE_SCOPED("Init batches");
+
+			VkExtent2D resInfo{ m_swapchain.swapChainExtent };
+
+			// Increment jitter index for frame
+			++m_JitterIndex;
+			
+			//prevjitterX = currWorld->cameras[0].jitterValues.x;
+			//prevjitterY = currWorld->cameras[0].jitterValues.y;
+
+			prevjitterX =jitterX;
+			prevjitterY =jitterY;
+
+			jitterX = 0.0f;
+			jitterY = 0.0f;
+			jitterPhaseCount = 0;
+
+			
+			jitterPhaseCount = ffxFsr2GetJitterPhaseCount(renderWidth, resInfo.width);
+			ffxFsr2GetJitterOffset(&jitterX, &jitterY, m_JitterIndex, jitterPhaseCount);
+						
+			for (size_t i = 0; i < currWorld->numCameras; i++)
+			{
+				Camera& cam = currWorld->cameras[i];		
+
+				if (m_useJitter && m_upscaleType != UPSCALING_TYPE::NONE) {
+
+					uint32_t x = getFrame();
+					float xval[]{ -.5,.5 };
+					float yval[]{ -.5,.5 };
+					//jitterX = xval[x];
+					//jitterY = yval[x];
+					cam.SetJitterValues({ -2.f * jitterX / renderWidth, 2.f * jitterY / renderHeight });
+				}
+				else {
+					cam.SetJitterValues({ 0.0f,0.0f });
+					m_JitterIndex = 1;
+				}
+
+				cam.UpdateMatrices();
+			}
+			
 			batches.Init(currWorld, this, MAX_OBJECTS);
 			currWorld->BeginFrame();
+			auto f = currWorld->cameras[0].GetFrustum();
+			std::vector<oGFX::AABB> boxes;
+			std::vector<uint32_t> depth;
+			currWorld->m_OctTree->GetActiveBoxList(boxes, depth);
+			std::vector<oGFX::AABB> visible;
+			std::vector<oGFX::AABB> intersecting;
+			currWorld->m_OctTree->GetBoxesInFrustum(f, visible, intersecting);
+			//size_t colsSz = oGFX::Colors::c.size();
+			//for (size_t i = 0; i < boxes.size(); i++)
+			//{
+			//	oGFX::DebugDraw::AddAABB(boxes[i], oGFX::Colors::c[depth[i] % colsSz]);
+			//}
+			for (size_t i = 0; i < visible.size(); i++)
+			{
+				//oGFX::DebugDraw::AddAABB(visible[i], oGFX::Colors::GREEN);
+			}
+			for (size_t i = 0; i < intersecting.size(); i++)
+			{
+				//oGFX::DebugDraw::AddAABB(intersecting[i], oGFX::Colors::YELLOW);
+			}
 			batches.GenerateBatches();
+
+			
 		}
 
 		{
 			PROFILE_SCOPED("Transfer data");
 			{				
 				auto cmd = GetCommandBuffer();
+				VK_NAME(m_device.logicalDevice, "TransferMesh", cmd);
 				{
 					PROFILE_SCOPED("Mesh buffers");
 					if (g_GlobalMeshBuffers.IdxBuffer.m_mustUpdate) g_GlobalMeshBuffers.IdxBuffer.flushToGPU(cmd);
 					if (g_GlobalMeshBuffers.VtxBuffer.m_mustUpdate) g_GlobalMeshBuffers.VtxBuffer.flushToGPU(cmd);
-					if (gpuSkinningBoneWeightsBuffer.m_mustUpdate) gpuSkinningBoneWeightsBuffer.flushToGPU(cmd);
+					if (gpuSkinningWeightsBuffer.m_mustUpdate) gpuSkinningWeightsBuffer.flushToGPU(cmd);
 				}
 				
 				UpdateUniformBuffers();
@@ -2456,11 +2863,12 @@ void VulkanRenderer::BeginDraw()
 				VK_IMAGE_LAYOUT_UNDEFINED);
 
 			DescriptorBuilder::Begin()
-				.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-				.BindBuffer(3, gpuTransformBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-				.BindBuffer(4, gpuBoneMatrixBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-				.BindBuffer(5, objectInformationBuffer[getFrame()].GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-				.BindBuffer(6, gpuSkinningBoneWeightsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+				.BindImage(0, &basicSampler, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+				.BindBuffer(1, instanceBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+				.BindBuffer(3, gpuTransformBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+				.BindBuffer(4, gpuBoneMatrixBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+				.BindBuffer(5, objectInformationBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+				.BindBuffer(6, gpuSkinningWeightsBuffer.GetBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 				.Build(descriptorSet_gpuscene,SetLayoutDB::gpuscene);
 	
 			auto uniformMinAlignment = m_device.properties.limits.minUniformBufferOffsetAlignment;
@@ -2513,7 +2921,7 @@ void VulkanRenderer::RenderFrame()
 			cond.notify_all();
 			};
 		drawCallRecrodingCompleted.CompletionTask = Task(tasksDone);
-		drawCallRecrodingCompleted.TaskCount = m_taskList.size();
+		drawCallRecrodingCompleted.TaskCount = (uint32_t)m_taskList.size();
 
 		g_taskManager.AddTaskList(m_taskList);
 		{
@@ -2574,10 +2982,23 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 		AddRenderer(g_LightingPass);
 		AddRenderer(g_SkyRenderPass);
 		AddRenderer(g_LightingHistogram);
-		AddRenderer(g_BloomPass);
-		AddRenderer(g_ForwardParticlePass);
 		AddRenderer(g_ForwardUIPass);
-		AddRenderer(g_DebugDrawRenderpass);
+		AddRenderer(g_ForwardParticlePass);
+		switch (m_upscaleType)
+		{
+		case UPSCALING_TYPE::DLSS:
+			AddRenderer(g_DLSSPass);
+			break;
+		case UPSCALING_TYPE::FSR2:
+			AddRenderer(g_FSR2Pass);
+			break;
+		case UPSCALING_TYPE::NONE:
+		default:
+			break;
+		}
+
+		AddRenderer(g_BloomPass);
+		//AddRenderer(g_DebugDrawRenderpass);
 		
 		auto updateHistogram = [this](void*) {
 			const VkCommandBuffer cmd = GetCommandBuffer();
@@ -2603,17 +3024,21 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 			// TODO: Very bad pls fix
 			auto thisID = currWorld->targetIDs[1];
 			auto& texture = renderTargets[thisID].texture;
-
 			auto nextID = currWorld->targetIDs[0];
-			auto& nextTexture = renderTargets[nextID].texture;
-			FullscreenBlit(cmd, nextTexture, nextTexture.referenceLayout, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+			vkutils::Texture* nextTexture;
+			nextTexture = &renderTargets[nextID].texture;
+
+			FullscreenBlit(cmd, *nextTexture, nextTexture->referenceLayout, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 		}
 		else
 		{
 			auto thisID = currWorld->targetIDs[0];
-			auto& texture = renderTargets[thisID].texture;
-			FullscreenBlit(cmd, texture, texture.referenceLayout, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			vkutils::Texture* texture;
+			texture = &renderTargets[thisID].texture;
+			
+			FullscreenBlit(cmd, *texture, texture->referenceLayout, dst, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		}
 	};
 	m_taskList.push(Task(blitT, 0, &drawCallRecrodingCompleted));
@@ -2737,45 +3162,11 @@ void VulkanRenderer::Present()
 	++currentFrame;
 }
 
-void ffxSpdSetup(uint32_t*    dispatchThreadGroupCountXY,
-                         uint32_t*    workGroupOffset,
-                         uint32_t*    numWorkGroupsAndMips,
-					     uint32_t*     rectInfo,
-                         int32_t mips)
-{
-    // determines the offset of the first tile to downsample based on
-    // left (rectInfo[0]) and top (rectInfo[1]) of the subregion.
-    workGroupOffset[0] = rectInfo[0] / 64;
-    workGroupOffset[1] = rectInfo[1] / 64;
-
-    uint32_t endIndexX = (rectInfo[0] + rectInfo[2] - 1) / 64;  // rectInfo[0] = left, rectInfo[2] = width
-	uint32_t endIndexY = (rectInfo[1] + rectInfo[3] - 1) / 64;  // rectInfo[1] = top, rectInfo[3] = height
-
-    // we only need to dispatch as many thread groups as tiles we need to downsample
-    // number of tiles per slice depends on the subregion to downsample
-    dispatchThreadGroupCountXY[0] = endIndexX + 1 - workGroupOffset[0];
-    dispatchThreadGroupCountXY[1] = endIndexY + 1 - workGroupOffset[1];
-
-    // number of thread groups per slice
-    numWorkGroupsAndMips[0] = (dispatchThreadGroupCountXY[0]) * (dispatchThreadGroupCountXY[1]);
-
-    if (mips >= 0)
-    {
-        numWorkGroupsAndMips[1] = uint32_t(mips);
-    }
-    else
-    {
-        // calculate based on rect width and height
-		uint32_t resolution    = std::max(rectInfo[2], rectInfo[3]);
-        numWorkGroupsAndMips[1] = uint32_t((std::min(std::floor(std::log2(float(resolution))), float(12))));
-    }
-}
-
 void VulkanRenderer::GenerateMipmaps(vkutils::Texture& texture)
 {
 	auto oldLayout = texture.referenceLayout;
 	
-	constexpr size_t maxNumMips = 13;
+	
 	auto texMips = std::floor(std::log2(std::max(texture.width, texture.height))) + 1;
 
 	if (texMips < 2) return;
@@ -2802,6 +3193,8 @@ void VulkanRenderer::GenerateMipmaps(vkutils::Texture& texture)
 	viewCreateInfo.subresourceRange.baseMipLevel = 0;
 	
 	viewCreateInfo.image = generatedTexture.image.image;
+
+	constexpr size_t maxNumMips = 13;
 	std::array < VkImageView, maxNumMips> mipViews;
 	for (size_t i = 0; i < texMips; i++)
 	{
@@ -2841,11 +3234,11 @@ void VulkanRenderer::GenerateMipmaps(vkutils::Texture& texture)
 
 	std::array<VkDescriptorSet, 1> dstsets;
 	DescriptorBuilder::Begin()
-		.BindImage(0, &dii, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
-		.BindBuffer(3000, &cb, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-		.BindImage(2002, samplers.data(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT, 13)
-		.BindImage(2001, &samplers[6], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.BindBuffer(2000, &atomic, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindImage(FFX_SPD_BIND_SRV_INPUT_DOWNSAMPLE_SRC, &dii, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindBuffer(FFX_SPD_BIND_CB_SPD, SPDconstantBuffer.getBufferInfoPtr(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindImage(FFX_SPD_BIND_UAV_INPUT_DOWNSAMPLE_SRC_MIPS, samplers.data(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT, 13)
+		.BindImage(FFX_SPD_BIND_UAV_INPUT_DOWNSAMPLE_SRC_MID_MIPMAP, &samplers[6], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.BindBuffer(FFX_SPD_BIND_UAV_INTERNAL_GLOBAL_ATOMIC, SPDatomicBuffer.getBufferInfoPtr(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.Build(dstsets[0], SetLayoutDB::compute_AMDSPD);
 
 	
@@ -2959,11 +3352,7 @@ void VulkanRenderer::GenerateRadianceMap(VkCommandBuffer cmdlist, vkutils::CubeT
 	const float MAX_LIGHT_CONTRIBUTION = 100.0f;
 	values.x = MAX_LIGHT_CONTRIBUTION;
 
-	VkPushConstantRange pcr{};
-	pcr.size = sizeof(glm::vec4);
-	pcr.stageFlags = VK_SHADER_STAGE_ALL;
-
-	cmd.SetPushConstant(PSOLayoutDB::RadiancePSOLayout, pcr, &values.x);
+	cmd.SetPushConstant(PSOLayoutDB::RadiancePSOLayout, sizeof(glm::vec4), &values.x);
 
 	// use source to create radiance map for 6 faces using compute
 	cmd.BindPSO(pso_radiance, PSOLayoutDB::RadiancePSOLayout, VK_PIPELINE_BIND_POINT_COMPUTE);
@@ -3004,16 +3393,13 @@ void VulkanRenderer::GeneratePrefilterMap(VkCommandBuffer cmdlist, vkutils::Cube
 	//	.BindImage(1, &cubemap, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 	//	.BindImage(2, &g_prefilterMap, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-	VkPushConstantRange range{};
-	range.size = sizeof(float);
-	range.stageFlags = VK_SHADER_STAGE_ALL;
 
 	for (size_t i = 0; i < g_prefilterMap.mipLevels; i++)
 	{
-		VkImageView view = g_prefilterMap.GenerateMipView(i);
+		VkImageView view = g_prefilterMap.GenerateMipView((uint32_t)i);
 		float roughness = float(i) / (g_prefilterMap.mipLevels - 1);
 
-		cmd.SetPushConstant(PSOLayoutDB::prefilterPSOLayout, range, &roughness);
+		cmd.SetPushConstant(PSOLayoutDB::prefilterPSOLayout, sizeof(float), &roughness);
 
 		glm::vec2 dims = glm::vec2{ g_prefilterMap.width>>i,g_prefilterMap.height>>i };
 
@@ -3023,7 +3409,7 @@ void VulkanRenderer::GeneratePrefilterMap(VkCommandBuffer cmdlist, vkutils::Cube
 			.BindImage(1, &cubemap, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 			.BindImage(2, &g_prefilterMap, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, view);
 
-		cmd.Dispatch(dims.x/ 16 + 1, dims.y / 16 + 1, CUBE_FACES);
+		cmd.Dispatch((uint32_t)(dims.x/ 16 + 1), (uint32_t)(dims.y / 16 + 1), CUBE_FACES);
 		auto delFun = [imgView = view, dev = m_device.logicalDevice]
 			{
 				vkDestroyImageView(dev, imgView, nullptr);
@@ -3068,7 +3454,9 @@ bool VulkanRenderer::ResizeSwapchain()
 		}
 		if (windowPtr->windowShouldClose) return false;
 	}
-	m_swapchain.Init(m_instance, m_device);
+	
+	SetupSwapchain();
+
 	CreateDefaultRenderpass();
 	//CreateDepthBufferImage();
 	CreateFramebuffers();
@@ -3076,6 +3464,10 @@ bool VulkanRenderer::ResizeSwapchain()
 	fbCache.ResizeSwapchain(m_swapchain.swapChainExtent.width, m_swapchain.swapChainExtent.height);
 
 	ResizeGUIBuffers();
+
+	// Rest jitter index
+	m_JitterIndex = 0; 
+	fsrFrameCount = 0;
 
 	// update imgui shit
 	if (currWorld)
@@ -3131,11 +3523,21 @@ uint32_t VulkanRenderer::getFrame() const
 	return currentFrame % MAX_FRAME_DRAWS;
 }
 
+uint32_t VulkanRenderer::getPreviousFrame() const
+{
+	if (currentFrame) 
+	{
+		return (currentFrame - 1) % MAX_FRAME_DRAWS;
+	}
+	return 1; // special for first frame
+}
+
 uint32_t VulkanRenderer::RegisterThreadMapping()
 {
 	std::scoped_lock l{ g_mut_taskMap };
 	auto threadID = mappedThreadCnt++;
-	printf("Thread %llu mapped to %llu\n", std::this_thread::get_id(), threadID);
+	auto thread = std::this_thread::get_id();
+	// printf("Thread %llu mapped to %d\n", *reinterpret_cast<size_t*>(&thread), threadID);
 	g_taskManagerMapping[std::this_thread::get_id()] = threadID;
 	return threadID;
 }
@@ -3312,14 +3714,7 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 
 
 	ModelFileResource* modelFile = new ModelFileResource(file);
-	//modelFile->fileName = file;
 
-	//auto& mdl = [&]()-> gfxModel& {
-	//	std::scoped_lock(g_mut_globalModels);
-	//	auto mdlResourceIdx = g_globalModels.size();
-	//	modelFile->meshResource = static_cast<uint32_t>(mdlResourceIdx);
-	//	return  g_globalModels.emplace_back(gfxModel{});		 
-	//}();
 	uint32_t indx{};
 	{
 		std::scoped_lock s(g_mut_globalModels);
@@ -3329,17 +3724,25 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		indx = (uint32_t)mdlResourceIdx;
 	}
 	auto& mdl = g_globalModels[indx];
-
-
 	mdl.name = std::filesystem::path(file).stem().string();
 
 	mdl.m_subMeshes.resize(scene->mNumMeshes);
-	modelFile->numSubmesh =scene->mNumMeshes;
+	modelFile->numSubmesh = scene->mNumMeshes;
 	mdl.cpuModel = modelFile;
 
 	uint32_t totalBones{ 0 };
 	for (size_t i = 0; i < scene->mNumMeshes; i++)
 	{
+		auto& aimesh = scene->mMeshes[i];
+		uint32_t submeshIdx{};
+		{
+			std::scoped_lock s(g_mut_globalModels);
+			submeshIdx = (uint32_t)g_globalSubmesh.size();
+			g_globalSubmesh.push_back(SubMesh{});
+		}
+		SubMesh& submesh = g_globalSubmesh[submeshIdx];
+		mdl.m_subMeshes[i] = submeshIdx;
+		LoadSubmesh(mdl, submesh, aimesh, modelFile);
 		totalBones += scene->mMeshes[i]->mNumBones;
 	}
 	bool hasBone = totalBones > 0;
@@ -3348,16 +3751,6 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 	{
 		mdl.skeleton = new oGFX::Skeleton();
 		modelFile->skeleton = mdl.skeleton;
-	}
-
-	for (size_t i = 0; i < scene->mNumMeshes; i++)
-	{
-		auto& aimesh = scene->mMeshes[i];
-		LoadSubmesh(mdl, mdl.m_subMeshes[i], aimesh, modelFile);
-	}
-	
-	if (hasBone)
-	{
 		mdl.skeleton->boneWeights.resize(modelFile->vertices.size());
 		uint32_t verticesCnt = 0;
 		for (size_t i = 0; i < scene->mNumMeshes; i++)
@@ -3370,10 +3763,12 @@ ModelFileResource* VulkanRenderer::LoadModelFromFile(const std::string& file)
 		BuildSkeletonRecursive(*modelFile, scene->mRootNode, mdl.skeleton->m_boneNodes);
 	}
 	
-	for (auto& sm : mdl.m_subMeshes)
+	for (auto smID : mdl.m_subMeshes)
 	{
+		auto& sm = g_globalSubmesh[smID];
 		mdl.vertexCount += sm.vertexCount;
 		mdl.indicesCount += sm.indicesCount;
+
 	}
 
 	//always has one transform, root
@@ -3761,12 +4156,10 @@ void VulkanRenderer::LoadSubmesh(gfxModel& mdl,
 	{
 		plainVertices[i] = vertices[cacheVoffset+i].pos; 
 	}
+
+	//generate BV
 	oGFX::BV::LarsonSphere(submesh.boundingSphere, plainVertices);
-	//submesh.boundingSphere.radius *= 1.5f;
-	//std::cout << "Sphere generated :" << submesh.name << " [" 
-	//	<< submesh.boundingSphere.center.x << ", "
-	//	<< submesh.boundingSphere.center.y << ", "
-	//	<< submesh.boundingSphere.center.z << "] r: " << submesh.boundingSphere.radius << "\n";
+
 }
 
 ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
@@ -3788,22 +4181,22 @@ ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
 
 		model->indicesCount = static_cast<uint32_t>(indices.size());
 		model->vertexCount = static_cast<uint32_t>(vertex.size());
-
-		SubMesh sm;
+		
+		uint32_t smID = (uint32_t)g_globalSubmesh.size();
+		g_globalSubmesh.push_back(SubMesh{});
+		model->m_subMeshes.push_back(smID);
+		SubMesh& sm = g_globalSubmesh[smID];
 		sm.baseIndices = static_cast<uint32_t>(0);
 		sm.baseVertex = static_cast<uint32_t>(0);
 		sm.indicesCount = static_cast<uint32_t>(indices.size());
 		sm.vertexCount = static_cast<uint32_t>(vertex.size());
-
 		std::vector<glm::vec3> plainVertices;
 		plainVertices.resize(vertex.size());
 		for (size_t i = 0; i < plainVertices.size(); i++)
 		{
 			plainVertices[i] = vertex[i].pos;
 		}
-		oGFX::BV::RitterSphere(sm.boundingSphere, plainVertices);
-
-		model->m_subMeshes.push_back(sm);
+		oGFX::BV::RitterSphere(sm.boundingSphere, plainVertices);		
 
 		m = new ModelFileResource();
 		Node* n = new Node{};
@@ -3838,19 +4231,26 @@ ModelFileResource* VulkanRenderer::LoadMeshFromBuffers(
 		model->baseIndices = g_GlobalMeshBuffers.IdxOffset;
 		model->baseVertex = g_GlobalMeshBuffers.VtxOffset;
 
+		for (size_t i = 0; i < model->m_subMeshes.size(); i++)
+		{
+			SubMesh& sm = g_globalSubmesh[model->m_subMeshes[i]];
+			sm.baseVertex += model->baseVertex;		
+			sm.baseIndices += model->baseIndices;
+		}
+
 		g_GlobalMeshBuffers.IdxOffset += model->indicesCount;
 		g_GlobalMeshBuffers.VtxOffset += model->vertexCount;
 
 		if (model->skeleton)
 		{
 			auto& sk = model->skeleton;
-			model->skinningWeightsOffset = this->g_skinningBoneWeights.size();
+			model->skinningWeightsOffset = (uint32_t)this->g_skinningBoneWeights.size();
 			this->g_skinningBoneWeights.resize(model->skinningWeightsOffset + sk->boneWeights.size());
 			memcpy(this->g_skinningBoneWeights.data() + model->skinningWeightsOffset
 				, sk->boneWeights.data()
 				, sk->boneWeights.size() * sizeof(BoneWeight));
 			
-			gpuSkinningBoneWeightsBuffer.addWriteCommand(sk->boneWeights.size(), sk->boneWeights.data(), model->skinningWeightsOffset);
+			gpuSkinningWeightsBuffer.addWriteCommand(sk->boneWeights.size(), sk->boneWeights.data(), model->skinningWeightsOffset);
 			
 		}
 	};
@@ -4208,12 +4608,10 @@ VulkanRenderer::TextureInfo VulkanRenderer::GetTextureInfo(uint32_t handle)
 
 void VulkanRenderer::InitDebugBuffers()
 {
-	// TODO remove this
-	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
-	{
-		g_DebugDrawVertexBufferGPU[i].Init(&m_device,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		g_DebugDrawIndexBufferGPU[i].Init(&m_device,VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-	}
+	g_DebugDrawVertexBufferCPU.reserve(1024 * 1024);
+	g_DebugDrawIndexBufferCPU.reserve(1024 * 1024);
+	g_DebugDrawVertexBufferGPU.Init(&m_device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	g_DebugDrawIndexBufferGPU.Init(&m_device, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 }
 
 bool VulkanRenderer::UploadDebugDrawBuffers()
@@ -4230,13 +4628,13 @@ bool VulkanRenderer::UploadDebugDrawBuffers()
 	}
 	auto cmd = GetCommandBuffer();
 
-	g_DebugDrawVertexBufferGPU[getFrame()].reserve(cmd, g_DebugDrawVertexBufferCPU.size());
-	g_DebugDrawIndexBufferGPU[getFrame()].reserve(cmd, g_DebugDrawIndexBufferCPU.size());
+	g_DebugDrawVertexBufferGPU.reserve(cmd, g_DebugDrawVertexBufferCPU.size());
+	g_DebugDrawIndexBufferGPU.reserve(cmd, g_DebugDrawIndexBufferCPU.size());
 
 	// Copy CPU debug draw buffers to the GPU
 	
-	g_DebugDrawVertexBufferGPU[getFrame()].writeToCmd(g_DebugDrawVertexBufferCPU.size() , g_DebugDrawVertexBufferCPU.data(),cmd);
-	g_DebugDrawIndexBufferGPU[getFrame()].writeToCmd(g_DebugDrawIndexBufferCPU.size() , g_DebugDrawIndexBufferCPU.data(),cmd);
+	g_DebugDrawVertexBufferGPU.writeToCmd(g_DebugDrawVertexBufferCPU.size() , g_DebugDrawVertexBufferCPU.data(),cmd);
+	g_DebugDrawIndexBufferGPU.writeToCmd(g_DebugDrawIndexBufferCPU.size() , g_DebugDrawIndexBufferCPU.data(),cmd);
 
 	// Clear the CPU debug draw buffers for this frame
 	g_DebugDrawVertexBufferCPU.clear();
@@ -4273,7 +4671,21 @@ void VulkanRenderer::UpdateUniformBuffers()
 			frameContextUBO[i].renderTimer.y = std::sin(renderClock * glm::pi<float>());
 			frameContextUBO[i].renderTimer.z = std::cos(renderClock * glm::pi<float>());
 			frameContextUBO[i].renderTimer.w = 0.0f; // unused
-		
+
+			frameContextUBO[i].projectionJittered = camera.matrices.perspectiveJittered;
+			frameContextUBO[i].prevViewProjection = camera.previousMat.perspective * camera.previousMat.view;
+			frameContextUBO[i].viewProjJittered = camera.matrices.perspectiveJittered * camera.matrices.view;
+			frameContextUBO[i].inverseProjectionJittered = glm::inverse(camera.matrices.perspectiveJittered);
+
+			frameContextUBO[i].prevViewProjJittered = camera.previousMat.perspectiveJittered * camera.previousMat.view;
+			frameContextUBO[i].currJitter = {-2.0f* jitterX/renderWidth,2.0*jitterY/renderHeight};
+			frameContextUBO[i].prevJitter = { -2.0f * prevjitterX/ renderWidth,2.0f * prevjitterY/ renderHeight };
+
+			//if(i == 0)
+			//printf("[J] prev {%-1.5f,%-1.5f} jit {%-1.5f,%-1.5f} \n"
+			//	, prevjitterX, prevjitterY
+			//	, frameContextUBO[i].currJitter.x, frameContextUBO[i].currJitter.y);
+
 			// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
 			// Bind this to every single shader possible.
 			// Remove this upon shipping the final product.
@@ -4468,6 +4880,7 @@ VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(VulkanDevice& device,
 	//read in SPIR-V code of shaders
 	auto shaderCode = oGFX::readFile(fileName);
 	VkShaderModule shaderModule = oGFX::CreateShaderModule(device,shaderCode);
+	VK_NAME(device.logicalDevice, fileName.c_str(), shaderModule);
 
 	//shader module to be used by stage
 	shaderStageCreateInfo.module = shaderModule;
@@ -4558,8 +4971,8 @@ void SetDefaultViewportAndScissor(VkCommandBuffer commandBuffer, VkViewport* vp,
 {
 	auto& vr = *VulkanRenderer::get();
     auto* windowPtr = vr.windowPtr;
-    const float vpHeight = (float)vr.m_swapchain.swapChainExtent.height;
-    const float vpWidth = (float)vr.m_swapchain.swapChainExtent.width;
+    const float vpWidth = (float)vr.renderWidth;
+    const float vpHeight = (float)vr.renderHeight;
     VkViewport viewport = { 0.0f, vpHeight, vpWidth, -vpHeight, 0.0f, 1.0f };
     VkRect2D scissor = { {0, 0}, {uint32_t(windowPtr->m_width), uint32_t(windowPtr->m_height) } };
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -4581,7 +4994,7 @@ void DrawIndexedIndirect(
 	uint32_t drawCount,
 	uint32_t stride)
 {
-    if (VulkanRenderer::get()->m_device.enabledFeatures.multiDrawIndirect)
+    if (VulkanRenderer::get()->m_device.enabledFeatures.features.multiDrawIndirect)
     {
         vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, sizeof(oGFX::IndirectCommand));
     }

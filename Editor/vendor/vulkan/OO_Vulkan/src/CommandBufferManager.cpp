@@ -37,8 +37,9 @@ VkResult oGFX::CommandBufferManager::InitPool(VkDevice device, uint32_t queueInd
     m_commandpools.resize(MAX_THREADS);
     for (size_t i = 0; i < MAX_THREADS; i++)
     {
+        std::string str = ("commandPool_t" + std::to_string(i));
         VK_CHK(vkCreateCommandPool(device, &poolInfo, nullptr, &m_commandpools[i]));
-        VK_NAME(device, ("commandPool_t" + std::to_string(i)).c_str(), m_commandpools[i]);
+        VK_NAME(device, str.c_str() , m_commandpools[i]);
     }  
 
     orderedCommands.reserve(100);
@@ -96,8 +97,8 @@ void oGFX::CommandBufferManager::DestroyPools()
 {
     for (size_t i = 0; i < MAX_THREADS; i++)
     {
-        if (m_commandpools[i]);
-        vkDestroyCommandPool(m_device, m_commandpools[i], nullptr);
+        if (m_commandpools[i])
+            vkDestroyCommandPool(m_device, m_commandpools[i], nullptr);
         m_commandpools[i] = VK_NULL_HANDLE;
     }    
 }
@@ -202,7 +203,7 @@ void oGFX::CommandBufferManager::SubmitAll(VkQueue queue, VkSubmitInfo inInfo, V
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = submitBatch.size();
+    submitInfo.commandBufferCount = (uint32_t)submitBatch.size();
     submitInfo.pCommandBuffers = submitBatch.data();
 
     submitInfo.pSignalSemaphores = inInfo.pSignalSemaphores;
@@ -235,10 +236,10 @@ void oGFX::CommandBufferManager::FindCmdBufferPool(VkCommandBuffer cmd, uint32_t
 {
     for (size_t i = 0; i < MAX_THREADS; i++)
     {
-        outIndex = FindCmdIdx(i, cmd);
+        outIndex = FindCmdIdx((uint32_t)i, cmd);
         if (outIndex != size_t(-1))
         {
-            outThread = i;
+            outThread = (uint32_t)i;
             break;
         }
     }

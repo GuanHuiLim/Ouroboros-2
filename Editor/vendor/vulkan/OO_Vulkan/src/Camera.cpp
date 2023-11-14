@@ -182,6 +182,12 @@ void Camera::UpdateViewMatrixQuaternion()
 //	updated = true;
 //}
 
+void Camera::SetJitterValues(glm::vec2 vals)
+{
+	jitterValues = vals;
+	SetDirty();
+}
+
 oGFX::Frustum Camera::GetFrustum() const
 {
 	oGFX::Frustum frustum;
@@ -229,7 +235,7 @@ oGFX::Frustum Camera::GetFrustum() const
 	frustum.pt_top = act_centre + centre_half_height * m_up;
 	frustum.pt_bottom = act_centre - centre_half_height * m_up;
 	frustum.pt_planeNear = near_center;
-	frustum.pt_planeFar = act_centre;
+	frustum.pt_planeFar = far_center;
 
 	return frustum;
 }
@@ -291,7 +297,6 @@ void Camera::LookFromAngle(float distance, const glm::vec3& target, float vertAn
 void Camera::SetPosition(glm::vec3 position)
 {
 	this->m_position = position;
-	UpdateViewMatrixQuaternion();
 
 	//updateViewMatrix();
 }
@@ -305,7 +310,7 @@ void Camera::SetPosition(glm::vec3 position)
 void Camera::SetRotation(glm::quat orientation)
 {
 	this->m_orientation = orientation;
-	UpdateViewMatrixQuaternion();
+
 	m_rotation = glm::eulerAngles(orientation);
 }
 
@@ -320,7 +325,6 @@ void Camera::Rotate(glm::vec3 delta)
 	//glm::quat qRoll		= glm::angleAxis(glm::radians(delta.z), glm::vec3(0, 0, 1));
 
 	m_orientation = glm::normalize(qYaw) * glm::normalize(qPitch) /** glm::normalize(qRoll) */ * glm::quat{ 0, 0, 0, 1 };
-	UpdateViewMatrixQuaternion();
 }
 
 void Camera::SetTranslation(glm::vec3 translation)
@@ -333,7 +337,6 @@ void Camera::SetTranslation(glm::vec3 translation)
 	{
 		this->m_position = translation;
 	}
-	UpdateViewMatrixQuaternion();
 	//updateViewMatrix();
 }
 
@@ -347,14 +350,12 @@ void Camera::Translate(glm::vec3 delta)
 	{
 		this->m_position += delta;
 	}
-	UpdateViewMatrixQuaternion();
 	//updateViewMatrix();
 }
 
 void Camera::ChangeTargetDistance(float delta)
 {
 	m_TargetDistance = std::max(1.0f, delta + m_TargetDistance);
-	UpdateViewMatrixQuaternion();
 	//updateViewMatrix();
 }
 
@@ -415,7 +416,6 @@ bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime)
 
 	if (retVal)
 	{
-		UpdateViewMatrixQuaternion();
 		//updateViewMatrix();
 	}
 
@@ -444,10 +444,28 @@ glm::mat4 inversed_infinite_perspectiveRH_ZO(float fovRad, float aspect, float n
 };
 
 
-void Camera::UpdateProjectionMatrix()
+void Camera::SetDirty()
 {
+	m_ProjectionMatrixOutdated = true;
+}
+
+glm::mat4 Camera::GetNonInvProjectionMatrix()
+{
+	return glm::perspective(glm::radians(m_fovDegrees), m_aspectRatio, m_znear, m_zfar);
+}
+
+void Camera::UpdateMatrices()
+{
+	// Always update temporal information
+	previousMat.perspective = matrices.perspective;
+	previousMat.perspectiveJittered = matrices.perspectiveJittered;
+	previousMat.view = matrices.view;
+
+
+	UpdateViewMatrixQuaternion();
+
 	if (m_aspectRatio != m_aspectRatio)
-	{ 
+	{
 		//assert(false && "Times like this we must ask ourselves - why is aspect ratio NaN");
 		return;
 	}
@@ -459,21 +477,17 @@ void Camera::UpdateProjectionMatrix()
 		matrices.perspective = glm::ortho(-m_orthoSize, m_orthoSize, -h, h, m_znear, m_zfar);
 	}
 	else
-	{		
+	{
 #define INVERSED_DEPTH
 #ifdef INVERSED_DEPTH
 
 		matrices.perspective = inversed_infinite_perspectiveRH_ZO(glm::radians(m_fovDegrees), m_aspectRatio, m_znear, m_zfar);
-
+		glm::mat4 jitterTranslation = glm::translate(glm::mat4(1.0f), glm::vec3(jitterValues, 0.0f));
+		matrices.perspectiveJittered = jitterTranslation * matrices.perspective;
 #else
 		matrices.perspective = glm::perspective(glm::radians(m_fovDegrees), m_aspectRatio, m_znear, m_zfar);
 
 #endif // INVERSED_DEPTH
 
 	}
-}
-
-glm::mat4 Camera::GetNonInvProjectionMatrix()
-{
-	return glm::perspective(glm::radians(m_fovDegrees), m_aspectRatio, m_znear, m_zfar);
 }

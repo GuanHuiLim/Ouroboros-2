@@ -13,7 +13,9 @@ Technology is prohibited.
 *//*************************************************************************************/
 #include "DDSLoader.h"
 
+#pragma warning(push, 0)
 #include "tinyddsloader.h"
+#pragma warning(pop)
 #include "VulkanUtils.h"
 
 namespace oGFX

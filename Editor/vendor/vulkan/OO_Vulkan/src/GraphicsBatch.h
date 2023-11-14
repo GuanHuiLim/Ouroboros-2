@@ -14,13 +14,17 @@ Technology is prohibited.
 #pragma once
 
 #include "gpuCommon.h"
+#include "GraphicsWorld.h"
 #include <vector>
 #include <array>
 #include <mutex>
-#include "GraphicsWorld.h"
 #include "Font.h"
 
 class VulkanRenderer;
+
+class GraphicsWorld;
+
+constexpr size_t MAX_LIGHTS = 3;
 
 class GraphicsBatch
 {
@@ -28,7 +32,7 @@ public:
 	enum DrawBatch
 	{
 		ALL_OBJECTS,
-		SHADOW_CAST,
+		SHADOW_OCCLUDER,
 		SHADOW_RECV,
 		SHADOW_LIGHT,
 		GBUFFER_STATIC,
@@ -39,6 +43,8 @@ public:
 		LIGHT_SPOT,
 		MAX_NUM
 	};
+
+	
 
 	void Init(GraphicsWorld* gw,VulkanRenderer* renderer ,size_t maxObjects);
 	void GenerateBatches();
@@ -51,6 +57,7 @@ public:
 	const std::vector<ParticleData>& GetParticlesData();
 	const std::vector<oGFX::UIVertex>& GetUIVertices();
 	const std::vector<LocalLightInstance>& GetLocalLights();
+	const std::vector<LocalLightInstance>& GetShadowCasters();
 	size_t GetScreenSpaceUIOffset() const;
 	// TODO :: need to return indices out if i am doing fill
 	
@@ -59,7 +66,7 @@ public:
 	
 	size_t m_numShadowCastGrids{};
 
-private:
+
 	GraphicsWorld* m_world{ nullptr };
 	VulkanRenderer* m_renderer{nullptr};
 
@@ -71,6 +78,14 @@ private:
 
 	std::vector<LocalLightInstance>m_culledLights;
 	std::vector<LocalLightInstance>m_shadowCasters;
+
+	std::vector<DrawData> m_culledCameraObjects;
+
+	struct CastersData {		
+		std::vector<oGFX::IndirectCommand> m_commands [6];
+		std::vector<DrawData> m_culledObjects [6];
+	};
+	std::vector<CastersData> m_casterData;
 
 	static inline std::vector<oGFX::IndirectCommand> s_scratchBuffer;
 

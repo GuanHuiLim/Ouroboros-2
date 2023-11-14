@@ -46,8 +46,11 @@ public:
 		// Postfix increment
 		Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
 
+		size_t index() const;
+
 		friend bool operator== (const Iterator& a, const Iterator& b) { return a.m_ptr == b.m_ptr; };
 		friend bool operator!= (const Iterator& a, const Iterator& b) { return a.m_ptr != b.m_ptr; }; 
+		friend bool operator- (const Iterator& a, const Iterator& b) { return a.m_ptr - b.m_ptr; }; 
 	private:
 		pointer m_ptr;
 		pointer m_begin;
@@ -69,6 +72,7 @@ public:
 	size_t size();
 
 	auto Raw();
+	std::vector<T>& buffer();
 
 	T& operator[](size_t i);
 
@@ -184,6 +188,12 @@ inline auto BitContainer<T, MAX_OBJECTS>::Raw()
 }
 
 template<typename T, int32_t MAX_OBJECTS>
+inline std::vector<T>& BitContainer<T, MAX_OBJECTS>::buffer()
+{
+	return m_data;
+}
+
+template<typename T, int32_t MAX_OBJECTS>
 inline T& BitContainer<T, MAX_OBJECTS>::operator[](size_t i)
 {
 	return Get(i);
@@ -203,4 +213,10 @@ inline typename BitContainer<T, MAX_OBJECTS>::Iterator& BitContainer<T, MAX_OBJE
 	};
 	m_ptr = m_end;
 	return *this;
+}
+
+template<typename T, int32_t MAX_OBJECTS>
+inline size_t BitContainer<T, MAX_OBJECTS>::Iterator::index() const
+{
+	return m_ptr - m_begin;
 }

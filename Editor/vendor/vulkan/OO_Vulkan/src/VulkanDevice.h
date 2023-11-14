@@ -44,7 +44,7 @@ struct VulkanDevice
 	VkQueue graphicsQueue{VK_NULL_HANDLE};
 	oGFX::QueueFamilyIndices queueIndices{};
 
-	VkPhysicalDeviceFeatures enabledFeatures{};
+	VkPhysicalDeviceFeatures2 enabledFeatures{};
 	VkPhysicalDeviceProperties properties{};
 
 	std::vector<oGFX::CommandBufferManager> commandPoolManagers;

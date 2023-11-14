@@ -129,6 +129,9 @@ struct GPUTransform
     vec4 invRow0;
     vec4 invRow1;
     vec4 invRow2;
+    vec4 prevRow0;
+    vec4 prevRow1;
+    vec4 prevRow2;
 	vec4 colour; // temp
 };
 

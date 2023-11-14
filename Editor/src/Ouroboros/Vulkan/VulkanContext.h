@@ -50,7 +50,7 @@ namespace oo
 
         VulkanRenderer* getRenderer();
 
-    private:
+    public:
         SDL_Window* m_windowHandle;
         static VulkanRenderer* vr;
         static GraphicsWorld gw;

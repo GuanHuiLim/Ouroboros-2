@@ -26,7 +26,7 @@ LightPC PC;
 void main()
 {
 	// Get G-Buffer values
-	vec3 worldPos = WorldPosFromDepth(0.1,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
+    vec3 worldPos = WorldPosFromDepth(0.1, inUV, uboFrameContext.inverseProjectionJittered, uboFrameContext.inverseView);
 	vec3 uvw = normalize(worldPos- uboFrameContext.cameraPosition.xyz);
 	
 

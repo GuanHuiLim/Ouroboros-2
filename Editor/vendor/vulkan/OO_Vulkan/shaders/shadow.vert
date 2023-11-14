@@ -10,8 +10,11 @@ layout(location = 2) in vec3 inCol;
 layout(location = 3) in vec3 inTangent;
 layout(location = 4) in vec2 inUV;
 
-layout(location = 15) in uvec4 inInstanceData;
 
+layout(std430, set = 0, binding = 1) readonly buffer instanceBuffer
+{
+	uvec4 InstanceDatas[];
+};
 
 #include "frame.shader"
 layout(set = 1, binding = 0) uniform UboFrameContext
@@ -43,14 +46,15 @@ layout(push_constant) uniform PushLight
 
 void main()
 {
-	const uint localToWorldMatrixIndex = inInstanceData.x;
+	const uint instanceIndex = gl_InstanceIndex;
 
 	//decode the matrix into transform matrix
-	const mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[localToWorldMatrixIndex]);
-	GPUObjectInformation objectInfo = GPUobjectInfo[inInstanceData.x];
+	const mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[instanceIndex]);
+    GPUObjectInformation objectInfo = GPUobjectInfo[gl_InstanceIndex];
 	// inefficient
 
 	vec4 outPosition;
+    uvec4 inInstanceData = InstanceDatas[instanceIndex];
 	bool skinned = UnpackSkinned(inInstanceData.y);
     if(skinned)
 	{

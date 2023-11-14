@@ -29,7 +29,7 @@ void main()
 {
 	// Get G-Buffer values
 	vec4 depth = texture(sampler2D(samplerDepth,basicSampler), inUV);
-	vec3 fragPos = ViewPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection).xyz;
+    vec3 fragPos = ViewPosFromDepth(depth.r, inUV, uboFrameContext.inverseProjectionJittered).xyz;
 
 	vec3 normal = DecodeNormalHelper( texture(sampler2D(samplerNormal,basicSampler), inUV).rgb);
 
@@ -52,13 +52,13 @@ void main()
 	    samplePos = fragPos + samplePos * radius; 
 	    
 	    vec4 offset = vec4(samplePos, 1.0);
-		offset      = uboFrameContext.projection * offset;    // from view to clip-space
+        offset = uboFrameContext.projectionJittered * offset; // from view to clip-space
 		offset.xyz /= offset.w;               // perspective divide
 		offset.xy  = offset.xy * 0.5 + 0.5; // transform to range 0.0 - 1.0
 		offset.y = 1.0 - offset.y;
 		// once again we ignore z because vulkan
 		float sampleDepth = texture(sampler2D(samplerDepth,basicSampler), offset.xy).r;
-		vec3 world = ViewPosFromDepth(sampleDepth,offset.xy,uboFrameContext.inverseProjection).xyz;
+		vec3 world = ViewPosFromDepth(sampleDepth,offset.xy,uboFrameContext.inverseProjectionJittered).xyz;
 		
 		sampleDepth = world.z;
 		float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));

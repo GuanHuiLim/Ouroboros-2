@@ -38,7 +38,7 @@ VkFramebuffer FramebufferCache::CreateFramebuffer(VkFramebufferCreateInfo* info,
 {
 	FramebufferInfo bufferInfo;
 	bufferInfo.createInfo = *info;
-	bufferInfo.targetSwapchain = swapchainTarget;
+	bufferInfo.swapchainReliant = swapchainTarget;
 	bufferInfo.resourceTrackOnly = resourceTrackOnly;
 
 	// this is pretty bad, maybe std::move it here since its just stack based?
@@ -81,7 +81,7 @@ void FramebufferCache::ResizeSwapchain(uint32_t width, uint32_t height)
 {
 	std::vector<FramebufferInfo> targets;
 	for (auto& [framebufferInfo, framebuffer] : bufferCache){		
-		if (framebufferInfo.targetSwapchain)
+		if (framebufferInfo.swapchainReliant)
 		{
 			targets.emplace_back(framebufferInfo);			
 		}		
@@ -179,7 +179,7 @@ void FramebufferCache::RegisterFramebuffer(vkutils::Texture2D& tex)
 	--counter;
 	FramebufferInfo fbi; //open up
 	fbi.resourceTrackOnly = true;
-	fbi.targetSwapchain = true;
+	fbi.swapchainReliant = true;
 	fbi.createInfo.attachmentCount = counter;// some information to hash
 	fbi.createInfo.layers = counter/2;// some information to hash
 	fbi.createInfo.height = counter /4;// some information to hash

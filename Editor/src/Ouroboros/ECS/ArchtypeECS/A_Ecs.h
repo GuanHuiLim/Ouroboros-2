@@ -842,14 +842,14 @@ namespace Ecs::internal
 		OPTICK_PUSH("ecs_parallel_for");
 		//parallelize here
 		//iterate all matched archetypes
-		std::for_each(std::execution::par_unseq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
+		std::for_each(std::execution::seq, std::begin(archetypesToIterateIndex), std::end(archetypesToIterateIndex), [&](auto const& idx)
 			//for (auto idx : archetypesToIterateIndex)
 			{
-				TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
-				OPTICK_START_THREAD("singular_piece_of_parallel_work");
+				//TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+				//OPTICK_START_THREAD("singular_piece_of_parallel_work");
 				function(world->archetypes[idx]);
-				OPTICK_STOP_THREAD();
-				TRACY_PROFILE_SCOPE_END();
+				//OPTICK_STOP_THREAD();
+				//TRACY_PROFILE_SCOPE_END();
 			}
 		);
 		OPTICK_POP();
@@ -1394,13 +1394,13 @@ namespace Ecs
 			//for (auto chnk : arch->chunks) {
 			TRACY_PROFILE_SCOPE_NC(ecs_parallel_for_per_chunk, tracy::Color::AliceBlue);
 			OPTICK_PUSH("ecs_parallel_for_per_chunk");
-			std::for_each(std::execution::par_unseq, std::begin(arch->chunks), std::end(arch->chunks), [&](auto&& chnk)
+			std::for_each(std::execution::seq, std::begin(arch->chunks), std::end(arch->chunks), [&](auto&& chnk)
 				{
-					TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
-					OPTICK_START_THREAD("singular_piece_of_parallel_work");
+					//TRACY_PROFILE_SCOPE_NC(singular_piece_of_parallel_work, tracy::Color::Beige);
+					//OPTICK_START_THREAD("singular_piece_of_parallel_work");
 					internal::parallel_unpack_chunk(params{}, chnk, function);
-					OPTICK_STOP_THREAD()
-					TRACY_PROFILE_SCOPE_END();
+					//OPTICK_STOP_THREAD()
+					//TRACY_PROFILE_SCOPE_END();
 				});
 			OPTICK_POP();
 			TRACY_PROFILE_SCOPE_END();

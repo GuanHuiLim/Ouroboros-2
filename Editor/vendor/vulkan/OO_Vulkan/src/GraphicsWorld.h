@@ -26,6 +26,12 @@ Technology is prohibited.
 #include "imgui/imgui.h"
 #include <vector>
 #include <array>
+#include <memory>
+
+namespace oGFX {
+    class OctTree;
+    struct OctNode;
+};
 
 // pos windows
 #undef TRANSPARENT 
@@ -43,6 +49,7 @@ enum class ObjectInstanceFlags : uint32_t
     SKINNED          = 0x200, // Object can project shadows
     SHADOW_ENABLED   = 0x400, // Object is rendered
                                 // etc
+    ALL_FLAGS        = UINT32_MAX,
 };
 ENUM_OPERATORS_GEN(ObjectInstanceFlags, uint32_t)
 
@@ -56,8 +63,6 @@ enum class UIInstanceFlags : uint32_t
 };
 ENUM_OPERATORS_GEN(UIInstanceFlags, uint32_t)
 
-
-//CHAR_BIT * sizeof(uint64_t)
 struct ObjectInstance
 {
     std::string name;
@@ -72,9 +77,14 @@ struct ObjectInstance
     glm::vec4 emissiveColour{};
     uint8_t instanceData{ 0 }; // Per Instance unique data (not to be in material)
     glm::mat4x4 localToWorld{ 1.0f };
+    glm::mat4x4 prevLocalToWorld{ 1.0f };
     ObjectInstanceFlags flags{static_cast<ObjectInstanceFlags>(ObjectInstanceFlags::RENDER_ENABLED 
         | ObjectInstanceFlags::SHADOW_RECEIVER 
         | ObjectInstanceFlags::SHADOW_CASTER)};
+
+    bool isDirty = true;
+    bool newObject = true;
+    oGFX::OctNode* treeNode{ nullptr };
 
     // helper functions
     void SetShadowCaster(bool s);
@@ -82,6 +92,8 @@ struct ObjectInstance
     void SetSkinned(bool s);
     void SetShadowEnabled(bool s);
     void SetRenderEnabled(bool s);
+
+    void SetDirty();
 
     bool isSkinned();
     bool isShadowEnabled();
@@ -95,6 +107,27 @@ struct ObjectInstance
     uint32_t modelID{}; // Index for the mesh
     std::bitset<MAX_SUBMESH>submesh;// submeshes to draw
     uint32_t entityID{}; // Unique ID for this entity instance
+};
+
+struct DrawData {
+    uint32_t bindlessGlobalTextureIndex_Albedo{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Normal{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Roughness{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Metallic{ 0xFFFFFFFF };
+    uint32_t bindlessGlobalTextureIndex_Emissive{ 0xFFFFFFFF };
+    glm::vec4 emissiveColour{};
+
+    glm::mat4x4 localToWorld{ 1.0f };
+    glm::mat4x4 prevLocalToWorld{ 1.0f };
+
+    uint32_t submeshID{}; // Index for the mesh
+    uint32_t entityID{}; // Unique ID for this entity instance
+    ObjectInstanceFlags flags{};
+    uint8_t instanceData{};
+    uint32_t objectInstanceID{};
+
+    uint32_t modelID{};
+    const std::vector<glm::mat4>* ptrToBoneBuffer{nullptr};
 };
 
 struct UIInstance
@@ -131,7 +164,7 @@ struct ParticleData
 {
     glm::mat4 transform{1.0f};
     glm::vec4 colour{1.0f};
-    glm::ivec4 instanceData; // EntityID, flags  ,abledo norm, roughness metal
+    glm::ivec4 instanceData{0}; // EntityID, flags  ,abledo norm, roughness metal
 };
 
 struct UIData
@@ -190,6 +223,7 @@ class GraphicsWorld
 {
 public:
     
+    GraphicsWorld();
     // Call this at the beginning of the frame
     void BeginFrame();
     // Call this at the end of the frame
@@ -282,21 +316,24 @@ public:
     friend class VulkanRenderer;
     friend class GraphicsBatch;
 private:
-    int32_t m_entityCount{};
+    int32_t m_EntityCount{};
     BitContainer<ObjectInstance> m_ObjectInstances;
-    int32_t m_uiCount{};
+    int32_t m_UiCount{};
     BitContainer<UIInstance> m_UIInstances;
-    int32_t m_lightCount{};
+    int32_t m_LightCount{};
     BitContainer<OmniLightInstance> m_OmniLightInstances;
-    int32_t m_emitterCount{};
+    int32_t m_EmitterCount{};
     BitContainer<EmitterInstance> m_EmitterInstances;
     bool initialized = false;
 
     //etc
-    std::vector<ObjectInstance> m_objectsCopy;
+    BitContainer<ObjectInstance> m_ObjectInstancesCopy;
+    std::vector<uint32_t> m_ObjectsIndex;
     std::vector<UIInstance> m_UIcopy;
     std::vector<OmniLightInstance> m_OmniLightCopy;
     std::vector<EmitterInstance> m_EmitterCopy;
+
+    std::shared_ptr<oGFX::OctTree> m_OctTree;
     // + Spatial Acceleration Structures
     // + Culling object BV against frustum
 };

@@ -80,7 +80,7 @@ namespace oo
 #else
         si.debug = true;
 #endif
-        si.renderDoc = true;
+        si.renderDoc = false;
         si.SurfaceFunctionPointer = std::function<bool()>([&]() {
             return SDL_Vulkan_CreateSurface(m_windowHandle, vr->m_instance.instance, &vr->m_instance.surface);
             });
@@ -92,7 +92,6 @@ namespace oo
         try
         {
             vr->Init(si, m_window);
-            vr->CreateCubeMapTexture("Textures/viking");
         } 
         catch (std::runtime_error e)
         {
@@ -107,6 +106,7 @@ namespace oo
             &minimized = m_minimized
         ]() {
             OPTICK_THREAD("Render Thread");
+            vr->CreateCubeMapTexture("Textures/viking");
             while (keepRendering) 
             {
                 // Needs 3 parameters : Barrier, mutex, boolean & graphics engine
@@ -184,7 +184,7 @@ namespace oo
 
     void VulkanContext::OnImGuiBegin()
     {
-        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplVulkan_NewFrame();      
     }
 
     // TODO: this will be migrated to the dedicated renderthread

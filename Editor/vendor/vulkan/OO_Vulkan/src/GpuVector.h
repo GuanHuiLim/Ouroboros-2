@@ -27,8 +27,8 @@ class GpuVector {
 public:
 	GpuVector();
 	GpuVector(VulkanDevice* device);
-	void Init(VkBufferUsageFlags usage);
-	void Init(VulkanDevice* device, VkBufferUsageFlags usage);
+	void Init(VkBufferUsageFlags usage, std::string name = {});
+	void Init(VulkanDevice* device, VkBufferUsageFlags usage, std::string name = {});
 
 	void blockingWriteTo(size_t size, const void* data, VkQueue queue, VkCommandPool pool, size_t offset = 0);
 	void writeToCmd(size_t writeSize, const void* data, VkCommandBuffer command, size_t offset = 0);
@@ -52,6 +52,7 @@ public:
 	void Updated();
 
 public:
+	std::string m_name{"UNNAMED_VECTOR"};
 	size_t m_size{ 0 };
 	size_t m_capacity{ 0 };
 	VkBufferUsageFlags m_usage{};
@@ -89,20 +90,22 @@ GpuVector<T>::GpuVector(VulkanDevice* device) :
 }
 
 template <typename T>
-void GpuVector<T>::Init(VkBufferUsageFlags usage)
+void GpuVector<T>::Init(VkBufferUsageFlags usage, std::string name)
 {
 	assert(m_device != nullptr); // invalid device ptr. or didnt provide
+	if (name.empty() == false) m_name = name;
 	m_usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VmaAllocatorCreateFlags noflags = 0;
 	oGFX::CreateBuffer(m_device->m_allocator, 1, m_usage,
 		noflags, m_buffer);
+	VK_NAME(m_device->logicalDevice, m_name.c_str(), m_buffer.buffer);
 }
 
 template<typename T>
-inline void GpuVector<T>::Init(VulkanDevice* device, VkBufferUsageFlags usage)
+inline void GpuVector<T>::Init(VulkanDevice* device, VkBufferUsageFlags usage, std::string name)
 {
 	m_device = device;
-	Init(usage);
+	Init(usage,std::move(name));
 }
 
 template <typename T>
@@ -351,6 +354,7 @@ void GpuVector<T>::reserve(VkCommandBuffer cmd, size_t size)
 
 
 	m_buffer = tempBuffer;
+	VK_NAME(m_device->logicalDevice, m_name.c_str(), m_buffer.buffer);
 
 	// accumulate bytes
 	accumulatedBytes -= m_capacity;

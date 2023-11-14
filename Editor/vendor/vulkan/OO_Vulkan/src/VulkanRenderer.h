@@ -60,48 +60,87 @@ Technology is prohibited.
 #include <mutex>
 #include <deque>
 #include <functional>
+#include <memory>
+
+// dlss
+#include "NGXWrapper.h"
 
 struct Window;
 
+
 int Win32SurfaceCreator(ImGuiViewport* vp, ImU64 device, const void* allocator, ImU64* outSurface);
+
+enum FSR2 : uint8_t {
+	TCR_AUTOGEN,
+	AUTOGEN_REACTIVE,
+	COMPUTE_LUMINANCE_PYRAMID,
+	RECONSTRUCT_PREVIOUS_DEPTH,
+	DEPTH_CLIP,
+	LOCK,
+	ACCUMULATE,
+	RCAS,
+	MAX_SIZE
+};
+
+enum class UPSCALING_TYPE : uint8_t
+{
+	NONE,
+	DLSS,
+	FSR2,
+};
+ENUM_OPERATORS_GEN(UPSCALING_TYPE, uint8_t);
+enum class UPSCALING_QUALITY : uint8_t
+{
+	NATIVE,
+	QUALITY,
+	BALANCED,
+	PERFORMANCE,
+	ULTRA_PERFORMANCE,
+	CUSTOM,
+	NONE,
+};
+ENUM_OPERATORS_GEN(UPSCALING_QUALITY, uint8_t);
 
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
 struct SetLayoutDB // Think of a better name? Very short and sweet for easy typing productivity?
 {
     // For GPU Scene
-    inline static VkDescriptorSetLayout gpuscene;
+    inline static VkDescriptorSetLayout gpuscene{VK_NULL_HANDLE};
     // For UBO with the corresponding swap chain image
-    inline static VkDescriptorSetLayout FrameUniform;
+    inline static VkDescriptorSetLayout FrameUniform{VK_NULL_HANDLE};
     // For unbounded array of texture descriptors, used in bindless approach
-    inline static VkDescriptorSetLayout bindless;
+    inline static VkDescriptorSetLayout bindless{VK_NULL_HANDLE};
 	// For lighting
-	inline static VkDescriptorSetLayout Lighting;
-	inline static VkDescriptorSetLayout skypass;
+	inline static VkDescriptorSetLayout Lighting{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout skypass{VK_NULL_HANDLE};
 
-	inline static VkDescriptorSetLayout imguiCB;
-	inline static VkDescriptorSetLayout imguiTexture;
+	inline static VkDescriptorSetLayout imguiCB{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout imguiTexture{VK_NULL_HANDLE};
 
-	inline static VkDescriptorSetLayout lights;
+	inline static VkDescriptorSetLayout lights{VK_NULL_HANDLE};
 	// 
-	inline static VkDescriptorSetLayout ForwardDecal;
+	inline static VkDescriptorSetLayout ForwardDecal{VK_NULL_HANDLE};
 
-	inline static VkDescriptorSetLayout SSAO;
-	inline static VkDescriptorSetLayout SSAOBlur;
+	inline static VkDescriptorSetLayout SSAO{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout SSAOBlur{VK_NULL_HANDLE};
 
-	inline static VkDescriptorSetLayout util_fullscreenBlit;
+	inline static VkDescriptorSetLayout util_fullscreenBlit{VK_NULL_HANDLE};
 
-	inline static VkDescriptorSetLayout compute_singleTexture;
-	inline static VkDescriptorSetLayout compute_doubleImageStore;
-	inline static VkDescriptorSetLayout compute_shadowPrepass;
-	inline static VkDescriptorSetLayout compute_singleSSBO;
-	inline static VkDescriptorSetLayout compute_AMDSPD;
-	inline static VkDescriptorSetLayout compute_Radiance;
-	inline static VkDescriptorSetLayout compute_prefilter;
-	inline static VkDescriptorSetLayout compute_brdfLUT;
-	inline static VkDescriptorSetLayout compute_histogram;
-	inline static VkDescriptorSetLayout compute_luminance;
-	inline static VkDescriptorSetLayout compute_brightPixels;
-	inline static VkDescriptorSetLayout compute_tonemap;
+	inline static VkDescriptorSetLayout compute_singleTexture{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_doubleImageStore{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_shadowPrepass{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_singleSSBO{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_AMDSPD{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_Radiance{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_prefilter{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_brdfLUT{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_histogram{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_luminance{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_brightPixels{VK_NULL_HANDLE};
+	inline static VkDescriptorSetLayout compute_tonemap{VK_NULL_HANDLE};
+
+	// FSR2
+	inline static VkDescriptorSetLayout compute_fsr2[FSR2::MAX_SIZE]{};
 
 };
 
@@ -115,26 +154,29 @@ struct Attachments_imguiBinding {
 // Moving all the Descriptor Set Layout out of the VulkanRenderer class abomination...
 struct PSOLayoutDB
 {
-	inline static VkPipelineLayout defaultPSOLayout;
-	inline static VkPipelineLayout imguiPSOLayout;
-	inline static VkPipelineLayout fullscreenBlitPSOLayout;
-	inline static VkPipelineLayout lightingPSOLayout;
-	inline static VkPipelineLayout forwardDecalPSOLayout;
-	inline static VkPipelineLayout SSAOPSOLayout;
-	inline static VkPipelineLayout SSAOBlurPSOLayout;
-	inline static VkPipelineLayout BloomPSOLayout; 
-	inline static VkPipelineLayout tonemapPSOLayout; 
-	inline static VkPipelineLayout doubleImageStoreLayout; 
-	inline static VkPipelineLayout brightPixelsLayout; 
-	inline static VkPipelineLayout singleSSBOlayout; 
-	inline static VkPipelineLayout shadowPrepassPSOLayout; 
-	inline static VkPipelineLayout AMDSPDPSOLayout; 
-	inline static VkPipelineLayout RadiancePSOLayout; 
-	inline static VkPipelineLayout prefilterPSOLayout; 
-	inline static VkPipelineLayout BRDFLUTPSOLayout; 
-	inline static VkPipelineLayout skypassPSOLayout; 
-	inline static VkPipelineLayout histogramPSOLayout; 
-	inline static VkPipelineLayout luminancePSOLayout; 
+	inline static VkPipelineLayout defaultPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout imguiPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout fullscreenBlitPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout lightingPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout forwardDecalPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout SSAOPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout SSAOBlurPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout BloomPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout tonemapPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout doubleImageStoreLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout brightPixelsLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout singleSSBOlayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout shadowPrepassPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout AMDSPDPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout RadiancePSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout prefilterPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout BRDFLUTPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout skypassPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout histogramPSOLayout{ VK_NULL_HANDLE };
+	inline static VkPipelineLayout luminancePSOLayout{ VK_NULL_HANDLE };
+
+	// FSR2
+	inline static VkPipelineLayout fsr2_PSOLayouts[FSR2::MAX_SIZE]{};
 };
 
 // Moving all constant buffer structures into this CB namespace.
@@ -150,7 +192,15 @@ namespace CB
 		glm::mat4 inverseView{ 1.0f };
 		glm::mat4 inverseProjection{ 1.0f };
 		glm::vec4 cameraPosition{ 1.0f };
+		glm::mat4 prevViewProjection{ 1.0f };
 		glm::vec4 renderTimer{ 0.0f, 0.0f, 0.0f, 0.0f };
+
+		glm::mat4 projectionJittered;
+		glm::mat4 viewProjJittered;
+		glm::mat4 inverseProjectionJittered;
+		glm::mat4 prevViewProjJittered;
+		glm::vec2 currJitter;
+		glm::vec2 prevJitter;
 
 		// These variables area only to speedup development time by passing adjustable values from the C++ side to the shader.
 		// Bind this to every single shader possible.
@@ -187,6 +237,7 @@ class VulkanRenderer
 public:
 
 	static VulkanRenderer* s_vulkanRenderer;
+	static constexpr int MAX_FRAME_DRAWS = 2;
 
 	struct Attachments {
 		std::array<vkutils::Texture2D, GBufferAttachmentIndex::MAX_ATTACHMENTS> gbuffer{};
@@ -200,21 +251,37 @@ public:
 
 		vkutils::Texture2D lighting_target{};
 
+		vkutils::Texture2D fullres_HDR{};
+
 		static constexpr size_t MAX_BLOOM_SAMPLES = 5;
 		vkutils::Texture2D Bloom_brightTarget;
 		vkutils::Texture2D SD_target[2];
 		std::array<vkutils::Texture2D, MAX_BLOOM_SAMPLES> Bloom_downsampleTargets;
 
+		//FSR2 
+		vkutils::Texture2D fsr_exposure_mips;
+		vkutils::Texture2D fsr_reconstructed_prev_depth;
+		vkutils::Texture2D fsr_dilated_depth;
+		vkutils::Texture2D fsr_dilated_velocity[MAX_FRAME_DRAWS];
+		vkutils::Texture2D fsr_lock_input_luma;
+		vkutils::Texture2D fsr_dilated_reactive_masks;
+		vkutils::Texture2D fsr_prepared_input_color;
+		vkutils::Texture2D fsr_reactive_mask;
+		vkutils::Texture2D fsr_new_locks;
+		vkutils::Texture2D fsr_lock_status[MAX_FRAME_DRAWS];
+		vkutils::Texture2D fsr_upscaled_color[MAX_FRAME_DRAWS];
+		vkutils::Texture2D fsr_luma_history[MAX_FRAME_DRAWS];
 	}attachments;
 
 	inline static uint64_t totalTextureSizeLoaded = 0;
-	static constexpr int MAX_FRAME_DRAWS = 2;
+
 	static constexpr int MAX_OBJECTS = 2048;
-	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT_S8_UINT;
+	static constexpr VkFormat G_DEPTH_FORMAT = VK_FORMAT_D24_UNORM_S8_UINT;
 	static constexpr VkFormat G_NORMALS_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
 	static constexpr VkCompareOp G_DEPTH_COMPARISON = VK_COMPARE_OP_GREATER_OR_EQUAL;
 	static constexpr VkFormat G_HDR_FORMAT_ALPHA = VK_FORMAT_R16G16B16A16_SFLOAT;
 	static constexpr VkFormat G_HDR_FORMAT = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+	static constexpr VkFormat G_VELOCITY_FORMAT = VK_FORMAT_R16G16_SFLOAT;
 	static constexpr VkFormat G_NON_HDR_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
 
 	static int ImGui_ImplWin32_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface);
@@ -225,7 +292,6 @@ public:
 	 PFN_vkCmdDebugMarkerBeginEXT pfnDebugMarkerRegionBegin{ nullptr };
 	 PFN_vkCmdDebugMarkerEndEXT pfnDebugMarkerRegionEnd{ nullptr };
 
-	 VulkanRenderer();
 	~VulkanRenderer();
 
 	static VulkanRenderer* get();
@@ -255,6 +321,7 @@ public:
 	void CreateFramebuffers(); 
 	void CreateCommandBuffers();
 
+
 	VkCommandBuffer GetCommandBuffer();
 	void SubmitSingleCommandAndWait(VkCommandBuffer cmd);
 	void SubmitSingleCommand(VkCommandBuffer cmd);
@@ -265,7 +332,7 @@ public:
 	TaskCompletionCallback drawCallRecrodingCompleted{ Task([](void*) {}) };
 	void AddRenderer(GfxRenderpass* pass);
 	
-	ImTextureID myImg;
+	ImTextureID myImg{};
 
 	bool useSSAO = true;
     bool m_imguiInitialized = false;
@@ -283,22 +350,22 @@ public:
 	//---------- DescriptorSet ----------
 
 	// For Deferred Lighting onwards
-	VkDescriptorSet descriptorSet_DeferredComposition;
+	VkDescriptorSet descriptorSet_DeferredComposition{VK_NULL_HANDLE};
 	// For unbounded array of texture descriptors, used in bindless approach
-	VkDescriptorSet descriptorSet_bindless;
+	VkDescriptorSet descriptorSet_bindless{VK_NULL_HANDLE};
 	// For GPU Scene
-	VkDescriptorSet descriptorSet_gpuscene;
+	VkDescriptorSet descriptorSet_gpuscene{VK_NULL_HANDLE};
 
-	VkDescriptorSet descriptorSet_lights;
+	VkDescriptorSet descriptorSet_lights{VK_NULL_HANDLE};
 
-	VkDescriptorSet descriptorSet_bones;
+	VkDescriptorSet descriptorSet_bones{VK_NULL_HANDLE};
 
-	VkDescriptorSet descriptorSet_objInfos;
+	VkDescriptorSet descriptorSet_objInfos{VK_NULL_HANDLE};
 
-	VkDescriptorSet descriptorSet_SSAO;
-	VkDescriptorSet descriptorSet_SSAOBlur;
+	VkDescriptorSet descriptorSet_SSAO{VK_NULL_HANDLE};
+	VkDescriptorSet descriptorSet_SSAOBlur{VK_NULL_HANDLE};
 
-	VkDescriptorSet descriptorSet_fullscreenBlit;
+	VkDescriptorSet descriptorSet_fullscreenBlit{VK_NULL_HANDLE};
 	// For UBO with the corresponding swap chain image
 	std::vector<VkDescriptorSet> descriptorSets_uniform;
 
@@ -354,9 +421,10 @@ public:
 	void GenerateCPUIndirectDrawCommands();
 	void UploadInstanceData();
 	void UploadUIData();
-	uint32_t objectCount{};
+	uint32_t commandCount{};
 	// Contains the instanced data
-	GpuVector<oGFX::InstanceData> instanceBuffer[MAX_FRAME_DRAWS];
+	GpuVector<oGFX::InstanceData> instanceBuffer;
+	GpuVector<oGFX::InstanceData> shadowCasterInstanceBuffer;
 
 	bool PrepareFrame();
 	void BeginDraw();
@@ -410,17 +478,17 @@ public:
 	std::mutex g_mut_globalMeshBuffers;
 	IndexedVertexBuffer g_GlobalMeshBuffers;
 
-	std::array<GpuVector<ParticleData>,3> g_particleDatas;
-	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer[MAX_FRAME_DRAWS];
+	GpuVector<ParticleData> g_particleDatas;
+	GpuVector<oGFX::IndirectCommand> g_particleCommandsBuffer;
 
-	GpuVector<oGFX::DebugVertex>g_DebugDrawVertexBufferGPU[MAX_FRAME_DRAWS];
-	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU[MAX_FRAME_DRAWS];
+	GpuVector<oGFX::DebugVertex>g_DebugDrawVertexBufferGPU;
+	GpuVector<uint32_t> g_DebugDrawIndexBufferGPU;
 	std::vector<oGFX::DebugVertex> g_DebugDrawVertexBufferCPU;
 	std::vector<uint32_t> g_DebugDrawIndexBufferCPU;
 
 	// ui pass
-	GpuVector<oGFX::UIVertex> g_UIVertexBufferGPU[MAX_FRAME_DRAWS];
-	GpuVector<uint32_t> g_UIIndexBufferGPU[MAX_FRAME_DRAWS];
+	GpuVector<oGFX::UIVertex> g_UIVertexBufferGPU;
+	GpuVector<uint32_t> g_UIIndexBufferGPU;
 	std::array<GpuVector<UIData>,3> g_UIDatas;
 
 	ModelFileResource* GetDefaultCube();
@@ -435,6 +503,49 @@ public:
 	oGFX::CPUSkeletonInstance* CreateSkeletonInstance(uint32_t modelID);
 
 	bool ResizeSwapchain();
+
+	void UpdateRenderResolution();
+	void SetUpscaler(UPSCALING_TYPE upscaler);
+	void SetQuality(UPSCALING_QUALITY quality);
+	float changedRenderResolution = 1.0f;
+	float renderResolution = 1.0f;
+	uint32_t renderWidth{};
+	uint32_t renderHeight{};
+	uint32_t m_JitterIndex = 0;
+	bool m_useJitter = true;
+	float prevjitterX;
+	float prevjitterY;
+	float jitterX;
+	float jitterY;
+	uint32_t fsrFrameCount;
+	int32_t jitterPhaseCount;
+	
+	UPSCALING_TYPE m_upscaleType = UPSCALING_TYPE::NONE;
+	UPSCALING_QUALITY m_upscaleQuality = UPSCALING_QUALITY::NATIVE;
+
+	struct PERF_QUALITY_ITEM
+	{
+		NVSDK_NGX_PerfQuality_Value PerfQuality;
+		const char* PerfQualityText;
+		bool                        PerfQualityAllowed;
+		bool                        PerfQualityDynamicAllowed;
+	};
+	
+	std::vector<PERF_QUALITY_ITEM>        PERF_QUALITY_LIST =
+	{
+		{NVSDK_NGX_PerfQuality_Value_DLAA,             "DLAA"       , false, false}, // basically native
+		{NVSDK_NGX_PerfQuality_Value_MaxQuality,       "Quality"    , false, false},
+		{NVSDK_NGX_PerfQuality_Value_Balanced,         "Balanced"   , false, false},
+		{NVSDK_NGX_PerfQuality_Value_MaxPerf,          "Performance", false, false},
+		{NVSDK_NGX_PerfQuality_Value_UltraPerformance, "UltraPerf"  , false, false},
+	};
+	std::unordered_map<NVSDK_NGX_PerfQuality_Value, DlssRecommendedSettings> m_RecommendedSettingsMap;
+	glm::ivec2 m_recommendedSettingsLastSize = {~0, ~0, }; // in case we need to refresh the recommended settings map
+	NGXWrapper m_NGX;
+	void FillReccomendedSettings(glm::ivec2 displaySize);
+	void PrepareDLSS();
+
+	float rcas_sharpness = 1.0f;
 
 	Window* windowPtr{ nullptr };
 
@@ -465,14 +576,14 @@ public:
 	std::vector<VkSemaphore> presentSemaphore;
 	std::vector<VkSemaphore> renderSemaphore;
 	std::vector<VkFence> drawFences;
-	VkSemaphore frameCountSemaphore;
+	VkSemaphore frameCountSemaphore{VK_NULL_HANDLE};
 
 	// - Pipeline
-	VkPipeline pso_utilFullscreenBlit;
-	VkPipeline pso_utilAMDSPD;
-	VkPipeline pso_radiance;
-	VkPipeline pso_prefilter;
-	VkPipeline pso_brdfLUT;
+	VkPipeline pso_utilFullscreenBlit{ VK_NULL_HANDLE };
+	VkPipeline pso_utilAMDSPD{ VK_NULL_HANDLE };
+	VkPipeline pso_radiance{ VK_NULL_HANDLE };
+	VkPipeline pso_prefilter{ VK_NULL_HANDLE };
+	VkPipeline pso_brdfLUT{ VK_NULL_HANDLE };
 
 	VulkanRenderpass renderPass_default{};
 	VulkanRenderpass renderPass_default_noDepth{};
@@ -480,11 +591,11 @@ public:
 	VulkanRenderpass renderPass_HDR_noDepth{};
 	VulkanRenderpass renderPass_blit{};
 
-	GpuVector<oGFX::IndirectCommand> indirectCommandsBuffer[MAX_FRAME_DRAWS];
-	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer[MAX_FRAME_DRAWS];
+	GpuVector<oGFX::IndirectCommand> indirectCommandsBuffer;
+	GpuVector<oGFX::IndirectCommand> shadowCasterCommandsBuffer;
 	uint32_t indirectDrawCount{};
 
-	GpuVector<LocalLightInstance> globalLightBuffer[MAX_FRAME_DRAWS];
+	GpuVector<LocalLightInstance> globalLightBuffer;
 
 	// - Descriptors
 
@@ -496,23 +607,33 @@ public:
 
 	// SSBO
 	std::vector<glm::mat4> boneMatrices{};
-	GpuVector<glm::mat4> gpuBoneMatrixBuffer[MAX_FRAME_DRAWS];
+	GpuVector<glm::mat4> gpuBoneMatrixBuffer;
 
 	std::vector<BoneWeight> g_skinningBoneWeights;
-	GpuVector<BoneWeight> gpuSkinningBoneWeightsBuffer;
+	GpuVector<BoneWeight> gpuSkinningWeightsBuffer;
 
 	// SSBO
 	std::vector<GPUTransform> gpuTransform{};
-	GpuVector<GPUTransform> gpuTransformBuffer[MAX_FRAME_DRAWS];
+	GpuVector<GPUTransform> gpuTransformBuffer;
+	
+	// SSBO
+	std::vector<GPUTransform> gpuShadowCasterTransform{};
+	GpuVector<GPUTransform> gpuShadowCasterTransformBuffer;
 
 	// SSBO
 	std::vector<GPUObjectInformation> objectInformation;
-	GpuVector<GPUObjectInformation> objectInformationBuffer[MAX_FRAME_DRAWS];
+	GpuVector<GPUObjectInformation> objectInformationBuffer;
+	GpuVector<GPUObjectInformation> casterObjectInformationBuffer;
 	
 	// SSBO
 	std::vector<oGFX::AllocatedBuffer> vpUniformBuffer{};
 	oGFX::AllocatedBuffer SPDatomicBuffer;
 	oGFX::AllocatedBuffer SPDconstantBuffer;
+
+	oGFX::AllocatedBuffer FSR2constantBuffer[MAX_FRAME_DRAWS];
+	oGFX::AllocatedBuffer FSR2rcasBuffer[MAX_FRAME_DRAWS];
+	oGFX::AllocatedBuffer FSR2luminanceCB[MAX_FRAME_DRAWS];
+	oGFX::AllocatedBuffer FSR2autoGen[MAX_FRAME_DRAWS];
 
 	std::vector<oGFX::AllocatedBuffer> imguiVertexBuffer;
 	std::vector<oGFX::AllocatedBuffer> imguiIndexBuffer;
@@ -521,7 +642,7 @@ public:
 	oGFX::AllocatedBuffer lightingHistogram;
 	oGFX::AllocatedBuffer LuminanceBuffer;
 	oGFX::AllocatedBuffer LuminanceMonitor;
-	void* monitorData;
+	void* monitorData{ nullptr };
 
 	std::vector<DescriptorAllocator> descAllocs;
 	DescriptorLayoutCache DescLayoutCache;
@@ -535,17 +656,19 @@ public:
 	//Scene objects
 	std::mutex g_mut_globalModels;
 	std::vector<gfxModel> g_globalModels;
+	std::vector<SubMesh> g_globalSubmesh;
 
 	std::mutex g_mut_workQueue;
 	std::vector<std::function<void()>> g_workQueue;
 
-	uint32_t frameCounter = 0;
+	size_t frameCounter = 0;
 	uint32_t currentFrame = 0;
 	uint32_t getFrame() const;
+	uint32_t getPreviousFrame() const;
 
-	uint64_t uboDynamicAlignment;
+	uint64_t uboDynamicAlignment{};
 	static constexpr uint32_t numCameras = 2;
-	uint32_t numAllocatedCameras;
+	uint32_t numAllocatedCameras{};
 
 	struct RenderTarget
 	{
@@ -563,7 +686,7 @@ public:
 
 	TaskManager g_taskManager;
 	std::mutex g_mut_taskMap;
-	std::unordered_map<std::thread::id,size_t> g_taskManagerMapping;
+	std::unordered_map<std::thread::id, uint32_t> g_taskManagerMapping;
 	uint32_t mappedThreadCnt{};
 	uint32_t RegisterThreadMapping();
 

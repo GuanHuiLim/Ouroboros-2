@@ -117,10 +117,9 @@ public:
 
 	void BindPSO(const VkPipeline& pso, VkPipelineLayout pipelay, const VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-	void SetPushConstant(VkPipelineLayout layout,
-		const VkPushConstantRange& pcr,
-		const void* data
-	);
+	void SetPushConstant(VkPipelineLayout layout
+		, VkDeviceSize size, const void* data
+		, VkDeviceSize offset = 0);
 
 	DescriptorSetInfo& DescriptorSetBegin(uint32_t set);
 
@@ -159,6 +158,7 @@ public:
 	//----------------------------------------------------------------------------------------------------
 	// Drawing Commands
 	//----------------------------------------------------------------------------------------------------
+	void ClearImage(vkutils::Texture* tex, VkClearValue clear);
 
 	void Draw(
 		uint32_t vertexCount,
@@ -208,6 +208,8 @@ public:
 	VkCommandBuffer getCommandBuffer();
 private:
 	void CommitDescriptors();
+	void DenoteStateChanged();
+	void EndIfRendering();
 
 	VkCommandBuffer m_VkCommandBuffer{};
 
@@ -227,6 +229,8 @@ private:
 	bool m_regionNamed = false;
 
 	VkRect2D m_renderArea{};
+	bool m_attachmentReady{ false };
+	bool m_currentlyRendering{ false };
 
 	std::unordered_map<vkutils::Texture*, ImageStateTracking> m_trackedTextures;
 	std::unordered_map<VkBuffer, BufferStateTracking> m_trackedBuffers;

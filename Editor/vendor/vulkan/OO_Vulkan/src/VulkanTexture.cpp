@@ -14,12 +14,13 @@ Technology is prohibited.
 #include "VulkanTexture.h"
 #include "DelayedDeleter.h"
 
-#pragma warning( push )
-#pragma warning( disable : 26451 ) // arithmetic overflow
+#pragma warning( push, 0 )
 #include "loader/stb_image.h"
 #pragma warning( pop )
 
 #include <cassert>
+
+#include "VulkanRenderer.h"
 
 namespace vkutils
 {
@@ -464,7 +465,7 @@ namespace vkutils
 			stagingBuffer.buffer,
 			image.image,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			bufferCopyRegion.size(), // copy over as many mips as have
+			(uint32_t)bufferCopyRegion.size(), // copy over as many mips as have
 			bufferCopyRegion.data()
 		);
 
@@ -503,7 +504,7 @@ namespace vkutils
 		{
 			viewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 			viewCreateInfo.subresourceRange.levelCount = 1;
-			viewCreateInfo.subresourceRange.baseMipLevel = i;
+			viewCreateInfo.subresourceRange.baseMipLevel = (uint32_t)i;
 			viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 
 			//vkCreateImageView(device->logicalDevice, &viewCreateInfo, nullptr, &mipChainViews[i]);
@@ -539,21 +540,28 @@ namespace vkutils
 		VkFilter _filter
 	)
 	{
+		auto& vr = *VulkanRenderer::get();
+
 		this->device = device;
-		targetSwapchain = forFullscr;
+		useRenderscale = forFullscr;
 		renderScale = _renderscale;
-		width = static_cast<uint32_t>(texWidth * renderScale);
-		height = static_cast<uint32_t>(texHeight* renderScale);
+
+		float scale = 1.0f;
+		if (useRenderscale) {
+			scale = vr.renderResolution;
+		}
+
+		width = static_cast<uint32_t>(texWidth * renderScale* scale);
+		height = static_cast<uint32_t>(texHeight* renderScale* scale);
 		format = _format;
 		filter = _filter;
 		referenceLayout = _imageLayout;
 
-		aspectMask = 0;
+		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		if (referenceLayout == VK_IMAGE_LAYOUT_UNDEFINED) // no user defined layout, set automatically
 		{
 			if (imageUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 			{
-				aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				referenceLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			}
 			else if (imageUsageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -568,7 +576,7 @@ namespace vkutils
 		// for blitting
 		usage = imageUsageFlags | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		
-		assert(aspectMask > 0);
+		OO_ASSERT(aspectMask > 0);
 
 		//uint mipLevels = std::floor(std::log2(std::max(texWidth, texHeight))) + 1;
 		mipLevels = 1;
@@ -588,8 +596,16 @@ namespace vkutils
 		if (device == nullptr)
 			return;
 
-		width = static_cast<uint32_t>(texWidth * renderScale);
-		height = static_cast<uint32_t>(texHeight * renderScale);
+		auto& vr = *VulkanRenderer::get();
+
+		float scaling = 1.0f;
+		if (useRenderscale)
+		{
+			scaling = vr.renderResolution;
+		}
+
+		width = static_cast<uint32_t>(texWidth * renderScale * scaling);
+		height = static_cast<uint32_t>(texHeight * renderScale * scaling);
 
 		VkImageView oldview = view;
 		VmaAllocation oldMemory = image.allocation;
@@ -604,7 +620,12 @@ namespace vkutils
 
 		bool n = name.empty();
 
-		AllocateImageMemory(device, usage);
+		if (mipLevels > 1) {
+			//recompute mips
+			mipLevels = std::floor(std::log2(std::max(width, height))) + 1;
+		}
+
+		AllocateImageMemory(device, usage, mipLevels);
 
 		CreateImageView();
 
@@ -697,7 +718,7 @@ namespace vkutils
 		if (currentLayout == targetLayout) return; // might bug with write
 
 		auto subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		if (texture.format == VK_FORMAT_D32_SFLOAT_S8_UINT)
+		if (texture.format == VulkanRenderer::G_DEPTH_FORMAT)
 		{
 			subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
 		}
@@ -734,7 +755,7 @@ namespace vkutils
 	void ComputeImageBarrier(VkCommandBuffer cmd, Texture& texture, VkImageLayout currentLayout, VkImageLayout targetLayout, uint32_t mipBegin, uint32_t mipEnd)
 	{
 		auto subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		if (texture.format == VK_FORMAT_D32_SFLOAT_S8_UINT)
+		if (texture.format == VulkanRenderer::G_DEPTH_FORMAT)
 		{
 			subresrange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
 		}
@@ -817,7 +838,7 @@ namespace vkutils
 			stagingBuffer.buffer,
 			image.image,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			bufferCopyRegion.size(), // copy over as many mips as have
+			(uint32_t)bufferCopyRegion.size(), // copy over as many mips as have
 			bufferCopyRegion.data()
 		);
 

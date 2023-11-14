@@ -296,6 +296,53 @@ void DebugDraw::DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& v
     AddLine(v[2], v[6],col); // BR
 }
 
+void DebugDraw::DrawCameraFrustrumFromViewProj(const glm::mat4& viewProj, const oGFX::Color& col)
+{
+
+    glm::mat4 invVP =glm::inverse(viewProj);
+    oGFX::AABB a({ -1, -1, 0 }, { 1, 1, 1 });
+    oGFX::Point3D corners[8]{};
+    for (int i = 0; i < 8; ++i)
+    {
+        corners[i] = a.min(); // Start with the minimum corner of the AABB
+
+        if (i & 1) corners[i][0] = a.max()[0];
+        if (i & 2) corners[i][1] = a.max()[1];
+        if (i & 4) corners[i][2] = a.max()[2];
+    }
+    for (int i = 0; i < 8; ++i)
+    {
+        vec4 res = invVP * glm::vec4(corners[i], 1.0);
+        corners[i] = glm::vec3{res.x,res.y,res.z} / res.w;
+    }
+    // corner 0 FTL
+    // corner 1 FTR
+    // corner 2 FBL
+    // corner 3 FBR
+    // corner 4 NBR
+    // corner 5 NBL
+    // corner 6 NTR
+    // corner 7 NTL
+
+    // FAR
+    oGFX::DebugDraw::AddLine(corners[0], corners[2],col);
+    oGFX::DebugDraw::AddLine(corners[1], corners[3],col);
+    oGFX::DebugDraw::AddLine(corners[0], corners[1],col);
+    oGFX::DebugDraw::AddLine(corners[3], corners[2],col);
+    // NEAR
+    oGFX::DebugDraw::AddLine(corners[4], corners[6],col);
+    oGFX::DebugDraw::AddLine(corners[5], corners[7],col);
+    oGFX::DebugDraw::AddLine(corners[4], corners[5],col);
+    oGFX::DebugDraw::AddLine(corners[7], corners[6],col);
+    // connectors
+    oGFX::DebugDraw::AddLine(corners[0], corners[7],col);
+    oGFX::DebugDraw::AddLine(corners[1], corners[6],col);
+    oGFX::DebugDraw::AddLine(corners[2], corners[5],col);
+    oGFX::DebugDraw::AddLine(corners[3], corners[4],col);
+    
+
+}
+
 void DebugDraw::DrawCameraFrustrumDebugArrows(const Camera& c, const oGFX::Color& col)
 {
     auto frust = c.GetFrustum();

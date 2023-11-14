@@ -21,6 +21,7 @@ layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec2 outUV;
 layout(location = 2) out vec4 outColor;
 layout(location = 3) out flat uvec4 outInstanceData;
+layout(location = 4) out vec4 outPrevPosition;
 
 #include "frame.shader"
 layout(set = 1, binding = 0) uniform UboFrameContext
@@ -44,6 +45,8 @@ void main()
 	
 	outColor = inCol;
 	
-	gl_Position = uboFrameContext.viewProjection * vec4(inPosition.xyz,1.0);
+    outPosition = uboFrameContext.viewProjJittered * vec4(inPosition.xyz, 1.0);
+    gl_Position = outPosition;
+    outPrevPosition = uboFrameContext.prevViewProjJittered * vec4(inPosition.xyz, 1.0);
 	
 }

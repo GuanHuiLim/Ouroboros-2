@@ -53,7 +53,7 @@ void main()
 
 	vec4 albedo = texture(sampler2D(textureAlbedo,basicSampler), inUV);
 	float ambient = PC.ambient;
-	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjection,uboFrameContext.inverseView);
+	vec3 fragPos = WorldPosFromDepth(depth.r,inUV,uboFrameContext.inverseProjectionJittered,uboFrameContext.inverseView);
 	vec3 normal = DecodeNormalHelper(texture(sampler2D(textureNormal,basicSampler), inUV).rgb);
 	normal = normalize(normal);
 	

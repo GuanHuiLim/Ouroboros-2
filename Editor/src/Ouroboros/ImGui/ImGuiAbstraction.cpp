@@ -130,6 +130,12 @@ namespace oo
         Application& app = Application::Get();
         io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());*/
 
+        ImGui::Begin("Wtf is this window");
+        if (ImGui::DragFloat("wtfman", &m_renderer->vr->changedRenderResolution,0.01f,0.1f,1.0f)) m_renderer->vr->UpdateRenderResolution();
+        static int testi = 0;
+        if (ImGui::SliderInt("mann", &testi, 0, 2)) m_renderer->vr->SetUpscaler((UPSCALING_TYPE)testi);
+        ImGui::End();
+
         // Rendering
         ImGui::Render();
 

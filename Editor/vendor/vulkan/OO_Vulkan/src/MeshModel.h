@@ -128,7 +128,7 @@ struct gfxModel
 
     uint32_t skinningWeightsOffset{};
 
-    std::vector<SubMesh> m_subMeshes;
+    std::vector<uint32_t> m_subMeshes;
 
     ModelFileResource* cpuModel{ nullptr };
     oGFX::Skeleton* skeleton{ nullptr };

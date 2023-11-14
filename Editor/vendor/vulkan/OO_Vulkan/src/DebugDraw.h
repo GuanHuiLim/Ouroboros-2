@@ -37,6 +37,8 @@ struct DebugDraw
 
 	static void DrawCameraFrustrum(const Camera&, const oGFX::Color& col = oGFX::Colors::WHITE);
 	static void DrawCameraFrustrum(const glm::vec3& position, const glm::mat4& view, float ar,float fov ,float znear, float zfar, const oGFX::Color& col = oGFX::Colors::WHITE);
+	
+	static void DrawCameraFrustrumFromViewProj(const glm::mat4& viewProj, const oGFX::Color& col = oGFX::Colors::WHITE);
 
 	static void DrawCameraFrustrumDebugArrows(const Camera& f, const oGFX::Color& col = oGFX::Colors::WHITE);
 	static void DrawCameraFrustrumDebugArrows(const Frustum& f, const oGFX::Color& col = oGFX::Colors::WHITE);

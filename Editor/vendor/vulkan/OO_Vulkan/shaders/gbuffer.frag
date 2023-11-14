@@ -7,14 +7,16 @@ layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in flat int inEntityID;
 layout(location = 4) in flat vec4 inEmissiveColour;
+layout(location = 5) in vec4 inPrevPosition;
+layout(location = 6) in vec4 inCurrPosition;
 
-layout(location = 15) in flat uvec4 inInstanceData;
 layout(location = 7) in struct
 {
     vec3 b;
 	vec3 t;
 	vec3 n;
 }inLightData;
+layout(location = 15) in flat uvec4 inInstanceData;
 
 
 //layout(location = 0) out vec4 outPosition; // Optimization for space reconstructed from depth.
@@ -22,7 +24,8 @@ layout(location = 0) out vec4 outNormal;
 layout(location = 1) out vec4 outAlbedo;
 layout(location = 2) out vec4 outMaterial;
 layout(location = 3) out vec4 outEmissive;
-layout(location = 4) out int outEntityID;
+layout(location = 4) out vec2 outVelocity;
+layout(location = 5) out int outEntityID;
 
 #include "shader_utility.shader"
 
@@ -85,6 +88,15 @@ void main()
     outEntityID = inEntityID;
     outAlbedo = vec4(inColor, 1.0);
     
+    vec2 cancelJitter =  uboFrameContext.prevJitter - uboFrameContext.currJitter;
+    vec4 clipPos = inCurrPosition;
+    vec2 a = (clipPos.xy / clipPos.w);
+    vec2 b = (inPrevPosition.xy / inPrevPosition.w);
+    outVelocity.xy = (a - b) + cancelJitter;
+    
+    //outVelocity.xy *= vec2(0.5, -0.5);
+    outVelocity.xy *= vec2(-0.5, 0.5);
+    
     //outPosition = inPosition;
     // implicit depthOut will reconstruct the position
 
@@ -94,7 +106,7 @@ void main()
     const bool useRoughnessTexture = true;
     const bool useMetallicTexture = true;
     const bool useAmbientOcclusionTexture = true;
-
+    
     // Unpack per instance data
     const uint textureIndex_Albedo    = inInstanceData.z >> 16;
     const uint textureIndex_Normal    = inInstanceData.z & 0xFFFF;
@@ -105,7 +117,7 @@ void main()
    
     vec3 normalInfo = vec3(0.0);
     {
-        outAlbedo.rgb = texture(sampler2D(textureDescriptorArray[textureIndex_Albedo],basicSampler), inUV.xy).rgb;
+        outAlbedo.rgb = texture(sampler2D(textureDescriptorArray[textureIndex_Albedo],basicSampler), inUV.xy, -2.585).rgb;
     }
 	
     {
@@ -118,7 +130,7 @@ void main()
          
         vec3 V = normalize(inPosition.xyz - uboFrameContext.cameraPosition.xyz);    
   
-        vec3 map = texture(sampler2D(textureDescriptorArray[textureIndex_Normal],basicSampler), inUV.xy).xyz*2.0-1.0;
+        vec3 map = texture(sampler2D(textureDescriptorArray[textureIndex_Normal],basicSampler), inUV.xy, -2.585).xyz*2.0-1.0;
         
         // new method
         mat3 TBN = cotangent_frame( N, V,  inUV.xy );

@@ -105,13 +105,7 @@ void LightingHistogram::Draw(const VkCommandBuffer cmdlist)
 	dbi.buffer = vr.lightingHistogram.buffer;
 	dbi.offset = 0;
 	dbi.range = VK_WHOLE_SIZE;
-
-	VkPushConstantRange pcr{};
-	pcr.size = sizeof(LuminencePC);
-	pcr.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 	
-
-
 	vkCmdFillBuffer(cmdlist, vr.lightingHistogram.buffer, 0, VK_WHOLE_SIZE, 0);
 
 	auto& target = vr.attachments.lighting_target;
@@ -123,10 +117,10 @@ void LightingHistogram::Draw(const VkCommandBuffer cmdlist)
 	float histogramParams[4] = {
 		minLogLum,
 		1.0f / (maxLogLum - minLogLum),
-		target.width,
-		target.height
+		(float)target.width,
+		(float)target.height
 	};
-	cmd.SetPushConstant(PSOLayoutDB::histogramPSOLayout, pcr, &histogramParams);
+	cmd.SetPushConstant(PSOLayoutDB::histogramPSOLayout, sizeof(LuminencePC), &histogramParams);
 	cmd.DescriptorSetBegin(0)
 		.BindImage(0, &target, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 		.BindBuffer(1, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, rhi::UAV);
@@ -150,7 +144,7 @@ void LightingHistogram::Draw(const VkCommandBuffer cmdlist)
 	cmd.DescriptorSetBegin(0)
 		.BindBuffer(0, &lumBufferInfo, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, rhi::UAV)
 		.BindBuffer(1, &dbi, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, rhi::UAV);
-	cmd.SetPushConstant(PSOLayoutDB::luminancePSOLayout, pcr, &avgParams);
+	cmd.SetPushConstant(PSOLayoutDB::luminancePSOLayout, sizeof(LuminencePC), &avgParams);
 	cmd.Dispatch(1);
 }
 

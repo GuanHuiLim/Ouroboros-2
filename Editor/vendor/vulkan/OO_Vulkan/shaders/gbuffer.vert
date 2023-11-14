@@ -9,10 +9,8 @@ layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in vec3 inTangent;
 layout(location = 4) in vec2 inUV;
-
-
-
-layout(location = 15) in uvec4 inInstanceData;
+layout(location = 5) out vec4 outPrevPosition;
+layout(location = 6) out vec4 outCurrPosition;
 
 // Note: Sending too much stuff from VS to FS can result in bottleneck...
 layout(location = 0) out vec4 outPosition;
@@ -26,6 +24,13 @@ layout(location = 7) out struct
 	vec3 t;
 	vec3 n;
 }outLightData;
+
+
+layout(std430, set = 0, binding = 1) readonly buffer instanceBuffer
+{
+    uvec4 InstanceDatas[];
+};
+
 layout(location = 15) flat out uvec4 outInstanceData;
 
 #include "frame.shader"
@@ -51,13 +56,15 @@ layout(std430, set = 0, binding = 5) readonly buffer GPUobject
 void main()
 {
 
-	const uint instanceIndex = inInstanceData.x;
+    const uint instanceIndex = gl_InstanceIndex;
 
-	GPUObjectInformation objectInfo = GPUobjectInfo[inInstanceData.x];
+    GPUObjectInformation objectInfo = GPUobjectInfo[instanceIndex];
 	outEntityID = objectInfo.entityID;
 	outEmissive = objectInfo.emissiveColour;
 	//decode the matrix into transform matrix
 	mat4 dInsMatrix = GPUTransformToMatrix4x4(GPUScene_SSBO[instanceIndex]);
+    mat4 dPrevInsMatrix = GPUTransformToPreviousMatrix4x4(GPUScene_SSBO[instanceIndex]);
+    vec4 prevPosition;
 	
 	// inefficient
 	mat3 L2W = mat3(dInsMatrix);//inverse(dInsMatrix);
@@ -77,7 +84,7 @@ void main()
 	outLightData.t = T;
 	outLightData.n = N;
 
-
+    uvec4 inInstanceData = InstanceDatas[instanceIndex];
 	bool skinned = UnpackSkinned(inInstanceData.y);
     if(skinned)
 	{
@@ -87,21 +94,33 @@ void main()
         uvec4 boneIndices = UnpackBoneIndices(boneInfo);		
         vec4 boneWeights = UnpackBoneWeights(boneInfo);
 		
-		mat4x4 boneToModel; // what do i do with this
+		mat4x4 boneToModel;
 		outPosition = ComputeSkinnedVertexPosition(dInsMatrix,inPosition
 													, boneIndices, boneWeights
 													,objectInfo.boneStartIdx,boneToModel);
+		
+		// calculate previous position
+        prevPosition = ComputeSkinnedVertexPosition(dPrevInsMatrix, inPosition
+													, boneIndices, boneWeights
+													, objectInfo.boneStartIdx, boneToModel);
+		
 		mat3 inverseTransformBone = transpose(mat3(inverse(boneToModel)));
 		outLightData.n = normalize(inverseTransformBone*NN);
 	}
 	else
 	{
 		outPosition = dInsMatrix * vec4(inPosition,1.0);
-	}
+        prevPosition = dPrevInsMatrix * vec4(inPosition, 1.0);
+    }
 
-	gl_Position = uboFrameContext.viewProjection * outPosition;
+	// gl_Position jitters the motion vectors because its jittered
+	gl_Position = uboFrameContext.viewProjJittered * outPosition;
+	
+    outCurrPosition = uboFrameContext.viewProjJittered * outPosition;
+    outPrevPosition = uboFrameContext.prevViewProjJittered * prevPosition;
 	
 	outUV = inUV;
 	outColor = inColor;
 	outInstanceData = inInstanceData;
+    outInstanceData.x = gl_InstanceIndex;
 }

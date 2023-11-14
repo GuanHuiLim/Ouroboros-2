@@ -37,7 +37,7 @@
 #define FSR2_BIND_SRV_INPUT_DEPTH                           9
 #define FSR2_BIND_SRV_INPUT_EXPOSURE                        10
 
-#define FSR2_BIND_UAV_DEPTH_CLIP                          2011
+//#define FSR2_BIND_UAV_DEPTH_CLIP                          2011
 #define FSR2_BIND_UAV_DILATED_REACTIVE_MASKS              2012
 #define FSR2_BIND_UAV_PREPARED_INPUT_COLOR                2013
 

@@ -101,8 +101,9 @@ void DebugDrawRenderpass::Draw(const VkCommandBuffer cmdlist)
 	rhi::CommandList cmd{ cmdlist, "Debug Pass"};
 
 	auto& attachments = vr.attachments.gbuffer;
+	auto& target = vr.renderTargets[vr.renderTargetInUseID].texture;
 	
-	cmd.BindAttachment(0, &vr.renderTargets[vr.renderTargetInUseID].texture);
+	cmd.BindAttachment(0, &target);
 	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 
 	const float vpHeight = (float)vr.m_swapchain.swapChainExtent.height;
@@ -125,10 +126,10 @@ void DebugDrawRenderpass::Draw(const VkCommandBuffer cmdlist)
 			1, &dynamicOffset
 		);
 
-		cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU[currFrame].getBufferPtr());
-		cmd.BindIndexBuffer(vr.g_DebugDrawIndexBufferGPU[currFrame].getBuffer(), 0, VK_INDEX_TYPE_UINT32);		
+		cmd.BindVertexBuffer(BIND_POINT_VERTEX_BUFFER_ID, 1, vr.g_DebugDrawVertexBufferGPU.getBufferPtr());
+		cmd.BindIndexBuffer(vr.g_DebugDrawIndexBufferGPU.getBuffer(), 0, VK_INDEX_TYPE_UINT32);		
 		
-		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU[currFrame].size()), 1);
+		cmd.DrawIndexed((uint32_t)(vr.g_DebugDrawIndexBufferGPU.size()), 1);
 	}
 }
 
@@ -147,11 +148,10 @@ void DebugDrawRenderpass::Shutdown()
 		}
 	}
 
-	for (size_t i = 0; i < 2; i++)
-	{
-		vr->g_DebugDrawVertexBufferGPU[i].destroy();
-		vr->g_DebugDrawIndexBufferGPU[i].destroy();
-	}
+
+	vr->g_DebugDrawVertexBufferGPU.destroy();
+	vr->g_DebugDrawIndexBufferGPU.destroy();
+	
 }
 
 void DebugDrawRenderpass::CreateDebugRenderpass()

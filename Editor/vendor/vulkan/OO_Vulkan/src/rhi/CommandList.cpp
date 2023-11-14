@@ -25,6 +25,7 @@ namespace rhi
 
 	void CommandList::BindPSO(const VkPipeline& pso, VkPipelineLayout pipelay, const VkPipelineBindPoint bindPoint)
 	{
+		PROFILE_SCOPED();
 		m_pipelineBindPoint = bindPoint;
 		m_pipeLayout = pipelay;
 		m_targetStage = getStage(m_pipelineBindPoint);
@@ -32,26 +33,26 @@ namespace rhi
 		vkCmdBindPipeline(m_VkCommandBuffer, bindPoint, pso);
 	}
 
-	void CommandList::SetPushConstant(VkPipelineLayout layout, const VkPushConstantRange& pcr, const void* data)
+	void CommandList::SetPushConstant(VkPipelineLayout layout, VkDeviceSize size, const void* data, VkDeviceSize offset)
 	{
+		PROFILE_SCOPED();
 		memset(m_push_constant, 0, 128);
-		memcpy(m_push_constant, data, pcr.size);
-		vkCmdPushConstants(m_VkCommandBuffer, layout, VK_SHADER_STAGE_ALL, pcr.offset, pcr.size, data);
+		memcpy(m_push_constant, data, size);
+		vkCmdPushConstants(m_VkCommandBuffer, layout, VK_SHADER_STAGE_ALL, offset, size, data);
 	}
 
 	DescriptorSetInfo& CommandList::DescriptorSetBegin(uint32_t set)
 	{
 		assert(set < 4);
-		assert(m_pipelineBindPoint != VK_PIPELINE_BIND_POINT_MAX_ENUM);
-		descriptorSets[set].builder = DescriptorBuilder::Begin();
+		DenoteStateChanged();
 
+		descriptorSets[set].builder = DescriptorBuilder::Begin();
 		
 		descriptorSets[set].shaderStage = m_targetStage;
 
 		descriptorSets[set].expected = true;
 		descriptorSets[set].bound = false;
 		descriptorSets[set].built = false;
-
 		return descriptorSets[set];
 	}
 
@@ -59,7 +60,8 @@ namespace rhi
 	{
 		assert(set < 4);
 		assert(descriptor != VK_NULL_HANDLE);
-		assert(m_pipelineBindPoint != VK_PIPELINE_BIND_POINT_MAX_ENUM);
+		DenoteStateChanged();
+
 		descriptorSets[set].descriptor = descriptor;
 
 		descriptorSets[set].shaderStage = m_targetStage;
@@ -67,6 +69,7 @@ namespace rhi
 		descriptorSets[set].expected = true;
 		descriptorSets[set].bound = false;
 		descriptorSets[set].built = true;
+
 	}
 
 	CommandList::CommandList(const VkCommandBuffer& cmd, const char* name, const glm::vec4 col)
@@ -86,6 +89,7 @@ namespace rhi
 	}
 	CommandList::~CommandList()
 	{
+		EndIfRendering();
 		RestoreResourceStates();
 		EndNamedRegion();
 	}
@@ -171,6 +175,9 @@ namespace rhi
 	{
 		VerifyImageResourceStates();
 		VerifyBufferResourceStates();
+
+		CommitDescriptors();
+		m_attachmentReady = true;
 	}
 
 	void CommandList::RestoreResourceStates()
@@ -181,6 +188,7 @@ namespace rhi
 
 	void CommandList::VerifyImageResourceStates()
 	{
+		PROFILE_SCOPED();
 		for (auto& [tex, state] : m_trackedTextures) 
 		{
 			if (state.expectedLayout != state.currentLayout) 
@@ -203,6 +211,7 @@ namespace rhi
 
 	void CommandList::RestoreImageResourceStates()
 	{
+		PROFILE_SCOPED();
 		for (auto& [tex, state] : m_trackedTextures)
 		{
 			if (state.referenceLayout != state.currentLayout)
@@ -216,6 +225,7 @@ namespace rhi
 
 	void CommandList::VerifyBufferResourceStates()
 	{
+		PROFILE_SCOPED();
 		for (auto& [buffer, state] : m_trackedBuffers)
 		{
 			if (state.currentAccess != state.expectedAccess || state.expectedAccess == UAV)
@@ -314,12 +324,10 @@ void CommandList::BeginNameRegion(const char* name, const glm::vec4 col)
 
 void CommandList::BindAttachment(uint32_t bindPoint, vkutils::Texture* tex, bool clearOnDraw)
 {
-
 	if (tex) {
 		//start tracking
 		ImageStateTracking* tracked = ensureTrackedImage(tex);		
 		tracked->expectedLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
 
 		VkRenderingAttachmentInfo albedoInfo{};
 		albedoInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
@@ -346,7 +354,7 @@ void CommandList::BindAttachment(uint32_t bindPoint, vkutils::Texture* tex, bool
 		//bind null
 		m_attachments[bindPoint] = VkRenderingAttachmentInfo{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR };
 	}
-
+	DenoteStateChanged();
 }
 
 void CommandList::BindDepthAttachment(vkutils::Texture* tex, bool clearOnDraw)
@@ -380,26 +388,37 @@ void CommandList::BindDepthAttachment(vkutils::Texture* tex, bool clearOnDraw)
 	{
 		m_depthBound = false;
 	}
+	DenoteStateChanged();
 }
 void CommandList::BindVertexBuffer(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets /*= nullptr*/)
 {
+	PROFILE_SCOPED();
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(m_VkCommandBuffer, firstBinding, bindingCount, pBuffers, pOffsets ? pOffsets : offsets);
 }
 
 void CommandList::BindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType)
 {
+	PROFILE_SCOPED();
 	vkCmdBindIndexBuffer(m_VkCommandBuffer, buffer, offset, indexType);
 }
 
 void CommandList::BeginRendering(VkRect2D renderArea)
 {
-	VerifyResourceStates();
-	CommitDescriptors();
+	PROFILE_SCOPED();
 
+	if (m_attachmentReady == true) {
+		return;
+	}
+	else {
+		EndIfRendering();
+	}
+
+	VerifyResourceStates();
+	
 	m_depth.loadOp = m_shouldClearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
 	m_shouldClearDepth = false;
-	for (size_t i = 0; i < m_highestAttachmentBound + 1; i++)
+	for (size_t i = 0; i < size_t(m_highestAttachmentBound + 1); i++)
 	{
 		m_attachments[i].loadOp = m_shouldClearAttachment[i] ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
 		m_shouldClearAttachment[i] = false;
@@ -416,33 +435,57 @@ void CommandList::BeginRendering(VkRect2D renderArea)
 	renderingInfo.pStencilAttachment = m_depthBound ? &m_depth : NULL;
 
 	vkCmdBeginRendering(m_VkCommandBuffer, &renderingInfo);
+	m_currentlyRendering = true;
 }
 
 void CommandList::EndRendering()
 {
+	PROFILE_SCOPED();
 	vkCmdEndRendering(m_VkCommandBuffer);
+	m_currentlyRendering = false;
 }
 
 
+void CommandList::ClearImage(vkutils::Texture* tex, VkClearValue clear)
+{
+	OO_ASSERT(tex);
+
+	ImageStateTracking* tracked = ensureTrackedImage(tex);
+	tracked->expectedLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	VerifyImageResourceStates();
+	if (tex->format == VulkanRenderer::G_DEPTH_FORMAT) 
+	{
+		VkImageSubresourceRange srr{ VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, tex->mipLevels, 0, tex->layerCount };	
+		vkCmdClearDepthStencilImage(m_VkCommandBuffer, tex->image.image, tracked->currentLayout
+			, &clear.depthStencil, 1, &srr);
+	}
+	else 
+	{
+		VkImageSubresourceRange srr{ VK_IMAGE_ASPECT_COLOR_BIT, 0, tex->mipLevels, 0, tex->layerCount };	
+		vkCmdClearColorImage(m_VkCommandBuffer, tex->image.image, tracked->currentLayout
+			, &clear.color, 1, &srr);
+	}
+}
+
 void CommandList::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
+	PROFILE_SCOPED();
 	BeginRendering(m_renderArea);
 	vkCmdDraw(m_VkCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
-	EndRendering();
 }
 
 void CommandList::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
 {
+	PROFILE_SCOPED();
 	BeginRendering(m_renderArea);
 	vkCmdDrawIndexed(m_VkCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
-	EndRendering();
 }
 
 void CommandList::DrawIndexedIndirect(VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
+	PROFILE_SCOPED();
 	BeginRendering(m_renderArea);
 	::DrawIndexedIndirect(m_VkCommandBuffer, buffer, offset, drawCount, stride);
-	EndRendering();
 }
 
 void CommandList::BindDescriptorSet(VkPipelineLayout layout,
@@ -485,15 +528,15 @@ void CommandList::BindDescriptorSet(VkPipelineLayout layout,
 
 void CommandList::DrawFullScreenQuad()
 {
+	PROFILE_SCOPED();
 	BeginRendering(m_renderArea);
 	vkCmdDraw(m_VkCommandBuffer, 3, 1, 0, 0);
-	EndRendering();
 }
 
 void CommandList::Dispatch(uint32_t x, uint32_t y, uint32_t z)
 {
+	PROFILE_SCOPED();
 	VerifyResourceStates();
-	CommitDescriptors();
 	vkCmdDispatch(m_VkCommandBuffer, x, y, z);
 }
 
@@ -541,6 +584,7 @@ VkCommandBuffer CommandList::getCommandBuffer()
 
 void CommandList::CommitDescriptors()
 {
+	PROFILE_SCOPED();
 	uint32_t count{};
 	uint32_t firstSet{ UINT32_MAX };
 	std::array<VkDescriptorSet, 4> sets{};
@@ -588,6 +632,17 @@ void CommandList::CommitDescriptors()
 		dynamicOffsetCnt ? dynOffsets.data() : nullptr);
 }
 
+void CommandList::DenoteStateChanged()
+{
+	m_attachmentReady = false;
+}
+
+void CommandList::EndIfRendering()
+{
+	if (m_currentlyRendering == true)
+		EndRendering();
+}
+
 DescriptorSetInfo& DescriptorSetInfo::BindImage(uint32_t binding, vkutils::Texture* texture, VkDescriptorType type)
 {	
 	OO_ASSERT(texture);
@@ -598,6 +653,8 @@ DescriptorSetInfo& DescriptorSetInfo::BindImage(uint32_t binding, vkutils::Textu
 DescriptorSetInfo& DescriptorSetInfo::BindImage(uint32_t binding, vkutils::Texture* texture, VkDescriptorType type, VkImageView viewOverride)
 {
 	VkImageLayout layout = (type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	OO_ASSERT(viewOverride);
 
 	VkDescriptorImageInfo texinfo = oGFX::vkutils::inits::descriptorImageInfo(
 		VK_NULL_HANDLE, // no sampler
@@ -615,6 +672,8 @@ DescriptorSetInfo& DescriptorSetInfo::BindImage(uint32_t binding, vkutils::Textu
 
 DescriptorSetInfo& DescriptorSetInfo::BindSampler(uint32_t binding, VkSampler sampler, VkShaderStageFlags stageFlagsInclude)
 {
+	OO_ASSERT(sampler != VK_NULL_HANDLE);
+
 	VkDescriptorImageInfo samplerInfo = oGFX::vkutils::inits::descriptorImageInfo(
 		sampler, 
 		VK_NULL_HANDLE,
@@ -626,6 +685,8 @@ DescriptorSetInfo& DescriptorSetInfo::BindSampler(uint32_t binding, VkSampler sa
 
 DescriptorSetInfo& DescriptorSetInfo::BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, ResourceUsage access, VkShaderStageFlags stageFlagsInclude)
 {
+	OO_ASSERT(bufferInfo);
+
 	builder.BindBuffer(binding, bufferInfo, type, shaderStage | stageFlagsInclude);
 	this->m_cmdList->BeginTrackingBuffer(bufferInfo->buffer);
 	BufferStateTracking* tracked = m_cmdList->getTrackedBuffer(bufferInfo->buffer);
