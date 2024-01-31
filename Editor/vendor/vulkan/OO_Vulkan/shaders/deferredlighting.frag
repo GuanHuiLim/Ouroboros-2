@@ -73,7 +73,7 @@ void main()
 	
 	// Ambient part
 	vec3 emissive = texture(sampler2D(textureEmissive,basicSampler),inUV).rgb;
-	emissive = vec3(0);
+	//emissive = vec3(0);
 
     vec4 lightCol = PC.lightColorInten;
 	
@@ -103,7 +103,7 @@ void main()
     vec2 lutVal = texture(sampler2D( brdfLUT, basicSampler),vec2(max(dot(surface.N, surface.V), 0.0), roughness)).rg;
 	
     //vec3 result = EvalDirectionalLight(surface, irradiance, prefilteredColor,lutVal);
-	vec3 result = SaschaWillemsDirectionalLight(surface,
+	vec3 result = emissive+ SaschaWillemsDirectionalLight(surface,
 													irradiance,
 													prefilteredColor,
 													lutVal);

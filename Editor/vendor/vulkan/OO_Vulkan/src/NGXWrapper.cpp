@@ -107,6 +107,7 @@ void NGXWrapper::Init()
 		NVSDK_NGX_Result FeatureInitResult = NVSDK_NGX_Result_Fail;
 		NVSDK_NGX_Parameter_GetI(m_ngxParameters, NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult, (int*)&FeatureInitResult);
 		printf("NVIDIA DLSS not available on this hardward/platform., FeatureInitResult = 0x%08x, info: %ls\n", FeatureInitResult, GetNGXResultAsString(FeatureInitResult));
+		printf("Or cannot find DLL\n");
 		// shutdown ngx
 		Shutdown();
 		__debugbreak();

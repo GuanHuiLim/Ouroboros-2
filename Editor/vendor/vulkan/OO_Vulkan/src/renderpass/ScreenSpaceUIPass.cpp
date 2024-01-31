@@ -1,10 +1,10 @@
 /************************************************************************************//*!
-\file           ForwardUIPass.cpp
+\file           ScreenSpaceUIPass.cpp
 \project        Ouroboros
 \author         Jamie Kong, j.kong, 390004720 | code contribution (100%)
 \par            email: j.kong\@digipen.edu
 \date           Oct 02, 2022
-\brief              Defines a gbuffer pass
+\brief              Defines a screenspace ui pass
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -30,9 +30,9 @@ Technology is prohibited.
 #include <array>
 
 
-struct ForwardUIPass : public GfxRenderpass
+struct ScreenSpaceUIPass : public GfxRenderpass
 {
-	//DECLARE_RENDERPASS_SINGLETON(ForwardUIPass)
+	//DECLARE_RENDERPASS_SINGLETON(ScreenSpaceUIPass)
 
 	void Init() override;
 	void Draw(const VkCommandBuffer cmdlist) override;
@@ -49,25 +49,25 @@ private:
 
 };
 
-DECLARE_RENDERPASS(ForwardUIPass);
+DECLARE_RENDERPASS(ScreenSpaceUIPass);
 
 
 //VkPushConstantRange pushConstantRange;
-VkPipeline pso_Forward_UI{};
+VkPipeline pso_Forward_UI_NO_DEPTH{};
 
 
-void ForwardUIPass::Init()
+void ScreenSpaceUIPass::Init()
 {
 	SetupRenderpass();
 	SetupFramebuffer();
 }
 
-void ForwardUIPass::CreatePSO()
+void ScreenSpaceUIPass::CreatePSO()
 {
 	CreatePipeline();
 }
 
-bool ForwardUIPass::SetupDependencies()
+bool ScreenSpaceUIPass::SetupDependencies()
 {
 	// TODO: If gbuffer rendering is disabled, return false.
 
@@ -83,7 +83,7 @@ bool ForwardUIPass::SetupDependencies()
 	return true;
 }
 
-void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
+void ScreenSpaceUIPass::Draw(const VkCommandBuffer cmdlist)
 {
 	auto& vr = *VulkanRenderer::get();
 	lastCmd = cmdlist;
@@ -95,22 +95,26 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	auto* windowPtr = vr.windowPtr;
 
 	PROFILE_GPU_CONTEXT(cmdlist);
-    PROFILE_GPU_EVENT("ForwardUI");
+    PROFILE_GPU_EVENT("ScreenspaceUI");
 
-	rhi::CommandList cmd{ cmdlist, "Forward UI Pass"};
+	rhi::CommandList cmd{ cmdlist, "Screenspace UI Pass"};
 	
 	auto& attachments = vr.attachments.gbuffer;
-	auto& target = vr.attachments.lighting_target;
-	//auto& target = vr.renderTargets[vr.renderTargetInUseID].texture;
+	//auto& target = vr.attachments.lighting_tar get;
+	auto& target = vr.renderTargets[vr.renderTargetInUseID].texture;
 
 	cmd.BindAttachment(0, &target);
-	cmd.BindAttachment(1, &vr.attachments.gbuffer[VELOCITY]);
-	cmd.BindAttachment(2, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
-	cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
+	//cmd.BindAttachment(1, &vr.attachments.gbuffer[VELOCITY]);
+	//cmd.BindAttachment(2, &attachments[GBufferAttachmentIndex::ENTITY_ID]);
+	//cmd.BindDepthAttachment(&attachments[GBufferAttachmentIndex::DEPTH]);
 
+	const float vpWidth = (float)vr.renderWidth;
+	const float vpHeight = (float)vr.renderHeight;
+	VkViewport viewport = { 0.0f, target.height, target.width, -(float)target.height, 0.0f, 1.0f };
+	VkRect2D scissor = { {0, 0}, {uint32_t(target.width), uint32_t(target.height) } };
+	cmd.SetViewport(viewport);
+	cmd.SetScissor(scissor);
 
-	cmd.BindPSO(pso_Forward_UI, PSOLayoutDB::defaultPSOLayout);
-	cmd.SetDefaultViewportAndScissor();
 	uint32_t dynamicOffset = static_cast<uint32_t>(vr.renderIteration * oGFX::vkutils::tools::UniformBufferPaddedSize(sizeof(CB::FrameContextUBO), 
 																												vr.m_device.properties.limits.minUniformBufferOffsetAlignment));
 	cmd.BindDescriptorSet(PSOLayoutDB::defaultPSOLayout, 0, 
@@ -148,22 +152,22 @@ void ForwardUIPass::Draw(const VkCommandBuffer cmdlist)
 	const auto WorldSpaceCnt = instanceCnt - ScreenSpaceCnt;
 	const auto WorldSpaceIndices = WorldSpaceCnt * 6;
 	const auto ScreenSpaceIdxOffset = WorldSpaceIndices;
-
-	// do draw command here
-	// batch draw from the big buffer
-	cmd.DrawIndexed(static_cast<uint32_t>(WorldSpaceIndices), 1);// draw worldspace
-	
+		
+	// bind depth ignore pass
+	cmd.BindPSO(pso_Forward_UI_NO_DEPTH, PSOLayoutDB::defaultPSOLayout);
+	cmd.DrawIndexed(static_cast<uint32_t>(ScreenSpaceIndices), 1
+					,(uint32_t)ScreenSpaceIdxOffset, 0, 0);  // draw screenspace
 
 }
 
-void ForwardUIPass::Shutdown()
+void ScreenSpaceUIPass::Shutdown()
 {
 	auto& device = VulkanRenderer::get()->m_device.logicalDevice;
 
-	vkDestroyPipeline(device, pso_Forward_UI, nullptr);
+	vkDestroyPipeline(device, pso_Forward_UI_NO_DEPTH, nullptr);
 }
 
-void ForwardUIPass::SetupRenderpass()
+void ScreenSpaceUIPass::SetupRenderpass()
 {
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
@@ -174,7 +178,7 @@ void ForwardUIPass::SetupRenderpass()
 
 }
 
-void ForwardUIPass::SetupFramebuffer()
+void ScreenSpaceUIPass::SetupFramebuffer()
 {
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
@@ -189,7 +193,7 @@ void ForwardUIPass::SetupFramebuffer()
 }
 
 
-void ForwardUIPass::CreatePipeline()
+void ScreenSpaceUIPass::CreatePipeline()
 {
 	auto& vr = *VulkanRenderer::get();
 	auto& m_device = vr.m_device;
@@ -268,31 +272,32 @@ void ForwardUIPass::CreatePipeline()
 	blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // save background albedo as well
 	blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
 
-	colorBlendState.attachmentCount = blendAttachmentStates.size();
+	colorBlendState.attachmentCount = 1;
 	colorBlendState.pAttachments = blendAttachmentStates.data();
 
 	std::array<VkFormat, 3> formats{
-		vr.G_HDR_FORMAT,
+		vr.G_NON_HDR_FORMAT,
 		vr.G_VELOCITY_FORMAT,
 		VK_FORMAT_R32_SINT
 	};
 	VkPipelineRenderingCreateInfo renderingInfo{};
 	renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 	renderingInfo.viewMask = {};
-	renderingInfo.colorAttachmentCount = formats.size();
+	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachmentFormats = formats.data();
 	renderingInfo.depthAttachmentFormat = vr.G_DEPTH_FORMAT;
 	renderingInfo.stencilAttachmentFormat = vr.G_DEPTH_FORMAT;
 
 	pipelineCI.pNext = &renderingInfo;
 
-	if (pso_Forward_UI != VK_NULL_HANDLE)
-	{
-		vkDestroyPipeline(m_device.logicalDevice, pso_Forward_UI, nullptr);
-	}
-	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_Forward_UI));
-	VK_NAME(m_device.logicalDevice, "forwardUIPSO", pso_Forward_UI);
 
+	if (pso_Forward_UI_NO_DEPTH != VK_NULL_HANDLE)
+	{
+		vkDestroyPipeline(m_device.logicalDevice, pso_Forward_UI_NO_DEPTH, nullptr);
+	}
+	depthStencilState.depthTestEnable = VK_FALSE;
+	VK_CHK(vkCreateGraphicsPipelines(m_device.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pso_Forward_UI_NO_DEPTH));
+	VK_NAME(m_device.logicalDevice, "forwardUIPSO_NO_DEPTH", pso_Forward_UI_NO_DEPTH);
 
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(m_device.logicalDevice, shaderStages[1].module, nullptr);

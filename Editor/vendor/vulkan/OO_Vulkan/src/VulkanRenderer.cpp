@@ -52,6 +52,7 @@ extern GfxRenderpass* g_DebugDrawRenderpass;
 extern GfxRenderpass* g_ImguiRenderpass;
 extern GfxRenderpass* g_ForwardParticlePass;
 extern GfxRenderpass* g_ForwardUIPass;
+extern GfxRenderpass* g_ScreenSpaceUIPass;
 extern GfxRenderpass* g_GBufferRenderPass;
 extern GfxRenderpass* g_LightingPass;
 extern GfxRenderpass* g_LightingHistogram;
@@ -326,36 +327,6 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 				capturing = true;
 			}
 		}
-
-		static float scales[]{
-					1.0f,
-					1.0f / 1.5f,
-					1.0f / 1.724f, // conform to nvidia's scaling
-					1.0f / 2.0f,
-					1.0f / 3.0f,
-		};
-		auto setSetting = [scales=scales](int x) {
-			VulkanRenderer& vr = *VulkanRenderer::get();
-			vr.changedRenderResolution = scales[x];
-			vr.SetQuality((UPSCALING_QUALITY)x);
-			vr.UpdateRenderResolution();
-		};
-		if (kbdStruct->vkCode == VK_F2)	setSetting(0); //native		
-  		if (kbdStruct->vkCode == VK_F3)	setSetting(1); //native		
-		if (kbdStruct->vkCode == VK_F4)	setSetting(2); //native		
-		if (kbdStruct->vkCode == VK_F5)	setSetting(3); //native		
-		if (kbdStruct->vkCode == VK_F6)	setSetting(4); //ultra		
-
-		auto setScaler = [](int x) {
-			VulkanRenderer& vr = *VulkanRenderer::get();
-			vr.SetUpscaler((UPSCALING_TYPE)x);
-			vr.UpdateRenderResolution();
-		};
-		if (kbdStruct->vkCode == VK_F8 ) setScaler(0);
-		if (kbdStruct->vkCode == VK_F9 ) setScaler(1);
-		if (kbdStruct->vkCode == VK_F10) setScaler(2);
-		
-
 	}
 
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
@@ -453,6 +424,7 @@ bool VulkanRenderer::Init(const oGFX::SetupInfo& setupSpecs, Window& window)
 	rpd->RegisterRenderPass(g_BloomPass);
 	rpd->RegisterRenderPass(g_FSR2Pass);
 	rpd->RegisterRenderPass(g_DLSSPass);
+	rpd->RegisterRenderPass(g_ScreenSpaceUIPass);
 #if defined (ENABLE_DECAL_IMPLEMENTATION)
 	ptr = new ForwardDecalRenderpass;
 	rpd->RegisterRenderPass(ptr);
@@ -2998,6 +2970,7 @@ void VulkanRenderer::RenderFunc(bool shouldRunDebugDraw)
 		}
 
 		AddRenderer(g_BloomPass);
+		AddRenderer(g_ScreenSpaceUIPass);
 		//AddRenderer(g_DebugDrawRenderpass);
 		
 		auto updateHistogram = [this](void*) {

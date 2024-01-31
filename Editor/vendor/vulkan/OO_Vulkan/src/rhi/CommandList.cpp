@@ -44,6 +44,7 @@ namespace rhi
 	DescriptorSetInfo& CommandList::DescriptorSetBegin(uint32_t set)
 	{
 		assert(set < 4);
+		assert(m_pipelineBindPoint != VK_PIPELINE_BIND_POINT_MAX_ENUM);
 		DenoteStateChanged();
 
 		descriptorSets[set].builder = DescriptorBuilder::Begin();
@@ -60,6 +61,7 @@ namespace rhi
 	{
 		assert(set < 4);
 		assert(descriptor != VK_NULL_HANDLE);
+		assert(m_pipelineBindPoint != VK_PIPELINE_BIND_POINT_MAX_ENUM);
 		DenoteStateChanged();
 
 		descriptorSets[set].descriptor = descriptor;
